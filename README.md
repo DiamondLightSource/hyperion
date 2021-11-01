@@ -8,6 +8,6 @@ https://nsls-ii.github.io/bluesky/
 Development Installation
 ------------
 
-Clone this project and type::
+Clone this project and type:
 
     pipenv install --dev
