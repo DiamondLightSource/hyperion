@@ -10,6 +10,8 @@ ophyd = "*"
 [dev-packages]
 pytest = "*"
 ipython = "*"
+black = "*"
+mockito="*"
 
 [requires]
 python_version = "3.7"

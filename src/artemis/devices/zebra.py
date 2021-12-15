@@ -1,12 +1,11 @@
-from typing import Iterator, List
+from __future__ import annotations
+from typing import Iterator, List, Dict
+from enum import Enum
 
 from ophyd import Component, Device, EpicsSignal, StatusBase
 from ophyd.status import SubscriptionStatus
 
 from functools import partial, partialmethod
-
-PC_DIR_POS = 0
-PC_DIR_NEG = 1
 
 PC_ARM_SOURCE_SOFT = 0
 PC_ARM_SOURCE_EXT = 1
@@ -32,216 +31,245 @@ OR1 = 36
 PULSE1 = 52
 SOFT_IN3 = 62
 
-PULSE_TIMEUNIT_10SEC = 2
-PULSE_TIMEUNIT_SEC = 1
-PULSE_TIMEUNIT_MS = 0
+# Instrument specific
+TTL_DETECTOR = 2
+TTL_XSPRESS3 = 3
+TTL_SHUTTER = 4
 
-class CaptureInput(Device):
-	enc1: EpicsSignal = Component(EpicsSignal, "B0")
-	enc2: EpicsSignal = Component(EpicsSignal, "B1")
-	enc3: EpicsSignal = Component(EpicsSignal, "B2")
-	enc4: EpicsSignal = Component(EpicsSignal, "B3")
+
+def epics_signal_put_wait(pv_name: str, wait: str = 1.0) -> EpicsSignal:
+    """Creates a `Component` around an `EpicsSignal` that waits for a callback on a put.
+
+    Args:
+        pv_name (str): The name of the PV for the `EpicsSignal`
+        wait (str, optional): The timeout to wait for a callback. Defaults to 1.0.
+
+    Returns:
+        EpicsSignal: An EpicsSignal that will wait for a callback.
+    """
+    return Component(EpicsSignal, pv_name, put_complete=True, write_timeout=wait)
 
 
 class PositionCompare(Device):
-	capture_input: CaptureInput = Component(CaptureInput, "PC_BIT_CAP:")
-	trigger_encoder: EpicsSignal = Component(EpicsSignal, "PC_ENC")
+    num_gates: EpicsSignal = epics_signal_put_wait("PC_GATE_NGATE")
+    gate_source: EpicsSignal = epics_signal_put_wait("PC_GATE_SEL")
+    gate_input: EpicsSignal = epics_signal_put_wait("PC_GATE_INP")
 
-	gate_start: EpicsSignal = Component(EpicsSignal, "PC_GATE_START")
-	gate_width: EpicsSignal = Component(EpicsSignal, "PC_GATE_WID")
-	num_gates: EpicsSignal = Component(EpicsSignal, "PC_GATE_NGATE")
-	gate_step: EpicsSignal = Component(EpicsSignal, "PC_GATE_STEP")
-	gate_source: EpicsSignal = Component(EpicsSignal, "PC_GATE_SEL")
-	gate_input: EpicsSignal = Component(EpicsSignal, "PC_GATE_INP")
+    pulse_source: EpicsSignal = epics_signal_put_wait("PC_PULSE_SEL")
+    pulse_input: EpicsSignal = epics_signal_put_wait("PC_PULSE_INP")
 
-	pulse_source: EpicsSignal = Component(EpicsSignal, "PC_PULSE_SEL")
-	pulse_start: EpicsSignal = Component(EpicsSignal, "PC_PULSE_START")
-	pulse_width: EpicsSignal = Component(EpicsSignal, "PC_PULSE_WID")
-	max_pulses: EpicsSignal = Component(EpicsSignal, "PC_PULSE_MAX")
-	pulse_step: EpicsSignal = Component(EpicsSignal, "PC_PULSE_STEP")
-	pulse_delay: EpicsSignal = Component(EpicsSignal, "PC_PULSE_DLY")
-	pulse_input: EpicsSignal = Component(EpicsSignal, "PC_PULSE_INP")
+    dir: EpicsSignal = Component(EpicsSignal, "PC_DIR")
+    arm_source: EpicsSignal = epics_signal_put_wait("PC_ARM_SEL")
+    arm_demand: EpicsSignal = Component(EpicsSignal, "PC_ARM")
+    disarm_demand: EpicsSignal = Component(EpicsSignal, "PC_DISARM")
+    armed: EpicsSignal = Component(EpicsSignal, "PC_ARM_OUT")
 
-	dir: EpicsSignal = Component(EpicsSignal, "PC_DIR")
-	arm_source: EpicsSignal = Component(EpicsSignal, "PC_ARM_SEL")
-	arm_demand: EpicsSignal = Component(EpicsSignal, "PC_ARM")
-	disarm_demand: EpicsSignal = Component(EpicsSignal, "PC_DISARM")
-	armed: EpicsSignal = Component(EpicsSignal, "PC_ARM_OUT")
+    def setup_fast_grid_scan(self):
+        self.arm_source.put(PC_ARM_SOURCE_SOFT)
+        self.gate_source.put(PC_GATE_SOURCE_EXTERNAL)
 
-	def setup_fast_grid_scan(self):
-		#TODO: Does it make sense to wait on all of these?
-		self.arm_source.put(PC_ARM_SOURCE_SOFT).wait(1.0)
-		self.gate_source.put(PC_GATE_SOURCE_EXTERNAL).wait(1.0)
+        # Set up parameters for the GATE
+        self.gate_input.put(SOFT_IN3)
+        self.num_gates.put(1)
 
-		# Set up parameters for the GATE
-		self.gate_input.put(SOFT_IN3).wait(1.0)
-		self.num_gates.put(1).wait(1.0)
+        # Pulses come in through TTL input 1
+        self.pulse_source.put(PC_PULSE_SOURCE_EXTERNAL)
+        self.pulse_input.put(IN1_TTL)
 
-		# Pulses come in through TTL input 1
-		self.pulse_source.put(PC_PULSE_SOURCE_EXTERNAL).wait(1.0)
-		self.pulse_input.put(IN1_TTL).wait(1.0)
-		return super().stage()
+    def arm(self) -> StatusBase:
+        status = self.arm_status(1)
+        self.arm_demand.put(1)
+        return status
 
-	def unstage(self) -> List[object]:
-		self.disarm().wait(10.0)
-		return super().unstage()
+    def disarm(self) -> StatusBase:
+        status = self.arm_status(0)
+        self.disarm_demand.put(1)
+        return status
 
-	def arm(self) -> StatusBase:
-		status = self.arm_status(1)
-		self.arm_demand.put(1)
-		return status
+    def is_armed(self) -> bool:
+        return self.armed.get() == 1
 
-	def disarm(self) -> StatusBase:
-		status = self.arm_status(0)
-		self.disarm_demand.put(1)
-		return status
-
-	def is_armed(self) -> bool:
-		return self.armed.get() == 1
-
-	def arm_status(self, armed: int) -> StatusBase:
-		return SubscriptionStatus(self.armed, lambda value, **_: value == armed)
+    def arm_status(self, armed: int) -> StatusBase:
+        return SubscriptionStatus(self.armed, lambda value, **_: value == armed)
 
 
 class ZebraOutputPanel(Device):
-	# TODO: Need to check these (also instrument dependent not Device so shouldn't live here)
-	DETECTOR_TTL = 2 
-	TTL_SHUTTER = 4 
-	TTL_XSPRESS3 = 3
+    pulse_1_input: EpicsSignal = epics_signal_put_wait("PULSE1_INP")
 
-	pulse_1_input: EpicsSignal = Component(EpicsSignal, "PULSE1_INP")
-	pulse_1_delay: EpicsSignal = Component(EpicsSignal, "PULSE1_DLY")
-	pulse_1_width: EpicsSignal = Component(EpicsSignal, "PULSE1_WID")
-	pulse_1_time_units: EpicsSignal = Component(EpicsSignal, "PULSE1_PRE")
+    out_1: EpicsSignal = epics_signal_put_wait(f"OUT1_TTL")
+    out_2: EpicsSignal = epics_signal_put_wait(f"OUT2_TTL")
+    out_3: EpicsSignal = epics_signal_put_wait(f"OUT3_TTL")
+    out_4: EpicsSignal = epics_signal_put_wait(f"OUT4_TTL")
 
-	def __init__(self) -> None:
-		self.out_pvs = [Component(EpicsSignal, f"OUT{out_i}_TTL") for out_i in range(1, 5)]
+    @property
+    def out_pvs(self):
+        """A list of all the output TTL PVs. Note that as the PVs are 1 indexed `out_pvs[0]` is `None`."""
+        return [None, self.out_1, self.out_2, self.out_3, self.out_4]
 
-	def setup_fast_grid_scan(self):
-		self.out_pvs[self.DETECTOR_TTL].put(AND3).wait(1.0)
-		self.out_pvs[self.TTL_SHUTTER].put(AND4).wait(1.0)
-		self.out_pvs[self.TTL_XSPRESS3].put(DISCONNECT).wait(1.0)
-	
-	def enable_fluo_collection(self, fluo_exposure_time: float):
-		# Generate a pulse, triggered immediately when IN1_TTL goes high
-		self.pulse_1_input.put(IN1_TTL).wait(1.0)
-		self.pulse_1_delay.put(0.0).wait(1)
+    def setup_fast_grid_scan(self):
+        self.out_pvs[TTL_DETECTOR].put(AND3)
+        self.out_pvs[TTL_SHUTTER].put(AND4)
+        self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
+        self.pulse_1_input.put(DISCONNECT)
 
-		# Pulse width is the specified exposure time
-		self.pulse_1_width.put(fluo_exposure_time).wait(1)
-		self.pulse_1_time_units.put(PULSE_TIMEUNIT_SEC).wait(1)
+    def disable_fluo_collection(self):
+        self.pulse_1_input.put(DISCONNECT)
+        self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
 
-		# Pulse should go out to the Xspress 3
-		self.out_pvs[self.TL_XSPRESS3].put(PULSE1).wait(1)
-	
-	def disable_fluo_collection(self):
-		# No PULSE1
-		self.pulse_1_input.put(DISCONNECT).wait(1)
-
-		# No signal out to the Xspress 3
-		self.out_pvs[self.TTL_XSPRESS3].put(DISCONNECT).wait(1.0)
-
-	def set_shutter_to_manual(self):
-		self.out_pvs[self.DETECTOR_TTL].put(PC_GATE).wait(1.0)
-		self.out_pvs[self.TTL_SHUTTER].put(OR1).wait(1.0)
+    def set_shutter_to_manual(self):
+        self.out_pvs[TTL_DETECTOR].put(PC_GATE)
+        self.out_pvs[TTL_SHUTTER].put(OR1)
 
 
-# TODO: More pythonic way to do this
-def boolean_array_to_integer(values : List[bool]) -> int:
-	val = 0
-	for i, value in enumerate(values):
-		if (value):
-			val += (1 << i)
-	return val
+def boolean_array_to_integer(values: List[bool]) -> int:
+    """Converts a boolean array to integer by interpretting it in binary with LSB 0 bit numbering.
+
+    Args:
+        values (List[bool]): The list of booleans to convert.
+
+    Returns:
+        int: The interpretted integer.
+    """
+    return sum(v << i for i, v in enumerate(values))
+
+
+class GateControl(Device):
+    enable: EpicsSignal = epics_signal_put_wait("_ENA", 30.0)
+    source_1: EpicsSignal = epics_signal_put_wait("_INP1", 30.0)
+    source_2: EpicsSignal = epics_signal_put_wait("_INP2", 30.0)
+    source_3: EpicsSignal = epics_signal_put_wait("_INP3", 30.0)
+    source_4: EpicsSignal = epics_signal_put_wait("_INP4", 30.0)
+    invert: EpicsSignal = epics_signal_put_wait("_INV", 30.0)
+
+    @property
+    def sources(self):
+        return [self.source_1, self.source_2, self.source_3, self.source_4]
+
+
+class GateType(Enum):
+    AND = "AND"
+    OR = "OR"
+
 
 class LogicGateConfigurer(Device):
-	NUMBER_OF_GATES = 4
+    and_gate_1 = Component(GateControl, "AND1")
+    and_gate_2 = Component(GateControl, "AND2")
+    and_gate_3 = Component(GateControl, "AND3")
+    and_gate_4 = Component(GateControl, "AND4")
 
-	def gate_enable_pv(gate_type: int, gate_number: int) -> Component: 
-		return Component(EpicsSignal, f"{gate_type}{gate_number}_ENA")
+    or_gate_1 = Component(GateControl, "OR1")
+    or_gate_2 = Component(GateControl, "OR2")
+    or_gate_3 = Component(GateControl, "OR3")
+    or_gate_4 = Component(GateControl, "OR4")
 
-	def gate_source_pv(gate_type: str, gate_number: int, gate_input: int) -> Component: 
-		return Component(EpicsSignal, f"{gate_type}{gate_number}_INP{gate_input}")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.all_gates = {
+            GateType.AND: [
+                self.and_gate_1,
+                self.and_gate_2,
+                self.and_gate_3,
+                self.and_gate_4,
+            ],
+            GateType.OR: [
+                self.or_gate_1,
+                self.or_gate_2,
+                self.or_gate_3,
+                self.or_gate_4,
+            ],
+        }
 
-	def gate_invert_pv(gate_type: str, gate_number: int) -> Component: 
-		return Component(EpicsSignal, f"{gate_type}{gate_number}_INV")
+    def apply_logic_gate_config(
+        self, type: GateType, gate_number: int, config: LogicGateConfiguration
+    ):
+        """Uses the specified `LogicGateConfiguration` to configure a gate on the Zebra.
 
-	def apply_logic_gate_config(self, type : str, gateNumber : int, config):
-		use_pv = self.gate_enable_pv(type, gateNumber)
-		use_pv.put(boolean_array_to_integer(config.get_use()))
+        Args:
+            type (GateType): The type of gate e.g. AND/OR
+            gate_number (int): Which gate to configure.
+            config (LogicGateConfiguration): A configuration for the gate.
+        """
+        gate: GateControl = self.all_gates[type][gate_number - 1]
 
-		# Input Source
-		for input in range(1, self.NUMBER_OF_GATES + 1):
-			source_pv = self.gate_source_pv(type, gateNumber, input)
-			source_pv.put(config.getSources()[input - 1])
+        gate.enable.put(boolean_array_to_integer(config.use))
 
-		# Invert
-		invert_pv = self.gate_invert_pv(type, gateNumber)
-		invert_pv.put(boolean_array_to_integer(config.getInvert()))
+        # Input Source
+        for source_pv, source_val in zip(gate.sources, config.sources):
+            source_pv.put(source_val)
 
-	apply_and_gate_config = partialmethod(apply_logic_gate_config, "AND")
-	apply_or_gate_config = partialmethod(apply_logic_gate_config, "OR")
+        # Invert
+        gate.invert.put(boolean_array_to_integer(config.invert))
 
-	def setup_fast_grid_scan(self):
-		# Set up AND3 block - produces trigger when SOFT_IN3 is high, AND a pulse is received from Geo Brick (via IN1_TTL)
-		and3_config = LogicGateConfiguration(1, PC_ARM).add_gate(2, IN1_TTL)
-		self.apply_and_gate_config(3, and3_config)
+    apply_and_gate_config = partialmethod(apply_logic_gate_config, GateType.AND)
+    apply_or_gate_config = partialmethod(apply_logic_gate_config, GateType.OR)
 
-		# Set up AND4 block - produces trigger when SOFT_IN3 is high, AND a pulse is received from Geo Brick (via IN2_TTL)
-		and4_config = LogicGateConfiguration(1, PC_ARM).add_gate(2, IN2_TTL)
-		self.apply_and_gate_config(4, and4_config)
+    def setup_fast_grid_scan(self):
+        # Set up AND3 block - produces trigger when SOFT_IN3 is high, AND a pulse is received from Geo Brick (via IN1_TTL)
+        and3_config = LogicGateConfiguration(1, PC_ARM).add_input(2, IN1_TTL)
+        self.apply_and_gate_config(3, and3_config)
 
-class LogicGateConfiguration():
-	NUMBER_OF_GATES = 4
+        # Set up AND4 block - produces trigger when SOFT_IN3 is high, AND a pulse is received from Geo Brick (via IN2_TTL)
+        and4_config = LogicGateConfiguration(1, PC_ARM).add_input(2, IN2_TTL)
+        self.apply_and_gate_config(4, and4_config)
 
-	use = [False] * NUMBER_OF_GATES
-	sources = [0] * NUMBER_OF_GATES
-	invert = [False] * NUMBER_OF_GATES
 
-	def __init__(self, use_gate: int, input_source: int, invert: bool = False) -> None:
-		self.add_gate(use_gate, input_source, invert)
+class LogicGateConfiguration:
+    NUMBER_OF_INPUTS = 4
 
-	def add_gate(self, use_gate: int, input_source: int, invert: bool = False) -> None:
-		assert 1 <= use_gate <= self.NUMBER_OF_GATES
-		assert 0 <= input_source <= 63 
-		self.use[use_gate - 1] = True
-		self.input_source[use_gate - 1] = input_source
-		self.invert[use_gate - 1] = invert
+    def __init__(self, use_input: int, input_source: int, invert: bool = False) -> None:
+        self.use = [False] * self.NUMBER_OF_INPUTS
+        self.sources = [0] * self.NUMBER_OF_INPUTS
+        self.invert = [False] * self.NUMBER_OF_INPUTS
+        self.add_input(use_input, input_source, invert)
 
-	def __str__(self) -> str:
-		bits = []
-		for (input, use, source, invert) in enumerate(zip(self.use, self.sources, self.invert)):
-			if use:
-				bits.append(f"INP{input+1}={'!' if invert else ''}{source}")
+    def add_input(
+        self, use_input: int, input_source: int, invert: bool = False
+    ) -> LogicGateConfiguration:
+        """Add an input to the gate.
 
-		return str(bits)
+        Args:
+            use_input (int): Which input to use (must be between 1 and 4).
+            input_source (int): The source for the input (must be between 0 and 63).
+            invert (bool, optional): Whether the input should be inverted. Defaults to False.
+
+        Returns:
+            LogicGateConfiguration: A description of the gate configuration.
+        """
+        assert 1 <= use_input <= self.NUMBER_OF_INPUTS
+        assert 0 <= input_source <= 63
+        self.use[use_input - 1] = True
+        self.sources[use_input - 1] = input_source
+        self.invert[use_input - 1] = invert
+        return self
+
+    def __str__(self) -> str:
+        input_strings = []
+        for input, (use, source, invert) in enumerate(
+            zip(self.use, self.sources, self.invert)
+        ):
+            if use:
+                input_strings.append(f"INP{input+1}={'!' if invert else ''}{source}")
+
+        return ", ".join(input_strings)
+
 
 class Zebra(Device):
-	pc: PositionCompare = Component(PositionCompare, "")
-	output: ZebraOutputPanel = Component(ZebraOutputPanel, "")
-	logic_gates: LogicGateConfigurer = Component(LogicGateConfigurer, "")
+    pc: PositionCompare = Component(PositionCompare, "")
+    output: ZebraOutputPanel = Component(ZebraOutputPanel, "")
+    logic_gates: LogicGateConfigurer = Component(LogicGateConfigurer, "")
 
-	collecting_fluo_data = True
-	fluo_exposure_time = 0.1
+    def setup_fast_grid_scan(self):
+        self.pc.setup_fast_grid_scan()
+        self.logic_gates.setup_fast_grid_scan()
+        self.output.setup_fast_grid_scan()
 
-	def setup_fast_grid_scan(self):
-		self.pc.setup_fast_grid_scan()
-		self.logic_gates.setup_fast_grid_scan()
-		self.output.setup_fast_grid_scan()
-	
-	def stage(self) -> List[object]:
-		self.setup_fast_grid_scan()
+    def stage(self) -> List[object]:
+        self.setup_fast_grid_scan()
+        self.output.disable_fluo_collection()
+        self.pc.arm().wait(10.0)
+        return super().stage()
 
-		if self.collecting_fluo_data:
-			self.output.enable_fluo_collection(self.fluo_exposure_time)
-		else:
-			self.output.disable_fluo_collection()
-		
-		self.pc.arm()
-
-	def unstage(self) -> List[object]:
-		self.pc.disarm()
-		if self.collecting_fluo_data:
-			self.output.disable_fluo_collection()
-		self.output.set_shutter_to_manual()
-		
+    def unstage(self) -> List[object]:
+        self.pc.disarm().wait(10.0)
+        self.output.set_shutter_to_manual()
+        return super.unstage()
