@@ -152,6 +152,8 @@ class GateType(Enum):
 
 
 class LogicGateConfigurer(Device):
+    DEFAULT_SOURCE_IF_GATE_NOT_USED = 0
+
     and_gate_1 = Component(GateControl, "AND1")
     and_gate_2 = Component(GateControl, "AND2")
     and_gate_3 = Component(GateControl, "AND3")
@@ -191,11 +193,14 @@ class LogicGateConfigurer(Device):
         """
         gate: GateControl = self.all_gates[type][gate_number - 1]
 
-        gate.enable.put(boolean_array_to_integer(config.use))
+        gate.enable.put(boolean_array_to_integer([True]*len(config.sources)))
 
         # Input Source
-        for source_pv, source_val in zip(gate.sources, config.sources):
-            source_pv.put(source_val)
+        for source_number, source_pv in enumerate(gate.sources):
+            try:
+                source_pv.put(config.sources[source_number])
+            except IndexError:
+                source_pv.put(self.DEFAULT_SOURCE_IF_GATE_NOT_USED)
 
         # Invert
         gate.invert.put(boolean_array_to_integer(config.invert))
@@ -205,50 +210,46 @@ class LogicGateConfigurer(Device):
 
     def setup_fast_grid_scan(self):
         # Set up AND3 block - produces trigger when SOFT_IN3 is high, AND a pulse is received from Geo Brick (via IN1_TTL)
-        and3_config = LogicGateConfiguration(1, PC_ARM).add_input(2, IN1_TTL)
+        and3_config = LogicGateConfiguration(PC_ARM).add_input(IN1_TTL)
         self.apply_and_gate_config(3, and3_config)
 
         # Set up AND4 block - produces trigger when SOFT_IN3 is high, AND a pulse is received from Geo Brick (via IN2_TTL)
-        and4_config = LogicGateConfiguration(1, PC_ARM).add_input(2, IN2_TTL)
+        and4_config = LogicGateConfiguration(PC_ARM).add_input(IN2_TTL)
         self.apply_and_gate_config(4, and4_config)
 
 
 class LogicGateConfiguration:
     NUMBER_OF_INPUTS = 4
 
-    def __init__(self, use_input: int, input_source: int, invert: bool = False) -> None:
-        self.use = [False] * self.NUMBER_OF_INPUTS
-        self.sources = [0] * self.NUMBER_OF_INPUTS
-        self.invert = [False] * self.NUMBER_OF_INPUTS
-        self.add_input(use_input, input_source, invert)
+    def __init__(self, input_source: int, invert: bool = False) -> None:
+        self.sources = []
+        self.invert = []
+        self.add_input(input_source, invert)
 
     def add_input(
-        self, use_input: int, input_source: int, invert: bool = False
+        self, input_source: int, invert: bool = False
     ) -> LogicGateConfiguration:
-        """Add an input to the gate.
+        """Add an input to the gate. This will throw an assertion error if more than 4 inputs are added to the Zebra.
 
         Args:
-            use_input (int): Which input to use (must be between 1 and 4).
             input_source (int): The source for the input (must be between 0 and 63).
             invert (bool, optional): Whether the input should be inverted. Defaults to False.
 
         Returns:
             LogicGateConfiguration: A description of the gate configuration.
         """
-        assert 1 <= use_input <= self.NUMBER_OF_INPUTS
+        assert len(self.sources) < 4
         assert 0 <= input_source <= 63
-        self.use[use_input - 1] = True
-        self.sources[use_input - 1] = input_source
-        self.invert[use_input - 1] = invert
+        self.sources.append(input_source)
+        self.invert.append(invert)
         return self
 
     def __str__(self) -> str:
         input_strings = []
-        for input, (use, source, invert) in enumerate(
-            zip(self.use, self.sources, self.invert)
+        for input, (source, invert) in enumerate(
+            zip(self.sources, self.invert)
         ):
-            if use:
-                input_strings.append(f"INP{input+1}={'!' if invert else ''}{source}")
+            input_strings.append(f"INP{input+1}={'!' if invert else ''}{source}")
 
         return ", ".join(input_strings)
 
@@ -272,4 +273,4 @@ class Zebra(Device):
     def unstage(self) -> List[object]:
         self.pc.disarm().wait(10.0)
         self.output.set_shutter_to_manual()
-        return super.unstage()
+        return super().unstage()

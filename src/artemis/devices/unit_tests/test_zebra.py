@@ -13,39 +13,36 @@ from ophyd.sim import make_fake_device
 @pytest.mark.parametrize(
     "boolean_array,expected_integer",
     [
-        ([True, False, False, False], 1),
+        ([True, False, False], 1),
         ([True, False, True, False], 5),
         ([False, True, False, True], 10),
         ([False, False, False, False], 0),
-        ([True, True, True, True], 15),
+        ([True, True, True], 7),
     ],
 )
 def test_boolean_array_to_integer(boolean_array, expected_integer):
     assert boolean_array_to_integer(boolean_array) == expected_integer
 
 
-def test_logic_gate_configuration_1_23():
-    config1 = LogicGateConfiguration(1, 23)
-    assert config1.use == [True, False, False, False]
-    assert config1.sources == [23, 0, 0, 0]
-    assert config1.invert == [False, False, False, False]
+def test_logic_gate_configuration_23():
+    config1 = LogicGateConfiguration(23)
+    assert config1.sources == [23]
+    assert config1.invert == [False]
     assert str(config1) == "INP1=23"
 
 
-def test_logic_gate_configuration_2_43_and_3_14_inv():
-    config = LogicGateConfiguration(2, 43).add_input(3, 14, True)
-    assert config.use == [False, True, True, False]
-    assert config.sources == [0, 43, 14, 0]
-    assert config.invert == [False, False, True, False]
-    assert str(config) == "INP2=43, INP3=!14"
+def test_logic_gate_configuration_43_and_14_inv():
+    config = LogicGateConfiguration(43).add_input(14, True)
+    assert config.sources == [43, 14]
+    assert config.invert == [False, True]
+    assert str(config) == "INP1=43, INP2=!14"
 
 
-def test_logic_gate_configuration_4_62_and_1_34_inv_and_2_15_inv():
-    config = LogicGateConfiguration(4, 62).add_input(1, 34, True).add_input(2, 15, True)
-    assert config.use == [True, True, False, True]
-    assert config.sources == [34, 15, 0, 62]
-    assert config.invert == [True, True, False, False]
-    assert str(config) == "INP1=!34, INP2=!15, INP4=62"
+def test_logic_gate_configuration_62_and_34_inv_and_15_inv():
+    config = LogicGateConfiguration(62).add_input(34, True).add_input(15, True)
+    assert config.sources == [62, 34, 15]
+    assert config.invert == [False, True, True]
+    assert str(config) == "INP1=62, INP2=!34, INP3=!15"
 
 
 def run_configurer_test(gate_type: GateType, gate_num, config, expected_pv_values):
@@ -69,34 +66,40 @@ def run_configurer_test(gate_type: GateType, gate_num, config, expected_pv_value
 
 
 @pytest.mark.skip("Will fail until https://github.com/bluesky/ophyd/pull/1023 is merged")
-def test_apply_and_logic_gate_configuration_1_32_and_2_51_inv_and_4_1():
-    config = LogicGateConfiguration(1, 32).add_input(2, 51, True).add_input(4, 1)
-    expected_pv_values = [11, 32, 51, 0, 1, 2]
+def test_apply_and_logic_gate_configuration_32_and_51_inv_and_1():
+    config = LogicGateConfiguration(32).add_input(51, True).add_input(1)
+    expected_pv_values = [7, 32, 51, 1, 0, 2]
 
     run_configurer_test(GateType.AND, 1, config, expected_pv_values)
 
 
 @pytest.mark.skip("Will fail until https://github.com/bluesky/ophyd/pull/1023 is merged")
-def test_apply_or_logic_gate_configuration_3_19_and_1_36_inv_and_2_60_inv():
-    config = LogicGateConfiguration(3, 19).add_input(1, 36, True).add_input(2, 60, True)
-    expected_pv_values = [7, 36, 60, 19, 0, 3]
+def test_apply_or_logic_gate_configuration_19_and_36_inv_and_60_inv():
+    config = LogicGateConfiguration(19).add_input(36, True).add_input(60, True)
+    expected_pv_values = [7, 19, 36, 60, 0, 6]
 
     run_configurer_test(GateType.OR, 2, config, expected_pv_values)
 
 
 @pytest.mark.parametrize(
-    "input,source",
+    "source",
     [
-        (0, 1),
-        (5, 1),
-        (1, -1),
-        (1, 67),
+        -1,
+        67
     ],
 )
-def test_logic_gate_configuration_with_invalid_input_then_error(input, source):
+def test_logic_gate_configuration_with_invalid_source_then_error(source):
     with pytest.raises(AssertionError):
-        LogicGateConfiguration(input, source)
+        LogicGateConfiguration(source)
 
-    existing_config = LogicGateConfiguration(1, 1)
+    existing_config = LogicGateConfiguration(1)
     with pytest.raises(AssertionError):
-        existing_config.add_input(input, source)
+        existing_config.add_input(source)
+
+def test_logic_gate_configuration_with_too_many_sources_then_error():
+    config = LogicGateConfiguration(0)
+    for source in range(1,4):
+        config.add_input(source)
+
+    with pytest.raises(AssertionError):
+        config.add_input(5)
