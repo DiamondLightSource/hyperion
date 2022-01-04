@@ -8,7 +8,7 @@ from ophyd.status import DeviceStatus, StatusBase, SubscriptionStatus
 class GridScanCompleteStatus(DeviceStatus):
     """
     A Status for the grid scan completion
-    A special status object that notifies watches (progress bars)
+    A special status object that notifies watchers (progress bars)
     based on comparing device.expected_images to device.position_counter.
     """
 
@@ -16,10 +16,9 @@ class GridScanCompleteStatus(DeviceStatus):
         super().__init__(*args, **kwargs)
         self.start_ts = time.time()
 
-        # Notify watchers (things like progress bars) of new values
         self.device.position_counter.subscribe(self._notify_watchers)
         self.device.status.subscribe(self._running_changed)
-        # some state needed only by self._notify_watchers
+
         self._name = self.device.name
         self._target_count = self.device.expected_images
 
@@ -120,17 +119,20 @@ class FastGridScan(Device):
         # Check running already here?
         st = DeviceStatus(device=self, timeout=self.KICKOFF_TIMEOUT)
 
-        def check_valid():
-            self.log.info("Waiting on position counter reset and valid settings")
-            while self.is_invalid() and not self.position_counter.get() == 0:
-                time.sleep(0.1)
-            self.log.debug("Running scan")
-            running = SubscriptionStatus(self.status, lambda value: value == 1)
-            run_requested = self.run_cmd.set(1)
-            (run_requested and running).wait()
-            st.set_finished()
+        def check_valid_and_scan():
+            try:
+                self.log.info("Waiting on position counter reset and valid settings")
+                while self.is_invalid() or not self.position_counter.get() == 0:
+                    time.sleep(0.1)
+                self.log.debug("Running scan")
+                running = SubscriptionStatus(self.status, lambda value: value == 1)
+                run_requested = self.run_cmd.set(1)
+                (run_requested and running).wait()
+                st.set_finished()
+            except Exception as e:
+                st.set_exception(e)
 
-        threading.Thread(target=check_valid, daemon=True).start()
+        threading.Thread(target=check_valid_and_scan, daemon=True).start()
         return st
 
     def stage(self) -> List[object]:
