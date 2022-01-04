@@ -30,6 +30,7 @@ class GridScanCompleteStatus(DeviceStatus):
             fraction = value / self._target_count
         except ZeroDivisionError:
             fraction = 1
+            time_remaining = 0
         except Exception:
             fraction = None
             time_remaining = None
@@ -139,5 +140,5 @@ class FastGridScan(Device):
         self.position_counter.put(0)
         return super().stage()
 
-    def complete(self) -> StatusBase:
+    def complete(self) -> DeviceStatus:
         return GridScanCompleteStatus(self)
