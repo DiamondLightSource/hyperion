@@ -10,7 +10,7 @@ def fast_grid_scan():
 
 
 @pytest.mark.s03
-def test_set_program_data(fast_grid_scan: FastGridScan):
+def test_set_program_data_and_kickoff(fast_grid_scan: FastGridScan):
     fast_grid_scan.set_program_data(2, 2, 0.1, 0.1, 1, 0, 0, 0)
     kickoff_status = fast_grid_scan.kickoff()
-    kickoff_status.wait(5.0)
+    kickoff_status.wait()
