@@ -1,9 +1,18 @@
+from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import make_fake_device
-from src.artemis.devices.fast_grid_scan import FastGridScan, time
+from src.artemis.devices.fast_grid_scan import (
+    FastGridScan,
+    GridScanParams,
+    set_fast_grid_scan_params,
+    time,
+    scan_in_limits,
+)
+from src.artemis.devices.motors import GridScanMotorBundle
 
-from mockito import *
-from mockito.matchers import *
+from mockito import when, mock, verify
+from mockito.matchers import ANY, ARGS, KWARGS
 import pytest
+from bluesky.run_engine import RunEngine
 
 
 @pytest.fixture
@@ -47,7 +56,7 @@ def test_given_settings_valid_when_kickoff_then_run_started(
 
     mock_run_set_status = mock()
     when(fast_grid_scan.run_cmd).set(ANY).thenReturn(mock_run_set_status)
-    fast_grid_scan.status.subscribe = lambda func, **kwargs: func(1)
+    fast_grid_scan.status.subscribe = lambda func, **_: func(1)
 
     status = fast_grid_scan.kickoff()
 
@@ -57,9 +66,14 @@ def test_given_settings_valid_when_kickoff_then_run_started(
     assert status.exception() == None
 
 
-def run_test_on_complete_watcher(fast_grid_scan, num_pos_1d, put_value, expected_frac):
-    fast_grid_scan.set_program_data(
-        num_pos_1d, num_pos_1d, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+def run_test_on_complete_watcher(
+    fast_grid_scan: FastGridScan, num_pos_1d, put_value, expected_frac
+):
+    RE = RunEngine()
+    RE(
+        set_fast_grid_scan_params(
+            fast_grid_scan, GridScanParams(num_pos_1d, num_pos_1d)
+        )
     )
 
     complete_status = fast_grid_scan.complete()
@@ -72,7 +86,7 @@ def run_test_on_complete_watcher(fast_grid_scan, num_pos_1d, put_value, expected
         current=put_value,
         target=num_pos_1d ** 2,
         fraction=expected_frac,
-        **KWARGS
+        **KWARGS,
     )
 
 
@@ -96,8 +110,11 @@ def test_running_finished_with_not_all_images_done_then_complete_status_in_error
     fast_grid_scan: FastGridScan,
 ):
     num_pos_1d = 2
-    fast_grid_scan.set_program_data(
-        num_pos_1d, num_pos_1d, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    RE = RunEngine()
+    RE(
+        set_fast_grid_scan_params(
+            fast_grid_scan, GridScanParams(num_pos_1d, num_pos_1d)
+        )
     )
 
     fast_grid_scan.status.sim_put(1)
@@ -117,8 +134,11 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
     fast_grid_scan: FastGridScan,
 ):
     num_pos_1d = 2
-    fast_grid_scan.set_program_data(
-        num_pos_1d, num_pos_1d, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    RE = RunEngine()
+    RE(
+        set_fast_grid_scan_params(
+            fast_grid_scan, GridScanParams(num_pos_1d, num_pos_1d)
+        )
     )
 
     fast_grid_scan.status.sim_put(1)
@@ -132,3 +152,43 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
 
     assert complete_status.done
     assert complete_status.exception() == None
+
+
+def create_motor_bundle_with_x_limits(low_limit, high_limit) -> GridScanMotorBundle:
+    FakeGridScanMotorBundle = make_fake_device(GridScanMotorBundle)
+    grid_scan_motor_bundle: GridScanMotorBundle = FakeGridScanMotorBundle(name="test")
+    grid_scan_motor_bundle.x.low_limit_travel.sim_put(low_limit)
+    grid_scan_motor_bundle.x.high_limit_travel.sim_put(high_limit)
+    return grid_scan_motor_bundle
+
+
+@pytest.mark.parametrize(
+    "position, expected_in_limit",
+    [
+        (-1, False),
+        (20, False),
+        (5, True),
+    ],
+)
+def test_within_limits_check(position, expected_in_limit):
+    limits = create_motor_bundle_with_x_limits(0.0, 10).get_limits()
+    assert limits.x.is_within(position) == expected_in_limit
+
+
+@pytest.mark.parametrize(
+    "start, steps, size, expected_in_limits",
+    [
+        (1, 5, 1, True),
+        (-1, 5, 1, False),
+        (-1, 10, 2, False),
+        (0, 10, 0.1, True),
+        (5, 10, 0.5, True),
+        (5, 20, 0.6, False),
+    ],
+)
+def test_scan_within_limits(start, steps, size, expected_in_limits):
+    motor_bundle = create_motor_bundle_with_x_limits(0.0, 10.0)
+    assert (
+        scan_in_limits(motor_bundle.get_limits().x, start, steps, size)
+        == expected_in_limits
+    )

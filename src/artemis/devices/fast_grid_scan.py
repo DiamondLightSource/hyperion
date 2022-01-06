@@ -1,8 +1,65 @@
 import threading
 import time
 from typing import List
-from ophyd import Component, Device, EpicsSignal, EpicsSignalRO, EpicsSignalWithRBV
+from ophyd import (
+    Component,
+    Device,
+    EpicsSignal,
+    EpicsSignalRO,
+    EpicsSignalWithRBV,
+    Signal,
+)
 from ophyd.status import DeviceStatus, StatusBase, SubscriptionStatus
+
+from dataclasses import dataclass
+from typing import Any
+
+from src.artemis.devices.motors import (
+    GridScanLimit,
+    GridScanLimitBundle,
+)
+
+from bluesky.plan_stubs import mv
+
+
+@dataclass
+class GridScanParams:
+    """
+    Holder class for the parameters of a grid scan.
+    """
+
+    x_steps: int = 1
+    y_steps: int = 1
+    x_step_size: float = 0.1
+    y_step_size: float = 0.1
+    dwell_time: float = 0.1
+    x_start: float = 0.1
+    y1_start: float = 0.1
+    z1_start: float = 0.1
+
+    def is_valid(self, limits: GridScanLimitBundle) -> bool:
+        """
+        Validates scan parameters
+
+        :param limits: The motor limits against which to validate
+                       the parameters
+        :return: True if the scan is valid
+        """
+
+        return (
+            # All scan axes are within limits
+            scan_in_limits(limits.x, self.x_start, self.x_steps, self.x_step_size)
+            and scan_in_limits(limits.y, self.y1_start, self.y_steps, self.y_step_size)
+            # Z never exceeds limits
+            and limits.z.is_within(self.z1_start)
+        )
+
+
+def scan_in_limits(
+    limit: GridScanLimit, start: float, steps: float, step_size: float
+) -> bool:
+    end = start + (steps * step_size)
+    return limit.is_within(start) and limit.is_within(end)
 
 
 class GridScanCompleteStatus(DeviceStatus):
@@ -20,7 +77,7 @@ class GridScanCompleteStatus(DeviceStatus):
         self.device.status.subscribe(self._running_changed)
 
         self._name = self.device.name
-        self._target_count = self.device.expected_images
+        self._target_count = self.device.expected_images.get()
 
     def _notify_watchers(self, value, *args, **kwargs):
         if not self._watchers:
@@ -72,19 +129,15 @@ class FastGridScan(Device):
 
     x_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_NUM_STEPS")
     y_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_NUM_STEPS")
-    z_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_NUM_STEPS")
 
     x_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_STEP_SIZE")
     y_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_STEP_SIZE")
-    z_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_STEP_SIZE")
 
     dwell_time: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "DWELL_TIME")
 
     x_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_START")
     y1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_START")
-    y2_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y2_START")
     z1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_START")
-    z2_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z2_START")
 
     position_counter: EpicsSignal = Component(
         EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE"
@@ -97,19 +150,19 @@ class FastGridScan(Device):
     stop_cmd: EpicsSignal = Component(EpicsSignal, "STOP.PROC")
     status: EpicsSignalRO = Component(EpicsSignalRO, "SCAN_STATUS")
 
+    expected_images: Signal = Component(Signal)
+
     # Kickoff timeout in seconds
     KICKOFF_TIMEOUT: float = 5.0
 
-    def set_program_data(self, nx, ny, width, height, exptime, startx, starty, startz):
-        self.x_steps.put(nx)
-        self.y_steps.put(ny)
-        self.x_step_size.put(float(width))
-        self.y_step_size.put(float(height))
-        self.dwell_time.put(float(exptime))
-        self.x_start.put(float(startx))
-        self.y1_start.put(float(starty))
-        self.z1_start.put(float(startz))
-        self.expected_images = nx * ny
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        def set_expected_images(*_, **__):
+            self.expected_images.put(self.x_steps.get() * self.y_steps.get())
+
+        self.x_steps.subscribe(set_expected_images)
+        self.y_steps.subscribe(set_expected_images)
 
     def is_invalid(self):
         if "GONP" in self.scan_invalid.pvname:
@@ -142,3 +195,24 @@ class FastGridScan(Device):
 
     def complete(self) -> DeviceStatus:
         return GridScanCompleteStatus(self)
+
+
+def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
+    yield from mv(
+        scan.x_steps,
+        params.x_steps,
+        scan.y_steps,
+        params.y_steps,
+        scan.x_step_size,
+        params.x_step_size,
+        scan.y_step_size,
+        params.y_step_size,
+        scan.dwell_time,
+        params.dwell_time,
+        scan.x_start,
+        params.x_start,
+        scan.y1_start,
+        params.y1_start,
+        scan.z1_start,
+        params.z1_start,
+    )
