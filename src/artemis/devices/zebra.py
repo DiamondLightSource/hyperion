@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import Iterator, List, Dict
+from typing import List
 from enum import Enum
+from src.artemis.devices.utils import epics_signal_put_wait
 
 from ophyd import Component, Device, EpicsSignal, StatusBase
 from ophyd.status import SubscriptionStatus
 
-from functools import partial, partialmethod
+from functools import partialmethod
 
 PC_ARM_SOURCE_SOFT = 0
 PC_ARM_SOURCE_EXT = 1
@@ -35,19 +36,6 @@ SOFT_IN3 = 62
 TTL_DETECTOR = 2
 TTL_XSPRESS3 = 3
 TTL_SHUTTER = 4
-
-
-def epics_signal_put_wait(pv_name: str, wait: str = 1.0) -> EpicsSignal:
-    """Creates a `Component` around an `EpicsSignal` that waits for a callback on a put.
-
-    Args:
-        pv_name (str): The name of the PV for the `EpicsSignal`
-        wait (str, optional): The timeout to wait for a callback. Defaults to 1.0.
-
-    Returns:
-        EpicsSignal: An EpicsSignal that will wait for a callback.
-    """
-    return Component(EpicsSignal, pv_name, put_complete=True, write_timeout=wait)
 
 
 class PositionCompare(Device):
@@ -193,7 +181,7 @@ class LogicGateConfigurer(Device):
         """
         gate: GateControl = self.all_gates[type][gate_number - 1]
 
-        gate.enable.put(boolean_array_to_integer([True]*len(config.sources)))
+        gate.enable.put(boolean_array_to_integer([True] * len(config.sources)))
 
         # Input Source
         for source_number, source_pv in enumerate(gate.sources):
@@ -246,9 +234,7 @@ class LogicGateConfiguration:
 
     def __str__(self) -> str:
         input_strings = []
-        for input, (source, invert) in enumerate(
-            zip(self.sources, self.invert)
-        ):
+        for input, (source, invert) in enumerate(zip(self.sources, self.invert)):
             input_strings.append(f"INP{input+1}={'!' if invert else ''}{source}")
 
         return ", ".join(input_strings)
