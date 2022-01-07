@@ -1,37 +1,26 @@
 from ophyd import (
 	Component,
-	DetectorBase,
 	Device,
-	EpicsSignalRO,
-	EpcisSignalWithRBV,
-	SingleTrigger,
-	StatusBase
+	EpicsSignalRO
 )
 
 from ophyd.areadetector.cam import EigerDetectorCam
-from ophyd.status import AndStatus
 
 from eigerodin import EigerOdin
-import DetDimConstants
 import DetDistToBeamConverter
 from status import await_value
-
-class EigerManualInterface(Device):
-	manual_trigger: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ManualTrigger")
-	trigger_now: EpicsSignal = Component(EpicsSignal, "Trigger")
-	num_triggers: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "NumTriggers")
 
 class EigerDetector(Device):
 	cam: EigerDetectorCam = Component(EigerDetectorCam, "CAM:")
 	odin: EigerOdin = Component(EigerOdin, "")
-	manual: EigerManualInterface = Component(EigerManualInterface, "CAM:")
 
-	stale_params: EpicsSingalRO = Component(EpicsSignalRO, "CAM:StaleParameters_RBV")
+	stale_params: EpicsSignalRO = Component(EpicsSignalRO, "CAM:StaleParameters_RBV")
 	bit_depth: EpicsSignalRO = Component(EpicsSignalRO, "CAM:BitDepthImage_RBV")
 
 	def __init__(self, detector_size_constants, use_roi_mode):
 		self.detector_size = detector_size_constants
 		self.use_roi_mode = use_roi_mode
+		super.__init__()
 
 	def stage(self):
 		if self.use_roi_mode:
