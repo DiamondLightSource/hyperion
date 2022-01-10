@@ -9,13 +9,14 @@ Development Installation
 ------------
 
 1. Clone this project 
-1. If on a DLS machine get Python 3.9 by running:
+1. If on a DLS machine avoid the controls pypi server and get Python 3.7 by running:
     ```
-    module load python/3.9
+    module unload controls_dev
+    module load python/3.7
     ```
-    If not at DLS, use your local version of Python (>3.7)
-2. Gather the dependencies by running the following (note that the `--pypi-mirror` command is required at DLS to get the latest dependencies by avoiding the internal mirror, this is not required outside DLS)
+    If not at DLS, use your local version of Python 3.7
+1. Gather the dependencies by running the following
     ```
-    pipenv install --pypi-mirror="https://pypi.org/simple/" --dev
+    pipenv install --dev
     ```
-3. Install the pre-commit hooks, as specified [here](https://pre-commit.com/#3-install-the-git-hook-scripts).
+1. Install the pre-commit hooks, as specified [here](https://pre-commit.com/#3-install-the-git-hook-scripts).
