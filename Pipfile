@@ -10,6 +10,7 @@ ophyd = "*"
 [dev-packages]
 pytest = "*"
 ipython = "*"
+pre-commit = ">2.9.0"
 
 [requires]
 python_version = "3.7"
