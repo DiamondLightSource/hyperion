@@ -11,6 +11,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+env/
 build/
 develop-eggs/
 dist/
@@ -53,6 +54,8 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+cov.xml
+.mypy_cache/
 
 # Translations
 *.mo
@@ -130,3 +133,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# DLS build dir and virtual environment
+/prefix/
+/venv/
+/lightweight-venv/
+/installed.files

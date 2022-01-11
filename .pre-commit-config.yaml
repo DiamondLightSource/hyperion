@@ -1,4 +1,5 @@
 repos:
+<<<<<<< HEAD
 
 # Automatically sort imports
 - repo: https://github.com/PyCQA/isort
@@ -22,16 +23,12 @@ repos:
   - id: flake8
     additional_dependencies: ['flake8-comprehensions==3.5.0']
 
-# Give a specific warning for added image files
-- repo: local
+# Check typing
+- repo: https://github.com/python/mypy
+  rev: 0.931
   hooks:
-  - id: no-images
-    name: Check for image files
-    entry: >
-      Images for documentation should go into the documentation repository
-      https://github.com/dials/dials.github.io
-    language: fail
-    files: '.*\.png$'
+  - id: mypy
+    name: Run mypy
 
 # Syntax validation and some basic sanity checks
 - repo: https://github.com/pre-commit/pre-commit-hooks

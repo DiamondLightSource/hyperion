@@ -1,12 +1,5 @@
-# python-artemis
-
-Repository for the Artemis project to implement "3D grid scans" using the BlueSky / Ophyd framework from BNL. 
-
-https://nsls-ii.github.io/bluesky/
-
-
-Development Installation
-------------
+Installation
+============
 
 1. Clone this project 
 1. If on a DLS machine avoid the controls pypi server and get Python 3.7 by running:
