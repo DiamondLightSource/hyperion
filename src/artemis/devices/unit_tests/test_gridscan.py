@@ -88,22 +88,24 @@ def run_test_on_complete_watcher(
         fraction=expected_frac,
         **KWARGS,
     )
+    return complete_status
 
 
 def test_when_new_image_then_complete_watcher_notified(fast_grid_scan: FastGridScan):
-    run_test_on_complete_watcher(fast_grid_scan, 2, 1, 1 / 4)
+    run_test_on_complete_watcher(fast_grid_scan, 2, 1, 3 / 4)
 
 
 def test_given_0_expected_images_then_complete_watcher_correct(
     fast_grid_scan: FastGridScan,
 ):
-    run_test_on_complete_watcher(fast_grid_scan, 0, 1, 1)
+    run_test_on_complete_watcher(fast_grid_scan, 0, 1, 0)
 
 
 def test_given_invalid_image_number_then_complete_watcher_correct(
     fast_grid_scan: FastGridScan,
 ):
-    run_test_on_complete_watcher(fast_grid_scan, 1, "BAD", None)
+    complete_status = run_test_on_complete_watcher(fast_grid_scan, 1, "BAD", None)
+    assert complete_status.exception()
 
 
 def test_running_finished_with_not_all_images_done_then_complete_status_in_error(
@@ -157,6 +159,7 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
 def create_motor_bundle_with_x_limits(low_limit, high_limit) -> GridScanMotorBundle:
     FakeGridScanMotorBundle = make_fake_device(GridScanMotorBundle)
     grid_scan_motor_bundle: GridScanMotorBundle = FakeGridScanMotorBundle(name="test")
+    grid_scan_motor_bundle.wait_for_connection()
     grid_scan_motor_bundle.x.low_limit_travel.sim_put(low_limit)
     grid_scan_motor_bundle.x.high_limit_travel.sim_put(high_limit)
     return grid_scan_motor_bundle

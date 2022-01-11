@@ -84,20 +84,21 @@ class GridScanCompleteStatus(DeviceStatus):
             return
         time_elapsed = time.time() - self.start_ts
         try:
-            fraction = value / self._target_count
+            fraction = 1 - value / self._target_count
         except ZeroDivisionError:
-            fraction = 1
+            fraction = 0
             time_remaining = 0
-        except Exception:
+        except Exception as e:
             fraction = None
             time_remaining = None
+            self.set_exception(e)
         else:
             time_remaining = time_elapsed / fraction
         for watcher in self._watchers:
             watcher(
                 name=self._name,
                 current=value,
-                initial=0,
+                initial=1,
                 target=self._target_count,
                 unit="images",
                 precision=0,
@@ -164,7 +165,7 @@ class FastGridScan(Device):
         self.x_steps.subscribe(set_expected_images)
         self.y_steps.subscribe(set_expected_images)
 
-    def is_invalid(self):
+    def is_invalid(self) -> bool:
         if "GONP" in self.scan_invalid.pvname:
             return False
         return self.scan_invalid.get()

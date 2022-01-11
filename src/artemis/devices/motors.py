@@ -5,15 +5,13 @@ from ophyd.device import Component
 from ophyd.epics_motor import MotorBundle
 
 
+@dataclass
 class GridScanLimit:
     """
     Represents motor limit(s)
     """
 
-    def __init__(self, motor: EpicsMotor):
-        motor.wait_for_connection()
-        self.low = motor.low_limit_travel.get()
-        self.high = motor.high_limit_travel.get()
+    motor: EpicsMotor
 
     def is_within(self, position: float) -> bool:
         """Checks position against limits
@@ -21,7 +19,9 @@ class GridScanLimit:
         :param position: The position to check
         :return: True if position is within the limits
         """
-        return self.low <= position <= self.high
+        low = self.motor.low_limit_travel.get()
+        high = self.motor.high_limit_travel.get()
+        return low <= position <= high
 
 
 @dataclass
@@ -45,6 +45,13 @@ class GridScanMotorBundle(MotorBundle):
     z: EpicsMotor = Component(EpicsMotor, ":Z")
 
     def get_limits(self) -> GridScanLimitBundle:
+        """Get the limits for the bundle.
+
+        Note that these limits may not yet be valid until wait_for_connection is called on this MotorBundle.
+
+        Returns:
+            GridScanLimitBundle: The limits for the underlying motor.
+        """
         return GridScanLimitBundle(
             GridScanLimit(self.x),
             GridScanLimit(self.y),
