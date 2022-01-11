@@ -98,7 +98,7 @@ class GridScanCompleteStatus(DeviceStatus):
             watcher(
                 name=self._name,
                 current=value,
-                initial=1,
+                initial=0,
                 target=self._target_count,
                 unit="images",
                 precision=0,
