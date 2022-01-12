@@ -1,24 +1,21 @@
-class DetectorSizeConstants:
-
-    def __init__(self, det_type_string, det_dimension, det_size_pixels, roi_dimension, roi_size_pixels):
-        self.detector_type_string = det_type_string
-        self.detector_dimension = det_dimension
-        self.detector_size_pixels = det_size_pixels
-        self.roi_dimension = roi_dimension
-        self.roi_size_pixels = roi_size_pixels
+from dataclasses import dataclass
 
 
+@dataclass
 class DetectorSize:
 
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
+    width: float
+    height: float
 
-    def get_width(self):
-        return self.width
 
-    def get_height(self):
-        return self.height
+@dataclass
+class DetectorSizeConstants:
+
+    det_type_string: str
+    det_dimension: DetectorSize
+    det_size_pixels: DetectorSize
+    roi_dimension: DetectorSize
+    roi_size_pixels: DetectorSize
 
 
 EIGER_TYPE_EIGER2_X_4M = "EIGER2_X_4M"

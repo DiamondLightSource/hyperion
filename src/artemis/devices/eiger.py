@@ -5,10 +5,21 @@ from ophyd import (
 )
 
 from ophyd.areadetector.cam import EigerDetectorCam
+from ophyd.utils.epics_pvs import set_and_wait
 
-from eigerodin import EigerOdin
-import DetDistToBeamConverter
+from eiger_odin import EigerOdin
+import det_dist_to_beam_converter
 from status import await_value
+from enum import Enum
+
+
+class EigerTriggerMode(Enum):
+
+	INTERNAL_SERIES = 0
+	INTERNAL_ENABLE = 1
+	EXTERNAL_SERIES = 2
+	EXTERNAL_ENABLE = 3
+
 
 class EigerDetector(Device):
 	cam: EigerDetectorCam = Component(EigerDetectorCam, "CAM:")
@@ -16,6 +27,8 @@ class EigerDetector(Device):
 
 	stale_params: EpicsSignalRO = Component(EpicsSignalRO, "CAM:StaleParameters_RBV")
 	bit_depth: EpicsSignalRO = Component(EpicsSignalRO, "CAM:BitDepthImage_RBV")
+
+	STALE_PARAMS_TIMEOUT = 60
 
 	def __init__(self, detector_size_constants, use_roi_mode):
 		self.detector_size = detector_size_constants
@@ -29,6 +42,7 @@ class EigerDetector(Device):
 		self.set_cam_pvs()
 		self.set_odin_pvs()
 		self.set_mx_settings_pvs()
+		self.set_num_triggers_and_captures()
 		self.arm_detector()
 
 	def unstage(self):
@@ -47,19 +61,25 @@ class EigerDetector(Device):
 
 	def change_roi_mode(self, enable):
 		detector_dimensions = self.detector_size.roi_size_pixels if enable else self.detector_size.detector_size_pixels
-		self.cam.roi_mode.put(1 if enable else 0)
-		self.odin.file_writer.image_height.put(detector_dimensions.get_height())
-		self.odin.file_writer.image_width.put(detector_dimensions.get_width())
-		self.odin.file_writer.num_frames_chunks.put(1)
-		self.odin.file_writer.num_col_chunks.put(detector_dimensions.get_width())
-		self.odin.file_writer.num_row_chunks.put(detector_dimensions.get_height())
+
+		status = self.cam.roi_mode.set(1 if enable else 0)
+		status &= self.odin.file_writer.image_height.set(detector_dimensions.height)
+		status &= self.odin.file_writer.image_width.set(detector_dimensions.width)
+		status &= self.odin.file_writer.num_frames_chunk.set(1)
+		status &= self.odin.file_writer.num_row_chunks.set(detector_dimensions.height)
+		status &= self.odin.file_writer.num_col_chunks.set(detector_dimensions.width)
+
+		status.wait(10)
+
+		if not status.success:
+			print("Failed to switch to ROI mode")
 
 	def set_cam_pvs(self):
 		self.cam.acquire_time.put(exposure_time)
 		self.cam.acquire_period.put(exposure_time)
 		self.cam.num_exposures.put(1)
-		self.cam.image_mode.put(self.ImageMode.MULTIPLE)
-		self.cam.trigger_mode.put("External Series")
+		self.cam.image_mode.put(self.cam.ImageMode.MULTIPLE)
+		self.cam.trigger_mode.put(EigerTriggerMode.EXTERNAL_SERIES)
 
 	def set_odin_pvs(self):
 		self.odin.fan.forward_stream.put(True)
@@ -79,8 +99,8 @@ class EigerDetector(Device):
 	def get_beam_position_pixels(self, detector_distance):
 		x_size = self.detector_size.detector_size_pixels.get_width()
 		y_size = self.detector_size.decteor_size_pixels.get_height()
-		beam_x = DetDistToBeamConverter.get_beam_x_pixels(detector_distance, x_size, self.detector_size.detector_dimension.get_width())
-		beam_y = DetDistToBeamConverter.get_beam_y_pixels(detector_distance, y_size, self.detector_size.detector_dimension.get_height())
+		beam_x = det_dist_to_beam_converter.get_beam_x_pixels(detector_distance, x_size, self.detector_size.detector_dimension.get_width())
+		beam_y = det_dist_to_beam_converter.get_beam_y_pixels(detector_distance, y_size, self.detector_size.detector_dimension.get_height())
 
 		offset_x = (x_size - self.detector_size.roi_size_pixels.get_width())
 		offset_y = (y_size - self.detector_size.roi_size_pixels.get_height())
@@ -96,8 +116,13 @@ class EigerDetector(Device):
 		else:
 			return False
 
+	def set_num_triggers_and_captures(self):
+		self.cam.num_images.put(1)
+		self.cam.num_triggers.put(num_images)
+		self.odin.file_writer.num_capture.put(num_images)
+
 	def wait_for_stale_parameters(self):
-		await_value(self.stale_params, 0).wait(10)
+		await_value(self.stale_params, 0).wait(self.STALE_PARAMS_TIMEOUT)
 
 	def arm_detector(self):
 		self.wait_for_stale_parameters()
@@ -105,11 +130,9 @@ class EigerDetector(Device):
 		bit_depth = self.bit_depth.get()
 		self.odin.file_writer.data_type.put(bit_depth)
 	
-		self.odin.file_writer.capture.put(1)
-		await_value(self.odin.file_writer.capture, 1).wait(10)
+		set_and_wait(self.odin.file_writer.capture, 1, timeout=10)
 
-		self.cam.acquire.put(1)
-		await_value(self.cam.acquire, 1).wait(10)
+		set_and_wait(self.cam.acquire, 1, timeout=10)
 
 		await_value(self.odin.fan.ready, 1).wait(10)
 

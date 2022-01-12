@@ -1,7 +1,8 @@
 from ophyd import Component, Device, EpicsSignalRO, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import HDF5Plugin_V22
 
-from status  import await_value
+from status import await_value
+
 
 class EigerFan(Device):
 	on: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
@@ -15,15 +16,18 @@ class EigerFan(Device):
 	offset: EpicsSignalRO = Component(EpicsSignalRO, "CurrentOffset_RBV")
 	forward_stream: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ForwardStream")
 
+
 class OdinMetaListener(Device):
 	file_name: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "FileName")
 	initialised: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
+
 
 class OdinFileWriter(HDF5Plugin_V22):
 	timeout: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "StartTimeout")
 	id: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "AcquisitionID")
 	image_height: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageHeight")
 	image_width: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageWidth")
+
 
 class OdinNodes(Device):
 
@@ -80,6 +84,7 @@ class OdinNodes(Device):
 				return False
 		return True
 
+
 class EigerOdin(Device):
 	fan: EigerFan = Component(EigerFan, "OD:FAN:")
 	file_writer: OdinFileWriter = Component(OdinFileWriter, "OD:")
@@ -87,37 +92,26 @@ class EigerOdin(Device):
 	nodes: OdinNodes = Component(OdinNodes, "")
 
 	def check_odin_state(self):
-		is_initialised, _ = self.check_odin_iniitialised()
+		is_initialised, error_message = self.check_odin_iniitialised()
 		frames_dropped, frames_dropped_details = self.nodes.check_frames_dropped()
 		frames_timed_out, frames_timed_out_details = self.nodes.check_frames_timed_out()
 
 		if not is_initialised:
-			#TODO log message and stop script
+			raise Exception(error_message)
 		if frames_dropped:
-			#TODO log frames_dropped_details
+			print(frames_dropped_details)
 		if frames_timed_out:
-			#TODO log frames_timed_out_details
+			print(frames_timed_out_details)
 
 		return is_initialised and not frames_dropped and not frames_timed_out
 
 	def check_odin_initialised(self):
-		odin_ready = True
-		message = ""
+		to_check = [(not self.fan.connected.get(), "EigerFan is not connected"),
+					(not self.fan.on.get(), "EigerFan is not initialised"),
+					(not self.meta.initialised.get(), "MetaListener is not initialised"),
+					(self.nodes.get_error_state(), "One or more filewriters is in an error state"),
+					(not self.nodes.get_init_state(), "One or more filewriters is not initialised")]
 
-		if not self.fan.connected.get():
-			odin_ready = False
-			message += "EigerFan is not connected\n"
-		if not self.fan.on.get():
-			odin_ready = False
-			message += "EigerFan is not initialised\n"
-		if not self.meta.initialised.get():
-			odin_ready = False
-			message += "MetaListener is not initialised\n"
-		if self.nodes.get_error_state():
-			odin_ready = False
-			message += "One or more filewriters is in an error state"
-		if not self.nodes.get_init_state():
-			odin_ready = False
-			message += "One or more filewriters is not initialised"
+		errors = [message for check_result, message in to_check if check_result]
 
-		return odin_ready, message
+		return not errors, "\n".join(errors)
