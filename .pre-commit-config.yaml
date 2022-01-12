@@ -1,5 +1,4 @@
 repos:
-<<<<<<< HEAD
 
 # Automatically sort imports
 - repo: https://github.com/PyCQA/isort
@@ -24,11 +23,10 @@ repos:
     additional_dependencies: ['flake8-comprehensions==3.5.0']
 
 # Check typing
-- repo: https://github.com/python/mypy
-  rev: 0.931
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: 'v0.931'
   hooks:
   - id: mypy
-    name: Run mypy
 
 # Syntax validation and some basic sanity checks
 - repo: https://github.com/pre-commit/pre-commit-hooks

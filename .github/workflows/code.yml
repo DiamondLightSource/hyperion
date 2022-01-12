@@ -24,32 +24,6 @@ jobs:
         with:
           pipenv-run: lint
 
-  wheel:
-    runs-on: "ubuntu-latest"
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Create Sdist and Wheel
-        # Set SOURCE_DATE_EPOCH from git commit for reproducible build
-        # https://reproducible-builds.org/
-        # Set group writable and umask to do the same to match inside DLS
-        run: |
-          chmod -R g+w .
-          umask 0002
-          SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) pipx run build --sdist --wheel
-
-      - name: Test cli works from the installed wheel
-        # Can remove the repository reference after https://github.com/pypa/pipx/pull/733
-        run: pipx run --spec dist/*.whl ${GITHUB_REPOSITORY##*/} --version
-
-      - name: Upload Wheel and Sdist as artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: dist
-          path: dist/*
-
   test:
     strategy:
       fail-fast: false
