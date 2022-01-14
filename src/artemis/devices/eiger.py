@@ -8,9 +8,9 @@ from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.utils.epics_pvs import set_and_wait
 
 from eiger_odin import EigerOdin
-import det_dist_to_beam_converter
 from status import await_value
 from enum import Enum
+from dataclasses import dataclass
 
 
 class EigerTriggerMode(Enum):
@@ -19,6 +19,20 @@ class EigerTriggerMode(Enum):
 	INTERNAL_ENABLE = 1
 	EXTERNAL_SERIES = 2
 	EXTERNAL_ENABLE = 3
+
+
+@dataclass
+class DetectorParams:
+
+	current_energy: float
+	exposure_time: float
+	acquisition_id: int
+	directory: str
+	prefix: str
+	detector_distance: float
+	omega_start: float
+	omega_increment: float
+	num_images: int
 
 
 class EigerDetector(Device):
@@ -30,15 +44,21 @@ class EigerDetector(Device):
 
 	STALE_PARAMS_TIMEOUT = 60
 
-	def __init__(self, detector_size_constants, use_roi_mode):
+	def __init__(self, detector_size_constants, use_roi_mode, detector_params, beam_xy_converter):
 		self.detector_size = detector_size_constants
 		self.use_roi_mode = use_roi_mode
+		self.detector_params = detector_params
+		self.beam_xy_converter = beam_xy_converter
 		super.__init__()
 
 	def stage(self):
+		self.odin.nodes.clear_odin_errors()
+		status_ok, error_message = self.odin.check_odin_initialised()
+		if not status_ok:
+			raise Exception(f"Odin not initialised: {error_message}")
 		if self.use_roi_mode:
 			self.enable_roi_mode()
-		self.set_detector_threshold(current_energy)
+		self.set_detector_threshold(self.detector_params.current_energy)
 		self.set_cam_pvs()
 		self.set_odin_pvs()
 		self.set_mx_settings_pvs()
@@ -75,35 +95,35 @@ class EigerDetector(Device):
 			print("Failed to switch to ROI mode")
 
 	def set_cam_pvs(self):
-		self.cam.acquire_time.put(exposure_time)
-		self.cam.acquire_period.put(exposure_time)
+		self.cam.acquire_time.put(self.detector_params.exposure_time)
+		self.cam.acquire_period.put(self.detector_params.exposure_time)
 		self.cam.num_exposures.put(1)
 		self.cam.image_mode.put(self.cam.ImageMode.MULTIPLE)
 		self.cam.trigger_mode.put(EigerTriggerMode.EXTERNAL_SERIES)
 
 	def set_odin_pvs(self):
 		self.odin.fan.forward_stream.put(True)
-		self.odin.file_writer.id.put(acquisition_id)
-		self.odin.file_writer.file_path.put(directory)
-		self.odin.file_writer.file_name.put(prefix)
-		self.odin.meta.file_name.put(prefix)
+		self.odin.file_writer.id.put(self.detector_params.acquisition_id)
+		self.odin.file_writer.file_path.put(self.detector_params.directory)
+		self.odin.file_writer.file_name.put(self.detector_params.prefix)
+		self.odin.meta.file_name.put(self.detector_params.prefix)
 
 	def set_mx_settings_pvs(self):
-		beam_x_pixels, beam_y_pixels = self.get_beam_position_pixels(detector_distance)
+		beam_x_pixels, beam_y_pixels = self.get_beam_position_pixels(self.detector_params.det_distance)
 		self.cam.beam_center_x.put(beam_x_pixels)
 		self.cam.beam_center_y.put(beam_y_pixels)
-		self.cam.det_distance.put(det_distance)
-		self.cam.omega_start.put(omega_start)
-		self.cam.omega_incr.put(omega_inr)
+		self.cam.det_distance.put(self.detector_params.det_distance)
+		self.cam.omega_start.put(self.detector_params.omega_start)
+		self.cam.omega_incr.put(self.detector_params.omega_inr)
 
 	def get_beam_position_pixels(self, detector_distance):
-		x_size = self.detector_size.detector_size_pixels.get_width()
-		y_size = self.detector_size.decteor_size_pixels.get_height()
-		beam_x = det_dist_to_beam_converter.get_beam_x_pixels(detector_distance, x_size, self.detector_size.detector_dimension.get_width())
-		beam_y = det_dist_to_beam_converter.get_beam_y_pixels(detector_distance, y_size, self.detector_size.detector_dimension.get_height())
+		x_size = self.detector_size.det_size_pixels.width
+		y_size = self.detector_size.det_size_pixels.height
+		beam_x = self.beam_xy_converter.get_beam_x_pixels(detector_distance, x_size, self.detector_size.det_dimension.width)
+		beam_y = self.beam_xy_converter.get_beam_y_pixels(detector_distance, y_size, self.detector_size.det_dimension.height)
 
-		offset_x = (x_size - self.detector_size.roi_size_pixels.get_width())
-		offset_y = (y_size - self.detector_size.roi_size_pixels.get_height())
+		offset_x = (x_size - self.detector_size.roi_size_pixels.width)
+		offset_y = (y_size - self.detector_size.roi_size_pixels.height)
 
 		return beam_x - offset_x, beam_y - offset_y
 
@@ -118,8 +138,8 @@ class EigerDetector(Device):
 
 	def set_num_triggers_and_captures(self):
 		self.cam.num_images.put(1)
-		self.cam.num_triggers.put(num_images)
-		self.odin.file_writer.num_capture.put(num_images)
+		self.cam.num_triggers.put(self.detector_params.num_images)
+		self.odin.file_writer.num_capture.put(self.detector_params.num_images)
 
 	def wait_for_stale_parameters(self):
 		await_value(self.stale_params, 0).wait(self.STALE_PARAMS_TIMEOUT)

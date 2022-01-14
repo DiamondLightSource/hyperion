@@ -1,4 +1,4 @@
-from ophyd import Component, Device, EpicsSignalRO, EpicsSignalWithRBV
+from ophyd import Component, Device, EpicsSignalRO, EpicsSignalWithRBV, EpicsSignal
 from ophyd.areadetector.plugins import HDF5Plugin_V22
 
 from status import await_value
@@ -29,67 +29,86 @@ class OdinFileWriter(HDF5Plugin_V22):
 	image_width: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageWidth")
 
 
-class OdinNodes(Device):
+class OdinNode(Device):
 
-	def __init__(self, number_of_nodes):
-		self.number_of_nodes = number_of_nodes
-		super.__init__()
+	writing: EpicsSignalRO = Component(EpicsSignalRO, "Writing_RBV")
+	frames_dropped: EpicsSignalRO = Component(EpicsSignalRO, "FramesDropped_RBV")
+	frames_timed_out: EpicsSignalRO = Component(EpicsSignalRO, "FramesTimedOut_RBV")
+	error_status: EpicsSignalRO = Component(EpicsSignalRO, "FPErrorState_RBV")
+	fp_initialised: EpicsSignalRO = Component(EpicsSignalRO, "FPProcessConnected_RBV")
+	fr_initialised: EpicsSignalRO = Component(EpicsSignalRO, "FRProcessConnected_RBV")
+	clear_errors: EpicsSignal = Component(EpicsSignal, ":FPClearErrors")
+	error_message: EpicsSignalRO = Component(EpicsSignalRO, ":FPErrorMessage_RBV")
+
+
+class OdinNodesStatus(Device):
+
+	node_1: OdinNode = Component(OdinNode, "OD1:")
+	node_2: OdinNode = Component(OdinNode, "OD2:")
+	node_3: OdinNode = Component(OdinNode, "OD3:")
+	node_4: OdinNode = Component(OdinNode, "OD4:")
+
+	@property
+	def nodes(self):
+		return [self.node_1, self.node_2, self.node_3, self.node_4]
 
 	def wait_for_filewriters_to_finish(self):
-		for i in range(self.number_of_nodes):
-			node_writing: EpicsSignalRO = Component(EpicsSignalRO, "OD%i:Writing_RBV" % i)
-			if node_writing.get():
-				await_value(node_writing, 0).wait(10)
+		for node_number, node_pv in enumerate(self.nodes):
+			if node_pv.writing.get():
+				await_value(node_pv.writing, 0).wait(10)
 
 	def check_frames_dropped(self):
 		frames_dropped = False
 		frames_dropped_details = ""
-		dropped_frames_filewriter = [0] * self.number_of_nodes
+		dropped_frames_filewriter = [0] * len(self.nodes)
 
-		for i in range(self.number_of_nodes):
-			node_dropped_frames: EpicsSignalRO = Component(EpicsSignalRO, "OD%i:FramesDropped_RBV" % i)
-			dropped_frames_filewriter[i] = node_dropped_frames.get()
+		for node_number, node_pv in enumerate(self.nodes):
+			dropped_frames_filewriter[node_number] = node_pv.frames_dropped.get()
 			if dropped_frames_filewriter != 0:
 				frames_dropped = True
-				frames_dropped_details = "Filewriter %d dropped %d frames" % (i, dropped_frames_filewriter[i])
+				frames_dropped_details = f"Filewriter {node_number} dropped {dropped_frames_filewriter[node_number]} frames"
 
 		return frames_dropped, frames_dropped_details
 
 	def check_frames_timed_out(self):
 		frames_timed_out = False
 		frames_timed_out_details = ""
-		timed_out_frames_filewriter = [0] * self.number_of_nodes
+		timed_out_frames_filewriter = [0] * len(self.nodes)
 
-		for i in range(self.number_of_nodes):
-			node_timed_out_frames: EpicsSignalRO = Component(EpicsSignalRO, "OD%i:FramesTimedOut_RBV" % i)
-        	timed_out_frames_filewriter[i] = node_timed_out_frames.get()
-        	if timed_out_frames_filewriter !=	0:
+		for node_number, node_pv in enumerate(self.nodes):
+			timed_out_frames_filewriter[node_number] = node_pv.frames_timed_out.get()
+			if timed_out_frames_filewriter != 0:
 				frames_timed_out = True
-				frames_timed_out_details = "Filewriter %d timed out %d frames" % (i, timed_out_frames_filewriter[i])
+				frames_timed_out_details = f"Filewriter {node_number} timed out {timed_out_frames_filewriter[node_number]} frames"
 
 		return frames_timed_out, frames_timed_out_details
 
 	def get_error_state(self):
-		for i in range(self.number_of_nodes):
-			node_error_status: EpicsSignalRO = Component(EpicsSignalRO, "OD%i:FPErrorState_RBV" % i)
-			if node_error_status.get():
-				return True
-		return False
+		is_error = []
+		for node_number, node_pv in enumerate(self.nodes):
+			is_error.append(node_pv.error_state.get())
+		return any(is_error)
 
 	def get_init_state(self):
-		for i in range(self.number_of_nodes):
-			node_fr_init: EpicsSignalRO = Component(EpicsSignalRO, "OD%i:FPProcessConnected_RBV" % i)
-			node_fp_init: EpicsSignalRO = Component(EpicsSignalRO, "OD%i:FRProcessConnected_RBV" % i)
-			if not (node_fr_init.get() and node_fp_init.get()):
-				return False
-		return True
+		is_initialised = []
+		for node_number, node_pv in enumerate(self.nodes):
+			is_initialised.append(node_pv.fr_inititalised.get())
+			is_initialised.append(node_pv.fp_inititalised.get())
+		return all(is_initialised)
+
+	def clear_odin_errors(self):
+		for node_number, node_pv in enumerate(self.nodes):
+			error_message = node_pv.error_message.get()
+			if len(error_message) != 0:
+				print(f"Clearing errors from node {node_number}")
+				node_pv.clear_errors.put(1)
 
 
 class EigerOdin(Device):
 	fan: EigerFan = Component(EigerFan, "OD:FAN:")
 	file_writer: OdinFileWriter = Component(OdinFileWriter, "OD:")
 	meta: OdinMetaListener = Component(OdinMetaListener, "OD:META")
-	nodes: OdinNodes = Component(OdinNodes, "")
+	nodes: OdinNodesStatus = Component(OdinNodesStatus, "")
 
 	def check_odin_state(self):
 		is_initialised, error_message = self.check_odin_iniitialised()
