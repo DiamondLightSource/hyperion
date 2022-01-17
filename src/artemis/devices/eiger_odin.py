@@ -2,6 +2,7 @@ from ophyd import Component, Device, EpicsSignalRO, EpicsSignalWithRBV, EpicsSig
 from ophyd.areadetector.plugins import HDF5Plugin_V22
 
 from status import await_value
+from typing import Callable
 
 
 class EigerFan(Device):
@@ -30,7 +31,6 @@ class OdinFileWriter(HDF5Plugin_V22):
 
 
 class OdinNode(Device):
-
 	writing: EpicsSignalRO = Component(EpicsSignalRO, "Writing_RBV")
 	frames_dropped: EpicsSignalRO = Component(EpicsSignalRO, "FramesDropped_RBV")
 	frames_timed_out: EpicsSignalRO = Component(EpicsSignalRO, "FramesTimedOut_RBV")
@@ -42,7 +42,6 @@ class OdinNode(Device):
 
 
 class OdinNodesStatus(Device):
-
 	node_1: OdinNode = Component(OdinNode, "OD1:")
 	node_2: OdinNode = Component(OdinNode, "OD2:")
 	node_3: OdinNode = Component(OdinNode, "OD3:")
@@ -57,39 +56,28 @@ class OdinNodesStatus(Device):
 			if node_pv.writing.get():
 				await_value(node_pv.writing, 0).wait(10)
 
-	def check_frames_dropped(self):
-		frames_dropped = False
-		frames_dropped_details = ""
-		dropped_frames_filewriter = [0] * len(self.nodes)
-
+	def check_node_frames_from_attr(self, node_get_func: Callable, error_message_verb: str) -> (bool, str):
+		nodes_frames_values = [0] * len(self.nodes)
+		frames_details = []
 		for node_number, node_pv in enumerate(self.nodes):
-			dropped_frames_filewriter[node_number] = node_pv.frames_dropped.get()
-			if dropped_frames_filewriter != 0:
-				frames_dropped = True
-				frames_dropped_details = f"Filewriter {node_number} dropped {dropped_frames_filewriter[node_number]} frames"
+			nodes_frames_values[node_number] = node_get_func(node_pv)
+			frames_details.append(f"Filewriter {node_number} {error_message_verb} {nodes_frames_values[node_number]} frames")
+		bad_frames = any(v != 0 for v in nodes_frames_values)
+		return bad_frames, "\n".join(frames_details)
 
-		return frames_dropped, frames_dropped_details
+	def check_frames_timed_out(self) -> (bool, str):
+		return self.check_node_frames_from_attr(lambda node: node.frames_timed_out.get(), 'timed out')
 
-	def check_frames_timed_out(self):
-		frames_timed_out = False
-		frames_timed_out_details = ""
-		timed_out_frames_filewriter = [0] * len(self.nodes)
+	def check_frames_dropped(self) -> (bool, str):
+		return self.check_node_frames_from_attr(lambda node: node.frames_droped.get(), 'dropped')
 
-		for node_number, node_pv in enumerate(self.nodes):
-			timed_out_frames_filewriter[node_number] = node_pv.frames_timed_out.get()
-			if timed_out_frames_filewriter != 0:
-				frames_timed_out = True
-				frames_timed_out_details = f"Filewriter {node_number} timed out {timed_out_frames_filewriter[node_number]} frames"
-
-		return frames_timed_out, frames_timed_out_details
-
-	def get_error_state(self):
+	def get_error_state(self) -> bool:
 		is_error = []
 		for node_number, node_pv in enumerate(self.nodes):
 			is_error.append(node_pv.error_state.get())
 		return any(is_error)
 
-	def get_init_state(self):
+	def get_init_state(self) -> bool:
 		is_initialised = []
 		for node_number, node_pv in enumerate(self.nodes):
 			is_initialised.append(node_pv.fr_inititalised.get())
@@ -100,7 +88,7 @@ class OdinNodesStatus(Device):
 		for node_number, node_pv in enumerate(self.nodes):
 			error_message = node_pv.error_message.get()
 			if len(error_message) != 0:
-				print(f"Clearing errors from node {node_number}")
+				print(f"Clearing odin errors from node {node_number}")
 				node_pv.clear_errors.put(1)
 
 
@@ -110,7 +98,7 @@ class EigerOdin(Device):
 	meta: OdinMetaListener = Component(OdinMetaListener, "OD:META")
 	nodes: OdinNodesStatus = Component(OdinNodesStatus, "")
 
-	def check_odin_state(self):
+	def check_odin_state(self) -> bool:
 		is_initialised, error_message = self.check_odin_iniitialised()
 		frames_dropped, frames_dropped_details = self.nodes.check_frames_dropped()
 		frames_timed_out, frames_timed_out_details = self.nodes.check_frames_timed_out()
@@ -124,7 +112,7 @@ class EigerOdin(Device):
 
 		return is_initialised and not frames_dropped and not frames_timed_out
 
-	def check_odin_initialised(self):
+	def check_odin_initialised(self) -> (bool, str):
 		to_check = [(not self.fan.connected.get(), "EigerFan is not connected"),
 					(not self.fan.on.get(), "EigerFan is not initialised"),
 					(not self.meta.initialised.get(), "MetaListener is not initialised"),

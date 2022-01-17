@@ -7,6 +7,8 @@ from ophyd import (
 from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.utils.epics_pvs import set_and_wait
 
+from det_dim_constants import DetectorSizeConstants
+from det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
 from eiger_odin import EigerOdin
 from status import await_value
 from enum import Enum
@@ -14,7 +16,6 @@ from dataclasses import dataclass
 
 
 class EigerTriggerMode(Enum):
-
 	INTERNAL_SERIES = 0
 	INTERNAL_ENABLE = 1
 	EXTERNAL_SERIES = 2
@@ -23,7 +24,6 @@ class EigerTriggerMode(Enum):
 
 @dataclass
 class DetectorParams:
-
 	current_energy: float
 	exposure_time: float
 	acquisition_id: int
@@ -44,12 +44,12 @@ class EigerDetector(Device):
 
 	STALE_PARAMS_TIMEOUT = 60
 
-	def __init__(self, detector_size_constants, use_roi_mode, detector_params, beam_xy_converter):
+	def __init__(self, detector_size_constants: DetectorSizeConstants, use_roi_mode: bool, detector_params: DetectorParams, beam_xy_converter: DetectorDistanceToBeamXYConverter):
 		self.detector_size = detector_size_constants
 		self.use_roi_mode = use_roi_mode
 		self.detector_params = detector_params
 		self.beam_xy_converter = beam_xy_converter
-		super.__init__()
+		super().__init__(name='Eiger Detector')
 
 	def stage(self):
 		self.odin.nodes.clear_odin_errors()
@@ -65,7 +65,7 @@ class EigerDetector(Device):
 		self.set_num_triggers_and_captures()
 		self.arm_detector()
 
-	def unstage(self):
+	def unstage(self) -> bool:
 		self.odin.file_writer.timeout.put(1)
 		self.odin.nodes.wait_for_filewriters_to_finish()
 		self.disarm_detector()
@@ -79,8 +79,8 @@ class EigerDetector(Device):
 	def disable_roi_mode(self):
 		self.change_roi_mode(False)
 
-	def change_roi_mode(self, enable):
-		detector_dimensions = self.detector_size.roi_size_pixels if enable else self.detector_size.detector_size_pixels
+	def change_roi_mode(self, enable: bool):
+		detector_dimensions = self.detector_size.roi_size_pixels if enable else self.detector_size.det_size_pixels
 
 		status = self.cam.roi_mode.set(1 if enable else 0)
 		status &= self.odin.file_writer.image_height.set(detector_dimensions.height)
@@ -109,14 +109,14 @@ class EigerDetector(Device):
 		self.odin.meta.file_name.put(self.detector_params.prefix)
 
 	def set_mx_settings_pvs(self):
-		beam_x_pixels, beam_y_pixels = self.get_beam_position_pixels(self.detector_params.det_distance)
+		beam_x_pixels, beam_y_pixels = self.get_beam_position_pixels(self.detector_params.detector_distance)
 		self.cam.beam_center_x.put(beam_x_pixels)
 		self.cam.beam_center_y.put(beam_y_pixels)
-		self.cam.det_distance.put(self.detector_params.det_distance)
+		self.cam.det_distance.put(self.detector_params.detector_distance)
 		self.cam.omega_start.put(self.detector_params.omega_start)
-		self.cam.omega_incr.put(self.detector_params.omega_inr)
+		self.cam.omega_incr.put(self.detector_params.omega_increment)
 
-	def get_beam_position_pixels(self, detector_distance):
+	def get_beam_position_pixels(self, detector_distance: float) -> (float, float):
 		x_size = self.detector_size.det_size_pixels.width
 		y_size = self.detector_size.det_size_pixels.height
 		beam_x = self.beam_xy_converter.get_beam_x_pixels(detector_distance, x_size, self.detector_size.det_dimension.width)
@@ -127,7 +127,7 @@ class EigerDetector(Device):
 
 		return beam_x - offset_x, beam_y - offset_y
 
-	def set_detector_threshold(self, energy):
+	def set_detector_threshold(self, energy: float) -> bool:
 		current_energy = self.cam.photon_energy.get()
 		
 		if abs(current_energy - energy) > 0.1:

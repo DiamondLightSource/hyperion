@@ -1,16 +1,15 @@
 from dataclasses import dataclass
+from typing import Union
 
 
 @dataclass
 class DetectorSize:
-
-    width: float
-    height: float
+    width: Union[float, int]
+    height: Union[float, int]
 
 
 @dataclass
 class DetectorSizeConstants:
-
     det_type_string: str
     det_dimension: DetectorSize
     det_size_pixels: DetectorSize
