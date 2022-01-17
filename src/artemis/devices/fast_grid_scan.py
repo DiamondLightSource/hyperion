@@ -176,13 +176,16 @@ class FastGridScan(Device):
 
         def check_valid_and_scan():
             try:
-                self.log.info("Waiting on position counter reset and valid settings")
+                self.log.debug("Waiting on position counter reset and valid settings")
                 while self.is_invalid() or not self.position_counter.get() == 0:
                     time.sleep(0.1)
                 self.log.debug("Running scan")
-                running = SubscriptionStatus(self.status, lambda value: value == 1)
-                run_requested = self.run_cmd.set(1)
-                (run_requested and running).wait()
+                running = SubscriptionStatus(
+                    self.status, lambda old_value, value, **kwargs: value == 1
+                )
+                self.run_cmd.put(1)
+                self.log.debug("Waiting for scan to start")
+                running.wait()
                 st.set_finished()
             except Exception as e:
                 st.set_exception(e)
@@ -191,7 +194,8 @@ class FastGridScan(Device):
         return st
 
     def stage(self) -> List[object]:
-        self.position_counter.put(0)
+        status = self.position_counter.set(0)
+        status.wait()
         return super().stage()
 
     def complete(self) -> DeviceStatus:
