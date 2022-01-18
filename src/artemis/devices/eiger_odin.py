@@ -1,7 +1,7 @@
 from ophyd import Component, Device, EpicsSignalRO, EpicsSignalWithRBV, EpicsSignal
 from ophyd.areadetector.plugins import HDF5Plugin_V22
 
-from status import await_value
+from src.artemis.devices.status import await_value
 from typing import Callable
 
 
@@ -99,7 +99,7 @@ class EigerOdin(Device):
 	nodes: OdinNodesStatus = Component(OdinNodesStatus, "")
 
 	def check_odin_state(self) -> bool:
-		is_initialised, error_message = self.check_odin_iniitialised()
+		is_initialised, error_message = self.check_odin_initialised()
 		frames_dropped, frames_dropped_details = self.nodes.check_frames_dropped()
 		frames_timed_out, frames_timed_out_details = self.nodes.check_frames_timed_out()
 
