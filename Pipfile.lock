@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2d8c6ccedab1f0bbc0025930ef2b8b36c1b2ff67d8811bf0e3df8864bab2db49"
+            "sha256": "69a47e9b0cc4af0a34960277463abf8c02bd2201b3c6dbdd36cecc7fbdd71166"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -80,11 +80,11 @@
         },
         "jsonschema": {
             "hashes": [
-                "sha256:eb7a69801beb7325653aa8fd373abbf9ff8f85b536ab2812e5e8287b522fb6a2",
-                "sha256:f210d4ce095ed1e8af635d15c8ee79b586f656ab54399ba87b8ab87e5bff0ade"
+                "sha256:636694eb41b3535ed608fe04129f26542b59ed99808b4f688aa32dcf55317a83",
+                "sha256:77281a1f71684953ee8b3d488371b162419767973789272434bbc3f29d9c8823"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==4.3.3"
+            "version": "==4.4.0"
         },
         "msgpack": {
             "hashes": [
@@ -199,6 +199,13 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==0.18"
+        },
+        "pyepics": {
+            "hashes": [
+                "sha256:c8154f599ef72ab0d1b49a5c39a76e641ac4f04fc61f3a7294e04e05076c943d"
+            ],
+            "index": "pypi",
+            "version": "==3.5.0"
         },
         "pyparsing": {
             "hashes": [
@@ -355,11 +362,11 @@
         },
         "identify": {
             "hashes": [
-                "sha256:67c1e66225870dce721228176637a8ef965e8dd58450bcc7592249d0dfc4da6c",
-                "sha256:93e8ec965e888f2212aa5c24b2b662f4832c39acb1d7196a70ea45acb626a05e"
+                "sha256:6b4b5031f69c48bf93a646b90de9b381c6b5f560df4cbe0ed3cf7650ae741e4d",
+                "sha256:aa68609c7454dbcaae60a01ff6b8df1de9b39fe6e50b1f6107ec81dcda624aa6"
             ],
             "markers": "python_full_version >= '3.6.1'",
-            "version": "==2.4.2"
+            "version": "==2.4.4"
         },
         "importlib-metadata": {
             "hashes": [
