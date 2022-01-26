@@ -32,3 +32,25 @@ def test_check_odin_state(fake_odin, is_initialised: bool, frames_dropped: bool,
     else:
         with pytest.raises(Exception):
             fake_odin.check_odin_state()
+
+
+@pytest.mark.parametrize(
+    "fan_connected, fan_on, meta_init, node_error, node_init, expected_error_num, expected_state",
+    [
+        (True, True, True, False, True, 0, True),
+        (False, True, True, False, True, 1, False),
+        (False, False, False, True, False, 5, False),
+        (True, True, False, False, False, 2, False)
+    ]
+)
+def test_check_odin_initialised(fake_odin, fan_connected: bool, fan_on: bool, meta_init: bool, node_error: bool, node_init: bool, expected_error_num: int, expected_state: bool):
+    when(fake_odin.fan.connected).get().thenReturn(fan_connected)
+    when(fake_odin.fan.on).get().thenReturn(fan_on)
+    when(fake_odin.meta.initialised).get().thenReturn(meta_init)
+    when(fake_odin.nodes).get_error_state().thenReturn([node_error, "node error" if node_error else ""])
+    when(fake_odin.nodes).get_init_state().thenReturn(node_init)
+
+    error_state, error_message = fake_odin.check_odin_initialised()
+    assert error_state == expected_state
+    assert (len(error_message) == 0) == expected_state
+    assert error_message.count("\n") == (0 if expected_state else expected_error_num - 1)
