@@ -8,7 +8,7 @@ from src.artemis.devices.eiger_odin import EigerOdin
 @pytest.fixture
 def fake_odin():
     FakeOdin = make_fake_device(EigerOdin)
-    fake_odin: EigerOdin = FakeOdin(name='test')
+    fake_odin: EigerOdin = FakeOdin(name="test")
 
     return fake_odin
 
@@ -19,10 +19,16 @@ def fake_odin():
         (True, False, False, True),
         (False, True, True, False),
         (False, False, False, False),
-        (True, True, True, False)
-    ]
+        (True, True, True, False),
+    ],
 )
-def test_check_odin_state(fake_odin, is_initialised: bool, frames_dropped: bool, frames_timed_out: bool, expected_state: bool):
+def test_check_odin_state(
+    fake_odin: EigerOdin,
+    is_initialised: bool,
+    frames_dropped: bool,
+    frames_timed_out: bool,
+    expected_state: bool,
+):
     when(fake_odin).check_odin_initialised().thenReturn([is_initialised, ""])
     when(fake_odin.nodes).check_frames_dropped().thenReturn([frames_dropped, ""])
     when(fake_odin.nodes).check_frames_timed_out().thenReturn([frames_timed_out, ""])
@@ -40,17 +46,44 @@ def test_check_odin_state(fake_odin, is_initialised: bool, frames_dropped: bool,
         (True, True, True, False, True, 0, True),
         (False, True, True, False, True, 1, False),
         (False, False, False, True, False, 5, False),
-        (True, True, False, False, False, 2, False)
-    ]
+        (True, True, False, False, False, 2, False),
+    ],
 )
-def test_check_odin_initialised(fake_odin, fan_connected: bool, fan_on: bool, meta_init: bool, node_error: bool, node_init: bool, expected_error_num: int, expected_state: bool):
+def test_check_odin_initialised(
+    fake_odin: EigerOdin,
+    fan_connected: bool,
+    fan_on: bool,
+    meta_init: bool,
+    node_error: bool,
+    node_init: bool,
+    expected_error_num: int,
+    expected_state: bool,
+):
     when(fake_odin.fan.connected).get().thenReturn(fan_connected)
     when(fake_odin.fan.on).get().thenReturn(fan_on)
     when(fake_odin.meta.initialised).get().thenReturn(meta_init)
-    when(fake_odin.nodes).get_error_state().thenReturn([node_error, "node error" if node_error else ""])
+    when(fake_odin.nodes).get_error_state().thenReturn(
+        [node_error, "node error" if node_error else ""]
+    )
     when(fake_odin.nodes).get_init_state().thenReturn(node_init)
 
     error_state, error_message = fake_odin.check_odin_initialised()
     assert error_state == expected_state
     assert (len(error_message) == 0) == expected_state
-    assert error_message.count("\n") == (0 if expected_state else expected_error_num - 1)
+    assert error_message.count("\n") == (
+        0 if expected_state else expected_error_num - 1
+    )
+
+
+def test_given_node_in_error_node_error_status_gives_message_and_node_number(
+    fake_odin: EigerOdin,
+):
+    ERR_MESSAGE = "Help, I'm in error!"
+    fake_odin.nodes.node_1.error_status.sim_put(True)
+    fake_odin.nodes.node_1.error_message.sim_put(ERR_MESSAGE)
+
+    in_error, message = fake_odin.nodes.get_error_state()
+
+    assert in_error == True
+    assert "0" in message
+    assert ERR_MESSAGE in message
