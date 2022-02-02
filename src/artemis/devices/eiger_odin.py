@@ -42,14 +42,14 @@ class OdinNode(Device):
 
 
 class OdinNodesStatus(Device):
-    node_1: OdinNode = Component(OdinNode, "OD1:")
-    node_2: OdinNode = Component(OdinNode, "OD2:")
-    node_3: OdinNode = Component(OdinNode, "OD3:")
-    node_4: OdinNode = Component(OdinNode, "OD4:")
+    node_0: OdinNode = Component(OdinNode, "OD1:")
+    node_1: OdinNode = Component(OdinNode, "OD2:")
+    node_2: OdinNode = Component(OdinNode, "OD3:")
+    node_3: OdinNode = Component(OdinNode, "OD4:")
 
     @property
     def nodes(self) -> List[OdinNode]:
-        return [self.node_1, self.node_2, self.node_3, self.node_4]
+        return [self.node_0, self.node_1, self.node_2, self.node_3]
 
     def wait_for_filewriters_to_finish(self):
         for node_number, node_pv in enumerate(self.nodes):
