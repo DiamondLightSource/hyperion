@@ -79,8 +79,8 @@ def test_given_node_in_error_node_error_status_gives_message_and_node_number(
     fake_odin: EigerOdin,
 ):
     ERR_MESSAGE = "Help, I'm in error!"
-    fake_odin.nodes.node_1.error_status.sim_put(True)
-    fake_odin.nodes.node_1.error_message.sim_put(ERR_MESSAGE)
+    fake_odin.nodes.node_0.error_status.sim_put(True)
+    fake_odin.nodes.node_0.error_message.sim_put(ERR_MESSAGE)
 
     in_error, message = fake_odin.nodes.get_error_state()
 
