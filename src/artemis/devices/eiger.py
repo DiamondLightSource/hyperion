@@ -172,7 +172,7 @@ class EigerDetector(Device):
         self.wait_for_stale_parameters()
 
         bit_depth = self.bit_depth.get()
-        self.odin.file_writer.data_type.put(bit_depth)
+        self.odin.file_writer.data_type.put(f"UInt{bit_depth}")
 
         odin_status = self.odin.file_writer.capture.set(1)
         odin_status &= await_value(self.odin.meta.ready, 1)
