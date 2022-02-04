@@ -23,6 +23,8 @@ PC_PULSE_SOURCE_EXTERNAL = 2
 DISCONNECT = 0
 IN1_TTL = 1
 IN2_TTL = 4
+IN3_TTL = 7
+IN4_TTL = 10
 PC_ARM = 29
 PC_GATE = 30
 PC_PULSE = 31
@@ -33,9 +35,9 @@ PULSE1 = 52
 SOFT_IN3 = 62
 
 # Instrument specific
-TTL_DETECTOR = 2
+TTL_DETECTOR = 1
+TTL_SHUTTER = 2
 TTL_XSPRESS3 = 3
-TTL_SHUTTER = 4
 
 
 class PositionCompare(Device):
@@ -95,8 +97,8 @@ class ZebraOutputPanel(Device):
         return [None, self.out_1, self.out_2, self.out_3, self.out_4]
 
     def setup_fast_grid_scan(self):
-        self.out_pvs[TTL_DETECTOR].put(AND3)
-        self.out_pvs[TTL_SHUTTER].put(AND4)
+        self.out_pvs[TTL_DETECTOR].put(IN3_TTL)
+        self.out_pvs[TTL_SHUTTER].put(IN4_TTL)
         self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
         self.pulse_1_input.put(DISCONNECT)
 
@@ -105,7 +107,7 @@ class ZebraOutputPanel(Device):
         self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
 
     def set_shutter_to_manual(self):
-        self.out_pvs[TTL_DETECTOR].put(PC_GATE)
+        self.out_pvs[TTL_DETECTOR].put(PC_PULSE)
         self.out_pvs[TTL_SHUTTER].put(OR1)
 
 
@@ -246,8 +248,6 @@ class Zebra(Device):
     logic_gates: LogicGateConfigurer = Component(LogicGateConfigurer, "")
 
     def setup_fast_grid_scan(self):
-        self.pc.setup_fast_grid_scan()
-        self.logic_gates.setup_fast_grid_scan()
         self.output.setup_fast_grid_scan()
 
     def stage(self) -> List[object]:
