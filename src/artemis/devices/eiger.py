@@ -123,8 +123,7 @@ class EigerDetector(Device):
         self.odin.fan.forward_stream.put(True)
         self.odin.file_writer.id.put(self.detector_params.acquisition_id)
         self.odin.file_writer.file_path.put(self.detector_params.directory)
-        self.odin.file_writer.file_name.put(self.detector_params.prefix)
-        self.odin.meta.file_name.put(self.detector_params.prefix)
+        self.odin.file_writer.file_prefix.put(self.detector_params.prefix)
 
     def set_mx_settings_pvs(self):
         beam_x_pixels, beam_y_pixels = self.get_beam_position_pixels(
