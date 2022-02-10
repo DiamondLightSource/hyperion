@@ -7,6 +7,9 @@ from src.artemis.devices.det_dist_to_beam_converter import (
 )
 
 import pytest
+import os
+from epics import caput
+import numpy as np
 
 
 @pytest.fixture()
@@ -34,7 +37,18 @@ def eiger():
 
 @pytest.mark.s03
 def test_can_stage_and_unstage_eiger(eiger: EigerDetector):
+    times_id_has_changed = 0
+
+    def file_writer_id_monitor(*_, **kwargs):
+        nonlocal times_id_has_changed
+        if not np.array_equal(kwargs["old_value"], kwargs["value"]):
+            times_id_has_changed += 1
+
+    eiger.odin.file_writer.id.subscribe(file_writer_id_monitor)
     eiger.stage()
+    assert (
+        times_id_has_changed == 2
+    )  # Once for initial connection and once for changing the value
     assert eiger.cam.acquire.get() == 1
     # S03 filewriters stay in error
     eiger.odin.check_odin_initialised = lambda: (True, "")
