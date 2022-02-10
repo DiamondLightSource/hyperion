@@ -1,6 +1,6 @@
 import pytest
 
-from src.artemis.devices.zebra import Zebra, PositionCompare
+from src.artemis.devices.zebra import Zebra
 
 
 @pytest.fixture()
@@ -29,10 +29,12 @@ def test_disarm(zebra: Zebra):
 @pytest.mark.s03
 def test_zebra_stage(zebra: Zebra):
     zebra.stage()
-    assert zebra.pc.is_armed()
+    assert zebra.output.out_pvs[Zebra.TTL_DETECTOR] == Zebra.IN3_TTL
+    assert zebra.output.out_pvs[Zebra.TTL_SHUTTER] == Zebra.IN4_TTL
 
 
 @pytest.mark.s03
 def test_zebra_unstage(zebra: Zebra):
     zebra.unstage()
-    assert not zebra.pc.is_armed()
+    assert zebra.output.out_pvs[Zebra.TTL_DETECTOR] == Zebra.PC_PULSE
+    assert zebra.output.out_pvs[Zebra.TTL_SHUTTER] == Zebra.OR1
