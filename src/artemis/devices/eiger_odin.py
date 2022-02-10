@@ -100,7 +100,7 @@ class OdinNodesStatus(Device):
         for node_number, node_pv in enumerate(self.nodes):
             error_message = node_pv.error_message.get()
             if len(error_message) != 0:
-                print(f"Clearing odin errors from node {node_number}")
+                self.log.info(f"Clearing odin errors from node {node_number}")
                 node_pv.clear_errors.put(1)
 
 
@@ -118,9 +118,9 @@ class EigerOdin(Device):
         if not is_initialised:
             raise Exception(error_message)
         if frames_dropped:
-            print(frames_dropped_details)
+            self.log.error(f"Frames dropped: {frames_dropped_details}")
         if frames_timed_out:
-            print(frames_timed_out_details)
+            self.log.error(f"Frames timed out: {frames_timed_out_details}")
 
         return is_initialised and not frames_dropped and not frames_timed_out
 

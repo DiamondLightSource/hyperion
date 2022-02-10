@@ -110,7 +110,7 @@ class EigerDetector(Device):
         status.wait(10)
 
         if not status.success:
-            print("Failed to switch to ROI mode")
+            self.log.error("Failed to switch to ROI mode")
 
     def set_cam_pvs(self):
         self.cam.acquire_time.put(self.detector_params.exposure_time)
