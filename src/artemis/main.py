@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 import bluesky
 from click import Parameter
@@ -25,29 +26,49 @@ class Status(Enum):
     IDLE = "Idle"
 
 
+@dataclass
+class StatusAndError:
+    status: Status
+    error: str = ""
+
+
 class BlueskyRunner(object):
     def __init__(self) -> None:
         self.bluesky_running = False
-        self.bluesky_thread = Thread(target=self.do_plan, daemon=True)
+        self.error = None
 
-    def start(self, parameters):
+    def start(self, parameters) -> StatusAndError:
         print(f"Params are: {parameters}")
         if self.bluesky_running:
-            return False
+            return StatusAndError(Status.FAILED, "Bluesky already running")
         self.bluesky_running = True
+        self.error = None
+        self.bluesky_thread = Thread(target=self.do_plan, daemon=True)
         self.bluesky_thread.start()
-        return True
+        return StatusAndError(Status.SUCCESS)
 
     def do_plan(self):
         while self.bluesky_running:
             sleep(0.01)
 
-    def stop(self):
+    def stop(self) -> StatusAndError:
         if not self.bluesky_running:
-            return False
+            return StatusAndError(Status.FAILED, "Bluesky not running")
         self.bluesky_running = False
         self.bluesky_thread.join()
-        return True
+        return StatusAndError(Status.SUCCESS)
+
+    def set_error(self, error_message):
+        self.error = error_message
+        self.bluesky_running = False
+
+    def get_status(self) -> StatusAndError:
+        if self.bluesky_running:
+            return StatusAndError(Status.BUSY)
+        elif self.error is not None:
+            return StatusAndError(Status.FAILED, self.error)
+        else:
+            return StatusAndError(Status.IDLE)
 
 
 class FastGridScan(Resource):
@@ -55,18 +76,25 @@ class FastGridScan(Resource):
         super().__init__()
         self.runner = runner
 
+    def _craft_return_message(self, status_and_message: StatusAndError):
+        return jsonify(
+            {
+                "status": status_and_message.status.value,
+                "message": status_and_message.error,
+            }
+        )
+
     def put(self, action):
-        status = Status.FAILED
+        status_and_message = StatusAndError(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             parameters = json.loads(request.data)
-            status = Status.SUCCESS if self.runner.start(parameters) else Status.FAILED
+            status_and_message = self.runner.start(parameters)
         elif action == Actions.STOP.value:
-            status = Status.SUCCESS if self.runner.stop() else Status.FAILED
-        return jsonify({"status": status.value})
+            status_and_message = self.runner.stop()
+        return self._craft_return_message(status_and_message)
 
     def get(self, action):
-        status = Status.BUSY if self.runner.bluesky_running else Status.IDLE
-        return jsonify({"status": status.value})
+        return self._craft_return_message(self.runner.get_status())
 
 
 def create_app(test_config=None) -> Tuple[Flask, BlueskyRunner]:
