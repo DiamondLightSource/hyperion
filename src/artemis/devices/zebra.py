@@ -80,7 +80,7 @@ class ZebraOutputPanel(Device):
     out_4: EpicsSignal = epics_signal_put_wait(f"OUT4_TTL")
 
     @property
-    def out_pvs(self):
+    def out_pvs(self) -> List[EpicsSignal]:
         """A list of all the output TTL PVs. Note that as the PVs are 1 indexed `out_pvs[0]` is `None`."""
         return [None, self.out_1, self.out_2, self.out_3, self.out_4]
 
