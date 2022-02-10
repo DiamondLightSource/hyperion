@@ -1,3 +1,5 @@
+import os
+
 from src.artemis.devices.eiger import EigerDetector, DetectorParams
 from src.artemis.devices.det_dim_constants import EIGER2_X_16M_SIZE
 from src.artemis.devices.det_dist_to_beam_converter import (
@@ -5,8 +7,6 @@ from src.artemis.devices.det_dist_to_beam_converter import (
 )
 
 import pytest
-import os
-from epics import caput
 
 
 @pytest.fixture()
@@ -15,7 +15,7 @@ def eiger():
     eiger.detector_size_constants = EIGER2_X_16M_SIZE
     eiger.use_roi_mode = True
     eiger.detector_params = DetectorParams(
-        100, 0.1, "001", "/tmp/", "file.h5", 100.0, 0, 0.1, 10
+        100, 0.1, "001", "/tmp/", "file", 100.0, 0, 0.1, 10
     )
     eiger.beam_xy_converter = DetectorDistanceToBeamXYConverter(
         os.path.join(
@@ -23,8 +23,8 @@ def eiger():
         )
     )
 
-    # S03 currently does not have logic for odin meta to be initialised
-    caput(eiger.odin.meta.initialised.pvname, 1)
+    # Otherwise odin moves too fast to be tested
+    eiger.cam.manual_trigger.put("Yes")
 
     # S03 currently does not have StaleParameters_RBV
     eiger.wait_for_stale_parameters = lambda: None
