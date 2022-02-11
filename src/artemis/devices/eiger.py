@@ -110,7 +110,7 @@ class EigerDetector(Device):
         status.wait(10)
 
         if not status.success:
-            print("Failed to switch to ROI mode")
+            self.log.error("Failed to switch to ROI mode")
 
     def set_cam_pvs(self):
         self.cam.acquire_time.put(self.detector_params.exposure_time)
@@ -123,8 +123,7 @@ class EigerDetector(Device):
         self.odin.fan.forward_stream.put(True)
         self.odin.file_writer.id.put(self.detector_params.acquisition_id)
         self.odin.file_writer.file_path.put(self.detector_params.directory)
-        self.odin.file_writer.file_name.put(self.detector_params.prefix)
-        self.odin.meta.file_name.put(self.detector_params.prefix)
+        self.odin.file_writer.file_prefix.put(self.detector_params.prefix)
 
     def set_mx_settings_pvs(self):
         beam_x_pixels, beam_y_pixels = self.get_beam_position_pixels(
@@ -172,9 +171,11 @@ class EigerDetector(Device):
         self.wait_for_stale_parameters()
 
         bit_depth = self.bit_depth.get()
-        self.odin.file_writer.data_type.put(bit_depth)
+        self.odin.file_writer.data_type.put(f"UInt{bit_depth}")
 
-        set_and_wait(self.odin.file_writer.capture, 1, timeout=10)
+        odin_status = self.odin.file_writer.capture.set(1)
+        odin_status &= await_value(self.odin.meta.ready, 1)
+        odin_status.wait(10)
 
         set_and_wait(self.cam.acquire, 1, timeout=10)
 

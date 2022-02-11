@@ -19,8 +19,8 @@ class EigerFan(Device):
 
 
 class OdinMetaListener(Device):
-    file_name: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "FileName")
     initialised: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
+    ready: EpicsSignalRO = Component(EpicsSignalRO, "Writing_RBV")
 
 
 class OdinFileWriter(HDF5Plugin_V22):
@@ -28,6 +28,7 @@ class OdinFileWriter(HDF5Plugin_V22):
     id: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "AcquisitionID")
     image_height: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageHeight")
     image_width: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageWidth")
+    file_prefix: EpicsSignal = Component(EpicsSignalWithRBV, "FP:FileName")
 
 
 class OdinNode(Device):
@@ -42,14 +43,14 @@ class OdinNode(Device):
 
 
 class OdinNodesStatus(Device):
-    node_1: OdinNode = Component(OdinNode, "OD1:")
-    node_2: OdinNode = Component(OdinNode, "OD2:")
-    node_3: OdinNode = Component(OdinNode, "OD3:")
-    node_4: OdinNode = Component(OdinNode, "OD4:")
+    node_0: OdinNode = Component(OdinNode, "OD1:")
+    node_1: OdinNode = Component(OdinNode, "OD2:")
+    node_2: OdinNode = Component(OdinNode, "OD3:")
+    node_3: OdinNode = Component(OdinNode, "OD4:")
 
     @property
     def nodes(self) -> List[OdinNode]:
-        return [self.node_1, self.node_2, self.node_3, self.node_4]
+        return [self.node_0, self.node_1, self.node_2, self.node_3]
 
     def wait_for_filewriters_to_finish(self):
         for node_number, node_pv in enumerate(self.nodes):
@@ -79,11 +80,14 @@ class OdinNodesStatus(Device):
             lambda node: node.frames_dropped.get(), "dropped"
         )
 
-    def get_error_state(self) -> bool:
+    def get_error_state(self) -> Tuple[bool, str]:
         is_error = []
+        error_messages = []
         for node_number, node_pv in enumerate(self.nodes):
             is_error.append(node_pv.error_status.get())
-        return any(is_error)
+            if is_error[node_number]:
+                error_messages.append(f"Filewriter {node_number} is in an error state with error message - {node_pv.error_message.get()}")
+        return any(is_error), "\n".join(error_messages)
 
     def get_init_state(self) -> bool:
         is_initialised = []
@@ -96,7 +100,7 @@ class OdinNodesStatus(Device):
         for node_number, node_pv in enumerate(self.nodes):
             error_message = node_pv.error_message.get()
             if len(error_message) != 0:
-                print(f"Clearing odin errors from node {node_number}")
+                self.log.info(f"Clearing odin errors from node {node_number}")
                 node_pv.clear_errors.put(1)
 
 
@@ -114,21 +118,19 @@ class EigerOdin(Device):
         if not is_initialised:
             raise Exception(error_message)
         if frames_dropped:
-            print(frames_dropped_details)
+            self.log.error(f"Frames dropped: {frames_dropped_details}")
         if frames_timed_out:
-            print(frames_timed_out_details)
+            self.log.error(f"Frames timed out: {frames_timed_out_details}")
 
         return is_initialised and not frames_dropped and not frames_timed_out
 
     def check_odin_initialised(self) -> Tuple[bool, str]:
+        is_error_state, error_messages = self.nodes.get_error_state()
         to_check = [
             (not self.fan.connected.get(), "EigerFan is not connected"),
             (not self.fan.on.get(), "EigerFan is not initialised"),
             (not self.meta.initialised.get(), "MetaListener is not initialised"),
-            (
-                self.nodes.get_error_state(),
-                "One or more filewriters is in an error state",
-            ),
+            (is_error_state, error_messages),
             (
                 not self.nodes.get_init_state(),
                 "One or more filewriters is not initialised",
