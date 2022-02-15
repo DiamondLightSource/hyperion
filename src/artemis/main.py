@@ -13,7 +13,6 @@ from json import JSONDecodeError
 from queue import Queue
 from typing import Optional
 from bluesky import RunEngine
-from bluesky.run_engine import RunEngineResult
 from typing import Tuple
 from enum import Enum
 from src.artemis.fast_grid_scan_plan import FullParameters, get_plan
@@ -33,6 +32,7 @@ class Status(Enum):
     FAILED = "Failed"
     SUCCESS = "Success"
     BUSY = "Busy"
+    ABORTING = "Aborting"
     IDLE = "Idle"
 
 
@@ -55,48 +55,63 @@ class StatusAndError:
 
 class BlueskyRunner(object):
     command_queue: "Queue[Command]" = Queue()
-    RE: RunEngine = RunEngine({}, call_returns_result=True)
-    last_RE_result: RunEngineResult = None
-    RE_running: bool = False  # Keep track of this ourselves rather than ask the RE as it takes some time to start
+    current_status: StatusAndError = StatusAndError(Status.IDLE)
+    last_run_aborted: bool = False
+
+    def __init__(self, RE: RunEngine) -> None:
+        self.RE = RE
 
     def start(self, parameters: FullParameters) -> StatusAndError:
         logger.info(f"Started with parameters: {parameters}")
-        if self.RE_running:
+        if (
+            self.current_status.status == Status.BUSY.value
+            or self.current_status.status == Status.ABORTING.value
+        ):
             return StatusAndError(Status.FAILED, "Bluesky already running")
         else:
-            self.RE_running = True
+            self.current_status = StatusAndError(Status.BUSY)
             self.command_queue.put(Command(Actions.START, parameters))
             return StatusAndError(Status.SUCCESS)
 
+    def stopping_thread(self):
+        try:
+            self.RE.abort()
+            self.current_status = StatusAndError(Status.IDLE)
+        except Exception as e:
+            self.current_status = StatusAndError(Status.FAILED, str(e))
+
     def stop(self) -> StatusAndError:
-        if not self.RE_running:
+        if self.current_status.status == Status.IDLE.value:
             return StatusAndError(Status.FAILED, "Bluesky not running")
+        elif self.current_status.status == Status.ABORTING.value:
+            return StatusAndError(Status.FAILED, "Bluesky already stopping")
         else:
-            self.last_RE_result = self.RE.abort()
-            self.RE_running = False
-            return StatusAndError(Status.SUCCESS)
+            self.current_status = StatusAndError(Status.ABORTING)
+            stopping_thread = threading.Thread(target=self.stopping_thread)
+            stopping_thread.start()
+            self.last_run_aborted = True
+            return StatusAndError(Status.ABORTING)
 
     def shutdown(self):
         self.stop()
         self.command_queue.put(Command(Actions.SHUTDOWN))
 
-    def get_status(self) -> StatusAndError:
-        if self.RE_running:
-            return StatusAndError(Status.BUSY)
-        last_result_success = (
-            self.last_RE_result is None or self.last_RE_result.interrupted == False
-        )
-        if last_result_success:
-            return StatusAndError(Status.IDLE)
-        else:
-            return StatusAndError(Status.FAILED, self.last_RE_result.reason)
-
     def wait_on_queue(self):
         while True:
             command = self.command_queue.get()
             if command.action == Actions.START:
-                self.last_RE_result = self.RE(get_plan(command.parameters))
-                self.RE_running = False
+                try:
+                    self.RE(get_plan(command.parameters))
+                    self.current_status = StatusAndError(Status.IDLE)
+                    self.last_run_aborted = False
+                except Exception as exception:
+                    if self.last_run_aborted:
+                        # Aborting will cause an exception here that we want to swallow
+                        self.last_run_aborted = False
+                    else:
+                        self.current_status = StatusAndError(
+                            Status.FAILED, str(exception)
+                        )
             elif command.action == Actions.SHUTDOWN:
                 return
 
@@ -112,8 +127,8 @@ class FastGridScan(Resource):
             try:
                 parameters = FullParameters.from_json(request.data)
                 status_and_message = self.runner.start(parameters)
-            except JSONDecodeError as e:
-                status_and_message = StatusAndError(Status.FAILED, e.message)
+            except JSONDecodeError as exception:
+                status_and_message = StatusAndError(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
         return status_and_message.to_dict()
@@ -127,11 +142,13 @@ class FastGridScan(Resource):
             if shutdown_func is None:
                 raise RuntimeError("Not running with the Werkzeug Server")
             shutdown_func()
-        return self.runner.get_status().to_dict()
+        return self.runner.current_status.to_dict()
 
 
-def create_app(test_config=None) -> Tuple[Flask, BlueskyRunner]:
-    runner = BlueskyRunner()
+def create_app(
+    test_config=None, RE: RunEngine = RunEngine({})
+) -> Tuple[Flask, BlueskyRunner]:
+    runner = BlueskyRunner(RE)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)

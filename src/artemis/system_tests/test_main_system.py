@@ -1,14 +1,15 @@
 from dataclasses import dataclass
 import threading
+from black import err
 import pytest
-from typing import Any
+from typing import Any, Callable
 from flask.testing import FlaskClient
 from src.artemis.fast_grid_scan_plan import FullParameters
 
 from src.artemis.main import create_app, Status, Actions
 import json
 from time import sleep
-from bluesky.run_engine import RunEngineResult
+import time
 from mockito import mock
 
 FGS_ENDPOINT = "/fast_grid_scan/"
@@ -20,20 +21,22 @@ TEST_PARAMS = FullParameters().to_json()
 
 
 class MockRunEngine:
-    RE_running = True
-    return_status: RunEngineResult = mock()
-
-    def __init__(self) -> None:
-        self.return_status.interrupted = False
+    RE_takes_time = True
+    aborting_takes_time = False
+    error: str = None
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
-        while self.RE_running:
+        while self.RE_takes_time:
             sleep(0.1)
-        return self.return_status
+            if self.error:
+                raise Exception(self.error)
 
     def abort(self):
-        self.RE_running = False
-        return self.return_status
+        while self.aborting_takes_time:
+            sleep(0.1)
+            if self.error:
+                raise Exception(self.error)
+        self.RE_takes_time = False
 
 
 @dataclass
@@ -44,15 +47,31 @@ class ClientAndRunEngine:
 
 @pytest.fixture
 def test_env():
-    app, runner = create_app({"TESTING": True})
-    runner.RE = MockRunEngine()
+    mock_run_engine = MockRunEngine()
+    app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
     with app.test_client() as client:
-        yield ClientAndRunEngine(client, runner.RE)
+        yield ClientAndRunEngine(client, mock_run_engine)
         client.get(SHUTDOWN_ENDPOINT)
 
     runner_thread.join()
+
+
+def wait_for_run_engine_status(
+    client: FlaskClient,
+    status_check: Callable[[str], bool] = lambda status: status != Status.BUSY.value,
+    attempts=10,
+):
+    while attempts != 0:
+        response = client.get(STATUS_ENDPOINT)
+        response_json = json.loads(response.data)
+        if status_check(response_json["status"]):
+            return response_json
+        else:
+            attempts -= 1
+            sleep(0.1)
+    assert False, "Run engine still busy"
 
 
 def check_status_in_response(response_object, expected_result: Status):
@@ -87,11 +106,17 @@ def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
 def test_given_started_when_stopped_then_success_and_idle_status(
     test_env: ClientAndRunEngine,
 ):
+    test_env.mock_run_engine.aborting_takes_time = True
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(STOP_ENDPOINT)
-    check_status_in_response(response, Status.SUCCESS)
+    check_status_in_response(response, Status.ABORTING)
     response = test_env.client.get(STATUS_ENDPOINT)
-    check_status_in_response(response, Status.IDLE)
+    check_status_in_response(response, Status.ABORTING)
+    test_env.mock_run_engine.aborting_takes_time = False
+    wait_for_run_engine_status(
+        test_env.client, lambda status: status != Status.ABORTING
+    )
+    check_status_in_response(response, Status.ABORTING)
 
 
 def test_given_started_when_stopped_and_started_again_then_runs(
@@ -105,27 +130,13 @@ def test_given_started_when_stopped_and_started_again_then_runs(
     check_status_in_response(response, Status.BUSY)
 
 
-def wait_for_not_busy(client: FlaskClient, attempts=10):
-    while attempts != 0:
-        response = client.get(STATUS_ENDPOINT)
-        response_json = json.loads(response.data)
-        if response_json["status"] != Status.BUSY.value:
-            return response_json
-        else:
-            attempts -= 1
-            sleep(0.1)
-    assert False, "Run engine still busy"
-
-
-def test_given_started_when_RE_stops_on_its_own_with_interrupt_then_error_reported(
+def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
     test_env: ClientAndRunEngine,
 ):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     error_message = "D'Oh"
-    test_env.mock_run_engine.return_status.interrupted = True
-    test_env.mock_run_engine.return_status.reason = error_message
-    test_env.mock_run_engine.RE_running = False
-    response_json = wait_for_not_busy(test_env.client)
+    test_env.mock_run_engine.error = error_message
+    response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.FAILED.value
     assert response_json["message"] == error_message
 
@@ -133,12 +144,14 @@ def test_given_started_when_RE_stops_on_its_own_with_interrupt_then_error_report
 def test_given_started_and_return_status_interrupted_when_RE_aborted_then_error_reported(
     test_env: ClientAndRunEngine,
 ):
+    test_env.mock_run_engine.aborting_takes_time = True
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     error_message = "D'Oh"
-    test_env.mock_run_engine.return_status.interrupted = True
-    test_env.mock_run_engine.return_status.reason = error_message
     test_env.client.put(STOP_ENDPOINT)
-    response_json = wait_for_not_busy(test_env.client)
+    test_env.mock_run_engine.error = error_message
+    response_json = wait_for_run_engine_status(
+        test_env.client, lambda status: status != Status.ABORTING.value
+    )
     assert response_json["status"] == Status.FAILED.value
     assert response_json["message"] == error_message
 
@@ -147,8 +160,6 @@ def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
     test_env: ClientAndRunEngine,
 ):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
-    test_env.mock_run_engine.return_status.interrupted = False
-    test_env.mock_run_engine.RE_running = False
-    test_env.client.put(STOP_ENDPOINT)
-    response_json = wait_for_not_busy(test_env.client)
+    test_env.mock_run_engine.RE_takes_time = False
+    response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.IDLE.value

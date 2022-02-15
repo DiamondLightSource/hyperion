@@ -30,6 +30,7 @@ from ophyd.log import config_ophyd_logging
 from bluesky.log import config_bluesky_logging
 
 from dataclasses_json import dataclass_json
+from typing import Generator
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
@@ -100,6 +101,14 @@ def run_gridscan(
 
 
 def get_plan(parameters: FullParameters):
+    """Create the plan to run the grid scan based on provided parameters.
+
+    Args:
+        parameters (FullParameters): The parameters to run the scan.
+
+    Returns:
+        Generator: The plan for the gridscan
+    """
     fast_grid_scan = FastGridScan(
         name="fgs", prefix=f"{parameters.beamline}-MO-SGON-01:FGS:"
     )
