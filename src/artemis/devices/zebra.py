@@ -23,6 +23,8 @@ PC_PULSE_SOURCE_EXTERNAL = 2
 DISCONNECT = 0
 IN1_TTL = 1
 IN2_TTL = 4
+IN3_TTL = 7
+IN4_TTL = 10
 PC_ARM = 29
 PC_GATE = 30
 PC_PULSE = 31
@@ -33,9 +35,9 @@ PULSE1 = 52
 SOFT_IN3 = 62
 
 # Instrument specific
-TTL_DETECTOR = 2
+TTL_DETECTOR = 1
+TTL_SHUTTER = 2
 TTL_XSPRESS3 = 3
-TTL_SHUTTER = 4
 
 
 class PositionCompare(Device):
@@ -51,18 +53,6 @@ class PositionCompare(Device):
     arm_demand: EpicsSignal = Component(EpicsSignal, "PC_ARM")
     disarm_demand: EpicsSignal = Component(EpicsSignal, "PC_DISARM")
     armed: EpicsSignal = Component(EpicsSignal, "PC_ARM_OUT")
-
-    def setup_fast_grid_scan(self):
-        self.arm_source.put(PC_ARM_SOURCE_SOFT)
-        self.gate_source.put(PC_GATE_SOURCE_EXTERNAL)
-
-        # Set up parameters for the GATE
-        self.gate_input.put(SOFT_IN3)
-        self.num_gates.put(1)
-
-        # Pulses come in through TTL input 1
-        self.pulse_source.put(PC_PULSE_SOURCE_EXTERNAL)
-        self.pulse_input.put(IN1_TTL)
 
     def arm(self) -> StatusBase:
         status = self.arm_status(1)
@@ -90,13 +80,13 @@ class ZebraOutputPanel(Device):
     out_4: EpicsSignal = epics_signal_put_wait(f"OUT4_TTL")
 
     @property
-    def out_pvs(self):
+    def out_pvs(self) -> List[EpicsSignal]:
         """A list of all the output TTL PVs. Note that as the PVs are 1 indexed `out_pvs[0]` is `None`."""
         return [None, self.out_1, self.out_2, self.out_3, self.out_4]
 
     def setup_fast_grid_scan(self):
-        self.out_pvs[TTL_DETECTOR].put(AND3)
-        self.out_pvs[TTL_SHUTTER].put(AND4)
+        self.out_pvs[TTL_DETECTOR].put(IN3_TTL)
+        self.out_pvs[TTL_SHUTTER].put(IN4_TTL)
         self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
         self.pulse_1_input.put(DISCONNECT)
 
@@ -105,7 +95,7 @@ class ZebraOutputPanel(Device):
         self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
 
     def set_shutter_to_manual(self):
-        self.out_pvs[TTL_DETECTOR].put(PC_GATE)
+        self.out_pvs[TTL_DETECTOR].put(PC_PULSE)
         self.out_pvs[TTL_SHUTTER].put(OR1)
 
 
@@ -196,15 +186,6 @@ class LogicGateConfigurer(Device):
     apply_and_gate_config = partialmethod(apply_logic_gate_config, GateType.AND)
     apply_or_gate_config = partialmethod(apply_logic_gate_config, GateType.OR)
 
-    def setup_fast_grid_scan(self):
-        # Set up AND3 block - produces trigger when SOFT_IN3 is high, AND a pulse is received from Geo Brick (via IN1_TTL)
-        and3_config = LogicGateConfiguration(PC_ARM).add_input(IN1_TTL)
-        self.apply_and_gate_config(3, and3_config)
-
-        # Set up AND4 block - produces trigger when SOFT_IN3 is high, AND a pulse is received from Geo Brick (via IN2_TTL)
-        and4_config = LogicGateConfiguration(PC_ARM).add_input(IN2_TTL)
-        self.apply_and_gate_config(4, and4_config)
-
 
 class LogicGateConfiguration:
     NUMBER_OF_INPUTS = 4
@@ -246,17 +227,13 @@ class Zebra(Device):
     logic_gates: LogicGateConfigurer = Component(LogicGateConfigurer, "")
 
     def setup_fast_grid_scan(self):
-        self.pc.setup_fast_grid_scan()
-        self.logic_gates.setup_fast_grid_scan()
         self.output.setup_fast_grid_scan()
 
     def stage(self) -> List[object]:
         self.setup_fast_grid_scan()
         self.output.disable_fluo_collection()
-        self.pc.arm().wait(10.0)
         return super().stage()
 
     def unstage(self) -> List[object]:
-        self.pc.disarm().wait(10.0)
         self.output.set_shutter_to_manual()
         return super().unstage()
