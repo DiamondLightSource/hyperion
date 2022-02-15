@@ -53,7 +53,7 @@ class StatusAndError:
         self.message = message
 
 
-class BlueskyRunner(object):
+class BlueskyRunner:
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndError = StatusAndError(Status.IDLE)
     last_run_aborted: bool = False
@@ -93,6 +93,7 @@ class BlueskyRunner(object):
             return StatusAndError(Status.ABORTING)
 
     def shutdown(self):
+        """Stops the run engine and the loop waiting for messages."""
         self.stop()
         self.command_queue.put(Command(Actions.SHUTDOWN))
 

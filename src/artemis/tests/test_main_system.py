@@ -1,16 +1,15 @@
 from dataclasses import dataclass
 import threading
-from black import err
 import pytest
 from typing import Any, Callable
 from flask.testing import FlaskClient
 from src.artemis.fast_grid_scan_plan import FullParameters
 
 from src.artemis.main import create_app, Status, Actions
+from src.artemis.devices.det_dim_constants import EIGER_TYPE_EIGER2_X_4M
 import json
 from time import sleep
-import time
-from mockito import mock
+
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
