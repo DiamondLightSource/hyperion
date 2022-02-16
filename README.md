@@ -81,11 +81,3 @@ To stop a scan that is currently running:
 ```
 curl -X PUT http://127.0.0.1:5000/fast_grid_scan/stop
 ```
-
-Shutdown the Runner
-------------------
-
-To shut down the runner:
-```
-curl http://127.0.0.1:5000/fast_grid_scan/shutdown
-```

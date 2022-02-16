@@ -44,7 +44,7 @@ class Command:
 
 @dataclass_json
 @dataclass
-class StatusAndError:
+class StatusAndMessage:
     status: str
     message: str = ""
 
@@ -55,42 +55,42 @@ class StatusAndError:
 
 class BlueskyRunner:
     command_queue: "Queue[Command]" = Queue()
-    current_status: StatusAndError = StatusAndError(Status.IDLE)
+    current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
 
-    def start(self, parameters: FullParameters) -> StatusAndError:
+    def start(self, parameters: FullParameters) -> StatusAndMessage:
         logger.info(f"Started with parameters: {parameters}")
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
         ):
-            return StatusAndError(Status.FAILED, "Bluesky already running")
+            return StatusAndMessage(Status.FAILED, "Bluesky already running")
         else:
-            self.current_status = StatusAndError(Status.BUSY)
+            self.current_status = StatusAndMessage(Status.BUSY)
             self.command_queue.put(Command(Actions.START, parameters))
-            return StatusAndError(Status.SUCCESS)
+            return StatusAndMessage(Status.SUCCESS)
 
     def stopping_thread(self):
         try:
             self.RE.abort()
-            self.current_status = StatusAndError(Status.IDLE)
+            self.current_status = StatusAndMessage(Status.IDLE)
         except Exception as e:
-            self.current_status = StatusAndError(Status.FAILED, str(e))
+            self.current_status = StatusAndMessage(Status.FAILED, str(e))
 
-    def stop(self) -> StatusAndError:
+    def stop(self) -> StatusAndMessage:
         if self.current_status.status == Status.IDLE.value:
-            return StatusAndError(Status.FAILED, "Bluesky not running")
+            return StatusAndMessage(Status.FAILED, "Bluesky not running")
         elif self.current_status.status == Status.ABORTING.value:
-            return StatusAndError(Status.FAILED, "Bluesky already stopping")
+            return StatusAndMessage(Status.FAILED, "Bluesky already stopping")
         else:
-            self.current_status = StatusAndError(Status.ABORTING)
+            self.current_status = StatusAndMessage(Status.ABORTING)
             stopping_thread = threading.Thread(target=self.stopping_thread)
             stopping_thread.start()
             self.last_run_aborted = True
-            return StatusAndError(Status.ABORTING)
+            return StatusAndMessage(Status.ABORTING)
 
     def shutdown(self):
         """Stops the run engine and the loop waiting for messages."""
@@ -103,14 +103,14 @@ class BlueskyRunner:
             if command.action == Actions.START:
                 try:
                     self.RE(get_plan(command.parameters))
-                    self.current_status = StatusAndError(Status.IDLE)
+                    self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow
                         self.last_run_aborted = False
                     else:
-                        self.current_status = StatusAndError(
+                        self.current_status = StatusAndMessage(
                             Status.FAILED, str(exception)
                         )
             elif command.action == Actions.SHUTDOWN:
@@ -123,26 +123,18 @@ class FastGridScan(Resource):
         self.runner = runner
 
     def put(self, action):
-        status_and_message = StatusAndError(Status.FAILED, f"{action} not understood")
+        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
                 parameters = FullParameters.from_json(request.data)
                 status_and_message = self.runner.start(parameters)
             except JSONDecodeError as exception:
-                status_and_message = StatusAndError(Status.FAILED, str(exception))
+                status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
         return status_and_message.to_dict()
 
     def get(self, action):
-        if action == Actions.SHUTDOWN.value:
-            self.runner.shutdown()
-            shutdown_func = request.environ.get("werkzeug.server.shutdown")
-            if globals.current_app.testing:
-                return
-            if shutdown_func is None:
-                raise RuntimeError("Not running with the Werkzeug Server")
-            shutdown_func()
         return self.runner.current_status.to_dict()
 
 
@@ -163,7 +155,7 @@ def create_app(
 if __name__ == "__main__":
     app, runner = create_app()
     flask_thread = threading.Thread(
-        target=lambda: app.run(debug=True, use_reloader=False)
+        target=lambda: app.run(debug=True, use_reloader=False), daemon=True
     )
     flask_thread.start()
     runner.wait_on_queue()

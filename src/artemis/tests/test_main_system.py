@@ -52,8 +52,8 @@ def test_env():
     runner_thread.start()
     with app.test_client() as client:
         yield ClientAndRunEngine(client, mock_run_engine)
-        client.get(SHUTDOWN_ENDPOINT)
 
+    runner.shutdown()
     runner_thread.join()
 
 
