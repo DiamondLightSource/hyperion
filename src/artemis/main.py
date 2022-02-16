@@ -17,7 +17,7 @@ from typing import Tuple
 from enum import Enum
 from src.artemis.fast_grid_scan_plan import FullParameters, get_plan
 from dataclasses_json import dataclass_json
-
+import atexit
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,7 @@ class BlueskyRunner:
 
     def shutdown(self):
         """Stops the run engine and the loop waiting for messages."""
+        print("Shutting down: Stopping the run engine gracefully")
         self.stop()
         self.command_queue.put(Command(Actions.SHUTDOWN))
 
@@ -154,6 +155,7 @@ def create_app(
 
 if __name__ == "__main__":
     app, runner = create_app()
+    atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(debug=True, use_reloader=False), daemon=True
     )
