@@ -1,15 +1,23 @@
+import os
+import sys
+
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+
 from dataclasses import dataclass
-import json
-import bluesky
-from click import Parameter
-from flask import Flask, jsonify, request
+from flask import Flask, request, globals
 from flask_restful import Resource, Api
 import logging
-from threading import Thread
-from time import sleep
+import threading
+from json import JSONDecodeError
+from queue import Queue
+from typing import Optional
+from bluesky import RunEngine
 from typing import Tuple
 from enum import Enum
-
+from src.artemis.fast_grid_scan_plan import FullParameters, get_plan
+from dataclasses_json import dataclass_json
+import atexit
 
 logger = logging.getLogger(__name__)
 
@@ -17,58 +25,97 @@ logger = logging.getLogger(__name__)
 class Actions(Enum):
     START = "start"
     STOP = "stop"
+    SHUTDOWN = "shutdown"
 
 
 class Status(Enum):
     FAILED = "Failed"
     SUCCESS = "Success"
     BUSY = "Busy"
+    ABORTING = "Aborting"
     IDLE = "Idle"
 
 
 @dataclass
-class StatusAndError:
-    status: Status
-    error: str = ""
+class Command:
+    action: Actions
+    parameters: Optional[FullParameters] = None
 
 
-class BlueskyRunner(object):
-    def __init__(self) -> None:
-        self.bluesky_running = False
-        self.error = None
+@dataclass_json
+@dataclass
+class StatusAndMessage:
+    status: str
+    message: str = ""
 
-    def start(self, parameters) -> StatusAndError:
-        print(f"Params are: {parameters}")
-        if self.bluesky_running:
-            return StatusAndError(Status.FAILED, "Bluesky already running")
-        self.bluesky_running = True
-        self.error = None
-        self.bluesky_thread = Thread(target=self.do_plan, daemon=True)
-        self.bluesky_thread.start()
-        return StatusAndError(Status.SUCCESS)
+    def __init__(self, status: Status, message: str = "") -> None:
+        self.status = status.value
+        self.message = message
 
-    def do_plan(self):
-        while self.bluesky_running:
-            sleep(0.01)
 
-    def stop(self) -> StatusAndError:
-        if not self.bluesky_running:
-            return StatusAndError(Status.FAILED, "Bluesky not running")
-        self.bluesky_running = False
-        self.bluesky_thread.join()
-        return StatusAndError(Status.SUCCESS)
+class BlueskyRunner:
+    command_queue: "Queue[Command]" = Queue()
+    current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
+    last_run_aborted: bool = False
 
-    def set_error(self, error_message):
-        self.error = error_message
-        self.bluesky_running = False
+    def __init__(self, RE: RunEngine) -> None:
+        self.RE = RE
 
-    def get_status(self) -> StatusAndError:
-        if self.bluesky_running:
-            return StatusAndError(Status.BUSY)
-        elif self.error is not None:
-            return StatusAndError(Status.FAILED, self.error)
+    def start(self, parameters: FullParameters) -> StatusAndMessage:
+        logger.info(f"Started with parameters: {parameters}")
+        if (
+            self.current_status.status == Status.BUSY.value
+            or self.current_status.status == Status.ABORTING.value
+        ):
+            return StatusAndMessage(Status.FAILED, "Bluesky already running")
         else:
-            return StatusAndError(Status.IDLE)
+            self.current_status = StatusAndMessage(Status.BUSY)
+            self.command_queue.put(Command(Actions.START, parameters))
+            return StatusAndMessage(Status.SUCCESS)
+
+    def stopping_thread(self):
+        try:
+            self.RE.abort()
+            self.current_status = StatusAndMessage(Status.IDLE)
+        except Exception as e:
+            self.current_status = StatusAndMessage(Status.FAILED, str(e))
+
+    def stop(self) -> StatusAndMessage:
+        if self.current_status.status == Status.IDLE.value:
+            return StatusAndMessage(Status.FAILED, "Bluesky not running")
+        elif self.current_status.status == Status.ABORTING.value:
+            return StatusAndMessage(Status.FAILED, "Bluesky already stopping")
+        else:
+            self.current_status = StatusAndMessage(Status.ABORTING)
+            stopping_thread = threading.Thread(target=self.stopping_thread)
+            stopping_thread.start()
+            self.last_run_aborted = True
+            return StatusAndMessage(Status.ABORTING)
+
+    def shutdown(self):
+        """Stops the run engine and the loop waiting for messages."""
+        print("Shutting down: Stopping the run engine gracefully")
+        self.stop()
+        self.command_queue.put(Command(Actions.SHUTDOWN))
+
+    def wait_on_queue(self):
+        while True:
+            command = self.command_queue.get()
+            if command.action == Actions.START:
+                try:
+                    self.RE(get_plan(command.parameters))
+                    self.current_status = StatusAndMessage(Status.IDLE)
+                    self.last_run_aborted = False
+                except Exception as exception:
+                    if self.last_run_aborted:
+                        # Aborting will cause an exception here that we want to swallow
+                        self.last_run_aborted = False
+                    else:
+                        self.current_status = StatusAndMessage(
+                            Status.FAILED, str(exception)
+                        )
+            elif command.action == Actions.SHUTDOWN:
+                return
 
 
 class FastGridScan(Resource):
@@ -76,29 +123,26 @@ class FastGridScan(Resource):
         super().__init__()
         self.runner = runner
 
-    def _craft_return_message(self, status_and_message: StatusAndError):
-        return jsonify(
-            {
-                "status": status_and_message.status.value,
-                "message": status_and_message.error,
-            }
-        )
-
     def put(self, action):
-        status_and_message = StatusAndError(Status.FAILED, f"{action} not understood")
+        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
-            parameters = json.loads(request.data)
-            status_and_message = self.runner.start(parameters)
+            try:
+                parameters = FullParameters.from_json(request.data)
+                status_and_message = self.runner.start(parameters)
+            except JSONDecodeError as exception:
+                status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
-        return self._craft_return_message(status_and_message)
+        return status_and_message.to_dict()
 
     def get(self, action):
-        return self._craft_return_message(self.runner.get_status())
+        return self.runner.current_status.to_dict()
 
 
-def create_app(test_config=None) -> Tuple[Flask, BlueskyRunner]:
-    runner = BlueskyRunner()
+def create_app(
+    test_config=None, RE: RunEngine = RunEngine({})
+) -> Tuple[Flask, BlueskyRunner]:
+    runner = BlueskyRunner(RE)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
@@ -111,4 +155,10 @@ def create_app(test_config=None) -> Tuple[Flask, BlueskyRunner]:
 
 if __name__ == "__main__":
     app, runner = create_app()
-    app.run(debug=True)
+    atexit.register(runner.shutdown)
+    flask_thread = threading.Thread(
+        target=lambda: app.run(debug=True, use_reloader=False), daemon=True
+    )
+    flask_thread.start()
+    runner.wait_on_queue()
+    flask_thread.join()

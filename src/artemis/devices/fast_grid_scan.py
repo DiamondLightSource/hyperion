@@ -22,8 +22,10 @@ from src.artemis.devices.motors import (
 
 from bluesky.plan_stubs import mv
 from src.artemis.devices.status import await_value
+from dataclasses_json import dataclass_json
 
 
+@dataclass_json
 @dataclass
 class GridScanParams:
     """

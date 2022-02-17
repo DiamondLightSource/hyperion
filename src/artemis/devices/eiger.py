@@ -12,6 +12,7 @@ from src.artemis.devices.eiger_odin import EigerOdin
 from src.artemis.devices.status import await_value
 from enum import Enum
 from dataclasses import dataclass
+from dataclasses_json import dataclass_json
 
 
 class EigerTriggerMode(Enum):
@@ -21,6 +22,7 @@ class EigerTriggerMode(Enum):
     EXTERNAL_ENABLE = 3
 
 
+@dataclass_json
 @dataclass
 class DetectorParams:
     current_energy: float

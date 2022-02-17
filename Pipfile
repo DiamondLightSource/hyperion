@@ -8,6 +8,7 @@ bluesky = "*"
 ophyd = "*"
 pyepics="*"
 flask-restful="*"
+dataclasses-json = "*"
 
 [dev-packages]
 pytest = "*"
