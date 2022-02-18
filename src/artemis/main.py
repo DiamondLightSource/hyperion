@@ -157,7 +157,8 @@ if __name__ == "__main__":
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
-        target=lambda: app.run(debug=True, use_reloader=False), daemon=True
+        target=lambda: app.run(host="0.0.0.0", debug=True, use_reloader=False),
+        daemon=True,
     )
     flask_thread.start()
     runner.wait_on_queue()
