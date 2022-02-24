@@ -9,6 +9,7 @@ ophyd = "*"
 pyepics="*"
 flask-restful="*"
 dataclasses-json = "*"
+ispyb = "*"
 
 [dev-packages]
 pytest = "*"
