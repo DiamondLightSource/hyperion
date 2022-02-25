@@ -1,7 +1,7 @@
 import ispyb
 from src.artemis.ispyb.ispyb_dataclasses import GridInfo, DataCollection
 
-ISPYB_CONFIG_FILE = "src/artemis/ispyb/config.cfg"
+ISPYB_CONFIG_FILE = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
 
 def store_grid_info_table(grid_info: GridInfo, visit: str) -> int:
