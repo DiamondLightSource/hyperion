@@ -24,6 +24,19 @@ def store_grid_scan(grid_info: GridInfo, data_collection: DataCollection, data_c
         return grid_id, dc_id, group_id
 
 
+def update_grid_scan_with_end_time_and_status(end_time: str, run_status: str, dc_id: int) -> int:
+    with ispyb.open(ISPYB_CONFIG_FILE) as conn:
+        mx_acquisition = conn.mx_acquisition
+
+        params = mx_acquisition.get_data_collection_params()
+        params["id"] = dc_id
+        params["endtime"] = end_time
+        params["run_status"] = run_status
+
+        return mx_acquisition.upsert_data_collection(list(params.values()))
+
+
+
 def store_grid_info_table(grid_info: GridInfo, conn: Connector) -> int:
     mx_acquisition = conn.mx_acquisition
 
