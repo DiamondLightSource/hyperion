@@ -21,6 +21,7 @@ class EigerFan(Device):
 class OdinMetaListener(Device):
     initialised: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
     ready: EpicsSignalRO = Component(EpicsSignalRO, "Writing_RBV")
+    meta: EpicsSignal = Component(EpicsSignal, "FileName")
 
 
 class OdinFileWriter(HDF5Plugin_V22):
