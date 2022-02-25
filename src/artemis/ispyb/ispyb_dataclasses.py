@@ -24,7 +24,7 @@ class GridInfo:
 
 @dataclass
 class DataCollection:
-    data_collection_group_id: int # required
+    data_collection_group_id: int  # required
     sample_id: int
     position_id: int
     detector_id: int
@@ -61,7 +61,7 @@ class DataCollection:
     xtal_snapshots_3: str
     synchrotron_mode: str
     undulator_gap: float
-    start_time: str # db column is datetime, so needs to be a string of the format YYYY-MM-DD HH:MM:SS
+    start_time: str  # db column is datetime, so needs to be a string of the format YYYY-MM-DD HH:MM:SS
     end_time: str
     run_status: str
     file_template: str
@@ -77,7 +77,7 @@ class Position:
 
 @dataclass
 class DataCollectionGroup:
-    visit: str # required
+    visit: str  # required
     experiment_type: str
     sample_id: int
     sample_barcode: str
