@@ -4,15 +4,17 @@ from sqlalchemy.connectors import Connector
 from src.artemis.ispyb.ispyb_dataclasses import GridInfo, DataCollection, DataCollectionGroup, Position
 
 
+ISPYB_CONFIG_FILE = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
+
+
 class StoreInIspyb:
 
-    ISPYB_CONFIG_FILE = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
     conn: Connector
 
     def store_grid_scan(self, grid_info: GridInfo, data_collection: DataCollection, position: Position,
                         data_collection_group: DataCollectionGroup):
 
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(ISPYB_CONFIG_FILE) as self.conn:
             data_collection.data_collection_group_id = self.store_data_collection_group_table(data_collection_group)
             data_collection.position_id = self.store_position_table(position)
 
@@ -24,9 +26,8 @@ class StoreInIspyb:
 
             return grid_id, data_collection_id
 
-
     def update_grid_scan_with_end_time_and_status(self, end_time: str, run_status: str, dc_id: int) -> int:
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(ISPYB_CONFIG_FILE) as self.conn:
             mx_acquisition = self.conn.mx_acquisition
 
             params = mx_acquisition.get_data_collection_params()
@@ -54,7 +55,6 @@ class StoreInIspyb:
         params["snaked"] = grid_info.snaked
 
         return mx_acquisition.upsert_dc_grid(list(params.values()))
-
 
     def store_data_collection_table(self, data_collection: DataCollection) -> int:
         core = self.conn.core
@@ -108,7 +108,6 @@ class StoreInIspyb:
 
         return mx_acquisition.upsert_data_collection(list(params.values()))
 
-
     def store_position_table(self, position: Position) -> int:
         mx_acquisition = self.conn.mx_acquisition
 
@@ -118,7 +117,6 @@ class StoreInIspyb:
         params["pos_z"] = position.position_z
 
         return mx_acquisition.update_dc_position(list(params.values()))
-
 
     def store_data_collection_group_table(self, data_collection_group: DataCollectionGroup) -> int:
         core = self.conn.core
