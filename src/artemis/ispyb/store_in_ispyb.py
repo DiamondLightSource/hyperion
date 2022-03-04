@@ -142,7 +142,9 @@ class StoreInIspyb:
         params["synchrotron_mode"] = self.full_params.ispyb_params.synchrotron_mode
         params["undulator_gap1"] = self.full_params.ispyb_params.undulator_gap
         params["starttime"] = self.get_current_time_string()
-        params["file_template"] # same as master h5 file name
+
+        # temporary file template until nxs filewriting is integrated and we can use that file name
+        params["file_template"] = f"{self.full_params.detector_params.prefix}_{self.full_params.ispyb_params.run_number}_master.h5"
 
         return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
@@ -173,7 +175,7 @@ class StoreInIspyb:
     def get_visit_string_from_visit_path(self, visit_path):
         return re.search(self.VISIT_PATH_REGEX, visit_path).group(1)
 
-    def get_beam_position_mm(self, detector_distance): # possibly should be in beam_xy_converter
+    def get_beam_position_mm(self, detector_distance): # possibly should be in beam_converter
         x_beam_mm = self.full_params.det_to_distance.get_beam_xy_from_det_dist_mm(detector_distance, DetectorDistanceToBeamXYConverter.Axis.X_AXIS)
         y_beam_mm = self.full_params.det_to_distance.get_beam_xy_from_det_dist_mm(detector_distance, DetectorDistanceToBeamXYConverter.Axis.Y_AXIS)
 
