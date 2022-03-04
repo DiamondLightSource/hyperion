@@ -6,6 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from dataclasses import dataclass, field
 from src.artemis.devices.eiger import DetectorParams, EigerDetector
+from src.artemis.ispyb.store_in_ispyb import IspybParams
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
     GridScanParams,
@@ -83,6 +84,9 @@ class FullParameters:
             "devices",
             "det_dist_to_beam_XY_converter.txt",
         )
+    )
+    ispyb_params: IspybParams = IspybParams(
+
     )
 
 
