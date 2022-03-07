@@ -10,15 +10,18 @@ def _send_to_zocalo(parameters: dict):
 
     transport = lookup(default_transport)()
     transport.connect()
-    message = {
-        "recipes": "mimas",
-        "parameters": parameters,
-    }
-    header = {
-        "zocalo.go.user": getpass.getuser(),
-        "zocalo.go.host": socket.gethostname(),
-    }
-    transport.send("processing_recipe", message, headers=header)
+    try:
+        message = {
+            "recipes": "mimas",
+            "parameters": parameters,
+        }
+        header = {
+            "zocalo.go.user": getpass.getuser(),
+            "zocalo.go.host": socket.gethostname(),
+        }
+        transport.send("processing_recipe", message, headers=header)
+    finally:
+        transport.disconnect()
 
 
 def run_start(data_collection_id: int):
