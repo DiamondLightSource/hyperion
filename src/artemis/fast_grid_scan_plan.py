@@ -50,26 +50,6 @@ SIM_BEAMLINE = "BL03S"
 @dataclass_json
 @dataclass
 class FullParameters:
-    detector_size_constants: DetectorSizeConstants = field(
-        default=EIGER2_X_16M_SIZE,
-        metadata=config(
-            encoder=lambda detector: detector.det_type_string,
-            decoder=lambda det_type: constants_from_type(det_type),
-        ),
-    )
-
-    beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
-        default=DetectorDistanceToBeamXYConverter(os.path.join(
-                    os.path.dirname(__file__),
-                    "devices",
-                    "det_dist_to_beam_XY_converter.txt",
-                )),
-        metadata=config(
-            encoder=lambda converter: converter.lookup_file,
-            decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name)
-        )
-    )
-
     beamline: str = SIM_BEAMLINE
     grid_scan_params: GridScanParams = GridScanParams(
         x_steps=5,
@@ -82,8 +62,12 @@ class FullParameters:
         z1_start=0.0,
     )
     detector_params: DetectorParams = DetectorParams(
-        detector_size_constants=detector_size_constants,
-        beam_xy_converter=beam_xy_converter,
+        detector_type_string=EIGER2_X_16M_SIZE.det_type_string,
+        beam_xy_converter_lookup_file=os.path.join(
+                    os.path.dirname(__file__),
+                    "devices",
+                    "det_dist_to_beam_XY_converter.txt",
+                ),
         current_energy=100,
         exposure_time=0.1,
         acquisition_id="test",

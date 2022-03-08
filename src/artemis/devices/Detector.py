@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 from typing import Tuple
-from dataclasses_json import dataclass_json
+from dataclasses_json import dataclass_json, Undefined
 
-from src.artemis.devices.det_dim_constants import DetectorSizeConstants
+from src.artemis.devices.det_dim_constants import DetectorSizeConstants, constants_from_type
 from src.artemis.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
 
 
-@dataclass_json
+@dataclass_json(undefined=Undefined.EXCLUDE)
 @dataclass
 class DetectorParams:
-    detector_size_constants: DetectorSizeConstants
-    beam_xy_converter: DetectorDistanceToBeamXYConverter
+    detector_type_string: str
+    beam_xy_converter_lookup_file: str
 
     current_energy: float
     exposure_time: float
@@ -23,6 +23,10 @@ class DetectorParams:
     num_images: int
 
     use_roi_mode: bool
+
+    def __post_init__(self):
+        self.detector_size_constants = constants_from_type(self.detector_type_string)
+        self.beam_xy_converter = DetectorDistanceToBeamXYConverter(self.beam_xy_converter_lookup_file)
 
     def get_beam_position_mm(self, detector_distance: float) -> Tuple[float, float]:
         x_beam_mm = self.get_beam_xy_from_det_dist_mm(detector_distance, DetectorDistanceToBeamXYConverter.Axis.X_AXIS)
