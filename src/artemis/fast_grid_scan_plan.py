@@ -1,12 +1,14 @@
 import os
 import sys
 
+from importlib_metadata import metadata
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from dataclasses import dataclass, field
 from src.artemis.devices.eiger import DetectorParams, EigerDetector
-from src.artemis.ispyb.store_in_ispyb import IspybParams
+from src.artemis.ispyb.ispyb_dataclass import IspybParams, Orientation
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
     GridScanParams,
@@ -48,15 +50,27 @@ SIM_BEAMLINE = "BL03S"
 @dataclass_json
 @dataclass
 class FullParameters:
-    beamline: str = SIM_BEAMLINE
-    detector: DetectorSizeConstants = field(
+    detector_size_constants: DetectorSizeConstants = field(
         default=EIGER2_X_16M_SIZE,
         metadata=config(
             encoder=lambda detector: detector.det_type_string,
             decoder=lambda det_type: constants_from_type(det_type),
         ),
     )
-    use_roi: bool = False
+
+    beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
+        default=DetectorDistanceToBeamXYConverter(os.path.join(
+                    os.path.dirname(__file__),
+                    "devices",
+                    "det_dist_to_beam_XY_converter.txt",
+                )),
+        metadata=config(
+            encoder=lambda converter: converter.lookup_file,
+            decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name)
+        )
+    )
+
+    beamline: str = SIM_BEAMLINE
     grid_scan_params: GridScanParams = GridScanParams(
         x_steps=5,
         y_steps=10,
@@ -68,6 +82,8 @@ class FullParameters:
         z1_start=0.0,
     )
     detector_params: DetectorParams = DetectorParams(
+        detector_size_constants=detector_size_constants,
+        beam_xy_converter=beam_xy_converter,
         current_energy=100,
         exposure_time=0.1,
         acquisition_id="test",
@@ -77,16 +93,32 @@ class FullParameters:
         omega_start=0.0,
         omega_increment=0.1,
         num_images=10,
-    )
-    det_to_distance = DetectorDistanceToBeamXYConverter(
-        os.path.join(
-            os.path.dirname(__file__),
-            "devices",
-            "det_dist_to_beam_XY_converter.txt",
-        )
+        use_roi_mode = False,
     )
     ispyb_params: IspybParams = IspybParams(
-
+        sample_id=None,
+        visit_path=None,
+        undulator_gap=None,
+        pixels_per_micron_x=None,
+        pixels_per_micron_y=None,
+        upper_left=[None,None],
+        bottom_right=[None,None],
+        sample_barcode=None,
+        position=None,
+        synchrotron_mode=None,
+        xtal_snapshots=None,
+        run_number=None,
+        transmission=None,
+        flux=None,
+        wavelength=None,
+        beam_size_x=None,
+        beam_size_y=None,
+        slit_gap_size_x=None,
+        slit_gap_size_y=None,
+        focal_spot_size_x=None,
+        focal_spot_size_y=None,
+        comment=None,
+        resolution=None,
     )
 
 
