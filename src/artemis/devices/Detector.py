@@ -1,17 +1,16 @@
-from dataclasses import dataclass
-from typing import Tuple
-from dataclasses_json import dataclass_json, Undefined
+import os
 
-from src.artemis.devices.det_dim_constants import DetectorSizeConstants, constants_from_type
+from dataclasses import dataclass, field
+from typing import Tuple
+from dataclasses_json import dataclass_json, config
+
+from src.artemis.devices.det_dim_constants import DetectorSizeConstants, constants_from_type, EIGER2_X_16M_SIZE
 from src.artemis.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
 
 
-@dataclass_json(undefined=Undefined.EXCLUDE)
+@dataclass_json
 @dataclass
 class DetectorParams:
-    detector_type_string: str
-    beam_xy_converter_lookup_file: str
-
     current_energy: float
     exposure_time: float
     acquisition_id: int
@@ -24,9 +23,24 @@ class DetectorParams:
 
     use_roi_mode: bool
 
-    def __post_init__(self):
-        self.detector_size_constants = constants_from_type(self.detector_type_string)
-        self.beam_xy_converter = DetectorDistanceToBeamXYConverter(self.beam_xy_converter_lookup_file)
+    detector_size_constants: DetectorSizeConstants = field(
+        default=EIGER2_X_16M_SIZE,
+        metadata=config(
+            encoder=lambda detector: detector.det_type_string,
+            decoder=lambda det_type: constants_from_type(det_type),
+        ),
+    )
+
+    beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
+        default=DetectorDistanceToBeamXYConverter(os.path.join(
+                    os.path.dirname(__file__),
+                    "det_dist_to_beam_XY_converter.txt",
+                )),
+        metadata=config(
+            encoder=lambda converter: converter.lookup_file,
+            decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name)
+        )
+    )
 
     def get_beam_position_mm(self, detector_distance: float) -> Tuple[float, float]:
         x_beam_mm = self.get_beam_xy_from_det_dist_mm(detector_distance, DetectorDistanceToBeamXYConverter.Axis.X_AXIS)
