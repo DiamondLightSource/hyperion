@@ -33,9 +33,11 @@ class EigerDetector(Device):
         super().__init__(name=name, *args, **kwargs)
 
     def check_detector_variables_set(self):
+        if self.detector_params is None:
+            raise Exception("Parameters for scan must be specified")
+
         to_check = [
             (self.detector_params.detector_size_constants is None, "Detector Size must be set"),
-            (self.detector_params is None, "Parameters for scan must be specified"),
             (self.detector_params.beam_xy_converter is None, "Beam converter must be set"),
         ]
 
