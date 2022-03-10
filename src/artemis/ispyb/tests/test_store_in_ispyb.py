@@ -4,7 +4,6 @@ import re
 from mockito import when, mock, ANY
 from unittest.mock import patch, mock_open
 from ispyb.sp.mxacquisition import MXAcquisition
-from src.artemis.ispyb.ispyb_dataclass import IspybParams
 
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
 from src.artemis.fast_grid_scan_plan import FullParameters
@@ -15,6 +14,11 @@ TEST_DATA_COLLECTION_GROUP_ID = 34
 TEST_GRID_INFO_ID = 56
 TEST_POSITION_ID = 78
 TEST_SESSION_ID = 90
+
+DCG_PARAMS = MXAcquisition.get_data_collection_group_params()
+DC_PARAMS = MXAcquisition.get_data_collection_params()
+GRID_PARAMS = MXAcquisition.get_dc_grid_params()
+POSITION_PARAMS = MXAcquisition.get_dc_position_params()
 
 DUMMY_CONFIG = "/file/path/to/config/"
 DUMMY_PARAMS = FullParameters()
@@ -38,11 +42,10 @@ def test_get_current_time_string(dummy_ispyb):
         ("/dls/i03/data/2022/mx54663-1/", "mx54663-1"),
         ("/dls/i03/data/2022/mx53-1/", None),
         ("/dls/i03/data/2022/mx5563-1565/", None)
-
     ]
 )
 def test_regex_string(dummy_ispyb, visit_path: str, expected_match: str):
-    assert dummy_ispyb.get_visit_string_from_visit_path(visit_path) == expected_match
+    assert dummy_ispyb.get_visit_string_from_path(visit_path) == expected_match
 
 @patch("ispyb.open", new_callable=mock_open)
 def test_store_grid_scan(ispyb_conn, dummy_ispyb):
@@ -61,11 +64,6 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
     ispyb_conn.return_value.core = mock()
     ispyb_conn.return_value.mx_acquisition = mock()
 
-    DCG_PARAMS = MXAcquisition.get_data_collection_group_params()
-    DC_PARAMS = MXAcquisition.get_data_collection_params()
-    GRID_PARAMS = MXAcquisition.get_dc_grid_params()
-    POSITION_PARAMS = MXAcquisition.get_dc_position_params()
-    
     when(ispyb_conn.return_value.mx_acquisition).get_data_collection_group_params().thenReturn(DCG_PARAMS)
     when(ispyb_conn.return_value.mx_acquisition).get_data_collection_params().thenReturn(DC_PARAMS)
     when(ispyb_conn.return_value.mx_acquisition).get_dc_grid_params().thenReturn(GRID_PARAMS)

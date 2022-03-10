@@ -2,7 +2,7 @@ from ophyd import Component, Device, EpicsSignalRO, EpicsSignalWithRBV, EpicsSig
 from ophyd.areadetector.plugins import HDF5Plugin_V22
 
 from src.artemis.devices.status import await_value
-from typing import Callable, List, Tuple
+from typing import List, Tuple
 
 
 class EigerFan(Device):

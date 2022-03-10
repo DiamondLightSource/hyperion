@@ -65,9 +65,7 @@ class StoreInIspyb:
         return self.mx_acquisition.upsert_dc_grid(list(params.values()))
 
     def _store_data_collection_table(self, position_id: int, data_collection_group_id: int) -> int:
-        session_id = self.core.retrieve_visit_id(
-            self.get_visit_string_from_visit_path(
-                self.full_params.ispyb_params.visit_path))
+        session_id = self.core.retrieve_visit_id(self.get_visit_string())
 
         params = self.mx_acquisition.get_data_collection_params()
         params["visitid"] = session_id
@@ -121,9 +119,7 @@ class StoreInIspyb:
         return self.mx_acquisition.update_dc_position(list(params.values()))
 
     def _store_data_collection_group_table(self) -> int:
-        session_id = self.core.retrieve_visit_id(
-            self.get_visit_string_from_visit_path(
-                self.full_params.ispyb_params.visit_path))
+        session_id = self.core.retrieve_visit_id(self.get_visit_string())
 
         params = self.mx_acquisition.get_data_collection_group_params()
         params["parentid"] = session_id
@@ -137,8 +133,16 @@ class StoreInIspyb:
         now = datetime.datetime.now()
         return now.strftime("%Y/%m/%d %H:%M:%S")
 
-    def get_visit_string_from_visit_path(self, visit_path):
-        try:
-            return re.search(self.VISIT_PATH_REGEX, visit_path).group(1)
-        except AttributeError:
+    def get_visit_string(self):
+        visit_path_match = self.get_visit_string_from_path(self.full_params.ispyb_params.visit_path)
+        if visit_path_match:
+            return visit_path_match
+        else:
+            return self.get_visit_string_from_path(self.full_params.detector_params.directory)
+
+    def get_visit_string_from_path(self, path):
+        match = re.search(self.VISIT_PATH_REGEX, path) if path else None
+        if match:
+            return match.group(1)
+        else:
             return None
