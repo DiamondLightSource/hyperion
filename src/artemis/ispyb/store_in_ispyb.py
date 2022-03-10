@@ -2,12 +2,9 @@ import ispyb
 import datetime
 import re
 from sqlalchemy.connectors import Connector
-from dataclasses import dataclass
-from enum import Enum
 
 from src.artemis.fast_grid_scan_plan import FullParameters
 from src.artemis.ispyb.ispyb_dataclass import Orientation
-from src.artemis.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
 
 
 I03_EIGER_DETECTOR = 78
@@ -31,12 +28,12 @@ class StoreInIspyb:
             self.mx_acquisition = self.conn.mx_acquisition
             self.core = self.conn.core
 
-            data_collection_group_id = self.__store_data_collection_group_table()
-            position_id = self.__store_position_table()
+            data_collection_group_id = self._store_data_collection_group_table()
+            position_id = self._store_position_table()
 
-            data_collection_id = self.__store_data_collection_table(position_id, data_collection_group_id)
+            data_collection_id = self._store_data_collection_table(position_id, data_collection_group_id)
 
-            grid_id = self.__store_grid_info_table(data_collection_id)
+            grid_id = self._store_grid_info_table(data_collection_id)
 
             return grid_id, data_collection_id
 
@@ -75,7 +72,7 @@ class StoreInIspyb:
         params = self.mx_acquisition.get_data_collection_params()
         params["visitid"] = session_id
         params["parentid"] = data_collection_group_id
-        params["positonid"] = position_id
+        params["positionid"] = position_id
         params["sampleid"] = self.full_params.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
         params["axis_start"] = self.full_params.detector_params.omega_start
@@ -106,7 +103,7 @@ class StoreInIspyb:
         params["xbeam"], params["ybeam"] = self.full_params.detector_params.get_beam_position_mm(
                 self.full_params.detector_params.detector_distance
             )
-        params["xtal_snapshot1"], params["xtal_snapshot2"], params["xtal_snapshot3"] = self.full_params.ispyb_params.xtal_snapshots * 3
+        params["xtal_snapshot1"], params["xtal_snapshot2"], params["xtal_snapshot3"] = [self.full_params.ispyb_params.xtal_snapshots] * 3
         params["synchrotron_mode"] = self.full_params.ispyb_params.synchrotron_mode
         params["undulator_gap1"] = self.full_params.ispyb_params.undulator_gap
         params["starttime"] = self.get_current_time_string()
@@ -128,7 +125,7 @@ class StoreInIspyb:
             self.get_visit_string_from_visit_path(
                 self.full_params.ispyb_params.visit_path))
 
-        params = self.mx_acquisition.get_data_collection_params()
+        params = self.mx_acquisition.get_data_collection_group_params()
         params["parentid"] = session_id
         params["experimenttype"] = "mesh"
         params["sampleid"] = self.full_params.ispyb_params.sample_id
@@ -141,5 +138,7 @@ class StoreInIspyb:
         return now.strftime("%Y/%m/%d %H:%M:%S")
 
     def get_visit_string_from_visit_path(self, visit_path):
-        return re.search(self.VISIT_PATH_REGEX, visit_path).group(1)
-
+        try:
+            return re.search(self.VISIT_PATH_REGEX, visit_path).group(1)
+        except AttributeError:
+            return None

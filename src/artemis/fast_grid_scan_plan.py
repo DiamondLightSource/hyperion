@@ -2,6 +2,8 @@ from collections import namedtuple
 import os
 import sys
 
+from pydantic import NoneIsNotAllowedError
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from dataclasses import dataclass
@@ -65,7 +67,7 @@ class FullParameters:
     )
     ispyb_params: IspybParams = IspybParams(
         sample_id=None,
-        visit_path=None,
+        visit_path="",
         undulator_gap=None,
         pixels_per_micron_x=None,
         pixels_per_micron_y=None,

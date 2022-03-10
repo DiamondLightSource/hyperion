@@ -48,22 +48,6 @@ def test_detector_threshold(fake_eiger, current_energy: float, request_energy: f
         verify(fake_eiger.cam.photon_energy, times=0).put(ANY)
 
 
-def test_get_beam_position(fake_eiger):
-    fake_eiger.detector_size_constants = TEST_DETECTOR_SIZE_CONSTANTS
-    fake_eiger.beam_xy_converter = mock()
-
-    test_detector_distance = 300.0
-    test_beam_x_pixels = 1000.0
-    test_beam_y_pixels = 1500.0
-    when(fake_eiger.beam_xy_converter).get_beam_x_pixels(test_detector_distance, TEST_PIXELS_X_EIGER, TEST_EIGER_DIMENSION_X).thenReturn(test_beam_x_pixels)
-    when(fake_eiger.beam_xy_converter).get_beam_y_pixels(test_detector_distance, TEST_PIXELS_Y_EIGER, TEST_EIGER_DIMENSION_Y).thenReturn(test_beam_y_pixels)
-
-    expected_x = test_beam_x_pixels - TEST_PIXELS_X_EIGER + TEST_PIXELS_X_EIGER
-    expected_y = test_beam_y_pixels - TEST_PIXELS_Y_EIGER + TEST_PIXELS_Y_EIGER
-
-    assert fake_eiger.get_beam_position_pixels(test_detector_distance) == (expected_x, expected_y)
-
-
 @pytest.mark.parametrize(
     "use_roi_mode, detector_size_constants, detector_params, beam_xy_converter",
     [

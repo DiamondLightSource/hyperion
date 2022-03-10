@@ -5,7 +5,7 @@ from typing import Tuple
 from dataclasses_json import dataclass_json, config
 
 from src.artemis.devices.det_dim_constants import DetectorSizeConstants, constants_from_type, EIGER2_X_16M_SIZE
-from src.artemis.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
+from src.artemis.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter, Axis
 
 
 @dataclass_json
@@ -43,8 +43,8 @@ class DetectorParams:
     )
 
     def get_beam_position_mm(self, detector_distance: float) -> Tuple[float, float]:
-        x_beam_mm = self.get_beam_xy_from_det_dist_mm(detector_distance, DetectorDistanceToBeamXYConverter.Axis.X_AXIS)
-        y_beam_mm = self.get_beam_xy_from_det_dist_mm(detector_distance, DetectorDistanceToBeamXYConverter.Axis.Y_AXIS)
+        x_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist_mm(detector_distance, Axis.X_AXIS)
+        y_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist_mm(detector_distance, Axis.Y_AXIS)
 
         full_size_mm = self.detector_size_constants.det_dimension
         roi_size_mm = self.detector_size_constants.roi_dimension if self.use_roi_mode else full_size_mm
