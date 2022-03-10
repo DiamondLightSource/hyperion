@@ -23,7 +23,7 @@ POSITION_PARAMS = MXAcquisition.get_dc_position_params()
 DUMMY_CONFIG = "/file/path/to/config/"
 DUMMY_PARAMS = FullParameters()
 
-TIME_FORMAT_REGEX = r"\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}"
+TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 @pytest.fixture
 def dummy_ispyb():

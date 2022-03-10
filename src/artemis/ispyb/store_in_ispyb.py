@@ -131,7 +131,7 @@ class StoreInIspyb:
 
     def get_current_time_string(self):
         now = datetime.datetime.now()
-        return now.strftime("%Y/%m/%d %H:%M:%S")
+        return now.strftime("%Y-%m-%d %H:%M:%S")
 
     def get_visit_string(self):
         visit_path_match = self.get_visit_string_from_path(self.full_params.ispyb_params.visit_path)
