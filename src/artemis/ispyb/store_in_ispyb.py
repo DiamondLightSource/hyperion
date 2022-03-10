@@ -135,14 +135,8 @@ class StoreInIspyb:
 
     def get_visit_string(self):
         visit_path_match = self.get_visit_string_from_path(self.full_params.ispyb_params.visit_path)
-        if visit_path_match:
-            return visit_path_match
-        else:
-            return self.get_visit_string_from_path(self.full_params.detector_params.directory)
+        return visit_path_match if visit_path_match else self.get_visit_string_from_path(self.full_params.detector_params.directory)
 
     def get_visit_string_from_path(self, path):
         match = re.search(self.VISIT_PATH_REGEX, path) if path else None
-        if match:
-            return match.group(1)
-        else:
-            return None
+        return match.group(1) if match else None
