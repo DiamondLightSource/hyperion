@@ -72,7 +72,6 @@ class FullParameters:
         pixels_per_micron_x=None,
         pixels_per_micron_y=None,
         upper_left=Point2D(x=None, y=None),
-        bottom_right=Point2D(x=None, y=None),
         sample_barcode=None,
         position=Point3D(x=None, y=None, z=None),
         synchrotron_mode=None,

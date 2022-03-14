@@ -23,13 +23,6 @@ class IspybParams:
         )
     )
 
-    bottom_right: Point2D = field(
-        metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point2D(**mydict)
-        )
-    )
-
     sample_barcode: str
 
     position: Point3D = field(

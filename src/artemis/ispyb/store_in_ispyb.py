@@ -74,7 +74,7 @@ class StoreInIspyb:
         params["sampleid"] = self.full_params.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
         params["axis_start"] = self.full_params.detector_params.omega_start
-        params["axis_end"] = 0
+        params["axis_end"] = self.full_params.detector_params.omega_start
         params["axis_range"] = 0
         params["focal_spot_size_at_samplex"] = self.full_params.ispyb_params.focal_spot_size_x
         params["focal_spot_size_at_sampley"] = self.full_params.ispyb_params.focal_spot_size_y
@@ -91,8 +91,10 @@ class StoreInIspyb:
         params["imgprefix"] = self.full_params.detector_params.prefix
         params["imgsuffix"] = EIGER_FILE_SUFFIX
         params["n_images"] = self.full_params.detector_params.num_images
+
         params["n_passes"] = 1
-        params["overlap"] = 0
+        params["overlap"] = 0 # Both overlap and n_passes included for backwards compatibility, planned to be removed later
+
         params["flux"] = self.full_params.ispyb_params.flux
         params["omegastart"] = self.full_params.detector_params.omega_start
         params["start_image_number"] = 1

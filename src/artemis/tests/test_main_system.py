@@ -79,7 +79,6 @@ def check_status_in_response(response_object, expected_result: Status):
 
 
 def test_start_gives_success(test_env: ClientAndRunEngine):
-    print (TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.SUCCESS)
 
