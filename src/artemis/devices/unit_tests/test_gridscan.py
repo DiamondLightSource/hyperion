@@ -1,4 +1,3 @@
-from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import make_fake_device
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
@@ -13,6 +12,7 @@ from mockito import when, mock, verify
 from mockito.matchers import ANY, ARGS, KWARGS
 import pytest
 from bluesky.run_engine import RunEngine
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -48,22 +48,23 @@ def test_given_image_counter_not_reset_when_kickoff_then_timeout(
         status.wait()
 
 
+@patch("src.artemis.devices.fast_grid_scan.time.sleep")
 def test_given_settings_valid_when_kickoff_then_run_started(
-    fast_grid_scan: FastGridScan,
+    mock_time, fast_grid_scan: FastGridScan
 ):
     when(fast_grid_scan.scan_invalid).get().thenReturn(False)
     when(fast_grid_scan.position_counter).get().thenReturn(0)
 
     mock_run_set_status = mock()
-    when(fast_grid_scan.run_cmd).set(ANY).thenReturn(mock_run_set_status)
+    when(fast_grid_scan.run_cmd).put(ANY).thenReturn(mock_run_set_status)
     fast_grid_scan.status.subscribe = lambda func, **_: func(1)
 
     status = fast_grid_scan.kickoff()
 
     status.wait()
-
-    verify(fast_grid_scan.run_cmd).set(1)
     assert status.exception() == None
+
+    verify(fast_grid_scan.run_cmd).put(1)
 
 
 def run_test_on_complete_watcher(
