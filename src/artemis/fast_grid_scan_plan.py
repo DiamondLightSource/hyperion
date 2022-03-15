@@ -1,11 +1,14 @@
+from collections import namedtuple
 import os
 import sys
 
+from pydantic import NoneIsNotAllowedError
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from src.artemis.devices.eiger import DetectorParams, EigerDetector
+from src.artemis.ispyb.ispyb_dataclass import IspybParams, Point2D, Point3D
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
     GridScanParams,
@@ -17,20 +20,12 @@ from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 
 from src.artemis.devices.zebra import Zebra
-from src.artemis.devices.det_dim_constants import (
-    EIGER2_X_16M_SIZE,
-    DetectorSizeConstants,
-    constants_from_type,
-)
 import argparse
-from src.artemis.devices.det_dist_to_beam_converter import (
-    DetectorDistanceToBeamXYConverter,
-)
 
 from ophyd.log import config_ophyd_logging
 from bluesky.log import config_bluesky_logging
 
-from dataclasses_json import dataclass_json, config
+from dataclasses_json import dataclass_json
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
@@ -48,14 +43,6 @@ SIM_BEAMLINE = "BL03S"
 @dataclass
 class FullParameters:
     beamline: str = SIM_BEAMLINE
-    detector: DetectorSizeConstants = field(
-        default=EIGER2_X_16M_SIZE,
-        metadata=config(
-            encoder=lambda detector: detector.det_type_string,
-            decoder=lambda det_type: constants_from_type(det_type),
-        ),
-    )
-    use_roi: bool = False
     grid_scan_params: GridScanParams = GridScanParams(
         x_steps=5,
         y_steps=10,
@@ -76,13 +63,31 @@ class FullParameters:
         omega_start=0.0,
         omega_increment=0.1,
         num_images=10,
+        use_roi_mode = False,
     )
-    det_to_distance = DetectorDistanceToBeamXYConverter(
-        os.path.join(
-            os.path.dirname(__file__),
-            "devices",
-            "det_dist_to_beam_XY_converter.txt",
-        )
+    ispyb_params: IspybParams = IspybParams(
+        sample_id=None,
+        visit_path="",
+        undulator_gap=None,
+        pixels_per_micron_x=None,
+        pixels_per_micron_y=None,
+        upper_left=Point2D(x=None, y=None),
+        sample_barcode=None,
+        position=Point3D(x=None, y=None, z=None),
+        synchrotron_mode=None,
+        xtal_snapshots=None,
+        run_number=None,
+        transmission=None,
+        flux=None,
+        wavelength=None,
+        beam_size_x=None,
+        beam_size_y=None,
+        slit_gap_size_x=None,
+        slit_gap_size_y=None,
+        focal_spot_size_x=None,
+        focal_spot_size_y=None,
+        comment=None,
+        resolution=None,
     )
 
 

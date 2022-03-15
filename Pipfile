@@ -10,6 +10,7 @@ pyepics="*"
 flask-restful="*"
 dataclasses-json = "*"
 zocalo = "*"
+ispyb = "*"
 
 [dev-packages]
 pytest = "*"

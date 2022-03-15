@@ -16,9 +16,8 @@ import numpy as np
 def eiger():
     eiger = EigerDetector(name="eiger", prefix="BL03S-EA-EIGER-01:")
     eiger.detector_size_constants = EIGER2_X_16M_SIZE
-    eiger.use_roi_mode = True
     eiger.detector_params = DetectorParams(
-        100, 0.1, "001", "/tmp/", "file", 100.0, 0, 0.1, 10
+        100, 0.1, "001", "/tmp/", "file", 100.0, 0, 0.1, 10, True
     )
     eiger.beam_xy_converter = DetectorDistanceToBeamXYConverter(
         os.path.join(

@@ -4,15 +4,11 @@ from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.utils.epics_pvs import set_and_wait
 
-from src.artemis.devices.det_dim_constants import DetectorSizeConstants
-from src.artemis.devices.det_dist_to_beam_converter import (
-    DetectorDistanceToBeamXYConverter,
-)
+from src.artemis.devices.Detector import DetectorParams
+
 from src.artemis.devices.eiger_odin import EigerOdin
 from src.artemis.devices.status import await_value
 from enum import Enum
-from dataclasses import dataclass
-from dataclasses_json import dataclass_json
 
 
 class EigerTriggerMode(Enum):
@@ -22,20 +18,6 @@ class EigerTriggerMode(Enum):
     EXTERNAL_ENABLE = 3
 
 
-@dataclass_json
-@dataclass
-class DetectorParams:
-    current_energy: float
-    exposure_time: float
-    acquisition_id: int
-    directory: str
-    prefix: str
-    detector_distance: float
-    omega_start: float
-    omega_increment: float
-    num_images: int
-
-
 class EigerDetector(Device):
     cam: EigerDetectorCam = Component(EigerDetectorCam, "CAM:")
     odin: EigerOdin = Component(EigerOdin, "")
@@ -43,10 +25,7 @@ class EigerDetector(Device):
     stale_params: EpicsSignalRO = Component(EpicsSignalRO, "CAM:StaleParameters_RBV")
     bit_depth: EpicsSignalRO = Component(EpicsSignalRO, "CAM:BitDepthImage_RBV")
 
-    detector_size_constants: DetectorSizeConstants
-    use_roi_mode: bool
     detector_params: DetectorParams
-    beam_xy_converter: DetectorDistanceToBeamXYConverter
 
     STALE_PARAMS_TIMEOUT = 60
 
@@ -54,11 +33,12 @@ class EigerDetector(Device):
         super().__init__(name=name, *args, **kwargs)
 
     def check_detector_variables_set(self):
+        if self.detector_params is None:
+            raise Exception("Parameters for scan must be specified")
+
         to_check = [
-            (self.detector_size_constants is None, "Detector Size must be set"),
-            (self.use_roi_mode is None, "ROI mode must be specified"),
-            (self.detector_params is None, "Parameters for scan must be specified"),
-            (self.beam_xy_converter is None, "Beam converter must be set"),
+            (self.detector_params.detector_size_constants is None, "Detector Size must be set"),
+            (self.detector_params.beam_xy_converter is None, "Beam converter must be set"),
         ]
 
         errors = [message for check_result, message in to_check if check_result]
@@ -72,7 +52,7 @@ class EigerDetector(Device):
         status_ok, error_message = self.odin.check_odin_initialised()
         if not status_ok:
             raise Exception(f"Odin not initialised: {error_message}")
-        if self.use_roi_mode:
+        if self.detector_params.use_roi_mode:
             self.enable_roi_mode()
         self.set_detector_threshold(self.detector_params.current_energy)
         self.set_cam_pvs()
@@ -97,9 +77,9 @@ class EigerDetector(Device):
 
     def change_roi_mode(self, enable: bool):
         detector_dimensions = (
-            self.detector_size_constants.roi_size_pixels
+            self.detector_params.detector_size_constants.roi_size_pixels
             if enable
-            else self.detector_size_constants.det_size_pixels
+            else self.detector_params.detector_size_constants.det_size_pixels
         )
 
         status = self.cam.roi_mode.set(1 if enable else 0)
@@ -128,7 +108,7 @@ class EigerDetector(Device):
         self.odin.file_writer.file_prefix.put(self.detector_params.prefix)
 
     def set_mx_settings_pvs(self):
-        beam_x_pixels, beam_y_pixels = self.get_beam_position_pixels(
+        beam_x_pixels, beam_y_pixels = self.detector_params.get_beam_position_pixels(
             self.detector_params.detector_distance
         )
         self.cam.beam_center_x.put(beam_x_pixels)
@@ -136,21 +116,6 @@ class EigerDetector(Device):
         self.cam.det_distance.put(self.detector_params.detector_distance)
         self.cam.omega_start.put(self.detector_params.omega_start)
         self.cam.omega_incr.put(self.detector_params.omega_increment)
-
-    def get_beam_position_pixels(self, detector_distance: float) -> Tuple[float, float]:
-        x_size = self.detector_size_constants.det_size_pixels.width
-        y_size = self.detector_size_constants.det_size_pixels.height
-        beam_x = self.beam_xy_converter.get_beam_x_pixels(
-            detector_distance, x_size, self.detector_size_constants.det_dimension.width
-        )
-        beam_y = self.beam_xy_converter.get_beam_y_pixels(
-            detector_distance, y_size, self.detector_size_constants.det_dimension.height
-        )
-
-        offset_x = x_size - self.detector_size_constants.roi_size_pixels.width
-        offset_y = y_size - self.detector_size_constants.roi_size_pixels.height
-
-        return beam_x - offset_x, beam_y - offset_y
 
     def set_detector_threshold(self, energy: float) -> bool:
         current_energy = self.cam.photon_energy.get()

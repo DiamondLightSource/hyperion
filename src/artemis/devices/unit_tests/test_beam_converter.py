@@ -1,6 +1,6 @@
 import pytest
 from mockito import when
-from src.artemis.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
+from src.artemis.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter, Axis
 
 
 LOOKUP_TABLE_TEST_VALUES = [[100.0, 200.0], [150.0, 151.0], [160.0, 165.0]]
@@ -15,15 +15,14 @@ def fake_converter() -> DetectorDistanceToBeamXYConverter:
 @pytest.mark.parametrize(
     "detector_distance, axis, expected_value",
     [
-        (100.0, 'x', 160.0),
-        (200.0, 'y', 151.0),
-        (150.0, 'y', 150.5),
-        (190.0, 'x', 164.5)
+        (100.0, Axis.X_AXIS, 160.0),
+        (200.0, Axis.Y_AXIS, 151.0),
+        (150.0, Axis.Y_AXIS, 150.5),
+        (190.0, Axis.X_AXIS, 164.5)
     ]
 )
-def test_interpolate_beam_xy_from_det_distance(fake_converter, detector_distance: float, axis: str, expected_value: float):
-    axis_index = 1 if axis == 'y' else 2
-    assert fake_converter.get_beam_xy_from_det_dist_mm(detector_distance, LOOKUP_TABLE_TEST_VALUES[axis_index]) == expected_value
+def test_interpolate_beam_xy_from_det_distance(fake_converter, detector_distance: float, axis: Axis, expected_value: float):
+    assert fake_converter.get_beam_xy_from_det_dist_mm(detector_distance, axis) == expected_value
 
 
 def test_get_beam_in_pixels(fake_converter):
@@ -33,8 +32,8 @@ def test_get_beam_in_pixels(fake_converter):
     interpolated_x_value = 160.0
     interpolated_y_value = 150.0
 
-    when(fake_converter).get_beam_xy_from_det_dist_mm(100.0, LOOKUP_TABLE_TEST_VALUES[1]).thenReturn(interpolated_y_value)
-    when(fake_converter).get_beam_xy_from_det_dist_mm(100.0, LOOKUP_TABLE_TEST_VALUES[2]).thenReturn(interpolated_x_value)
+    when(fake_converter).get_beam_xy_from_det_dist_mm(100.0, Axis.Y_AXIS).thenReturn(interpolated_y_value)
+    when(fake_converter).get_beam_xy_from_det_dist_mm(100.0, Axis.X_AXIS).thenReturn(interpolated_x_value)
     expected_y_value = interpolated_y_value * image_size_pixels / detector_dimensions
     expected_x_value = interpolated_x_value * image_size_pixels / detector_dimensions
 
