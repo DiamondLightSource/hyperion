@@ -24,3 +24,6 @@ python_version = "3.7"
 
 [pipenv]
 allow_prereleases = true
+
+[scripts]
+tests = "pytest -m \"not s03\""

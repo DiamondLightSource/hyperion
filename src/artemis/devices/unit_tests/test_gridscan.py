@@ -8,11 +8,10 @@ from src.artemis.devices.fast_grid_scan import (
 )
 from src.artemis.devices.motors import GridScanMotorBundle
 
-from mockito import when, mock, verify
+from mockito import when, mock, verify, unstub
 from mockito.matchers import ANY, ARGS, KWARGS
 import pytest
 from bluesky.run_engine import RunEngine
-from unittest.mock import patch
 
 
 @pytest.fixture
@@ -23,7 +22,9 @@ def fast_grid_scan():
 
     # A bit of a hack to assume that if we are waiting on something then we will timeout
     when(time).sleep(ANY).thenRaise(TimeoutError())
-    return fast_grid_scan
+    yield fast_grid_scan
+    # Need to unstub as sleep raising a TimeoutError can cause a segfault on the destruction of FastGridScan
+    unstub()
 
 
 def test_given_invalid_scan_when_kickoff_then_timeout(fast_grid_scan: FastGridScan):
@@ -48,9 +49,8 @@ def test_given_image_counter_not_reset_when_kickoff_then_timeout(
         status.wait()
 
 
-@patch("src.artemis.devices.fast_grid_scan.time.sleep")
 def test_given_settings_valid_when_kickoff_then_run_started(
-    mock_time, fast_grid_scan: FastGridScan
+    fast_grid_scan: FastGridScan,
 ):
     when(fast_grid_scan.scan_invalid).get().thenReturn(False)
     when(fast_grid_scan.position_counter).get().thenReturn(0)
@@ -85,7 +85,7 @@ def run_test_on_complete_watcher(
     verify(watcher).__call__(
         *ARGS,
         current=put_value,
-        target=num_pos_1d ** 2,
+        target=num_pos_1d**2,
         fraction=expected_frac,
         **KWARGS,
     )
@@ -148,7 +148,7 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
 
     complete_status = fast_grid_scan.complete()
     assert not complete_status.done
-    fast_grid_scan.position_counter.sim_put(num_pos_1d ** 2)
+    fast_grid_scan.position_counter.sim_put(num_pos_1d**2)
     fast_grid_scan.status.sim_put(0)
 
     complete_status.wait()
