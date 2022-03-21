@@ -16,14 +16,6 @@ on:
     - cron: '0 8 * * MON'
 
 jobs:
-  lint:
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: Run black, flake8, mypy
-        uses: dls-controls/pipenv-run-action@v1
-        with:
-          pipenv-run: lint
-
   test:
     strategy:
       fail-fast: false
