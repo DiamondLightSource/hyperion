@@ -17,7 +17,7 @@ from nexgen.tools.VDS_tools import image_vds_writer
 from src.artemis.devices.eiger import DetectorParams
 from src.artemis.devices.fast_grid_scan import GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams
-from src.artemis.fast_grid_scan_plan import FullParameters
+from src.artemis.parameters import FullParameters
 
 import time
 from datetime import datetime
