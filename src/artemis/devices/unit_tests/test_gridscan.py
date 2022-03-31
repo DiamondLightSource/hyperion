@@ -5,7 +5,6 @@ from src.artemis.devices.fast_grid_scan import (
     GridScanParams,
     set_fast_grid_scan_params,
     time,
-    scan_in_limits,
 )
 from src.artemis.devices.motors import GridScanMotorBundle
 
@@ -178,20 +177,20 @@ def test_within_limits_check(position, expected_in_limit):
     assert limits.x.is_within(position) == expected_in_limit
 
 
-@pytest.mark.parametrize(
-    "start, steps, size, expected_in_limits",
-    [
-        (1, 5, 1, True),
-        (-1, 5, 1, False),
-        (-1, 10, 2, False),
-        (0, 10, 0.1, True),
-        (5, 10, 0.5, True),
-        (5, 20, 0.6, False),
-    ],
-)
-def test_scan_within_limits(start, steps, size, expected_in_limits):
-    motor_bundle = create_motor_bundle_with_x_limits(0.0, 10.0)
-    assert (
-        scan_in_limits(motor_bundle.get_limits().x, start, steps, size)
-        == expected_in_limits
-    )
+# @pytest.mark.parametrize(
+#     "start, steps, size, expected_in_limits",
+#     [
+#         (1, 5, 1, True),
+#         (-1, 5, 1, False),
+#         (-1, 10, 2, False),
+#         (0, 10, 0.1, True),
+#         (5, 10, 0.5, True),
+#         (5, 20, 0.6, False),
+#     ],
+# )
+# def test_scan_within_limits(start, steps, size, expected_in_limits):
+#     motor_bundle = create_motor_bundle_with_x_limits(0.0, 10.0)
+#     assert (
+#         scan_in_limits(motor_bundle.get_limits().x, start, steps, size)
+#         == expected_in_limits
+#     )

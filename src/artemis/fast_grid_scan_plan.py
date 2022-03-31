@@ -62,8 +62,8 @@ class FullParameters:
         detector_distance=100.0,
         omega_start=0.0,
         omega_increment=0.1,
-        num_images=10,
-        use_roi_mode = False,
+        num_images=50,
+        use_roi_mode=False,
     )
     ispyb_params: IspybParams = IspybParams(
         sample_id=None,

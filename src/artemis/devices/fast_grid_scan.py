@@ -49,21 +49,27 @@ class GridScanParams:
                        the parameters
         :return: True if the scan is valid
         """
-
+        x_in_limits = limits.x.is_within(self.x_start) and limits.x.is_within(
+            self.x_end
+        )
+        y_in_limits = limits.y.is_within(self.y1_start) and limits.x.is_within(
+            self.y_end
+        )
         return (
             # All scan axes are within limits
-            scan_in_limits(limits.x, self.x_start, self.x_steps, self.x_step_size)
-            and scan_in_limits(limits.y, self.y1_start, self.y_steps, self.y_step_size)
+            x_in_limits
+            and y_in_limits
             # Z never exceeds limits
             and limits.z.is_within(self.z1_start)
         )
 
+    @property
+    def x_end(self):
+        return self.x_start + (self.x_steps * self.x_step_size)
 
-def scan_in_limits(
-    limit: GridScanLimit, start: float, steps: float, step_size: float
-) -> bool:
-    end = start + (steps * step_size)
-    return limit.is_within(start) and limit.is_within(end)
+    @property
+    def y_end(self):
+        return self.y1_start + (self.y_steps * self.y_step_size)
 
 
 class GridScanCompleteStatus(DeviceStatus):
