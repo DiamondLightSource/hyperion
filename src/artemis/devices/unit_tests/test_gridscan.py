@@ -1,3 +1,4 @@
+from matplotlib import gridspec
 from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import make_fake_device
 from src.artemis.devices.fast_grid_scan import (
@@ -83,7 +84,7 @@ def run_test_on_complete_watcher(
     verify(watcher).__call__(
         *ARGS,
         current=put_value,
-        target=num_pos_1d ** 2,
+        target=num_pos_1d**2,
         fraction=expected_frac,
         **KWARGS,
     )
@@ -146,7 +147,7 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
 
     complete_status = fast_grid_scan.complete()
     assert not complete_status.done
-    fast_grid_scan.position_counter.sim_put(num_pos_1d ** 2)
+    fast_grid_scan.position_counter.sim_put(num_pos_1d**2)
     fast_grid_scan.status.sim_put(0)
 
     complete_status.wait()
@@ -155,12 +156,17 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
     assert complete_status.exception() == None
 
 
-def create_motor_bundle_with_x_limits(low_limit, high_limit) -> GridScanMotorBundle:
+def create_motor_bundle_with_limits(low_limit, high_limit) -> GridScanMotorBundle:
     FakeGridScanMotorBundle = make_fake_device(GridScanMotorBundle)
     grid_scan_motor_bundle: GridScanMotorBundle = FakeGridScanMotorBundle(name="test")
     grid_scan_motor_bundle.wait_for_connection()
-    grid_scan_motor_bundle.x.low_limit_travel.sim_put(low_limit)
-    grid_scan_motor_bundle.x.high_limit_travel.sim_put(high_limit)
+    for axis in [
+        grid_scan_motor_bundle.x,
+        grid_scan_motor_bundle.y,
+        grid_scan_motor_bundle.z,
+    ]:
+        axis.low_limit_travel.sim_put(low_limit)
+        axis.high_limit_travel.sim_put(high_limit)
     return grid_scan_motor_bundle
 
 
@@ -173,24 +179,22 @@ def create_motor_bundle_with_x_limits(low_limit, high_limit) -> GridScanMotorBun
     ],
 )
 def test_within_limits_check(position, expected_in_limit):
-    limits = create_motor_bundle_with_x_limits(0.0, 10).get_limits()
+    limits = create_motor_bundle_with_limits(0.0, 10).get_limits()
     assert limits.x.is_within(position) == expected_in_limit
 
 
-# @pytest.mark.parametrize(
-#     "start, steps, size, expected_in_limits",
-#     [
-#         (1, 5, 1, True),
-#         (-1, 5, 1, False),
-#         (-1, 10, 2, False),
-#         (0, 10, 0.1, True),
-#         (5, 10, 0.5, True),
-#         (5, 20, 0.6, False),
-#     ],
-# )
-# def test_scan_within_limits(start, steps, size, expected_in_limits):
-#     motor_bundle = create_motor_bundle_with_x_limits(0.0, 10.0)
-#     assert (
-#         scan_in_limits(motor_bundle.get_limits().x, start, steps, size)
-#         == expected_in_limits
-#     )
+@pytest.mark.parametrize(
+    "start, steps, size, expected_in_limits",
+    [
+        (1, 5, 1, True),
+        (-1, 5, 1, False),
+        (-1, 10, 2, False),
+        (0, 10, 0.1, True),
+        (5, 10, 0.5, True),
+        (5, 20, 0.6, False),
+    ],
+)
+def test_scan_within_limits(start, steps, size, expected_in_limits):
+    motor_bundle = create_motor_bundle_with_limits(0.0, 10.0)
+    grid_params = GridScanParams(x_start=start, x_steps=steps, x_step_size=size)
+    assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits
