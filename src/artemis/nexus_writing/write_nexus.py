@@ -51,6 +51,14 @@ module = {
 
 
 def create_goniometer_axes(detector_params: DetectorParams) -> Dict:
+    """Create the data for the goniometer.
+
+    Args:
+        detector_params (DetectorParams): Information about the detector.
+
+    Returns:
+        Dict: A dictionary describing the gonio for nexgen
+    """
     # fmt: off
     return {
         "axes": ["omega", "sam_z", "sam_y", "sam_x", "chi", "phi"],
@@ -141,6 +149,14 @@ def create_beam_and_attenuator_parameters(
 
 
 def create_scan_spec(grid_scan_params: GridScanParams) -> Spec:
+    """Create a scan spec from the grid scan parameters.
+
+    Args:
+        grid_scan_params (GridScanParams): The grid scan parameters.
+
+    Returns:
+        Spec: A scanspec for nexgen
+    """
     y_line = Line(
         "sam_y",
         grid_scan_params.y1_start,

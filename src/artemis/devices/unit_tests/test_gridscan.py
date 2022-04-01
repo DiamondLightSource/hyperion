@@ -1,5 +1,3 @@
-from matplotlib import gridspec
-from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import make_fake_device
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
