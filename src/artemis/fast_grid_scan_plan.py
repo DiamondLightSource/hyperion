@@ -42,11 +42,6 @@ def run_gridscan(
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs, parameters.grid_scan_params)
 
-    eiger.detector_size_constants = parameters.detector
-    eiger.use_roi_mode = parameters.use_roi
-    eiger.detector_params = parameters.detector_params
-    eiger.beam_xy_converter = parameters.det_to_distance
-
     @bpp.stage_decorator([zebra, eiger, fgs])
     def do_fgs():
         yield from bps.kickoff(fgs)
@@ -68,7 +63,11 @@ def get_plan(parameters: FullParameters):
     fast_grid_scan = FastGridScan(
         name="fgs", prefix=f"{parameters.beamline}-MO-SGON-01:FGS:"
     )
-    eiger = EigerDetector(name="eiger", prefix=f"{parameters.beamline}-EA-EIGER-01:")
+    eiger = EigerDetector(
+        parameters.detector_params,
+        name="eiger",
+        prefix=f"{parameters.beamline}-EA-EIGER-01:",
+    )
     zebra = Zebra(name="zebra", prefix=f"{parameters.beamline}-EA-ZEBRA-01:")
 
     return run_gridscan(fast_grid_scan, zebra, eiger, parameters)
