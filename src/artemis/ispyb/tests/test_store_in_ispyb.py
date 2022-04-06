@@ -1,13 +1,11 @@
-import pytest
 import re
+from unittest.mock import mock_open, patch
 
-from mockito import when, mock, ANY
-from unittest.mock import patch, mock_open
+import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
-
-from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
+from mockito import ANY, mock, when
 from src.artemis.fast_grid_scan_plan import FullParameters
-
+from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
 
 TEST_DATA_COLLECTION_ID = 12
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -74,34 +72,21 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
 def test_param_keys(ispyb_conn, dummy_ispyb):
     ispyb_conn.return_value.core = mock()
     ispyb_conn.return_value.mx_acquisition = mock()
+    mx_acquisition = ispyb_conn.return_value.mx_acquisition
 
-    when(
-        ispyb_conn.return_value.mx_acquisition
-    ).get_data_collection_group_params().thenReturn(DCG_PARAMS)
-    when(
-        ispyb_conn.return_value.mx_acquisition
-    ).get_data_collection_params().thenReturn(DC_PARAMS)
-    when(ispyb_conn.return_value.mx_acquisition).get_dc_grid_params().thenReturn(
-        GRID_PARAMS
-    )
-    when(ispyb_conn.return_value.mx_acquisition).get_dc_position_params().thenReturn(
-        POSITION_PARAMS
-    )
+    when(mx_acquisition).get_data_collection_group_params().thenReturn(DCG_PARAMS)
+    when(mx_acquisition).get_data_collection_params().thenReturn(DC_PARAMS)
+    when(mx_acquisition).get_dc_grid_params().thenReturn(GRID_PARAMS)
+    when(mx_acquisition).get_dc_position_params().thenReturn(POSITION_PARAMS)
 
     when(ispyb_conn.return_value.core).retrieve_visit_id(ANY).thenReturn(
         TEST_SESSION_ID
     )
-    when(ispyb_conn.return_value.mx_acquisition).upsert_data_collection(ANY).thenReturn(
-        TEST_DATA_COLLECTION_ID
+    when(mx_acquisition).upsert_data_collection(ANY).thenReturn(TEST_DATA_COLLECTION_ID)
+    when(mx_acquisition).update_dc_position(ANY).thenReturn(TEST_POSITION_ID)
+    when(mx_acquisition).upsert_data_collection_group(ANY).thenReturn(
+        TEST_DATA_COLLECTION_GROUP_ID
     )
-    when(ispyb_conn.return_value.mx_acquisition).update_dc_position(ANY).thenReturn(
-        TEST_POSITION_ID
-    )
-    when(ispyb_conn.return_value.mx_acquisition).upsert_data_collection_group(
-        ANY
-    ).thenReturn(TEST_DATA_COLLECTION_GROUP_ID)
-    when(ispyb_conn.return_value.mx_acquisition).upsert_dc_grid(ANY).thenReturn(
-        TEST_GRID_INFO_ID
-    )
+    when(mx_acquisition).upsert_dc_grid(ANY).thenReturn(TEST_GRID_INFO_ID)
 
     assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)

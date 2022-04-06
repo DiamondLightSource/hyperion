@@ -1,5 +1,6 @@
-from numpy import loadtxt, interp
 from enum import Enum
+
+from numpy import interp, loadtxt
 
 
 class Axis(Enum):
@@ -15,9 +16,7 @@ class DetectorDistanceToBeamXYConverter:
         self.lookup_file = lookup_file
         self.lookup_table_values = self.parse_table()
 
-    def get_beam_xy_from_det_dist_mm(
-        self, det_dist_mm: float, beam_axis: Axis
-    ) -> float:
+    def get_beam_xy_from_det_dist(self, det_dist_mm: float, beam_axis: Axis) -> float:
         beam_axis_values = self.lookup_table_values[beam_axis.value]
         det_dist_array = self.lookup_table_values[0]
         return interp(det_dist_mm, det_dist_array, beam_axis_values)
@@ -29,7 +28,7 @@ class DetectorDistanceToBeamXYConverter:
         det_dim: float,
         beam_axis: Axis,
     ) -> float:
-        beam_mm = self.get_beam_xy_from_det_dist_mm(det_distance, beam_axis)
+        beam_mm = self.get_beam_xy_from_det_dist(det_distance, beam_axis)
         return beam_mm * image_size_pixels / det_dim
 
     def get_beam_y_pixels(
