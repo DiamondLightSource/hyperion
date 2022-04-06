@@ -13,7 +13,6 @@ from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
 
 from dataclasses import dataclass
-from typing import Any
 
 from src.artemis.devices.motors import (
     GridScanLimit,
@@ -59,9 +58,7 @@ class GridScanParams:
         )
 
 
-def scan_in_limits(
-    limit: GridScanLimit, start: float, steps: float, step_size: float
-) -> bool:
+def scan_in_limits(limit: GridScanLimit, start: float, steps: float, step_size: float) -> bool:
     end = start + (steps * step_size)
     return limit.is_within(start) and limit.is_within(end)
 
@@ -144,9 +141,7 @@ class FastGridScan(Device):
     y1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_START")
     z1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_START")
 
-    position_counter: EpicsSignal = Component(
-        EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE"
-    )
+    position_counter: EpicsSignal = Component(EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE")
     x_counter: EpicsSignalRO = Component(EpicsSignalRO, "X_COUNTER")
     y_counter: EpicsSignalRO = Component(EpicsSignalRO, "Y_COUNTER")
     scan_invalid: EpicsSignalRO = Component(EpicsSignalRO, "SCAN_INVALID")
