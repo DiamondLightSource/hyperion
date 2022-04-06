@@ -65,7 +65,9 @@ def run_configurer_test(gate_type: GateType, gate_num, config, expected_pv_value
         verify(pv).put(value)
 
 
-@pytest.mark.skip("Will fail until https://github.com/bluesky/ophyd/pull/1023 is merged")
+@pytest.mark.skip(
+    "Will fail until https://github.com/bluesky/ophyd/pull/1023 is merged"
+)
 def test_apply_and_logic_gate_configuration_32_and_51_inv_and_1():
     config = LogicGateConfiguration(32).add_input(51, True).add_input(1)
     expected_pv_values = [7, 32, 51, 1, 0, 2]
@@ -73,7 +75,9 @@ def test_apply_and_logic_gate_configuration_32_and_51_inv_and_1():
     run_configurer_test(GateType.AND, 1, config, expected_pv_values)
 
 
-@pytest.mark.skip("Will fail until https://github.com/bluesky/ophyd/pull/1023 is merged")
+@pytest.mark.skip(
+    "Will fail until https://github.com/bluesky/ophyd/pull/1023 is merged"
+)
 def test_apply_or_logic_gate_configuration_19_and_36_inv_and_60_inv():
     config = LogicGateConfiguration(19).add_input(36, True).add_input(60, True)
     expected_pv_values = [7, 19, 36, 60, 0, 6]
@@ -83,10 +87,7 @@ def test_apply_or_logic_gate_configuration_19_and_36_inv_and_60_inv():
 
 @pytest.mark.parametrize(
     "source",
-    [
-        -1,
-        67
-    ],
+    [-1, 67],
 )
 def test_logic_gate_configuration_with_invalid_source_then_error(source):
     with pytest.raises(AssertionError):
@@ -96,9 +97,10 @@ def test_logic_gate_configuration_with_invalid_source_then_error(source):
     with pytest.raises(AssertionError):
         existing_config.add_input(source)
 
+
 def test_logic_gate_configuration_with_too_many_sources_then_error():
     config = LogicGateConfiguration(0)
-    for source in range(1,4):
+    for source in range(1, 4):
         config.add_input(source)
 
     with pytest.raises(AssertionError):

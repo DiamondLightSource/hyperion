@@ -37,8 +37,14 @@ class EigerDetector(Device):
             raise Exception("Parameters for scan must be specified")
 
         to_check = [
-            (self.detector_params.detector_size_constants is None, "Detector Size must be set"),
-            (self.detector_params.beam_xy_converter is None, "Beam converter must be set"),
+            (
+                self.detector_params.detector_size_constants is None,
+                "Detector Size must be set",
+            ),
+            (
+                self.detector_params.beam_xy_converter is None,
+                "Beam converter must be set",
+            ),
         ]
 
         errors = [message for check_result, message in to_check if check_result]

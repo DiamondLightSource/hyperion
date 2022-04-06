@@ -87,7 +87,9 @@ class OdinNodesStatus(Device):
         for node_number, node_pv in enumerate(self.nodes):
             is_error.append(node_pv.error_status.get())
             if is_error[node_number]:
-                error_messages.append(f"Filewriter {node_number} is in an error state with error message - {node_pv.error_message.get()}")
+                error_messages.append(
+                    f"Filewriter {node_number} is in an error state with error message - {node_pv.error_message.get()}"
+                )
         return any(is_error), "\n".join(error_messages)
 
     def get_init_state(self) -> bool:
