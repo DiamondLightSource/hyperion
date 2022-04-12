@@ -11,4 +11,3 @@ def await_value(subscribable: Any, expected_value: T) -> StatusBase:
         return value == expected_value
 
     return SubscriptionStatus(subscribable, value_is)
-

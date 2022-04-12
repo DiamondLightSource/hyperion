@@ -1,11 +1,12 @@
-from dataclasses import dataclass ,field
+from dataclasses import dataclass, field
 from collections import namedtuple
 from enum import Enum
 
 from dataclasses_json import dataclass_json, config
 
-Point2D = namedtuple("point_2d", ['x', 'y'])
-Point3D = namedtuple('point_3d', ['x', 'y', 'z'])
+Point2D = namedtuple("point_2d", ["x", "y"])
+Point3D = namedtuple("point_3d", ["x", "y", "z"])
+
 
 @dataclass_json
 @dataclass
@@ -19,7 +20,7 @@ class IspybParams:
     upper_left: Point2D = field(
         metadata=config(
             encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point2D(**mydict)
+            decoder=lambda mydict: Point2D(**mydict),
         )
     )
 
@@ -28,7 +29,7 @@ class IspybParams:
     position: Point3D = field(
         metadata=config(
             encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict)
+            decoder=lambda mydict: Point3D(**mydict),
         )
     )
 

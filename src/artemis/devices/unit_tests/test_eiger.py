@@ -1,10 +1,8 @@
 import pytest
-from mockito import mock, when, verify, ANY
-
+from mockito import ANY, mock, verify, when
 from ophyd.sim import make_fake_device
+from src.artemis.devices.det_dim_constants import DetectorSize, DetectorSizeConstants
 from src.artemis.devices.eiger import EigerDetector
-from src.artemis.devices.det_dim_constants import DetectorSizeConstants, DetectorSize
-
 
 TEST_EIGER_STRING = "EIGER2_X_4M"
 TEST_EIGER_DIMENSION_X = 155.1
@@ -14,7 +12,11 @@ TEST_PIXELS_X_EIGER = 2068
 TEST_PIXELS_Y_EIGER = 2162
 TEST_PIXELS_EIGER = DetectorSize(TEST_PIXELS_X_EIGER, TEST_PIXELS_Y_EIGER)
 TEST_DETECTOR_SIZE_CONSTANTS = DetectorSizeConstants(
-    TEST_EIGER_STRING, TEST_EIGER_DIMENSION, TEST_PIXELS_EIGER, TEST_EIGER_DIMENSION, TEST_PIXELS_EIGER
+    TEST_EIGER_STRING,
+    TEST_EIGER_DIMENSION,
+    TEST_PIXELS_EIGER,
+    TEST_EIGER_DIMENSION,
+    TEST_PIXELS_EIGER,
 )
 
 
@@ -22,15 +24,22 @@ TEST_DETECTOR_SIZE_CONSTANTS = DetectorSizeConstants(
 def fake_eiger():
     FakeEigerDetector = make_fake_device(EigerDetector)
     fake_eiger: EigerDetector = FakeEigerDetector(detector_params=mock(), name="test")
-
     return fake_eiger
 
 
 @pytest.mark.parametrize(
     "current_energy, request_energy, is_energy_change",
-    [(100.0, 100.0, False), (100.0, 200.0, True), (100.0, 50.0, True), (100.0, 100.09, False), (100.0, 99.91, False)],
+    [
+        (100.0, 100.0, False),
+        (100.0, 200.0, True),
+        (100.0, 50.0, True),
+        (100.0, 100.09, False),
+        (100.0, 99.91, False),
+    ],
 )
-def test_detector_threshold(fake_eiger, current_energy: float, request_energy: float, is_energy_change: bool):
+def test_detector_threshold(
+    fake_eiger, current_energy: float, request_energy: float, is_energy_change: bool
+):
 
     when(fake_eiger.cam.photon_energy).get().thenReturn(current_energy)
     when(fake_eiger.cam.photon_energy).put(ANY).thenReturn(None)
@@ -55,7 +64,11 @@ def test_detector_threshold(fake_eiger, current_energy: float, request_energy: f
     ],
 )
 def test_check_detector_variables(
-    fake_eiger, detector_params, detector_size_constants, beam_xy_converter, expected_error_number
+    fake_eiger,
+    detector_params,
+    detector_size_constants,
+    beam_xy_converter,
+    expected_error_number,
 ):
     fake_eiger.detector_params = detector_params
 
