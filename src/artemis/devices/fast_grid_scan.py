@@ -1,6 +1,10 @@
 import threading
 import time
+from dataclasses import dataclass
 from typing import List
+
+from bluesky.plan_stubs import mv
+from dataclasses_json import dataclass_json
 from ophyd import (
     Component,
     Device,
@@ -11,17 +15,8 @@ from ophyd import (
 )
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
-
-from dataclasses import dataclass
-
-from src.artemis.devices.motors import (
-    GridScanLimit,
-    GridScanLimitBundle,
-)
-
-from bluesky.plan_stubs import mv
+from src.artemis.devices.motors import GridScanLimit, GridScanLimitBundle
 from src.artemis.devices.status import await_value
-from dataclasses_json import dataclass_json
 
 
 @dataclass_json
@@ -58,7 +53,9 @@ class GridScanParams:
         )
 
 
-def scan_in_limits(limit: GridScanLimit, start: float, steps: float, step_size: float) -> bool:
+def scan_in_limits(
+    limit: GridScanLimit, start: float, steps: float, step_size: float
+) -> bool:
     end = start + (steps * step_size)
     return limit.is_within(start) and limit.is_within(end)
 
@@ -110,16 +107,7 @@ class GridScanCompleteStatus(DeviceStatus):
 
     def _running_changed(self, value=None, old_value=None, **kwargs):
         if (old_value == 1) and (value == 0):
-            # Stopped running
-            number_of_images = self.device.position_counter.get()
-            if number_of_images != self._target_count:
-                self.set_exception(
-                    Exception(
-                        f"Grid scan finished without collecting expected number of images. Expected {self._target_count} got {number_of_images}."
-                    )
-                )
-            else:
-                self.set_finished()
+            self.set_finished()
             self.clean_up()
 
     def clean_up(self):
@@ -141,7 +129,9 @@ class FastGridScan(Device):
     y1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_START")
     z1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_START")
 
-    position_counter: EpicsSignal = Component(EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE")
+    position_counter: EpicsSignal = Component(
+        EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE"
+    )
     x_counter: EpicsSignalRO = Component(EpicsSignalRO, "X_COUNTER")
     y_counter: EpicsSignalRO = Component(EpicsSignalRO, "Y_COUNTER")
     scan_invalid: EpicsSignalRO = Component(EpicsSignalRO, "SCAN_INVALID")
