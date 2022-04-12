@@ -15,8 +15,10 @@ from ophyd.log import config_ophyd_logging
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from src.artemis.devices.zebra import Zebra
+from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
 from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
+from src.artemis.zocalo_interaction import run_end, run_start
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
@@ -33,6 +35,9 @@ config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 def run_gridscan(
     fgs: FastGridScan, zebra: Zebra, eiger: EigerDetector, parameters: FullParameters
 ):
+    ispyb = StoreInIspyb("config", parameters)
+    grid_id, dc_id = ispyb.store_grid_scan()
+    run_start(dc_id)
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs, parameters.grid_scan_params)
 
@@ -43,6 +48,12 @@ def run_gridscan(
 
     with NexusWriter(parameters):
         yield from do_fgs()
+
+    current_time = ispyb.get_current_time_string()
+    ispyb.update_grid_scan_with_end_time_and_status(
+        current_time, "DataCollection Successful", dc_id
+    )
+    run_end(dc_id)
 
 
 def get_plan(parameters: FullParameters):
