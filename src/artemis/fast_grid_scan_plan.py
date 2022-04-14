@@ -1,28 +1,22 @@
-from collections import namedtuple
 import os
 import sys
+from collections import namedtuple
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from src.artemis.devices.eiger import EigerDetector
-from src.artemis.devices.fast_grid_scan import (
-    FastGridScan,
-    set_fast_grid_scan_params,
-)
-from src.artemis.nexus_writing.write_nexus import NexusWriter
-from src.artemis.parameters import FullParameters, SIM_BEAMLINE
-
-import bluesky.preprocessors as bpp
-import bluesky.plan_stubs as bps
-from bluesky import RunEngine
-from bluesky.utils import ProgressBarManager
-
-from src.artemis.devices.zebra import Zebra
 import argparse
 
-from ophyd.log import config_ophyd_logging
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
+from bluesky import RunEngine
 from bluesky.log import config_bluesky_logging
-
+from bluesky.utils import ProgressBarManager
+from ophyd.log import config_ophyd_logging
+from src.artemis.devices.eiger import EigerDetector
+from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
+from src.artemis.devices.zebra import Zebra
+from src.artemis.nexus_writing.write_nexus import NexusWriter
+from src.artemis.parameters import SIM_BEAMLINE, FullParameters
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")

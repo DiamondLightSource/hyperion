@@ -20,6 +20,8 @@ ipython = "*"
 black = "*"
 mockito="*"
 pre-commit = ">2.9.0"
+flake8 = "*"
+mypy = "*"
 
 [requires]
 python_version = "3.7"

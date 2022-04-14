@@ -1,17 +1,16 @@
 import os
-
 from dataclasses import dataclass, field
 from typing import Tuple
-from dataclasses_json import dataclass_json, config
 
+from dataclasses_json import config, dataclass_json
 from src.artemis.devices.det_dim_constants import (
+    EIGER2_X_16M_SIZE,
     DetectorSizeConstants,
     constants_from_type,
-    EIGER2_X_16M_SIZE,
 )
 from src.artemis.devices.det_dist_to_beam_converter import (
-    DetectorDistanceToBeamXYConverter,
     Axis,
+    DetectorDistanceToBeamXYConverter,
 )
 
 
@@ -52,10 +51,10 @@ class DetectorParams:
     )
 
     def get_beam_position_mm(self, detector_distance: float) -> Tuple[float, float]:
-        x_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist_mm(
+        x_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist(
             detector_distance, Axis.X_AXIS
         )
-        y_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist_mm(
+        y_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist(
             detector_distance, Axis.Y_AXIS
         )
 
