@@ -13,7 +13,7 @@ zocalo = "*"
 ispyb = "*"
 
 [dev-packages]
-pytest = "*"
+pytest-cov = "*"
 ipython = "*"
 black = "*"
 mockito="*"
@@ -26,3 +26,6 @@ python_version = "3.7"
 
 [pipenv]
 allow_prereleases = true
+
+[scripts]
+tests = "pytest -m \"not s03\" --cov=src/artemis --cov-report term --cov-report xml:cov.xml"
