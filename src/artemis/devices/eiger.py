@@ -1,14 +1,12 @@
+from enum import Enum
 from typing import Tuple
-from ophyd import Component, Device, EpicsSignalRO
 
+from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.utils.epics_pvs import set_and_wait
-
 from src.artemis.devices.Detector import DetectorParams
-
 from src.artemis.devices.eiger_odin import EigerOdin
 from src.artemis.devices.status import await_value
-from enum import Enum
 
 
 class EigerTriggerMode(Enum):
@@ -25,20 +23,26 @@ class EigerDetector(Device):
     stale_params: EpicsSignalRO = Component(EpicsSignalRO, "CAM:StaleParameters_RBV")
     bit_depth: EpicsSignalRO = Component(EpicsSignalRO, "CAM:BitDepthImage_RBV")
 
-    detector_params: DetectorParams
-
     STALE_PARAMS_TIMEOUT = 60
 
-    def __init__(self, name="Eiger Detector", *args, **kwargs):
+    def __init__(self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs):
         super().__init__(name=name, *args, **kwargs)
+        self.detector_params = detector_params
+        self.check_detector_variables_set()
 
     def check_detector_variables_set(self):
         if self.detector_params is None:
             raise Exception("Parameters for scan must be specified")
 
         to_check = [
-            (self.detector_params.detector_size_constants is None, "Detector Size must be set"),
-            (self.detector_params.beam_xy_converter is None, "Beam converter must be set"),
+            (
+                self.detector_params.detector_size_constants is None,
+                "Detector Size must be set",
+            ),
+            (
+                self.detector_params.beam_xy_converter is None,
+                "Beam converter must be set",
+            ),
         ]
 
         errors = [message for check_result, message in to_check if check_result]
@@ -47,7 +51,6 @@ class EigerDetector(Device):
             raise Exception("\n".join(errors))
 
     def stage(self):
-        self.check_detector_variables_set()
         self.odin.nodes.clear_odin_errors()
         status_ok, error_message = self.odin.check_odin_initialised()
         if not status_ok:
