@@ -23,12 +23,12 @@ class EigerDetector(Device):
     stale_params: EpicsSignalRO = Component(EpicsSignalRO, "CAM:StaleParameters_RBV")
     bit_depth: EpicsSignalRO = Component(EpicsSignalRO, "CAM:BitDepthImage_RBV")
 
-    detector_params: DetectorParams
-
     STALE_PARAMS_TIMEOUT = 60
 
-    def __init__(self, name="Eiger Detector", *args, **kwargs):
+    def __init__(self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs):
         super().__init__(name=name, *args, **kwargs)
+        self.detector_params = detector_params
+        self.check_detector_variables_set()
 
     def check_detector_variables_set(self):
         if self.detector_params is None:
@@ -51,7 +51,6 @@ class EigerDetector(Device):
             raise Exception("\n".join(errors))
 
     def stage(self):
-        self.check_detector_variables_set()
         self.odin.nodes.clear_odin_errors()
         status_ok, error_message = self.odin.check_odin_initialised()
         if not status_ok:

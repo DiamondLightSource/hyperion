@@ -1,10 +1,8 @@
 import pytest
-from mockito import mock, when, verify, ANY
-
+from mockito import ANY, mock, verify, when
 from ophyd.sim import make_fake_device
-from src.artemis.devices.eiger import EigerDetector, DetectorParams
-from src.artemis.devices.det_dim_constants import DetectorSizeConstants, DetectorSize
-
+from src.artemis.devices.det_dim_constants import DetectorSize, DetectorSizeConstants
+from src.artemis.devices.eiger import EigerDetector
 
 TEST_EIGER_STRING = "EIGER2_X_4M"
 TEST_EIGER_DIMENSION_X = 155.1
@@ -25,8 +23,7 @@ TEST_DETECTOR_SIZE_CONSTANTS = DetectorSizeConstants(
 @pytest.fixture
 def fake_eiger():
     FakeEigerDetector = make_fake_device(EigerDetector)
-    fake_eiger: EigerDetector = FakeEigerDetector(name="test")
-
+    fake_eiger: EigerDetector = FakeEigerDetector(detector_params=mock(), name="test")
     return fake_eiger
 
 

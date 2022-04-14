@@ -1,28 +1,24 @@
-import os
-
-from src.artemis.devices.eiger import EigerDetector, DetectorParams
-from src.artemis.devices.det_dim_constants import EIGER2_X_16M_SIZE
-from src.artemis.devices.det_dist_to_beam_converter import (
-    DetectorDistanceToBeamXYConverter,
-)
-
-import pytest
-import os
-from epics import caput
 import numpy as np
+import pytest
+from src.artemis.devices.eiger import DetectorParams, EigerDetector
 
 
 @pytest.fixture()
 def eiger():
-    eiger = EigerDetector(name="eiger", prefix="BL03S-EA-EIGER-01:")
-    eiger.detector_size_constants = EIGER2_X_16M_SIZE
-    eiger.detector_params = DetectorParams(
-        100, 0.1, "001", "/tmp/", "file", 100.0, 0, 0.1, 10, True
+    detector_params: DetectorParams = DetectorParams(
+        current_energy=100,
+        exposure_time=0.1,
+        acquisition_id="test",
+        directory="/tmp",
+        prefix="file_name",
+        detector_distance=100.0,
+        omega_start=0.0,
+        omega_increment=0.1,
+        num_images=50,
+        use_roi_mode=False,
     )
-    eiger.beam_xy_converter = DetectorDistanceToBeamXYConverter(
-        os.path.join(
-            os.path.dirname(__file__), "..", "det_dist_to_beam_XY_converter.txt"
-        )
+    eiger = EigerDetector(
+        detector_params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
     )
 
     # Otherwise odin moves too fast to be tested
