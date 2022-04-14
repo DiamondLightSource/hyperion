@@ -1,18 +1,17 @@
+import pytest
+from bluesky.run_engine import RunEngine
+from mockito import mock, verify, when
+from mockito.matchers import ANY, ARGS, KWARGS
 from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import make_fake_device
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
     GridScanParams,
+    scan_in_limits,
     set_fast_grid_scan_params,
     time,
-    scan_in_limits,
 )
 from src.artemis.devices.motors import GridScanMotorBundle
-
-from mockito import when, mock, verify
-from mockito.matchers import ANY, ARGS, KWARGS
-import pytest
-from bluesky.run_engine import RunEngine
 
 
 @pytest.fixture
@@ -63,7 +62,7 @@ def test_given_settings_valid_when_kickoff_then_run_started(
     status.wait()
 
     verify(fast_grid_scan.run_cmd).set(1)
-    assert status.exception() == None
+    assert status.exception() is None
 
 
 def run_test_on_complete_watcher(
@@ -84,7 +83,7 @@ def run_test_on_complete_watcher(
     verify(watcher).__call__(
         *ARGS,
         current=put_value,
-        target=num_pos_1d ** 2,
+        target=num_pos_1d**2,
         fraction=expected_frac,
         **KWARGS,
     )
@@ -108,30 +107,6 @@ def test_given_invalid_image_number_then_complete_watcher_correct(
     assert complete_status.exception()
 
 
-def test_running_finished_with_not_all_images_done_then_complete_status_in_error(
-    fast_grid_scan: FastGridScan,
-):
-    num_pos_1d = 2
-    RE = RunEngine()
-    RE(
-        set_fast_grid_scan_params(
-            fast_grid_scan, GridScanParams(num_pos_1d, num_pos_1d)
-        )
-    )
-
-    fast_grid_scan.status.sim_put(1)
-
-    complete_status = fast_grid_scan.complete()
-    assert not complete_status.done
-    fast_grid_scan.status.sim_put(0)
-
-    with pytest.raises(Exception):
-        complete_status.wait()
-
-    assert complete_status.done
-    assert complete_status.exception() != None
-
-
 def test_running_finished_with_all_images_done_then_complete_status_finishes_not_in_error(
     fast_grid_scan: FastGridScan,
 ):
@@ -147,13 +122,13 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
 
     complete_status = fast_grid_scan.complete()
     assert not complete_status.done
-    fast_grid_scan.position_counter.sim_put(num_pos_1d ** 2)
+    fast_grid_scan.position_counter.sim_put(num_pos_1d**2)
     fast_grid_scan.status.sim_put(0)
 
     complete_status.wait()
 
     assert complete_status.done
-    assert complete_status.exception() == None
+    assert complete_status.exception() is None
 
 
 def create_motor_bundle_with_x_limits(low_limit, high_limit) -> GridScanMotorBundle:

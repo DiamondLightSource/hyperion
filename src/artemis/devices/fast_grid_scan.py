@@ -90,6 +90,7 @@ class GridScanCompleteStatus(DeviceStatus):
             fraction = None
             time_remaining = None
             self.set_exception(e)
+            self.clean_up()
         else:
             time_remaining = time_elapsed / fraction
         for watcher in self._watchers:
