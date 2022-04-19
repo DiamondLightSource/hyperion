@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from src.artemis.devices.fast_grid_scan import GridScanParams
+
 from dataclasses_json import dataclass_json
 from src.artemis.devices.eiger import DetectorParams
+from src.artemis.devices.fast_grid_scan import GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams, Point2D, Point3D
 
 SIM_BEAMLINE = "BL03S"
@@ -54,6 +55,6 @@ class FullParameters:
         slit_gap_size_y=None,
         focal_spot_size_x=None,
         focal_spot_size_y=None,
-        comment=None,
+        comment="",
         resolution=None,
     )

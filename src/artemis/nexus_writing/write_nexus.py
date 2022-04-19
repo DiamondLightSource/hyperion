@@ -1,26 +1,22 @@
 """
 Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
 """
-import h5py
-from scanspec.specs import Line, Spec
-import numpy as np
-
+import time
+from datetime import datetime
 from pathlib import Path
-from nexgen.nxs_write import calculate_scan_from_scanspec
 from typing import Dict, Tuple
 
+import h5py
+import numpy as np
+from nexgen.nxs_write import calculate_scan_from_scanspec
 from nexgen.nxs_write.NexusWriter import call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
-
 from nexgen.tools.VDS_tools import image_vds_writer
-
+from scanspec.specs import Line, Spec
 from src.artemis.devices.eiger import DetectorParams
 from src.artemis.devices.fast_grid_scan import GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams
 from src.artemis.parameters import FullParameters
-
-import time
-from datetime import datetime
 
 source = {
     "name": "Diamond Light Source",
@@ -219,7 +215,6 @@ class NexusWriter:
                 source,
                 self.beam,
                 self.attenuator,
-                vds="dataset",
                 metafile=metafile,
                 link_list=dset_links,
             )
