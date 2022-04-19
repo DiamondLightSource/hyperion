@@ -93,3 +93,7 @@ class DetectorParams:
         offset_y = (full_size_pixels.height - roi_size_pixels.height) / 2.0
 
         return x_beam_pixels - offset_x, y_beam_pixels - offset_y
+
+    @property
+    def omega_end(self):
+        return self.omega_start + self.num_images * self.omega_increment

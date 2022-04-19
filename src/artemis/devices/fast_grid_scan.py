@@ -1,6 +1,10 @@
 import threading
 import time
+from dataclasses import dataclass
 from typing import List
+
+from bluesky.plan_stubs import mv
+from dataclasses_json import dataclass_json
 from ophyd import (
     Component,
     Device,
@@ -11,17 +15,8 @@ from ophyd import (
 )
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
-
-from dataclasses import dataclass
-
-from src.artemis.devices.motors import (
-    GridScanLimit,
-    GridScanLimitBundle,
-)
-
-from bluesky.plan_stubs import mv
+from src.artemis.devices.motors import GridScanLimitBundle
 from src.artemis.devices.status import await_value
-from dataclasses_json import dataclass_json
 
 
 @dataclass_json
@@ -48,19 +43,27 @@ class GridScanParams:
                        the parameters
         :return: True if the scan is valid
         """
-
+        x_in_limits = limits.x.is_within(self.x_start) and limits.x.is_within(
+            self.x_end
+        )
+        y_in_limits = limits.y.is_within(self.y1_start) and limits.x.is_within(
+            self.y_end
+        )
         return (
             # All scan axes are within limits
-            scan_in_limits(limits.x, self.x_start, self.x_steps, self.x_step_size)
-            and scan_in_limits(limits.y, self.y1_start, self.y_steps, self.y_step_size)
+            x_in_limits
+            and y_in_limits
             # Z never exceeds limits
             and limits.z.is_within(self.z1_start)
         )
 
+    @property
+    def x_end(self):
+        return self.x_start + (self.x_steps * self.x_step_size)
 
-def scan_in_limits(limit: GridScanLimit, start: float, steps: float, step_size: float) -> bool:
-    end = start + (steps * step_size)
-    return limit.is_within(start) and limit.is_within(end)
+    @property
+    def y_end(self):
+        return self.y1_start + (self.y_steps * self.y_step_size)
 
 
 class GridScanCompleteStatus(DeviceStatus):
@@ -141,7 +144,9 @@ class FastGridScan(Device):
     y1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_START")
     z1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_START")
 
-    position_counter: EpicsSignal = Component(EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE")
+    position_counter: EpicsSignal = Component(
+        EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE"
+    )
     x_counter: EpicsSignalRO = Component(EpicsSignalRO, "X_COUNTER")
     y_counter: EpicsSignalRO = Component(EpicsSignalRO, "Y_COUNTER")
     scan_invalid: EpicsSignalRO = Component(EpicsSignalRO, "SCAN_INVALID")

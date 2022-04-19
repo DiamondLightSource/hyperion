@@ -4,8 +4,8 @@ from unittest.mock import mock_open, patch
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import ANY, mock, when
-from src.artemis.fast_grid_scan_plan import FullParameters
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
+from src.artemis.parameters import FullParameters
 
 TEST_DATA_COLLECTION_ID = 12
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -74,6 +74,7 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
 def test_param_keys(ispyb_conn, dummy_ispyb):
     ispyb_conn.return_value.core = mock()
     ispyb_conn.return_value.mx_acquisition = mock()
+
     mx_acquisition = ispyb_conn.return_value.mx_acquisition
 
     when(mx_acquisition).get_data_collection_group_params().thenReturn(DCG_PARAMS)

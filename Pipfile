@@ -11,6 +11,8 @@ flask-restful="*"
 dataclasses-json = "*"
 zocalo = "*"
 ispyb = "*"
+nexgen = {git = "https://github.com/DominicOram/nexgen.git", ref = "add_support_for_defining_scans_using_scanspec"}
+scanspec = "*"
 
 [dev-packages]
 pytest-cov = "*"

@@ -4,7 +4,6 @@ from src.artemis.devices.fast_grid_scan import (
     GridScanParams,
     set_fast_grid_scan_params,
     time,
-    scan_in_limits,
 )
 from src.artemis.devices.motors import GridScanMotorBundle
 
@@ -157,12 +156,17 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
     assert complete_status.exception() == None
 
 
-def create_motor_bundle_with_x_limits(low_limit, high_limit) -> GridScanMotorBundle:
+def create_motor_bundle_with_limits(low_limit, high_limit) -> GridScanMotorBundle:
     FakeGridScanMotorBundle = make_fake_device(GridScanMotorBundle)
     grid_scan_motor_bundle: GridScanMotorBundle = FakeGridScanMotorBundle(name="test")
     grid_scan_motor_bundle.wait_for_connection()
-    grid_scan_motor_bundle.x.low_limit_travel.sim_put(low_limit)
-    grid_scan_motor_bundle.x.high_limit_travel.sim_put(high_limit)
+    for axis in [
+        grid_scan_motor_bundle.x,
+        grid_scan_motor_bundle.y,
+        grid_scan_motor_bundle.z,
+    ]:
+        axis.low_limit_travel.sim_put(low_limit)
+        axis.high_limit_travel.sim_put(high_limit)
     return grid_scan_motor_bundle
 
 
@@ -175,7 +179,7 @@ def create_motor_bundle_with_x_limits(low_limit, high_limit) -> GridScanMotorBun
     ],
 )
 def test_within_limits_check(position, expected_in_limit):
-    limits = create_motor_bundle_with_x_limits(0.0, 10).get_limits()
+    limits = create_motor_bundle_with_limits(0.0, 10).get_limits()
     assert limits.x.is_within(position) == expected_in_limit
 
 
@@ -191,8 +195,6 @@ def test_within_limits_check(position, expected_in_limit):
     ],
 )
 def test_scan_within_limits(start, steps, size, expected_in_limits):
-    motor_bundle = create_motor_bundle_with_x_limits(0.0, 10.0)
-    assert (
-        scan_in_limits(motor_bundle.get_limits().x, start, steps, size)
-        == expected_in_limits
-    )
+    motor_bundle = create_motor_bundle_with_limits(0.0, 10.0)
+    grid_params = GridScanParams(x_start=start, x_steps=steps, x_step_size=size)
+    assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits
