@@ -61,6 +61,7 @@ def test_given_settings_valid_when_kickoff_then_run_started(
     status = fast_grid_scan.kickoff()
 
     status.wait()
+    assert status.exception() is None
 
     verify(fast_grid_scan.run_cmd).put(1)
 
