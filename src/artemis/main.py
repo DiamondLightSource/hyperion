@@ -5,7 +5,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from dataclasses import dataclass
-from flask import Flask, request, globals
+from flask import Flask, request
 from flask_restful import Resource, Api
 import logging
 import threading
@@ -15,7 +15,8 @@ from typing import Optional
 from bluesky import RunEngine
 from typing import Tuple
 from enum import Enum
-from src.artemis.fast_grid_scan_plan import FullParameters, get_plan
+from src.artemis.parameters import FullParameters
+from src.artemis.fast_grid_scan_plan import get_plan
 from dataclasses_json import dataclass_json
 import atexit
 

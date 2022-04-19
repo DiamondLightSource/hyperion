@@ -5,23 +5,18 @@ from collections import namedtuple
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 import argparse
-from dataclasses import dataclass
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
-from dataclasses_json import dataclass_json
 from ophyd.log import config_ophyd_logging
-from src.artemis.devices.eiger import DetectorParams, EigerDetector
-from src.artemis.devices.fast_grid_scan import (
-    FastGridScan,
-    GridScanParams,
-    set_fast_grid_scan_params,
-)
+from src.artemis.devices.eiger import EigerDetector
+from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from src.artemis.devices.zebra import Zebra
-from src.artemis.ispyb.ispyb_dataclass import IspybParams, Point2D, Point3D
+from src.artemis.nexus_writing.write_nexus import NexusWriter
+from src.artemis.parameters import SIM_BEAMLINE, FullParameters
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
@@ -32,59 +27,6 @@ config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 # Store in ISPyB
 # Start nxgen
 # Start analysis run collection
-SIM_BEAMLINE = "BL03S"
-
-
-@dataclass_json
-@dataclass
-class FullParameters:
-    beamline: str = SIM_BEAMLINE
-    grid_scan_params: GridScanParams = GridScanParams(
-        x_steps=5,
-        y_steps=10,
-        x_step_size=0.1,
-        y_step_size=0.1,
-        dwell_time=0.2,
-        x_start=0.0,
-        y1_start=0.0,
-        z1_start=0.0,
-    )
-    detector_params: DetectorParams = DetectorParams(
-        current_energy=100,
-        exposure_time=0.1,
-        acquisition_id="test",
-        directory="/tmp",
-        prefix="file_name",
-        detector_distance=100.0,
-        omega_start=0.0,
-        omega_increment=0.1,
-        num_images=10,
-        use_roi_mode=False,
-    )
-    ispyb_params: IspybParams = IspybParams(
-        sample_id=None,
-        visit_path="",
-        undulator_gap=None,
-        pixels_per_micron_x=None,
-        pixels_per_micron_y=None,
-        upper_left=Point2D(x=None, y=None),
-        sample_barcode=None,
-        position=Point3D(x=None, y=None, z=None),
-        synchrotron_mode=None,
-        xtal_snapshots=None,
-        run_number=None,
-        transmission=None,
-        flux=None,
-        wavelength=None,
-        beam_size_x=None,
-        beam_size_y=None,
-        slit_gap_size_x=None,
-        slit_gap_size_y=None,
-        focal_spot_size_x=None,
-        focal_spot_size_y=None,
-        comment="",
-        resolution=None,
-    )
 
 
 @bpp.run_decorator()
@@ -99,7 +41,8 @@ def run_gridscan(
         yield from bps.kickoff(fgs)
         yield from bps.complete(fgs, wait=True)
 
-    yield from do_fgs()
+    with NexusWriter(parameters):
+        yield from do_fgs()
 
 
 def get_plan(parameters: FullParameters):

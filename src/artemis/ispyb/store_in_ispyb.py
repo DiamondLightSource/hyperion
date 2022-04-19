@@ -2,8 +2,8 @@ import datetime
 import re
 
 from sqlalchemy.connectors import Connector
-from src.artemis.fast_grid_scan_plan import FullParameters
 from src.artemis.ispyb.ispyb_dataclass import Orientation
+from src.artemis.parameters import FullParameters
 
 import ispyb
 

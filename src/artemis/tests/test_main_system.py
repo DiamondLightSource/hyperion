@@ -3,7 +3,7 @@ import threading
 import pytest
 from typing import Any, Callable
 from flask.testing import FlaskClient
-from src.artemis.fast_grid_scan_plan import FullParameters
+from src.artemis.parameters import FullParameters
 
 from src.artemis.main import create_app, Status, Actions
 from src.artemis.devices.det_dim_constants import EIGER_TYPE_EIGER2_X_4M
