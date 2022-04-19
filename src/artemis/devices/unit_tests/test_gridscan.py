@@ -6,7 +6,6 @@ from ophyd.sim import make_fake_device
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
     GridScanParams,
-    scan_in_limits,
     set_fast_grid_scan_params,
     time,
 )
