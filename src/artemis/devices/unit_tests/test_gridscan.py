@@ -7,7 +7,7 @@ from src.artemis.devices.fast_grid_scan import (
 )
 from src.artemis.devices.motors import GridScanMotorBundle
 
-from mockito import when, mock, verify
+from mockito import when, mock, verify, unstub
 from mockito.matchers import ANY, ARGS, KWARGS
 import pytest
 from bluesky.run_engine import RunEngine
@@ -21,7 +21,9 @@ def fast_grid_scan():
 
     # A bit of a hack to assume that if we are waiting on something then we will timeout
     when(time).sleep(ANY).thenRaise(TimeoutError())
-    return fast_grid_scan
+    yield fast_grid_scan
+    # Need to unstub as sleep raising a TimeoutError can cause a segfault on the destruction of FastGridScan
+    unstub()
 
 
 def test_given_invalid_scan_when_kickoff_then_timeout(fast_grid_scan: FastGridScan):
@@ -53,15 +55,15 @@ def test_given_settings_valid_when_kickoff_then_run_started(
     when(fast_grid_scan.position_counter).get().thenReturn(0)
 
     mock_run_set_status = mock()
-    when(fast_grid_scan.run_cmd).set(ANY).thenReturn(mock_run_set_status)
+    when(fast_grid_scan.run_cmd).put(ANY).thenReturn(mock_run_set_status)
     fast_grid_scan.status.subscribe = lambda func, **_: func(1)
 
     status = fast_grid_scan.kickoff()
 
     status.wait()
-
-    verify(fast_grid_scan.run_cmd).set(1)
     assert status.exception() == None
+
+    verify(fast_grid_scan.run_cmd).put(1)
 
 
 def run_test_on_complete_watcher(

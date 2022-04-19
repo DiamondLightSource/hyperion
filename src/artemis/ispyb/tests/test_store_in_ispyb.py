@@ -54,12 +54,14 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
-    when(dummy_ispyb)._store_position_table().thenReturn(TEST_POSITION_ID)
+    when(dummy_ispyb)._store_position_table(TEST_DATA_COLLECTION_ID).thenReturn(
+        TEST_POSITION_ID
+    )
     when(dummy_ispyb)._store_data_collection_group_table().thenReturn(
         TEST_DATA_COLLECTION_GROUP_ID
     )
     when(dummy_ispyb)._store_data_collection_table(
-        TEST_POSITION_ID, TEST_DATA_COLLECTION_GROUP_ID
+        TEST_DATA_COLLECTION_GROUP_ID
     ).thenReturn(TEST_DATA_COLLECTION_ID)
     when(dummy_ispyb)._store_grid_info_table(TEST_DATA_COLLECTION_ID).thenReturn(
         TEST_GRID_INFO_ID

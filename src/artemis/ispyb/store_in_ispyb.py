@@ -31,11 +31,12 @@ class StoreInIspyb:
             self.core = self.conn.core
 
             data_collection_group_id = self._store_data_collection_group_table()
-            position_id = self._store_position_table()
 
             data_collection_id = self._store_data_collection_table(
-                position_id, data_collection_group_id
+                data_collection_group_id
             )
+
+            self._store_position_table(data_collection_id)
 
             grid_id = self._store_grid_info_table(data_collection_id)
 
@@ -71,15 +72,12 @@ class StoreInIspyb:
 
         return self.mx_acquisition.upsert_dc_grid(list(params.values()))
 
-    def _store_data_collection_table(
-        self, position_id: int, data_collection_group_id: int
-    ) -> int:
+    def _store_data_collection_table(self, data_collection_group_id: int) -> int:
         session_id = self.core.retrieve_visit_id(self.get_visit_string())
 
         params = self.mx_acquisition.get_data_collection_params()
         params["visitid"] = session_id
         params["parentid"] = data_collection_group_id
-        params["positionid"] = position_id
         params["sampleid"] = self.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
         params["axis_start"] = self.detector_params.omega_start
@@ -92,7 +90,7 @@ class StoreInIspyb:
         params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
         params["transmission"] = self.ispyb_params.transmission
-        params["comments"] = self.ispyb_params.comment
+        params["comments"] = "Artemis: " + self.ispyb_params.comment
         params["datacollection_number"] = self.ispyb_params.run_number
         params["detector_distance"] = self.detector_params.detector_distance
         params["exp_time"] = self.detector_params.exposure_time
@@ -128,9 +126,10 @@ class StoreInIspyb:
 
         return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
-    def _store_position_table(self) -> int:
+    def _store_position_table(self, dc_id: int) -> int:
         params = self.mx_acquisition.get_dc_position_params()
 
+        params["id"] = dc_id
         (
             params["pos_x"],
             params["pos_y"],

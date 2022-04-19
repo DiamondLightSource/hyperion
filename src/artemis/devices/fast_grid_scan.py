@@ -1,6 +1,10 @@
 import threading
 import time
+from dataclasses import dataclass
 from typing import List
+
+from bluesky.plan_stubs import mv
+from dataclasses_json import dataclass_json
 from ophyd import (
     Component,
     Device,
@@ -11,18 +15,8 @@ from ophyd import (
 )
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
-
-from dataclasses import dataclass
-from typing import Any
-
-from src.artemis.devices.motors import (
-    GridScanLimit,
-    GridScanLimitBundle,
-)
-
-from bluesky.plan_stubs import mv
+from src.artemis.devices.motors import GridScanLimitBundle
 from src.artemis.devices.status import await_value
-from dataclasses_json import dataclass_json
 
 
 @dataclass_json

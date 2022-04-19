@@ -25,9 +25,7 @@ class EigerDetector(Device):
 
     STALE_PARAMS_TIMEOUT = 60
 
-    def __init__(
-        self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
-    ):
+    def __init__(self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs):
         super().__init__(name=name, *args, **kwargs)
         self.detector_params = detector_params
         self.check_detector_variables_set()
