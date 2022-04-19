@@ -40,7 +40,7 @@ class StoreInIspyb:
 
             grid_id = self._store_grid_info_table(data_collection_id)
 
-            return grid_id, data_collection_id
+            return grid_id, data_collection_id, data_collection_group_id
 
     def update_grid_scan_with_end_time_and_status(
         self,
