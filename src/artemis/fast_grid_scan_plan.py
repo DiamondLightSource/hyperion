@@ -36,8 +36,8 @@ def run_gridscan(
     fgs: FastGridScan, zebra: Zebra, eiger: EigerDetector, parameters: FullParameters
 ):
     ispyb = StoreInIspyb("config", parameters)
-    grid_id, dc_id = ispyb.store_grid_scan()
-    run_start(dc_id)
+    _, datacollection_id, datacollection_group_id = ispyb.store_grid_scan()
+    run_start(datacollection_id)
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs, parameters.grid_scan_params)
 
@@ -51,9 +51,12 @@ def run_gridscan(
 
     current_time = ispyb.get_current_time_string()
     ispyb.update_grid_scan_with_end_time_and_status(
-        current_time, "DataCollection Successful", dc_id
+        current_time,
+        "DataCollection Successful",
+        datacollection_id,
+        datacollection_group_id,
     )
-    run_end(dc_id)
+    run_end(datacollection_id)
 
 
 def get_plan(parameters: FullParameters):
