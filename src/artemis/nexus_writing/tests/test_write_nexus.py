@@ -1,8 +1,9 @@
-from src.artemis.nexus_writing.write_nexus import NexusWriter
-from src.artemis.parameters import FullParameters
 import tempfile
+
 import h5py
 import pytest
+from src.artemis.nexus_writing.write_nexus import NexusWriter
+from src.artemis.parameters import FullParameters
 
 """It's hard to effectively unit test the nexus writing so these are really system tests 
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output."""
@@ -19,26 +20,28 @@ def get_minimum_parameters_for_file_writing() -> FullParameters:
 def assert_start_data_correct(
     nexus_writer: NexusWriter, test_full_params: FullParameters
 ):
-    with h5py.File(nexus_writer.nexus_file, "r") as written_nexus_file:
-        sam_x_data = written_nexus_file["/entry/data/sam_x"][:]
-        assert len(sam_x_data) == (test_full_params.grid_scan_params.x_steps + 1) * (
-            test_full_params.grid_scan_params.y_steps + 1
-        )
-        assert sam_x_data[1] - sam_x_data[0] == pytest.approx(
-            test_full_params.grid_scan_params.x_step_size
-        )
-        assert written_nexus_file["/entry/instrument/beam/total_flux"][()] == 9.0
+    for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            sam_x_data = written_nexus_file["/entry/data/sam_x"][:]
+            assert len(sam_x_data) == (
+                test_full_params.grid_scan_params.x_steps + 1
+            ) * (test_full_params.grid_scan_params.y_steps + 1)
+            assert sam_x_data[1] - sam_x_data[0] == pytest.approx(
+                test_full_params.grid_scan_params.x_step_size
+            )
+            assert written_nexus_file["/entry/instrument/beam/total_flux"][()] == 9.0
 
 
 def assert_end_data_correct(nexus_writer: NexusWriter):
-
-    with h5py.File(nexus_writer.nexus_file, "r") as written_nexus_file:
-        assert "end_time" in written_nexus_file["entry"]
+    for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            assert "end_time" in written_nexus_file["entry"]
 
 
 def create_nexus_writer_with_temp_file(test_params: FullParameters) -> NexusWriter:
     nexus_writer = NexusWriter(test_params)
     nexus_writer.nexus_file = tempfile.NamedTemporaryFile(delete=False)
+    nexus_writer.master_file = tempfile.NamedTemporaryFile(delete=False)
     return nexus_writer
 
 
