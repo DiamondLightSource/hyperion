@@ -57,8 +57,9 @@ def test_given_full_params_and_nexus_file_with_entry_when_exit_called_then_end_t
     test_full_params = get_minimum_parameters_for_file_writing()
     nexus_writer = create_nexus_writer_with_temp_file(test_full_params)
 
-    with h5py.File(nexus_writer.nexus_file, "r+") as written_nexus_file:
-        written_nexus_file.require_group("entry")
+    for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
+        with h5py.File(file, "r+") as written_nexus_file:
+            written_nexus_file.require_group("entry")
 
     nexus_writer.__exit__()
 
