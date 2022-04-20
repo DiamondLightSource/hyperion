@@ -1,9 +1,10 @@
 import re
+from functools import partial
 from unittest.mock import mock_open, patch
 
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
-from mockito import ANY, mock, when
+from mockito import ANY, arg_that, mock, verify, when
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
 from src.artemis.parameters import FullParameters
 
@@ -13,15 +14,17 @@ TEST_GRID_INFO_ID = 56
 TEST_POSITION_ID = 78
 TEST_SESSION_ID = 90
 
-DCG_PARAMS = MXAcquisition.get_data_collection_group_params()
-DC_PARAMS = MXAcquisition.get_data_collection_params()
-GRID_PARAMS = MXAcquisition.get_dc_grid_params()
-POSITION_PARAMS = MXAcquisition.get_dc_position_params()
-
 DUMMY_CONFIG = "/file/path/to/config/"
 DUMMY_PARAMS = FullParameters()
 
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
+
+
+@pytest.fixture
+def dummy_ispyb_with_0_sample_id():
+    params = DUMMY_PARAMS
+    params.ispyb_params.sample_id = 0
+    return StoreInIspyb(DUMMY_CONFIG, params)
 
 
 @pytest.fixture
@@ -70,17 +73,21 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
     assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)
 
 
-@patch("ispyb.open", new_callable=mock_open)
-def test_param_keys(ispyb_conn, dummy_ispyb):
+def setup_mock_return_values(ispyb_conn):
     ispyb_conn.return_value.core = mock()
     ispyb_conn.return_value.mx_acquisition = mock()
 
     mx_acquisition = ispyb_conn.return_value.mx_acquisition
 
-    when(mx_acquisition).get_data_collection_group_params().thenReturn(DCG_PARAMS)
-    when(mx_acquisition).get_data_collection_params().thenReturn(DC_PARAMS)
-    when(mx_acquisition).get_dc_grid_params().thenReturn(GRID_PARAMS)
-    when(mx_acquisition).get_dc_position_params().thenReturn(POSITION_PARAMS)
+    dcg_params = MXAcquisition.get_data_collection_group_params()
+    dc_params = MXAcquisition.get_data_collection_params()
+    grid_params = MXAcquisition.get_dc_grid_params()
+    position_params = MXAcquisition.get_dc_position_params()
+
+    when(mx_acquisition).get_data_collection_group_params().thenReturn(dcg_params)
+    when(mx_acquisition).get_data_collection_params().thenReturn(dc_params)
+    when(mx_acquisition).get_dc_grid_params().thenReturn(grid_params)
+    when(mx_acquisition).get_dc_position_params().thenReturn(position_params)
 
     when(ispyb_conn.return_value.core).retrieve_visit_id(ANY).thenReturn(
         TEST_SESSION_ID
@@ -92,4 +99,42 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
     )
     when(mx_acquisition).upsert_dc_grid(ANY).thenReturn(TEST_GRID_INFO_ID)
 
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_param_keys(ispyb_conn, dummy_ispyb):
+    setup_mock_return_values(ispyb_conn)
+
     assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_given_sampleid_of_0_when_grid_scan_stored_then_sample_id_not_set(
+    ispyb_conn, dummy_ispyb_with_0_sample_id
+):
+    setup_mock_return_values(ispyb_conn)
+
+    dummy_ispyb_with_0_sample_id.store_grid_scan()
+
+    def test_sample_id(expected, actual):
+        sampleid_idx = list(expected).index("sampleid")
+        return actual[sampleid_idx] == expected["sampleid"]
+
+    mx_acquisition = ispyb_conn.return_value.mx_acquisition
+
+    verify(mx_acquisition, times=1).upsert_data_collection_group(
+        arg_that(
+            partial(
+                test_sample_id,
+                MXAcquisition.get_data_collection_group_params(),
+            )
+        )
+    )
+
+    verify(mx_acquisition, times=1).upsert_data_collection(
+        arg_that(
+            partial(
+                test_sample_id,
+                MXAcquisition.get_data_collection_params(),
+            )
+        )
+    )
