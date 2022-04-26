@@ -46,7 +46,6 @@ class FullParameters:
         position=Point3D(x=None, y=None, z=None),
         synchrotron_mode=None,
         xtal_snapshots=None,
-        run_number=None,
         transmission=1.0,
         flux=10.0,
         wavelength=0.01,

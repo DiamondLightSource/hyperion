@@ -91,7 +91,7 @@ class StoreInIspyb:
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
         params["transmission"] = self.ispyb_params.transmission
         params["comments"] = "Artemis: " + self.ispyb_params.comment
-        params["datacollection_number"] = self.ispyb_params.run_number
+        params["datacollection_number"] = self.detector_params.run_number
         params["detector_distance"] = self.detector_params.detector_distance
         params["exp_time"] = self.detector_params.exposure_time
         params["imgdir"] = self.detector_params.directory
