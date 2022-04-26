@@ -120,9 +120,7 @@ class StoreInIspyb:
         params["starttime"] = self.get_current_time_string()
 
         # temporary file template until nxs filewriting is integrated and we can use that file name
-        params[
-            "file_template"
-        ] = f"{self.detector_params.prefix}_{self.ispyb_params.run_number}_master.h5"
+        params["file_template"] = f"{self.detector_params.full_filename}_master.h5"
 
         return self.mx_acquisition.upsert_data_collection(list(params.values()))
 

@@ -28,6 +28,7 @@ class FullParameters:
         acquisition_id="test",
         directory="/tmp",
         prefix="file_name",
+        run_number=0,
         detector_distance=100.0,
         omega_start=0.0,
         omega_increment=0.1,
