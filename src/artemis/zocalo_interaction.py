@@ -1,18 +1,19 @@
-import zocalo.configuration
-from workflows.transport import lookup, default_transport
 import getpass
 import socket
+
+import zocalo.configuration
+from workflows.transport import default_transport, lookup
 
 
 def _send_to_zocalo(parameters: dict):
     zc = zocalo.configuration.from_file()
     zc.activate()
 
-    transport = lookup(default_transport)()
+    transport = lookup("PikaTransport")()
     transport.connect()
     try:
         message = {
-            "recipes": "mimas",
+            "recipes": ["mimas"],
             "parameters": parameters,
         }
         header = {
