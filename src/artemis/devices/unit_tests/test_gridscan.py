@@ -1,3 +1,7 @@
+import pytest
+from bluesky.run_engine import RunEngine
+from mockito import mock, unstub, verify, when
+from mockito.matchers import ANY, ARGS, KWARGS
 from ophyd.sim import make_fake_device
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
@@ -6,11 +10,6 @@ from src.artemis.devices.fast_grid_scan import (
     time,
 )
 from src.artemis.devices.motors import GridScanMotorBundle
-
-from mockito import when, mock, verify, unstub
-from mockito.matchers import ANY, ARGS, KWARGS
-import pytest
-from bluesky.run_engine import RunEngine
 
 
 @pytest.fixture
@@ -61,7 +60,7 @@ def test_given_settings_valid_when_kickoff_then_run_started(
     status = fast_grid_scan.kickoff()
 
     status.wait()
-    assert status.exception() == None
+    assert status.exception() is None
 
     verify(fast_grid_scan.run_cmd).put(1)
 
@@ -108,30 +107,6 @@ def test_given_invalid_image_number_then_complete_watcher_correct(
     assert complete_status.exception()
 
 
-def test_running_finished_with_not_all_images_done_then_complete_status_in_error(
-    fast_grid_scan: FastGridScan,
-):
-    num_pos_1d = 2
-    RE = RunEngine()
-    RE(
-        set_fast_grid_scan_params(
-            fast_grid_scan, GridScanParams(num_pos_1d, num_pos_1d)
-        )
-    )
-
-    fast_grid_scan.status.sim_put(1)
-
-    complete_status = fast_grid_scan.complete()
-    assert not complete_status.done
-    fast_grid_scan.status.sim_put(0)
-
-    with pytest.raises(Exception):
-        complete_status.wait()
-
-    assert complete_status.done
-    assert complete_status.exception() != None
-
-
 def test_running_finished_with_all_images_done_then_complete_status_finishes_not_in_error(
     fast_grid_scan: FastGridScan,
 ):
@@ -153,7 +128,7 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
     complete_status.wait()
 
     assert complete_status.done
-    assert complete_status.exception() == None
+    assert complete_status.exception() is None
 
 
 def create_motor_bundle_with_limits(low_limit, high_limit) -> GridScanMotorBundle:
