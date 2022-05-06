@@ -23,17 +23,31 @@ from src.artemis.devices.status import await_value
 @dataclass
 class GridScanParams:
     """
-    Holder class for the parameters of a grid scan.
+    Holder class for the parameters of a grid scan in a similar
+    layout to EPICS. It has a number of inconsistencies that reflect
+    the hardware:
+    z_steps is actually omega_steps and can be 0 or 1, if 0 then omega
+    should not move, if 1 then omega should rotate -90 degrees and then
+    the scan should be repeated. z_steps has not yet been renamed in
+    EPICS or the motion PLC so it is left as z here for consistency.
+    This constraint also means that z_steps_size is ignored. Confusingly,
+    z1_start and z2_start still refer to the actual z motor, they are the
+    constant positions z should occupy during the first and second grid
+    scans. Finally, dwell_time is also ignored in favour of a fixed delay
+    (see PER_POINT_DELAY in this module).
     """
 
     x_steps: int = 1
     y_steps: int = 1
+    z_steps: int = 1
     x_step_size: float = 0.1
     y_step_size: float = 0.1
     dwell_time: float = 0.1
     x_start: float = 0.1
     y1_start: float = 0.1
+    y2_start: float = 0.1
     z1_start: float = 0.1
+    z2_start: float = 0.1
 
     def is_valid(self, limits: GridScanLimitBundle) -> bool:
         """
@@ -126,6 +140,7 @@ class FastGridScan(Device):
 
     x_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_NUM_STEPS")
     y_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_NUM_STEPS")
+    z_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_NUM_STEPS")
 
     x_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_STEP_SIZE")
     y_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_STEP_SIZE")
@@ -134,7 +149,9 @@ class FastGridScan(Device):
 
     x_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_START")
     y1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_START")
+    y2_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y2_START")
     z1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_START")
+    z2_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z2_START")
 
     position_counter: EpicsSignal = Component(
         EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE"
@@ -156,10 +173,13 @@ class FastGridScan(Device):
         super().__init__(*args, **kwargs)
 
         def set_expected_images(*_, **__):
-            self.expected_images.put(self.x_steps.get() * self.y_steps.get())
+            self.expected_images.put(
+                self.x_steps.get() * self.y_steps.get() * (self.z_steps.get() + 1)
+            )
 
         self.x_steps.subscribe(set_expected_images)
         self.y_steps.subscribe(set_expected_images)
+        self.z_steps.subscribe(set_expected_images)
 
     def is_invalid(self) -> bool:
         if "GONP" in self.scan_invalid.pvname:
@@ -200,6 +220,8 @@ def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
         params.x_steps,
         scan.y_steps,
         params.y_steps,
+        scan.z_steps,
+        params.z_steps,
         scan.x_step_size,
         params.x_step_size,
         scan.y_step_size,
@@ -210,6 +232,10 @@ def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
         params.x_start,
         scan.y1_start,
         params.y1_start,
+        scan.y2_start,
+        params.y2_start,
         scan.z1_start,
         params.z1_start,
+        scan.z2_start,
+        params.z2_start,
     )
