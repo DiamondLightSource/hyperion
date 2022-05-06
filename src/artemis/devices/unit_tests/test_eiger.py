@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 from mockito import ANY, mock, verify, when
 from ophyd.sim import make_fake_device
@@ -23,7 +25,12 @@ TEST_DETECTOR_SIZE_CONSTANTS = DetectorSizeConstants(
 @pytest.fixture
 def fake_eiger():
     FakeEigerDetector = make_fake_device(EigerDetector)
-    fake_eiger: EigerDetector = FakeEigerDetector(detector_params=mock(), name="test")
+    mock_detector_params = mock()
+    mock_detector_params.detector_size_constants = TEST_DETECTOR_SIZE_CONSTANTS
+    mock_detector_params.current_energy = 100
+    fake_eiger: EigerDetector = FakeEigerDetector(
+        detector_params=mock_detector_params, name="test"
+    )
     return fake_eiger
 
 
@@ -87,3 +94,21 @@ def test_check_detector_variables(
             fake_eiger.check_detector_variables_set()
         except Exception as e:
             assert False, f"exception was raised {e}"
+
+
+def test_given_failing_odin_when_stage_then_exception_raised(fake_eiger):
+    error_contents = "Got an error"
+    fake_eiger.odin.nodes.clear_odin_errors = MagicMock()
+    fake_eiger.odin.check_odin_initialised = MagicMock()
+    fake_eiger.odin.check_odin_initialised.return_value = (False, error_contents)
+    with pytest.raises(Exception) as e:
+        fake_eiger.stage()
+        assert error_contents in e.value
+
+
+def test_stage_runs_successfully(fake_eiger):
+    fake_eiger.odin.nodes.clear_odin_errors = MagicMock()
+    fake_eiger.odin.check_odin_initialised = MagicMock()
+    fake_eiger.odin.check_odin_initialised.return_value = (True, "")
+    fake_eiger.odin.file_writer.file_path.put(True)
+    fake_eiger.stage()
