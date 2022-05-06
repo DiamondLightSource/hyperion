@@ -5,6 +5,7 @@ from typing import Tuple
 from dataclasses_json import config, dataclass_json
 from src.artemis.devices.det_dim_constants import (
     EIGER2_X_16M_SIZE,
+    DetectorSize,
     DetectorSizeConstants,
     constants_from_type,
 )
@@ -70,13 +71,14 @@ class DetectorParams:
 
         return x_beam_mm - offset_x, y_beam_mm - offset_y
 
+    def get_detector_size_pizels(self) -> DetectorSize:
+        full_size = self.detector_size_constants.det_size_pixels
+        roi_size = self.detector_size_constants.roi_size_pixels
+        return roi_size if self.use_roi_mode else full_size
+
     def get_beam_position_pixels(self, detector_distance: float) -> Tuple[float, float]:
         full_size_pixels = self.detector_size_constants.det_size_pixels
-        roi_size_pixels = (
-            self.detector_size_constants.roi_size_pixels
-            if self.use_roi_mode
-            else full_size_pixels
-        )
+        roi_size_pixels = self.get_detector_size_pizels()
 
         x_beam_pixels = self.beam_xy_converter.get_beam_x_pixels(
             detector_distance,
