@@ -100,6 +100,24 @@ def test_given_0_expected_images_then_complete_watcher_correct(
     run_test_on_complete_watcher(fast_grid_scan, 0, 1, 0)
 
 
+@pytest.mark.parametrize(
+    "steps, expected_images",
+    [
+        ((10, 10, 0), 100),
+        ((30, 5, 10), 450),
+        ((7, 0, 5), 35),
+    ],
+)
+def test_given_different_step_numbers_then_expected_images_correct(
+    fast_grid_scan: FastGridScan, steps, expected_images
+):
+    fast_grid_scan.x_steps.sim_put(steps[0])
+    fast_grid_scan.y_steps.sim_put(steps[1])
+    fast_grid_scan.z_steps.sim_put(steps[2])
+
+    assert fast_grid_scan.expected_images.get() == expected_images
+
+
 def test_given_invalid_image_number_then_complete_watcher_correct(
     fast_grid_scan: FastGridScan,
 ):

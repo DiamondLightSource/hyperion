@@ -24,22 +24,12 @@ from src.artemis.devices.status import await_value
 class GridScanParams:
     """
     Holder class for the parameters of a grid scan in a similar
-    layout to EPICS. It has a number of inconsistencies that reflect
-    the hardware:
-    z_steps is actually omega_steps and can be 0 or 1, if 0 then omega
-    should not move, if 1 then omega should rotate -90 degrees and then
-    the scan should be repeated. z_steps has not yet been renamed in
-    EPICS or the motion PLC so it is left as z here for consistency.
-    This constraint also means that z_steps_size is ignored. Confusingly,
-    z1_start and z2_start still refer to the actual z motor, they are the
-    constant positions z should occupy during the first and second grid
-    scans. Finally, dwell_time is also ignored in favour of a fixed delay
-    (see PER_POINT_DELAY in this module).
+    layout to EPICS.
     """
 
     x_steps: int = 1
     y_steps: int = 1
-    z_steps: int = 1
+    z_steps: int = 0
     x_step_size: float = 0.1
     y_step_size: float = 0.1
     dwell_time: float = 0.1
@@ -173,9 +163,10 @@ class FastGridScan(Device):
         super().__init__(*args, **kwargs)
 
         def set_expected_images(*_, **__):
-            self.expected_images.put(
-                self.x_steps.get() * self.y_steps.get() * (self.z_steps.get() + 1)
-            )
+            x, y, z = self.x_steps.get(), self.y_steps.get(), self.z_steps.get()
+            first_grid = x * y
+            second_grid = x * z
+            self.expected_images.put(first_grid + second_grid)
 
         self.x_steps.subscribe(set_expected_images)
         self.y_steps.subscribe(set_expected_images)
