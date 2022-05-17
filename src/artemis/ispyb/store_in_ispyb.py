@@ -15,32 +15,36 @@ class StoreInIspyb:
 
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
-    def __init__(self, ispyb_config, full_params: FullParameters):
+    def __init__(self, ispyb_config):
         self.ISPYB_CONFIG_FILE = ispyb_config
-        self.full_params = full_params
-        self.ispyb_params = full_params.ispyb_params
-        self.detector_params = full_params.detector_params
+        self.full_params = None
+        self.ispyb_params = None
+        self.detector_params = None
+        self.run_number = None
+        self.omega_start = None
+
         self.conn: Connector = None
         self.mx_acquisition = None
         self.core = None
 
-    def store_grid_scan(self):
+    def store_grid_scan(self, full_params: FullParameters):
+
+        self.full_params = full_params
+        self.ispyb_params = full_params.ispyb_params
+        self.detector_params = full_params.detector_params
+        self.run_number = self.ispyb_params.run_number
+        self.omega_start = self.detector_params.omega_start
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
             self.core = self.conn.core
 
-            data_collection_group_id = self._store_data_collection_group_table()
+            return self._store_scan_data()
 
-            data_collection_id = self._store_data_collection_table(
-                data_collection_group_id
-            )
-
-            self._store_position_table(data_collection_id)
-
-            grid_id = self._store_grid_info_table(data_collection_id)
-
-            return grid_id, data_collection_id
+    def _store_scan_data(self):
+        raise NotImplementedError(
+            "_store_scan_data() must be implemented by a subclass"
+        )
 
     def update_grid_scan_with_end_time_and_status(
         self, end_time: str, run_status: str, dc_id: int
@@ -80,8 +84,8 @@ class StoreInIspyb:
         params["parentid"] = data_collection_group_id
         params["sampleid"] = self.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
-        params["axis_start"] = self.detector_params.omega_start
-        params["axis_end"] = self.detector_params.omega_start
+        params["axis_start"] = self.omega_start
+        params["axis_end"] = self.omega_start
         params["axis_range"] = 0
         params["focal_spot_size_at_samplex"] = self.ispyb_params.focal_spot_size_x
         params["focal_spot_size_at_sampley"] = self.ispyb_params.focal_spot_size_y
@@ -91,7 +95,7 @@ class StoreInIspyb:
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
         params["transmission"] = self.ispyb_params.transmission
         params["comments"] = "Artemis: " + self.ispyb_params.comment
-        params["datacollection_number"] = self.ispyb_params.run_number
+        params["datacollection_number"] = self.run_number
         params["detector_distance"] = self.detector_params.detector_distance
         params["exp_time"] = self.detector_params.exposure_time
         params["imgdir"] = self.detector_params.directory
@@ -104,7 +108,7 @@ class StoreInIspyb:
         params["overlap"] = 0
 
         params["flux"] = self.ispyb_params.flux
-        params["omegastart"] = self.detector_params.omega_start
+        params["omegastart"] = self.omega_start
         params["start_image_number"] = 1
         params["resolution"] = self.ispyb_params.resolution
         params["wavelength"] = self.ispyb_params.wavelength
@@ -122,7 +126,7 @@ class StoreInIspyb:
         # temporary file template until nxs filewriting is integrated and we can use that file name
         params[
             "file_template"
-        ] = f"{self.detector_params.prefix}_{self.ispyb_params.run_number}_master.h5"
+        ] = f"{self.detector_params.prefix}_{self.run_number}_master.h5"
 
         return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
