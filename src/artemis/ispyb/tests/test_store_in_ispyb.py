@@ -4,7 +4,7 @@ from unittest.mock import mock_open, patch
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import ANY, mock, when
-from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
+from src.artemis.ispyb.store_in_ispyb_2d import StoreInIspyb2D
 from src.artemis.parameters import FullParameters
 
 TEST_DATA_COLLECTION_ID = 12
@@ -26,7 +26,7 @@ TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 @pytest.fixture
 def dummy_ispyb():
-    return StoreInIspyb(DUMMY_CONFIG, DUMMY_PARAMS)
+    return StoreInIspyb2D(DUMMY_CONFIG)
 
 
 def test_get_current_time_string(dummy_ispyb):
@@ -67,7 +67,10 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
         TEST_GRID_INFO_ID
     )
 
-    assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)
+    assert dummy_ispyb.store_grid_scan(DUMMY_PARAMS) == (
+        [TEST_DATA_COLLECTION_ID],
+        [TEST_GRID_INFO_ID],
+    )
 
 
 @patch("ispyb.open", new_callable=mock_open)
@@ -92,4 +95,7 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
     )
     when(mx_acquisition).upsert_dc_grid(ANY).thenReturn(TEST_GRID_INFO_ID)
 
-    assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)
+    assert dummy_ispyb.store_grid_scan(DUMMY_PARAMS) == (
+        [TEST_DATA_COLLECTION_ID],
+        [TEST_GRID_INFO_ID],
+    )
