@@ -13,7 +13,7 @@ from nexgen.nxs_write.NexusWriter import call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 from scanspec.specs import Line, Spec
-from src.artemis.devices.eiger import DetectorParams
+from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.fast_grid_scan import GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams
 from src.artemis.parameters import FullParameters
@@ -93,6 +93,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
     Returns:
         Dict: The dictionary for nexgen to write.
     """
+    detector_pixels = detector_params.get_detector_size_pizels()
     return {
         "mode": "images",
         "description": "Eiger 16M",
@@ -106,7 +107,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
         "flatfield_applied": "_dectris/flatfield_correction_applied",
         "pixel_mask": "mask",
         "pixel_mask_applied": "_dectris/pixel_mask_applied",
-        "image_size": [4148, 4362],  # (fast, slow)
+        "image_size": [detector_pixels.width, detector_pixels.height],  # (fast, slow)
         "axes": ["det_z"],
         "depends": ["."],
         "vectors": [0.0, 0.0, 1.0],
