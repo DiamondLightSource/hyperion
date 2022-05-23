@@ -44,7 +44,7 @@ class FullParameters:
         sample_barcode=None,
         position=Point3D(x=None, y=None, z=None),
         synchrotron_mode=None,
-        xtal_snapshots=None,
+        xtal_snapshots=["test"],
         run_number=None,
         transmission=1.0,
         flux=10.0,
