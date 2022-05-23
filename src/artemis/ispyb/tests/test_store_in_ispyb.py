@@ -108,24 +108,19 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
     )
 
 
-@patch("ispyb.open", new_callable=mock_open)
-def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
-    ispyb_conn, dummy_ispyb
+def _test_when_grid_scan_stored_then_data_present_in_upserts(
+    ispyb_conn, dummy_ispyb, test_function
 ):
     setup_mock_return_values(ispyb_conn)
 
     dummy_ispyb.store_grid_scan()
-
-    def test_sample_id(expected, actual):
-        sampleid_idx = list(expected).index("sampleid")
-        return actual[sampleid_idx] == expected["sampleid"]
 
     mx_acquisition = ispyb_conn.return_value.mx_acquisition
 
     verify(mx_acquisition, times=1).upsert_data_collection_group(
         arg_that(
             partial(
-                test_sample_id,
+                test_function,
                 MXAcquisition.get_data_collection_group_params(),
             )
         )
@@ -134,8 +129,37 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     verify(mx_acquisition, times=1).upsert_data_collection(
         arg_that(
             partial(
-                test_sample_id,
+                test_function,
                 MXAcquisition.get_data_collection_params(),
             )
         )
+    )
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
+    ispyb_conn, dummy_ispyb
+):
+    def test_sample_id(default_params, actual):
+        sampleid_idx = list(default_params).index("sampleid")
+        return actual[sampleid_idx] == default_params["sampleid"]
+
+    _test_when_grid_scan_stored_then_data_present_in_upserts(
+        ispyb_conn, dummy_ispyb, test_sample_id
+    )
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
+    ispyb_conn, dummy_ispyb
+):
+    expected_sample_id = "0001"
+    dummy_ispyb.ispyb_params.sample_id = expected_sample_id
+
+    def test_sample_id(default_params, actual):
+        sampleid_idx = list(default_params).index("sampleid")
+        return actual[sampleid_idx] == expected_sample_id
+
+    _test_when_grid_scan_stored_then_data_present_in_upserts(
+        ispyb_conn, dummy_ispyb, test_sample_id
     )
