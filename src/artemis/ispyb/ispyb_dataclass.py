@@ -1,8 +1,9 @@
-from dataclasses import dataclass, field
 from collections import namedtuple
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Optional
 
-from dataclasses_json import dataclass_json, config
+from dataclasses_json import config, dataclass_json
 
 Point2D = namedtuple("point_2d", ["x", "y"])
 Point3D = namedtuple("point_3d", ["x", "y", "z"])
@@ -11,7 +12,6 @@ Point3D = namedtuple("point_3d", ["x", "y", "z"])
 @dataclass_json
 @dataclass
 class IspybParams:
-    sample_id: int
     visit_path: str
     undulator_gap: float
     pixels_per_micron_x: float
@@ -23,8 +23,6 @@ class IspybParams:
             decoder=lambda mydict: Point2D(**mydict),
         )
     )
-
-    sample_barcode: str
 
     position: Point3D = field(
         metadata=config(
@@ -47,6 +45,9 @@ class IspybParams:
     focal_spot_size_y: float
     comment: str
     resolution: float
+
+    sample_id: Optional[int] = None
+    sample_barcode: Optional[str] = None
 
 
 class Orientation(Enum):
