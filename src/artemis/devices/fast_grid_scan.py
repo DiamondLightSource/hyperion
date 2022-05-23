@@ -5,8 +5,14 @@ from typing import List
 
 from bluesky.plan_stubs import mv
 from dataclasses_json import dataclass_json
-from ophyd import (Component, Device, EpicsSignal, EpicsSignalRO,
-                   EpicsSignalWithRBV, Signal)
+from ophyd import (
+    Component,
+    Device,
+    EpicsSignal,
+    EpicsSignalRO,
+    EpicsSignalWithRBV,
+    Signal,
+)
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
 from src.artemis.devices.motors import GridScanLimitBundle
@@ -147,6 +153,7 @@ class FastGridScan(Device):
 
     x_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_STEP_SIZE")
     y_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_STEP_SIZE")
+    z_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_STEP_SIZE")
 
     dwell_time: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "DWELL_TIME")
 
@@ -230,6 +237,8 @@ def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
         params.x_step_size,
         scan.y_step_size,
         params.y_step_size,
+        scan.z_step_size,
+        params.z_step_size,
         scan.dwell_time,
         params.dwell_time,
         scan.x_start,

@@ -18,6 +18,7 @@ class FullParameters:
         z_steps=0,
         x_step_size=0.1,
         y_step_size=0.1,
+        z_step_size=0.1,
         dwell_time=0.2,
         x_start=0.0,
         y1_start=0.0,

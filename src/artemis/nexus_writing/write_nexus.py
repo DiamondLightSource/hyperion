@@ -179,11 +179,9 @@ class NexusWriter:
         self.scan_spec = create_scan_spec(parameters.grid_scan_params)
         self.directory = Path(parameters.detector_params.directory)
         self.filename = parameters.detector_params.prefix
-        self.num_of_images_per_grid = parameters.detector_params.num_images
+        self.num_of_images = parameters.detector_params.num_images
         self.nexus_file = self.directory / f"{self.filename}.nxs"
         self.master_file = self.directory / f"{self.filename}_master.h5"
-        self.nexus_file_3d = self.directory / f"{self.filename}_3d.nxs"
-        self.master_file_3d = self.directory / f"{self.filename}_3d_master.h5"
 
     def _get_current_time(self):
         return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
@@ -210,7 +208,7 @@ class NexusWriter:
                     image_data,
                     "mcstas",
                     scan_range,
-                    ("images", self.num_of_images_per_grid),
+                    ("images", self.num_of_images),
                     self.goniometer,
                     self.detector,
                     module,
@@ -224,7 +222,7 @@ class NexusWriter:
                 image_vds_writer(
                     nxsfile,
                     (
-                        self.num_of_images_per_grid,
+                        self.num_of_images,
                         self.detector["image_size"][1],
                         self.detector["image_size"][0],
                     ),
