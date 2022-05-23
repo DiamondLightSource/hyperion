@@ -4,7 +4,7 @@ from typing import Tuple
 from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.utils.epics_pvs import set_and_wait
-from src.artemis.devices.Detector import DetectorParams
+from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.eiger_odin import EigerOdin
 from src.artemis.devices.status import await_value
 

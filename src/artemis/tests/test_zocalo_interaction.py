@@ -1,12 +1,12 @@
-from unittest.mock import patch, MagicMock
-from src.artemis.zocalo_interaction import run_start, run_end
-from zocalo.configuration import Configuration
-from workflows.transport import default_transport
 import getpass
 import socket
-from typing import Callable, Dict
 from functools import partial
-from pytest import raises, mark
+from typing import Callable, Dict
+from unittest.mock import MagicMock, patch
+
+from pytest import mark, raises
+from src.artemis.zocalo_interaction import run_end, run_start
+from zocalo.configuration import Configuration
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -31,10 +31,10 @@ def _test_zocalo(
     func_testing(mock_transport)
 
     mock_zc.activate.assert_called_once()
-    mock_transport_lookup.assert_called_once_with(default_transport)
+    mock_transport_lookup.assert_called_once_with("PikaTransport")
     mock_transport.connect.assert_called_once()
     expected_message = {
-        "recipes": "mimas",
+        "recipes": ["mimas"],
         "parameters": expected_params,
     }
 
