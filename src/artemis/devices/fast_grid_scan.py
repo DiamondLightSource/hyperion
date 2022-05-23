@@ -5,14 +5,8 @@ from typing import List
 
 from bluesky.plan_stubs import mv
 from dataclasses_json import dataclass_json
-from ophyd import (
-    Component,
-    Device,
-    EpicsSignal,
-    EpicsSignalRO,
-    EpicsSignalWithRBV,
-    Signal,
-)
+from ophyd import (Component, Device, EpicsSignal, EpicsSignalRO,
+                   EpicsSignalWithRBV, Signal)
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
 from src.artemis.devices.motors import GridScanLimitBundle
@@ -25,6 +19,9 @@ class GridScanParams:
     """
     Holder class for the parameters of a grid scan in a similar
     layout to EPICS.
+
+    Motion program will do a grid in x-y then rotate omega +90 and perform
+    a grid in x-z
     """
 
     x_steps: int = 1
