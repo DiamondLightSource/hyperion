@@ -21,13 +21,6 @@ TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 
 @pytest.fixture
-def dummy_ispyb_with_0_sample_id():
-    params = DUMMY_PARAMS
-    params.ispyb_params.sample_id = 0
-    return StoreInIspyb(DUMMY_CONFIG, params)
-
-
-@pytest.fixture
 def dummy_ispyb():
     return StoreInIspyb(DUMMY_CONFIG, DUMMY_PARAMS)
 
@@ -108,12 +101,12 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
 
 
 @patch("ispyb.open", new_callable=mock_open)
-def test_given_sampleid_of_0_when_grid_scan_stored_then_sample_id_not_set(
-    ispyb_conn, dummy_ispyb_with_0_sample_id
+def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
+    ispyb_conn, dummy_ispyb
 ):
     setup_mock_return_values(ispyb_conn)
 
-    dummy_ispyb_with_0_sample_id.store_grid_scan()
+    dummy_ispyb.store_grid_scan()
 
     def test_sample_id(expected, actual):
         sampleid_idx = list(expected).index("sampleid")

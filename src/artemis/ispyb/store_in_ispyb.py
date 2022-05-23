@@ -78,7 +78,7 @@ class StoreInIspyb:
         params = self.mx_acquisition.get_data_collection_params()
         params["visitid"] = session_id
         params["parentid"] = data_collection_group_id
-        if self.ispyb_params.sample_id != 0:
+        if self.ispyb_params.sample_id:
             params["sampleid"] = self.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
         params["axis_start"] = self.detector_params.omega_start
@@ -145,7 +145,7 @@ class StoreInIspyb:
         params = self.mx_acquisition.get_data_collection_group_params()
         params["parentid"] = session_id
         params["experimenttype"] = "mesh"
-        if self.ispyb_params.sample_id != 0:
+        if self.ispyb_params.sample_id:
             params["sampleid"] = self.ispyb_params.sample_id
             params["sample_barcode"] = self.ispyb_params.sample_barcode
 
