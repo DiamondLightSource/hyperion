@@ -32,6 +32,7 @@ class GridScanParams:
     z_steps: int = 0
     x_step_size: float = 0.1
     y_step_size: float = 0.1
+    z_step_size: float = 0.1
     dwell_time: float = 0.1
     x_start: float = 0.1
     y1_start: float = 0.1
@@ -50,16 +51,23 @@ class GridScanParams:
         x_in_limits = limits.x.is_within(self.x_start) and limits.x.is_within(
             self.x_end
         )
-        y_in_limits = limits.y.is_within(self.y1_start) and limits.x.is_within(
+        y_in_limits = limits.y.is_within(self.y1_start) and limits.y.is_within(
             self.y_end
         )
-        return (
-            # All scan axes are within limits
-            x_in_limits
-            and y_in_limits
-            # Z never exceeds limits
-            and limits.z.is_within(self.z1_start)
+
+        first_grid_in_limits = (
+            x_in_limits and y_in_limits and limits.z.is_within(self.z1_start)
         )
+
+        z_in_limits = limits.z.is_within(self.z2_start) and limits.z.is_within(
+            self.z_end
+        )
+
+        second_grid_in_limits = (
+            x_in_limits and z_in_limits and limits.y.is_within(self.y2_start)
+        )
+
+        return first_grid_in_limits and second_grid_in_limits
 
     @property
     def x_end(self):
@@ -68,6 +76,14 @@ class GridScanParams:
     @property
     def y_end(self):
         return self.y1_start + (self.y_steps * self.y_step_size)
+
+    @property
+    def z_end(self):
+        return self.z2_start + (self.z_steps * self.z_step_size)
+
+    @property
+    def is_3d_grid_scan(self):
+        return self.z_steps > 0
 
 
 class GridScanCompleteStatus(DeviceStatus):
