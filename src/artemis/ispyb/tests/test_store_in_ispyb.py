@@ -67,7 +67,11 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
         TEST_GRID_INFO_ID
     )
 
-    assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)
+    assert dummy_ispyb.store_grid_scan() == (
+        TEST_GRID_INFO_ID,
+        TEST_DATA_COLLECTION_ID,
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
 
 
 @patch("ispyb.open", new_callable=mock_open)
@@ -92,4 +96,8 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
     )
     when(mx_acquisition).upsert_dc_grid(ANY).thenReturn(TEST_GRID_INFO_ID)
 
-    assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)
+    assert dummy_ispyb.store_grid_scan() == (
+        TEST_GRID_INFO_ID,
+        TEST_DATA_COLLECTION_ID,
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
