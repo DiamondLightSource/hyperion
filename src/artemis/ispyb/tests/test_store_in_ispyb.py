@@ -63,7 +63,11 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
         TEST_GRID_INFO_ID
     )
 
-    assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)
+    assert dummy_ispyb.store_grid_scan() == (
+        TEST_GRID_INFO_ID,
+        TEST_DATA_COLLECTION_ID,
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
 
 
 def setup_mock_return_values(ispyb_conn):
@@ -97,7 +101,11 @@ def setup_mock_return_values(ispyb_conn):
 def test_param_keys(ispyb_conn, dummy_ispyb):
     setup_mock_return_values(ispyb_conn)
 
-    assert dummy_ispyb.store_grid_scan() == (TEST_GRID_INFO_ID, TEST_DATA_COLLECTION_ID)
+    assert dummy_ispyb.store_grid_scan() == (
+        TEST_GRID_INFO_ID,
+        TEST_DATA_COLLECTION_ID,
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
 
 
 @patch("ispyb.open", new_callable=mock_open)

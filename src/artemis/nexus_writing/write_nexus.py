@@ -13,7 +13,7 @@ from nexgen.nxs_write.NexusWriter import call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 from scanspec.specs import Line, Spec
-from src.artemis.devices.eiger import DetectorParams
+from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.fast_grid_scan import GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams
 from src.artemis.parameters import FullParameters
@@ -93,6 +93,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
     Returns:
         Dict: The dictionary for nexgen to write.
     """
+    detector_pixels = detector_params.get_detector_size_pizels()
     return {
         "mode": "images",
         "description": "Eiger 16M",
@@ -106,7 +107,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
         "flatfield_applied": "_dectris/flatfield_correction_applied",
         "pixel_mask": "mask",
         "pixel_mask_applied": "_dectris/pixel_mask_applied",
-        "image_size": [4148, 4362],  # (fast, slow)
+        "image_size": [detector_pixels.width, detector_pixels.height],  # (fast, slow)
         "axes": ["det_z"],
         "depends": ["."],
         "vectors": [0.0, 0.0, 1.0],
@@ -177,12 +178,11 @@ class NexusWriter:
             parameters.ispyb_params
         )
         self.scan_spec = create_scan_spec(parameters.grid_scan_params)
-        self.directory, self.filename = (
-            Path(parameters.detector_params.directory),
-            parameters.detector_params.prefix,
-        )
+        self.directory = Path(parameters.detector_params.directory)
+        self.filename = parameters.detector_params.prefix
         self.num_of_images = parameters.detector_params.num_images
         self.nexus_file = self.directory / f"{self.filename}.nxs"
+        self.master_file = self.directory / f"{self.filename}_master.h5"
 
     def _get_current_time(self):
         return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
@@ -198,38 +198,40 @@ class NexusWriter:
         image_data = [self.directory / f"{self.filename}_000001.h5"]
         metafile = self.directory / f"{self.filename}_meta.h5"
 
-        with h5py.File(self.nexus_file, "x") as nxsfile:
-            nxentry = write_NXentry(nxsfile)
+        for filename in [self.nexus_file, self.master_file]:
+            with h5py.File(filename, "x") as nxsfile:
+                nxentry = write_NXentry(nxsfile)
 
-            nxentry.create_dataset("start_time", data=np.string_(start_time))
+                nxentry.create_dataset("start_time", data=np.string_(start_time))
 
-            call_writers(
-                nxsfile,
-                image_data,
-                "mcstas",
-                scan_range,
-                ("images", self.num_of_images),
-                self.goniometer,
-                self.detector,
-                module,
-                source,
-                self.beam,
-                self.attenuator,
-                metafile=metafile,
-                link_list=dset_links,
-            )
+                call_writers(
+                    nxsfile,
+                    image_data,
+                    "mcstas",
+                    scan_range,
+                    ("images", self.num_of_images),
+                    self.goniometer,
+                    self.detector,
+                    module,
+                    source,
+                    self.beam,
+                    self.attenuator,
+                    metafile=metafile,
+                    link_list=dset_links,
+                )
 
-            image_vds_writer(
-                nxsfile,
-                (
-                    self.num_of_images,
-                    self.detector["image_size"][1],
-                    self.detector["image_size"][0],
-                ),
-            )
+                image_vds_writer(
+                    nxsfile,
+                    (
+                        self.num_of_images,
+                        self.detector["image_size"][1],
+                        self.detector["image_size"][0],
+                    ),
+                )
 
     def __exit__(self, *_):
-        with h5py.File(self.nexus_file, "r+") as nxsfile:
-            nxsfile["entry"].create_dataset(
-                "end_time", data=np.string_(self._get_current_time())
-            )
+        for filename in [self.nexus_file, self.master_file]:
+            with h5py.File(filename, "r+") as nxsfile:
+                nxsfile["entry"].create_dataset(
+                    "end_time", data=np.string_(self._get_current_time())
+                )

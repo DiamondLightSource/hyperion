@@ -4,7 +4,7 @@ from typing import Tuple
 from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.utils.epics_pvs import set_and_wait
-from src.artemis.devices.Detector import DetectorParams
+from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.eiger_odin import EigerOdin
 from src.artemis.devices.status import await_value
 
@@ -25,7 +25,9 @@ class EigerDetector(Device):
 
     STALE_PARAMS_TIMEOUT = 60
 
-    def __init__(self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs):
+    def __init__(
+        self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
+    ):
         super().__init__(name=name, *args, **kwargs)
         self.detector_params = detector_params
         self.check_detector_variables_set()

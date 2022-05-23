@@ -96,6 +96,7 @@ class GridScanCompleteStatus(DeviceStatus):
             fraction = None
             time_remaining = None
             self.set_exception(e)
+            self.clean_up()
         else:
             time_remaining = time_elapsed / fraction
         for watcher in self._watchers:
@@ -113,16 +114,7 @@ class GridScanCompleteStatus(DeviceStatus):
 
     def _running_changed(self, value=None, old_value=None, **kwargs):
         if (old_value == 1) and (value == 0):
-            # Stopped running
-            number_of_images = self.device.position_counter.get()
-            if number_of_images != self._target_count:
-                self.set_exception(
-                    Exception(
-                        f"Grid scan finished without collecting expected number of images. Expected {self._target_count} got {number_of_images}."
-                    )
-                )
-            else:
-                self.set_finished()
+            self.set_finished()
             self.clean_up()
 
     def clean_up(self):
