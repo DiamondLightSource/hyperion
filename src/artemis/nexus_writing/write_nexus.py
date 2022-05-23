@@ -187,6 +187,13 @@ class NexusWriter:
     def _get_current_time(self):
         return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
 
+    def get_image_datafiles(self):
+        max_images_per_file = 1000
+        return [
+            self.directory / f"{self.filename}_{h5_num:06}.h5"
+            for h5_num in range(1, (self.num_of_images // max_images_per_file) + 2)
+        ]
+
     def __enter__(self):
         """
         Creates a nexus file based on the parameters supplied when this obect was initialised.
@@ -195,7 +202,6 @@ class NexusWriter:
 
         scan_range = calculate_scan_from_scanspec(self.scan_spec)
 
-        image_data = [self.directory / f"{self.filename}_000001.h5"]
         metafile = self.directory / f"{self.filename}_meta.h5"
 
         for filename in [self.nexus_file, self.master_file]:
@@ -206,7 +212,7 @@ class NexusWriter:
 
                 call_writers(
                     nxsfile,
-                    image_data,
+                    self.get_image_datafiles(),
                     "mcstas",
                     scan_range,
                     ("images", self.num_of_images),

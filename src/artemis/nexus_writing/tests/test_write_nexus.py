@@ -74,3 +74,16 @@ def test_given_parameters_when_nexus_writer_used_as_context_manager_then_all_dat
 
     assert_start_data_correct(nexus_writer, test_full_params)
     assert_end_data_correct(nexus_writer)
+
+
+def test_given_2540_images_then_expected_datafiles_used():
+    params = FullParameters()
+    params.detector_params.num_images = 2540
+    nexus_writer = NexusWriter(params)
+    assert len(nexus_writer.get_image_datafiles()) == 3
+    paths = [str(filename) for filename in nexus_writer.get_image_datafiles()]
+    assert paths == [
+        "/tmp/file_name_000001.h5",
+        "/tmp/file_name_000002.h5",
+        "/tmp/file_name_000003.h5",
+    ]
