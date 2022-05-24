@@ -1,11 +1,8 @@
 from dataclasses import dataclass, field
-from collections import namedtuple
 from enum import Enum
 
-from dataclasses_json import dataclass_json, config
-
-Point2D = namedtuple("point_2d", ["x", "y"])
-Point3D = namedtuple("point_3d", ["x", "y", "z"])
+from dataclasses_json import config, dataclass_json
+from src.artemis.utils import Point2D, Point3D
 
 
 @dataclass_json

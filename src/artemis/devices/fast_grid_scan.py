@@ -17,6 +17,24 @@ from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
 from src.artemis.devices.motors import GridScanLimitBundle
 from src.artemis.devices.status import await_value
+from src.artemis.utils import Point3D
+
+
+@dataclass
+class GridAxis:
+    start: int
+    step_size: float
+    full_steps: int
+
+    def steps_to_motor_position(self, steps):
+        return self.start + (steps * self.step_size)
+
+    @property
+    def end(self):
+        return self.steps_to_motor_position(self.full_steps)
+
+    def is_within(self, steps):
+        return 0 <= steps <= self.full_steps
 
 
 @dataclass_json
@@ -43,6 +61,12 @@ class GridScanParams:
     z1_start: float = 0.1
     z2_start: float = 0.1
 
+    def __post_init__(self):
+        self.x_axis = GridAxis(self.x_start, self.x_step_size, self.x_steps)
+        self.y_axis = GridAxis(self.y1_start, self.y_step_size, self.y_steps)
+        self.z_axis = GridAxis(self.z2_start, self.z_step_size, self.z_steps)
+        self.axes = [self.x_axis, self.y_axis, self.z_axis]
+
     def is_valid(self, limits: GridScanLimitBundle) -> bool:
         """
         Validates scan parameters
@@ -51,19 +75,19 @@ class GridScanParams:
                        the parameters
         :return: True if the scan is valid
         """
-        x_in_limits = limits.x.is_within(self.x_start) and limits.x.is_within(
-            self.x_end
+        x_in_limits = limits.x.is_within(self.x_axis.start) and limits.x.is_within(
+            self.x_axis.end
         )
-        y_in_limits = limits.y.is_within(self.y1_start) and limits.y.is_within(
-            self.y_end
+        y_in_limits = limits.y.is_within(self.y_axis.start) and limits.y.is_within(
+            self.y_axis.end
         )
 
         first_grid_in_limits = (
             x_in_limits and y_in_limits and limits.z.is_within(self.z1_start)
         )
 
-        z_in_limits = limits.z.is_within(self.z2_start) and limits.z.is_within(
-            self.z_end
+        z_in_limits = limits.z.is_within(self.z_axis.start) and limits.z.is_within(
+            self.z_axis.end
         )
 
         second_grid_in_limits = (
@@ -73,20 +97,25 @@ class GridScanParams:
         return first_grid_in_limits and second_grid_in_limits
 
     @property
-    def x_end(self):
-        return self.x_start + (self.x_steps * self.x_step_size)
-
-    @property
-    def y_end(self):
-        return self.y1_start + (self.y_steps * self.y_step_size)
-
-    @property
-    def z_end(self):
-        return self.z2_start + (self.z_steps * self.z_step_size)
-
-    @property
     def is_3d_grid_scan(self):
         return self.z_steps > 0
+
+    def grid_position_to_motor_position(self, grid_position: Point3D) -> Point3D:
+        """Converts a grid position, given as steps in the x, y, z grid,
+        to a real motor position.
+
+        :param grid_position: The x, y, z position in grid steps
+        :return: The motor position this corresponds to.
+        :raises: IndexError if the desired position is outside the grid."""
+        for position, axis in zip(grid_position, self.axes):
+            if not axis.is_within(position):
+                raise IndexError(f"{grid_position} is outside the bounds of the grid")
+
+        return Point3D(
+            self.x_axis.steps_to_motor_position(grid_position.x),
+            self.y_axis.steps_to_motor_position(grid_position.y),
+            self.z_axis.steps_to_motor_position(grid_position.z),
+        )
 
 
 class GridScanCompleteStatus(DeviceStatus):
