@@ -87,3 +87,13 @@ def test_check_detector_variables(
             fake_eiger.check_detector_variables_set()
         except Exception as e:
             assert False, f"exception was raised {e}"
+
+
+def test_when_set_odin_pvs_called_then_full_filename_written(fake_eiger: EigerDetector):
+    expected_full_filename = "test_full_filename"
+    fake_eiger.detector_params.full_filename = expected_full_filename
+
+    fake_eiger.set_odin_pvs()
+
+    assert fake_eiger.odin.file_writer.file_prefix.get() == expected_full_filename
+    assert fake_eiger.odin.meta.file_name.get() == expected_full_filename

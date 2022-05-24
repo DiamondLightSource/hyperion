@@ -179,7 +179,7 @@ class NexusWriter:
         )
         self.scan_spec = create_scan_spec(parameters.grid_scan_params)
         self.directory = Path(parameters.detector_params.directory)
-        self.filename = parameters.detector_params.prefix
+        self.filename = parameters.detector_params.full_filename
         self.num_of_images = parameters.detector_params.num_images
         self.nexus_file = self.directory / f"{self.filename}.nxs"
         self.master_file = self.directory / f"{self.filename}_master.h5"

@@ -1,8 +1,8 @@
-from dataclasses import dataclass, field
 from collections import namedtuple
+from dataclasses import dataclass, field
 from enum import Enum
 
-from dataclasses_json import dataclass_json, config
+from dataclasses_json import config, dataclass_json
 
 Point2D = namedtuple("point_2d", ["x", "y"])
 Point3D = namedtuple("point_3d", ["x", "y", "z"])
@@ -35,7 +35,6 @@ class IspybParams:
 
     synchrotron_mode: str
     xtal_snapshots: str
-    run_number: int
     transmission: float
     flux: float
     wavelength: float
