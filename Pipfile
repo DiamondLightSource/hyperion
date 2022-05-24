@@ -5,13 +5,13 @@ name = "pypi"
 
 [packages]
 bluesky = "*"
-ophyd = "*"
+ophyd = ">=1.6.4"
 pyepics="*"
 flask-restful="*"
 dataclasses-json = "*"
 zocalo = "*"
 ispyb = "*"
-nexgen = {git = "https://github.com/DominicOram/nexgen.git", ref = "add_support_for_defining_scans_using_scanspec"}
+nexgen = {git = "https://github.com/DominicOram/nexgen.git", ref = "add_support_for_defining_scans_using_scanspec", editable = true}
 scanspec = "*"
 
 [dev-packages]

@@ -23,6 +23,7 @@ class DetectorParams:
     acquisition_id: int
     directory: str
     prefix: str
+    run_number: int
     detector_distance: float
     omega_start: float
     omega_increment: float
@@ -99,3 +100,7 @@ class DetectorParams:
     @property
     def omega_end(self):
         return self.omega_start + self.num_images * self.omega_increment
+
+    @property
+    def full_filename(self):
+        return f"{self.prefix}_{self.run_number}"
