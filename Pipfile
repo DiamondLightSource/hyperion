@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 bluesky = "*"
-ophyd = ">=1.6.4"
+ophyd = {git = "https://github.com/bluesky/ophyd.git", ref = "master", editable = true}
 pyepics="*"
 flask-restful="*"
 dataclasses-json = "*"
