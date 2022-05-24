@@ -148,6 +148,7 @@ class StoreInIspyb:
 
         params = self.mx_acquisition.get_data_collection_group_params()
         params["parentid"] = session_id
+        params["experimenttype"] = "mesh"
         params["sampleid"] = self.ispyb_params.sample_id
         params["sample_barcode"] = self.ispyb_params.sample_barcode
 
