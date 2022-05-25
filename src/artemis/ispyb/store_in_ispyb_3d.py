@@ -4,6 +4,7 @@ from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
 class StoreInIspyb3D(StoreInIspyb):
     def __init__(self, ispyb_config):
         super().__init__(ispyb_config)
+        self.experiment_type = "Mesh3D"
 
     def _store_scan_data(self):
         data_collection_group_id = self._store_data_collection_group_table()

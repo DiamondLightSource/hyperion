@@ -22,6 +22,7 @@ class StoreInIspyb:
         self.detector_params = None
         self.run_number = None
         self.omega_start = None
+        self.experiment_type = None
 
         self.conn: Connector = None
         self.mx_acquisition = None
@@ -147,7 +148,7 @@ class StoreInIspyb:
 
         params = self.mx_acquisition.get_data_collection_group_params()
         params["parentid"] = session_id
-        params["experimenttype"] = "mesh"
+        params["experimenttype"] = self.experiment_type
         params["sampleid"] = self.ispyb_params.sample_id
         params["sample_barcode"] = self.ispyb_params.sample_barcode
 
