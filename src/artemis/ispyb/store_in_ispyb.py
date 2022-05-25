@@ -48,13 +48,18 @@ class StoreInIspyb:
         )
 
     def update_grid_scan_with_end_time_and_status(
-        self, end_time: str, run_status: str, dc_id: int
+        self,
+        end_time: str,
+        run_status: str,
+        datacollection_id: int,
+        datacollection_group_id: int,
     ) -> int:
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
 
             params = self.mx_acquisition.get_data_collection_params()
-            params["id"] = dc_id
+            params["id"] = datacollection_id
+            params["parentid"] = datacollection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
 
