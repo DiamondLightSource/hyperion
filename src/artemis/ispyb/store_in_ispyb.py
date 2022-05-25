@@ -33,7 +33,7 @@ class StoreInIspyb:
         self.full_params = full_params
         self.ispyb_params = full_params.ispyb_params
         self.detector_params = full_params.detector_params
-        self.run_number = self.ispyb_params.run_number
+        self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
