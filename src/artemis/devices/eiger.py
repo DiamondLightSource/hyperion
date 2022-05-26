@@ -4,7 +4,7 @@ from typing import Tuple
 from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.utils.epics_pvs import set_and_wait
-from src.artemis.devices.Detector import DetectorParams
+from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.eiger_odin import EigerOdin
 from src.artemis.devices.status import await_value
 
@@ -25,7 +25,9 @@ class EigerDetector(Device):
 
     STALE_PARAMS_TIMEOUT = 60
 
-    def __init__(self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs):
+    def __init__(
+        self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
+    ):
         super().__init__(name=name, *args, **kwargs)
         self.detector_params = detector_params
         self.check_detector_variables_set()
@@ -108,8 +110,8 @@ class EigerDetector(Device):
         self.odin.fan.forward_stream.put(True)
         self.odin.file_writer.id.put(self.detector_params.acquisition_id)
         self.odin.file_writer.file_path.put(self.detector_params.directory)
-        self.odin.file_writer.file_prefix.put(self.detector_params.prefix)
-        self.odin.meta.file_name.put(self.detector_params.prefix)
+        self.odin.file_writer.file_prefix.put(self.detector_params.full_filename)
+        self.odin.meta.file_name.put(self.detector_params.full_filename)
 
     def set_mx_settings_pvs(self):
         beam_x_pixels, beam_y_pixels = self.detector_params.get_beam_position_pixels(

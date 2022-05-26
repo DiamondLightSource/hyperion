@@ -19,7 +19,7 @@ class DetectorDistanceToBeamXYConverter:
     def get_beam_xy_from_det_dist(self, det_dist_mm: float, beam_axis: Axis) -> float:
         beam_axis_values = self.lookup_table_values[beam_axis.value]
         det_dist_array = self.lookup_table_values[0]
-        return interp(det_dist_mm, det_dist_array, beam_axis_values)
+        return float(interp(det_dist_mm, det_dist_array, beam_axis_values))
 
     def get_beam_axis_pixels(
         self,

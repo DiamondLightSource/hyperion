@@ -5,6 +5,7 @@ from typing import Tuple
 from dataclasses_json import config, dataclass_json
 from src.artemis.devices.det_dim_constants import (
     EIGER2_X_16M_SIZE,
+    DetectorSize,
     DetectorSizeConstants,
     constants_from_type,
 )
@@ -22,6 +23,7 @@ class DetectorParams:
     acquisition_id: int
     directory: str
     prefix: str
+    run_number: int
     detector_distance: float
     omega_start: float
     omega_increment: float
@@ -70,13 +72,14 @@ class DetectorParams:
 
         return x_beam_mm - offset_x, y_beam_mm - offset_y
 
+    def get_detector_size_pizels(self) -> DetectorSize:
+        full_size = self.detector_size_constants.det_size_pixels
+        roi_size = self.detector_size_constants.roi_size_pixels
+        return roi_size if self.use_roi_mode else full_size
+
     def get_beam_position_pixels(self, detector_distance: float) -> Tuple[float, float]:
         full_size_pixels = self.detector_size_constants.det_size_pixels
-        roi_size_pixels = (
-            self.detector_size_constants.roi_size_pixels
-            if self.use_roi_mode
-            else full_size_pixels
-        )
+        roi_size_pixels = self.get_detector_size_pizels()
 
         x_beam_pixels = self.beam_xy_converter.get_beam_x_pixels(
             detector_distance,
@@ -97,3 +100,7 @@ class DetectorParams:
     @property
     def omega_end(self):
         return self.omega_start + self.num_images * self.omega_increment
+
+    @property
+    def full_filename(self):
+        return f"{self.prefix}_{self.run_number}"
