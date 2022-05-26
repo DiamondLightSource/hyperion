@@ -14,11 +14,12 @@ from bluesky.utils import ProgressBarManager
 from ophyd.log import config_ophyd_logging
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
+from src.artemis.devices.motors import GridScanMotorBundle
 from src.artemis.devices.zebra import Zebra
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
 from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
-from src.artemis.zocalo_interaction import run_end, run_start
+from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
@@ -33,7 +34,11 @@ config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 
 @bpp.run_decorator()
 def run_gridscan(
-    fgs: FastGridScan, zebra: Zebra, eiger: EigerDetector, parameters: FullParameters
+    fgs: FastGridScan,
+    zebra: Zebra,
+    eiger: EigerDetector,
+    sample_motors: GridScanMotorBundle,
+    parameters: FullParameters,
 ):
     ispyb = StoreInIspyb("config", parameters)
     _, datacollection_id, datacollection_group_id = ispyb.store_grid_scan()
@@ -58,6 +63,19 @@ def run_gridscan(
     )
     run_end(datacollection_id)
 
+    xray_centre = wait_for_result(datacollection_id)
+    xray_centre_motor_position = (
+        parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
+    )
+    yield from bps.mv(
+        sample_motors.x,
+        xray_centre_motor_position.x,
+        sample_motors.y,
+        xray_centre_motor_position.y,
+        sample_motors.z,
+        xray_centre_motor_position.z,
+    )
+
 
 def get_plan(parameters: FullParameters):
     """Create the plan to run the grid scan based on provided parameters.
@@ -78,7 +96,11 @@ def get_plan(parameters: FullParameters):
     )
     zebra = Zebra(name="zebra", prefix=f"{parameters.beamline}-EA-ZEBRA-01:")
 
-    return run_gridscan(fast_grid_scan, zebra, eiger, parameters)
+    sample_motors = GridScanMotorBundle(
+        name="sample_motors", prefix=f"{parameters.beamline}-MO-SGON-01:"
+    )
+
+    return run_gridscan(fast_grid_scan, zebra, eiger, sample_motors, parameters)
 
 
 if __name__ == "__main__":
