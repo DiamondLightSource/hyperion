@@ -4,8 +4,7 @@ from unittest.mock import mock_open, patch
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import ANY, mock, when
-from src.artemis.ispyb.store_in_ispyb_2d import StoreInIspyb2D
-from src.artemis.ispyb.store_in_ispyb_3d import StoreInIspyb3D
+from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from src.artemis.parameters import FullParameters
 
 TEST_DATA_COLLECTION_ID = 12
@@ -78,6 +77,7 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
     assert dummy_ispyb.store_grid_scan(DUMMY_PARAMS) == (
         [TEST_DATA_COLLECTION_ID],
         [TEST_GRID_INFO_ID],
+        TEST_DATA_COLLECTION_GROUP_ID,
     )
 
 
@@ -104,6 +104,7 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
     assert dummy_ispyb_3d.store_grid_scan(DUMMY_PARAMS) == (
         [TEST_DATA_COLLECTION_ID, TEST_DATA_COLLECTION_ID],
         [TEST_GRID_INFO_ID, TEST_GRID_INFO_ID],
+        TEST_DATA_COLLECTION_GROUP_ID,
     )
 
     assert dummy_ispyb_3d.omega_start == DUMMY_PARAMS.detector_params.omega_start - 90
@@ -135,4 +136,5 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
     assert dummy_ispyb.store_grid_scan(DUMMY_PARAMS) == (
         [TEST_DATA_COLLECTION_ID],
         [TEST_GRID_INFO_ID],
+        TEST_DATA_COLLECTION_GROUP_ID,
     )

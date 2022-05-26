@@ -1,5 +1,6 @@
 import datetime
 import re
+from abc import ABC, abstractmethod
 
 from sqlalchemy.connectors import Connector
 from src.artemis.ispyb.ispyb_dataclass import Orientation
@@ -11,7 +12,7 @@ I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
 
 
-class StoreInIspyb:
+class StoreInIspyb(ABC):
 
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
@@ -42,10 +43,9 @@ class StoreInIspyb:
 
             return self._store_scan_data()
 
+    @abstractmethod
     def _store_scan_data(self):
-        raise NotImplementedError(
-            "_store_scan_data() must be implemented by a subclass"
-        )
+        pass
 
     def update_grid_scan_with_end_time_and_status(
         self,
@@ -173,3 +173,57 @@ class StoreInIspyb:
     def get_visit_string_from_path(self, path):
         match = re.search(self.VISIT_PATH_REGEX, path) if path else None
         return match.group(1) if match else None
+
+
+class StoreInIspyb3D(StoreInIspyb):
+    def __init__(self, ispyb_config):
+        super().__init__(ispyb_config)
+        self.experiment_type = "Mesh3D"
+
+    def _store_scan_data(self):
+        data_collection_group_id = self._store_data_collection_group_table()
+
+        data_collection_id_1 = self._store_data_collection_table(
+            data_collection_group_id
+        )
+
+        self._store_position_table(data_collection_id_1)
+
+        grid_id_1 = self._store_grid_info_table(data_collection_id_1)
+
+        self.__prepare_second_scan_params()
+
+        data_collection_id_2 = self._store_data_collection_table(
+            data_collection_group_id
+        )
+
+        self._store_position_table(data_collection_id_2)
+
+        grid_id_2 = self._store_grid_info_table(data_collection_id_2)
+
+        return (
+            [data_collection_id_1, data_collection_id_2],
+            [grid_id_1, grid_id_2],
+            data_collection_group_id,
+        )
+
+    def __prepare_second_scan_params(self):
+        self.omega_start -= 90
+        self.run_number += 1
+
+
+class StoreInIspyb2D(StoreInIspyb):
+    def __init__(self, ispyb_config):
+        super().__init__(ispyb_config)
+        self.experiment_type = "mesh"
+
+    def _store_scan_data(self):
+        data_collection_group_id = self._store_data_collection_group_table()
+
+        data_collection_id = self._store_data_collection_table(data_collection_group_id)
+
+        self._store_position_table(data_collection_id)
+
+        grid_id = self._store_grid_info_table(data_collection_id)
+
+        return [data_collection_id], [grid_id], data_collection_group_id
