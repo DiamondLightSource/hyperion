@@ -5,7 +5,8 @@ name = "pypi"
 
 [packages]
 bluesky = "*"
-ophyd = ">=1.6.4"
+#Ophyd version required for tests to pass, pin to proper version when >1.6.4 released
+ophyd = {git = "https://github.com/bluesky/ophyd.git", ref = "0895f9f00bdf7454712aa954ea7c7f3f1776fcb9", editable = true} 
 pyepics="*"
 flask-restful="*"
 dataclasses-json = "*"
