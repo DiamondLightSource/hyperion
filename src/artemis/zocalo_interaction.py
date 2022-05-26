@@ -65,15 +65,15 @@ def run_end(data_collection_id: int):
 
 
 def wait_for_result(data_collection_id: int, timeout: int = TIMEOUT) -> Point3D:
-    """Block until a result is recieved from Zocalo.
+    """Block until a result is received from Zocalo.
     Args:
         data_collection_id (int): The ID of the data collection representing the gridscan in ISpyB
-        timeout (float): The time in seconds to wait for the result to be recieved.
+        timeout (float): The time in seconds to wait for the result to be received.
     Returns:
         Point in grid co-ordinates that is the centre point to move to
     """
     transport = _get_zocalo_connection()
-    result_recieved = None
+    result_received = None
 
     def receive_result(
         rw: workflows.recipe.RecipeWrapper, header: dict, message: dict
@@ -81,13 +81,13 @@ def wait_for_result(data_collection_id: int, timeout: int = TIMEOUT) -> Point3D:
         print(f"Received {message}")
         recipe_parameters = rw.recipe_step["parameters"]
         print(f"Recipe step parameters: {recipe_parameters}")
+        transport.ack(header)
         if recipe_parameters["dcid"] == str(data_collection_id):
-            transport.ack(header)
-            nonlocal result_recieved
-            result_recieved = Point3D(*message["max_voxel"])
+            nonlocal result_received
+            result_received = Point3D(*message["max_voxel"])
         else:
             print(
-                f"Warning: results for {recipe_parameters['dcid']} recieved but expected {data_collection_id}"
+                f"Warning: results for {recipe_parameters['dcid']} received but expected {data_collection_id}"
             )
 
     workflows.recipe.wrap_subscribe(
@@ -95,14 +95,14 @@ def wait_for_result(data_collection_id: int, timeout: int = TIMEOUT) -> Point3D:
         "xrc.i03",
         receive_result,
         acknowledgement=True,
-        allow_non_recipe_messages=True,
+        allow_non_recipe_messages=False,
     )
 
     try:
         for _ in range(timeout):
             sleep(1)
-            if result_recieved:
-                return result_recieved
+            if result_received:
+                return result_received
         raise TimeoutError(f"Result not received in {timeout} seconds")
     finally:
         transport.disconnect()
