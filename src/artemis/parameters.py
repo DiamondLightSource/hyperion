@@ -49,7 +49,7 @@ class FullParameters:
         sample_barcode=None,
         position=Point3D(x=None, y=None, z=None),
         synchrotron_mode=None,
-        xtal_snapshots=None,
+        xtal_snapshots=["test_1", "test_2", "test_3"],
         transmission=1.0,
         flux=10.0,
         wavelength=0.01,
