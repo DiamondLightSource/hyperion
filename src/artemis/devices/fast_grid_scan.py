@@ -23,17 +23,25 @@ from src.artemis.devices.status import await_value
 @dataclass
 class GridScanParams:
     """
-    Holder class for the parameters of a grid scan.
+    Holder class for the parameters of a grid scan in a similar
+    layout to EPICS.
+
+    Motion program will do a grid in x-y then rotate omega +90 and perform
+    a grid in x-z
     """
 
     x_steps: int = 1
     y_steps: int = 1
+    z_steps: int = 0
     x_step_size: float = 0.1
     y_step_size: float = 0.1
+    z_step_size: float = 0.1
     dwell_time: float = 0.1
     x_start: float = 0.1
     y1_start: float = 0.1
+    y2_start: float = 0.1
     z1_start: float = 0.1
+    z2_start: float = 0.1
 
     def is_valid(self, limits: GridScanLimitBundle) -> bool:
         """
@@ -46,16 +54,23 @@ class GridScanParams:
         x_in_limits = limits.x.is_within(self.x_start) and limits.x.is_within(
             self.x_end
         )
-        y_in_limits = limits.y.is_within(self.y1_start) and limits.x.is_within(
+        y_in_limits = limits.y.is_within(self.y1_start) and limits.y.is_within(
             self.y_end
         )
-        return (
-            # All scan axes are within limits
-            x_in_limits
-            and y_in_limits
-            # Z never exceeds limits
-            and limits.z.is_within(self.z1_start)
+
+        first_grid_in_limits = (
+            x_in_limits and y_in_limits and limits.z.is_within(self.z1_start)
         )
+
+        z_in_limits = limits.z.is_within(self.z2_start) and limits.z.is_within(
+            self.z_end
+        )
+
+        second_grid_in_limits = (
+            x_in_limits and z_in_limits and limits.y.is_within(self.y2_start)
+        )
+
+        return first_grid_in_limits and second_grid_in_limits
 
     @property
     def x_end(self):
@@ -64,6 +79,14 @@ class GridScanParams:
     @property
     def y_end(self):
         return self.y1_start + (self.y_steps * self.y_step_size)
+
+    @property
+    def z_end(self):
+        return self.z2_start + (self.z_steps * self.z_step_size)
+
+    @property
+    def is_3d_grid_scan(self):
+        return self.z_steps > 0
 
 
 class GridScanCompleteStatus(DeviceStatus):
@@ -126,15 +149,19 @@ class FastGridScan(Device):
 
     x_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_NUM_STEPS")
     y_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_NUM_STEPS")
+    z_steps: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_NUM_STEPS")
 
     x_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_STEP_SIZE")
     y_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_STEP_SIZE")
+    z_step_size: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_STEP_SIZE")
 
     dwell_time: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "DWELL_TIME")
 
     x_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "X_START")
     y1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y_START")
+    y2_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Y2_START")
     z1_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z_START")
+    z2_start: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "Z2_START")
 
     position_counter: EpicsSignal = Component(
         EpicsSignal, "POS_COUNTER", write_pv="POS_COUNTER_WRITE"
@@ -156,10 +183,14 @@ class FastGridScan(Device):
         super().__init__(*args, **kwargs)
 
         def set_expected_images(*_, **__):
-            self.expected_images.put(self.x_steps.get() * self.y_steps.get())
+            x, y, z = self.x_steps.get(), self.y_steps.get(), self.z_steps.get()
+            first_grid = x * y
+            second_grid = x * z
+            self.expected_images.put(first_grid + second_grid)
 
         self.x_steps.subscribe(set_expected_images)
         self.y_steps.subscribe(set_expected_images)
+        self.z_steps.subscribe(set_expected_images)
 
     def is_invalid(self) -> bool:
         if "GONP" in self.scan_invalid.pvname:
@@ -200,16 +231,24 @@ def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
         params.x_steps,
         scan.y_steps,
         params.y_steps,
+        scan.z_steps,
+        params.z_steps,
         scan.x_step_size,
         params.x_step_size,
         scan.y_step_size,
         params.y_step_size,
+        scan.z_step_size,
+        params.z_step_size,
         scan.dwell_time,
         params.dwell_time,
         scan.x_start,
         params.x_start,
         scan.y1_start,
         params.y1_start,
+        scan.y2_start,
+        params.y2_start,
         scan.z1_start,
         params.z1_start,
+        scan.z2_start,
+        params.z2_start,
     )
