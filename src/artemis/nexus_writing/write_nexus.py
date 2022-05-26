@@ -156,16 +156,16 @@ def create_scan_spec(grid_scan_params: GridScanParams) -> Spec:
     """
     y_line = Line(
         "sam_y",
-        grid_scan_params.y1_start,
-        grid_scan_params.y_end,
-        grid_scan_params.y_steps
+        grid_scan_params.y_axis.start,
+        grid_scan_params.y_axis.end,
+        grid_scan_params.y_axis.full_steps
         + 1,  # 1 more as we take an image on the first step as well as the last
     )
     x_line = Line(
         "sam_x",
-        grid_scan_params.x_start,
-        grid_scan_params.x_end,
-        grid_scan_params.x_steps + 1,
+        grid_scan_params.x_axis.start,
+        grid_scan_params.x_axis.end,
+        grid_scan_params.x_axis.full_steps + 1,
     )
     return y_line * ~x_line
 
