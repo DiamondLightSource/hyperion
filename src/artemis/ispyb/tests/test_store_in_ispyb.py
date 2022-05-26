@@ -4,8 +4,8 @@ from unittest.mock import mock_open, patch
 
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
-from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from mockito import ANY, arg_that, mock, verify, when
+from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from src.artemis.parameters import FullParameters
 
 TEST_DATA_COLLECTION_ID = 12
@@ -138,9 +138,9 @@ def setup_mock_return_values(ispyb_conn):
 def test_param_keys(ispyb_conn, dummy_ispyb):
     setup_mock_return_values(ispyb_conn)
 
-    assert dummy_ispyb.store_grid_scan() == (
-        TEST_GRID_INFO_ID,
-        TEST_DATA_COLLECTION_ID,
+    assert dummy_ispyb.store_grid_scan(DUMMY_PARAMS) == (
+        [TEST_DATA_COLLECTION_ID],
+        [TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
@@ -150,7 +150,7 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 ):
     setup_mock_return_values(ispyb_conn)
 
-    dummy_ispyb.store_grid_scan()
+    dummy_ispyb.store_grid_scan(DUMMY_PARAMS)
 
     mx_acquisition = ispyb_conn.return_value.mx_acquisition
 
@@ -191,7 +191,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     ispyb_conn, dummy_ispyb
 ):
     expected_sample_id = "0001"
-    dummy_ispyb.ispyb_params.sample_id = expected_sample_id
+    DUMMY_PARAMS.ispyb_params.sample_id = expected_sample_id
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")
