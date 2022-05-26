@@ -122,9 +122,11 @@ class StoreInIspyb(ABC):
             self.detector_params.detector_distance
         )
         params["xbeam"], params["ybeam"] = beam_position
-        params["xtal_snapshot1"], params["xtal_snapshot2"], params["xtal_snapshot3"] = [
-            self.ispyb_params.xtal_snapshots
-        ] * 3
+        (
+            params["xtal_snapshot1"],
+            params["xtal_snapshot2"],
+            params["xtal_snapshot3"],
+        ) = self.ispyb_params.xtal_snapshots
         params["synchrotron_mode"] = self.ispyb_params.synchrotron_mode
         params["undulator_gap1"] = self.ispyb_params.undulator_gap
         params["starttime"] = self.get_current_time_string()

@@ -1,17 +1,14 @@
-from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import List, Optional
 
 from dataclasses_json import config, dataclass_json
-
-Point2D = namedtuple("point_2d", ["x", "y"])
-Point3D = namedtuple("point_3d", ["x", "y", "z"])
+from src.artemis.utils import Point2D, Point3D
 
 
 @dataclass_json
 @dataclass
 class IspybParams:
-    sample_id: int
     visit_path: str
     undulator_gap: float
     pixels_per_micron_x: float
@@ -24,8 +21,6 @@ class IspybParams:
         )
     )
 
-    sample_barcode: str
-
     position: Point3D = field(
         metadata=config(
             encoder=lambda mytuple: mytuple._asdict(),
@@ -34,7 +29,7 @@ class IspybParams:
     )
 
     synchrotron_mode: str
-    xtal_snapshots: str
+    xtal_snapshots: List[str]
     transmission: float
     flux: float
     wavelength: float
@@ -46,6 +41,9 @@ class IspybParams:
     focal_spot_size_y: float
     comment: str
     resolution: float
+
+    sample_id: Optional[int] = None
+    sample_barcode: Optional[str] = None
 
 
 class Orientation(Enum):
