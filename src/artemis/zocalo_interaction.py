@@ -5,7 +5,7 @@ from time import sleep
 import workflows.recipe
 import workflows.transport
 import zocalo.configuration
-from src.artemis.ispyb.ispyb_dataclass import Point3D
+from src.artemis.utils import Point3D
 from workflows.transport import lookup
 
 TIMEOUT = 30
