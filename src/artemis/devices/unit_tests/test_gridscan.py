@@ -10,6 +10,7 @@ from src.artemis.devices.fast_grid_scan import (
     time,
 )
 from src.artemis.devices.motors import GridScanMotorBundle
+from src.artemis.utils import Point3D
 
 
 @pytest.fixture
@@ -284,3 +285,62 @@ def test_scan_within_limits_3d(
         y2_start=y2_start,
     )
     assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits
+
+
+@pytest.fixture
+def grid_scan_params():
+    yield GridScanParams(
+        10,
+        15,
+        20,
+        0.3,
+        0.2,
+        0.1,
+        x_start=0,
+        y1_start=1,
+        y2_start=2,
+        z1_start=3,
+        z2_start=4,
+    )
+
+
+@pytest.mark.parametrize(
+    "grid_position",
+    [
+        (Point3D(-1, 2, 4)),
+        (Point3D(11, 2, 4)),
+        (Point3D(1, 17, 4)),
+        (Point3D(1, 5, 22)),
+    ],
+)
+def test_given_x_y_z_out_of_range_then_converting_to_motor_coords_raises(
+    grid_scan_params: GridScanParams, grid_position
+):
+    with pytest.raises(IndexError):
+        grid_scan_params.grid_position_to_motor_position(grid_position)
+
+
+def test_given_x_y_z_of_origin_when_get_motor_positions_then_initial_positions_returned(
+    grid_scan_params: GridScanParams,
+):
+    motor_positions = grid_scan_params.grid_position_to_motor_position(Point3D(0, 0, 0))
+    assert motor_positions.x == 0
+    assert motor_positions.y == 1
+    assert motor_positions.z == 4
+
+
+@pytest.mark.parametrize(
+    "grid_position, expected_x, expected_y, expected_z",
+    [
+        (Point3D(1, 1, 1), 0.3, 1.2, 4.1),
+        (Point3D(2, 11, 16), 0.6, 3.2, 5.6),
+        (Point3D(7, 5, 5), 2.1, 2.0, 4.5),
+    ],
+)
+def test_given_various_x_y_z_when_get_motor_positions_then_expected_positions_returned(
+    grid_scan_params: GridScanParams, grid_position, expected_x, expected_y, expected_z
+):
+    motor_positions = grid_scan_params.grid_position_to_motor_position(grid_position)
+    assert motor_positions.x == expected_x
+    assert motor_positions.y == expected_y
+    assert motor_positions.z == expected_z

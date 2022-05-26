@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from src.artemis.devices.eiger import DetectorParams
 from src.artemis.devices.fast_grid_scan import GridScanParams
-from src.artemis.ispyb.ispyb_dataclass import IspybParams, Point2D, Point3D
+from src.artemis.ispyb.ispyb_dataclass import IspybParams
+from src.artemis.utils import Point2D, Point3D
 
 SIM_BEAMLINE = "BL03S"
 
