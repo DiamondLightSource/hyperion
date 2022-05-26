@@ -19,7 +19,9 @@ class StoreInIspyb3D(StoreInIspyb):
 
         self.__prepare_second_scan_params()
 
-        data_collection_id_2 = self._store_data_collection_table()
+        data_collection_id_2 = self._store_data_collection_table(
+            data_collection_group_id
+        )
 
         self._store_position_table(data_collection_id_2)
 
