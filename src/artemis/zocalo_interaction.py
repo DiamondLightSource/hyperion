@@ -1,4 +1,5 @@
 import getpass
+import queue
 import socket
 from time import sleep
 
@@ -73,7 +74,7 @@ def wait_for_result(data_collection_id: int, timeout: int = TIMEOUT) -> Point3D:
         Point in grid co-ordinates that is the centre point to move to
     """
     transport = _get_zocalo_connection()
-    result_received = None
+    result_received: queue.Queue = queue.Queue()
 
     def receive_result(
         rw: workflows.recipe.RecipeWrapper, header: dict, message: dict
@@ -83,8 +84,7 @@ def wait_for_result(data_collection_id: int, timeout: int = TIMEOUT) -> Point3D:
         print(f"Recipe step parameters: {recipe_parameters}")
         transport.ack(header)
         if recipe_parameters["dcid"] == str(data_collection_id):
-            nonlocal result_received
-            result_received = Point3D(*message["max_voxel"])
+            result_received.put(Point3D(*message["max_voxel"]))
         else:
             print(
                 f"Warning: results for {recipe_parameters['dcid']} received but expected {data_collection_id}"
@@ -99,10 +99,6 @@ def wait_for_result(data_collection_id: int, timeout: int = TIMEOUT) -> Point3D:
     )
 
     try:
-        for _ in range(timeout):
-            sleep(1)
-            if result_received:
-                return result_received
-        raise TimeoutError(f"Result not received in {timeout} seconds")
+        return result_received.get(timeout=timeout)
     finally:
         transport.disconnect()
