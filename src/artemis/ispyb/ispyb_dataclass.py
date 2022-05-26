@@ -1,12 +1,9 @@
-from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 from dataclasses_json import config, dataclass_json
-
-Point2D = namedtuple("point_2d", ["x", "y"])
-Point3D = namedtuple("point_3d", ["x", "y", "z"])
+from src.artemis.utils import Point2D, Point3D
 
 
 @dataclass_json
@@ -32,7 +29,7 @@ class IspybParams:
     )
 
     synchrotron_mode: str
-    xtal_snapshots: str
+    xtal_snapshots: List[str]
     transmission: float
     flux: float
     wavelength: float
