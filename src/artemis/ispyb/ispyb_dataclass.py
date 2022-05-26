@@ -33,7 +33,6 @@ class IspybParams:
 
     synchrotron_mode: str
     xtal_snapshots: str
-    run_number: int
     transmission: float
     flux: float
     wavelength: float
