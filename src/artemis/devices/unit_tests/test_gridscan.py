@@ -100,6 +100,24 @@ def test_given_0_expected_images_then_complete_watcher_correct(
     run_test_on_complete_watcher(fast_grid_scan, 0, 1, 0)
 
 
+@pytest.mark.parametrize(
+    "steps, expected_images",
+    [
+        ((10, 10, 0), 100),
+        ((30, 5, 10), 450),
+        ((7, 0, 5), 35),
+    ],
+)
+def test_given_different_step_numbers_then_expected_images_correct(
+    fast_grid_scan: FastGridScan, steps, expected_images
+):
+    fast_grid_scan.x_steps.sim_put(steps[0])
+    fast_grid_scan.y_steps.sim_put(steps[1])
+    fast_grid_scan.z_steps.sim_put(steps[2])
+
+    assert fast_grid_scan.expected_images.get() == expected_images
+
+
 def test_given_invalid_image_number_then_complete_watcher_correct(
     fast_grid_scan: FastGridScan,
 ):
@@ -158,10 +176,19 @@ def test_within_limits_check(position, expected_in_limit):
     assert limits.x.is_within(position) == expected_in_limit
 
 
+PASSING_LINE_1 = (1, 5, 1)
+PASSING_LINE_2 = (0, 10, 0.5)
+FAILING_LINE_1 = (-1, 20, 0.5)
+PASSING_CONST = 6
+FAILING_CONST = 15
+
+
 @pytest.mark.parametrize(
     "start, steps, size, expected_in_limits",
     [
-        (1, 5, 1, True),
+        (*PASSING_LINE_1, True),
+        (*PASSING_LINE_2, True),
+        (*FAILING_LINE_1, False),
         (-1, 5, 1, False),
         (-1, 10, 2, False),
         (0, 10, 0.1, True),
@@ -169,7 +196,91 @@ def test_within_limits_check(position, expected_in_limit):
         (5, 20, 0.6, False),
     ],
 )
-def test_scan_within_limits(start, steps, size, expected_in_limits):
+def test_scan_within_limits_1d(start, steps, size, expected_in_limits):
     motor_bundle = create_motor_bundle_with_limits(0.0, 10.0)
     grid_params = GridScanParams(x_start=start, x_steps=steps, x_step_size=size)
+    assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits
+
+
+@pytest.mark.parametrize(
+    "x_start, x_steps, x_size, y1_start, y_steps, y_size, z1_start, expected_in_limits",
+    [
+        (*PASSING_LINE_1, *PASSING_LINE_2, PASSING_CONST, True),
+        (*PASSING_LINE_1, *FAILING_LINE_1, PASSING_CONST, False),
+        (*PASSING_LINE_1, *PASSING_LINE_2, FAILING_CONST, False),
+    ],
+)
+def test_scan_within_limits_2d(
+    x_start, x_steps, x_size, y1_start, y_steps, y_size, z1_start, expected_in_limits
+):
+    motor_bundle = create_motor_bundle_with_limits(0.0, 10.0)
+    grid_params = GridScanParams(
+        x_start=x_start,
+        x_steps=x_steps,
+        x_step_size=x_size,
+        y1_start=y1_start,
+        y_steps=y_steps,
+        y_step_size=y_size,
+        z1_start=z1_start,
+    )
+    assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits
+
+
+@pytest.mark.parametrize(
+    "x_start, x_steps, x_size, y1_start, y_steps, y_size, z1_start, z2_start, z_steps, z_size, y2_start, expected_in_limits",
+    [
+        (
+            *PASSING_LINE_1,
+            *PASSING_LINE_2,
+            PASSING_CONST,
+            *PASSING_LINE_1,
+            PASSING_CONST,
+            True,
+        ),
+        (
+            *PASSING_LINE_1,
+            *PASSING_LINE_2,
+            PASSING_CONST,
+            *PASSING_LINE_1,
+            FAILING_CONST,
+            False,
+        ),
+        (
+            *PASSING_LINE_1,
+            *PASSING_LINE_2,
+            PASSING_CONST,
+            *FAILING_LINE_1,
+            PASSING_CONST,
+            False,
+        ),
+    ],
+)
+def test_scan_within_limits_3d(
+    x_start,
+    x_steps,
+    x_size,
+    y1_start,
+    y_steps,
+    y_size,
+    z1_start,
+    z2_start,
+    z_steps,
+    z_size,
+    y2_start,
+    expected_in_limits,
+):
+    motor_bundle = create_motor_bundle_with_limits(0.0, 10.0)
+    grid_params = GridScanParams(
+        x_start=x_start,
+        x_steps=x_steps,
+        x_step_size=x_size,
+        y1_start=y1_start,
+        y_steps=y_steps,
+        y_step_size=y_size,
+        z1_start=z1_start,
+        z2_start=z2_start,
+        z_steps=z_steps,
+        z_step_size=z_size,
+        y2_start=y2_start,
+    )
     assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits

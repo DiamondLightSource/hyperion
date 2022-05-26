@@ -1,6 +1,7 @@
 from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import List
 
 from dataclasses_json import config, dataclass_json
 
@@ -34,7 +35,7 @@ class IspybParams:
     )
 
     synchrotron_mode: str
-    xtal_snapshots: str
+    xtal_snapshots: List[str]
     transmission: float
     flux: float
     wavelength: float
