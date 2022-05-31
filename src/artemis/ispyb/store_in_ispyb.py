@@ -210,7 +210,7 @@ class StoreInIspyb3D(StoreInIspyb):
         )
 
     def __prepare_second_scan_params(self):
-        self.omega_start -= 90
+        self.omega_start += 90
         self.run_number += 1
 
 
