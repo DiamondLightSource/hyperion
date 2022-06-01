@@ -103,7 +103,7 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    assert dummy_ispyb_3d.omega_start == DUMMY_PARAMS.detector_params.omega_start - 90
+    assert dummy_ispyb_3d.omega_start == DUMMY_PARAMS.detector_params.omega_start + 90
     assert dummy_ispyb_3d.run_number == DUMMY_PARAMS.detector_params.run_number + 1
 
 
