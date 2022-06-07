@@ -103,7 +103,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup.return_value.return_value = mock_transport
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(wait_for_result, 8183741)
+        future = executor.submit(wait_for_result, 7263143)
 
         for _ in range(10):
             sleep(0.1)

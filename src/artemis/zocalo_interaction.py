@@ -65,10 +65,10 @@ def run_end(data_collection_id: int):
     )
 
 
-def wait_for_result(data_collection_id: int, timeout: int = TIMEOUT) -> Point3D:
+def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Point3D:
     """Block until a result is received from Zocalo.
     Args:
-        data_collection_id (int): The ID of the data collection representing the gridscan in ISpyB
+        data_collection_group_id (int): The ID of the data collection group representing the gridscan in ISpyB
         timeout (float): The time in seconds to wait for the result to be received.
     Returns:
         Point in grid co-ordinates that is the centre point to move to
@@ -83,11 +83,12 @@ def wait_for_result(data_collection_id: int, timeout: int = TIMEOUT) -> Point3D:
         recipe_parameters = rw.recipe_step["parameters"]
         print(f"Recipe step parameters: {recipe_parameters}")
         transport.ack(header)
-        if recipe_parameters["dcid"] == str(data_collection_id):
+        received_group_id = recipe_parameters["dcgid"]
+        if received_group_id == str(data_collection_group_id):
             result_received.put(Point3D(*message["max_voxel"]))
         else:
             print(
-                f"Warning: results for {recipe_parameters['dcid']} received but expected {data_collection_id}"
+                f"Warning: results for {received_group_id} received but expected {data_collection_group_id}"
             )
 
     workflows.recipe.wrap_subscribe(
