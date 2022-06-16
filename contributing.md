@@ -1,5 +1,7 @@
 # How to contribute to Artemis
 
+Artemis should prioritise working, agile code over strict standards, particularly for contributors that are not full time developers. The standards below are thus guidelines that developers should try to follow as much as possible (apart from when something is specified in bold, which is required).
+
 General Workflow
 ----------------
 
@@ -7,7 +9,7 @@ General Workflow
 2. If a developer is going to do the work they assign themselves to the issue.
 3. The developer makes a new branch with the format `issue_short_description` e.g. `122_create_a_contributing_file`. (External developers are also welcome to make forks)
 4. The developer does the work on this branch, adding their work in small commits. Commit messages should be informative and prefixed with the issue number e.g. `#122: Added contributing file".
-5. The developer submits a PR for the work. In the pull request should start with `Fixes #issue_num` e.g. `Fixes #122`, this will ensure the issue is automatically closed when the PR is merged.
+5. The developer submits a PR for the work. In the pull request should start with `Fixes #issue_num` e.g. `Fixes #122`, this will ensure the issue is automatically closed when the PR is merged. The developer should also add some background on how the reviewer might test the change.
 6. If the developer has a particular person in mind to review the work they should assign that person to the PR as a reviewer.
 7. The reviewer and developer go back and forth on the code until the reviewer approves it. (See [Reviewing Work](#reviewing-work))
 8. Once the work is approved the original developer merges it.
