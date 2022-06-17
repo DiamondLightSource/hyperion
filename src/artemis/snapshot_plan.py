@@ -11,10 +11,10 @@ RE = RunEngine({})
 
 def prepare_for_snapshot():
 	yield from abs_set(backlight.pos, Backlight.IN, group='A')
-	# TODO get from beamlineParameters
-	miniap_y_ROBOT_LOAD = 31.40
-	if (yield from rd(aperture.y)) > miniap_y_ROBOT_LOAD:
-		yield from abs_set(aperture.y, miniap_y_ROBOT_LOAD, group='A')
+	# TODO get from beamlineParameters miniap_y_ROBOT_LOAD
+	aperture_y_snapshot_position = 31.40
+	if (yield from rd(aperture.y)) > aperture_y_snapshot_position:
+		yield from abs_set(aperture.y, aperture_y_snapshot_position, group='A')
 	yield from wait('A')
 
 
