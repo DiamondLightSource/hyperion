@@ -4,7 +4,7 @@ from devices.backlight import Backlight
 from devices.aperture import Aperture
 
 backlight = Backlight(name="Backlight", prefix="BL03I")
-aperture = Aperture(name="Aperture", prefix="BL03I")
+aperture = Aperture(name="Aperture", prefix="BL03I-MO-MAPT-01:")
 aperture.wait_for_connection()
 
 RE = RunEngine({})
