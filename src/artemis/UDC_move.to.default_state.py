@@ -89,7 +89,7 @@ def move_to_default_UDC_state():			# TODO add energy change
 
 	#basic checks done, move to known positions safely
 	yield from make_scin_safe()
-	yield from bps.mv(fluo.pos, OUT)# ctab.inboard_y, 0, ctab.outboard_y, 0, ctab.upstream_y, 0, ctab.downstream_x, 0, ctab.upstream_x, 0) 
+	yield from bps.mv(fluo.pos, OUT) #, ctab.inboard_y, 0, ctab.outboard_y, 0, ctab.upstream_y, 0, ctab.downstream_x, 0, ctab.upstream_x, 0) 
 	yield from bps.mv(sgon.chi, 0)
 	yield from bps.mv(sgon.x, 0, sgon.y, 0, sgon.z, 0, sgon.phi, 0, sgon.omega, 0, gonp.x, 0, gonp.z, 0) 
 	yield from put_bs_in()
