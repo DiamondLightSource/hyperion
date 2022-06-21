@@ -16,5 +16,5 @@ class Det(Device):
 	
 	shutter_closed_lim: EpicsSignalRO = Cpt(EpicsSignalRO, '-MO-DET-01:CLOSE_LIMIT')# on limit = 1, off = 0
 	shutter_open_lim: EpicsSignalRO = Cpt(EpicsSignalRO, '-MO-DET-01:OPEN_LIMIT')	# on limit = 1, off = 0
-	z_disabled: EpicsSignalRO = Cpt(EpicsSignalRO, '-MO-PMAC-02:GPIO_INP_BITS')	#returns 36 if light off
-	crate_power: EpicsSignalRO = Cpt(EpicsSignalRO, '-MO-PMAC-02:CRATE2_HEALTHY')	#returns  0 if light off
+	z_disabled: EpicsSignalRO = Cpt(EpicsSignalRO, '-MO-DET-01:Z:DISABLED')	#robot interlock, 0=ok to move, 1=blocked
+	crate_power: EpicsSignalRO = Cpt(EpicsSignalRO, '-MO-PMAC-02:CRATE2_HEALTHY')	#returns 0 if no power
