@@ -37,7 +37,7 @@ def run_gridscan(
     fgs: FastGridScan, zebra: Zebra, eiger: EigerDetector, parameters: FullParameters
 ):
     config = "config"
-    if parameters.grid_scan_params.is_3d_grid_scan():
+    if parameters.grid_scan_params.is_3d_grid_scan:
         ispyb = StoreInIspyb3D(config)
     else:
         ispyb = StoreInIspyb2D(config)
