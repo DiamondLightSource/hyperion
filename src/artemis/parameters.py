@@ -7,12 +7,13 @@ from src.artemis.ispyb.ispyb_dataclass import IspybParams
 from src.artemis.utils import Point2D, Point3D
 
 SIM_BEAMLINE = "BL03S"
-
+SIM_INSERTION_PREFIX = "SR03S"
 
 @dataclass_json
 @dataclass
 class FullParameters:
     beamline: str = SIM_BEAMLINE
+    insetrion_prefix: str = SIM_INSERTION_PREFIX
     grid_scan_params: GridScanParams = GridScanParams(
         x_steps=5,
         y_steps=10,

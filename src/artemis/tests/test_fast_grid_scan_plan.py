@@ -27,7 +27,7 @@ def test_when_get_plan_called_then_generator_returned():
     assert isinstance(plan, types.GeneratorType)
 
 
-def test_parameters_updated_from_epics_devices_correctly():
+def test_undulator_gap_updated_from_epics_device_correctly():
     RE = RunEngine({})
     test_value = 1.234
     params = FullParameters()
