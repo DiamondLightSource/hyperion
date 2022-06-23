@@ -23,6 +23,7 @@ mockito="*"
 pre-commit = ">2.9.0"
 flake8 = "*"
 mypy = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.7"
