@@ -15,6 +15,7 @@ from ophyd.log import config_ophyd_logging
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from src.artemis.devices.zebra import Zebra
+from src.artemis.devices.undulator import Undulator
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
 from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
@@ -31,10 +32,20 @@ config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 # Start analysis run collection
 
 
+def update_params_from_epics(parameters: FullParameters):
+    undulator = Undulator(
+        name="Undulator",
+        prefix=f"{parameters.beamline}-MO-SERVC-01:"
+    )
+    undulator_gap = yield from bps.rd(undulator.gap)
+    parameters.ispyb_params.undulator_gap = undulator_gap
+
+
 @bpp.run_decorator()
 def run_gridscan(
     fgs: FastGridScan, zebra: Zebra, eiger: EigerDetector, parameters: FullParameters
 ):
+    yield from update_params_from_epics(parameters)
     ispyb = StoreInIspyb("config", parameters)
     _, datacollection_id, datacollection_group_id = ispyb.store_grid_scan()
     run_start(datacollection_id)
