@@ -32,20 +32,16 @@ config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 # Start analysis run collection
 
 
-def update_params_from_epics(parameters: FullParameters):
-    undulator = Undulator(
-        name="Undulator",
-        prefix=f"{parameters.beamline}-MO-SERVC-01:"
-    )
+def update_params_from_epics_devices(parameters: FullParameters, undulator: Undulator):
     undulator_gap = yield from bps.rd(undulator.gap)
     parameters.ispyb_params.undulator_gap = undulator_gap
 
 
 @bpp.run_decorator()
 def run_gridscan(
-    fgs: FastGridScan, zebra: Zebra, eiger: EigerDetector, parameters: FullParameters
+    fgs: FastGridScan, zebra: Zebra, eiger: EigerDetector, undulator: Undulator, parameters: FullParameters
 ):
-    yield from update_params_from_epics(parameters)
+    yield from update_params_from_epics_devices(parameters, undulator)
     ispyb = StoreInIspyb("config", parameters)
     _, datacollection_id, datacollection_group_id = ispyb.store_grid_scan()
     run_start(datacollection_id)
@@ -89,7 +85,9 @@ def get_plan(parameters: FullParameters):
     )
     zebra = Zebra(name="zebra", prefix=f"{parameters.beamline}-EA-ZEBRA-01:")
 
-    return run_gridscan(fast_grid_scan, zebra, eiger, parameters)
+    undulator = Undulator(name="undulator", prefix=f"{parameters.beamline}-MO-SERVC-01:")
+
+    return run_gridscan(fast_grid_scan, zebra, eiger, undulator, parameters)
 
 
 if __name__ == "__main__":
