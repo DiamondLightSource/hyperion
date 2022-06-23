@@ -44,15 +44,17 @@ ctab.wait_for_connection()
 IN=1
 OUT=0
 
+######default state for I03. The safe psitions should be read from a central parameter file
+
 RE=RunEngine({})
 
 def make_scin_safe():
 
-	if (scin.y.position < 1 and scin.z.position < 1):
+	if (scin.y.position < 0.016 and scin.z.position < 0.016):
 		pass
 	else:
-		yield from bps.mv(scin.y, 0.1, mapt.x, -4.91, sg.x, -4.75) 
-		yield from bps.mv(scin.z, 0.1)
+		yield from bps.mv(scin.y, 0.015, mapt.x, -4.91, sg.x, -4.75) 
+		yield from bps.mv(scin.z, 0.015)
 
 def put_bs_in():
 	if (bs.z.position >25 and bs.y.position > 25):
