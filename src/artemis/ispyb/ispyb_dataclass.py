@@ -29,7 +29,8 @@ class IspybParams:
     )
 
     synchrotron_mode: str
-    xtal_snapshots: List[str]
+    xtal_snapshots_y: List[str]
+    xtal_snapshots_z: List[str]
     transmission: float
     flux: float
     wavelength: float
