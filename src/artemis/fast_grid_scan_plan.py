@@ -18,7 +18,7 @@ from src.artemis.devices.zebra import Zebra
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb
 from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
-from src.artemis.zocalo_interaction import run_end, run_start
+from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
@@ -57,6 +57,8 @@ def run_gridscan(
         datacollection_group_id,
     )
     run_end(datacollection_id)
+
+    wait_for_result(datacollection_group_id)
 
 
 def get_plan(parameters: FullParameters):

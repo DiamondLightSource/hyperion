@@ -1,11 +1,14 @@
+import concurrent.futures
 import getpass
 import socket
 from functools import partial
+from time import sleep
 from typing import Callable, Dict
 from unittest.mock import MagicMock, patch
 
 from pytest import mark, raises
-from src.artemis.zocalo_interaction import run_end, run_start
+from src.artemis.ispyb.ispyb_dataclass import Point3D
+from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 from zocalo.configuration import Configuration
 
 EXPECTED_DCID = 100
@@ -31,7 +34,6 @@ def _test_zocalo(
     func_testing(mock_transport)
 
     mock_zc.activate.assert_called_once()
-    mock_transport_lookup.assert_called_once_with("PikaTransport")
     mock_transport.connect.assert_called_once()
     expected_message = {
         "recipes": ["mimas"],
@@ -80,3 +82,41 @@ def test_run_start_and_end(
     function_to_run = partial(function_to_test, EXPECTED_DCID)
     function_to_run = partial(function_wrapper, function_to_run)
     _test_zocalo(function_to_run, expected_message)
+
+
+@patch("workflows.recipe.wrap_subscribe")
+@patch("zocalo.configuration.from_file")
+@patch("src.artemis.zocalo_interaction.lookup")
+def test_when_message_recieved_from_zocalo_then_point_returned(
+    mock_transport_lookup, mock_from_file, mock_wrap_subscribe
+):
+    message = {
+        "max_voxel": [3, 5, 5],
+        "centre_of_mass": [2.942925659754348, 7.142683401382778, 6.79110544979448],
+    }
+    step_params = {"dcid": "8183741", "dcgid": "7263143"}
+
+    mock_zc: Configuration = MagicMock()
+    mock_from_file.return_value = mock_zc
+    mock_transport = MagicMock()
+    mock_transport_lookup.return_value = MagicMock()
+    mock_transport_lookup.return_value.return_value = mock_transport
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(wait_for_result, 7263143)
+
+        for _ in range(10):
+            sleep(0.1)
+            if mock_wrap_subscribe.call_args:
+                break
+
+        result_func = mock_wrap_subscribe.call_args[0][2]
+
+        mock_recipe_wrapper = MagicMock()
+        mock_recipe_wrapper.recipe_step.__getitem__.return_value = step_params
+        result_func(mock_recipe_wrapper, {}, message)
+
+        return_value = future.result()
+
+    assert type(return_value) == Point3D
+    assert return_value == Point3D(3, 5, 5)
