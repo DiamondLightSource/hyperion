@@ -24,6 +24,7 @@ bs.wait_for_connection()
 RE=RunEngine({})
 
 def move_to_robot_load():
+	yield from bps.mv(sgon.stub_offset_set, 1)
 	yield from bps.mv(sgon.x,0 ,sgon.y,0, sgon.z, 0, sgon.chi, 0, sgon.phi, 0, sgon.omega, 0, backlight.pos, OUT, mapt.y, 31.4, bs.z, 30)
 
 RE(move_to_robot_load())

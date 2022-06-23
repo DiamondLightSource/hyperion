@@ -1,5 +1,5 @@
 
-from ophyd import Device, EpicsMotor
+from ophyd import Device, EpicsMotor, EpicsSignal
 from ophyd import Component as Cpt
 
 class I03Smargon(Device):
@@ -9,3 +9,6 @@ class I03Smargon(Device):
 	chi: EpicsMotor = Cpt(EpicsMotor, '-MO-SGON-01:CHI')
 	phi: EpicsMotor = Cpt(EpicsMotor, '-MO-SGON-01:PHI')
 	omega: EpicsMotor = Cpt(EpicsMotor, '-MO-SGON-01:OMEGA')
+
+	stub_offset_set: EpicsSignal = Cpt(EpicsSignal, '-MO-SGON-01:SET_STUBS_TO_RL.PROC')
+

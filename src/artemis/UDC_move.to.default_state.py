@@ -50,11 +50,11 @@ RE=RunEngine({})
 
 def make_scin_safe():
 
-	if (scin.y.position < 0.016 and scin.z.position < 0.016):
+	if (scin.y.position < 0.016 and scin.z.position < 0.1):
 		pass
 	else:
 		yield from bps.mv(scin.y, 0.015, mapt.x, -4.91, sg.x, -4.75) 
-		yield from bps.mv(scin.z, 0.015)
+		yield from bps.mv(scin.z, 0.1)
 
 def put_bs_in():
 	if (bs.z.position >25 and bs.y.position > 25):
