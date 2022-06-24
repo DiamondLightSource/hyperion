@@ -163,8 +163,7 @@ def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
     assert response_json["status"] == Status.IDLE.value
 
 
-def test_test_parameters_json():
-    test_parameters_json = json.load(open("test_parameters.json"))
-    test_parameters_json_string = json.dumps(test_parameters_json)
-    parameters = FullParameters.from_json(test_parameters_json_string)
-    assert True
+def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
+    test_parameters_json = open("test_parameters.json").read()
+    response = test_env.client.put(START_ENDPOINT, data=test_parameters_json)
+    check_status_in_response(response, Status.SUCCESS)
