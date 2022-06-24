@@ -13,6 +13,7 @@ General Workflow
 6. If the developer has a particular person in mind to review the work they should assign that person to the PR as a reviewer.
 7. The reviewer and developer go back and forth on the code until the reviewer approves it. (See [Reviewing Work](#reviewing-work))
 8. Once the work is approved the original developer merges it.
+9. The developer deletes the merged branch.
 
 **Work should not be done without an associated ticket describing what the work is**
 
