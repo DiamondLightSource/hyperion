@@ -1,15 +1,14 @@
-from dataclasses import dataclass
-import threading
-import pytest
-from typing import Any, Callable
-from flask.testing import FlaskClient
-from src.artemis.parameters import FullParameters
-
-from src.artemis.main import create_app, Status, Actions
-from src.artemis.devices.det_dim_constants import EIGER_TYPE_EIGER2_X_4M
 import json
+import threading
+from dataclasses import dataclass
 from time import sleep
+from typing import Any, Callable
 
+import pytest
+from flask.testing import FlaskClient
+from src.artemis.devices.det_dim_constants import EIGER_TYPE_EIGER2_X_4M
+from src.artemis.main import Actions, Status, StatusAndMessage, create_app
+from src.artemis.parameters import FullParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -162,3 +161,10 @@ def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
     test_env.mock_run_engine.RE_takes_time = False
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.IDLE.value
+
+
+def test_test_parameters_json():
+    test_parameters_json = json.load(open("test_parameters.json"))
+    test_parameters_json_string = json.dumps(test_parameters_json)
+    parameters = FullParameters.from_json(test_parameters_json_string)
+    assert True
