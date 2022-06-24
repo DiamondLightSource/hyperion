@@ -10,7 +10,6 @@ from src.artemis.utils import Point2D, Point3D
 @dataclass
 class IspybParams:
     visit_path: str
-    undulator_gap: float
     pixels_per_micron_x: float
     pixels_per_micron_y: float
 
@@ -44,6 +43,8 @@ class IspybParams:
 
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
+    # The following is optional because we are getting it from the EPICS PV
+    undulator_gap: Optional[float] = None
 
 
 class Orientation(Enum):
