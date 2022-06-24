@@ -103,7 +103,7 @@ def get_plan(parameters: FullParameters):
     zebra = Zebra(name="zebra", prefix=f"{parameters.beamline}-EA-ZEBRA-01:")
 
     undulator = Undulator(
-        name="undulator", prefix=f"{parameters.beamline}-MO-SERVC-01:"
+        name="undulator", prefix=f"{parameters.insertion_prefix}-MO-SERVC-01:"
     )
 
     return run_gridscan(fast_grid_scan, zebra, eiger, undulator, parameters)
