@@ -48,10 +48,13 @@ def run_gridscan(
 ):
     yield from update_params_from_epics_devices(parameters, undulator)
     config = "config"
-    if parameters.grid_scan_params.is_3d_grid_scan:
-        ispyb = StoreInIspyb3D(config)
-    else:
-        ispyb = StoreInIspyb2D(config)
+
+    ispyb = (
+        StoreInIspyb3D(config)
+        if parameters.grid_scan_params.is_3d_grid_scan
+        else StoreInIspyb2D(config)
+    )
+
     datacollection_ids, _, datacollection_group_id = ispyb.store_grid_scan(parameters)
 
     for id in datacollection_ids:
