@@ -37,7 +37,7 @@ class StoreInIspyb(ABC):
         self.detector_params = full_params.detector_params
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
-        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_y
+        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
@@ -214,7 +214,7 @@ class StoreInIspyb3D(StoreInIspyb):
     def __prepare_second_scan_params(self):
         self.omega_start += 90
         self.run_number += 1
-        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_z
+        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
 
 
 class StoreInIspyb2D(StoreInIspyb):
