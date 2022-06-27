@@ -99,8 +99,10 @@ def test_given_parameters_when_nexus_writer_used_as_context_manager_then_all_dat
 
 
 def test_nexus_writer_files_are_formatted_as_expected():
-    nexus_writer = NexusWriter(get_minimum_parameters_for_file_writing())
+    parameters = get_minimum_parameters_for_file_writing()
+    nexus_writer = NexusWriter(parameters)
 
     for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
         file_name = os.path.basename(file.name)
-        assert file_name.startswith("file_name_0")
+        expected_file_name_prefix = parameters.detector_params.prefix + "_0"
+        assert file_name.startswith(expected_file_name_prefix)
