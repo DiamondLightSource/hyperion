@@ -8,6 +8,7 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
+import shutil
 from nexgen.nxs_write import calculate_scan_from_scanspec
 from nexgen.nxs_write.NexusWriter import call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
@@ -231,7 +232,10 @@ class NexusWriter:
 
     def __exit__(self, *_):
         for filename in [self.nexus_file, self.master_file]:
-            with h5py.File(filename, "r+") as nxsfile:
+            temp_filename = filename.parent / f"{filename.name}.tmp"
+            shutil.copy(filename, temp_filename)
+            with h5py.File(temp_filename, "r+") as nxsfile:
                 nxsfile["entry"].create_dataset(
                     "end_time", data=np.string_(self._get_current_time())
                 )
+            shutil.move(temp_filename, filename)
