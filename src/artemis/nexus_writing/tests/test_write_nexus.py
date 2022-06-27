@@ -1,5 +1,4 @@
 import os
-import tempfile
 from collections import namedtuple
 
 import h5py
@@ -8,13 +7,17 @@ from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import FullParameters
 
 """It's hard to effectively unit test the nexus writing so these are really system tests 
-that confirms that we're passing the right sorts of data to nexgen to get a sensible output."""
+that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
+Note that the testing process does now write temporary files to disk."""
 
 ParamsAndNexusWriter = namedtuple("ParamsAndNexusWriter", ["params", "nexus_writer"])
 
 
 def get_minimum_parameters_for_file_writing() -> FullParameters:
     test_full_params = FullParameters()
+    test_path = os.path.abspath(os.path.dirname(__file__))
+    test_full_params.detector_params.directory = str(test_path)
+    test_full_params.detector_params.prefix = "test_write_nexus"
     test_full_params.ispyb_params.wavelength = 1.0
     test_full_params.ispyb_params.flux = 9.0
     test_full_params.ispyb_params.transmission = 0.5
@@ -43,8 +46,10 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 def create_nexus_writer_with_temp_file(test_params: FullParameters) -> NexusWriter:
     nexus_writer = NexusWriter(test_params)
-    nexus_writer.nexus_file = tempfile.NamedTemporaryFile(delete=False)
-    nexus_writer.master_file = tempfile.NamedTemporaryFile(delete=False)
+    # remove below
+    # nexus_writer.nexus_file = tempfile.NamedTemporaryFile(delete=False)
+    # nexus_writer.master_file = tempfile.NamedTemporaryFile(delete=False)
+
     return nexus_writer
 
 
@@ -52,7 +57,11 @@ def create_nexus_writer_with_temp_file(test_params: FullParameters) -> NexusWrit
 def params_and_nexus_writer():
     test_full_params = get_minimum_parameters_for_file_writing()
     nexus_writer = create_nexus_writer_with_temp_file(test_full_params)
-    return ParamsAndNexusWriter(test_full_params, nexus_writer)
+    yield ParamsAndNexusWriter(test_full_params, nexus_writer)
+    # cleanup: delete test nexus file
+    for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
+        file_path = filename.parent / f"{filename.name}"
+        os.remove(file_path)
 
 
 def test_given_full_params_when_enter_called_then_files_written_as_expected(
@@ -67,6 +76,7 @@ def test_given_full_params_and_nexus_file_with_entry_when_exit_called_then_end_t
     params_and_nexus_writer,
 ):
     nexus_writer = params_and_nexus_writer.nexus_writer
+    nexus_writer.__enter__()
 
     for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
         with h5py.File(file, "r+") as written_nexus_file:
