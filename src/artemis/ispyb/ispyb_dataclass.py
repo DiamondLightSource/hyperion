@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from dataclasses_json import config, dataclass_json
 from src.artemis.utils import Point2D, Point3D
@@ -9,9 +9,7 @@ from src.artemis.utils import Point2D, Point3D
 @dataclass_json
 @dataclass
 class IspybParams:
-    sample_id: int
     visit_path: str
-    undulator_gap: float
     pixels_per_micron_x: float
     pixels_per_micron_y: float
 
@@ -21,8 +19,6 @@ class IspybParams:
             decoder=lambda mydict: Point2D(**mydict),
         )
     )
-
-    sample_barcode: str
 
     position: Point3D = field(
         metadata=config(
@@ -44,6 +40,11 @@ class IspybParams:
     focal_spot_size_y: float
     comment: str
     resolution: float
+
+    sample_id: Optional[int] = None
+    sample_barcode: Optional[str] = None
+    # The following is optional because we are getting it from the EPICS PV
+    undulator_gap: Optional[float] = None
 
 
 class Orientation(Enum):
