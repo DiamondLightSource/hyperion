@@ -11,6 +11,7 @@ from src.artemis.devices.det_dim_constants import (
 )
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan
+from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
 from src.artemis.devices.zebra import Zebra
 from src.artemis.fast_grid_scan_plan import (
@@ -42,13 +43,32 @@ def test_when_get_plan_called_then_generator_returned():
 
 def test_undulator_gap_updated_from_epics_device_correctly():
     RE = RunEngine({})
-    test_value = 1.234
     params = FullParameters()
+    FakeSynchrotron = make_fake_device(Synchrotron)
+    synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
+
+    test_value = 1.234
     FakeUndulator = make_fake_device(Undulator)
     undulator: Undulator = FakeUndulator(name="undulator")
     undulator.gap.user_readback.sim_put(test_value)
-    RE(update_params_from_epics_devices(params, undulator))
+
+    RE(update_params_from_epics_devices(params, undulator, synchrotron))
     assert params.ispyb_params.undulator_gap == test_value
+
+
+def test_synchrotron_mode_updated_from_epics_device_correctly():
+    RE = RunEngine({})
+    params = FullParameters()
+    FakeUndulator = make_fake_device(Undulator)
+    undulator: Undulator = FakeUndulator(name="undulator")
+
+    test_value = "test"
+    FakeSynchrotron = make_fake_device(Synchrotron)
+    synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
+    synchrotron.machine_status.synchrotron_mode.sim_put(test_value)
+
+    RE(update_params_from_epics_devices(params, undulator, synchrotron))
+    assert params.ispyb_params.synchrotron_mode == test_value
 
 
 @patch("src.artemis.fast_grid_scan_plan.run_start")
@@ -61,6 +81,8 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     params = FullParameters()
     params.grid_scan_params.z_steps = 2
 
+    FakeSynchrotron = make_fake_device(Synchrotron)
+    synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
     FakeUndulator = make_fake_device(Undulator)
     undulator: Undulator = FakeUndulator(name="undulator")
     FakeEiger = make_fake_device(EigerDetector)
@@ -81,7 +103,7 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     )
 
     with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
-        list(run_gridscan(fast_grid_scan, zebra, eiger, undulator, params))
+        list(run_gridscan(fast_grid_scan, zebra, eiger, undulator, synchrotron, params))
 
     run_start.assert_has_calls(call(x) for x in dc_ids)
     assert run_start.call_count == len(dc_ids)
