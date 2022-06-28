@@ -15,7 +15,7 @@ from bluesky.utils import ProgressBarManager
 from ophyd.log import config_ophyd_logging
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
-from src.artemis.devices.motors import GridScanMotorBundle
+from src.artemis.devices.motors import I03Smargon
 from src.artemis.devices.undulator import Undulator
 from src.artemis.devices.zebra import Zebra
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
@@ -44,7 +44,7 @@ def run_gridscan(
     fgs: FastGridScan,
     zebra: Zebra,
     eiger: EigerDetector,
-    sample_motors: GridScanMotorBundle,
+    sample_motors: I03Smargon,
     undulator: Undulator,
     parameters: FullParameters,
 ):
@@ -128,7 +128,7 @@ def get_plan(parameters: FullParameters):
     )
     zebra = Zebra(name="zebra", prefix=f"{parameters.beamline}-EA-ZEBRA-01:")
 
-    sample_motors = GridScanMotorBundle(
+    sample_motors = I03Smargon(
         name="sample_motors", prefix=f"{parameters.beamline}-MO-SGON-01:"
     )
 

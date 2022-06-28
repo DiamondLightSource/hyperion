@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from ophyd import EpicsMotor
 from ophyd.device import Component
@@ -6,7 +6,7 @@ from ophyd.epics_motor import MotorBundle
 
 
 @dataclass
-class GridScanLimit:
+class MotorLimitHelper:
     """
     Represents motor limit(s)
     """
@@ -25,17 +25,17 @@ class GridScanLimit:
 
 
 @dataclass
-class GridScanLimitBundle:
+class XYZLimitBundle:
     """
-    Holder for limits reflecting MX grid scan axes
+    Holder for limits reflecting an x, y, z bundle
     """
 
-    x: GridScanLimit
-    y: GridScanLimit
-    z: GridScanLimit
+    x: MotorLimitHelper
+    y: MotorLimitHelper
+    z: MotorLimitHelper
 
 
-class GridScanMotorBundle(MotorBundle):
+class I03Smargon(MotorBundle):
     """
     Holder for motors reflecting grid scan axes
     """
@@ -45,16 +45,16 @@ class GridScanMotorBundle(MotorBundle):
     z: EpicsMotor = Component(EpicsMotor, "Z")
     omega: EpicsMotor = Component(EpicsMotor, "OMEGA")
 
-    def get_limits(self) -> GridScanLimitBundle:
-        """Get the limits for the bundle.
+    def get_xyz_limits(self) -> XYZLimitBundle:
+        """Get the limits for the x, y and z axes.
 
         Note that these limits may not yet be valid until wait_for_connection is called on this MotorBundle.
 
         Returns:
-            GridScanLimitBundle: The limits for the underlying motor.
+            XYZLimitBundle: The limits for the underlying motors.
         """
-        return GridScanLimitBundle(
-            GridScanLimit(self.x),
-            GridScanLimit(self.y),
-            GridScanLimit(self.z),
+        return XYZLimitBundle(
+            MotorLimitHelper(self.x),
+            MotorLimitHelper(self.y),
+            MotorLimitHelper(self.z),
         )

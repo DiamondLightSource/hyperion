@@ -11,7 +11,7 @@ from src.artemis.devices.det_dim_constants import (
 )
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan
-from src.artemis.devices.motors import GridScanMotorBundle
+from src.artemis.devices.motors import I03Smargon
 from src.artemis.devices.undulator import Undulator
 from src.artemis.devices.zebra import Zebra
 from src.artemis.fast_grid_scan_plan import (
@@ -65,8 +65,8 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     FakeUndulator = make_fake_device(Undulator)
     undulator: Undulator = FakeUndulator(name="undulator")
 
-    FakeGridScanMotorBundle = make_fake_device(GridScanMotorBundle)
-    motor_bundle: GridScanMotorBundle = FakeGridScanMotorBundle(name="motor_bundle")
+    FakeI03Smargon = make_fake_device(I03Smargon)
+    motor_bundle: I03Smargon = FakeI03Smargon(name="motor_bundle")
 
     FakeEiger = make_fake_device(EigerDetector)
     eiger: EigerDetector = FakeEiger(
