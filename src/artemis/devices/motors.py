@@ -40,9 +40,10 @@ class GridScanMotorBundle(MotorBundle):
     Holder for motors reflecting grid scan axes
     """
 
-    x: EpicsMotor = Component(EpicsMotor, ":X")
-    y: EpicsMotor = Component(EpicsMotor, ":Y")
-    z: EpicsMotor = Component(EpicsMotor, ":Z")
+    x: EpicsMotor = Component(EpicsMotor, "X")
+    y: EpicsMotor = Component(EpicsMotor, "Y")
+    z: EpicsMotor = Component(EpicsMotor, "Z")
+    omega: EpicsMotor = Component(EpicsMotor, "OMEGA")
 
     def get_limits(self) -> GridScanLimitBundle:
         """Get the limits for the bundle.

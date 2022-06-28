@@ -48,6 +48,10 @@ def run_gridscan(
     undulator: Undulator,
     parameters: FullParameters,
 ):
+    current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
+    assert current_omega == parameters.detector_params.omega_start
+    assert current_omega == 0  # This should eventually be removed, see #154
+
     yield from update_params_from_epics_devices(parameters, undulator)
     config = "config"
 
@@ -89,6 +93,12 @@ def run_gridscan(
     xray_centre_motor_position = (
         parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
     )
+
+    yield from bps.mv(sample_motors.omega, parameters.detector_params.omega_start)
+
+    # After moving omega we need to wait for x, y and z to have finished moving too
+    yield from bps.wait(sample_motors)
+
     yield from bps.mv(
         sample_motors.x,
         xray_centre_motor_position.x,
