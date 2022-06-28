@@ -1,5 +1,6 @@
 import datetime
 import re
+from abc import ABC, abstractmethod
 
 from sqlalchemy.connectors import Connector
 from src.artemis.ispyb.ispyb_dataclass import Orientation
@@ -11,36 +12,42 @@ I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
 
 
-class StoreInIspyb:
+class StoreInIspyb(ABC):
 
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
-    def __init__(self, ispyb_config, full_params: FullParameters):
+    def __init__(self, ispyb_config):
         self.ISPYB_CONFIG_FILE = ispyb_config
-        self.full_params = full_params
-        self.ispyb_params = full_params.ispyb_params
-        self.detector_params = full_params.detector_params
+        self.full_params = None
+        self.ispyb_params = None
+        self.detector_params = None
+        self.run_number = None
+        self.omega_start = None
+        self.experiment_type = None
+        self.xtal_snapshots = None
+
         self.conn: Connector = None
         self.mx_acquisition = None
         self.core = None
 
-    def store_grid_scan(self):
+    def store_grid_scan(self, full_params: FullParameters):
+
+        self.full_params = full_params
+        self.ispyb_params = full_params.ispyb_params
+        self.detector_params = full_params.detector_params
+        self.run_number = self.detector_params.run_number
+        self.omega_start = self.detector_params.omega_start
+        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
             self.core = self.conn.core
 
-            data_collection_group_id = self._store_data_collection_group_table()
+            return self._store_scan_data()
 
-            data_collection_id = self._store_data_collection_table(
-                data_collection_group_id
-            )
-
-            self._store_position_table(data_collection_id)
-
-            grid_id = self._store_grid_info_table(data_collection_id)
-
-            return grid_id, data_collection_id, data_collection_group_id
+    @abstractmethod
+    def _store_scan_data(self):
+        pass
 
     def update_grid_scan_with_end_time_and_status(
         self,
@@ -85,8 +92,8 @@ class StoreInIspyb:
         params["parentid"] = data_collection_group_id
         params["sampleid"] = self.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
-        params["axis_start"] = self.detector_params.omega_start
-        params["axis_end"] = self.detector_params.omega_start
+        params["axis_start"] = self.omega_start
+        params["axis_end"] = self.omega_start
         params["axis_range"] = 0
         params["focal_spot_size_at_samplex"] = self.ispyb_params.focal_spot_size_x
         params["focal_spot_size_at_sampley"] = self.ispyb_params.focal_spot_size_y
@@ -96,7 +103,7 @@ class StoreInIspyb:
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
         params["transmission"] = self.ispyb_params.transmission
         params["comments"] = "Artemis: " + self.ispyb_params.comment
-        params["datacollection_number"] = self.ispyb_params.run_number
+        params["datacollection_number"] = self.run_number
         params["detector_distance"] = self.detector_params.detector_distance
         params["exp_time"] = self.detector_params.exposure_time
         params["imgdir"] = self.detector_params.directory
@@ -109,7 +116,7 @@ class StoreInIspyb:
         params["overlap"] = 0
 
         params["flux"] = self.ispyb_params.flux
-        params["omegastart"] = self.detector_params.omega_start
+        params["omegastart"] = self.omega_start
         params["start_image_number"] = 1
         params["resolution"] = self.ispyb_params.resolution
         params["wavelength"] = self.ispyb_params.wavelength
@@ -117,9 +124,11 @@ class StoreInIspyb:
             self.detector_params.detector_distance
         )
         params["xbeam"], params["ybeam"] = beam_position
-        params["xtal_snapshot1"], params["xtal_snapshot2"], params["xtal_snapshot3"] = [
-            self.ispyb_params.xtal_snapshots
-        ] * 3
+        (
+            params["xtal_snapshot1"],
+            params["xtal_snapshot2"],
+            params["xtal_snapshot3"],
+        ) = self.xtal_snapshots
         params["synchrotron_mode"] = self.ispyb_params.synchrotron_mode
         params["undulator_gap1"] = self.ispyb_params.undulator_gap
         params["starttime"] = self.get_current_time_string()
@@ -127,7 +136,7 @@ class StoreInIspyb:
         # temporary file template until nxs filewriting is integrated and we can use that file name
         params[
             "file_template"
-        ] = f"{self.detector_params.prefix}_{self.ispyb_params.run_number}_master.h5"
+        ] = f"{self.detector_params.prefix}_{self.run_number}_master.h5"
 
         return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
@@ -148,7 +157,7 @@ class StoreInIspyb:
 
         params = self.mx_acquisition.get_data_collection_group_params()
         params["parentid"] = session_id
-        params["experimenttype"] = "mesh"
+        params["experimenttype"] = self.experiment_type
         params["sampleid"] = self.ispyb_params.sample_id
         params["sample_barcode"] = self.ispyb_params.sample_barcode
 
@@ -168,3 +177,58 @@ class StoreInIspyb:
     def get_visit_string_from_path(self, path):
         match = re.search(self.VISIT_PATH_REGEX, path) if path else None
         return match.group(1) if match else None
+
+
+class StoreInIspyb3D(StoreInIspyb):
+    def __init__(self, ispyb_config):
+        super().__init__(ispyb_config)
+        self.experiment_type = "Mesh3D"
+
+    def _store_scan_data(self):
+        data_collection_group_id = self._store_data_collection_group_table()
+
+        data_collection_id_1 = self._store_data_collection_table(
+            data_collection_group_id
+        )
+
+        self._store_position_table(data_collection_id_1)
+
+        grid_id_1 = self._store_grid_info_table(data_collection_id_1)
+
+        self.__prepare_second_scan_params()
+
+        data_collection_id_2 = self._store_data_collection_table(
+            data_collection_group_id
+        )
+
+        self._store_position_table(data_collection_id_2)
+
+        grid_id_2 = self._store_grid_info_table(data_collection_id_2)
+
+        return (
+            [data_collection_id_1, data_collection_id_2],
+            [grid_id_1, grid_id_2],
+            data_collection_group_id,
+        )
+
+    def __prepare_second_scan_params(self):
+        self.omega_start += 90
+        self.run_number += 1
+        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
+
+
+class StoreInIspyb2D(StoreInIspyb):
+    def __init__(self, ispyb_config):
+        super().__init__(ispyb_config)
+        self.experiment_type = "mesh"
+
+    def _store_scan_data(self):
+        data_collection_group_id = self._store_data_collection_group_table()
+
+        data_collection_id = self._store_data_collection_table(data_collection_group_id)
+
+        self._store_position_table(data_collection_id)
+
+        grid_id = self._store_grid_info_table(data_collection_id)
+
+        return [data_collection_id], [grid_id], data_collection_group_id
