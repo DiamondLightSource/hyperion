@@ -18,6 +18,7 @@ def get_minimum_parameters_for_file_writing() -> FullParameters:
     test_full_params.ispyb_params.wavelength = 1.0
     test_full_params.ispyb_params.flux = 9.0
     test_full_params.ispyb_params.transmission = 0.5
+    test_full_params.detector_params.prefix = "file_name"
     return test_full_params
 
 
@@ -95,9 +96,9 @@ def test_given_2540_images_then_expected_datafiles_used():
     assert len(nexus_writer.get_image_datafiles()) == 3
     paths = [str(filename) for filename in nexus_writer.get_image_datafiles()]
     assert paths == [
-        "/tmp/file_name_000001.h5",
-        "/tmp/file_name_000002.h5",
-        "/tmp/file_name_000003.h5",
+        "/tmp/file_name_0_000001.h5",
+        "/tmp/file_name_0_000002.h5",
+        "/tmp/file_name_0_000003.h5",
     ]
 
 
