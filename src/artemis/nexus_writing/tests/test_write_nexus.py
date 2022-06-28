@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 import h5py
@@ -87,3 +88,30 @@ def test_given_2540_images_then_expected_datafiles_used():
         "/tmp/file_name_000002.h5",
         "/tmp/file_name_000003.h5",
     ]
+
+
+@pytest.fixture
+def dummy_nexus_writer():
+    params = FullParameters()
+    params.detector_params.use_roi_mode = True
+    params.detector_params.num_images = 1044
+    params.detector_params.directory = (
+        os.path.dirname(os.path.realpath(__file__)) + "/test_data"
+    )
+    params.detector_params.prefix = "dummy"
+    nexus_writer = NexusWriter(params)
+
+    yield nexus_writer
+
+    os.remove(nexus_writer.nexus_file)
+    os.remove(nexus_writer.master_file)
+
+
+def test_given_dummy_data_then_datafile_written_correctly(dummy_nexus_writer):
+    dummy_nexus_writer.__enter__()
+
+    with h5py.File(dummy_nexus_writer.nexus_file) as f:
+        assert f["entry"]["data"]["data"][1043, 0, 0] == 0
+
+        with pytest.raises(IndexError):
+            assert f["entry"]["data"]["data"][1044, 0, 0] == 0
