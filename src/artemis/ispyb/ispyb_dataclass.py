@@ -26,8 +26,6 @@ class IspybParams:
             decoder=lambda mydict: Point3D(**mydict),
         )
     )
-
-    synchrotron_mode: str
     xtal_snapshots: List[str]
     transmission: float
     flux: float
@@ -43,8 +41,10 @@ class IspybParams:
 
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
-    # The following is optional because we are getting it from the EPICS PV
+
+    # Optional from GDA as populated by Ophyd
     undulator_gap: Optional[float] = None
+    synchrotron_mode: Optional[str] = None
 
 
 class Orientation(Enum):
