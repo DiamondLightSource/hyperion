@@ -26,7 +26,9 @@ class IspybParams:
             decoder=lambda mydict: Point3D(**mydict),
         )
     )
-    xtal_snapshots: List[str]
+
+    xtal_snapshots_omega_start: List[str]
+    xtal_snapshots_omega_end: List[str]
     transmission: float
     flux: float
     wavelength: float
