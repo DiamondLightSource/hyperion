@@ -11,6 +11,7 @@ from src.artemis.devices.det_dim_constants import (
 )
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan
+from src.artemis.devices.slit_gaps import SlitGaps
 from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
 from src.artemis.devices.zebra import Zebra
@@ -41,34 +42,33 @@ def test_when_get_plan_called_then_generator_returned():
     assert isinstance(plan, types.GeneratorType)
 
 
-def test_undulator_gap_updated_from_epics_device_correctly():
+def test_ispyb_params_update_from_ophyd_devices_correctly():
     RE = RunEngine({})
     params = FullParameters()
-    FakeSynchrotron = make_fake_device(Synchrotron)
-    synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
 
-    test_value = 1.234
+    undulator_test_value = 1.234
     FakeUndulator = make_fake_device(Undulator)
     undulator: Undulator = FakeUndulator(name="undulator")
-    undulator.gap.user_readback.sim_put(test_value)
+    undulator.gap.user_readback.sim_put(undulator_test_value)
 
-    RE(update_params_from_epics_devices(params, undulator, synchrotron))
-    assert params.ispyb_params.undulator_gap == test_value
-
-
-def test_synchrotron_mode_updated_from_epics_device_correctly():
-    RE = RunEngine({})
-    params = FullParameters()
-    FakeUndulator = make_fake_device(Undulator)
-    undulator: Undulator = FakeUndulator(name="undulator")
-
-    test_value = "test"
+    synchrotron_test_value = "test"
     FakeSynchrotron = make_fake_device(Synchrotron)
     synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
-    synchrotron.machine_status.synchrotron_mode.sim_put(test_value)
+    synchrotron.machine_status.synchrotron_mode.sim_put(synchrotron_test_value)
 
-    RE(update_params_from_epics_devices(params, undulator, synchrotron))
-    assert params.ispyb_params.synchrotron_mode == test_value
+    xgap_test_value = 0.1234
+    ygap_test_value = 0.2345
+    FakeSlitGaps = make_fake_device(SlitGaps)
+    slit_gaps: SlitGaps = FakeSlitGaps(name="slit_gaps")
+    slit_gaps.xgap.sim_put(xgap_test_value)
+    slit_gaps.ygap.sim_put(ygap_test_value)
+
+    RE(update_params_from_epics_devices(params, undulator, synchrotron, slit_gaps))
+
+    assert params.ispyb_params.undulator_gap == undulator_test_value
+    assert params.ispyb_params.synchrotron_mode == synchrotron_test_value
+    assert params.ispyb_params.slit_gap_size_x == xgap_test_value
+    assert params.ispyb_params.slit_gap_size_y == ygap_test_value
 
 
 @patch("src.artemis.fast_grid_scan_plan.run_start")
