@@ -15,6 +15,7 @@ from bluesky.utils import ProgressBarManager
 from ophyd.log import config_ophyd_logging
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
+from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
 from src.artemis.devices.zebra import Zebra
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
@@ -33,9 +34,13 @@ config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 # Start analysis run collection
 
 
-def update_params_from_epics_devices(parameters: FullParameters, undulator: Undulator):
-    undulator_gap = yield from bps.rd(undulator.gap)
-    parameters.ispyb_params.undulator_gap = undulator_gap
+def update_params_from_epics_devices(
+    parameters: FullParameters, undulator: Undulator, synchrotron: Synchrotron
+):
+    parameters.ispyb_params.undulator_gap = yield from bps.rd(undulator.gap)
+    parameters.ispyb_params.synchrotron_mode = yield from bps.rd(
+        synchrotron.machine_status.synchrotron_mode
+    )
 
 
 @bpp.run_decorator()
@@ -44,14 +49,17 @@ def run_gridscan(
     zebra: Zebra,
     eiger: EigerDetector,
     undulator: Undulator,
+    synchrotron: Synchrotron,
     parameters: FullParameters,
 ):
-    yield from update_params_from_epics_devices(parameters, undulator)
+    yield from update_params_from_epics_devices(parameters, undulator, synchrotron)
     config = "config"
-    if parameters.grid_scan_params.is_3d_grid_scan:
-        ispyb = StoreInIspyb3D(config)
-    else:
-        ispyb = StoreInIspyb2D(config)
+    ispyb = (
+        StoreInIspyb3D(config)
+        if parameters.grid_scan_params.is_3d_grid_scan
+        else StoreInIspyb2D(config)
+    )
+
     datacollection_ids, _, datacollection_group_id = ispyb.store_grid_scan(parameters)
 
     for id in datacollection_ids:
@@ -101,12 +109,14 @@ def get_plan(parameters: FullParameters):
         prefix=f"{parameters.beamline}-EA-EIGER-01:",
     )
     zebra = Zebra(name="zebra", prefix=f"{parameters.beamline}-EA-ZEBRA-01:")
-
     undulator = Undulator(
         name="undulator", prefix=f"{parameters.insertion_prefix}-MO-SERVC-01:"
     )
+    synchrotron = Synchrotron(name="synchrotron")
 
-    return run_gridscan(fast_grid_scan, zebra, eiger, undulator, parameters)
+    return run_gridscan(
+        fast_grid_scan, zebra, eiger, undulator, synchrotron, parameters
+    )
 
 
 if __name__ == "__main__":
