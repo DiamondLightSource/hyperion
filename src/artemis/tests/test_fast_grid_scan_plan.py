@@ -81,6 +81,8 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     params = FullParameters()
     params.grid_scan_params.z_steps = 2
 
+    FakeSlitGaps = make_fake_device(SlitGaps)
+    slit_gaps: SlitGaps = FakeSlitGaps(name="slit_gaps")
     FakeSynchrotron = make_fake_device(Synchrotron)
     synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
     FakeUndulator = make_fake_device(Undulator)
@@ -103,7 +105,11 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     )
 
     with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
-        list(run_gridscan(fast_grid_scan, zebra, eiger, undulator, synchrotron, params))
+        list(
+            run_gridscan(
+                fast_grid_scan, zebra, eiger, undulator, synchrotron, slit_gaps, params
+            )
+        )
 
     run_start.assert_has_calls(call(x) for x in dc_ids)
     assert run_start.call_count == len(dc_ids)
