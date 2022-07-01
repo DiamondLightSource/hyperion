@@ -34,8 +34,6 @@ class IspybParams:
     wavelength: float
     beam_size_x: float
     beam_size_y: float
-    slit_gap_size_x: float
-    slit_gap_size_y: float
     focal_spot_size_x: float
     focal_spot_size_y: float
     comment: str
@@ -47,6 +45,8 @@ class IspybParams:
     # Optional from GDA as populated by Ophyd
     undulator_gap: Optional[float] = None
     synchrotron_mode: Optional[str] = None
+    slit_gap_size_x: Optional[float] = None
+    slit_gap_size_y: Optional[float] = None
 
 
 class Orientation(Enum):
