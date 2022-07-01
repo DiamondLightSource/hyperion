@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from sqlalchemy.connectors import Connector
 from src.artemis.ispyb.ispyb_dataclass import Orientation
 from src.artemis.parameters import FullParameters
+from src.artemis.utils import Point2D
 
 import ispyb
 
@@ -25,6 +26,7 @@ class StoreInIspyb(ABC):
         self.omega_start = None
         self.experiment_type = None
         self.xtal_snapshots = None
+        self.upper_left = None
 
         self.conn: Connector = None
         self.mx_acquisition = None
@@ -38,6 +40,9 @@ class StoreInIspyb(ABC):
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
+        self.upper_left = Point2D(
+            self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.y
+        )
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
@@ -77,8 +82,7 @@ class StoreInIspyb(ABC):
         params["stepsY"] = self.full_params.grid_scan_params.y_steps
         params["pixelsPerMicronX"] = self.ispyb_params.pixels_per_micron_x
         params["pixelsPerMicronY"] = self.ispyb_params.pixels_per_micron_y
-        upper_left = self.ispyb_params.upper_left
-        params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = upper_left
+        params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = self.upper_left
         params["orientation"] = Orientation.HORIZONTAL.value
         params["snaked"] = True
 
@@ -215,6 +219,9 @@ class StoreInIspyb3D(StoreInIspyb):
         self.omega_start += 90
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
+        self.upper_left = Point2D(
+            self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.z
+        )
 
 
 class StoreInIspyb2D(StoreInIspyb):

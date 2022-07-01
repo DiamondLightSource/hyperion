@@ -48,7 +48,7 @@ class FullParameters:
         undulator_gap=1.0,
         pixels_per_micron_x=None,
         pixels_per_micron_y=None,
-        upper_left=Point2D(x=None, y=None),
+        upper_left=Point3D(x=None, y=None, z=None),
         sample_barcode=None,
         position=Point3D(x=None, y=None, z=None),
         synchrotron_mode=None,
