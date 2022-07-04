@@ -1,6 +1,7 @@
 """
 Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
 """
+import math
 import time
 from datetime import datetime
 from pathlib import Path
@@ -190,8 +191,8 @@ class NexusWriter:
     def get_image_datafiles(self):
         max_images_per_file = 1000
         return [
-            self.directory / f"{self.filename}_{h5_num:06}.h5"
-            for h5_num in range(1, (self.num_of_images // max_images_per_file) + 2)
+            self.directory / f"{self.filename}_{h5_num + 1:06}.h5"
+            for h5_num in range(math.ceil(self.num_of_images / max_images_per_file))
         ]
 
     def __enter__(self):
