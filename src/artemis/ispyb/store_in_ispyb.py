@@ -27,6 +27,8 @@ class StoreInIspyb(ABC):
         self.experiment_type = None
         self.xtal_snapshots = None
         self.upper_left = None
+        self.y_steps = None
+        self.y_step_size = None
 
         self.conn: Connector = None
         self.mx_acquisition = None
@@ -43,6 +45,8 @@ class StoreInIspyb(ABC):
         self.upper_left = Point2D(
             self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.y
         )
+        self.y_steps = full_params.grid_scan_params.y_steps
+        self.y_step_size = full_params.grid_scan_params.y_step_size
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
@@ -222,6 +226,8 @@ class StoreInIspyb3D(StoreInIspyb):
         self.upper_left = Point2D(
             self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.z
         )
+        self.y_steps = self.full_params.grid_scan_params.z_steps
+        self.y_step_size = self.full_params.grid_scan_params.z_step_size
 
 
 class StoreInIspyb2D(StoreInIspyb):
