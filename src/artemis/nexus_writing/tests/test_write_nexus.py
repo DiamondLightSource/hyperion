@@ -89,17 +89,22 @@ def test_given_parameters_when_nexus_writer_used_as_context_manager_then_all_dat
     assert_end_data_correct(nexus_writer)
 
 
-def test_given_2540_images_then_expected_datafiles_used():
+@pytest.mark.parametrize(
+    "num_images, expected_num_of_files",
+    [(2540, 3), (4000, 4), (8999, 9)],
+)
+def test_given_number_of_images_above_1000_then_expected_datafiles_used(
+    num_images, expected_num_of_files
+):
     params = FullParameters()
-    params.detector_params.num_images = 2540
+    params.detector_params.num_images = num_images
     nexus_writer = NexusWriter(params)
-    assert len(nexus_writer.get_image_datafiles()) == 3
+    assert len(nexus_writer.get_image_datafiles()) == expected_num_of_files
     paths = [str(filename) for filename in nexus_writer.get_image_datafiles()]
-    assert paths == [
-        "/tmp/file_name_0_000001.h5",
-        "/tmp/file_name_0_000002.h5",
-        "/tmp/file_name_0_000003.h5",
+    expected_paths = [
+        f"/tmp/file_name_0_00000{i + 1}.h5" for i in range(expected_num_of_files)
     ]
+    assert paths == expected_paths
 
 
 @pytest.fixture
