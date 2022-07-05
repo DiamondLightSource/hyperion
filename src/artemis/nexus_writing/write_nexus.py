@@ -231,6 +231,11 @@ class NexusWriter:
                 )
 
     def __exit__(self, *_):
+        """
+        Write timestamp when closing file.
+        For the nexus file to be updated atomically, changes are written to a
+        temporary copy which then replaces the original.
+        """
         for filename in [self.nexus_file, self.master_file]:
             temp_filename = filename.parent / f"{filename.name}.tmp"
             shutil.copy(filename, temp_filename)
