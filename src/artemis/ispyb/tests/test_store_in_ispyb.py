@@ -105,6 +105,10 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
 
     assert dummy_ispyb_3d.omega_start == DUMMY_PARAMS.detector_params.omega_start + 90
     assert dummy_ispyb_3d.run_number == DUMMY_PARAMS.detector_params.run_number + 1
+    assert (
+        dummy_ispyb_3d.xtal_snapshots
+        == DUMMY_PARAMS.ispyb_params.xtal_snapshots_omega_end
+    )
 
 
 def setup_mock_return_values(ispyb_conn):
