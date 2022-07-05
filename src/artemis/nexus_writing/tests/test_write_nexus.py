@@ -17,10 +17,10 @@ def get_minimum_parameters_for_file_writing() -> FullParameters:
     test_full_params = FullParameters()
     test_path = os.path.abspath(os.path.dirname(__file__))
     test_full_params.detector_params.directory = str(test_path)
-    test_full_params.detector_params.prefix = "test_write_nexus"
     test_full_params.ispyb_params.wavelength = 1.0
     test_full_params.ispyb_params.flux = 9.0
     test_full_params.ispyb_params.transmission = 0.5
+    test_full_params.detector_params.prefix = "file_name"
     return test_full_params
 
 
@@ -44,19 +44,10 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
             assert "end_time" in written_nexus_file["entry"]
 
 
-def create_nexus_writer_with_temp_file(test_params: FullParameters) -> NexusWriter:
-    nexus_writer = NexusWriter(test_params)
-    # remove below
-    # nexus_writer.nexus_file = tempfile.NamedTemporaryFile(delete=False)
-    # nexus_writer.master_file = tempfile.NamedTemporaryFile(delete=False)
-
-    return nexus_writer
-
-
 @pytest.fixture
 def params_and_nexus_writer():
     test_full_params = get_minimum_parameters_for_file_writing()
-    nexus_writer = create_nexus_writer_with_temp_file(test_full_params)
+    nexus_writer = NexusWriter(test_full_params)
     yield ParamsAndNexusWriter(test_full_params, nexus_writer)
     # cleanup: delete test nexus file
     for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
