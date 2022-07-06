@@ -1,5 +1,7 @@
 import os
 from collections import namedtuple
+from pathlib import Path
+from unittest.mock import call, patch
 
 import h5py
 import pytest
@@ -97,3 +99,21 @@ def test_nexus_writer_files_are_formatted_as_expected():
         file_name = os.path.basename(file.name)
         expected_file_name_prefix = parameters.detector_params.prefix + "_0"
         assert file_name.startswith(expected_file_name_prefix)
+
+
+def test_nexus_writer_opens_temp_file_on_exit(params_and_nexus_writer):
+    nexus_writer = params_and_nexus_writer.nexus_writer
+    nexus_file = nexus_writer.nexus_file
+    master_file = nexus_writer.master_file
+    temp_nexus_file = Path(f"{str(nexus_file)}.tmp")
+    temp_master_file = Path(f"{str(master_file)}.tmp")
+    calls_with_temp = [call(temp_nexus_file, "r+"), call(temp_master_file, "r+")]
+    calls_without_temp = [call(nexus_file, "r+"), call(master_file, "r+")]
+
+    nexus_writer.__enter__()
+
+    with patch("h5py.File") as mock_h5py_file:
+        nexus_writer.__exit__()
+        actual_mock_calls = mock_h5py_file.mock_calls
+        assert all(call in actual_mock_calls for call in calls_with_temp)
+        assert all(call not in actual_mock_calls for call in calls_without_temp)
