@@ -27,15 +27,13 @@ class IspybParams:
         )
     )
 
-    synchrotron_mode: str
-    xtal_snapshots: List[str]
+    xtal_snapshots_omega_start: List[str]
+    xtal_snapshots_omega_end: List[str]
     transmission: float
     flux: float
     wavelength: float
     beam_size_x: float
     beam_size_y: float
-    slit_gap_size_x: float
-    slit_gap_size_y: float
     focal_spot_size_x: float
     focal_spot_size_y: float
     comment: str
@@ -43,8 +41,12 @@ class IspybParams:
 
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
-    # The following is optional because we are getting it from the EPICS PV
+
+    # Optional from GDA as populated by Ophyd
     undulator_gap: Optional[float] = None
+    synchrotron_mode: Optional[str] = None
+    slit_gap_size_x: Optional[float] = None
+    slit_gap_size_y: Optional[float] = None
 
 
 class Orientation(Enum):

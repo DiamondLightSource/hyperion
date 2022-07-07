@@ -75,7 +75,7 @@ def create_goniometer_axes(detector_params: DetectorParams) -> Dict:
             "rotation",
             "rotation",
         ],
-        "units": ["deg", "mm", "mm", "mm", "deg", "deg"],
+        "units": ["deg", "um", "um", "um", "deg", "deg"],
         "offsets": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         "starts": [detector_params.omega_start, 0.0, None, None, 0.0, 0.0],
         "ends": [detector_params.omega_end] + [0.0] * 5,
