@@ -3,6 +3,8 @@
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
         "--max-line-length=88",
+        "--ignore-tests",
+        "--extend-ignore=E203"
     ],
     "python.linting.mypyEnabled": true,
     "python.linting.enabled": true,
@@ -19,4 +21,8 @@
         "--profile",
         "black"
     ],
+    "python.pythonPath": ".venv/bin/python",
+    "[python]": {"editor.rulers": [88]},
+    // Make the terminal more responsive:
+    "terminal.integrated.gpuAcceleration": "off",
 }
