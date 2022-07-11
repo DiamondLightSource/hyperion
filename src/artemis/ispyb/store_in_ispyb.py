@@ -24,6 +24,7 @@ class StoreInIspyb(ABC):
         self.run_number = None
         self.omega_start = None
         self.experiment_type = None
+        self.xtal_snapshots = None
 
         self.conn: Connector = None
         self.mx_acquisition = None
@@ -36,6 +37,7 @@ class StoreInIspyb(ABC):
         self.detector_params = full_params.detector_params
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
+        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
@@ -126,7 +128,7 @@ class StoreInIspyb(ABC):
             params["xtal_snapshot1"],
             params["xtal_snapshot2"],
             params["xtal_snapshot3"],
-        ) = self.ispyb_params.xtal_snapshots
+        ) = self.xtal_snapshots
         params["synchrotron_mode"] = self.ispyb_params.synchrotron_mode
         params["undulator_gap1"] = self.ispyb_params.undulator_gap
         params["starttime"] = self.get_current_time_string()
@@ -212,6 +214,7 @@ class StoreInIspyb3D(StoreInIspyb):
     def __prepare_second_scan_params(self):
         self.omega_start += 90
         self.run_number += 1
+        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
 
 
 class StoreInIspyb2D(StoreInIspyb):

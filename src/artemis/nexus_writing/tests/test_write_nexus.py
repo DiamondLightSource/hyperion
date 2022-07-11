@@ -18,6 +18,7 @@ def get_minimum_parameters_for_file_writing() -> FullParameters:
     test_full_params.ispyb_params.wavelength = 1.0
     test_full_params.ispyb_params.flux = 9.0
     test_full_params.ispyb_params.transmission = 0.5
+    test_full_params.detector_params.prefix = "file_name"
     return test_full_params
 
 
@@ -86,6 +87,51 @@ def test_given_parameters_when_nexus_writer_used_as_context_manager_then_all_dat
 
     assert_start_data_correct(params_and_nexus_writer)
     assert_end_data_correct(nexus_writer)
+
+
+@pytest.mark.parametrize(
+    "num_images, expected_num_of_files",
+    [(2540, 3), (4000, 4), (8999, 9)],
+)
+def test_given_number_of_images_above_1000_then_expected_datafiles_used(
+    num_images, expected_num_of_files
+):
+    params = FullParameters()
+    params.detector_params.num_images = num_images
+    nexus_writer = NexusWriter(params)
+    assert len(nexus_writer.get_image_datafiles()) == expected_num_of_files
+    paths = [str(filename) for filename in nexus_writer.get_image_datafiles()]
+    expected_paths = [
+        f"/tmp/file_name_0_00000{i + 1}.h5" for i in range(expected_num_of_files)
+    ]
+    assert paths == expected_paths
+
+
+@pytest.fixture
+def dummy_nexus_writer():
+    params = FullParameters()
+    params.detector_params.use_roi_mode = True
+    params.detector_params.num_images = 1044
+    params.detector_params.directory = (
+        os.path.dirname(os.path.realpath(__file__)) + "/test_data"
+    )
+    params.detector_params.prefix = "dummy"
+    nexus_writer = NexusWriter(params)
+
+    yield nexus_writer
+
+    os.remove(nexus_writer.nexus_file)
+    os.remove(nexus_writer.master_file)
+
+
+def test_given_dummy_data_then_datafile_written_correctly(dummy_nexus_writer):
+    dummy_nexus_writer.__enter__()
+
+    with h5py.File(dummy_nexus_writer.nexus_file) as f:
+        assert f["entry"]["data"]["data"][1043, 0, 0] == 0
+
+        with pytest.raises(IndexError):
+            assert f["entry"]["data"]["data"][1044, 0, 0] == 0
 
 
 def test_nexus_writer_files_are_formatted_as_expected():
