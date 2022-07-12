@@ -9,13 +9,8 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
-<<<<<<< HEAD
-from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
-=======
 import shutil
-from nexgen.nxs_write import calculate_scan_from_scanspec
-from nexgen.nxs_write.NexusWriter import call_writers
->>>>>>> main
+from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 from src.artemis.devices.detector import DetectorParams
