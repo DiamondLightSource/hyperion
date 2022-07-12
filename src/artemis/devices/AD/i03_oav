@@ -1,0 +1,144 @@
+
+import logging
+
+from ophyd.device import DynamicDeviceComponent as DDC
+from ophyd.signal import EpicsSignal, EpicsSignalRO
+from ophyd.utils import enum
+from ophyd.areadetector.base import ADBase
+from ophyd.areadetector.base import EpicsSignalWithRBV as SignalWithRBV
+from ophyd.areadetector.base import ADComponent as ADCpt
+from ophyd.areadetector.base import ad_group
+# Import FileBase class for cameras that use File PVs in their drivers
+from ophyd.areadetector.plugins import FileBase
+
+logger = logging.getLogger(__name__)
+
+
+__all__ = ['CamBase',
+           'AdscDetectorCam',
+           'Andor3DetectorCam',
+           'AndorDetectorCam',
+           'BrukerDetectorCam',
+           'DexelaDetectorCam',
+           'EmergentVisionDetectorCam',
+           'EigerDetectorCam',
+           'FirewireLinDetectorCam',
+           'FirewireWinDetectorCam',
+           'GreatEyesDetectorCam',
+           'Lambda750kCam',
+           'LightFieldDetectorCam',
+           'Mar345DetectorCam',
+           'MarCCDDetectorCam',
+           'PSLDetectorCam',
+           'PcoDetectorCam',
+           'PcoDetectorIO',
+           'PcoDetectorSimIO',
+           'PerkinElmerDetectorCam',
+           'PICamDetectorCam',
+           'PilatusDetectorCam',
+           'PixiradDetectorCam',
+           'PointGreyDetectorCam',
+           'ProsilicaDetectorCam',
+           'PvcamDetectorCam',
+           'RoperDetectorCam',
+           'SimDetectorCam',
+           'URLDetectorCam',
+           'UVCDetectorCam',
+           'Xspress3DetectorCam'
+           ]
+
+
+class CamBase(ADBase):
+    _default_configuration_attrs = (ADBase._default_configuration_attrs +
+                                    ('acquire_time', 'acquire_period',
+                                     'model', 'num_exposures', 'image_mode',
+                                     'num_images',
+                                     'manufacturer', 'trigger_mode'))
+
+    ImageMode = enum(SINGLE=0, MULTIPLE=1, CONTINUOUS=2)
+
+    # Shared among all cams and plugins
+    array_counter = ADCpt(SignalWithRBV, 'ArrayCounter')
+    array_rate = ADCpt(EpicsSignalRO, 'ArrayRate_RBV')
+    asyn_io = ADCpt(EpicsSignal, 'AsynIO')
+
+    nd_attributes_file = ADCpt(EpicsSignal, 'NDAttributesFile', string=True)
+    pool_alloc_buffers = ADCpt(EpicsSignalRO, 'PoolAllocBuffers')
+    pool_free_buffers = ADCpt(EpicsSignalRO, 'PoolFreeBuffers')
+    pool_max_buffers = ADCpt(EpicsSignalRO, 'PoolMaxBuffers')
+    pool_max_mem = ADCpt(EpicsSignalRO, 'PoolMaxMem')
+    pool_used_buffers = ADCpt(EpicsSignalRO, 'PoolUsedBuffers')
+    pool_used_mem = ADCpt(EpicsSignalRO, 'PoolUsedMem')
+    port_name = ADCpt(EpicsSignalRO, 'PortName_RBV', string=True)
+
+    # Cam-specific
+    acquire = ADCpt(SignalWithRBV, 'Acquire')
+    acquire_period = ADCpt(SignalWithRBV, 'AcquirePeriod')
+    acquire_time = ADCpt(SignalWithRBV, 'AcquireTime')
+
+    array_callbacks = ADCpt(SignalWithRBV, 'ArrayCallbacks')
+    array_size = DDC(ad_group(EpicsSignalRO,
+                              (('array_size_z', 'ArraySizeZ_RBV'),
+                               ('array_size_y', 'ArraySizeY_RBV'),
+                               ('array_size_x', 'ArraySizeX_RBV'))),
+                     doc='Size of the array in the XYZ dimensions')
+
+    array_size_bytes = ADCpt(EpicsSignalRO, 'ArraySize_RBV')
+    bin_x = ADCpt(SignalWithRBV, 'BinX')
+    bin_y = ADCpt(SignalWithRBV, 'BinY')
+    color_mode = ADCpt(SignalWithRBV, 'ColorMode')
+    data_type = ADCpt(SignalWithRBV, 'DataType')
+    detector_state = ADCpt(EpicsSignalRO, 'DetectorState_RBV')
+    frame_type = ADCpt(SignalWithRBV, 'FrameType')
+    gain = ADCpt(SignalWithRBV, 'Gain')
+
+    image_mode = ADCpt(SignalWithRBV, 'ImageMode')
+    manufacturer = ADCpt(EpicsSignalRO, 'Manufacturer_RBV')
+
+    max_size = DDC(ad_group(EpicsSignalRO,
+                            (('max_size_x', 'MaxSizeX_RBV'),
+                             ('max_size_y', 'MaxSizeY_RBV'))),
+                   doc='Maximum sensor size in the XY directions')
+
+    min_x = ADCpt(SignalWithRBV, 'MinX')
+    min_y = ADCpt(SignalWithRBV, 'MinY')
+    model = ADCpt(EpicsSignalRO, 'Model_RBV')
+
+    num_exposures = ADCpt(SignalWithRBV, 'NumExposures')
+    num_exposures_counter = ADCpt(EpicsSignalRO, 'NumExposuresCounter_RBV')
+    num_images = ADCpt(SignalWithRBV, 'NumImages')
+    num_images_counter = ADCpt(EpicsSignalRO, 'NumImagesCounter_RBV')
+
+    read_status = ADCpt(EpicsSignal, 'ReadStatus')
+    reverse = DDC(ad_group(SignalWithRBV,
+                           (('reverse_x', 'ReverseX'),
+                            ('reverse_y', 'ReverseY'))
+                           ))
+
+    shutter_close_delay = ADCpt(SignalWithRBV, 'ShutterCloseDelay')
+    shutter_close_epics = ADCpt(EpicsSignal, 'ShutterCloseEPICS')
+    shutter_control = ADCpt(SignalWithRBV, 'ShutterControl')
+    shutter_control_epics = ADCpt(EpicsSignal, 'ShutterControlEPICS')
+    shutter_fanout = ADCpt(EpicsSignal, 'ShutterFanout')
+    shutter_mode = ADCpt(SignalWithRBV, 'ShutterMode')
+    shutter_open_delay = ADCpt(SignalWithRBV, 'ShutterOpenDelay')
+    shutter_open_epics = ADCpt(EpicsSignal, 'ShutterOpenEPICS')
+    shutter_status_epics = ADCpt(EpicsSignalRO, 'ShutterStatusEPICS_RBV')
+    shutter_status = ADCpt(EpicsSignalRO, 'ShutterStatus_RBV')
+
+    size = DDC(ad_group(SignalWithRBV,
+                        (('size_x', 'SizeX'),
+                         ('size_y', 'SizeY'))
+                        ))
+
+    status_message = ADCpt(EpicsSignalRO, 'StatusMessage_RBV', string=True)
+    string_from_server = ADCpt(EpicsSignalRO, 'StringFromServer_RBV', string=True)
+    string_to_server = ADCpt(EpicsSignalRO, 'StringToServer_RBV', string=True)
+    temperature = ADCpt(SignalWithRBV, 'Temperature')
+    temperature_actual = ADCpt(EpicsSignal, 'TemperatureActual')
+    time_remaining = ADCpt(EpicsSignalRO, 'TimeRemaining_RBV')
+    trigger_mode = ADCpt(SignalWithRBV, 'TriggerMode')
+
+
+class AreaDetectorCam(CamBase):
+    pass

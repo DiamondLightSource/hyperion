@@ -2,7 +2,7 @@ from ophyd import Device, EpicsMotor
 from ophyd import Component as Cpt
 
 class CTAB(Device):
-	
+	'''CTAB is the collimation table. It is interlocked with the detector for safe movement''' 
 
 	inboard_y: EpicsMotor = Cpt(EpicsMotor, '-MO-TABLE-01:INBOARDY')
 	outboard_y: EpicsMotor = Cpt(EpicsMotor, '-MO-TABLE-01:OUTBOARDY')

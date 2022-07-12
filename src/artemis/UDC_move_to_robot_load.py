@@ -13,8 +13,6 @@ backlight = Backlight(name="Backlight", prefix="BL03I")
 mapt = MiniAperture(name="MiniAperture", prefix="BL03I")
 bs = BeamStop(name="BeamStop", prefix="BL03I")
 
-IN=1
-OUT=0
 
 sgon.wait_for_connection()
 backlight.wait_for_connection()
@@ -25,7 +23,7 @@ RE=RunEngine({})
 
 def move_to_robot_load():
 	yield from bps.mv(sgon.stub_offset_set, 1)
-	yield from bps.mv(sgon.x,0 ,sgon.y,0, sgon.z, 0, sgon.chi, 0, sgon.phi, 0, sgon.omega, 0, backlight.pos, OUT, mapt.y, 31.4, bs.z, 30)
+	yield from bps.mv(sgon.x,0 ,sgon.y,0, sgon.z, 0, sgon.chi, 0, sgon.phi, 0, sgon.omega, 0, backlight.pos, backlight.OUT, mapt.y, 31.4, bs.z, 30)
 
 RE(move_to_robot_load())
 
