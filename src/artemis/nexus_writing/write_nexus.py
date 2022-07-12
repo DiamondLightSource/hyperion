@@ -9,7 +9,13 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
+<<<<<<< HEAD
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
+=======
+import shutil
+from nexgen.nxs_write import calculate_scan_from_scanspec
+from nexgen.nxs_write.NexusWriter import call_writers
+>>>>>>> main
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 from src.artemis.devices.detector import DetectorParams
@@ -214,8 +220,16 @@ class NexusWriter:
                 )
 
     def __exit__(self, *_):
+        """
+        Write timestamp when closing file.
+        For the nexus file to be updated atomically, changes are written to a
+        temporary copy which then replaces the original.
+        """
         for filename in [self.nexus_file, self.master_file]:
-            with h5py.File(filename, "r+") as nxsfile:
+            temp_filename = filename.parent / f"{filename.name}.tmp"
+            shutil.copy(filename, temp_filename)
+            with h5py.File(temp_filename, "r+") as nxsfile:
                 nxsfile["entry"].create_dataset(
                     "end_time", data=np.string_(self._get_current_time())
                 )
+            shutil.move(temp_filename, filename)
