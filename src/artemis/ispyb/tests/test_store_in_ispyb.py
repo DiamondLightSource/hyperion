@@ -7,6 +7,7 @@ from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import ANY, arg_that, mock, verify, when
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from src.artemis.parameters import FullParameters
+from src.artemis.utils import Point3D
 
 TEST_DATA_COLLECTION_ID = 12
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -95,6 +96,12 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
         TEST_GRID_INFO_ID
     )
 
+    x = 0
+    y = 1
+    z = 2
+    DUMMY_PARAMS.ispyb_params.upper_left = Point3D(x, y, z)
+    DUMMY_PARAMS.grid_scan_params.z_step_size = 0.2
+
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
 
     assert dummy_ispyb_3d.store_grid_scan(DUMMY_PARAMS) == (
@@ -109,6 +116,32 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
         dummy_ispyb_3d.xtal_snapshots
         == DUMMY_PARAMS.ispyb_params.xtal_snapshots_omega_end
     )
+    assert dummy_ispyb_3d.y_step_size == DUMMY_PARAMS.grid_scan_params.z_step_size
+    assert dummy_ispyb_3d.y_steps == DUMMY_PARAMS.grid_scan_params.z_steps
+    assert dummy_ispyb_3d.upper_left.x == x
+    assert dummy_ispyb_3d.upper_left.y == z
+
+
+@patch("ispyb.open", new_callable=mock_open)
+@patch(
+    "src.artemis.ispyb.store_in_ispyb.StoreInIspyb3D.mxacquisition.upsert_dc_grid",
+    return_value=TEST_GRID_INFO_ID,
+)
+def test_3d_stored_params(upsert_grid, ispyb_conn, dummy_ispyb_3d):
+    setup_mock_return_values(ispyb_conn)
+
+    assert dummy_ispyb_3d.store_grid_scan(DUMMY_PARAMS) == (
+        [TEST_DATA_COLLECTION_ID, TEST_DATA_COLLECTION_ID],
+        [TEST_GRID_INFO_ID, TEST_GRID_INFO_ID],
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
+
+    grid_params = MXAcquisition.get_dc_grid_params()
+    steps_y_index = list(grid_params.keys()).index("stepsy")
+
+    args = upsert_grid.call_args_list
+
+    assert args[0][steps_y_index] == DUMMY_PARAMS.grid_scan_params.y_steps
 
 
 def setup_mock_return_values(ispyb_conn):
@@ -119,12 +152,12 @@ def setup_mock_return_values(ispyb_conn):
 
     dcg_params = MXAcquisition.get_data_collection_group_params()
     dc_params = MXAcquisition.get_data_collection_params()
-    grid_params = MXAcquisition.get_dc_grid_params()
+    # grid_params = MXAcquisition.get_dc_grid_params()
     position_params = MXAcquisition.get_dc_position_params()
 
     when(mx_acquisition).get_data_collection_group_params().thenReturn(dcg_params)
     when(mx_acquisition).get_data_collection_params().thenReturn(dc_params)
-    when(mx_acquisition).get_dc_grid_params().thenReturn(grid_params)
+    # when(mx_acquisition).get_dc_grid_params().thenReturn(grid_params)
     when(mx_acquisition).get_dc_position_params().thenReturn(position_params)
 
     when(ispyb_conn.return_value.core).retrieve_visit_id(ANY).thenReturn(

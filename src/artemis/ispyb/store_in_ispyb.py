@@ -81,9 +81,9 @@ class StoreInIspyb(ABC):
 
         params["parentid"] = ispyb_data_collection_id
         params["dxInMm"] = self.full_params.grid_scan_params.x_step_size
-        params["dyInMm"] = self.full_params.grid_scan_params.y_step_size
+        params["dyInMm"] = self.y_step_size
         params["stepsX"] = self.full_params.grid_scan_params.x_steps
-        params["stepsY"] = self.full_params.grid_scan_params.y_steps
+        params["stepsY"] = self.y_steps
         params["pixelsPerMicronX"] = self.ispyb_params.pixels_per_micron_x
         params["pixelsPerMicronY"] = self.ispyb_params.pixels_per_micron_y
         params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = self.upper_left
