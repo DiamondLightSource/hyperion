@@ -44,8 +44,16 @@ jobs:
           allow-editable-installs: ${{ matrix.pipenv == 'deploy' }}
           pipenv-run: tests
 
+      - name: Run flake8
+        uses: suo/flake8-github-action@releases/v1
+        with:
+          checkName: 'test'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
           name: ${{ matrix.python }}/${{ matrix.os }}/${{ matrix.pipenv }}
           files: cov.xml
+  
