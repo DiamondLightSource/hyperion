@@ -15,7 +15,6 @@ ispyb = "*"
 nexgen = "*"
 scanspec = "*"
 numpy = ">=1.22"
-pipenv = "*"
 
 [dev-packages]
 pytest-cov = "*"
