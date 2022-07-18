@@ -9,12 +9,12 @@ Development Installation
 =================
 
 1. Clone this project 
-1. If on a DLS machine avoid the controls pypi server and get Python 3.7 by running:
+1. If on a DLS machine avoid the controls pypi server and get Python 3.10 by running:
     ```
     module unload controls_dev
-    module load python/3.7
+    module load python/3.10
     ```
-    If not at DLS, use your local version of Python 3.7
+    If not at DLS, use your local version of Python 3.10
 1. Gather the dependencies by running the following
     ```
     pipenv install --dev

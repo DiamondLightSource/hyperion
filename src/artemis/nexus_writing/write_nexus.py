@@ -1,6 +1,7 @@
 """
 Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
 """
+import math
 import time
 from datetime import datetime
 from pathlib import Path
@@ -8,6 +9,7 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
+import shutil
 from nexgen.nxs_write import calculate_scan_from_scanspec
 from nexgen.nxs_write.NexusWriter import call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
@@ -187,6 +189,13 @@ class NexusWriter:
     def _get_current_time(self):
         return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
 
+    def get_image_datafiles(self):
+        max_images_per_file = 1000
+        return [
+            self.directory / f"{self.filename}_{h5_num + 1:06}.h5"
+            for h5_num in range(math.ceil(self.num_of_images / max_images_per_file))
+        ]
+
     def __enter__(self):
         """
         Creates a nexus file based on the parameters supplied when this obect was initialised.
@@ -195,7 +204,6 @@ class NexusWriter:
 
         scan_range = calculate_scan_from_scanspec(self.scan_spec)
 
-        image_data = [self.directory / f"{self.filename}_000001.h5"]
         metafile = self.directory / f"{self.filename}_meta.h5"
 
         for filename in [self.nexus_file, self.master_file]:
@@ -206,7 +214,7 @@ class NexusWriter:
 
                 call_writers(
                     nxsfile,
-                    image_data,
+                    self.get_image_datafiles(),
                     "mcstas",
                     scan_range,
                     ("images", self.num_of_images),
@@ -230,8 +238,16 @@ class NexusWriter:
                 )
 
     def __exit__(self, *_):
+        """
+        Write timestamp when closing file.
+        For the nexus file to be updated atomically, changes are written to a
+        temporary copy which then replaces the original.
+        """
         for filename in [self.nexus_file, self.master_file]:
-            with h5py.File(filename, "r+") as nxsfile:
+            temp_filename = filename.parent / f"{filename.name}.tmp"
+            shutil.copy(filename, temp_filename)
+            with h5py.File(temp_filename, "r+") as nxsfile:
                 nxsfile["entry"].create_dataset(
                     "end_time", data=np.string_(self._get_current_time())
                 )
+            shutil.move(temp_filename, filename)
