@@ -1,3 +1,4 @@
+import os
 import types
 from unittest.mock import call, patch
 
@@ -71,6 +72,7 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
     assert params.ispyb_params.slit_gap_size_y == ygap_test_value
 
 
+@patch.dict(os.environ, {"ISPYB_CONFIG_PATH": "TEST_CONFIG"})
 @patch("src.artemis.fast_grid_scan_plan.run_start")
 @patch("src.artemis.fast_grid_scan_plan.run_end")
 @patch("src.artemis.fast_grid_scan_plan.wait_for_result")

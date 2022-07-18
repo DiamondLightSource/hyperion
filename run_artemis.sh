@@ -32,7 +32,7 @@ checkver () {
 }
 
 STOP=0
-START=0
+START=1
 DEPLOY=0
 for option in "$@"; do
     case $option in
@@ -47,8 +47,8 @@ for option in "$@"; do
         --stop)
             STOP=1
             ;;
-        --start)
-            START=1
+        --no-start)
+            START=0
             ;;
         --deploy)
             DEPLOY=1
@@ -63,10 +63,10 @@ for option in "$@"; do
             echo "Operations"
             echo "  --stop                  Used to stop a currently running instance of Artemis. Will override any other operations"
             echo "                          options"
-            echo "  --start                 Used to start the Artemis server with the currently installed version."
             echo "  --deploy                Used to update and install a new version of Artemis."
+            echo "  --no-start              Used to specify that the script should be run without starting the server."
             echo " "
-            echo "If no Operations options are specified both --deploy --start will be used by default."
+            echo "By default this script will start an Artemis server unless the --no-start flag is specified."
             exit 0
             ;;
         -*|--*)
@@ -75,11 +75,6 @@ for option in "$@"; do
             ;;
     esac
 done
-
-if [[ $START == 0 && $DEPLOY == 0]]; then
-    START=1
-    DEPLOY=1
-fi
 
 if [[ -z "${BEAMLINE}" ]]; then
     echo "BEAMLINE parameter not set. Use the option -b, --beamline=BEAMLNE to set it manually"
