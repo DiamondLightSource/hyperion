@@ -50,11 +50,9 @@ def test_env():
     app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
-    with (
-        app.test_client() as client,
-        patch("src.artemis.main.get_plan") as _,
-    ):
-        yield ClientAndRunEngine(client, mock_run_engine)
+    with app.test_client() as client:
+        with patch("src.artemis.main.get_plan") as _:
+            yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()
     runner_thread.join()
