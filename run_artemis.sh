@@ -89,7 +89,9 @@ fi
 SSH_KEY_FILE_LOC="/dls_sw/${BEAMLINE}/software/gda_versions/var/.ssh/${BEAMLINE}-ssh.key"
 
 if [[ $STOP == 1 ]]; then
-    ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk
+    if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" ]]; then
+        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} ${BEAMLINE}-control.diamond.ac.uk
+    fi
     pkill -f src/artemis/main.py
     exit 0
 fi
@@ -102,6 +104,8 @@ else
     echo "Couldn't find artemis installation at ${ARTEMIS_PATH} terminating script"
     exit 1
 fi
+
+
 
 if [[ $DEPLOY == 1 ]]; then
     git fetch --all --tags --prune
@@ -118,21 +122,26 @@ if [[ $DEPLOY == 1 ]]; then
 
     git checkout "tags/${VERSION}"
 
+    module unload controls_dev
+    module load python/3.10
+
     pipenv install --python 3.10
 fi
 
 if [[ $START == 1 ]]; then
-    ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk
+    if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" || $USERNAME != "gda2" ]]; then
+        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk
+    fi
 
     if [[ -z $(pgrep -f src/artemis/main.py) ]]; then
         pkill -f src/artemis.main.py
     fi
 
+    cd ${ARTEMIS_PATH}
+
     module unload controls_dev
     module load python/3.10
     module load dials
-
-    cd ${ARTEMIS_PATH}
 
     ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
 
