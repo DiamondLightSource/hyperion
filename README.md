@@ -19,7 +19,7 @@ Development Installation
     ```
     pipenv install --dev
     ```
-2. Install the pre-commit hooks, as specified [here](https://pre-commit.com/#3-install-the-git-hook-scripts).
+1. Install the pre-commit hooks, as specified [here](https://pre-commit.com/#3-install-the-git-hook-scripts).
 
 
 Controlling the Gridscan Externally (e.g. from GDA)
