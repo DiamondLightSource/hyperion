@@ -1,7 +1,5 @@
 import os
 import sys
-from collections import namedtuple
-from selectors import EpollSelector
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -13,6 +11,7 @@ from bluesky import RunEngine
 from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
 from ophyd.log import config_ophyd_logging
+
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from src.artemis.devices.slit_gaps import SlitGaps

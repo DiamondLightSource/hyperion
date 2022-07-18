@@ -12,7 +12,11 @@ flask-restful="*"
 dataclasses-json = "*"
 zocalo = "*"
 ispyb = "*"
-nexgen = {git = "https://github.com/DominicOram/nexgen.git", editable = true}
+# Currently nexgen cannot be installed via pipenv+ git, instead after installation use `pipenv run pip install git+https://github.com/dials/nexgen.git` 
+#nexgen = {git = "https://github.com/dials/nexgen.git", editable = true}
+scanspec = "*"
+numpy = ">=1.22"
+pipenv = "*"
 
 [dev-packages]
 pytest-cov = "*"
@@ -25,7 +29,7 @@ mypy = "*"
 matplotlib = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.10"
 
 [pipenv]
 allow_prereleases = true
