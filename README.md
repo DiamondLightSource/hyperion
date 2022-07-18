@@ -19,8 +19,7 @@ Development Installation
     ```
     pipenv install --dev
     ```
-1. Nexgen currently cannot be installed in this way (see #175). So then run `pipenv run pip install git+https://github.com/dials/nexgen.git`
-1. Install the pre-commit hooks, as specified [here](https://pre-commit.com/#3-install-the-git-hook-scripts).
+2. Install the pre-commit hooks, as specified [here](https://pre-commit.com/#3-install-the-git-hook-scripts).
 
 
 Controlling the Gridscan Externally (e.g. from GDA)
