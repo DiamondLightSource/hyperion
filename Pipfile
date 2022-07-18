@@ -13,7 +13,7 @@ dataclasses-json = "*"
 zocalo = "*"
 ispyb = "*"
 # Currently nexgen cannot be installed via pipenv+ git, instead after installation use `pipenv run pip install git+https://github.com/dials/nexgen.git` 
-#nexgen = {git = "https://github.com/dials/nexgen.git", editable = true}
+nexgen = {git = "https://github.com/dials/nexgen.git", editable = true}
 scanspec = "*"
 numpy = ">=1.22"
 pipenv = "*"
