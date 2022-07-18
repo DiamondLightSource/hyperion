@@ -3,8 +3,6 @@
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
         "--max-line-length=88",
-        "--ignore-tests",
-        "--extend-ignore=E203"
     ],
     "python.linting.mypyEnabled": true,
     "python.linting.enabled": true,
