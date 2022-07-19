@@ -9,7 +9,7 @@ from ophyd import (
     ROIPlugin,
 )
 
-from src.artemis.devices.oav.snapshot import Snapshot
+from src.artemis.devices.oav.grid_overlay import SnapshotWithGrid
 
 
 class OAV(AreaDetector):
@@ -19,4 +19,4 @@ class OAV(AreaDetector):
     over = ADC(OverlayPlugin, "OVER:")
     tiff = ADC(OverlayPlugin, "TIFF:")
     hdf5 = ADC(HDF5Plugin, "HDF5:")
-    snapshot: Snapshot = Component(Snapshot, ":MJPG")
+    snapshot: SnapshotWithGrid = Component(SnapshotWithGrid, ":MJPG")
