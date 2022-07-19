@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Optional
 
 from dataclasses_json import config, dataclass_json
-from src.artemis.utils import Point2D, Point3D
+from src.artemis.utils import Point3D
 
 
 @dataclass_json
@@ -13,10 +13,10 @@ class IspybParams:
     pixels_per_micron_x: float
     pixels_per_micron_y: float
 
-    upper_left: Point2D = field(
+    upper_left: Point3D = field(
         metadata=config(
             encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point2D(**mydict),
+            decoder=lambda mydict: Point3D(**mydict),
         )
     )
 
