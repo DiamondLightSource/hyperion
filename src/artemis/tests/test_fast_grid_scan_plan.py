@@ -4,6 +4,7 @@ from unittest.mock import call, patch
 from bluesky.run_engine import RunEngine
 from mockito import ANY, when
 from ophyd.sim import make_fake_device
+
 from src.artemis.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -11,6 +12,7 @@ from src.artemis.devices.det_dim_constants import (
 )
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan
+from src.artemis.devices.motors import I03Smargon
 from src.artemis.devices.slit_gaps import SlitGaps
 from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
@@ -87,6 +89,10 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
     FakeUndulator = make_fake_device(Undulator)
     undulator: Undulator = FakeUndulator(name="undulator")
+
+    FakeI03Smargon = make_fake_device(I03Smargon)
+    motor_bundle: I03Smargon = FakeI03Smargon(name="motor_bundle")
+
     FakeEiger = make_fake_device(EigerDetector)
     eiger: EigerDetector = FakeEiger(
         detector_params=params.detector_params, name="eiger"
@@ -107,7 +113,14 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
         list(
             run_gridscan(
-                fast_grid_scan, zebra, eiger, undulator, synchrotron, slit_gaps, params
+                fast_grid_scan,
+                zebra,
+                eiger,
+                motor_bundle,
+                undulator,
+                synchrotron,
+                slit_gaps,
+                params,
             )
         )
 
