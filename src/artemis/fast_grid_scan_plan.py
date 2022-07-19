@@ -65,11 +65,11 @@ def run_gridscan(
         fgs_composite.slit_gaps,
     )
 
-    config = "config"
+    ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
     ispyb = (
-        StoreInIspyb3D(config)
+        StoreInIspyb3D(ispyb_config)
         if parameters.grid_scan_params.is_3d_grid_scan
-        else StoreInIspyb2D(config)
+        else StoreInIspyb2D(ispyb_config)
     )
 
     datacollection_ids, _, datacollection_group_id = ispyb.store_grid_scan(parameters)
