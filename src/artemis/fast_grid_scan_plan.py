@@ -62,11 +62,11 @@ def run_gridscan(
     yield from update_params_from_epics_devices(
         parameters, undulator, synchrotron, slit_gap
     )
-    config = "config"
+    ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
     ispyb = (
-        StoreInIspyb3D(config)
+        StoreInIspyb3D(ispyb_config)
         if parameters.grid_scan_params.is_3d_grid_scan
-        else StoreInIspyb2D(config)
+        else StoreInIspyb2D(ispyb_config)
     )
 
     datacollection_ids, _, datacollection_group_id = ispyb.store_grid_scan(parameters)

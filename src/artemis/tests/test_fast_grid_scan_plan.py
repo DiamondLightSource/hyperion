@@ -1,3 +1,4 @@
+import os
 import types
 from unittest.mock import call, patch
 
