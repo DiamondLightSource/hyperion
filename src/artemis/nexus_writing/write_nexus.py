@@ -2,19 +2,21 @@
 Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
 """
 import math
+import shutil
 import time
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Tuple
 
 import h5py
 import numpy as np
-import shutil
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
+
 from src.artemis.devices.detector import DetectorParams
-from src.artemis.devices.fast_grid_scan import GridScanParams
+from src.artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams
 from src.artemis.parameters import FullParameters
 
@@ -44,6 +46,35 @@ module = {
     "slow_axis": [0.0, -1.0, 0.0],
     "module_offset": "1",
 }
+
+
+def create_parameters_for_first_file(parameters: FullParameters):
+    new_params = deepcopy(parameters)
+    new_params.grid_scan_params.z_axis = GridAxis(
+        parameters.grid_scan_params.z1_start, 0, 0
+    )
+    new_params.detector_params.num_images = (
+        parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
+    )
+    new_params.detector_params.nexus_file_run_number = (
+        parameters.detector_params.run_number
+    )
+    return new_params
+
+
+def create_parameters_for_second_file(parameters: FullParameters):
+    new_params = deepcopy(parameters)
+    new_params.grid_scan_params.y_axis = GridAxis(
+        parameters.grid_scan_params.y2_start, 0, 0
+    )
+    new_params.detector_params.omega_start += 90
+    new_params.detector_params.nexus_file_run_number = (
+        parameters.detector_params.run_number + 1
+    )
+    new_params.detector_params.start_index = (
+        parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
+    )
+    return new_params
 
 
 def create_goniometer_axes(
@@ -79,9 +110,9 @@ def create_goniometer_axes(
         ],
         "units": ["deg", "um", "um", "um", "deg", "deg"],
         "offsets": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        "starts": [detector_params.omega_start, 0.0, grid_scan_params.y_axis.start, grid_scan_params.x_axis.start, 0.0, 0.0],
-        "ends": [detector_params.omega_end, 0.0, grid_scan_params.y_axis.end, grid_scan_params.x_axis.end, 0.0, 0.0],
-        "increments": [detector_params.omega_increment, 0.0, grid_scan_params.y_axis.step_size, grid_scan_params.x_axis.step_size, 0.0, 0.0],
+        "starts": [detector_params.omega_start, grid_scan_params.z_axis.start, grid_scan_params.y_axis.start, grid_scan_params.x_axis.start, 0.0, 0.0],
+        "ends": [detector_params.omega_end, grid_scan_params.z_axis.end, grid_scan_params.y_axis.end, grid_scan_params.x_axis.end, 0.0, 0.0],
+        "increments": [detector_params.omega_increment, grid_scan_params.z_axis.step_size, grid_scan_params.y_axis.step_size, grid_scan_params.x_axis.step_size, 0.0, 0.0],
     }
     # fmt: on
 
@@ -148,19 +179,34 @@ def create_beam_and_attenuator_parameters(
 
 
 class NexusWriter:
-    def __init__(self, parameters: FullParameters) -> None:
+    def __init__(
+        self,
+        parameters: FullParameters,
+    ) -> None:
         self.detector = create_detector_parameters(parameters.detector_params)
-        self.goniometer = create_goniometer_axes(
-            parameters.detector_params, parameters.grid_scan_params
-        )
         self.beam, self.attenuator = create_beam_and_attenuator_parameters(
             parameters.ispyb_params
         )
+
+        self.goniometer = create_goniometer_axes(
+            parameters.detector_params, parameters.grid_scan_params
+        )
         self.directory = Path(parameters.detector_params.directory)
         self.filename = parameters.detector_params.full_filename
-        self.num_of_images = parameters.detector_params.num_images
-        self.nexus_file = self.directory / f"{self.filename}.nxs"
-        self.master_file = self.directory / f"{self.filename}_master.h5"
+
+        self.current_num_of_images = (
+            parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
+        )
+        self.start_index = parameters.detector_params.start_index
+
+        self.full_num_of_images = parameters.detector_params.num_images
+
+        self.nexus_file = (
+            self.directory / f"{parameters.detector_params.nexus_filename}.nxs"
+        )
+        self.master_file = (
+            self.directory / f"{parameters.detector_params.nexus_filename}_master.h5"
+        )
 
     def _get_current_time(self):
         return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
@@ -169,7 +215,9 @@ class NexusWriter:
         max_images_per_file = 1000
         return [
             self.directory / f"{self.filename}_{h5_num + 1:06}.h5"
-            for h5_num in range(math.ceil(self.num_of_images / max_images_per_file))
+            for h5_num in range(
+                math.ceil(self.full_num_of_images / max_images_per_file)
+            )
         ]
 
     def __enter__(self):
@@ -192,7 +240,7 @@ class NexusWriter:
                     nxsfile,
                     self.get_image_datafiles(),
                     "mcstas",
-                    ("images", self.num_of_images),
+                    ("images", self.full_num_of_images),
                     self.goniometer,
                     self.detector,
                     module,
@@ -208,10 +256,11 @@ class NexusWriter:
                 image_vds_writer(
                     nxsfile,
                     (
-                        self.num_of_images,
+                        self.full_num_of_images,
                         self.detector["image_size"][1],
                         self.detector["image_size"][0],
                     ),
+                    start_index=self.start_index,
                 )
 
     def __exit__(self, *_):

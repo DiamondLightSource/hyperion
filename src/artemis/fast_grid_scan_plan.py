@@ -19,7 +19,11 @@ from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
 from src.artemis.devices.zebra import Zebra
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
-from src.artemis.nexus_writing.write_nexus import NexusWriter
+from src.artemis.nexus_writing.write_nexus import (
+    NexusWriter,
+    create_parameters_for_first_file,
+    create_parameters_for_second_file,
+)
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
 from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
@@ -81,8 +85,9 @@ def run_gridscan(
         yield from bps.kickoff(fgs)
         yield from bps.complete(fgs, wait=True)
 
-    with NexusWriter(parameters):
-        yield from do_fgs()
+    with NexusWriter(create_parameters_for_first_file(parameters)):
+        with NexusWriter(create_parameters_for_second_file(parameters)):
+            yield from do_fgs()
 
     current_time = ispyb.get_current_time_string()
     for id in datacollection_ids:

@@ -15,6 +15,7 @@ from ophyd import (
 )
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
+
 from src.artemis.devices.motors import GridScanLimitBundle
 from src.artemis.devices.status import await_value
 from src.artemis.utils import Point3D
@@ -22,7 +23,7 @@ from src.artemis.utils import Point3D
 
 @dataclass
 class GridAxis:
-    start: int
+    start: float
     step_size: float
     full_steps: int
 
