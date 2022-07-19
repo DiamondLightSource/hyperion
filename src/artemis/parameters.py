@@ -23,9 +23,9 @@ class FullParameters:
     insertion_prefix: str = SIM_INSERTION_PREFIX
     grid_scan_params: GridScanParams = default_field(
         GridScanParams(
-            x_steps=5,
-            y_steps=10,
-            z_steps=0,
+            x_steps=4,
+            y_steps=200,
+            z_steps=61,
             x_step_size=0.1,
             y_step_size=0.1,
             z_step_size=0.1,
@@ -47,8 +47,8 @@ class FullParameters:
             run_number=0,
             detector_distance=100.0,
             omega_start=0.0,
-            omega_increment=0.1,
-            num_images=50,
+            omega_increment=0.0,
+            num_images=300,
             use_roi_mode=False,
         )
     )
