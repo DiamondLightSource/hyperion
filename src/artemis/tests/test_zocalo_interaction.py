@@ -7,9 +7,10 @@ from typing import Callable, Dict
 from unittest.mock import MagicMock, patch
 
 from pytest import mark, raises
+from zocalo.configuration import Configuration
+
 from src.artemis.ispyb.ispyb_dataclass import Point3D
 from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
-from zocalo.configuration import Configuration
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -90,10 +91,12 @@ def test_run_start_and_end(
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
-    message = {
-        "max_voxel": [3, 5, 5],
-        "centre_of_mass": [2.942925659754348, 7.142683401382778, 6.79110544979448],
-    }
+    message = [
+        {
+            "max_voxel": [3, 5, 5],
+            "centre_of_mass": [2.942925659754348, 7.142683401382778, 6.79110544979448],
+        }
+    ]
     step_params = {"dcid": "8183741", "dcgid": "7263143"}
 
     mock_zc: Configuration = MagicMock()
