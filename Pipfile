@@ -12,7 +12,7 @@ flask-restful="*"
 dataclasses-json = "*"
 zocalo = "*"
 ispyb = "*"
-nexgen = {git = "https://github.com/DominicOram/nexgen.git", ref = "add_support_for_defining_scans_using_scanspec", editable = true}
+nexgen = "*"
 scanspec = "*"
 numpy = ">=1.22"
 
