@@ -26,6 +26,9 @@ from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 
+# Tolerance for how close omega must start to 0
+OMEGA_TOLERANCE = 0.1
+
 # Clear odin errors and check initialised
 # If in error clean up
 # Setup beamline
@@ -60,8 +63,10 @@ def run_gridscan(
     parameters: FullParameters,
 ):
     current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
-    assert current_omega == parameters.detector_params.omega_start
-    assert current_omega == 0  # This should eventually be removed, see #154
+    assert abs(current_omega - parameters.detector_params.omega_start) < OMEGA_TOLERANCE
+    assert (
+        abs(current_omega) < OMEGA_TOLERANCE
+    )  # This should eventually be removed, see #154
 
     yield from update_params_from_epics_devices(
         parameters, undulator, synchrotron, slit_gap
