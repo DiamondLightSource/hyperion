@@ -84,10 +84,12 @@ fi
 SSH_KEY_FILE_LOC="/dls_sw/${BEAMLINE}/software/gda_versions/var/.ssh/${BEAMLINE}-ssh.key"
 
 if [[ $STOP == 1 ]]; then
+    STOP_STRING="pkill -f src/artemis/main.py"
     if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" ]]; then
-        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} ${BEAMLINE}-control.diamond.ac.uk
+        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} ${BEAMLINE}-control.diamond.ac.uk ${STOP_STRING}
+        exit 0
     fi
-    pkill -f src/artemis/main.py
+    eval ${STOP_STRING}
     exit 0
 fi
 
@@ -103,8 +105,10 @@ fi
 
 
 if [[ $DEPLOY == 1 ]]; then
+    echo "Fetching artemis remote repository"
     git fetch --all --tags --prune
     if [[ -z "${VERSION}" ]]; then
+        echo "No verison number specified, finding latest version tag"
         VERSION="0"
         for version_tag in $(git ls-remote --tags origin/main); do
             checkver $VERSION ${version_tag}
@@ -113,6 +117,7 @@ if [[ $DEPLOY == 1 ]]; then
                 2) VERSION = ${version_tag} ;;
             esac
         done
+        echo "Found version ${VERSION}"
     fi
 
     git checkout "tags/${VERSION}"
@@ -121,28 +126,20 @@ if [[ $DEPLOY == 1 ]]; then
     module load python/3.10
 
     pipenv install --python 3.10
+
+    sleep 1
+    echo "Version ${VERSION} of artemis finished installing"
 fi
 
 if [[ $START == 1 ]]; then
+    COMMAND_STRING="source ${ARTEMIS_PATH}/start_artemis.sh ${ARTEMIS_PATH} ${BEAMLINE}"
+    echo "running ${COMMAND_STRING} on control machine"
+
     if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" || $USERNAME != "gda2" ]]; then
-        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk
+        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk ${COMMAND_STRING}
+    else
+        eval $COMMAND_STRING
     fi
-
-    if [[ -z $(pgrep -f src/artemis/main.py) ]]; then
-        pkill -f src/artemis.main.py
-    fi
-
-    cd ${ARTEMIS_PATH}
-
-    module unload controls_dev
-    module load python/3.10
-    module load dials
-
-    ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
-
-    export ISPYB_CONFIG_PATH
-
-    pipenv run python src/artemis/main.py &
+    sleep 1
+    echo "Artemis Server Started"
 fi
-
-sleep 1
