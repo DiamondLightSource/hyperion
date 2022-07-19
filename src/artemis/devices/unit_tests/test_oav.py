@@ -35,7 +35,7 @@ def test_snapshot_trigger_handles_request_with_bad_status_code_correctly(
 
 
 @patch("requests.get")
-@patch("src.artemis.devices.oav.Image")
+@patch("src.artemis.devices.oav.snapshot.Image")
 def test_snapshot_trigger_loads_correct_url(mock_image, mock_get: MagicMock, fake_oav):
     st = fake_oav.snapshot.trigger()
     st.wait()
@@ -43,7 +43,7 @@ def test_snapshot_trigger_loads_correct_url(mock_image, mock_get: MagicMock, fak
 
 
 @patch("requests.get")
-@patch("src.artemis.devices.oav.Image.open")
+@patch("src.artemis.devices.oav.snapshot.Image.open")
 def test_snapshot_trigger_saves_to_correct_file(
     mock_open: MagicMock, mock_get, fake_oav
 ):
