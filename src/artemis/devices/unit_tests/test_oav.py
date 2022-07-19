@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import PIL
@@ -15,6 +16,7 @@ def fake_oav() -> OAV:
 
     fake_oav.snapshot.url.sim_put("http://test.url")
     fake_oav.snapshot.filename.put("test filename")
+    fake_oav.snapshot.directory.put("test directory")
 
     return fake_oav
 
@@ -51,4 +53,5 @@ def test_snapshot_trigger_saves_to_correct_file(
     mock_open.return_value = image
     st = fake_oav.snapshot.trigger()
     st.wait()
-    mock_save.assert_called_once_with("test filename")
+    expected_path = Path("test directory") / "test filename.png"
+    mock_save.assert_called_once_with(expected_path)
