@@ -37,7 +37,7 @@ _add_horizontal_parallel_lines_to_image = partial(
 )
 
 
-def add_outer_overlay(
+def add_grid_border_overlay_to_image(
     image: Image.Image,
     top_left_x: int,
     top_left_y: int,
@@ -63,7 +63,7 @@ def add_outer_overlay(
     )
 
 
-def add_grid_overlay(
+def add_grid_overlay_to_image(
     image: Image.Image,
     top_left_x: int,
     top_left_y: int,
@@ -104,12 +104,12 @@ class SnapshotWithGrid(Snapshot):
         num_boxes_y = self.num_boxes_y_signal.get()
         filename_str = self.filename.get()
         directory_str = self.directory.get()
-        add_outer_overlay(
+        add_grid_border_overlay_to_image(
             image, top_left_x, top_left_y, box_width, num_boxes_x, num_boxes_y
         )
         outer_overlay_path = Path(f"{directory_str}/{filename_str}_outer_overlay.png")
         image.save(outer_overlay_path)
-        add_grid_overlay(
+        add_grid_overlay_to_image(
             image, top_left_x, top_left_y, box_width, num_boxes_x, num_boxes_y
         )
         grid_overlay_path = Path(f"{directory_str}/{filename_str}_grid_overlay.png")
