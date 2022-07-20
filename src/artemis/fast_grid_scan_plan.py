@@ -13,12 +13,13 @@ from bluesky import RunEngine
 from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
 from ophyd.log import config_ophyd_logging
+
 from src.artemis.devices.eiger import EigerDetector
-from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
+from src.artemis.devices.fast_grid_scan import set_fast_grid_scan_params
+from src.artemis.devices.fast_grid_scan_composite import FGSComposite
 from src.artemis.devices.slit_gaps import SlitGaps
 from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
-from src.artemis.devices.zebra import Zebra
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
@@ -26,13 +27,6 @@ from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
-
-# Clear odin errors and check initialised
-# If in error clean up
-# Setup beamline
-# Store in ISPyB
-# Start nxgen
-# Start analysis run collection
 
 
 def update_params_from_epics_devices(
@@ -51,16 +45,15 @@ def update_params_from_epics_devices(
 
 @bpp.run_decorator()
 def run_gridscan(
-    fgs: FastGridScan,
-    zebra: Zebra,
+    fgs_composite: FGSComposite,
     eiger: EigerDetector,
-    undulator: Undulator,
-    synchrotron: Synchrotron,
-    slit_gap: SlitGaps,
     parameters: FullParameters,
 ):
     yield from update_params_from_epics_devices(
-        parameters, undulator, synchrotron, slit_gap
+        parameters,
+        fgs_composite.undulator,
+        fgs_composite.synchrotron,
+        fgs_composite.slit_gaps,
     )
     ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
     ispyb = (
@@ -74,13 +67,16 @@ def run_gridscan(
     for id in datacollection_ids:
         run_start(id)
 
-    # TODO: Check topup gate
-    yield from set_fast_grid_scan_params(fgs, parameters.grid_scan_params)
+    fgs_motors = fgs_composite.fast_grid_scan
+    zebra = fgs_composite.zebra
 
-    @bpp.stage_decorator([zebra, eiger, fgs])
+    # TODO: Check topup gate
+    yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
+
+    @bpp.stage_decorator([zebra, eiger, fgs_motors])
     def do_fgs():
-        yield from bps.kickoff(fgs)
-        yield from bps.complete(fgs, wait=True)
+        yield from bps.kickoff(fgs_motors)
+        yield from bps.complete(fgs_motors, wait=True)
 
     with NexusWriter(parameters):
         yield from do_fgs()
@@ -109,24 +105,22 @@ def get_plan(parameters: FullParameters):
     Returns:
         Generator: The plan for the gridscan
     """
-    fast_grid_scan = FastGridScan(
-        name="fgs", prefix=f"{parameters.beamline}-MO-SGON-01:FGS:"
+    fast_grid_scan_composite = FGSComposite(
+        insertion_prefix=parameters.insertion_prefix,
+        name="fgs",
+        prefix=parameters.beamline,
     )
+
+    # Note, eiger cannot be currently waited on, see #166
     eiger = EigerDetector(
         parameters.detector_params,
         name="eiger",
         prefix=f"{parameters.beamline}-EA-EIGER-01:",
     )
-    zebra = Zebra(name="zebra", prefix=f"{parameters.beamline}-EA-ZEBRA-01:")
-    undulator = Undulator(
-        name="undulator", prefix=f"{parameters.insertion_prefix}-MO-SERVC-01:"
-    )
-    synchrotron = Synchrotron(name="synchrotron")
-    slit_gaps = SlitGaps(name="slit_gaps", prefix=f"{parameters.beamline}-AL-SLITS-04:")
 
-    return run_gridscan(
-        fast_grid_scan, zebra, eiger, undulator, synchrotron, slit_gaps, parameters
-    )
+    fast_grid_scan_composite.wait_for_connection()
+
+    return run_gridscan(fast_grid_scan_composite, eiger, parameters)
 
 
 if __name__ == "__main__":

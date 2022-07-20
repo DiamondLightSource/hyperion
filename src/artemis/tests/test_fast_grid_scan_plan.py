@@ -1,10 +1,11 @@
 import os
 import types
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 from bluesky.run_engine import RunEngine
 from mockito import ANY, when
 from ophyd.sim import make_fake_device
+
 from src.artemis.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -12,6 +13,7 @@ from src.artemis.devices.det_dim_constants import (
 )
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan
+from src.artemis.devices.fast_grid_scan_composite import FGSComposite
 from src.artemis.devices.slit_gaps import SlitGaps
 from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
@@ -38,8 +40,8 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
     assert det_dimension == EIGER2_X_4M_DIMENSION
 
 
-def test_when_get_plan_called_then_generator_returned():
-    plan = get_plan(FullParameters())
+def test_when_run_gridscan_called_then_generator_returned():
+    plan = run_gridscan(MagicMock(), MagicMock())
     assert isinstance(plan, types.GeneratorType)
 
 
@@ -82,20 +84,12 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     params = FullParameters()
     params.grid_scan_params.z_steps = 2
 
-    FakeSlitGaps = make_fake_device(SlitGaps)
-    slit_gaps: SlitGaps = FakeSlitGaps(name="slit_gaps")
-    FakeSynchrotron = make_fake_device(Synchrotron)
-    synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
-    FakeUndulator = make_fake_device(Undulator)
-    undulator: Undulator = FakeUndulator(name="undulator")
+    FakeFGSComposite = make_fake_device(FGSComposite)
+    fgs_composite: FGSComposite = FakeFGSComposite(name="fgs", insertion_prefix="")
     FakeEiger = make_fake_device(EigerDetector)
     eiger: EigerDetector = FakeEiger(
         detector_params=params.detector_params, name="eiger"
     )
-    FakeZebra = make_fake_device(Zebra)
-    zebra: Zebra = FakeZebra(name="zebra")
-    FakeFGS = make_fake_device(FastGridScan)
-    fast_grid_scan: FastGridScan = FakeFGS(name="fast_grid_scan")
 
     when(StoreInIspyb3D).store_grid_scan(params).thenReturn([dc_ids, None, dcg_id])
 
@@ -106,11 +100,7 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     )
 
     with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
-        list(
-            run_gridscan(
-                fast_grid_scan, zebra, eiger, undulator, synchrotron, slit_gaps, params
-            )
-        )
+        list(run_gridscan(fgs_composite, eiger, params))
 
     run_start.assert_has_calls(call(x) for x in dc_ids)
     assert run_start.call_count == len(dc_ids)
