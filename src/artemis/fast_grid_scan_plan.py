@@ -28,7 +28,7 @@ from src.artemis.nexus_writing.write_nexus import (
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
 from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
-config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
+config_bluesky_logging(file="/tmp/artemis.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 
 # Tolerance for how close omega must start to 0
