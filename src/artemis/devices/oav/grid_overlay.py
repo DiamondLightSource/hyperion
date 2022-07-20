@@ -1,9 +1,40 @@
+from functools import partial
 from pathlib import Path
 
 from ophyd import Component, Signal
 from PIL import Image, ImageDraw
 
 from src.artemis.devices.oav.snapshot import Snapshot
+
+
+def _add_parallel_lines_to_image(
+    image, start_x, start_y, line_length, spacing, num_lines, orientation=0
+):
+    lines = [
+        (
+            (start_x, start_y + i * spacing),
+            (start_x + line_length, start_y + i * spacing),
+        )
+        if orientation == 0
+        else (
+            (start_x + i * spacing, start_y),
+            (start_x + i * spacing, start_y + line_length),
+        )
+        for i in range(num_lines)
+    ]
+    draw = ImageDraw.Draw(image)
+    for line in lines:
+        draw.line(line)
+
+
+_add_vertical_parallel_lines_to_image = partial(
+    _add_parallel_lines_to_image, orientation=1
+)
+
+
+_add_horizontal_parallel_lines_to_image = partial(
+    _add_parallel_lines_to_image, orientation=0
+)
 
 
 def add_outer_overlay(
@@ -14,20 +45,22 @@ def add_outer_overlay(
     num_boxes_x: int,
     num_boxes_y: int,
 ):
-    draw = ImageDraw.Draw(image)
-    top_left = (top_left_x, top_left_y)
-    top_right = (top_left_x + box_width * num_boxes_x, top_left_y)
-    bottom_left = (top_left_x, top_left_y + num_boxes_y * box_width)
-    bottom_right = (
-        top_left_x + box_width * num_boxes_x,
-        top_left_y + num_boxes_y * box_width,
+    _add_vertical_parallel_lines_to_image(
+        image,
+        start_x=top_left_x,
+        start_y=top_left_y,
+        line_length=num_boxes_y * box_width,
+        spacing=num_boxes_x * box_width,
+        num_lines=2,
     )
-    top = (top_left, top_right)
-    left = (top_left, bottom_left)
-    right = (top_right, bottom_right)
-    bottom = (bottom_left, bottom_right)
-    for line in [top, left, right, bottom]:
-        draw.line(line)
+    _add_horizontal_parallel_lines_to_image(
+        image,
+        start_x=top_left_x,
+        start_y=top_left_y,
+        line_length=num_boxes_x * box_width,
+        spacing=num_boxes_y * box_width,
+        num_lines=2,
+    )
 
 
 def add_grid_overlay(
@@ -38,26 +71,22 @@ def add_grid_overlay(
     num_boxes_x: int,
     num_boxes_y: int,
 ):
-    draw = ImageDraw.Draw(image)
-    for i in range(1, num_boxes_x):
-        top = (top_left_x + i * box_width, top_left_y)
-        bottom = (top_left_x + i * box_width, top_left_y + num_boxes_y * box_width)
-        line = (top, bottom)
-        draw.line(line)
-    for i in range(1, num_boxes_y):
-        left = (top_left_x, top_left_y + i * box_width)
-        right = (top_left_x + num_boxes_x * box_width, top_left_y + i * box_width)
-        line = (left, right)
-        draw.line(line)
-
-
-def add_full_overlay(
-    image: Image.Image, top_left_x, top_left_y, box_width, num_boxes_x, num_boxes_y
-):
-    add_outer_overlay(
-        image, top_left_x, top_left_y, box_width, num_boxes_x, num_boxes_y
+    _add_vertical_parallel_lines_to_image(
+        image,
+        start_x=top_left_x + box_width,
+        start_y=top_left_y,
+        line_length=num_boxes_y * box_width,
+        spacing=box_width,
+        num_lines=num_boxes_x - 1,
     )
-    add_grid_overlay(image, top_left_x, top_left_y, box_width, num_boxes_x, num_boxes_y)
+    _add_horizontal_parallel_lines_to_image(
+        image,
+        start_x=top_left_x,
+        start_y=top_left_y + box_width,
+        line_length=num_boxes_x * box_width,
+        spacing=box_width,
+        num_lines=num_boxes_y - 1,
+    )
 
 
 class SnapshotWithGrid(Snapshot):
