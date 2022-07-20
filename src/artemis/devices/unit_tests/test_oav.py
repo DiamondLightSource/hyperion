@@ -63,3 +63,24 @@ def test_snapshot_trigger_saves_to_correct_file(
     ]
     calls_to_save = mock_save.mock_calls
     assert calls_to_save == expected_calls_to_save
+
+
+@patch("requests.get")
+@patch("src.artemis.devices.oav.snapshot.Image.open")
+@patch("src.artemis.devices.oav.grid_overlay.add_grid_overlay_to_image")
+@patch("src.artemis.devices.oav.grid_overlay.add_grid_border_overlay_to_image")
+def test_correct_grid_drawn_on_image(
+    mock_border_overlay: MagicMock,
+    mock_grid_overlay: MagicMock,
+    mock_open: MagicMock,
+    mock_get: MagicMock,
+    fake_oav: OAV,
+):
+    st = fake_oav.snapshot.trigger()
+    st.wait()
+    expected_border_calls = [call(mock_open.return_value, 100, 100, 50, 15, 10)]
+    expected_grid_calls = [call(mock_open.return_value, 100, 100, 50, 15, 10)]
+    actual_border_calls = mock_border_overlay.mock_calls
+    actual_grid_calls = mock_grid_overlay.mock_calls
+    assert actual_border_calls == expected_border_calls
+    assert actual_grid_calls == expected_grid_calls
