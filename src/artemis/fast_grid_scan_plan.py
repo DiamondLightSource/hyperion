@@ -13,6 +13,7 @@ from bluesky import RunEngine
 from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
 from ophyd.log import config_ophyd_logging
+
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from src.artemis.devices.slit_gaps import SlitGaps
@@ -24,7 +25,7 @@ from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
 from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
-config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
+config_bluesky_logging(file="/tmp/artemis.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 
 # Clear odin errors and check initialised
