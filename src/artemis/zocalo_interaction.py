@@ -6,8 +6,9 @@ from time import sleep
 import workflows.recipe
 import workflows.transport
 import zocalo.configuration
-from src.artemis.utils import Point3D
 from workflows.transport import lookup
+
+from src.artemis.utils import Point3D
 
 TIMEOUT = 30
 
@@ -85,7 +86,7 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
         transport.ack(header)
         received_group_id = recipe_parameters["dcgid"]
         if received_group_id == str(data_collection_group_id):
-            result_received.put(Point3D(*message["max_voxel"]))
+            result_received.put(Point3D(*message[0]["max_voxel"]))
         else:
             print(
                 f"Warning: results for {received_group_id} received but expected {data_collection_group_id}"
