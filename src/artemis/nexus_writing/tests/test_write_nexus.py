@@ -5,6 +5,7 @@ from unittest.mock import call, patch
 
 import h5py
 import pytest
+
 from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import FullParameters
 
@@ -17,12 +18,9 @@ ParamsAndNexusWriter = namedtuple("ParamsAndNexusWriter", ["params", "nexus_writ
 
 def get_minimum_parameters_for_file_writing() -> FullParameters:
     test_full_params = FullParameters()
-    test_path = os.path.abspath(os.path.dirname(__file__))
-    test_full_params.detector_params.directory = str(test_path)
     test_full_params.ispyb_params.wavelength = 1.0
     test_full_params.ispyb_params.flux = 9.0
     test_full_params.ispyb_params.transmission = 0.5
-    test_full_params.detector_params.prefix = "file_name"
     return test_full_params
 
 
