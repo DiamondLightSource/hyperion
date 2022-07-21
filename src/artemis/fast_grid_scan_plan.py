@@ -78,22 +78,28 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    with NexusWriter(parameters):
-        yield from do_fgs()
+    try:
+        with NexusWriter(parameters):
+            yield from do_fgs()
+    except Exception as e:
+        run_status = "Failure or whatever this message is"
+        raise Exception from e
+    else:
+        run_status = "DataCollection Successful"
+    finally:
+        current_time = ispyb.get_current_time_string()
+        for id in datacollection_ids:
+            ispyb.update_grid_scan_with_end_time_and_status(
+                current_time,
+                run_status,
+                id,
+                datacollection_group_id,
+            )
 
-    current_time = ispyb.get_current_time_string()
-    for id in datacollection_ids:
-        ispyb.update_grid_scan_with_end_time_and_status(
-            current_time,
-            "DataCollection Successful",
-            id,
-            datacollection_group_id,
-        )
+        for id in datacollection_ids:
+            run_end(id)
 
-    for id in datacollection_ids:
-        run_end(id)
-
-    wait_for_result(datacollection_group_id)
+        wait_for_result(datacollection_group_id)
 
 
 def get_plan(parameters: FullParameters):
