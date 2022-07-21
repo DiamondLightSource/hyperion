@@ -1,11 +1,5 @@
-import os
-import sys
-from collections import namedtuple
-from selectors import EpollSelector
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
 import argparse
+import os
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp

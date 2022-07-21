@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from ophyd import EpicsMotor
 from ophyd.device import Component
@@ -47,7 +47,8 @@ class GridScanMotorBundle(MotorBundle):
     def get_limits(self) -> GridScanLimitBundle:
         """Get the limits for the bundle.
 
-        Note that these limits may not yet be valid until wait_for_connection is called on this MotorBundle.
+        Note that these limits may not yet be valid until wait_for_connection is called
+        on this MotorBundle.
 
         Returns:
             GridScanLimitBundle: The limits for the underlying motor.

@@ -1,24 +1,19 @@
-import os
-import sys
-
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-from dataclasses import dataclass
-from flask import Flask, request
-from flask_restful import Resource, Api
+import atexit
 import logging
 import threading
+from dataclasses import dataclass
+from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
-from typing import Optional
+from typing import Optional, Tuple
+
 from bluesky import RunEngine
-from typing import Tuple
-from enum import Enum
-from src.artemis.parameters import FullParameters
-from src.artemis.fast_grid_scan_plan import get_plan
 from dataclasses_json import dataclass_json
-import atexit
+from flask import Flask, request
+from flask_restful import Api, Resource
+
+from src.artemis.fast_grid_scan_plan import get_plan
+from src.artemis.parameters import FullParameters
 
 logger = logging.getLogger(__name__)
 

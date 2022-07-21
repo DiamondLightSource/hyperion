@@ -1,7 +1,7 @@
 import pytest
-from mockito import when, mock
-
+from mockito import when
 from ophyd.sim import make_fake_device
+
 from src.artemis.devices.eiger_odin import EigerOdin
 
 
@@ -84,6 +84,6 @@ def test_given_node_in_error_node_error_status_gives_message_and_node_number(
 
     in_error, message = fake_odin.nodes.get_error_state()
 
-    assert in_error == True
+    assert in_error
     assert "0" in message
     assert ERR_MESSAGE in message

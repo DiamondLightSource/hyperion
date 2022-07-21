@@ -1,4 +1,3 @@
-import os
 import types
 from unittest.mock import MagicMock, call, patch
 
@@ -12,14 +11,11 @@ from src.artemis.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
 from src.artemis.devices.eiger import EigerDetector
-from src.artemis.devices.fast_grid_scan import FastGridScan
 from src.artemis.devices.fast_grid_scan_composite import FGSComposite
 from src.artemis.devices.slit_gaps import SlitGaps
 from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
-from src.artemis.devices.zebra import Zebra
 from src.artemis.fast_grid_scan_plan import (
-    get_plan,
     run_gridscan,
     update_params_from_epics_devices,
 )

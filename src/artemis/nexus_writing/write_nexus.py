@@ -1,7 +1,9 @@
 """
-Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
+Define beamline parameters for I03, Eiger detector and give an example of writing a
+gridscan.
 """
 import math
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -9,12 +11,12 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
-import shutil
 from nexgen.nxs_write import calculate_scan_from_scanspec
 from nexgen.nxs_write.NexusWriter import call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 from scanspec.specs import Line, Spec
+
 from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.fast_grid_scan import GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams
@@ -139,7 +141,8 @@ def create_beam_and_attenuator_parameters(
         ispyb_params (IspybParams): An IspybParams object holding all required data.
 
     Returns:
-        Tuple[Dict, Dict]: Tuple of dictionaries describing the beam and attenuator parameters respectively
+        Tuple[Dict, Dict]: Tuple of dictionaries describing the beam and attenuator
+                         parameters respectively
     """
     return (
         {"wavelength": ispyb_params.wavelength, "flux": ispyb_params.flux},
@@ -198,7 +201,8 @@ class NexusWriter:
 
     def __enter__(self):
         """
-        Creates a nexus file based on the parameters supplied when this obect was initialised.
+        Creates a nexus file based on the parameters supplied when this obect was
+        initialised.
         """
         start_time = self._get_current_time()
 
