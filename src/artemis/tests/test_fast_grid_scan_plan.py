@@ -1,7 +1,9 @@
 import os
 import types
+from unittest import mock
 from unittest.mock import MagicMock, call, patch
 
+import pytest
 from bluesky.run_engine import RunEngine
 from mockito import ANY, when
 from ophyd.sim import make_fake_device
@@ -109,3 +111,93 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     assert run_end.call_count == len(dc_ids)
 
     wait_for_result.assert_called_once_with(dcg_id)
+
+
+@patch("src.artemis.fast_grid_scan_plan.run_start")
+@patch("src.artemis.fast_grid_scan_plan.run_end")
+@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
+@patch("src.artemis.fast_grid_scan_plan.NexusWriter")
+@patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D")
+def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
+    mock_ispyb: MagicMock, mock_nexus: MagicMock, wait_for_result, run_end, run_start
+):
+    dc_ids = [1, 2]
+    dcg_id = 4
+
+    params = FullParameters()
+    params.grid_scan_params.z_steps = 2
+
+    FakeFGSComposite = make_fake_device(FGSComposite)
+    fgs_composite: FGSComposite = FakeFGSComposite(name="fgs", insertion_prefix="")
+    FakeEiger = make_fake_device(EigerDetector)
+    eiger: EigerDetector = FakeEiger(
+        detector_params=params.detector_params, name="eiger"
+    )
+
+    mock_ispyb.return_value.store_grid_scan.return_value = [dc_ids, None, dcg_id]
+    mock_ispyb.return_value.get_current_time_string.return_value = DUMMY_TIME_STRING
+    mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.return_value = (
+        None
+    )
+
+    with pytest.raises(Exception) as excinfo:
+        with patch(
+            "src.artemis.fast_grid_scan_plan.NexusWriter",
+            side_effect=Exception("mocked error"),
+        ):
+            list(run_gridscan(fgs_composite, eiger, params))
+
+    expected_error_message = "Gridscan failed with exception"
+    assert str(excinfo.value) == expected_error_message
+
+    # TODO: Update this to be the real failure status
+    expected_run_status = "Failure or whatever this message is"
+    expected_calls = [
+        call(DUMMY_TIME_STRING, expected_run_status, id, dcg_id) for id in dc_ids
+    ]
+    actual_calls = (
+        mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.mock_calls
+    )
+    assert all(call in actual_calls for call in expected_calls)
+
+
+@patch("src.artemis.fast_grid_scan_plan.run_start")
+@patch("src.artemis.fast_grid_scan_plan.run_end")
+@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
+@patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D")
+def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
+    mock_ispyb: MagicMock, wait_for_result, run_end, run_start
+):
+    dc_ids = [1, 2]
+    dcg_id = 4
+
+    params = FullParameters()
+    params.grid_scan_params.z_steps = 2
+
+    FakeFGSComposite = make_fake_device(FGSComposite)
+    fgs_composite: FGSComposite = FakeFGSComposite(name="fgs", insertion_prefix="")
+    FakeEiger = make_fake_device(EigerDetector)
+    eiger: EigerDetector = FakeEiger(
+        detector_params=params.detector_params, name="eiger"
+    )
+
+    mock_ispyb.return_value.store_grid_scan.return_value = [dc_ids, None, dcg_id]
+    mock_ispyb.return_value.get_current_time_string.return_value = DUMMY_TIME_STRING
+    mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.return_value = (
+        None
+    )
+
+    with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
+        list(run_gridscan(fgs_composite, eiger, params))
+
+    expected_run_status = "DataCollection Successful"
+    expected_calls = [
+        call(DUMMY_TIME_STRING, expected_run_status, id, dcg_id) for id in dc_ids
+    ]
+    actual_calls = (
+        mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.mock_calls
+    )
+    print("\n\n")
+    print(expected_calls)
+    print(actual_calls)
+    assert all(call in actual_calls for call in expected_calls)
