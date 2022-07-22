@@ -29,6 +29,9 @@ from src.artemis.ispyb.store_in_ispyb import StoreInIspyb3D
 from src.artemis.parameters import FullParameters
 
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
+GOOD_ISPYB_RUN_STATUS = "DataCollection Successful"
+# TODO: Update this to the correct message
+BAD_ISPYB_RUN_STATUS = "DataCollection Unsuccessful"
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
@@ -116,10 +119,9 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
 @patch("src.artemis.fast_grid_scan_plan.run_start")
 @patch("src.artemis.fast_grid_scan_plan.run_end")
 @patch("src.artemis.fast_grid_scan_plan.wait_for_result")
-@patch("src.artemis.fast_grid_scan_plan.NexusWriter")
 @patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D")
 def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
-    mock_ispyb: MagicMock, mock_nexus: MagicMock, wait_for_result, run_end, run_start
+    mock_ispyb: MagicMock, wait_for_result, run_end, run_start
 ):
     dc_ids = [1, 2]
     dcg_id = 4
@@ -134,11 +136,10 @@ def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
         detector_params=params.detector_params, name="eiger"
     )
 
-    mock_ispyb.return_value.store_grid_scan.return_value = [dc_ids, None, dcg_id]
-    mock_ispyb.return_value.get_current_time_string.return_value = DUMMY_TIME_STRING
-    mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.return_value = (
-        None
-    )
+    mock_ispyb_object = mock_ispyb.return_value
+    mock_ispyb_object.store_grid_scan.return_value = [dc_ids, None, dcg_id]
+    mock_ispyb_object.get_current_time_string.return_value = DUMMY_TIME_STRING
+    mock_ispyb_object.update_grid_scan_with_end_time_and_status.return_value = None
 
     with pytest.raises(Exception) as excinfo:
         with patch(
@@ -150,15 +151,13 @@ def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
     expected_error_message = "Gridscan failed with exception"
     assert str(excinfo.value) == expected_error_message
 
-    # TODO: Update this to be the real failure status
-    expected_run_status = "Failure or whatever this message is"
-    expected_calls = [
-        call(DUMMY_TIME_STRING, expected_run_status, id, dcg_id) for id in dc_ids
-    ]
-    actual_calls = (
-        mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.mock_calls
+    mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.assert_has_calls(
+        call(DUMMY_TIME_STRING, BAD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids
     )
-    assert all(call in actual_calls for call in expected_calls)
+    assert (
+        mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.call_count
+        == len(dc_ids)
+    )
 
 
 @patch("src.artemis.fast_grid_scan_plan.run_start")
@@ -181,23 +180,18 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
         detector_params=params.detector_params, name="eiger"
     )
 
-    mock_ispyb.return_value.store_grid_scan.return_value = [dc_ids, None, dcg_id]
-    mock_ispyb.return_value.get_current_time_string.return_value = DUMMY_TIME_STRING
-    mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.return_value = (
-        None
-    )
+    mock_ispyb_object = mock_ispyb.return_value
+    mock_ispyb_object.store_grid_scan.return_value = [dc_ids, None, dcg_id]
+    mock_ispyb_object.get_current_time_string.return_value = DUMMY_TIME_STRING
+    mock_ispyb_object.update_grid_scan_with_end_time_and_status.return_value = None
 
     with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
         list(run_gridscan(fgs_composite, eiger, params))
 
-    expected_run_status = "DataCollection Successful"
-    expected_calls = [
-        call(DUMMY_TIME_STRING, expected_run_status, id, dcg_id) for id in dc_ids
-    ]
-    actual_calls = (
-        mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.mock_calls
+    mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.assert_has_calls(
+        call(DUMMY_TIME_STRING, GOOD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids
     )
-    print("\n\n")
-    print(expected_calls)
-    print(actual_calls)
-    assert all(call in actual_calls for call in expected_calls)
+    assert (
+        mock_ispyb.return_value.update_grid_scan_with_end_time_and_status.call_count
+        == len(dc_ids)
+    )

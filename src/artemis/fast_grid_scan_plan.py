@@ -83,7 +83,7 @@ def run_gridscan(
             yield from do_fgs()
     except Exception as e:
         # TODO: Update this to be the real failure message
-        run_status = "Failure or whatever this message is"
+        run_status = "DataCollection Unsuccessful"
         raise Exception("Gridscan failed with exception") from e
     else:
         run_status = "DataCollection Successful"
