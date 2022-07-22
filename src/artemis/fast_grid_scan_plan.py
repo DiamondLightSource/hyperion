@@ -13,7 +13,6 @@ from bluesky import RunEngine
 from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
 from ophyd.log import config_ophyd_logging
-
 from src.artemis.devices.eiger import EigerDetector
 from src.artemis.devices.fast_grid_scan import set_fast_grid_scan_params
 from src.artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -56,16 +55,16 @@ def run_gridscan(
         fgs_composite.slit_gaps,
     )
     ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
-    ispyb = (
-        StoreInIspyb3D(ispyb_config)
-        if parameters.grid_scan_params.is_3d_grid_scan
-        else StoreInIspyb2D(ispyb_config)
-    )
+    # ispyb = (
+    #     StoreInIspyb3D(ispyb_config)
+    #     if parameters.grid_scan_params.is_3d_grid_scan
+    #     else StoreInIspyb2D(ispyb_config)
+    # )
 
-    datacollection_ids, _, datacollection_group_id = ispyb.store_grid_scan(parameters)
+    # datacollection_ids, _, datacollection_group_id = ispyb.store_grid_scan(parameters)
 
-    for id in datacollection_ids:
-        run_start(id)
+    # for id in datacollection_ids:
+    #     run_start(id)
 
     fgs_motors = fgs_composite.fast_grid_scan
     zebra = fgs_composite.zebra
@@ -78,29 +77,31 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    try:
-        with NexusWriter(parameters):
-            yield from do_fgs()
-    except Exception as e:
-        # TODO: Update this to be the real failure message
-        run_status = "DataCollection Unsuccessful"
-        raise Exception("Gridscan failed with exception") from e
-    else:
-        run_status = "DataCollection Successful"
-    finally:
-        current_time = ispyb.get_current_time_string()
-        for id in datacollection_ids:
-            ispyb.update_grid_scan_with_end_time_and_status(
-                current_time,
-                run_status,
-                id,
-                datacollection_group_id,
-            )
+    # try:
+    with NexusWriter(parameters) as nx, StoreInIspyb3D(
+        ispyb_config, parameters
+    ) as ispyb:
+        print("\n\n", ispyb, "\n\n")
+        yield from do_fgs()
+    # except Exception as e:
+    #     # run_status = "DataCollection Unsuccessful"
+    #     raise Exception("Gridscan failed with exception") from e
+    # else:
+    #     run_status = "DataCollection Successful"
+    # finally:
+    #     current_time = ispyb.get_current_time_string()
+    #     for id in datacollection_ids:
+    #         ispyb.update_grid_scan_with_end_time_and_status(
+    #             current_time,
+    #             run_status,
+    #             id,
+    #             datacollection_group_id,
+    #         )
 
-        for id in datacollection_ids:
-            run_end(id)
+    #     for id in datacollection_ids:
+    #         run_end(id)
 
-        wait_for_result(datacollection_group_id)
+    #     wait_for_result(datacollection_group_id)
 
 
 def get_plan(parameters: FullParameters):

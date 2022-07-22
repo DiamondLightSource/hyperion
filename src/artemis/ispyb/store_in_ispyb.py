@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from sqlalchemy.connectors import Connector
 from src.artemis.ispyb.ispyb_dataclass import Orientation
 from src.artemis.parameters import FullParameters
+from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 import ispyb
 
@@ -16,7 +17,7 @@ class StoreInIspyb(ABC):
 
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
-    def __init__(self, ispyb_config):
+    def __init__(self, ispyb_config, parameters=None):
         self.ISPYB_CONFIG_FILE = ispyb_config
         self.full_params = None
         self.ispyb_params = None
@@ -29,6 +30,39 @@ class StoreInIspyb(ABC):
         self.conn: Connector = None
         self.mx_acquisition = None
         self.core = None
+
+        self.datacollection_ids = None
+        self.datacollection_group_id = None
+        self.grid_ids = None
+
+    def __enter__(self):
+        (
+            self.datacollection_ids,
+            self.grid_ids,
+            self.datacollection_group_id,
+        ) = self.store_grid_scan(self.full_params)
+        print("Store grid scan:", self.store_grid_scan)
+        for id in self.datacollection_ids:
+            run_start(id)
+
+    def __exit__(self, exc, value, traceback):
+        if exc:
+            run_status = "DataCollection Unsuccessful"
+        else:
+            run_status = "DataCollection Successful"
+        current_time = ispyb.get_current_time_string()
+        for id in self.datacollection_ids:
+            ispyb.update_grid_scan_with_end_time_and_status(
+                current_time,
+                run_status,
+                id,
+                self.datacollection_group_id,
+            )
+
+        for id in self.datacollection_ids:
+            run_end(id)
+
+        wait_for_result(self.datacollection_group_id)
 
     def store_grid_scan(self, full_params: FullParameters):
 
@@ -180,8 +214,8 @@ class StoreInIspyb(ABC):
 
 
 class StoreInIspyb3D(StoreInIspyb):
-    def __init__(self, ispyb_config):
-        super().__init__(ispyb_config)
+    def __init__(self, ispyb_config, parameters=None):
+        super().__init__(ispyb_config, parameters)
         self.experiment_type = "Mesh3D"
 
     def _store_scan_data(self):
@@ -218,8 +252,8 @@ class StoreInIspyb3D(StoreInIspyb):
 
 
 class StoreInIspyb2D(StoreInIspyb):
-    def __init__(self, ispyb_config):
-        super().__init__(ispyb_config)
+    def __init__(self, ispyb_config, parameters=None):
+        super().__init__(ispyb_config, parameters)
         self.experiment_type = "mesh"
 
     def _store_scan_data(self):

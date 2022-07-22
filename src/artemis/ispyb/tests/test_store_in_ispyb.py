@@ -204,3 +204,19 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     _test_when_grid_scan_stored_then_data_present_in_upserts(
         ispyb_conn, dummy_ispyb, test_sample_id
     )
+
+
+def test_exception_during_run_results_in_bad_run_status():
+    # TODO:
+    #   Raise exception between __enter__ and __exit__ and
+    #   test that "DataCollection Unsuccessful" is passed to
+    #   update_grid_scan_with_end_time_and_status
+    pass
+
+
+def test_good_run_status_when_no_exception():
+    # TODO:
+    #   Call__enter__ and __exit__ and
+    #   test that "DataCollection Successful" is passed to
+    #   update_grid_scan_with_end_time_and_status
+    pass
