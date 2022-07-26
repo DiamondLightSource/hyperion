@@ -2,12 +2,12 @@ import datetime
 import re
 from abc import ABC, abstractmethod
 
+import ispyb
 from sqlalchemy.connectors import Connector
+
 from src.artemis.ispyb.ispyb_dataclass import Orientation
 from src.artemis.parameters import FullParameters
 from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
-
-import ispyb
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -19,7 +19,7 @@ class StoreInIspyb(ABC):
 
     def __init__(self, ispyb_config, parameters=None):
         self.ISPYB_CONFIG_FILE = ispyb_config
-        self.full_params = None
+        self.full_params = parameters
         self.ispyb_params = None
         self.detector_params = None
         self.run_number = None
@@ -41,18 +41,17 @@ class StoreInIspyb(ABC):
             self.grid_ids,
             self.datacollection_group_id,
         ) = self.store_grid_scan(self.full_params)
-        print("Store grid scan:", self.store_grid_scan)
         for id in self.datacollection_ids:
             run_start(id)
 
-    def __exit__(self, exc, value, traceback):
-        if exc:
+    def __exit__(self, exception, exception_value, traceback):
+        if exception is not None:
             run_status = "DataCollection Unsuccessful"
         else:
             run_status = "DataCollection Successful"
-        current_time = ispyb.get_current_time_string()
+        current_time = self.get_current_time_string()
         for id in self.datacollection_ids:
-            ispyb.update_grid_scan_with_end_time_and_status(
+            self.update_grid_scan_with_end_time_and_status(
                 current_time,
                 run_status,
                 id,
@@ -98,7 +97,6 @@ class StoreInIspyb(ABC):
             params["parentid"] = datacollection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
-
             return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
@@ -145,7 +143,8 @@ class StoreInIspyb(ABC):
         params["imgsuffix"] = EIGER_FILE_SUFFIX
         params["n_images"] = self.detector_params.num_images
 
-        # Both overlap and n_passes included for backwards compatibility, planned to be removed later
+        # Both overlap and n_passes included for backwards compatibility, planned to be
+        # removed later
         params["n_passes"] = 1
         params["overlap"] = 0
 
@@ -167,7 +166,8 @@ class StoreInIspyb(ABC):
         params["undulator_gap1"] = self.ispyb_params.undulator_gap
         params["starttime"] = self.get_current_time_string()
 
-        # temporary file template until nxs filewriting is integrated and we can use that file name
+        # temporary file template until nxs filewriting is integrated and we can use
+        # that file name
         params[
             "file_template"
         ] = f"{self.detector_params.prefix}_{self.run_number}_master.h5"
