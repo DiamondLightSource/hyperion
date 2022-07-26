@@ -1,10 +1,10 @@
 import re
-from functools import partial
-from unittest.mock import mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
-from mockito import ANY, arg_that, mock, verify, when
+from mockito import mock, when
+
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from src.artemis.parameters import FullParameters
 
@@ -22,19 +22,19 @@ TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 @pytest.fixture
 def dummy_ispyb():
-    return StoreInIspyb2D(DUMMY_CONFIG)
+    return StoreInIspyb2D(DUMMY_CONFIG, DUMMY_PARAMS)
 
 
 @pytest.fixture
 def dummy_ispyb_3d():
-    return StoreInIspyb3D(DUMMY_CONFIG)
+    return StoreInIspyb3D(DUMMY_CONFIG, DUMMY_PARAMS)
 
 
 def test_get_current_time_string(dummy_ispyb):
     current_time = dummy_ispyb.get_current_time_string()
 
     assert type(current_time) == str
-    assert re.match(TIME_FORMAT_REGEX, current_time) != None
+    assert re.match(TIME_FORMAT_REGEX, current_time) is not None
 
 
 @pytest.mark.parametrize(
@@ -112,33 +112,29 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
 
 
 def setup_mock_return_values(ispyb_conn):
-    ispyb_conn.return_value.core = mock()
-    ispyb_conn.return_value.mx_acquisition = mock()
 
-    mx_acquisition = ispyb_conn.return_value.mx_acquisition
+    mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
     dcg_params = MXAcquisition.get_data_collection_group_params()
     dc_params = MXAcquisition.get_data_collection_params()
     grid_params = MXAcquisition.get_dc_grid_params()
     position_params = MXAcquisition.get_dc_position_params()
 
-    when(mx_acquisition).get_data_collection_group_params().thenReturn(dcg_params)
-    when(mx_acquisition).get_data_collection_params().thenReturn(dc_params)
-    when(mx_acquisition).get_dc_grid_params().thenReturn(grid_params)
-    when(mx_acquisition).get_dc_position_params().thenReturn(position_params)
+    mx_acquisition.get_data_collection_group_params.return_value = dcg_params
+    mx_acquisition.get_data_collection_params.return_value = dc_params
+    mx_acquisition.get_dc_grid_params.return_value = grid_params
+    mx_acquisition.get_dc_position_params.return_value = position_params
 
-    when(ispyb_conn.return_value.core).retrieve_visit_id(ANY).thenReturn(
-        TEST_SESSION_ID
-    )
-    when(mx_acquisition).upsert_data_collection(ANY).thenReturn(TEST_DATA_COLLECTION_ID)
-    when(mx_acquisition).update_dc_position(ANY).thenReturn(TEST_POSITION_ID)
-    when(mx_acquisition).upsert_data_collection_group(ANY).thenReturn(
+    ispyb_conn.return_value.core.retrieve_visit_id.return_value = TEST_SESSION_ID
+    mx_acquisition.upsert_data_collection.return_value = TEST_DATA_COLLECTION_ID
+    mx_acquisition.update_dc_position.return_value = TEST_POSITION_ID
+    mx_acquisition.upsert_data_collection_group.return_value = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
-    when(mx_acquisition).upsert_dc_grid(ANY).thenReturn(TEST_GRID_INFO_ID)
+    mx_acquisition.upsert_dc_grid.return_value = TEST_GRID_INFO_ID
 
 
-@patch("ispyb.open", new_callable=mock_open)
+@patch("ispyb.open")
 def test_param_keys(ispyb_conn, dummy_ispyb):
     setup_mock_return_values(ispyb_conn)
 
@@ -156,28 +152,22 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 
     dummy_ispyb.store_grid_scan(DUMMY_PARAMS)
 
-    mx_acquisition = ispyb_conn.return_value.mx_acquisition
+    mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
-    verify(mx_acquisition, times=1).upsert_data_collection_group(
-        arg_that(
-            partial(
-                test_function,
-                MXAcquisition.get_data_collection_group_params(),
-            )
-        )
+    upsert_data_collection_group_arg_list = (
+        mx_acquisition.upsert_data_collection_group.call_args_list[0][0]
     )
+    actual = upsert_data_collection_group_arg_list[0]
+    assert test_function(MXAcquisition.get_data_collection_group_params(), actual)
 
-    verify(mx_acquisition, times=1).upsert_data_collection(
-        arg_that(
-            partial(
-                test_function,
-                MXAcquisition.get_data_collection_params(),
-            )
-        )
+    upsert_data_collection_arg_list = (
+        mx_acquisition.upsert_data_collection.call_args_list[0][0]
     )
+    actual = upsert_data_collection_arg_list[0]
+    assert test_function(MXAcquisition.get_data_collection_params(), actual)
 
 
-@patch("ispyb.open", new_callable=mock_open)
+@patch("ispyb.open")
 def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     ispyb_conn, dummy_ispyb
 ):
@@ -190,7 +180,7 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     )
 
 
-@patch("ispyb.open", new_callable=mock_open)
+@patch("ispyb.open")
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     ispyb_conn, dummy_ispyb
 ):
@@ -206,17 +196,77 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     )
 
 
-def test_exception_during_run_results_in_bad_run_status():
-    # TODO:
-    #   Raise exception between __enter__ and __exit__ and
-    #   test that "DataCollection Unsuccessful" is passed to
-    #   update_grid_scan_with_end_time_and_status
-    pass
+@patch("src.artemis.ispyb.store_in_ispyb.run_end")
+@patch("src.artemis.ispyb.store_in_ispyb.wait_for_result")
+@patch("src.artemis.ispyb.store_in_ispyb.run_start")
+@patch("ispyb.open")
+def test_zocalo_called_with_correct_ids(
+    mock_ispyb_conn: MagicMock,
+    mock_start: MagicMock,
+    mock_wait: MagicMock,
+    mock_end: MagicMock,
+    dummy_ispyb,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+
+    with dummy_ispyb:
+        pass
+
+    mock_start.assert_called_once_with(TEST_DATA_COLLECTION_ID)
+    mock_end.assert_called_once_with(TEST_DATA_COLLECTION_ID)
+    mock_wait.assert_called_once_with(TEST_DATA_COLLECTION_GROUP_ID)
 
 
-def test_good_run_status_when_no_exception():
-    # TODO:
-    #   Call__enter__ and __exit__ and
-    #   test that "DataCollection Successful" is passed to
-    #   update_grid_scan_with_end_time_and_status
-    pass
+@patch("src.artemis.ispyb.store_in_ispyb.run_end")
+@patch("src.artemis.ispyb.store_in_ispyb.wait_for_result")
+@patch("src.artemis.ispyb.store_in_ispyb.run_start")
+@patch("ispyb.open")
+def test_exception_during_run_results_in_bad_run_status(
+    mock_ispyb_conn: MagicMock,
+    mock_start: MagicMock,
+    mock_wait: MagicMock,
+    mock_end: MagicMock,
+    dummy_ispyb,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+    mock_mx_aquisition = (
+        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+    )
+    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+    with pytest.raises(Exception) as _:
+        with dummy_ispyb:
+            raise Exception
+    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
+    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
+        0
+    ]
+    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
+    assert "DataCollection Unsuccessful" in upserted_param_value_list
+    assert "DataCollection Successful" not in upserted_param_value_list
+
+
+@patch("src.artemis.ispyb.store_in_ispyb.run_end")
+@patch("src.artemis.ispyb.store_in_ispyb.wait_for_result")
+@patch("src.artemis.ispyb.store_in_ispyb.run_start")
+@patch("ispyb.open")
+def test_no_exception_during_run_results_in_good_run_status(
+    mock_ispyb_conn: MagicMock,
+    mock_start: MagicMock,
+    mock_wait: MagicMock,
+    mock_end: MagicMock,
+    dummy_ispyb,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+    mock_mx_aquisition = (
+        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+    )
+    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+    with dummy_ispyb:
+        pass
+    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
+    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
+        0
+    ]
+    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
+    assert "DataCollection Unsuccessful" not in upserted_param_value_list
+    assert "DataCollection Successful" in upserted_param_value_list
