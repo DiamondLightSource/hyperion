@@ -29,9 +29,9 @@ def assert_start_data_correct(params_and_nexus_writer: ParamsAndNexusWriter):
     for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
             sam_x_data = written_nexus_file["/entry/data/sam_x"][:]
-            assert len(sam_x_data) == (
-                test_full_params.grid_scan_params.x_steps + 1
-            ) * (test_full_params.grid_scan_params.y_steps + 1)
+            assert len(sam_x_data) == (test_full_params.grid_scan_params.x_steps) * (
+                test_full_params.grid_scan_params.y_steps
+            )
             assert sam_x_data[1] - sam_x_data[0] == pytest.approx(
                 test_full_params.grid_scan_params.x_step_size
             )
