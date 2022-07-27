@@ -15,6 +15,7 @@ from ophyd import (
 )
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
+
 from src.artemis.devices.motors import GridScanLimitBundle
 from src.artemis.devices.status import await_value
 from src.artemis.utils import Point3D
@@ -31,10 +32,10 @@ class GridAxis:
 
     @property
     def end(self):
-        return self.steps_to_motor_position(self.full_steps)
+        return self.steps_to_motor_position(self.full_steps - 1)
 
     def is_within(self, steps):
-        return 0 <= steps <= self.full_steps
+        return 0 <= steps <= self.full_steps - 1
 
 
 @dataclass_json

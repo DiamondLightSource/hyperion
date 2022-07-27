@@ -2,6 +2,7 @@
 Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
 """
 import math
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -9,12 +10,12 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
-import shutil
 from nexgen.nxs_write import calculate_scan_from_scanspec
 from nexgen.nxs_write.NexusWriter import call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 from scanspec.specs import Line, Spec
+
 from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.fast_grid_scan import GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams
@@ -160,14 +161,13 @@ def create_scan_spec(grid_scan_params: GridScanParams) -> Spec:
         "sam_y",
         grid_scan_params.y_axis.start,
         grid_scan_params.y_axis.end,
-        grid_scan_params.y_axis.full_steps
-        + 1,  # 1 more as we take an image on the first step as well as the last
+        grid_scan_params.y_axis.full_steps,
     )
     x_line = Line(
         "sam_x",
         grid_scan_params.x_axis.start,
         grid_scan_params.x_axis.end,
-        grid_scan_params.x_axis.full_steps + 1,
+        grid_scan_params.x_axis.full_steps,
     )
     return y_line * ~x_line
 
