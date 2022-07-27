@@ -11,7 +11,7 @@ from src.artemis.devices.eiger import EigerDetector
 
 TEST_DETECTOR_SIZE_CONSTANTS = EIGER2_X_16M_SIZE
 
-TEST_CURRENT_ENERGY = 0.0
+TEST_CURRENT_ENERGY = 100.0
 TEST_EXPOSURE_TIME = 1.0
 TEST_ACQUISITION_ID = 1
 TEST_DIR = "/test/dir"
@@ -214,3 +214,22 @@ def test_bad_odin_state_results_in_unstage_returning_bad_status(
     mock_check_odin_state.return_value = False
     returned_status = fake_eiger.unstage()
     assert returned_status is False
+
+
+def test_given_failing_odin_when_stage_then_exception_raised(fake_eiger):
+    error_contents = "Got an error"
+    fake_eiger.odin.nodes.clear_odin_errors = MagicMock()
+    fake_eiger.odin.check_odin_initialised = MagicMock()
+    fake_eiger.odin.check_odin_initialised.return_value = (False, error_contents)
+    with pytest.raises(Exception) as e:
+        fake_eiger.stage()
+        assert error_contents in e.value
+
+
+@patch("src.artemis.devices.eiger.await_value")
+def test_stage_runs_successfully(mock_await, fake_eiger):
+    fake_eiger.odin.nodes.clear_odin_errors = MagicMock()
+    fake_eiger.odin.check_odin_initialised = MagicMock()
+    fake_eiger.odin.check_odin_initialised.return_value = (True, "")
+    fake_eiger.odin.file_writer.file_path.put(True)
+    fake_eiger.stage()
