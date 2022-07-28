@@ -12,8 +12,8 @@ from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
 
-from src.artemis.fast_grid_scan_plan import get_plan
-from src.artemis.parameters import FullParameters
+from artemis.fast_grid_scan_plan import get_plan
+from artemis.parameters import FullParameters
 
 logger = logging.getLogger(__name__)
 
