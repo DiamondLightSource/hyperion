@@ -196,15 +196,9 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     )
 
 
-@patch("src.artemis.ispyb.store_in_ispyb.run_end")
-@patch("src.artemis.ispyb.store_in_ispyb.wait_for_result")
-@patch("src.artemis.ispyb.store_in_ispyb.run_start")
 @patch("ispyb.open")
 def test_exception_during_run_results_in_bad_run_status(
     mock_ispyb_conn: MagicMock,
-    mock_start: MagicMock,
-    mock_wait: MagicMock,
-    mock_end: MagicMock,
     dummy_ispyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
@@ -224,15 +218,9 @@ def test_exception_during_run_results_in_bad_run_status(
     assert "DataCollection Successful" not in upserted_param_value_list
 
 
-@patch("src.artemis.ispyb.store_in_ispyb.run_end")
-@patch("src.artemis.ispyb.store_in_ispyb.wait_for_result")
-@patch("src.artemis.ispyb.store_in_ispyb.run_start")
 @patch("ispyb.open")
 def test_no_exception_during_run_results_in_good_run_status(
     mock_ispyb_conn: MagicMock,
-    mock_start: MagicMock,
-    mock_wait: MagicMock,
-    mock_end: MagicMock,
     dummy_ispyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)

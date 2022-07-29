@@ -40,8 +40,6 @@ class StoreInIspyb(ABC):
             self.grid_ids,
             self.datacollection_group_id,
         ) = self.store_grid_scan(self.full_params)
-        # for id in self.datacollection_ids:
-        #     run_start(id)
         return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
 
     def __exit__(self, exception, exception_value, traceback):
@@ -57,11 +55,6 @@ class StoreInIspyb(ABC):
                 id,
                 self.datacollection_group_id,
             )
-
-        # for id in self.datacollection_ids:
-        #     run_end(id)
-
-        # wait_for_result(self.datacollection_group_id)
 
     def store_grid_scan(self, full_params: FullParameters):
 
