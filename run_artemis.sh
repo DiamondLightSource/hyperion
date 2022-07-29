@@ -129,7 +129,7 @@ if [[ $START == 1 ]]; then
     fi
 
     if [[ -z $(pgrep -f artemis) ]]; then
-        pkill -f src/artemis.main.py
+        pkill -f artemis
     fi
 
     cd ${ARTEMIS_PATH}
