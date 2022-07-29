@@ -3,28 +3,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[packages]
-bluesky = "*"
-#Ophyd version required for tests to pass, pin to proper version when >1.6.4 released
-ophyd = {git = "https://github.com/bluesky/ophyd.git", ref = "0895f9f00bdf7454712aa954ea7c7f3f1776fcb9", editable = true} 
-pyepics="*"
-flask-restful="*"
-dataclasses-json = "*"
-zocalo = "*"
-ispyb = "*"
-nexgen = "*"
-scanspec = "*"
-numpy = ">=1.22"
-
 [dev-packages]
-pytest-cov = "*"
-ipython = "*"
-black = "*"
-mockito="*"
-pre-commit = ">2.9.0"
-flake8 = "*"
-mypy = "*"
-matplotlib = "*"
+python-artemis = { editable = true, extras = ["dev"], path = "." }
+
+[packages]
+python-artemis = { editable = true, path = "." }
 
 [requires]
 python_version = "3.10"
@@ -33,4 +16,6 @@ python_version = "3.10"
 allow_prereleases = true
 
 [scripts]
-tests = "pytest -m \"not s03\" --cov=src/artemis --cov-report term --cov-report xml:cov.xml"
+tests = "pytest -m \"not s03\""
+build = "python setup.py sdist bdist_wheel"
+gitclean = "git clean -fdX"
