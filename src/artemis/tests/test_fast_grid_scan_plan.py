@@ -78,6 +78,7 @@ def dummy_3d_gridscan_args():
 
     FakeFGSComposite = make_fake_device(FGSComposite)
     fgs_composite: FGSComposite = FakeFGSComposite(name="fgs", insertion_prefix="")
+
     FakeEiger = make_fake_device(EigerDetector)
     eiger: EigerDetector = FakeEiger(
         detector_params=params.detector_params, name="eiger"

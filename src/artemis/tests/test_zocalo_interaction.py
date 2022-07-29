@@ -97,7 +97,8 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
             "centre_of_mass": [2.942925659754348, 7.142683401382778, 6.79110544979448],
         }
     ]
-    step_params = {"dcid": "8183741", "dcgid": "7263143"}
+    datacollection_grid_id = 7263143
+    step_params = {"dcid": "8183741", "dcgid": str(datacollection_grid_id)}
 
     mock_zc: Configuration = MagicMock()
     mock_from_file.return_value = mock_zc
@@ -106,7 +107,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup.return_value.return_value = mock_transport
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(wait_for_result, 7263143)
+        future = executor.submit(wait_for_result, datacollection_grid_id)
 
         for _ in range(10):
             sleep(0.1)
