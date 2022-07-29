@@ -9,7 +9,7 @@ from src.artemis.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
     time,
 )
-from src.artemis.devices.motors import GridScanMotorBundle
+from src.artemis.devices.motors import I03Smargon
 from src.artemis.utils import Point3D
 
 
@@ -150,9 +150,9 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
     assert complete_status.exception() is None
 
 
-def create_motor_bundle_with_limits(low_limit, high_limit) -> GridScanMotorBundle:
-    FakeGridScanMotorBundle = make_fake_device(GridScanMotorBundle)
-    grid_scan_motor_bundle: GridScanMotorBundle = FakeGridScanMotorBundle(name="test")
+def create_motor_bundle_with_limits(low_limit, high_limit) -> I03Smargon:
+    FakeI03Smargon = make_fake_device(I03Smargon)
+    grid_scan_motor_bundle: I03Smargon = FakeI03Smargon(name="test")
     grid_scan_motor_bundle.wait_for_connection()
     for axis in [
         grid_scan_motor_bundle.x,
@@ -173,7 +173,7 @@ def create_motor_bundle_with_limits(low_limit, high_limit) -> GridScanMotorBundl
     ],
 )
 def test_within_limits_check(position, expected_in_limit):
-    limits = create_motor_bundle_with_limits(0.0, 10).get_limits()
+    limits = create_motor_bundle_with_limits(0.0, 10).get_xyz_limits()
     assert limits.x.is_within(position) == expected_in_limit
 
 
@@ -200,7 +200,7 @@ FAILING_CONST = 15
 def test_scan_within_limits_1d(start, steps, size, expected_in_limits):
     motor_bundle = create_motor_bundle_with_limits(0.0, 10.0)
     grid_params = GridScanParams(x_start=start, x_steps=steps, x_step_size=size)
-    assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits
+    assert grid_params.is_valid(motor_bundle.get_xyz_limits()) == expected_in_limits
 
 
 @pytest.mark.parametrize(
@@ -224,7 +224,7 @@ def test_scan_within_limits_2d(
         y_step_size=y_size,
         z1_start=z1_start,
     )
-    assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits
+    assert grid_params.is_valid(motor_bundle.get_xyz_limits()) == expected_in_limits
 
 
 @pytest.mark.parametrize(
@@ -284,7 +284,7 @@ def test_scan_within_limits_3d(
         z_step_size=z_size,
         y2_start=y2_start,
     )
-    assert grid_params.is_valid(motor_bundle.get_limits()) == expected_in_limits
+    assert grid_params.is_valid(motor_bundle.get_xyz_limits()) == expected_in_limits
 
 
 @pytest.fixture

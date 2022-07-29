@@ -87,7 +87,7 @@ if [[ $STOP == 1 ]]; then
     if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" ]]; then
         ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} ${BEAMLINE}-control.diamond.ac.uk
     fi
-    pkill -f src/artemis/main.py
+    pkill -f artemis
     exit 0
 fi
 
@@ -128,8 +128,8 @@ if [[ $START == 1 ]]; then
         ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk
     fi
 
-    if [[ -z $(pgrep -f src/artemis/main.py) ]]; then
-        pkill -f src/artemis.main.py
+    if [[ -z $(pgrep -f artemis) ]]; then
+        pkill -f artemis
     fi
 
     cd ${ARTEMIS_PATH}
@@ -142,7 +142,7 @@ if [[ $START == 1 ]]; then
 
     export ISPYB_CONFIG_PATH
 
-    pipenv run python src/artemis/main.py &
+    pipenv run main &
 fi
 
 sleep 1
