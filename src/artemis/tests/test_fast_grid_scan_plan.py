@@ -82,6 +82,7 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
 
     FakeFGSComposite = make_fake_device(FGSComposite)
     fgs_composite: FGSComposite = FakeFGSComposite(name="fgs", insertion_prefix="")
+
     FakeEiger = make_fake_device(EigerDetector)
     eiger: EigerDetector = FakeEiger(
         detector_params=params.detector_params, name="eiger"

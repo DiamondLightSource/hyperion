@@ -1,6 +1,7 @@
 from ophyd import Component, Device, FormattedComponent
 
 from src.artemis.devices.fast_grid_scan import FastGridScan
+from src.artemis.devices.motors import I03Smargon
 from src.artemis.devices.slit_gaps import SlitGaps
 from src.artemis.devices.synchrotron import Synchrotron
 from src.artemis.devices.undulator import Undulator
@@ -18,6 +19,8 @@ class FGSComposite(Device):
 
     synchrotron = FormattedComponent(Synchrotron)
     slit_gaps = Component(SlitGaps, "-AL-SLITS-04:")
+
+    sample_motors: I03Smargon = Component(I03Smargon, "-MO-SGON-01:")
 
     def __init__(self, insertion_prefix: str, *args, **kwargs):
         self.insertion_prefix = insertion_prefix

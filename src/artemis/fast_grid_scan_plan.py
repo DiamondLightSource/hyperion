@@ -22,6 +22,9 @@ from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 
+# Tolerance for how close omega must start to 0
+OMEGA_TOLERANCE = 0.1
+
 
 def update_params_from_epics_devices(
     parameters: FullParameters,
@@ -43,12 +46,21 @@ def run_gridscan(
     eiger: EigerDetector,
     parameters: FullParameters,
 ):
+    sample_motors = fgs_composite.sample_motors
+
+    current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
+    assert abs(current_omega - parameters.detector_params.omega_start) < OMEGA_TOLERANCE
+    assert (
+        abs(current_omega) < OMEGA_TOLERANCE
+    )  # This should eventually be removed, see #154
+
     yield from update_params_from_epics_devices(
         parameters,
         fgs_composite.undulator,
         fgs_composite.synchrotron,
         fgs_composite.slit_gaps,
     )
+
     ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
     ispyb = (
         StoreInIspyb3D(ispyb_config)
@@ -87,7 +99,24 @@ def run_gridscan(
     for id in datacollection_ids:
         run_end(id)
 
-    wait_for_result(datacollection_group_id)
+    xray_centre = wait_for_result(datacollection_group_id)
+    xray_centre_motor_position = (
+        parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
+    )
+
+    yield from bps.mv(sample_motors.omega, parameters.detector_params.omega_start)
+
+    # After moving omega we need to wait for x, y and z to have finished moving too
+    yield from bps.wait(sample_motors)
+
+    yield from bps.mv(
+        sample_motors.x,
+        xray_centre_motor_position.x,
+        sample_motors.y,
+        xray_centre_motor_position.y,
+        sample_motors.z,
+        xray_centre_motor_position.z,
+    )
 
 
 def get_plan(parameters: FullParameters):
