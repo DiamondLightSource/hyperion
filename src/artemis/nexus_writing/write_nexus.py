@@ -2,6 +2,7 @@
 Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
 """
 import math
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -9,10 +10,10 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
-import shutil
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
+
 from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.fast_grid_scan import GridScanParams
 from src.artemis.ispyb.ispyb_dataclass import IspybParams
@@ -103,7 +104,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
         "sensor_material": "Silicon",
         "sensor_thickness": "4.5E-4",
         "overload": 46051,
-        "underload": -1,  # Not sure of this
+        "underload": 0,  # sure of this
         "pixel_size": ["0.075mm", "0.075mm"],
         "flatfield": "flatfield",
         "flatfield_applied": "_dectris/flatfield_correction_applied",
