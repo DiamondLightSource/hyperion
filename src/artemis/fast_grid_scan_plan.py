@@ -21,6 +21,7 @@ from src.artemis.devices.undulator import Undulator
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb3D
 from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
+from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
@@ -65,8 +66,16 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    with StoreInIspyb3D(ispyb_config, parameters), NexusWriter(parameters):
+    with StoreInIspyb3D(ispyb_config, parameters) as ispyb_ids, NexusWriter(parameters):
+        dc_ids = ispyb_ids[0]
+        dc_gid = ispyb_ids[2]
+        for id in dc_ids:
+            run_start(id)
         yield from do_fgs()
+
+    for id in dc_ids:
+        run_end(id)
+    wait_for_result(dc_gid)
 
 
 def get_plan(parameters: FullParameters):

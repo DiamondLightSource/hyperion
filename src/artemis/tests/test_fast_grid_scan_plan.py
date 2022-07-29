@@ -86,9 +86,9 @@ def dummy_3d_gridscan_args():
     return fgs_composite, eiger, params
 
 
-@patch("src.artemis.ispyb.store_in_ispyb.run_start")
-@patch("src.artemis.ispyb.store_in_ispyb.run_end")
-@patch("src.artemis.ispyb.store_in_ispyb.wait_for_result")
+@patch("src.artemis.fast_grid_scan_plan.run_start")
+@patch("src.artemis.fast_grid_scan_plan.run_end")
+@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
 @patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
 @patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
 @patch(
@@ -122,9 +122,9 @@ def test_run_gridscan_zocalo_calls(
     wait_for_result.assert_called_once_with(dcg_id)
 
 
-@patch("src.artemis.ispyb.store_in_ispyb.run_start")
-@patch("src.artemis.ispyb.store_in_ispyb.run_end")
-@patch("src.artemis.ispyb.store_in_ispyb.wait_for_result")
+@patch("src.artemis.fast_grid_scan_plan.run_start")
+@patch("src.artemis.fast_grid_scan_plan.run_end")
+@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
 @patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
 @patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
 @patch(
@@ -162,9 +162,9 @@ def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
 
-@patch("src.artemis.ispyb.store_in_ispyb.run_start")
-@patch("src.artemis.ispyb.store_in_ispyb.run_end")
-@patch("src.artemis.ispyb.store_in_ispyb.wait_for_result")
+@patch("src.artemis.fast_grid_scan_plan.run_start")
+@patch("src.artemis.fast_grid_scan_plan.run_end")
+@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
 @patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
 @patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
 @patch(

@@ -7,7 +7,6 @@ from sqlalchemy.connectors import Connector
 
 from src.artemis.ispyb.ispyb_dataclass import Orientation
 from src.artemis.parameters import FullParameters
-from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -41,8 +40,9 @@ class StoreInIspyb(ABC):
             self.grid_ids,
             self.datacollection_group_id,
         ) = self.store_grid_scan(self.full_params)
-        for id in self.datacollection_ids:
-            run_start(id)
+        # for id in self.datacollection_ids:
+        #     run_start(id)
+        return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
 
     def __exit__(self, exception, exception_value, traceback):
         if exception is not None:
@@ -58,10 +58,10 @@ class StoreInIspyb(ABC):
                 self.datacollection_group_id,
             )
 
-        for id in self.datacollection_ids:
-            run_end(id)
+        # for id in self.datacollection_ids:
+        #     run_end(id)
 
-        wait_for_result(self.datacollection_group_id)
+        # wait_for_result(self.datacollection_group_id)
 
     def store_grid_scan(self, full_params: FullParameters):
 
