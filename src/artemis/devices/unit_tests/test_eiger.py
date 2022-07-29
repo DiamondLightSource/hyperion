@@ -1,6 +1,7 @@
 import pytest
 from mockito import ANY, mock, verify, when
 from ophyd.sim import make_fake_device
+
 from src.artemis.devices.det_dim_constants import DetectorSize, DetectorSizeConstants
 from src.artemis.devices.eiger import EigerDetector
 
@@ -95,5 +96,4 @@ def test_when_set_odin_pvs_called_then_full_filename_written(fake_eiger: EigerDe
 
     fake_eiger.set_odin_pvs()
 
-    assert fake_eiger.odin.file_writer.file_prefix.get() == expected_full_filename
-    assert fake_eiger.odin.meta.file_name.get() == expected_full_filename
+    assert fake_eiger.odin.file_writer.file_name.get() == expected_full_filename
