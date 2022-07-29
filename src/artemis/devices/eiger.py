@@ -4,6 +4,7 @@ from typing import Tuple
 from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.utils.epics_pvs import set_and_wait
+
 from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.eiger_odin import EigerOdin
 from src.artemis.devices.status import await_value
@@ -24,6 +25,7 @@ class EigerDetector(Device):
     bit_depth: EpicsSignalRO = Component(EpicsSignalRO, "CAM:BitDepthImage_RBV")
 
     STALE_PARAMS_TIMEOUT = 60
+    ODIN_FILEWRITER_TIMEOUT = 30
 
     def __init__(
         self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
@@ -61,9 +63,12 @@ class EigerDetector(Device):
             self.enable_roi_mode()
         self.set_detector_threshold(self.detector_params.current_energy)
         self.set_cam_pvs()
-        self.set_odin_pvs()
+        odin_filename_status = self.set_odin_pvs()
         self.set_mx_settings_pvs()
         self.set_num_triggers_and_captures()
+
+        odin_filename_status.wait(self.ODIN_FILEWRITER_TIMEOUT)
+
         self.arm_detector()
 
     def unstage(self) -> bool:
@@ -107,11 +112,16 @@ class EigerDetector(Device):
         self.cam.trigger_mode.put(EigerTriggerMode.EXTERNAL_SERIES.value)
 
     def set_odin_pvs(self):
+        file_prefix = self.detector_params.full_filename
+
         self.odin.fan.forward_stream.put(True)
-        self.odin.file_writer.id.put(self.detector_params.acquisition_id)
         self.odin.file_writer.file_path.put(self.detector_params.directory)
-        self.odin.file_writer.file_prefix.put(self.detector_params.full_filename)
-        self.odin.meta.file_name.put(self.detector_params.full_filename)
+        self.odin.file_writer.file_name.put(file_prefix)
+
+        odin_status = await_value(self.odin.meta.file_name, file_prefix)
+        odin_status &= await_value(self.odin.file_writer.id, file_prefix)
+
+        return odin_status
 
     def set_mx_settings_pvs(self):
         beam_x_pixels, beam_y_pixels = self.detector_params.get_beam_position_pixels(
