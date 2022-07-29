@@ -4,8 +4,8 @@ from numpy import interp, loadtxt
 
 
 class Axis(Enum):
-    Y_AXIS = 1
-    X_AXIS = 2
+    Y_AXIS = 2
+    X_AXIS = 1
 
 
 class DetectorDistanceToBeamXYConverter:

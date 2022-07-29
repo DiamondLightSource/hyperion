@@ -1,5 +1,6 @@
 import pytest
 from mockito import when
+
 from src.artemis.devices.det_dist_to_beam_converter import (
     Axis,
     DetectorDistanceToBeamXYConverter,
@@ -19,10 +20,10 @@ def fake_converter() -> DetectorDistanceToBeamXYConverter:
 @pytest.mark.parametrize(
     "detector_distance, axis, expected_value",
     [
-        (100.0, Axis.X_AXIS, 160.0),
-        (200.0, Axis.Y_AXIS, 151.0),
-        (150.0, Axis.Y_AXIS, 150.5),
-        (190.0, Axis.X_AXIS, 164.5),
+        (100.0, Axis.Y_AXIS, 160.0),
+        (200.0, Axis.X_AXIS, 151.0),
+        (150.0, Axis.X_AXIS, 150.5),
+        (190.0, Axis.Y_AXIS, 164.5),
     ],
 )
 def test_interpolate_beam_xy_from_det_distance(
@@ -45,8 +46,8 @@ def test_get_beam_in_pixels(fake_converter: DetectorDistanceToBeamXYConverter):
     detector_distance = 100.0
     image_size_pixels = 100
     detector_dimensions = 200.0
-    interpolated_x_value = 160.0
-    interpolated_y_value = 150.0
+    interpolated_x_value = 150.0
+    interpolated_y_value = 160.0
 
     when(fake_converter).get_beam_xy_from_det_dist(100.0, Axis.Y_AXIS).thenReturn(
         interpolated_y_value

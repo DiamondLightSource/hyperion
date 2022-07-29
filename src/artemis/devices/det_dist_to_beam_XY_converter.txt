@@ -1,10 +1,10 @@
 #Table giving position of beam X and Y as a function of detector distance
 #Units mm mm mm
 # Eiger values
-# distance beamY beamX (values from mosflm)
+# distance beamX beamY (values from mosflm)
 Units mm mm mm
-200 157.58 166.82
-500 157.68 164.83
+200 157.56 166.65
+500 157.65 164.65
 
 
 
