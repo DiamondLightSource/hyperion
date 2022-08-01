@@ -16,7 +16,7 @@ from ophyd import (
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
 
-from src.artemis.devices.motors import GridScanLimitBundle
+from src.artemis.devices.motors import XYZLimitBundle
 from src.artemis.devices.status import await_value
 from src.artemis.utils import Point3D
 
@@ -68,7 +68,7 @@ class GridScanParams:
         self.z_axis = GridAxis(self.z2_start, self.z_step_size, self.z_steps)
         self.axes = [self.x_axis, self.y_axis, self.z_axis]
 
-    def is_valid(self, limits: GridScanLimitBundle) -> bool:
+    def is_valid(self, limits: XYZLimitBundle) -> bool:
         """
         Validates scan parameters
 
