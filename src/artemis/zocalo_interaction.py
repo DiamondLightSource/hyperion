@@ -1,7 +1,6 @@
 import getpass
 import queue
 import socket
-from time import sleep
 
 import workflows.recipe
 import workflows.transport
@@ -15,7 +14,7 @@ TIMEOUT = 30
 
 def _get_zocalo_connection():
     zc = zocalo.configuration.from_file()
-    zc.activate()
+    zc.activate_environment("artemis")
 
     transport = lookup("PikaTransport")()
     transport.connect()
