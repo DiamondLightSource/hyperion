@@ -41,20 +41,22 @@ def _send_to_zocalo(parameters: dict):
 
 def run_start(data_collection_id: int):
     """Tells the data analysis pipeline we have started a grid scan.
-    Assumes that appropriate data has already been put into ISpyB
+    Assumes that appropriate data has already been put into ISPyB
 
     Args:
-        data_collection_id (int): The ID of the data collection representing the gridscan in ISpyB
+        data_collection_id (int): The ID of the data collection representing the
+                                  gridscan in ISPyB
     """
     _send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
 
 
 def run_end(data_collection_id: int):
     """Tells the data analysis pipeline we have finished a grid scan.
-    Assumes that appropriate data has already been put into ISpyB
+    Assumes that appropriate data has already been put into ISPyB
 
     Args:
-        data_collection_id (int): The ID of the data collection representing the gridscan in ISpyB
+        data_collection_id (int): The ID of the data collection representing the
+                                  gridscan in ISPyB
     """
     _send_to_zocalo(
         {
@@ -68,7 +70,8 @@ def run_end(data_collection_id: int):
 def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Point3D:
     """Block until a result is received from Zocalo.
     Args:
-        data_collection_group_id (int): The ID of the data collection group representing the gridscan in ISpyB
+        data_collection_group_id (int): The ID of the data collection group representing
+                                        the gridscan in ISPyB
         timeout (float): The time in seconds to wait for the result to be received.
     Returns:
         Point in grid co-ordinates that is the centre point to move to
