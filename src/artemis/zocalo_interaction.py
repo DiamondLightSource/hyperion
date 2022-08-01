@@ -86,7 +86,7 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
         transport.ack(header)
         received_group_id = recipe_parameters["dcgid"]
         if received_group_id == str(data_collection_group_id):
-            result_received.put(Point3D(*message[0]["max_voxel"]))
+            result_received.put(Point3D(*reversed(message[0]["centre_of_mass"])))
         else:
             print(
                 f"Warning: results for {received_group_id} received but expected {data_collection_group_id}"
