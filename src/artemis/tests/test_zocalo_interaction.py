@@ -34,7 +34,7 @@ def _test_zocalo(
 
     func_testing(mock_transport)
 
-    mock_zc.activate.assert_called_once()
+    mock_zc.activate_environment.assert_called_once_with("artemis")
     mock_transport.connect.assert_called_once()
     expected_message = {
         "recipes": ["mimas"],
