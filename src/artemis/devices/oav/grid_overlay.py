@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import partial
 from pathlib import Path
 
@@ -7,15 +8,45 @@ from PIL import Image, ImageDraw
 from src.artemis.devices.oav.snapshot import Snapshot
 
 
+class Orientation(Enum):
+    horizontal = 0
+    vertical = 1
+
+
 def _add_parallel_lines_to_image(
-    image, start_x, start_y, line_length, spacing, num_lines, orientation=0
+    image: Image,
+    start_x: int,
+    start_y: int,
+    line_length: int,
+    spacing: int,
+    num_lines: int,
+    orientation=Orientation.horizontal,
 ):
+    """Draws horizontal or vertical parallel lines on a given image.
+    Draws a line of a given length and orientation starting from a given point; then \
+    draws a given number of parallel lines equally spaced with a given spacing. \
+    If the line is horizontal, the start point corresponds to left end of the initial \
+    line and the other parallel lines will be drawn below the initial line; if \
+    vertical, the start point corresponds to the top end of the initial line and the \
+    other parallel lines will be drawn to the right of the initial line. (0,0) is the \
+    top left of the image.
+
+    Args:
+        image (PIL.Image): The image to be drawn upon.
+        start_x (int): The x coordinate (in pixels) of the start of the initial line.
+        start_y (int): The y coordinate (in pixels) of the start of the initial line.
+        line_length (int): The length of each of the parallel lines in pixels.
+        spacing (int): The spacing, in pixels, between each parallel line. Strictly, \
+            there are spacing-1 pixels between each line
+        num_lines (int): The total number of parallel lines to draw.
+        orientation (Orientation): The orientation (horizontal or vertical) of the \
+            parallel lines to draw."""
     lines = [
         (
             (start_x, start_y + i * spacing),
             (start_x + line_length, start_y + i * spacing),
         )
-        if orientation == 0
+        if orientation == Orientation.horizontal
         else (
             (start_x + i * spacing, start_y),
             (start_x + i * spacing, start_y + line_length),
@@ -28,12 +59,12 @@ def _add_parallel_lines_to_image(
 
 
 _add_vertical_parallel_lines_to_image = partial(
-    _add_parallel_lines_to_image, orientation=1
+    _add_parallel_lines_to_image, orientation=Orientation.vertical
 )
 
 
 _add_horizontal_parallel_lines_to_image = partial(
-    _add_parallel_lines_to_image, orientation=0
+    _add_parallel_lines_to_image, orientation=Orientation.horizontal
 )
 
 
