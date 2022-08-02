@@ -3,11 +3,12 @@ import threading
 from dataclasses import dataclass
 from time import sleep
 from typing import Any, Callable
+from unittest.mock import patch
 
 import pytest
 from flask.testing import FlaskClient
-from src.artemis.devices.det_dim_constants import EIGER_TYPE_EIGER2_X_4M
-from src.artemis.main import Actions, Status, StatusAndMessage, create_app
+
+from src.artemis.__main__ import Actions, Status, create_app
 from src.artemis.parameters import FullParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
@@ -50,7 +51,8 @@ def test_env():
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
     with app.test_client() as client:
-        yield ClientAndRunEngine(client, mock_run_engine)
+        with patch("src.artemis.__main__.get_plan") as _:
+            yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()
     runner_thread.join()
