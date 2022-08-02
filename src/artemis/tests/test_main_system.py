@@ -1,15 +1,15 @@
-from dataclasses import dataclass
-import threading
-import pytest
-from typing import Any, Callable
-from flask.testing import FlaskClient
-from src.artemis.parameters import FullParameters
-
-from src.artemis.main import create_app, Status, Actions
-from src.artemis.devices.det_dim_constants import EIGER_TYPE_EIGER2_X_4M
 import json
+import threading
+from dataclasses import dataclass
 from time import sleep
+from typing import Any, Callable
+from unittest.mock import patch
 
+import pytest
+from flask.testing import FlaskClient
+
+from src.artemis.__main__ import Actions, Status, create_app
+from src.artemis.parameters import FullParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -51,7 +51,8 @@ def test_env():
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
     with app.test_client() as client:
-        yield ClientAndRunEngine(client, mock_run_engine)
+        with patch("src.artemis.__main__.get_plan") as _:
+            yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()
     runner_thread.join()
@@ -162,3 +163,10 @@ def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
     test_env.mock_run_engine.RE_takes_time = False
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.IDLE.value
+
+
+def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
+    with open("test_parameters.json") as test_parameters_file:
+        test_parameters_json = test_parameters_file.read()
+    response = test_env.client.put(START_ENDPOINT, data=test_parameters_json)
+    check_status_in_response(response, Status.SUCCESS)
