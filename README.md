@@ -29,7 +29,7 @@ Starting the bluesky runner
 -------------------------
 You can start the bluesky runner by doing the following:
 ```
-pipenv run python src/artemis/main.py
+pipenv run main
 ```
 
 Starting a scan
