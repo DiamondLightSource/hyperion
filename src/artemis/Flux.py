@@ -15,16 +15,21 @@ xbpm2.wait_for_connection()
 dcm.wait_for_connection()
 
 
+class scale(Enum):					#aperture scales to be applied to XBPM2 reading to give flux at sample
+	Large = 0.738			
+	Medium = 0.336
+	Small = 0.084
+	Empty = 1
 
 
-def get_flux(aperture_size):
+def get_flux(aperture_size):				#get live flux for data collection, needs aperture specified
 
 	valid = {"Large","Medium","Small", "Empty"}
 	if aperture_size not in valid:
 		raise ValueError("Aperture size must be one of %r," % valid)
 	
 	class scale(Enum):
-		Large = 0.738			#aperture scales to be applied to XBPM2 reading to give flux at sample
+		Large = 0.738			
 		Medium = 0.336
 		Small = 0.084
 		Empty = 1
@@ -45,11 +50,11 @@ def get_flux(aperture_size):
 	flux = float(1e12 * signal * gradient)
 
 	flux_at_sample = "{:e}".format(flux * aperture_scale)
-	
-	print(flux_at_sample)
+
+	#how to do return values on functions that require runengine?
 
 
-def predict_flux(aperture_size, energy, transmission):
+def predict_flux(aperture_size, energy, transmission, ring_current):			#predicts flux based on expected 100% beam value given energy, ring current, aperture and transmission
 	valid_aperture = {"Large","Medium","Small", "Empty"}
 	if aperture_size not in valid_aperture:
 		raise ValueError("Aperture size must be one of %r," % valid_aperture)
@@ -57,16 +62,15 @@ def predict_flux(aperture_size, energy, transmission):
 		raise ValueError("Energy is required in eV and in range 5500 to 25000eV")
 	if transmission < 0 or transmission >1:
 		raise ValueError("Transmission should be in fractional notation, between 0 and 1")
-	
-	class scale(Enum):
-		Large = 0.738			
-		Medium = 0.336
-		Small = 0.084
-		Empty = 1
+	if ring_current < 10 or ring_current > 400
+		raise ValueError("Ring Current (mA) valid range is 10-400")
+
+
 
 	aperture_scale = float(scale[aperture_size].value)
 	energy_eV = float(energy)
 	transmission_scale=float(transmission)
+	ring_current_scale= ring_current/300
 		
 	print(aperture_scale)
 	print(energy)
@@ -78,10 +82,10 @@ def predict_flux(aperture_size, energy, transmission):
 	D = 3.599085792e-2
 	E = 1.085096504e2
 	
-	predicted_flux = "{:e}".format(aperture_scale * transmission_scale * (A*energy_eV**4+B*energy_eV**3-C*energy_eV**2+D*energy_eV-E)*1e12)
-	print(predicted_flux)
+	predicted_flux = "{:e}".format(ring_current_scale * aperture_scale * transmission_scale * (A*energy_eV**4+B*energy_eV**3-C*energy_eV**2+D*energy_eV-E)*1e12)
+	return(predicted_flux)
 
-
+predict_flux("Large",12700,1,300)
 
 
 
