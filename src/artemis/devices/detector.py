@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Tuple
 
 from dataclasses_json import config, dataclass_json
+
 from src.artemis.devices.det_dim_constants import (
     EIGER2_X_16M_SIZE,
     DetectorSize,
@@ -51,6 +52,10 @@ class DetectorParams:
             decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name),
         ),
     )
+
+    def __post_init__(self):
+        if not self.directory.endswith("/"):
+            self.directory += "/"
 
     def get_beam_position_mm(self, detector_distance: float) -> Tuple[float, float]:
         x_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist(
