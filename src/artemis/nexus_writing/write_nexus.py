@@ -1,5 +1,6 @@
 """
-Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
+Define beamline parameters for I03, Eiger detector and give an example of writing a
+gridscan.
 """
 import math
 import shutil
@@ -110,9 +111,30 @@ def create_goniometer_axes(
         ],
         "units": ["deg", "um", "um", "um", "deg", "deg"],
         "offsets": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        "starts": [detector_params.omega_start, grid_scan_params.z_axis.start, grid_scan_params.y_axis.start, grid_scan_params.x_axis.start, 0.0, 0.0],
-        "ends": [detector_params.omega_end, grid_scan_params.z_axis.end, grid_scan_params.y_axis.end, grid_scan_params.x_axis.end, 0.0, 0.0],
-        "increments": [detector_params.omega_increment, grid_scan_params.z_axis.step_size, grid_scan_params.y_axis.step_size, grid_scan_params.x_axis.step_size, 0.0, 0.0],
+        "starts": [
+            detector_params.omega_start,
+            grid_scan_params.z_axis.start,
+            grid_scan_params.y_axis.start,
+            grid_scan_params.x_axis.start,
+            0.0,
+            0.0,
+            ],
+        "ends": [
+            detector_params.omega_end,
+            grid_scan_params.z_axis.end,
+            grid_scan_params.y_axis.end,
+            grid_scan_params.x_axis.end,
+            0.0,
+            0.0,
+            ],
+        "increments": [
+            detector_params.omega_increment,
+            grid_scan_params.z_axis.step_size,
+            grid_scan_params.y_axis.step_size,
+            grid_scan_params.x_axis.step_size,
+            0.0,
+            0.0,
+            ],
     }
     # fmt: on
 
@@ -170,7 +192,8 @@ def create_beam_and_attenuator_parameters(
         ispyb_params (IspybParams): An IspybParams object holding all required data.
 
     Returns:
-        Tuple[Dict, Dict]: Tuple of dictionaries describing the beam and attenuator parameters respectively
+        Tuple[Dict, Dict]: Tuple of dictionaries describing the beam and attenuator
+                         parameters respectively
     """
     return (
         {"wavelength": ispyb_params.wavelength, "flux": ispyb_params.flux},
@@ -222,7 +245,8 @@ class NexusWriter:
 
     def __enter__(self):
         """
-        Creates a nexus file based on the parameters supplied when this obect was initialised.
+        Creates a nexus file based on the parameters supplied when this obect was
+        initialised.
         """
         start_time = self._get_current_time()
 
