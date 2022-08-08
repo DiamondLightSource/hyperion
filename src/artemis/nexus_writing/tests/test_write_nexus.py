@@ -7,14 +7,15 @@ import h5py
 import numpy as np
 import pytest
 
-from src.artemis.nexus_writing.write_nexus import (
+from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
+from artemis.nexus_writing.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from src.artemis.parameters import FullParameters
+from artemis.parameters import FullParameters
 
-"""It's hard to effectively unit test the nexus writing so these are really system tests 
+"""It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
 Note that the testing process does now write temporary files to disk."""
 
@@ -143,61 +144,81 @@ def dummy_nexus_writer():
 
 def test_given_dummy_data_then_datafile_written_correctly(dummy_nexus_writer):
     test_full_params, nexus_writer_1, nexus_writer_2 = dummy_nexus_writer
+    grid_scan_params: GridScanParams = test_full_params.grid_scan_params
     nexus_writer_1.__enter__()
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
-            sam_x_data = written_nexus_file["/entry/data/sam_x"][:]
-            assert len(sam_x_data) == (
-                test_full_params.grid_scan_params.x_steps + 1
-            ) * (test_full_params.grid_scan_params.y_steps + 1)
-            assert sam_x_data[1] - sam_x_data[0] == pytest.approx(
-                test_full_params.grid_scan_params.x_step_size
+            data_path = written_nexus_file["/entry/data"]
+            assert_x_data_stride_correct(
+                data_path, grid_scan_params, grid_scan_params.y_steps
             )
-            assert "sam_z" not in written_nexus_file["/entry/data"]
-            sam_z_data = written_nexus_file["/entry/sample/sample_z/sam_z"][()]
-            assert sam_z_data == test_full_params.grid_scan_params.z1_start
+            assert_varying_axis_stride_correct(
+                data_path["sam_y"][:], grid_scan_params, grid_scan_params.y_axis
+            )
+            assert_axis_data_fixed(written_nexus_file, "z", grid_scan_params.z1_start)
             assert written_nexus_file["/entry/instrument/beam/total_flux"][()] == 10.0
-            assert "data_000001" in written_nexus_file["/entry/data"]
-            assert "data_000002" not in written_nexus_file["/entry/data"]
-            external_link = written_nexus_file["/entry/data/data_000001"]
-            assert external_link.file.filename.endswith("dummy_0_000001.h5")
-            assert np.all(written_nexus_file["/entry/data/omega"][:] == 0.0)
+            assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
+            assert "data_000002" not in data_path
+            assert np.all(data_path["omega"][:] == 0.0)
 
-    with h5py.File(nexus_writer_1.nexus_file) as f:
-        assert f["entry"]["data"]["data"][799, 0, 0] == 0
-
-        with pytest.raises(IndexError):
-            assert f["entry"]["data"]["data"][800, 0, 0] == 0
+    assert_data_edge_at(nexus_writer_1.nexus_file, 799)
 
     nexus_writer_2.__enter__()
 
     for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
-            sam_z_data = written_nexus_file["/entry/data/sam_x"][:]
-            assert len(sam_z_data) == (
-                test_full_params.grid_scan_params.x_steps + 1
-            ) * (test_full_params.grid_scan_params.z_steps + 1)
-            assert sam_z_data[1] - sam_z_data[0] == pytest.approx(
-                test_full_params.grid_scan_params.z_step_size
+            data_path = written_nexus_file["/entry/data"]
+            assert_x_data_stride_correct(
+                data_path, grid_scan_params, grid_scan_params.z_steps
             )
-            assert "sam_y" not in written_nexus_file["/entry/data"]
-            sam_y_data = written_nexus_file["/entry/sample/sample_y/sam_y"][()]
-            assert sam_y_data == test_full_params.grid_scan_params.y2_start
+            assert_varying_axis_stride_correct(
+                data_path["sam_z"][:], grid_scan_params, grid_scan_params.z_axis
+            )
+            assert_axis_data_fixed(written_nexus_file, "y", grid_scan_params.y2_start)
             assert written_nexus_file["/entry/instrument/beam/total_flux"][()] == 10.0
-            assert "data_000001" in written_nexus_file["/entry/data"]
-            assert "data_000002" in written_nexus_file["/entry/data"]
-            external_link = written_nexus_file["/entry/data/data_000001"]
-            assert external_link.file.filename.endswith("dummy_0_000001.h5")
-            external_link = written_nexus_file["/entry/data/data_000002"]
-            assert external_link.file.filename.endswith("dummy_0_000002.h5")
-            assert np.all(written_nexus_file["/entry/data/omega"][:] == 90.0)
+            assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
+            assert_contains_external_link(data_path, "data_000002", "dummy_0_000002.h5")
+            assert np.all(data_path["omega"][:] == 90.0)
 
-    with h5py.File(nexus_writer_2.nexus_file) as f:
-        assert f["entry"]["data"]["data"][243, 0, 0] == 0
+    assert_data_edge_at(nexus_writer_2.nexus_file, 243)
+
+
+def assert_x_data_stride_correct(data_path, grid_scan_params, varying_axis_steps):
+    sam_x_data = data_path["sam_x"][:]
+    assert len(sam_x_data) == (grid_scan_params.x_steps + 1) * (varying_axis_steps + 1)
+    assert sam_x_data[1] - sam_x_data[0] == pytest.approx(grid_scan_params.x_step_size)
+
+
+def assert_varying_axis_stride_correct(
+    axis_data, grid_scan_params: GridScanParams, varying_axis: GridAxis
+):
+    assert len(axis_data) == (grid_scan_params.x_steps + 1) * (
+        varying_axis.full_steps + 1
+    )
+    assert axis_data[grid_scan_params.x_steps + 1] - axis_data[0] == pytest.approx(
+        varying_axis.step_size
+    )
+
+
+def assert_axis_data_fixed(written_nexus_file, axis, expected_value):
+    assert f"sam_{axis}" not in written_nexus_file["/entry/data"]
+    sam_y_data = written_nexus_file[f"/entry/sample/sample_{axis}/sam_{axis}"][()]
+    assert sam_y_data == expected_value
+
+
+def assert_data_edge_at(nexus_file, expected_edge_index):
+    """Asserts that the datafile's last datapoint is at the specified index"""
+    with h5py.File(nexus_file) as f:
+        assert f["entry"]["data"]["data"][expected_edge_index, 0, 0] == 0
 
         with pytest.raises(IndexError):
-            assert f["entry"]["data"]["data"][244, 0, 0] == 0
+            assert f["entry"]["data"]["data"][expected_edge_index + 1, 0, 0] == 0
+
+
+def assert_contains_external_link(data_path, entry_name, file_name):
+    assert entry_name in data_path
+    assert data_path[entry_name].file.filename.endswith(file_name)
 
 
 def test_nexus_writer_files_are_formatted_as_expected():

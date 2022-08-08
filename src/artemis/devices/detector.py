@@ -53,7 +53,9 @@ class DetectorParams:
         ),
     )
 
-    # Optional from GDA as populated internally
+    # The following are optional from GDA as populated internally
+
+    # Where the VDS start index should be in the Nexus file
     start_index: Optional[int] = 0
     nexus_file_run_number: Optional[int] = 0
 
