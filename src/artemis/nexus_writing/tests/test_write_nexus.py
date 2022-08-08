@@ -7,12 +7,12 @@ import numpy as np
 import pytest
 
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
-from artemis.nexus_writing.write_nexus import (
+from src.artemis.nexus_writing.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from artemis.parameters import FullParameters
+from src.artemis.parameters import FullParameters
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
