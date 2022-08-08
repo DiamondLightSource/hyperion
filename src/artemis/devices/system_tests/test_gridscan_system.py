@@ -1,11 +1,11 @@
 import pytest
+from bluesky.run_engine import RunEngine
 
 from src.artemis.devices.fast_grid_scan import (
     FastGridScan,
-    set_fast_grid_scan_params,
     GridScanParams,
+    set_fast_grid_scan_params,
 )
-from bluesky.run_engine import RunEngine
 
 
 @pytest.fixture()
@@ -55,5 +55,5 @@ def test_given_valid_params_when_kickoff_then_completion_status_increases_and_fi
     complete_status = fast_grid_scan.complete()
     complete_status.watch(progress_watcher)
     complete_status.wait()
-    assert prev_current != None
-    assert prev_fraction != None
+    assert prev_current is not None
+    assert prev_fraction is not None

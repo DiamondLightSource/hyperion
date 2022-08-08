@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -19,8 +18,6 @@ from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from src.artemis.nexus_writing.write_nexus import NexusWriter
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
 from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")

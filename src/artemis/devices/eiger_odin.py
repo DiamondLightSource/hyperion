@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 from ophyd import Component, Device, EpicsSignal, EpicsSignalRO, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import HDF5Plugin_V22
+
 from src.artemis.devices.status import await_value
 
 
@@ -65,7 +66,8 @@ class OdinNodesStatus(Device):
         frames_details = []
         for node_number, node_pv in enumerate(self.nodes):
             nodes_frames_values[node_number] = node_get_func(node_pv)
-            error_message = f"Filewriter {node_number} {error_message_verb} {nodes_frames_values[node_number]} frames"
+            error_message = f"Filewriter {node_number} {error_message_verb} \
+                    {nodes_frames_values[node_number]} frames"
             frames_details.append(error_message)
         bad_frames = any(v != 0 for v in nodes_frames_values)
         return bad_frames, "\n".join(frames_details)
@@ -87,7 +89,8 @@ class OdinNodesStatus(Device):
             is_error.append(node_pv.error_status.get())
             if is_error[node_number]:
                 error_messages.append(
-                    f"Filewriter {node_number} is in an error state with error message - {node_pv.error_message.get()}"
+                    f"Filewriter {node_number} is in an error state with error message\
+                     - {node_pv.error_message.get()}"
                 )
         return any(is_error), "\n".join(error_messages)
 

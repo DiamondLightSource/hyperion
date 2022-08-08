@@ -1,12 +1,13 @@
 from __future__ import annotations
-from typing import List
+
 from enum import Enum
-from src.artemis.devices.utils import epics_signal_put_wait
+from functools import partialmethod
+from typing import List
 
 from ophyd import Component, Device, EpicsSignal, StatusBase
 from ophyd.status import SubscriptionStatus
 
-from functools import partialmethod
+from src.artemis.devices.utils import epics_signal_put_wait
 
 PC_ARM_SOURCE_SOFT = 0
 PC_ARM_SOURCE_EXT = 1
@@ -74,14 +75,16 @@ class PositionCompare(Device):
 class ZebraOutputPanel(Device):
     pulse_1_input: EpicsSignal = epics_signal_put_wait("PULSE1_INP")
 
-    out_1: EpicsSignal = epics_signal_put_wait(f"OUT1_TTL")
-    out_2: EpicsSignal = epics_signal_put_wait(f"OUT2_TTL")
-    out_3: EpicsSignal = epics_signal_put_wait(f"OUT3_TTL")
-    out_4: EpicsSignal = epics_signal_put_wait(f"OUT4_TTL")
+    out_1: EpicsSignal = epics_signal_put_wait("OUT1_TTL")
+    out_2: EpicsSignal = epics_signal_put_wait("OUT2_TTL")
+    out_3: EpicsSignal = epics_signal_put_wait("OUT3_TTL")
+    out_4: EpicsSignal = epics_signal_put_wait("OUT4_TTL")
 
     @property
     def out_pvs(self) -> List[EpicsSignal]:
-        """A list of all the output TTL PVs. Note that as the PVs are 1 indexed `out_pvs[0]` is `None`."""
+        """A list of all the output TTL PVs. Note that as the PVs are 1 indexed
+        `out_pvs[0]` is `None`.
+        """
         return [None, self.out_1, self.out_2, self.out_3, self.out_4]
 
     def setup_fast_grid_scan(self):
@@ -100,7 +103,8 @@ class ZebraOutputPanel(Device):
 
 
 def boolean_array_to_integer(values: List[bool]) -> int:
-    """Converts a boolean array to integer by interpretting it in binary with LSB 0 bit numbering.
+    """Converts a boolean array to integer by interpretting it in binary with LSB 0 bit
+    numbering.
 
     Args:
         values (List[bool]): The list of booleans to convert.
@@ -198,11 +202,13 @@ class LogicGateConfiguration:
     def add_input(
         self, input_source: int, invert: bool = False
     ) -> LogicGateConfiguration:
-        """Add an input to the gate. This will throw an assertion error if more than 4 inputs are added to the Zebra.
+        """Add an input to the gate. This will throw an assertion error if more than 4
+        inputs are added to the Zebra.
 
         Args:
             input_source (int): The source for the input (must be between 0 and 63).
-            invert (bool, optional): Whether the input should be inverted. Defaults to False.
+            invert (bool, optional): Whether the input should be inverted. Default
+                False.
 
         Returns:
             LogicGateConfiguration: A description of the gate configuration.

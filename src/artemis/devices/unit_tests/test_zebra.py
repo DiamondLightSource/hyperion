@@ -1,13 +1,13 @@
 import pytest
-from mockito import *
-from src.artemis.devices.zebra import (
-    GateControl,
-    LogicGateConfiguration,
-    boolean_array_to_integer,
-    LogicGateConfigurer,
-    GateType,
-)
+from mockito import mock, verify
 from ophyd.sim import make_fake_device
+
+from src.artemis.devices.zebra import (
+    GateType,
+    LogicGateConfiguration,
+    LogicGateConfigurer,
+    boolean_array_to_integer,
+)
 
 
 @pytest.mark.parametrize(

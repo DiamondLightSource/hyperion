@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Union, Dict
+from typing import Dict, Union
 
 
 @dataclass
@@ -75,4 +75,4 @@ def constants_from_type(det_type_string: str) -> DetectorSizeConstants:
     try:
         return ALL_DETECTORS[det_type_string]
     except KeyError as e:
-        raise KeyError(f"Detector {det_type_string} not found")
+        raise KeyError(f"Detector {det_type_string} not found") from e

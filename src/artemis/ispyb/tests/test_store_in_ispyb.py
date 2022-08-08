@@ -5,6 +5,7 @@ from unittest.mock import mock_open, patch
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import ANY, arg_that, mock, verify, when
+
 from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from src.artemis.parameters import FullParameters
 
@@ -34,7 +35,7 @@ def test_get_current_time_string(dummy_ispyb):
     current_time = dummy_ispyb.get_current_time_string()
 
     assert type(current_time) == str
-    assert re.match(TIME_FORMAT_REGEX, current_time) != None
+    assert re.match(TIME_FORMAT_REGEX, current_time) is not None
 
 
 @pytest.mark.parametrize(
