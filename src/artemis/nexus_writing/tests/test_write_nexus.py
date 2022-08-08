@@ -5,8 +5,8 @@ from unittest.mock import call, patch
 import h5py
 import pytest
 
-from src.artemis.nexus_writing.write_nexus import NexusWriter
-from src.artemis.parameters import FullParameters
+from artemis.nexus_writing.write_nexus import NexusWriter
+from artemis.parameters import FullParameters
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.

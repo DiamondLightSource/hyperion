@@ -15,10 +15,10 @@ from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 
-from src.artemis.devices.detector import DetectorParams
-from src.artemis.devices.fast_grid_scan import GridScanParams
-from src.artemis.ispyb.ispyb_dataclass import IspybParams
-from src.artemis.parameters import FullParameters
+from artemis.devices.detector import DetectorParams
+from artemis.devices.fast_grid_scan import GridScanParams
+from artemis.ispyb.ispyb_dataclass import IspybParams
+from artemis.parameters import FullParameters
 
 source = {
     "name": "Diamond Light Source",

@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 import ispyb
 from sqlalchemy.connectors import Connector
 
-from src.artemis.ispyb.ispyb_dataclass import Orientation
-from src.artemis.parameters import FullParameters
+from artemis.ispyb.ispyb_dataclass import Orientation
+from artemis.parameters import FullParameters
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"

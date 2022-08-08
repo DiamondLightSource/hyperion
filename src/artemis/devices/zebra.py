@@ -7,7 +7,7 @@ from typing import List
 from ophyd import Component, Device, EpicsSignal, StatusBase
 from ophyd.status import SubscriptionStatus
 
-from src.artemis.devices.utils import epics_signal_put_wait
+from artemis.devices.utils import epics_signal_put_wait
 
 PC_ARM_SOURCE_SOFT = 0
 PC_ARM_SOURCE_EXT = 1
