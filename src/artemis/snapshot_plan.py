@@ -2,9 +2,9 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 
-from src.artemis.devices.aperture import Aperture
-from src.artemis.devices.backlight import Backlight
-from src.artemis.devices.oav import OAV
+from artemis.devices.aperture import Aperture
+from artemis.devices.backlight import Backlight
+from artemis.devices.oav import OAV
 
 
 def prepare_for_snapshot(backlight: Backlight, aperture: Aperture):

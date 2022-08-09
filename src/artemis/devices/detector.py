@@ -3,13 +3,14 @@ from dataclasses import dataclass, field
 from typing import Tuple
 
 from dataclasses_json import config, dataclass_json
-from src.artemis.devices.det_dim_constants import (
+
+from artemis.devices.det_dim_constants import (
     EIGER2_X_16M_SIZE,
     DetectorSize,
     DetectorSizeConstants,
     constants_from_type,
 )
-from src.artemis.devices.det_dist_to_beam_converter import (
+from artemis.devices.det_dist_to_beam_converter import (
     Axis,
     DetectorDistanceToBeamXYConverter,
 )

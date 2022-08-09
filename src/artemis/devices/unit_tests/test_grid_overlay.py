@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from src.artemis.devices.oav.grid_overlay import (
+from artemis.devices.oav.grid_overlay import (
     add_grid_border_overlay_to_image,
     add_grid_overlay_to_image,
 )
@@ -47,7 +47,7 @@ def _test_expected_calls_to_image_draw_line(mock_image_draw: MagicMock, expected
         ),
     ],
 )
-@patch("src.artemis.devices.oav.grid_overlay.ImageDraw.Draw")
+@patch("artemis.devices.oav.grid_overlay.ImageDraw.Draw")
 def test_add_grid_border_overlay_to_image_makes_correct_calls_to_imagedraw(
     mock_imagedraw: MagicMock,
     top_left_x,
@@ -97,7 +97,7 @@ def test_add_grid_border_overlay_to_image_makes_correct_calls_to_imagedraw(
         ),
     ],
 )
-@patch("src.artemis.devices.oav.grid_overlay.ImageDraw.Draw")
+@patch("artemis.devices.oav.grid_overlay.ImageDraw.Draw")
 def test_add_grid_overlay_to_image_makes_correct_calls_to_imagedraw(
     mock_imagedraw: MagicMock,
     top_left_x,

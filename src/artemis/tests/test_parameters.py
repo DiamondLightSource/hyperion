@@ -1,4 +1,4 @@
-from src.artemis.parameters import FullParameters
+from artemis.parameters import FullParameters
 
 
 def test_new_parameters_is_a_deep_copy():

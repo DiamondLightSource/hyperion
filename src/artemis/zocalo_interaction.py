@@ -7,7 +7,7 @@ import workflows.transport
 import zocalo.configuration
 from workflows.transport import lookup
 
-from src.artemis.utils import Point3D
+from artemis.utils import Point3D
 
 TIMEOUT = 30
 

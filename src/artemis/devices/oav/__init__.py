@@ -9,7 +9,7 @@ from ophyd import (
     ROIPlugin,
 )
 
-from src.artemis.devices.oav.grid_overlay import SnapshotWithGrid
+from artemis.devices.oav.grid_overlay import SnapshotWithGrid
 
 
 class OAV(AreaDetector):

@@ -1,6 +1,6 @@
 import pytest
 
-from src.artemis.devices.det_dim_constants import (
+from artemis.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION_X,
     EIGER_TYPE_EIGER2_X_4M,
     constants_from_type,
