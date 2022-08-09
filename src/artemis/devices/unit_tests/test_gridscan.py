@@ -3,14 +3,15 @@ from bluesky.run_engine import RunEngine
 from mockito import mock, unstub, verify, when
 from mockito.matchers import ANY, ARGS, KWARGS
 from ophyd.sim import make_fake_device
-from src.artemis.devices.fast_grid_scan import (
+
+from artemis.devices.fast_grid_scan import (
     FastGridScan,
     GridScanParams,
     set_fast_grid_scan_params,
     time,
 )
-from src.artemis.devices.motors import I03Smargon
-from src.artemis.utils import Point3D
+from artemis.devices.motors import I03Smargon
+from artemis.utils import Point3D
 
 
 @pytest.fixture

@@ -1,11 +1,11 @@
 from ophyd import Component, Device, FormattedComponent
 
-from src.artemis.devices.fast_grid_scan import FastGridScan
-from src.artemis.devices.motors import I03Smargon
-from src.artemis.devices.slit_gaps import SlitGaps
-from src.artemis.devices.synchrotron import Synchrotron
-from src.artemis.devices.undulator import Undulator
-from src.artemis.devices.zebra import Zebra
+from artemis.devices.fast_grid_scan import FastGridScan
+from artemis.devices.motors import I03Smargon
+from artemis.devices.slit_gaps import SlitGaps
+from artemis.devices.synchrotron import Synchrotron
+from artemis.devices.undulator import Undulator
+from artemis.devices.zebra import Zebra
 
 
 class FGSComposite(Device):
