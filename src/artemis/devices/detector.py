@@ -53,6 +53,10 @@ class DetectorParams:
         ),
     )
 
+    def __post_init__(self):
+        if not self.directory.endswith("/"):
+            self.directory += "/"
+
     def get_beam_position_mm(self, detector_distance: float) -> Tuple[float, float]:
         x_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist(
             detector_distance, Axis.X_AXIS
