@@ -3,7 +3,8 @@ from enum import Enum
 from typing import List, Optional
 
 from dataclasses_json import config, dataclass_json
-from src.artemis.utils import Point3D
+from artemis.utils import Point3D
+
 
 
 @dataclass_json

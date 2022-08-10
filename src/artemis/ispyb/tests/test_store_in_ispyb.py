@@ -5,9 +5,10 @@ from unittest.mock import mock_open, patch
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import ANY, arg_that, mock, verify, when
-from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
-from src.artemis.parameters import FullParameters
-from src.artemis.utils import Point3D
+from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
+from artemis.parameters import FullParameters
+from artemis.utils import Point3D
+
 
 TEST_DATA_COLLECTION_ID = 12
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -35,7 +36,7 @@ def test_get_current_time_string(dummy_ispyb):
     current_time = dummy_ispyb.get_current_time_string()
 
     assert type(current_time) == str
-    assert re.match(TIME_FORMAT_REGEX, current_time) != None
+    assert re.match(TIME_FORMAT_REGEX, current_time) is not None
 
 
 @pytest.mark.parametrize(

@@ -2,12 +2,12 @@ import datetime
 import re
 from abc import ABC, abstractmethod
 
-from sqlalchemy.connectors import Connector
-from src.artemis.ispyb.ispyb_dataclass import Orientation
-from src.artemis.parameters import FullParameters
-from src.artemis.utils import Point2D
-
 import ispyb
+from sqlalchemy.connectors import Connector
+from artemis.ispyb.ispyb_dataclass import Orientation
+from artemis.parameters import FullParameters
+from artemis.utils import Point2D
+
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -119,7 +119,8 @@ class StoreInIspyb(ABC):
         params["imgsuffix"] = EIGER_FILE_SUFFIX
         params["n_images"] = self.detector_params.num_images
 
-        # Both overlap and n_passes included for backwards compatibility, planned to be removed later
+        # Both overlap and n_passes included for backwards compatibility,
+        # planned to be removed later
         params["n_passes"] = 1
         params["overlap"] = 0
 
@@ -141,7 +142,8 @@ class StoreInIspyb(ABC):
         params["undulator_gap1"] = self.ispyb_params.undulator_gap
         params["starttime"] = self.get_current_time_string()
 
-        # temporary file template until nxs filewriting is integrated and we can use that file name
+        # temporary file template until nxs filewriting is integrated and we can use
+        # that file name
         params[
             "file_template"
         ] = f"{self.detector_params.prefix}_{self.run_number}_master.h5"

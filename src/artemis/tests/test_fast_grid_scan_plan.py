@@ -5,22 +5,19 @@ from bluesky.run_engine import RunEngine
 from mockito import ANY, when
 from ophyd.sim import make_fake_device
 
-from src.artemis.devices.det_dim_constants import (
+from artemis.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from src.artemis.devices.eiger import EigerDetector
-from src.artemis.devices.fast_grid_scan_composite import FGSComposite
-from src.artemis.devices.slit_gaps import SlitGaps
-from src.artemis.devices.synchrotron import Synchrotron
-from src.artemis.devices.undulator import Undulator
-from src.artemis.fast_grid_scan_plan import (
-    run_gridscan,
-    update_params_from_epics_devices,
-)
-from src.artemis.ispyb.store_in_ispyb import StoreInIspyb3D
-from src.artemis.parameters import FullParameters
+from artemis.devices.eiger import EigerDetector
+from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.devices.slit_gaps import SlitGaps
+from artemis.devices.synchrotron import Synchrotron
+from artemis.devices.undulator import Undulator
+from artemis.fast_grid_scan_plan import run_gridscan, update_params_from_epics_devices
+from artemis.ispyb.store_in_ispyb import StoreInIspyb3D
+from artemis.parameters import FullParameters
 
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
 
@@ -70,9 +67,9 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
     assert params.ispyb_params.slit_gap_size_y == ygap_test_value
 
 
-@patch("src.artemis.fast_grid_scan_plan.run_start")
-@patch("src.artemis.fast_grid_scan_plan.run_end")
-@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
+@patch("artemis.fast_grid_scan_plan.run_start")
+@patch("artemis.fast_grid_scan_plan.run_end")
+@patch("artemis.fast_grid_scan_plan.wait_for_result")
 def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     dc_ids = [1, 2]
     dcg_id = 4
@@ -96,7 +93,7 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
         DUMMY_TIME_STRING, "DataCollection Successful", ANY(int), dcg_id
     )
 
-    with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
+    with patch("artemis.fast_grid_scan_plan.NexusWriter"):
         list(run_gridscan(fgs_composite, eiger, params))
 
     run_start.assert_has_calls(call(x) for x in dc_ids)

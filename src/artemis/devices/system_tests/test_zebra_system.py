@@ -1,13 +1,13 @@
 import pytest
 
-from src.artemis.devices.zebra import (
-    Zebra,
-    TTL_DETECTOR,
-    TTL_SHUTTER,
-    PC_PULSE,
-    OR1,
+from artemis.devices.zebra import (
     IN3_TTL,
     IN4_TTL,
+    OR1,
+    PC_PULSE,
+    TTL_DETECTOR,
+    TTL_SHUTTER,
+    Zebra,
 )
 
 
