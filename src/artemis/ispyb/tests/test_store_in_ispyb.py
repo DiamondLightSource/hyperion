@@ -5,10 +5,10 @@ from unittest.mock import mock_open, patch
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import ANY, arg_that, mock, verify, when
+
 from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
-
 
 TEST_DATA_COLLECTION_ID = 12
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -125,7 +125,7 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
 
 @patch("ispyb.open", new_callable=mock_open)
 @patch(
-    "src.artemis.ispyb.store_in_ispyb.StoreInIspyb3D.mxacquisition.upsert_dc_grid",
+    "artemis.ispyb.store_in_ispyb.StoreInIspyb3D.mxacquisition.upsert_dc_grid",
     return_value=TEST_GRID_INFO_ID,
 )
 def test_3d_stored_params(upsert_grid, ispyb_conn, dummy_ispyb_3d):
