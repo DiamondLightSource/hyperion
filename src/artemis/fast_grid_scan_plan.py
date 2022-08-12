@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -9,18 +8,16 @@ from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
 from ophyd.log import config_ophyd_logging
 
-from src.artemis.devices.eiger import EigerDetector
-from src.artemis.devices.fast_grid_scan import set_fast_grid_scan_params
-from src.artemis.devices.fast_grid_scan_composite import FGSComposite
-from src.artemis.devices.slit_gaps import SlitGaps
-from src.artemis.devices.synchrotron import Synchrotron
-from src.artemis.devices.undulator import Undulator
-from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
-from src.artemis.nexus_writing.write_nexus import NexusWriter
-from src.artemis.parameters import SIM_BEAMLINE, FullParameters
-from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from artemis.devices.eiger import EigerDetector
+from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
+from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.devices.slit_gaps import SlitGaps
+from artemis.devices.synchrotron import Synchrotron
+from artemis.devices.undulator import Undulator
+from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
+from artemis.nexus_writing.write_nexus import NexusWriter
+from artemis.parameters import SIM_BEAMLINE, FullParameters
+from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
 config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")

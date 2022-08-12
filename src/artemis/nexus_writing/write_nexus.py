@@ -1,5 +1,6 @@
 """
-Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
+Define beamline parameters for I03, Eiger detector and give an example of writing a
+gridscan.
 """
 import math
 import shutil
@@ -14,10 +15,10 @@ from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 
-from src.artemis.devices.detector import DetectorParams
-from src.artemis.devices.fast_grid_scan import GridScanParams
-from src.artemis.ispyb.ispyb_dataclass import IspybParams
-from src.artemis.parameters import FullParameters
+from artemis.devices.detector import DetectorParams
+from artemis.devices.fast_grid_scan import GridScanParams
+from artemis.ispyb.ispyb_dataclass import IspybParams
+from artemis.parameters import FullParameters
 
 source = {
     "name": "Diamond Light Source",
@@ -80,9 +81,29 @@ def create_goniometer_axes(
         ],
         "units": ["deg", "um", "um", "um", "deg", "deg"],
         "offsets": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        "starts": [detector_params.omega_start, 0.0, grid_scan_params.y_axis.start, grid_scan_params.x_axis.start, 0.0, 0.0],
-        "ends": [detector_params.omega_end, 0.0, grid_scan_params.y_axis.end, grid_scan_params.x_axis.end, 0.0, 0.0],
-        "increments": [detector_params.omega_increment, 0.0, grid_scan_params.y_axis.step_size, grid_scan_params.x_axis.step_size, 0.0, 0.0],
+        "starts": [
+            detector_params.omega_start,
+            0.0,
+            grid_scan_params.y_axis.start,
+            grid_scan_params.x_axis.start,
+            0.0,
+            0.0,
+            ],
+        "ends": [
+            detector_params.omega_end,
+            0.0, grid_scan_params.y_axis.end,
+            grid_scan_params.x_axis.end,
+            0.0,
+            0.0,
+            ],
+        "increments": [
+            detector_params.omega_increment,
+            0.0,
+            grid_scan_params.y_axis.step_size,
+            grid_scan_params.x_axis.step_size,
+            0.0,
+            0.0,
+            ],
     }
     # fmt: on
 
@@ -140,7 +161,8 @@ def create_beam_and_attenuator_parameters(
         ispyb_params (IspybParams): An IspybParams object holding all required data.
 
     Returns:
-        Tuple[Dict, Dict]: Tuple of dictionaries describing the beam and attenuator parameters respectively
+        Tuple[Dict, Dict]: Tuple of dictionaries describing the beam and attenuator
+                         parameters respectively
     """
     return (
         {"wavelength": ispyb_params.wavelength, "flux": ispyb_params.flux},
@@ -175,7 +197,8 @@ class NexusWriter:
 
     def __enter__(self):
         """
-        Creates a nexus file based on the parameters supplied when this obect was initialised.
+        Creates a nexus file based on the parameters supplied when this obect was
+        initialised.
         """
         start_time = self._get_current_time()
 
