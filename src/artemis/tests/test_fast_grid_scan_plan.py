@@ -5,21 +5,18 @@ import pytest
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
 
-from src.artemis.devices.det_dim_constants import (
+from artemis.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from src.artemis.devices.eiger import EigerDetector
-from src.artemis.devices.fast_grid_scan_composite import FGSComposite
-from src.artemis.devices.slit_gaps import SlitGaps
-from src.artemis.devices.synchrotron import Synchrotron
-from src.artemis.devices.undulator import Undulator
-from src.artemis.fast_grid_scan_plan import (
-    run_gridscan,
-    update_params_from_epics_devices,
-)
-from src.artemis.parameters import FullParameters
+from artemis.devices.eiger import EigerDetector
+from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.devices.slit_gaps import SlitGaps
+from artemis.devices.synchrotron import Synchrotron
+from artemis.devices.undulator import Undulator
+from artemis.fast_grid_scan_plan import run_gridscan, update_params_from_epics_devices
+from artemis.parameters import FullParameters
 
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
 GOOD_ISPYB_RUN_STATUS = "DataCollection Successful"
@@ -87,13 +84,13 @@ def dummy_3d_gridscan_args():
     return fgs_composite, eiger, params
 
 
-@patch("src.artemis.fast_grid_scan_plan.run_start")
-@patch("src.artemis.fast_grid_scan_plan.run_end")
-@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
-@patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
-@patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
+@patch("artemis.fast_grid_scan_plan.run_start")
+@patch("artemis.fast_grid_scan_plan.run_end")
+@patch("artemis.fast_grid_scan_plan.wait_for_result")
+@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
+@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
 @patch(
-    "src.artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+    "artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
 def test_run_gridscan_zocalo_calls(
     mock_ispyb_update_time_and_status: MagicMock,
@@ -111,7 +108,9 @@ def test_run_gridscan_zocalo_calls(
     mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
+    print(run_start)
+
+    with patch("artemis.fast_grid_scan_plan.NexusWriter"):
         list(run_gridscan(*dummy_3d_gridscan_args))
 
     run_start.assert_has_calls(call(x) for x in dc_ids)
@@ -123,13 +122,13 @@ def test_run_gridscan_zocalo_calls(
     wait_for_result.assert_called_once_with(dcg_id)
 
 
-@patch("src.artemis.fast_grid_scan_plan.run_start")
-@patch("src.artemis.fast_grid_scan_plan.run_end")
-@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
-@patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
-@patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
+@patch("artemis.fast_grid_scan_plan.run_start")
+@patch("artemis.fast_grid_scan_plan.run_end")
+@patch("artemis.fast_grid_scan_plan.wait_for_result")
+@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
+@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
 @patch(
-    "src.artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+    "artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
 def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
     mock_ispyb_update_time_and_status: MagicMock,
@@ -149,7 +148,7 @@ def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
 
     with pytest.raises(Exception) as excinfo:
         with patch(
-            "src.artemis.fast_grid_scan_plan.NexusWriter",
+            "artemis.fast_grid_scan_plan.NexusWriter",
             side_effect=Exception("mocked error"),
         ):
             list(run_gridscan(*dummy_3d_gridscan_args))
@@ -163,13 +162,13 @@ def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
 
-@patch("src.artemis.fast_grid_scan_plan.run_start")
-@patch("src.artemis.fast_grid_scan_plan.run_end")
-@patch("src.artemis.fast_grid_scan_plan.wait_for_result")
-@patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
-@patch("src.artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
+@patch("artemis.fast_grid_scan_plan.run_start")
+@patch("artemis.fast_grid_scan_plan.run_end")
+@patch("artemis.fast_grid_scan_plan.wait_for_result")
+@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
+@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
 @patch(
-    "src.artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+    "artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
 def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_update_time_and_status: MagicMock,
@@ -187,7 +186,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    with patch("src.artemis.fast_grid_scan_plan.NexusWriter"):
+    with patch("artemis.fast_grid_scan_plan.NexusWriter"):
         list(run_gridscan(*dummy_3d_gridscan_args))
 
     mock_ispyb_update_time_and_status.assert_has_calls(

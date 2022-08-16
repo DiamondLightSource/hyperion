@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-from src.artemis.devices.eiger import DetectorParams, EigerDetector
+
+from artemis.devices.eiger import DetectorParams, EigerDetector
 
 
 @pytest.fixture()

@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 import ispyb
 from sqlalchemy.connectors import Connector
 
-from src.artemis.ispyb.ispyb_dataclass import Orientation
-from src.artemis.parameters import FullParameters
+from artemis.ispyb.ispyb_dataclass import Orientation
+from artemis.parameters import FullParameters
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -136,8 +136,8 @@ class StoreInIspyb(ABC):
         params["imgsuffix"] = EIGER_FILE_SUFFIX
         params["n_images"] = self.detector_params.num_images
 
-        # Both overlap and n_passes included for backwards compatibility, planned to be
-        # removed later
+        # Both overlap and n_passes included for backwards compatibility,
+        # planned to be removed later
         params["n_passes"] = 1
         params["overlap"] = 0
 

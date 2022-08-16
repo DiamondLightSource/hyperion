@@ -5,8 +5,8 @@ import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
-from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
-from src.artemis.parameters import FullParameters
+from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
+from artemis.parameters import FullParameters
 
 TEST_DATA_COLLECTION_ID = 12
 TEST_DATA_COLLECTION_GROUP_ID = 34

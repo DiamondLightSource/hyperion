@@ -1,7 +1,9 @@
 """
-Define beamline parameters for I03, Eiger detector and give an example of writing a gridscan.
+Define beamline parameters for I03, Eiger detector and give an example of writing a
+gridscan.
 """
 import math
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -9,16 +11,14 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
-import shutil
-from nexgen.nxs_write import calculate_scan_from_scanspec
-from nexgen.nxs_write.NexusWriter import call_writers
+from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
-from scanspec.specs import Line, Spec
-from src.artemis.devices.detector import DetectorParams
-from src.artemis.devices.fast_grid_scan import GridScanParams
-from src.artemis.ispyb.ispyb_dataclass import IspybParams
-from src.artemis.parameters import FullParameters
+
+from artemis.devices.detector import DetectorParams
+from artemis.devices.fast_grid_scan import GridScanParams
+from artemis.ispyb.ispyb_dataclass import IspybParams
+from artemis.parameters import FullParameters
 
 source = {
     "name": "Diamond Light Source",
@@ -48,7 +48,9 @@ module = {
 }
 
 
-def create_goniometer_axes(detector_params: DetectorParams) -> Dict:
+def create_goniometer_axes(
+    detector_params: DetectorParams, grid_scan_params: GridScanParams
+) -> Dict:
     """Create the data for the goniometer.
 
     Args:
@@ -79,9 +81,29 @@ def create_goniometer_axes(detector_params: DetectorParams) -> Dict:
         ],
         "units": ["deg", "um", "um", "um", "deg", "deg"],
         "offsets": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        "starts": [detector_params.omega_start, 0.0, None, None, 0.0, 0.0],
-        "ends": [detector_params.omega_end] + [0.0] * 5,
-        "increments": [detector_params.omega_increment] + [0.0] * 5,
+        "starts": [
+            detector_params.omega_start,
+            0.0,
+            grid_scan_params.y_axis.start,
+            grid_scan_params.x_axis.start,
+            0.0,
+            0.0,
+            ],
+        "ends": [
+            detector_params.omega_end,
+            0.0, grid_scan_params.y_axis.end,
+            grid_scan_params.x_axis.end,
+            0.0,
+            0.0,
+            ],
+        "increments": [
+            detector_params.omega_increment,
+            0.0,
+            grid_scan_params.y_axis.step_size,
+            grid_scan_params.x_axis.step_size,
+            0.0,
+            0.0,
+            ],
     }
     # fmt: on
 
@@ -139,7 +161,8 @@ def create_beam_and_attenuator_parameters(
         ispyb_params (IspybParams): An IspybParams object holding all required data.
 
     Returns:
-        Tuple[Dict, Dict]: Tuple of dictionaries describing the beam and attenuator parameters respectively
+        Tuple[Dict, Dict]: Tuple of dictionaries describing the beam and attenuator
+                         parameters respectively
     """
     return (
         {"wavelength": ispyb_params.wavelength, "flux": ispyb_params.flux},
@@ -147,39 +170,15 @@ def create_beam_and_attenuator_parameters(
     )
 
 
-def create_scan_spec(grid_scan_params: GridScanParams) -> Spec:
-    """Create a scan spec from the grid scan parameters.
-
-    Args:
-        grid_scan_params (GridScanParams): The grid scan parameters.
-
-    Returns:
-        Spec: A scanspec for nexgen
-    """
-    y_line = Line(
-        "sam_y",
-        grid_scan_params.y_axis.start,
-        grid_scan_params.y_axis.end,
-        grid_scan_params.y_axis.full_steps
-        + 1,  # 1 more as we take an image on the first step as well as the last
-    )
-    x_line = Line(
-        "sam_x",
-        grid_scan_params.x_axis.start,
-        grid_scan_params.x_axis.end,
-        grid_scan_params.x_axis.full_steps + 1,
-    )
-    return y_line * ~x_line
-
-
 class NexusWriter:
     def __init__(self, parameters: FullParameters) -> None:
         self.detector = create_detector_parameters(parameters.detector_params)
-        self.goniometer = create_goniometer_axes(parameters.detector_params)
+        self.goniometer = create_goniometer_axes(
+            parameters.detector_params, parameters.grid_scan_params
+        )
         self.beam, self.attenuator = create_beam_and_attenuator_parameters(
             parameters.ispyb_params
         )
-        self.scan_spec = create_scan_spec(parameters.grid_scan_params)
         self.directory = Path(parameters.detector_params.directory)
         self.filename = parameters.detector_params.full_filename
         self.num_of_images = parameters.detector_params.num_images
@@ -198,11 +197,12 @@ class NexusWriter:
 
     def __enter__(self):
         """
-        Creates a nexus file based on the parameters supplied when this obect was initialised.
+        Creates a nexus file based on the parameters supplied when this obect was
+        initialised.
         """
         start_time = self._get_current_time()
 
-        scan_range = calculate_scan_from_scanspec(self.scan_spec)
+        osc_scan, trans_scan = ScanReader(self.goniometer, snaked=True)
 
         metafile = self.directory / f"{self.filename}_meta.h5"
 
@@ -216,7 +216,6 @@ class NexusWriter:
                     nxsfile,
                     self.get_image_datafiles(),
                     "mcstas",
-                    scan_range,
                     ("images", self.num_of_images),
                     self.goniometer,
                     self.detector,
@@ -224,6 +223,8 @@ class NexusWriter:
                     source,
                     self.beam,
                     self.attenuator,
+                    osc_scan,
+                    trans_scan,
                     metafile=metafile,
                     link_list=dset_links,
                 )
