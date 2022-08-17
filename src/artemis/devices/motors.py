@@ -48,7 +48,8 @@ class I03Smargon(MotorBundle):
     def get_xyz_limits(self) -> XYZLimitBundle:
         """Get the limits for the x, y and z axes.
 
-        Note that these limits may not yet be valid until wait_for_connection is called on this MotorBundle.
+        Note that these limits may not yet be valid until wait_for_connection is called
+        on this MotorBundle.
 
         Returns:
             XYZLimitBundle: The limits for the underlying motors.
