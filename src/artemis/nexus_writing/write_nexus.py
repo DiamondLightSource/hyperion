@@ -125,7 +125,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
         "sensor_material": "Silicon",
         "sensor_thickness": "4.5E-4",
         "overload": 46051,
-        "underload": -1,  # Not sure of this
+        "underload": 0,
         "pixel_size": ["0.075mm", "0.075mm"],
         "flatfield": "flatfield",
         "flatfield_applied": "_dectris/flatfield_correction_applied",
