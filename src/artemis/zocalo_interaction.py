@@ -7,7 +7,7 @@ import workflows.transport
 import zocalo.configuration
 from workflows.transport import lookup
 
-from src.artemis.utils import Point3D
+from artemis.utils import Point3D
 
 TIMEOUT = 30
 
@@ -57,6 +57,7 @@ def run_end(data_collection_id: int):
     Args:
         data_collection_id (int): The ID of the data collection representing the
                                   gridscan in ISPyB
+
     """
     _send_to_zocalo(
         {
@@ -72,6 +73,7 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
     Args:
         data_collection_group_id (int): The ID of the data collection group representing
                                         the gridscan in ISPyB
+
         timeout (float): The time in seconds to wait for the result to be received.
     Returns:
         Point in grid co-ordinates that is the centre point to move to
@@ -88,10 +90,11 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
         transport.ack(header)
         received_group_id = recipe_parameters["dcgid"]
         if received_group_id == str(data_collection_group_id):
-            result_received.put(Point3D(*message[0]["max_voxel"]))
+            result_received.put(Point3D(*reversed(message[0]["centre_of_mass"])))
         else:
             print(
-                f"Warning: results for {received_group_id} received but expected {data_collection_group_id}"
+                f"Warning: results for {received_group_id} received but expected \
+                    {data_collection_group_id}"
             )
 
     workflows.recipe.wrap_subscribe(
