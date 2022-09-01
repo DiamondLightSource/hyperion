@@ -54,4 +54,31 @@ Stopping the Scan
 To stop a scan that is currently running:
 ```
 curl -X PUT http://127.0.0.1:5000/fast_grid_scan/stop
+
 ```
+
+
+For running local dev logging
+------------------------------
+For development logs a local instance of graylog is needed. This needs to be run with both a mongo and elastic search instance.
+
+First, to build the configured graylog image, navigate to the graylog folder and run:
+
+```
+podman build . --format docker -t graylog:test
+```
+
+Then run the following commands in order:
+```
+podman run -d --net host --pod=graylog-pod --name=mongo mongo:4.2
+```
+```
+podman run -d --net host --pod=graylog-pod -e "http.host=0.0.0.0" -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" --name=elasticsearch docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.0
+```
+```
+podman run -d --net host --pod=graylog-pod -e GRAYLOG_HTTP_EXTERNAL_URI="http://localhost:9000/" -e GRAYLOG_MONGODB_URI="mongodb://localhost:27017/graylog" -e GRAYLOG_ELASTICSEARCH_HOSTS="http://localhost:9200/" --name=graylog localhost/graylog:test
+```
+where `localhost/graylog:test` is the name of the image you built.
+
+
+This uses the generic defaults for a local graylog instance. It can be accessed on `localhost:9000` where the username and password for the graylog portal are both admin.
