@@ -7,15 +7,43 @@ from json import JSONDecodeError
 from queue import Queue
 from typing import Optional, Tuple
 
+import graypy
 from bluesky import RunEngine
+from bluesky.log import config_bluesky_logging
+from bluesky.log import logger as bluesky_logger
 from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
+from ophyd.log import config_ophyd_logging
+from ophyd.log import logger as ophyd_logger
 
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
 
-logger = logging.getLogger(__name__)
+# log all messages to console, graylog and file,
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    "%(asctime)s %(module)s %(name)s %(levelname)s: %(message)s"
+)
+# assign parenthood of ophyd bluesky loggers as artemis
+ophyd_logger.parent = LOGGER
+bluesky_logger.parent = LOGGER
+# Add additional seperate handles to the bluesky and ophyd loggers
+config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
+config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
+
+graylog_handler = graypy.GELFTCPHandler("localhost", 5555)
+graylog_handler.setFormatter(formatter)
+LOGGER.addHandler(graylog_handler)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+LOGGER.addHandler(stream_handler)
+
+file_handler = logging.FileHandler(filename="/tmp/artemis.log")
+file_handler.setFormatter(formatter)
+LOGGER.addHandler(file_handler)
 
 
 class Actions(Enum):
@@ -58,7 +86,7 @@ class BlueskyRunner:
         self.RE = RE
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
-        logger.info(f"Started with parameters: {parameters}")
+        LOGGER.info(f"Started with parameters: {parameters}")
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -99,7 +127,9 @@ class BlueskyRunner:
             command = self.command_queue.get()
             if command.action == Actions.START:
                 try:
-                    self.RE(get_plan(command.parameters))
+                    self.RE(
+                        get_plan(command.parameters)
+                    )  # time this, tag on sampleID in paramaters
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
@@ -153,7 +183,9 @@ if __name__ == "__main__":
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
-        target=lambda: app.run(host="0.0.0.0", debug=True, use_reloader=False),
+        target=lambda: app.run(
+            host="0.0.0.0", port=5003, debug=True, use_reloader=False
+        ),
         daemon=True,
     )
     flask_thread.start()

@@ -4,9 +4,7 @@ import os
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
-from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
-from ophyd.log import config_ophyd_logging
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
@@ -18,9 +16,6 @@ from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.nexus_writing.write_nexus import NexusWriter
 from artemis.parameters import SIM_BEAMLINE, FullParameters
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
-
-config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
-config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
 
 # Tolerance for how close omega must start to 0
 OMEGA_TOLERANCE = 0.1
