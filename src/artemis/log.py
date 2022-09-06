@@ -21,7 +21,7 @@ def set_up_logging(logging_level: Union[str, None], dev_mode: bool) -> None:
     Mode defaults to production and can be switched to dev with the --dev flag on run.
     """
     logging_level = "INFO" if logging_level is None else logging_level
-    file_path = Path(_get_logging_file_path(), "artemis.log")
+    file_path = Path(_get_logging_file_path(), "artemis.txt")
     graylog_host, graylog_port = _get_graylog_configuration(dev_mode)
     formatter = logging.Formatter(
         "[%(asctime)s] %(name)s %(module)s %(levelname)s: %(message)s"
@@ -36,10 +36,11 @@ def set_up_logging(logging_level: Union[str, None], dev_mode: bool) -> None:
         handler.setLevel(logging_level)
         LOGGER.addHandler(handler)
 
-    # for dev
-    set_seperate_ophyd_bluesky_files(
-        logging_level=logging_level, logging_path=_get_logging_file_path()
-    )
+    # for assistance in debugging
+    if dev_mode:
+        set_seperate_ophyd_bluesky_files(
+            logging_level=logging_level, logging_path=_get_logging_file_path()
+        )
 
 
 def _get_graylog_configuration(dev_mode: bool) -> tuple[str, int]:
@@ -55,8 +56,8 @@ def _get_graylog_configuration(dev_mode: bool) -> tuple[str, int]:
         host = "localhost"
         port = 5555
     else:
-        host = "localhost"
-        port = 12201
+        host = "graylog2.diamond.ac.uk"
+        port = 12218
 
     return host, port
 
@@ -75,11 +76,10 @@ def _get_logging_file_path() -> Path:
     logging_path: Path
 
     if beamline:
-        # to do: make this beamline path the one on dls_sw
-        logging_path = Path("./tmp/" + beamline + "/")
+        logging_path = Path("/dls_sw/" + beamline + "/logs/bluesky/")
     else:
         logging_path = Path("./tmp/dev/")
-    Path(logging_path).mkdir(parents=True, exist_ok=True)
+        Path(logging_path).mkdir(parents=True, exist_ok=True)
 
     return logging_path
 
