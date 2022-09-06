@@ -1,7 +1,7 @@
 import logging
 from os import environ
 from pathlib import Path
-from typing import Union
+from typing import Tuple, Union
 
 import graypy
 from bluesky.log import config_bluesky_logging
@@ -43,7 +43,7 @@ def set_up_logging(logging_level: Union[str, None], dev_mode: bool) -> None:
         )
 
 
-def _get_graylog_configuration(dev_mode: bool) -> tuple[str, int]:
+def _get_graylog_configuration(dev_mode: bool) -> Tuple[str, int]:
     """Get the host and port for the  graylog interaction.
 
     If running on dev mode, this switches to localhost. Otherwise it publishes to the
