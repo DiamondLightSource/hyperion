@@ -31,6 +31,23 @@ You can start the bluesky runner by doing the following:
 ```
 pipenv run artemis
 ```
+The default behaviour of which is to run artemis with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/artemis.txt on the shared file system. 
+
+To run locally in a dev envrionment use
+```
+pipenv run artemis --dev
+```
+This will log to a local graylog instance instead and into a file at `./tmp/dev/artemis.txt`. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
+
+This uses the generic defaults for a local graylog instance. It can be accessed on `localhost:9000` where the username and password for the graylog portal are both admin.
+
+The logging level of artemis can be selected with the flag
+```
+pipenv run artemis --dev --logging-level DEBUG
+```
+
+**DO NOT** run artemis at DEBUG level on production (without the --dev flag). This will flood graylog with messages and make people very grumpy.
+
 
 Starting a scan
 --------------
@@ -56,16 +73,3 @@ To stop a scan that is currently running:
 curl -X PUT http://127.0.0.1:5003/fast_grid_scan/stop
 
 ```
-
-
-For running local dev logging
-------------------------------
-For development logs a local instance of graylog is needed. This needs to be run with both a mongo and elastic search instance. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
-
-This uses the generic defaults for a local graylog instance. It can be accessed on `localhost:9000` where the username and password for the graylog portal are both admin. To run artemis in this mode use the `--dev` flag with the run command.
-
-You can also choose the logging level, like:
-```
-pipenv run artemis --dev --logging-level DEBUG
-```
-Without these flags the default behaviour will log to production graylog logs (not yet) with a logging level of INFO.
