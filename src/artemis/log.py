@@ -24,9 +24,8 @@ def set_up_logging(logging_level: Union[str, None], dev_mode: bool) -> None:
     file_path = Path(_get_logging_file_path(), "artemis.log")
     graylog_host, graylog_port = _get_graylog_configuration(dev_mode)
     formatter = logging.Formatter(
-        "%(asctime)s %(module)s %(name)s %(levelname)s: %(message)s"
+        "[%(asctime)s] %(name)s %(module)s %(levelname)s: %(message)s"
     )
-
     handlers: dict[str, logging.Handler] = {
         "graylog": graypy.GELFTCPHandler(graylog_host, graylog_port),
         "stream": logging.StreamHandler(),
@@ -56,7 +55,6 @@ def _get_graylog_configuration(dev_mode: bool) -> tuple[str, int]:
         host = "localhost"
         port = 5555
     else:
-        # find the real values for these
         host = "localhost"
         port = 12201
 
@@ -77,6 +75,7 @@ def _get_logging_file_path() -> Path:
     logging_path: Path
 
     if beamline:
+        # to do: make this beamline path the one on dls_sw
         logging_path = Path("./tmp/" + beamline + "/")
     else:
         logging_path = Path("./tmp/dev/")
