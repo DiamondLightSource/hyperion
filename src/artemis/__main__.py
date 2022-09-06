@@ -1,5 +1,5 @@
+import argparse
 import atexit
-import logging
 import threading
 from dataclasses import dataclass
 from enum import Enum
@@ -7,43 +7,14 @@ from json import JSONDecodeError
 from queue import Queue
 from typing import Optional, Tuple
 
-import graypy
 from bluesky import RunEngine
-from bluesky.log import config_bluesky_logging
-from bluesky.log import logger as bluesky_logger
 from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
-from ophyd.log import config_ophyd_logging
-from ophyd.log import logger as ophyd_logger
 
+import artemis.log
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
-
-# log all messages to console, graylog and file,
-LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.DEBUG)
-formatter = logging.Formatter(
-    "%(asctime)s %(module)s %(name)s %(levelname)s: %(message)s"
-)
-# assign parenthood of ophyd bluesky loggers as artemis
-ophyd_logger.parent = LOGGER
-bluesky_logger.parent = LOGGER
-# Add additional seperate handles to the bluesky and ophyd loggers
-config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
-config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
-
-graylog_handler = graypy.GELFTCPHandler("localhost", 5555)
-graylog_handler.setFormatter(formatter)
-LOGGER.addHandler(graylog_handler)
-
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
-LOGGER.addHandler(stream_handler)
-
-file_handler = logging.FileHandler(filename="/tmp/artemis.log")
-file_handler.setFormatter(formatter)
-LOGGER.addHandler(file_handler)
 
 
 class Actions(Enum):
@@ -86,7 +57,7 @@ class BlueskyRunner:
         self.RE = RE
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
-        LOGGER.info(f"Started with parameters: {parameters}")
+        artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -180,6 +151,22 @@ def create_app(
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Use dev options, such as local graylog instances and S03",
+    )
+    parser.add_argument(
+        "--logging-level",
+        type=str,
+        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
+        help="Choose overall logging level, defaults to INFO",
+    )
+    args = parser.parse_args()
+    artemis.log.set_up_logging(logging_level=args.logging_level, dev_mode=args.dev)
+
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
