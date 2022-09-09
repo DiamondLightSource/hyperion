@@ -1,10 +1,10 @@
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
-
-from artemis.devices.aperture import Aperture
-from artemis.devices.backlight import Backlight
-from artemis.devices.oav import OAV
+from dodal import i03
+from dodal.devices.aperture import Aperture
+from dodal.devices.backlight import Backlight
+from dodal.devices.oav import OAV
 
 
 def prepare_for_snapshot(backlight: Backlight, aperture: Aperture):
@@ -37,11 +37,15 @@ def snapshot_plan(
 
 
 if __name__ == "__main__":
-    beamline = "BL03I"
-    backlight = Backlight(name="Backlight", prefix=f"{beamline}")
-    aperture = Aperture(name="Aperture", prefix=f"{beamline}-MO-MAPT-01:")
-    oav = OAV(name="oav", prefix=f"{beamline}-DI-OAV-01")
     snapshot_filename = "snapshot"
     snapshot_directory = "."
     RE = RunEngine()
-    RE(snapshot_plan(oav, backlight, aperture, snapshot_filename, snapshot_directory))
+    RE(
+        snapshot_plan(
+            i03.oav(),
+            i03.backlight(),
+            i03.aperture(),
+            snapshot_filename,
+            snapshot_directory,
+        )
+    )

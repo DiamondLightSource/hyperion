@@ -6,14 +6,16 @@ import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
+from dodal import i03
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
+from dodal.devices.motors import I03Smargon
+from dodal.devices.slit_gaps import SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
+from dodal.devices.zebra import Zebra
 from ophyd.log import config_ophyd_logging
 
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
-from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.devices.slit_gaps import SlitGaps
-from artemis.devices.synchrotron import Synchrotron
-from artemis.devices.undulator import Undulator
 from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.nexus_writing.write_nexus import NexusWriter
 from artemis.parameters import SIM_BEAMLINE, FullParameters
@@ -42,11 +44,15 @@ def update_params_from_epics_devices(
 
 @bpp.run_decorator()
 def run_gridscan(
-    fgs_composite: FGSComposite,
+    fgs_motors: FastGridScan,
+    zebra: Zebra,
+    undulator: Undulator,
+    synchrotron: Synchrotron,
+    slit_gaps: SlitGaps,
+    sample_motors: I03Smargon,
     eiger: EigerDetector,
     parameters: FullParameters,
 ):
-    sample_motors = fgs_composite.sample_motors
 
     current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
     assert abs(current_omega - parameters.detector_params.omega_start) < OMEGA_TOLERANCE
@@ -56,9 +62,9 @@ def run_gridscan(
 
     yield from update_params_from_epics_devices(
         parameters,
-        fgs_composite.undulator,
-        fgs_composite.synchrotron,
-        fgs_composite.slit_gaps,
+        undulator,
+        synchrotron,
+        slit_gaps,
     )
 
     ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
@@ -72,9 +78,6 @@ def run_gridscan(
 
     for id in datacollection_ids:
         run_start(id)
-
-    fgs_motors = fgs_composite.fast_grid_scan
-    zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
@@ -128,22 +131,35 @@ def get_plan(parameters: FullParameters):
     Returns:
         Generator: The plan for the gridscan
     """
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=parameters.insertion_prefix,
-        name="fgs",
-        prefix=parameters.beamline,
+
+    fast_grid_scan = i03.fast_grid_scan()
+    zebra = i03.zebra()
+    undulator = i03.undulator()
+    synchrotron = i03.synchrotron()
+    slit_gaps = i03.slit_gaps()
+    sample_motors = i03.sample_motors()
+    eiger = i03.eiger()
+
+    for device in [
+        fast_grid_scan,
+        zebra,
+        undulator,
+        synchrotron,
+        slit_gaps,
+        sample_motors,
+    ]:
+        device.wait_for_connection()
+
+    return run_gridscan(
+        fast_grid_scan,
+        zebra,
+        undulator,
+        synchrotron,
+        slit_gaps,
+        sample_motors,
+        eiger,
+        parameters,
     )
-
-    # Note, eiger cannot be currently waited on, see #166
-    eiger = EigerDetector(
-        parameters.detector_params,
-        name="eiger",
-        prefix=f"{parameters.beamline}-EA-EIGER-01:",
-    )
-
-    fast_grid_scan_composite.wait_for_connection()
-
-    return run_gridscan(fast_grid_scan_composite, eiger, parameters)
 
 
 if __name__ == "__main__":

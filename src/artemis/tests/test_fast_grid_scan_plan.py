@@ -2,19 +2,21 @@ import types
 from unittest.mock import MagicMock, call, patch
 
 from bluesky.run_engine import RunEngine
-from mockito import ANY, when
-from ophyd.sim import make_fake_device
-
-from artemis.devices.det_dim_constants import (
+from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.devices.slit_gaps import SlitGaps
-from artemis.devices.synchrotron import Synchrotron
-from artemis.devices.undulator import Undulator
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.motors import I03Smargon
+from dodal.devices.slit_gaps import SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
+from dodal.devices.zebra import Zebra
+from mockito import ANY, when
+from ophyd.sim import make_fake_device
+
 from artemis.fast_grid_scan_plan import run_gridscan, update_params_from_epics_devices
 from artemis.ispyb.store_in_ispyb import StoreInIspyb3D
 from artemis.parameters import FullParameters
@@ -77,8 +79,23 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     params = FullParameters()
     params.grid_scan_params.z_steps = 2
 
-    FakeFGSComposite = make_fake_device(FGSComposite)
-    fgs_composite: FGSComposite = FakeFGSComposite(name="fgs", insertion_prefix="")
+    FakeFGS = make_fake_device(FastGridScan)
+    fgs = FakeFGS(name="fgs")
+
+    FakeZebra = make_fake_device(Zebra)
+    zebra = FakeZebra(name="zebra")
+
+    FakeUndulator = make_fake_device(Undulator)
+    undulator = FakeUndulator(name="undulator")
+
+    FakeSynchrotron = make_fake_device(Synchrotron)
+    synchrotron = FakeSynchrotron(name="synchrotron")
+
+    FakeSlitGaps = make_fake_device(SlitGaps)
+    slit_gaps = FakeSlitGaps(name="slit_gaps")
+
+    FakeSmargon = make_fake_device(I03Smargon)
+    sample_motors = FakeSmargon(name="slit_gaps")
 
     FakeEiger = make_fake_device(EigerDetector)
     eiger: EigerDetector = FakeEiger(
@@ -94,7 +111,18 @@ def test_run_gridscan_zocalo_calls(wait_for_result, run_end, run_start):
     )
 
     with patch("artemis.fast_grid_scan_plan.NexusWriter"):
-        list(run_gridscan(fgs_composite, eiger, params))
+        list(
+            run_gridscan(
+                fgs,
+                zebra,
+                undulator,
+                synchrotron,
+                slit_gaps,
+                sample_motors,
+                eiger,
+                params,
+            )
+        )
 
     run_start.assert_has_calls(call(x) for x in dc_ids)
     assert run_start.call_count == len(dc_ids)

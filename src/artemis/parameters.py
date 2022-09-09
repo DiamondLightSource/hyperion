@@ -2,9 +2,9 @@ import copy
 from dataclasses import dataclass, field
 
 from dataclasses_json import dataclass_json
+from dodal.devices.eiger import DetectorParams
+from dodal.devices.fast_grid_scan import GridScanParams
 
-from artemis.devices.eiger import DetectorParams
-from artemis.devices.fast_grid_scan import GridScanParams
 from artemis.ispyb.ispyb_dataclass import IspybParams
 from artemis.utils import Point2D, Point3D
 
