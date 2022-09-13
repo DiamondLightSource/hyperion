@@ -15,9 +15,10 @@ from ophyd import (
 )
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
-from src.artemis.devices.motors import XYZLimitBundle
-from src.artemis.devices.status import await_value
-from src.artemis.utils import Point3D
+
+from artemis.devices.motors import XYZLimitBundle
+from artemis.devices.status import await_value
+from artemis.utils import Point3D
 
 
 @dataclass

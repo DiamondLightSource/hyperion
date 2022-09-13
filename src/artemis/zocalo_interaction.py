@@ -1,21 +1,20 @@
 import getpass
 import queue
 import socket
-from time import sleep
 
 import workflows.recipe
 import workflows.transport
 import zocalo.configuration
 from workflows.transport import lookup
 
-from src.artemis.utils import Point3D
+from artemis.utils import Point3D
 
 TIMEOUT = 30
 
 
 def _get_zocalo_connection():
     zc = zocalo.configuration.from_file()
-    zc.activate()
+    zc.activate_environment("artemis")
 
     transport = lookup("PikaTransport")()
     transport.connect()
@@ -42,20 +41,23 @@ def _send_to_zocalo(parameters: dict):
 
 def run_start(data_collection_id: int):
     """Tells the data analysis pipeline we have started a grid scan.
-    Assumes that appropriate data has already been put into ISpyB
+    Assumes that appropriate data has already been put into ISPyB
 
     Args:
-        data_collection_id (int): The ID of the data collection representing the gridscan in ISpyB
+        data_collection_id (int): The ID of the data collection representing the
+                                  gridscan in ISPyB
     """
     _send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
 
 
 def run_end(data_collection_id: int):
     """Tells the data analysis pipeline we have finished a grid scan.
-    Assumes that appropriate data has already been put into ISpyB
+    Assumes that appropriate data has already been put into ISPyB
 
     Args:
-        data_collection_id (int): The ID of the data collection representing the gridscan in ISpyB
+        data_collection_id (int): The ID of the data collection representing the
+                                  gridscan in ISPyB
+
     """
     _send_to_zocalo(
         {
@@ -69,7 +71,9 @@ def run_end(data_collection_id: int):
 def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Point3D:
     """Block until a result is received from Zocalo.
     Args:
-        data_collection_group_id (int): The ID of the data collection group representing the gridscan in ISpyB
+        data_collection_group_id (int): The ID of the data collection group representing
+                                        the gridscan in ISPyB
+
         timeout (float): The time in seconds to wait for the result to be received.
     Returns:
         Point in grid co-ordinates that is the centre point to move to
@@ -89,7 +93,8 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
             result_received.put(Point3D(*reversed(message[0]["centre_of_mass"])))
         else:
             print(
-                f"Warning: results for {received_group_id} received but expected {data_collection_group_id}"
+                f"Warning: results for {received_group_id} received but expected \
+                    {data_collection_group_id}"
             )
 
     workflows.recipe.wrap_subscribe(

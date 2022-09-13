@@ -5,9 +5,9 @@ from mockito import ANY, mock, verify, when
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 
-from src.artemis.devices.det_dim_constants import EIGER2_X_16M_SIZE
-from src.artemis.devices.detector import DetectorParams
-from src.artemis.devices.eiger import EigerDetector
+from artemis.devices.det_dim_constants import EIGER2_X_16M_SIZE
+from artemis.devices.detector import DetectorParams
+from artemis.devices.eiger import EigerDetector
 
 TEST_DETECTOR_SIZE_CONSTANTS = EIGER2_X_16M_SIZE
 
@@ -133,7 +133,7 @@ def test_stage_raises_exception_if_odin_initialisation_status_not_ok(fake_eiger)
 @pytest.mark.parametrize(
     "roi_mode, expected_num_roi_enable_calls", [(True, 1), (False, 0)]
 )
-@patch("src.artemis.devices.eiger.await_value")
+@patch("artemis.devices.eiger.await_value")
 def test_stage_enables_roi_mode_correctly(
     mock_await, fake_eiger, roi_mode, expected_num_roi_enable_calls
 ):
@@ -206,7 +206,7 @@ def test_unsuccessful_roi_mode_change_results_in_logged_error(mock_and, fake_eig
     fake_eiger.log.error.assert_called_once_with("Failed to switch to ROI mode")
 
 
-@patch("src.artemis.devices.eiger.EigerOdin.check_odin_state")
+@patch("artemis.devices.eiger.EigerOdin.check_odin_state")
 def test_bad_odin_state_results_in_unstage_returning_bad_status(
     mock_check_odin_state, fake_eiger
 ):
@@ -225,7 +225,7 @@ def test_given_failing_odin_when_stage_then_exception_raised(fake_eiger):
         assert error_contents in e.value
 
 
-@patch("src.artemis.devices.eiger.await_value")
+@patch("artemis.devices.eiger.await_value")
 def test_stage_runs_successfully(mock_await, fake_eiger):
     fake_eiger.odin.nodes.clear_odin_errors = MagicMock()
     fake_eiger.odin.check_odin_initialised = MagicMock()

@@ -8,8 +8,8 @@ from unittest.mock import patch
 import pytest
 from flask.testing import FlaskClient
 
-from src.artemis.__main__ import Actions, Status, create_app
-from src.artemis.parameters import FullParameters
+from artemis.__main__ import Actions, Status, create_app
+from artemis.parameters import FullParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -51,7 +51,7 @@ def test_env():
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
     with app.test_client() as client:
-        with patch("src.artemis.__main__.get_plan") as _:
+        with patch("artemis.__main__.get_plan") as _:
             yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()

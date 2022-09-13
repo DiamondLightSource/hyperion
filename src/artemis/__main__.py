@@ -1,7 +1,5 @@
 import atexit
 import logging
-import os
-import sys
 import threading
 from dataclasses import dataclass
 from enum import Enum
@@ -14,11 +12,8 @@ from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
 
-from src.artemis.fast_grid_scan_plan import get_plan
-from src.artemis.parameters import FullParameters
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
+from artemis.fast_grid_scan_plan import get_plan
+from artemis.parameters import FullParameters
 
 logger = logging.getLogger(__name__)
 
