@@ -6,7 +6,7 @@ from dataclasses_json import dataclass_json
 from artemis.devices.eiger import DetectorParams
 from artemis.devices.fast_grid_scan import GridScanParams
 from artemis.ispyb.ispyb_dataclass import IspybParams
-from artemis.utils import Point2D, Point3D
+from artemis.utils import Point3D
 
 SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
