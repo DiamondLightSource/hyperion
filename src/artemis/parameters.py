@@ -41,7 +41,6 @@ class FullParameters:
         DetectorParams(
             current_energy=100,
             exposure_time=0.1,
-            acquisition_id="test",
             directory="/tmp",
             prefix="file_name",
             run_number=0,

@@ -18,7 +18,6 @@
     "detector_params": {
         "current_energy": 100,
         "exposure_time": 0.1,
-        "acquisition_id": "test",
         "directory": "/tmp",
         "prefix": "file_name",
         "run_number": 0,
@@ -41,8 +40,16 @@
             "y": 20.0,
             "z": 30.0
         },
-        "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
-        "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
+        "xtal_snapshots_omega_start": [
+            "test_1_y",
+            "test_2_y",
+            "test_3_y"
+        ],
+        "xtal_snapshots_omega_end": [
+            "test_1_z",
+            "test_2_z",
+            "test_3_z"
+        ],
         "xtal_snapshots": [
             "test_1",
             "test_2",
