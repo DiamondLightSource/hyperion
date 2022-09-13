@@ -6,7 +6,6 @@ def create_detector_params_with_directory(directory):
     return DetectorParams(
         100,
         1.0,
-        1,
         directory,
         "test",
         0,
