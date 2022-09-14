@@ -14,7 +14,12 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 
 from artemis.fast_grid_scan_plan import get_plan
-from artemis.flux_plan import get_flux, predict_flux
+from artemis.flux_plan import (
+    FluxCalculationParameters,
+    FluxPredictionParameters,
+    get_flux,
+    predict_flux,
+)
 from artemis.parameters import FullParameters
 
 logger = logging.getLogger(__name__)
@@ -143,15 +148,13 @@ class FastGridScan(Resource):
 
 
 class FluxPrediction(Resource):
-    def __init__(self, runner) -> None:
-        super().__init__()
-        self.runner = runner
-
     def put(self, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                status_and_message = self.runner.start(predict_flux, "Large")
+                parameters = FluxPredictionParameters.from_json(request.data)
+                flux = predict_flux(parameters)
+                status_and_message = StatusAndMessage(Status.SUCCESS, flux)
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
@@ -163,16 +166,13 @@ class FluxPrediction(Resource):
 
 
 class FluxCalculation(Resource):
-    def __init__(self, runner) -> None:
-        super().__init__()
-        self.runner = runner
-
     def put(self, action):
-        print("Comes in put for calculation")
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                status_and_message = self.runner.start(get_flux, "Large")
+                parameters = FluxCalculationParameters.from_json(request.data)
+                flux = get_flux(parameters)
+                status_and_message = StatusAndMessage(Status.SUCCESS, flux)
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
