@@ -197,12 +197,10 @@ def create_app(
     api.add_resource(
         FluxCalculation,
         "/flux_calculation/<string:action>",
-        resource_class_args=[runner],
     )
     api.add_resource(
         FluxPrediction,
         "/flux_prediction/<string:action>",
-        resource_class_args=[runner],
     )
     return app, runner
 
