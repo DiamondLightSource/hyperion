@@ -1,11 +1,12 @@
 import atexit
 import logging
 import threading
+import traceback
 from dataclasses import dataclass
 from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
-from typing import Optional, Tuple
+from typing import Generator, Optional, Tuple
 
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
@@ -13,6 +14,7 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 
 from artemis.fast_grid_scan_plan import get_plan
+from artemis.flux_plan import get_flux, predict_flux
 from artemis.parameters import FullParameters
 
 logger = logging.getLogger(__name__)
@@ -35,6 +37,7 @@ class Status(Enum):
 @dataclass
 class Command:
     action: Actions
+    plan: Optional[Generator] = None
     parameters: Optional[FullParameters] = None
 
 
@@ -57,7 +60,9 @@ class BlueskyRunner:
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
 
-    def start(self, parameters: FullParameters) -> StatusAndMessage:
+    def start(
+        self, plan, parameters: Optional[FullParameters] = None
+    ) -> StatusAndMessage:
         logger.info(f"Started with parameters: {parameters}")
         if (
             self.current_status.status == Status.BUSY.value
@@ -66,7 +71,7 @@ class BlueskyRunner:
             return StatusAndMessage(Status.FAILED, "Bluesky already running")
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
-            self.command_queue.put(Command(Actions.START, parameters))
+            self.command_queue.put(Command(Actions.START, plan, parameters))
             return StatusAndMessage(Status.SUCCESS)
 
     def stopping_thread(self):
@@ -99,10 +104,12 @@ class BlueskyRunner:
             command = self.command_queue.get()
             if command.action == Actions.START:
                 try:
-                    self.RE(get_plan(command.parameters))
+                    self.RE(command.plan(command.parameters))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
+                    tb = traceback.format_exc()
+                    print(tb)
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow
                         self.last_run_aborted = False
@@ -124,7 +131,48 @@ class FastGridScan(Resource):
         if action == Actions.START.value:
             try:
                 parameters = FullParameters.from_json(request.data)
-                status_and_message = self.runner.start(parameters)
+                status_and_message = self.runner.start(get_plan, parameters)
+            except JSONDecodeError as exception:
+                status_and_message = StatusAndMessage(Status.FAILED, str(exception))
+        elif action == Actions.STOP.value:
+            status_and_message = self.runner.stop()
+        return status_and_message.to_dict()
+
+    def get(self, action):
+        return self.runner.current_status.to_dict()
+
+
+class FluxPrediction(Resource):
+    def __init__(self, runner) -> None:
+        super().__init__()
+        self.runner = runner
+
+    def put(self, action):
+        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
+        if action == Actions.START.value:
+            try:
+                status_and_message = self.runner.start(predict_flux, "Large")
+            except JSONDecodeError as exception:
+                status_and_message = StatusAndMessage(Status.FAILED, str(exception))
+        elif action == Actions.STOP.value:
+            status_and_message = self.runner.stop()
+        return status_and_message.to_dict()
+
+    def get(self, action):
+        return self.runner.current_status.to_dict()
+
+
+class FluxCalculation(Resource):
+    def __init__(self, runner) -> None:
+        super().__init__()
+        self.runner = runner
+
+    def put(self, action):
+        print("Comes in put for calculation")
+        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
+        if action == Actions.START.value:
+            try:
+                status_and_message = self.runner.start(get_flux, "Large")
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
@@ -145,6 +193,16 @@ def create_app(
     api = Api(app)
     api.add_resource(
         FastGridScan, "/fast_grid_scan/<string:action>", resource_class_args=[runner]
+    )
+    api.add_resource(
+        FluxCalculation,
+        "/flux_calculation/<string:action>",
+        resource_class_args=[runner],
+    )
+    api.add_resource(
+        FluxPrediction,
+        "/flux_prediction/<string:action>",
+        resource_class_args=[runner],
     )
     return app, runner
 
