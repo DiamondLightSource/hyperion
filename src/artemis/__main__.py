@@ -13,7 +13,7 @@ from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
 
-from artemis.fast_grid_scan_plan import get_plan
+from artemis.fast_grid_scan_plan import get_fgs_plan
 from artemis.flux_plan import (
     FluxCalculationParameters,
     FluxPredictionParameters,
@@ -136,7 +136,7 @@ class FastGridScan(Resource):
         if action == Actions.START.value:
             try:
                 parameters = FullParameters.from_json(request.data)
-                status_and_message = self.runner.start(get_plan, parameters)
+                status_and_message = self.runner.start(get_fgs_plan, parameters)
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
@@ -148,6 +148,10 @@ class FastGridScan(Resource):
 
 
 class FluxPrediction(Resource):
+    def __init__(self, runner: BlueskyRunner) -> None:
+        super().__init__()
+        self.runner = runner
+
     def put(self, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
@@ -166,6 +170,10 @@ class FluxPrediction(Resource):
 
 
 class FluxCalculation(Resource):
+    def __init__(self, runner: BlueskyRunner) -> None:
+        super().__init__()
+        self.runner = runner
+
     def put(self, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
@@ -197,10 +205,10 @@ def create_app(
     api.add_resource(
         FluxCalculation,
         "/flux_calculation/<string:action>",
+        resource_class_args=[runner],
     )
     api.add_resource(
-        FluxPrediction,
-        "/flux_prediction/<string:action>",
+        FluxPrediction, "/flux_prediction/<string:action>", resource_class_args=[runner]
     )
     return app, runner
 

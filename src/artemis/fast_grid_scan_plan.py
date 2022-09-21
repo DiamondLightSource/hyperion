@@ -119,7 +119,7 @@ def run_gridscan(
     )
 
 
-def get_plan(parameters: FullParameters):
+def get_fgs_plan(parameters: FullParameters):
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
@@ -160,4 +160,4 @@ if __name__ == "__main__":
 
     parameters = FullParameters(beamline=args.beamline)
 
-    RE(get_plan(parameters))
+    RE(get_fgs_plan(parameters))
