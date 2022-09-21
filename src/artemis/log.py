@@ -15,7 +15,9 @@ ophyd_logger.parent = LOGGER
 bluesky_logger.parent = LOGGER
 
 
-def set_up_logging(logging_level: Union[str, None], dev_mode: bool) -> None:
+def set_up_logging(
+    logging_level: Union[str, None] = "INFO", dev_mode: bool = False
+) -> None:
     """Set up the logging level and instances for user chosen level of logging.
 
     Mode defaults to production and can be switched to dev with the --dev flag on run.
