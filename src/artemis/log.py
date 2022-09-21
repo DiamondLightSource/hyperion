@@ -44,6 +44,14 @@ def set_up_logging(
             logging_level=logging_level, logging_path=_get_logging_file_path()
         )
 
+    # Warn users if trying to run in prod in debug mode
+    if not dev_mode and logging_level == "DEBUG":
+        LOGGER.warning(
+            'STARTING ARTEMIS IN DEBUG WITHOUT "--dev" WILL FLOOD PRODUCTION GRAYLOG'
+            " WITH MESSAGES. If you really need debug messages, set up a"
+            " local graylog instead!\n"
+        )
+
 
 def _get_graylog_configuration(dev_mode: bool) -> Tuple[str, int]:
     """Get the host and port for the  graylog interaction.

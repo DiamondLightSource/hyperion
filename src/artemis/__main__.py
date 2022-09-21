@@ -164,14 +164,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     artemis.log.set_up_logging(logging_level=args.logging_level, dev_mode=args.dev)
-
-    if not args.dev and args.logging_level == "DEBUG":
-        artemis.log.LOGGER.warning(
-            'Starting Artemis in DEBUG without "--dev" will flood production'
-            " graylog with messages. If you really need debug messages, maybe set up a"
-            " local graylog instead.\n"
-        )
-
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
