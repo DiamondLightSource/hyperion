@@ -53,13 +53,9 @@ def _get_graylog_configuration(dev_mode: bool) -> Tuple[str, int]:
         (host,port): A tuple of the relevent host and port for graylog.
     """
     if dev_mode:
-        host = "localhost"
-        port = 5555
+        return "localhost", 5555
     else:
-        host = "graylog2.diamond.ac.uk"
-        port = 12218
-
-    return host, port
+        return "graylog2.diamond.ac.uk", 12218
 
 
 def _get_logging_file_path() -> Path:
