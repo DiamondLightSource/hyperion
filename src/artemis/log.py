@@ -3,9 +3,9 @@ from os import environ
 from pathlib import Path
 from typing import Tuple, Union
 
-import graypy
 from bluesky.log import config_bluesky_logging
 from bluesky.log import logger as bluesky_logger
+from graypy import GELFTCPHandler
 from ophyd.log import config_ophyd_logging
 from ophyd.log import logger as ophyd_logger
 
@@ -27,7 +27,7 @@ def set_up_logging(logging_level: Union[str, None], dev_mode: bool) -> None:
         "[%(asctime)s] %(name)s %(module)s %(levelname)s: %(message)s"
     )
     handlers: dict[str, logging.Handler] = {
-        "graylog": graypy.GELFTCPHandler(graylog_host, graylog_port),
+        "graylog": GELFTCPHandler(graylog_host, graylog_port),
         "stream": logging.StreamHandler(),
         "file": logging.FileHandler(filename=file_path),
     }
