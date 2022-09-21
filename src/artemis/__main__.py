@@ -98,9 +98,7 @@ class BlueskyRunner:
             command = self.command_queue.get()
             if command.action == Actions.START:
                 try:
-                    self.RE(
-                        get_plan(command.parameters)
-                    )  # time this, tag on sampleID in paramaters
+                    self.RE(get_plan(command.parameters))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
