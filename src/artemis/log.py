@@ -15,14 +15,11 @@ ophyd_logger.parent = LOGGER
 bluesky_logger.parent = LOGGER
 
 
-def set_up_logging(
-    logging_level: Union[str, None] = "INFO", dev_mode: bool = False
-) -> None:
+def set_up_logging(logging_level: str = "INFO", dev_mode: bool = False) -> None:
     """Set up the logging level and instances for user chosen level of logging.
 
     Mode defaults to production and can be switched to dev with the --dev flag on run.
     """
-    logging_level = "INFO" if logging_level is None else logging_level
     file_path = Path(_get_logging_file_path(), "artemis.txt")
     graylog_host, graylog_port = _get_graylog_configuration(dev_mode)
     formatter = logging.Formatter(
