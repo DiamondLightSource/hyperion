@@ -12,13 +12,12 @@ class FluxCalculator(Device):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.energy_signal.subscribe(self._update_flux)
+        self.intensity_signal.subscribe(self._update_flux)
 
-        def update_flux(*_, **__):
-            new_value = self.calculate_flux()
-            self.flux.put(new_value)
-
-        self.energy_signal.subscribe(update_flux)
-        self.intensity_signal.subscribe(update_flux)
+    def _update_flux(self, *_, **__):
+        new_value = self.calculate_flux()
+        self.flux.put(new_value)
 
     def get_flux(self):
         time.sleep(0.5)

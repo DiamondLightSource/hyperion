@@ -19,15 +19,36 @@ D = 2.118311635
         (1 / 1000, 1e-6, 1e-12, (A - B + C - D)),
     ],
 )
-def test_get_flux_returns_correct_values_for_known_input(
+def test_calculate_flux_returns_correct_values_for_known_input(
     energy, intensity, aperture_size, expected_result
 ):
-    flux_calculator = FluxCalculator(prefix="BL03I", name="flux calculator")
+    flux_calculator = FluxCalculator(prefix="BL03S", name="flux calculator")
     flux_calculator.aperture_size_signal.put(aperture_size)
-    mock_energy_get = MagicMock(get=MagicMock(return_value=energy))
-    mock_intensity_get = MagicMock(get=MagicMock(return_value=intensity))
-    with patch.object(FluxCalculator, "energy_signal", mock_energy_get), patch.object(
-        FluxCalculator, "intensity_signal", mock_intensity_get
-    ):
-        flux_result = flux_calculator.get_flux()
+    mock_energy_signal = MagicMock(get=MagicMock(return_value=energy))
+    mock_intensity_signal = MagicMock(get=MagicMock(return_value=intensity))
+    with patch.object(
+        FluxCalculator, "energy_signal", mock_energy_signal
+    ), patch.object(FluxCalculator, "intensity_signal", mock_intensity_signal):
+        flux_result = flux_calculator.calculate_flux()
     assert flux_result == pytest.approx(expected_result, rel=1e-12)
+
+
+@patch.object(FluxCalculator, "flux")
+@patch.object(FluxCalculator, "calculate_flux")
+def test_update_flux_calculates_and_updates_flux(
+    mock_calculate: MagicMock, mock_flux: MagicMock
+):
+    dummy_flux_value = 42
+    mock_calculate.return_value = dummy_flux_value
+    flux_calculator = FluxCalculator(prefix="BL03S", name="flux calculator")
+    flux_calculator._update_flux()
+    mock_calculate.assert_called_once()
+    mock_flux.put.assert_called_once_with(dummy_flux_value)
+
+
+@patch("time.sleep", MagicMock())
+@patch.object(FluxCalculator, "flux")
+def test_get_flux_gets_flux(mock_flux: MagicMock):
+    flux_calculator = FluxCalculator(prefix="BL03S", name="flux calculator")
+    flux_calculator.get_flux()
+    mock_flux.get.assert_called_once()
