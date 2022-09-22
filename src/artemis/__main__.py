@@ -18,6 +18,8 @@ from artemis.flux_plan import (
     FluxCalculationParameters,
     FluxPredictionParameters,
     get_flux,
+    get_flux_calculation_plan,
+    get_flux_prediction_plan,
     predict_flux,
 )
 from artemis.parameters import FullParameters
@@ -68,6 +70,7 @@ class BlueskyRunner:
     def start(
         self, plan, parameters: Optional[FullParameters] = None
     ) -> StatusAndMessage:
+        print("Started plan")
         logger.info(f"Started with parameters: {parameters}")
         if (
             self.current_status.status == Status.BUSY.value
@@ -157,8 +160,11 @@ class FluxPrediction(Resource):
         if action == Actions.START.value:
             try:
                 parameters = FluxPredictionParameters.from_json(request.data)
+                status_and_message = self.runner.start(
+                    get_flux_prediction_plan, parameters
+                )
                 flux = predict_flux(parameters)
-                status_and_message = StatusAndMessage(Status.SUCCESS, flux)
+                status_and_message.message = str(flux)
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
@@ -179,8 +185,11 @@ class FluxCalculation(Resource):
         if action == Actions.START.value:
             try:
                 parameters = FluxCalculationParameters.from_json(request.data)
+                status_and_message = self.runner.start(
+                    get_flux_calculation_plan, parameters
+                )
                 flux = get_flux(parameters)
-                status_and_message = StatusAndMessage(Status.SUCCESS, flux)
+                status_and_message.message = str(flux)
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:

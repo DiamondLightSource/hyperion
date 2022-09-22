@@ -1,3 +1,8 @@
+import time
+
+import bluesky.preprocessors as bpp
+from bluesky.plan_stubs import null, rd
+
 from artemis.devices.flux_calculator import FluxCalculator
 from artemis.flux_parameters import FluxCalculationParameters, FluxPredictionParameters
 
@@ -7,6 +12,22 @@ def get_flux(parameters: FluxCalculationParameters):
     flux_calculator.wait_for_connection()
     flux_calculator.aperture_size_signal.put(parameters.aperture_size)
     return flux_calculator.get_flux()
+
+
+@bpp.run_decorator()
+def flux_calculation_plan(flux_calculator: FluxCalculator):
+    flux_calculation_value = yield from rd(flux_calculator)
+    print(f"{flux_calculation_value=}")
+
+
+def get_flux_calculation_plan(parameters: FluxCalculationParameters):
+    flux_calculator = FluxCalculator(
+        name="Flux calculator", prefix=parameters.beamline, read_attrs=["flux"]
+    )
+    flux_calculator.wait_for_connection(all_signals=True)
+    flux_calculator.aperture_size_signal.put(parameters.aperture_size)
+    time.sleep(0.1)
+    return flux_calculation_plan(flux_calculator)
 
 
 def predict_flux(parameters: FluxPredictionParameters):
@@ -27,3 +48,7 @@ def predict_flux(parameters: FluxPredictionParameters):
         * 1e12
     )
     return predicted_flux
+
+
+def get_flux_prediction_plan(parameters):
+    return null()
