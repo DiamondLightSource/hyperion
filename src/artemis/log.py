@@ -28,12 +28,12 @@ def set_up_logging(
     formatter = logging.Formatter(
         "[%(asctime)s] %(name)s %(module)s %(levelname)s: %(message)s"
     )
-    handlers: dict[str, logging.Handler] = {
-        "graylog": GELFTCPHandler(graylog_host, graylog_port),
-        "stream": logging.StreamHandler(),
-        "file": logging.FileHandler(filename=file_path),
-    }
-    for handler in handlers.values():
+    handlers: list[logging.Handler] = [
+        GELFTCPHandler(graylog_host, graylog_port),
+        logging.StreamHandler(),
+        logging.FileHandler(filename=file_path),
+    ]
+    for handler in handlers:
         handler.setFormatter(formatter)
         handler.setLevel(logging_level)
         LOGGER.addHandler(handler)
