@@ -30,34 +30,36 @@ def dummy_flux_prediction_parameters(
     )
 
 
-def test_get_flux_waits_for_connection():
-    with patch("artemis.flux_plan.FluxCalculator") as mock_flux_calculator:
-        mock_calc = mock_flux_calculator.return_value
-        get_flux(dummy_flux_calculation_params())
-        mock_calc.wait_for_connection.assert_called_once()
+@patch("artemis.flux_plan.FluxCalculator")
+def test_get_flux_waits_for_connection(mock_flux_calculator):
+    mock_calc = mock_flux_calculator.return_value
+    get_flux(dummy_flux_calculation_params())
+    mock_calc.wait_for_connection.assert_called_once()
 
 
-def test_get_flux_sets_aperture_size_on_flux_calculator():
-    with patch("artemis.flux_plan.FluxCalculator") as mock_flux_calculator:
-        mock_calc = mock_flux_calculator.return_value
-        get_flux(dummy_flux_calculation_params())
-        mock_calc.aperture_size_signal.put.assert_called_once_with(TEST_APERTURE_SIZE)
+@patch("artemis.flux_plan.FluxCalculator")
+def test_get_flux_sets_aperture_size_on_flux_calculator(mock_flux_calculator):
+    mock_calc = mock_flux_calculator.return_value
+    get_flux(dummy_flux_calculation_params())
+    mock_calc.aperture_size_signal.put.assert_called_once_with(TEST_APERTURE_SIZE)
 
 
-@patch("artemis.flux_plan.rd")
-def test_flux_calculation_plan_waits_for_connection(mock_rd):
-    with patch("artemis.flux_plan.FluxCalculator") as mock_flux_calculator:
-        mock_calc: MagicMock = mock_flux_calculator.return_value
-        list(get_flux_calculation_plan(dummy_flux_calculation_params()))
-        mock_calc.wait_for_connection.assert_called_once()
+@patch("artemis.flux_plan.rd", MagicMock())
+@patch("artemis.flux_plan.FluxCalculator")
+def test_flux_calculation_plan_waits_for_connection(mock_flux_calculator):
+    mock_calc: MagicMock = mock_flux_calculator.return_value
+    list(get_flux_calculation_plan(dummy_flux_calculation_params()))
+    mock_calc.wait_for_connection.assert_called_once()
 
 
-@patch("artemis.flux_plan.rd")
-def test_flux_calculation_plan_sets_aperture_size_on_flux_calculator(mock_rd):
-    with patch("artemis.flux_plan.FluxCalculator") as mock_flux_calculator:
-        mock_calc: MagicMock = mock_flux_calculator.return_value
-        list(get_flux_calculation_plan(dummy_flux_calculation_params()))
-        mock_calc.aperture_size_signal.put.assert_called_once_with(TEST_APERTURE_SIZE)
+@patch("artemis.flux_plan.rd", MagicMock())
+@patch("artemis.flux_plan.FluxCalculator")
+def test_flux_calculation_plan_sets_aperture_size_on_flux_calculator(
+    mock_flux_calculator,
+):
+    mock_calc: MagicMock = mock_flux_calculator.return_value
+    list(get_flux_calculation_plan(dummy_flux_calculation_params()))
+    mock_calc.aperture_size_signal.put.assert_called_once_with(TEST_APERTURE_SIZE)
 
 
 A = -2.104798686e-15

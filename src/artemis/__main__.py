@@ -70,7 +70,6 @@ class BlueskyRunner:
     def start(
         self, plan, parameters: Optional[FullParameters] = None
     ) -> StatusAndMessage:
-        print("Started plan")
         logger.info(f"Started with parameters: {parameters}")
         if (
             self.current_status.status == Status.BUSY.value

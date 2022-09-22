@@ -10,6 +10,11 @@ C = 4.768760712e-4
 D = 2.118311635
 
 
+@pytest.fixture
+def flux_calculator():
+    return FluxCalculator(prefix="BL03S", name="flux calculator")
+
+
 @pytest.mark.parametrize(
     "energy, intensity, aperture_size, expected_result",
     [
@@ -20,9 +25,12 @@ D = 2.118311635
     ],
 )
 def test_calculate_flux_returns_correct_values_for_known_input(
-    energy, intensity, aperture_size, expected_result
+    flux_calculator: FluxCalculator,
+    energy,
+    intensity,
+    aperture_size,
+    expected_result,
 ):
-    flux_calculator = FluxCalculator(prefix="BL03S", name="flux calculator")
     flux_calculator.aperture_size_signal.put(aperture_size)
     mock_energy_signal = MagicMock(get=MagicMock(return_value=energy))
     mock_intensity_signal = MagicMock(get=MagicMock(return_value=intensity))
@@ -36,11 +44,12 @@ def test_calculate_flux_returns_correct_values_for_known_input(
 @patch.object(FluxCalculator, "flux")
 @patch.object(FluxCalculator, "calculate_flux")
 def test_update_flux_calculates_and_updates_flux(
-    mock_calculate: MagicMock, mock_flux: MagicMock
+    mock_calculate: MagicMock,
+    mock_flux: MagicMock,
+    flux_calculator: FluxCalculator,
 ):
     dummy_flux_value = 42
     mock_calculate.return_value = dummy_flux_value
-    flux_calculator = FluxCalculator(prefix="BL03S", name="flux calculator")
     flux_calculator._update_flux()
     mock_calculate.assert_called_once()
     mock_flux.put.assert_called_once_with(dummy_flux_value)
@@ -48,7 +57,6 @@ def test_update_flux_calculates_and_updates_flux(
 
 @patch("time.sleep", MagicMock())
 @patch.object(FluxCalculator, "flux")
-def test_get_flux_gets_flux(mock_flux: MagicMock):
-    flux_calculator = FluxCalculator(prefix="BL03S", name="flux calculator")
+def test_get_flux_gets_flux(mock_flux: MagicMock, flux_calculator: FluxCalculator):
     flux_calculator.get_flux()
     mock_flux.get.assert_called_once()
