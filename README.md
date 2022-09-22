@@ -32,12 +32,22 @@ You can start the bluesky runner by doing the following:
 pipenv run main
 ```
 
-Starting a scan
+Starting a plan
 --------------
 
-To start a scan you can do the following:
+To start a scan:
 ```
 curl -X PUT http://127.0.0.1:5000/fast_grid_scan/start --data-binary "@test_parameters.json" -H "Content-Type: application/json"
+```
+
+To start a flux calculation:
+```
+curl -X PUT http://127.0.0.1:5000/flux_calculation/start --data-binary "@test_flux_calculation_parameters.json" -H "Content-Type: application/json"
+```
+
+To start a flux prediction:
+```
+curl -X PUT http://127.0.0.1:5000/flux_prediction/start --data-binary "@test_flux_prediction_parameters.json" -H "Content-Type: application/json"
 ```
 
 Getting the Runner Status
@@ -45,13 +55,15 @@ Getting the Runner Status
 
 To get the status of the runner:
 ```
-curl http://127.0.0.1:5000/fast_grid_scan/status
+curl http://127.0.0.1:5000/<plan_name>/status
 ```
+Where `<plan_name>` is one of `fast_grid_scan`, `flux_calculation`, or `flux_prediction`.
 
-Stopping the Scan
+Stopping a plan
 -----------------
 
 To stop a scan that is currently running:
 ```
-curl -X PUT http://127.0.0.1:5000/fast_grid_scan/stop
+curl -X PUT http://127.0.0.1:5000/<plan_name>/stop
 ```
+Where `<plan_name>` is one of `fast_grid_scan`, `flux_calculation`, or `flux_prediction`.
