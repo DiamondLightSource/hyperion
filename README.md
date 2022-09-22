@@ -33,7 +33,7 @@ pipenv run artemis
 ```
 The default behaviour of which is to run artemis with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/artemis.txt on the shared file system. 
 
-To run locally in a dev envrionment use
+To run locally in a dev environment use
 ```
 pipenv run artemis --dev
 ```
