@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass, field
 from typing import Tuple
 
@@ -39,18 +38,18 @@ class DetectorParams:
             decoder=lambda det_type: constants_from_type(det_type),
         ),
     )
+    beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
+        init=False,
+        default=DetectorDistanceToBeamXYConverter(
+            "src/artemis/devices/unit_tests/test_lookup_table.txt",
+        ),
+        metadata=config(
+            encoder=lambda converter: converter.lookup_file,
+            decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name),
+        ),
+    )
 
     def __post_init__(self):
-        self.beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
-            init=False,
-            default=DetectorDistanceToBeamXYConverter(
-                self.det_dist_to_beam_converter_path,
-            ),
-            metadata=config(
-                encoder=lambda converter: converter.lookup_file,
-                decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name),
-            ),
-        )
         if not self.directory.endswith("/"):
             self.directory += "/"
 
