@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from os import path
 from typing import Tuple
 
 from dataclasses_json import config, dataclass_json
@@ -42,11 +41,7 @@ class DetectorParams:
     beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
         init=False,
         default=DetectorDistanceToBeamXYConverter(
-            path.join(
-                path.dirname(__file__),
-                "unit_tests",
-                "test_lookup_table.txt",
-            ),
+            "src/artemis/devices/unit_tests/test_lookup_table.txt",
         ),
         metadata=config(
             encoder=lambda converter: converter.lookup_file,
