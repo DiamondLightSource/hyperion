@@ -1,88 +1,17 @@
 import time
-from dataclasses import dataclass
 
 from bluesky import RunEngine
-from bluesky.plan_stubs import null
+from bluesky.plan_stubs import rd
 from bluesky.suspenders import SuspendBoolHigh
-from ophyd import Component, Device, Signal
 
-from artemis.devices.synchrotron import Synchrotron
-
-
-@dataclass
-class TopupPlanParameters:
-    instability_time: float
-    threshold_percentage: float
-    total_exposure_time: float
+from artemis.devices.synchrotron_monitor import SynchrotronMonitor
+from artemis.topup_parameters import TopupParameters
 
 
-class SynchrotronMonitor(Device):
-
-    synchrotron: Synchrotron = Component(Synchrotron)
-    total_exposure_time_signal: Signal = Component(Signal, value=1)
-    # Seconds of estimated beam instability following topup:
-    time_beam_unstable_signal: Signal = Component(Signal)
-    threshold_percentage_signal: Signal = Component(Signal)
-    topup_gate_signal: Signal = Component(Signal, value=False)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.synchrotron.top_up.topup_end_countdown.subscribe(
-            self.set_topup_gate_signal
-        )
-
-    def set_topup_gate_signal(self, *_, **__):
-        self.topup_gate_signal.put(self.get_topup_gate())
-
-    def get_topup_gate(self):
-        total_exposure_time = self.total_exposure_time_signal.get()
-        time_to_topup = self.synchrotron.top_up.topup_start_countdown.get()
-        mode_precludes_gating = self._mode_precludes_gating(time_to_topup)
-        sufficient_time_before_topup = self._sufficient_time_before_topup(
-            time_to_topup, total_exposure_time
-        )
-        time_beam_unstable = self.time_beam_unstable_signal.get()
-        threshold_percentage = self.threshold_percentage_signal.get()
-        topup_degrades_exposure = self._topup_degrades_exposure(
-            total_exposure_time, time_beam_unstable, threshold_percentage
-        )
-        delay_required = (
-            not (mode_precludes_gating or sufficient_time_before_topup)
-            and topup_degrades_exposure
-        )
-        return delay_required
-
-    @staticmethod
-    def _topup_degrades_exposure(
-        total_exposure_time, time_beam_unstable, threshold_percentage
-    ):
-        # return True if topup duration eats a significant fraction of planned exposure time
-        return 100.0 * time_beam_unstable / total_exposure_time > threshold_percentage
-
-    def _mode_precludes_gating(self, time_to_topup):
-        return (
-            self._in_decay_mode(time_to_topup)
-            or not self._gating_permitted_in_machine_mode()
-        )
-
-    def _gating_permitted_in_machine_mode(self):
-        machine_mode = self.synchrotron.machine_status.synchrotron_mode.get()
-        permitted_modes = ("User", "Special")
-        return machine_mode in permitted_modes
-
-    @staticmethod
-    def _in_decay_mode(time_to_topup):
-        # If this is -1 we're in decay mode so no need to gate as no topup
-        return time_to_topup == -1
-
-    @staticmethod
-    def _sufficient_time_before_topup(time_to_topup, total_exposure_time):
-        return time_to_topup > total_exposure_time
-
-
-def plan(
-    synchrotron_monitor: SynchrotronMonitor, topup_monitor_args: TopupPlanParameters
-):
+def get_synchrotron_monitor_from_parameters(topup_monitor_args: TopupParameters):
+    synchrotron_monitor = SynchrotronMonitor(
+        name="synchrotron monitor", read_attrs=["topup_gate_signal"]
+    )
     synchrotron_monitor.wait_for_connection()
     synchrotron_monitor.total_exposure_time_signal.put(
         topup_monitor_args.total_exposure_time
@@ -93,19 +22,23 @@ def plan(
     synchrotron_monitor.threshold_percentage_signal.put(
         topup_monitor_args.threshold_percentage
     )
-    for i in range(400):
+    return synchrotron_monitor
+
+
+def dummy_plan(synchrotron_monitor: SynchrotronMonitor):
+    for i in range(600):
         time.sleep(1)
-        yield from null()
-        print("Plan is running:", i)  # , synchrotron_monitor.topup_gate_signal.get())
+        value = yield from rd(synchrotron_monitor)
+        print(f"Plan is running. Step {i}, topup_gate={value}")
 
 
 if __name__ == "__main__":
     RE = RunEngine()
-    synchrotron_monitor = SynchrotronMonitor(name="monitor")
-    synchrotron_monitor.wait_for_connection()
+    topup_plan_args = TopupParameters()
+    topup_plan_args.total_exposure_time = 100
+    topup_plan_args.instability_time = 45
+    topup_plan_args.threshold_percentage = 10
+    synchrotron_monitor = get_synchrotron_monitor_from_parameters(topup_plan_args)
     sus = SuspendBoolHigh(synchrotron_monitor.topup_gate_signal)
     RE.install_suspender(sus)
-    topup_plan_args = TopupPlanParameters(
-        total_exposure_time=100, instability_time=45, threshold_percentage=10
-    )
-    RE(plan(synchrotron_monitor, topup_plan_args))
+    RE(dummy_plan(synchrotron_monitor))

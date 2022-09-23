@@ -5,15 +5,18 @@ from dataclasses import dataclass
 from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
-from typing import Optional, Tuple
+from typing import Any, Generator, Optional, Tuple
 
 from bluesky import RunEngine
+from bluesky.suspenders import SuspendBoolHigh
 from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
 
+from artemis.beam_topup_plan import dummy_plan, get_synchrotron_monitor_from_parameters
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
+from artemis.topup_parameters import TopupParameters
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +38,8 @@ class Status(Enum):
 @dataclass
 class Command:
     action: Actions
-    parameters: Optional[FullParameters] = None
+    plan: Optional[Generator] = None
+    plan_parameters: Optional[Any] = None
 
 
 @dataclass_json
@@ -57,7 +61,7 @@ class BlueskyRunner:
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
 
-    def start(self, parameters: FullParameters) -> StatusAndMessage:
+    def start(self, plan: Generator, parameters: FullParameters) -> StatusAndMessage:
         logger.info(f"Started with parameters: {parameters}")
         if (
             self.current_status.status == Status.BUSY.value
@@ -66,7 +70,7 @@ class BlueskyRunner:
             return StatusAndMessage(Status.FAILED, "Bluesky already running")
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
-            self.command_queue.put(Command(Actions.START, parameters))
+            self.command_queue.put(Command(Actions.START, plan, parameters))
             return StatusAndMessage(Status.SUCCESS)
 
     def stopping_thread(self):
@@ -99,7 +103,7 @@ class BlueskyRunner:
             command = self.command_queue.get()
             if command.action == Actions.START:
                 try:
-                    self.RE(get_plan(command.parameters))
+                    self.RE(command.plan(command.plan_parameters))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
@@ -123,8 +127,42 @@ class FastGridScan(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
+                self.runner.RE.clear_suspenders()
                 parameters = FullParameters.from_json(request.data)
-                status_and_message = self.runner.start(parameters)
+                status_and_message = self.runner.start(get_plan, parameters)
+            except JSONDecodeError as exception:
+                status_and_message = StatusAndMessage(Status.FAILED, str(exception))
+        elif action == Actions.STOP.value:
+            status_and_message = self.runner.stop()
+        return status_and_message.to_dict()
+
+    def get(self, action):
+        return self.runner.current_status.to_dict()
+
+
+class Dummy(Resource):
+    def __init__(self, runner: BlueskyRunner) -> None:
+        super().__init__()
+        self.runner = runner
+
+    def put(self, action):
+        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
+        if action == Actions.START.value:
+            try:
+                self.runner.RE.clear_suspenders()
+                topup_plan_params = TopupParameters()
+                topup_plan_params.total_exposure_time = 100
+                topup_plan_params.instability_time = 45
+                topup_plan_params.threshold_percentage = 10
+                synchrotron_monitor = get_synchrotron_monitor_from_parameters(
+                    topup_plan_params
+                )
+                sus = SuspendBoolHigh(synchrotron_monitor.topup_gate_signal)
+                self.runner.RE.install_suspender(sus)
+                status_and_message = self.runner.start(
+                    dummy_plan,
+                    synchrotron_monitor,
+                )
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
@@ -146,6 +184,7 @@ def create_app(
     api.add_resource(
         FastGridScan, "/fast_grid_scan/<string:action>", resource_class_args=[runner]
     )
+    api.add_resource(Dummy, "/dummy/<string:action>", resource_class_args=[runner])
     return app, runner
 
 
