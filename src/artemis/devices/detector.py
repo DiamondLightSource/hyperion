@@ -29,8 +29,8 @@ class DetectorParams:
     omega_start: float
     omega_increment: float
     num_images: int
-
     use_roi_mode: bool
+    det_dist_to_beam_converter_path: str
 
     detector_size_constants: DetectorSizeConstants = field(
         default=EIGER2_X_16M_SIZE,
@@ -40,20 +40,17 @@ class DetectorParams:
         ),
     )
 
-    beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
-        default=DetectorDistanceToBeamXYConverter(
-            os.path.join(
-                os.path.dirname(__file__),
-                "det_dist_to_beam_XY_converter.txt",
-            )
-        ),
-        metadata=config(
-            encoder=lambda converter: converter.lookup_file,
-            decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name),
-        ),
-    )
-
     def __post_init__(self):
+        self.beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
+            init=False,
+            default=DetectorDistanceToBeamXYConverter(
+                self.det_dist_to_beam_converter_path,
+            ),
+            metadata=config(
+                encoder=lambda converter: converter.lookup_file,
+                decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name),
+            ),
+        )
         if not self.directory.endswith("/"):
             self.directory += "/"
 

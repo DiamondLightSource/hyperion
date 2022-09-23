@@ -50,6 +50,7 @@ class FullParameters:
             omega_increment=0.1,
             num_images=50,
             use_roi_mode=False,
+            det_dist_to_beam_converter_path="path/to/file",
         )
     )
     ispyb_params: IspybParams = default_field(
