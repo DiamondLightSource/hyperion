@@ -23,7 +23,7 @@ TEST_OMEGA_INCREMENT = 1.0
 TEST_NUM_IMAGES = 1
 TEST_USE_ROI_MODE = False
 TEST_DET_DIST_TO_BEAM_CONVERTER_PATH = (
-    "src/artemis/devices/det_dist_to_beam_XY_converter.txt"
+    "src/artemis/devices/unit_tests/test_lookup_table.txt"
 )
 
 TEST_DETECTOR_PARAMS = DetectorParams(
