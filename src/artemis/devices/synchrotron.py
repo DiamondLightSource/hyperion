@@ -3,13 +3,13 @@ from ophyd import Component, Device, EpicsSignal
 
 class SynchrotoronMachineStatus(Device):
     synchrotron_mode: EpicsSignal = Component(EpicsSignal, "MODE", string=True)
-    beam_dump_countdown: EpicsSignal = Component(EpicsSignal, "USERCOUNTDN")
-    ring_energy: EpicsSignal = Component(EpicsSignal, "BEAMENERGY")
+    user_countdown: EpicsSignal = Component(EpicsSignal, "USERCOUNTDN")
+    beam_energy: EpicsSignal = Component(EpicsSignal, "BEAMENERGY")
 
 
 class SynchrotronTopUp(Device):
-    topup_start_countdown: EpicsSignal = Component(EpicsSignal, "COUNTDOWN")
-    topup_end_countdown: EpicsSignal = Component(EpicsSignal, "ENDCOUNTDN")
+    start_countdown: EpicsSignal = Component(EpicsSignal, "COUNTDOWN")
+    end_countdown: EpicsSignal = Component(EpicsSignal, "ENDCOUNTDN")
 
 
 class Synchrotron(Device):
