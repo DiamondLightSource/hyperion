@@ -163,7 +163,9 @@ if __name__ == "__main__":
         help="Choose overall logging level, defaults to INFO",
     )
     args = parser.parse_args()
-    artemis.log.set_up_logging(logging_level=args.logging_level, dev_mode=args.dev)
+    artemis.log.set_up_logging_handlers(
+        logging_level=args.logging_level, dev_mode=args.dev
+    )
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
