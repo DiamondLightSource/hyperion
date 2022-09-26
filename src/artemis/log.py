@@ -15,9 +15,9 @@ ophyd_logger.parent = LOGGER
 bluesky_logger.parent = LOGGER
 
 
-def set_up_logging(
+def set_up_logging_handlers(
     logging_level: Union[str, None] = "INFO", dev_mode: bool = False
-) -> None:
+) -> list[logging.Handler]:
     """Set up the logging level and instances for user chosen level of logging.
 
     Mode defaults to production and can be switched to dev with the --dev flag on run.
@@ -51,6 +51,8 @@ def set_up_logging(
             " WITH MESSAGES. If you really need debug messages, set up a"
             " local graylog instead!\n"
         )
+
+    return handlers
 
 
 def _get_graylog_configuration(dev_mode: bool) -> Tuple[str, int]:
