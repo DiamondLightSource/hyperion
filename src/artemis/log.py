@@ -1,7 +1,7 @@
 import logging
 from os import environ
 from pathlib import Path
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 
 from bluesky.log import config_bluesky_logging
 from bluesky.log import logger as bluesky_logger
@@ -17,7 +17,7 @@ bluesky_logger.parent = LOGGER
 
 def set_up_logging_handlers(
     logging_level: Union[str, None] = "INFO", dev_mode: bool = False
-) -> list[logging.Handler]:
+) -> List[logging.Handler]:
     """Set up the logging level and instances for user chosen level of logging.
 
     Mode defaults to production and can be switched to dev with the --dev flag on run.
