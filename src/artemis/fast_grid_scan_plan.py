@@ -57,16 +57,12 @@ def run_gridscan(
     )
 
     ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
+
     ispyb = (
-        StoreInIspyb3D(ispyb_config)
+        StoreInIspyb3D(ispyb_config, parameters)
         if parameters.grid_scan_params.is_3d_grid_scan
-        else StoreInIspyb2D(ispyb_config)
+        else StoreInIspyb2D(ispyb_config, parameters)
     )
-
-    datacollection_ids, _, datacollection_group_id = ispyb.store_grid_scan(parameters)
-
-    for id in datacollection_ids:
-        run_start(id)
 
     fgs_motors = fgs_composite.fast_grid_scan
     zebra = fgs_composite.zebra
@@ -79,17 +75,12 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    with NexusWriter(parameters):
+    with ispyb as ispyb_ids, NexusWriter(parameters):
+        datacollection_ids = ispyb_ids[0]
+        datacollection_group_id = ispyb_ids[2]
+        for id in datacollection_ids:
+            run_start(id)
         yield from do_fgs()
-
-    current_time = ispyb.get_current_time_string()
-    for id in datacollection_ids:
-        ispyb.update_grid_scan_with_end_time_and_status(
-            current_time,
-            "DataCollection Successful",
-            id,
-            datacollection_group_id,
-        )
 
     for id in datacollection_ids:
         run_end(id)
