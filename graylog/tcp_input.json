@@ -8,7 +8,7 @@
     "vendor": "DLS",
     "url": "",
     "created_at": "2022-09-01T13:55:24.405Z",
-    "server_version": "4.3.5+32fa802",
+    "server_version": "4.2.13+9c90b93",
     "parameters": [],
     "entities": [
         {
@@ -95,7 +95,7 @@
             "constraints": [
                 {
                     "type": "server-version",
-                    "version": ">=4.3.5+32fa802"
+                    "version": ">=4.2.13+9c90b93"
                 }
             ]
         }

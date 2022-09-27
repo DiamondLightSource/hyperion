@@ -1,4 +1,4 @@
-FROM graylog/graylog:4.3
+FROM graylog/graylog:4.2
 
 ENV GRAYLOG_ROOT_PASSWORD_SHA2 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
 ENV GRAYLOG_PASSWORD_SECRET thisisasecretstring
