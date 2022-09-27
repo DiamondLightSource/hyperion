@@ -19,4 +19,4 @@ allow_prereleases = true
 tests = "pytest -m \"not s03\""
 build = "python setup.py sdist bdist_wheel"
 gitclean = "git clean -fdX"
-main = "python -m artemis"
+artemis = "python -m artemis"
