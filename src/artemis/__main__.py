@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
-from typing import Optional, Tuple
+from sys import argv
+from typing import List, Optional, Tuple
 
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
@@ -148,7 +149,7 @@ def create_app(
     return app, runner
 
 
-def cli_args() -> Tuple[Optional[bool], Optional[str]]:
+def cli_arg_parse() -> Tuple[Optional[bool], Optional[str]]:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dev",
@@ -166,7 +167,7 @@ def cli_args() -> Tuple[Optional[bool], Optional[str]]:
 
 
 if __name__ == "__main__":
-    args = cli_args()
+    args = cli_arg_parse()
     artemis.log.set_up_logging_handlers(*args)
     app, runner = create_app()
     atexit.register(runner.shutdown)
