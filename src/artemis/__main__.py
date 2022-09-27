@@ -11,6 +11,7 @@ from bluesky import RunEngine
 from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
+from prometheus_client import start_http_server
 
 import artemis.log
 from artemis.fast_grid_scan_plan import get_plan
@@ -135,8 +136,10 @@ class FastGridScan(Resource):
 
 
 def create_app(
-    test_config=None, RE: RunEngine = RunEngine({})
+    test_config=None,
+    RE: RunEngine = RunEngine({}),
 ) -> Tuple[Flask, BlueskyRunner]:
+
     runner = BlueskyRunner(RE)
     app = Flask(__name__)
     if test_config:
@@ -175,5 +178,6 @@ if __name__ == "__main__":
         daemon=True,
     )
     flask_thread.start()
+    start_http_server(12212, "127.0.0.1")
     runner.wait_on_queue()
     flask_thread.join()
