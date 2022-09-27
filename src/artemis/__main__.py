@@ -5,8 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
-from sys import argv
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
