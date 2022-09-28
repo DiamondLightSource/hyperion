@@ -7,6 +7,7 @@ from mockito import mock, when
 
 from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.parameters import FullParameters
+from artemis.utils import Point3D
 
 TEST_DATA_COLLECTION_ID = 12
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -95,6 +96,12 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
         TEST_GRID_INFO_ID
     )
 
+    x = 0
+    y = 1
+    z = 2
+    DUMMY_PARAMS.ispyb_params.upper_left = Point3D(x, y, z)
+    DUMMY_PARAMS.grid_scan_params.z_step_size = 0.2
+
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
 
     assert dummy_ispyb_3d.store_grid_scan(DUMMY_PARAMS) == (
@@ -109,6 +116,10 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
         dummy_ispyb_3d.xtal_snapshots
         == DUMMY_PARAMS.ispyb_params.xtal_snapshots_omega_end
     )
+    assert dummy_ispyb_3d.y_step_size == DUMMY_PARAMS.grid_scan_params.z_step_size
+    assert dummy_ispyb_3d.y_steps == DUMMY_PARAMS.grid_scan_params.z_steps
+    assert dummy_ispyb_3d.upper_left.x == x
+    assert dummy_ispyb_3d.upper_left.y == z
 
 
 def setup_mock_return_values(ispyb_conn):

@@ -4,9 +4,10 @@ from abc import ABC, abstractmethod
 
 import ispyb
 from sqlalchemy.connectors import Connector
-
 from artemis.ispyb.ispyb_dataclass import Orientation
 from artemis.parameters import FullParameters
+from artemis.utils import Point2D
+
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -25,6 +26,9 @@ class StoreInIspyb(ABC):
         self.omega_start = None
         self.experiment_type = None
         self.xtal_snapshots = None
+        self.upper_left = None
+        self.y_steps = None
+        self.y_step_size = None
 
         self.conn: Connector = None
         self.mx_acquisition = None
@@ -64,6 +68,11 @@ class StoreInIspyb(ABC):
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
+        self.upper_left = Point2D(
+            self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.y
+        )
+        self.y_steps = full_params.grid_scan_params.y_steps
+        self.y_step_size = full_params.grid_scan_params.y_step_size
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
@@ -97,13 +106,12 @@ class StoreInIspyb(ABC):
 
         params["parentid"] = ispyb_data_collection_id
         params["dxInMm"] = self.full_params.grid_scan_params.x_step_size
-        params["dyInMm"] = self.full_params.grid_scan_params.y_step_size
+        params["dyInMm"] = self.y_step_size
         params["stepsX"] = self.full_params.grid_scan_params.x_steps
-        params["stepsY"] = self.full_params.grid_scan_params.y_steps
+        params["stepsY"] = self.y_steps
         params["pixelsPerMicronX"] = self.ispyb_params.pixels_per_micron_x
         params["pixelsPerMicronY"] = self.ispyb_params.pixels_per_micron_y
-        upper_left = self.ispyb_params.upper_left
-        params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = upper_left
+        params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = self.upper_left
         params["orientation"] = Orientation.HORIZONTAL.value
         params["snaked"] = True
 
@@ -242,6 +250,11 @@ class StoreInIspyb3D(StoreInIspyb):
         self.omega_start += 90
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
+        self.upper_left = Point2D(
+            self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.z
+        )
+        self.y_steps = self.full_params.grid_scan_params.z_steps
+        self.y_step_size = self.full_params.grid_scan_params.z_step_size
 
 
 class StoreInIspyb2D(StoreInIspyb):

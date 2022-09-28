@@ -35,7 +35,8 @@
         "pixels_per_micron_y": 1.0,
         "upper_left": {
             "x": 10.0,
-            "y": 20.0
+            "y": 20.0,
+            "z": 30.0
         },
         "position": {
             "x": 10.0,
