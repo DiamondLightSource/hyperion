@@ -20,7 +20,6 @@ from artemis.devices.det_dist_to_beam_converter import (
 class DetectorParams:
     current_energy: float
     exposure_time: float
-    acquisition_id: int
     directory: str
     prefix: str
     run_number: int
