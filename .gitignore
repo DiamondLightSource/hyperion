@@ -133,3 +133,6 @@ dmypy.json
 
 # gedit backup files
 *~
+
+# Log files
+/tmp

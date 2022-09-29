@@ -142,7 +142,7 @@ if [[ $START == 1 ]]; then
 
     export ISPYB_CONFIG_PATH
 
-    pipenv run main &
+    pipenv run artemis &
 fi
 
 sleep 1

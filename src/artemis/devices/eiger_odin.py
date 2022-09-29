@@ -3,7 +3,7 @@ from typing import List, Tuple
 from ophyd import Component, Device, EpicsSignal, EpicsSignalRO, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import HDF5Plugin_V22
 
-from src.artemis.devices.status import await_value
+from artemis.devices.status import await_value
 
 
 class EigerFan(Device):
@@ -30,7 +30,6 @@ class OdinFileWriter(HDF5Plugin_V22):
     id: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "AcquisitionID")
     image_height: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageHeight")
     image_width: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageWidth")
-    file_prefix: EpicsSignal = Component(EpicsSignalWithRBV, "FP:FileName")
 
 
 class OdinNode(Device):

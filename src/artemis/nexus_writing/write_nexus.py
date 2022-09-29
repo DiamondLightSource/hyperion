@@ -16,10 +16,10 @@ from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 
-from src.artemis.devices.detector import DetectorParams
-from src.artemis.devices.fast_grid_scan import GridAxis, GridScanParams
-from src.artemis.ispyb.ispyb_dataclass import IspybParams
-from src.artemis.parameters import FullParameters
+from artemis.devices.detector import DetectorParams
+from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
+from artemis.ispyb.ispyb_dataclass import IspybParams
+from artemis.parameters import FullParameters
 
 source = {
     "name": "Diamond Light Source",
@@ -156,7 +156,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
         "sensor_material": "Silicon",
         "sensor_thickness": "4.5E-4",
         "overload": 46051,
-        "underload": -1,  # Not sure of this
+        "underload": 0,
         "pixel_size": ["0.075mm", "0.075mm"],
         "flatfield": "flatfield",
         "flatfield_applied": "_dectris/flatfield_correction_applied",
@@ -217,9 +217,6 @@ class NexusWriter:
         self.directory = Path(parameters.detector_params.directory)
         self.filename = parameters.detector_params.full_filename
 
-        self.current_num_of_images = (
-            parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
-        )
         self.start_index = parameters.detector_params.start_index
 
         self.full_num_of_images = parameters.detector_params.num_images

@@ -1,7 +1,7 @@
 import pytest
 from bluesky.run_engine import RunEngine
 
-from src.artemis.devices.fast_grid_scan import (
+from artemis.devices.fast_grid_scan import (
     FastGridScan,
     GridScanParams,
     set_fast_grid_scan_params,
