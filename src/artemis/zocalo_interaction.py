@@ -11,7 +11,7 @@ from workflows.transport import lookup
 
 from src.artemis.utils import Point3D
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("artemis")
 
 TIMEOUT = 30
 
@@ -50,6 +50,7 @@ def run_start(data_collection_id: int):
     Args:
         data_collection_id (int): The ID of the data collection representing the gridscan in ISpyB
     """
+    logger.info(f"Sending {data_collection_id} to zocalo")
     _send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
 
 
@@ -79,6 +80,7 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
     """
     transport = _get_zocalo_connection()
     result_received: queue.Queue = queue.Queue()
+    logger.info(f"Waiting on group {data_collection_group_id}")
 
     def receive_result(
         rw: workflows.recipe.RecipeWrapper, header: dict, message: dict
@@ -89,7 +91,10 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
         transport.ack(header)
         received_group_id = recipe_parameters["dcgid"]
         if received_group_id == str(data_collection_group_id):
-            result_received.put(Point3D(*message["max_voxel"]))
+            try:
+                result_received.put(Point3D(*reversed(message[0]["centre_of_mass"])))
+            except Exception as e:
+                print(e)
         else:
             logger.warn(
                 f"Warning: results for {received_group_id} received but expected {data_collection_group_id}"

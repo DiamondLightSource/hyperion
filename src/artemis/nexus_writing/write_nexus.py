@@ -134,7 +134,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
         "sensor_material": "Silicon",
         "sensor_thickness": "4.5E-4",
         "overload": 46051,
-        "underload": -1,  # Not sure of this
+        "underload": 0,  # Not sure of this
         "pixel_size": ["0.075mm", "0.075mm"],
         "flatfield": "flatfield",
         "flatfield_applied": "_dectris/flatfield_correction_applied",
@@ -194,9 +194,6 @@ class NexusWriter:
         self.directory = Path(parameters.detector_params.directory)
         self.filename = parameters.detector_params.full_filename
 
-        self.current_num_of_images = (
-            parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
-        )
         self.start_index = parameters.detector_params.start_index
 
         self.full_num_of_images = parameters.detector_params.num_images
@@ -207,6 +204,11 @@ class NexusWriter:
         self.master_file = (
             self.directory / f"{parameters.detector_params.nexus_filename}_master.h5"
         )
+        
+        if parameters.grid_scan_params.y_axis.full_steps == 0:
+            self.num_images = (parameters.grid_scan_params.z_axis.full_steps, parameters.grid_scan_params.x_axis.full_steps)
+        else:
+            self.num_images = (parameters.grid_scan_params.y_axis.full_steps, parameters.grid_scan_params.x_axis.full_steps)
 
     def _get_current_time(self):
         return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
@@ -226,7 +228,7 @@ class NexusWriter:
         """
         start_time = self._get_current_time()
 
-        osc_scan, trans_scan = ScanReader(self.goniometer, snaked=True)
+        osc_scan, trans_scan = ScanReader(self.goniometer, n_images=self.num_images, snaked=True)
 
         metafile = self.directory / f"{self.filename}_meta.h5"
 

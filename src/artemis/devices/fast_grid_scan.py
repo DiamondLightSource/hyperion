@@ -15,15 +15,12 @@ from ophyd import (
 )
 from ophyd.status import DeviceStatus, StatusBase
 from ophyd.utils.epics_pvs import set_and_wait
-<<<<<<< HEAD
 from src.artemis.devices.motors import XYZLimitBundle
-=======
-
-from src.artemis.devices.motors import GridScanLimitBundle
->>>>>>> 100_write_2nd_nexus_file
 from src.artemis.devices.status import await_value
 from src.artemis.utils import Point3D
+import logging
 
+logger = logging.getLogger("artemis")
 
 @dataclass
 class GridAxis:
@@ -67,7 +64,7 @@ class GridScanParams:
     z2_start: float = 0.1
 
     def __post_init__(self):
-        self.x_axis = GridAxis(self.x_start, self.x_step_size, self.x_steps)
+        self.x_axis = GridAxis(self.x_start+self.x_step_size/2, self.x_step_size, self.x_steps)
         self.y_axis = GridAxis(self.y1_start, self.y_step_size, self.y_steps)
         self.z_axis = GridAxis(self.z2_start, self.z_step_size, self.z_steps)
         self.axes = [self.x_axis, self.y_axis, self.z_axis]

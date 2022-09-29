@@ -8,6 +8,8 @@ from src.artemis.devices.detector import DetectorParams
 from src.artemis.devices.eiger_odin import EigerOdin
 from src.artemis.devices.status import await_value
 
+import time
+
 
 class EigerTriggerMode(Enum):
     INTERNAL_SERIES = 0
@@ -108,10 +110,11 @@ class EigerDetector(Device):
 
     def set_odin_pvs(self):
         self.odin.fan.forward_stream.put(True)
-        self.odin.file_writer.id.put(self.detector_params.acquisition_id)
+        #self.odin.file_writer.id.put(self.detector_params.acquisition_id)
         self.odin.file_writer.file_path.put(self.detector_params.directory)
         self.odin.file_writer.file_prefix.put(self.detector_params.full_filename)
-        self.odin.meta.file_name.put(self.detector_params.full_filename)
+        time.sleep(1)
+        #self.odin.meta.file_name.set(self.detector_params.full_filename).wait(10)
 
     def set_mx_settings_pvs(self):
         beam_x_pixels, beam_y_pixels = self.detector_params.get_beam_position_pixels(
@@ -144,7 +147,7 @@ class EigerDetector(Device):
         self.wait_for_stale_parameters()
 
         bit_depth = self.bit_depth.get()
-        self.odin.file_writer.data_type.put(f"UInt{bit_depth}")
+        self.odin.file_writer.data_type.set(f"UInt{bit_depth}").wait(10)
 
         odin_status = self.odin.file_writer.capture.set(1)
         odin_status &= await_value(self.odin.meta.ready, 1)

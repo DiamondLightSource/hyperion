@@ -20,14 +20,15 @@ from flask_restful import Api, Resource
 from src.artemis.fast_grid_scan_plan import get_plan
 from src.artemis.parameters import FullParameters
 
-logging.basicConfig(
+logger = logging.getLogger("artemis")
+
+logger.setLevel(logging.DEBUG)
+logHandler = logging.FileHandler(
     filename="/tmp/artemis.log",
     encoding="utf-8",
-    level=logging.DEBUG,
-    format="%(asctime)s: %(filename)s - %(message)s",
 )
-
-logger = logging.getLogger(__name__)
+logHandler.setFormatter(logging.Formatter("%(asctime)s: %(filename)s - %(message)s"))
+logger.addHandler(logHandler)
 
 
 class Actions(Enum):

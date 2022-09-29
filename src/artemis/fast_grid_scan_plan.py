@@ -27,9 +27,12 @@ from src.artemis.nexus_writing.write_nexus import (
 )
 from src.artemis.parameters import SIM_BEAMLINE, FullParameters
 from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
+import logging
 
-config_bluesky_logging(file="/tmp/artemis.log", level="DEBUG")
-config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
+logger = logging.getLogger("artemis")
+
+config_bluesky_logging(file="/tmp/artemis_bluesky.log", level="DEBUG")
+config_ophyd_logging(file="/tmp/ophyd.log", level="INFO")
 
 # Tolerance for how close omega must start to 0
 OMEGA_TOLERANCE = 0.1
@@ -113,7 +116,11 @@ def run_gridscan(
         parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
     )
 
+    logger.info(f"Moving to {xray_centre_motor_position}")
+
     yield from bps.mv(sample_motors.omega, parameters.detector_params.omega_start)
+    
+    yield from bps.sleep(1)
 
     # After moving omega we need to wait for x, y and z to have finished moving too
     yield from bps.wait(sample_motors)
@@ -153,6 +160,7 @@ def get_plan(parameters: FullParameters):
     sample_motors = I03Smargon(
         name="sample_motors", prefix=f"{parameters.beamline}-MO-SGON-01:"
     )
+    sample_motors.wait_for_connection()
 
     fast_grid_scan_composite.wait_for_connection()
 

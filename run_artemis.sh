@@ -85,7 +85,7 @@ SSH_KEY_FILE_LOC="/dls_sw/${BEAMLINE}/software/gda_versions/var/.ssh/${BEAMLINE}
 
 if [[ $STOP == 1 ]]; then
     STOP_STRING="pkill -f src/artemis/main.py"
-    if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" ]]; then
+    if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" ]]; then
         ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} ${BEAMLINE}-control.diamond.ac.uk ${STOP_STRING}
         exit 0
     fi
@@ -132,14 +132,28 @@ if [[ $DEPLOY == 1 ]]; then
 fi
 
 if [[ $START == 1 ]]; then
-    COMMAND_STRING="source ${ARTEMIS_PATH}/start_artemis.sh ${ARTEMIS_PATH} ${BEAMLINE}"
-    echo "running ${COMMAND_STRING} on control machine"
+    COMMAND_STRING="${ARTEMIS_PATH}/start_artemis.sh"
 
-    if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" || $USERNAME != "gda2" ]]; then
-        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk ${COMMAND_STRING}
+    if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USERNAME != "gda2" ]]; then
+	PUBLIC_KEY_FILE="/dls_sw/${BEAMLINE}/software/gda_versions/var/.ssh/${BEAMLINE}-host.key.pub"
+        CONTROL_MACHINE_PUBKEY=$(<$PUBLIC_KEY_FILE)
+	CONTROL_MACHINE_IP=$(resolveip -s i03-control.diamond.ac.uk)
+	CONTROL_MACHINE_IP=${CONTROL_MACHINE_IP%% }
+	if [[ -f ~/.ssh/known_hosts ]]; then
+            ssh-keygen-remove() {
+		SSH_KEYGEN_OUT=$(ssh-keygen -R $1 2>&1)
+            }
+            ssh-keygen-remove ${BEAMLINE}-control.diamond.ac.uk
+            ssh-keygen-remove ${BEAMLINE}-control
+       	    ssh-keygen-remove ${CONTROL_MACHINE_IP}
+	fi
+        echo "${BEAMLINE}-control,${BEAMLINE}-control.diamond.ac.uk,${CONTROL_MACHINE_IP} ${CONTROL_MACHINE_PUBKEY}" >> ~/.ssh/known_hosts
+        echo "running ${COMMAND_STRING} on control machine"
+        ssh -v -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk "ls"
     else
+        echo "running ${COMMAND_STRING} on local machine"
         eval $COMMAND_STRING
     fi
-    sleep 1
+    sleep 2
     echo "Artemis Server Started"
 fi

@@ -47,6 +47,8 @@ class StoreInIspyb(ABC):
         )
         self.y_steps = full_params.grid_scan_params.y_steps
         self.y_step_size = full_params.grid_scan_params.y_step_size
+        
+        self.num_images = self.full_params.grid_scan_params.x_steps * self.full_params.grid_scan_params.y_steps
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
@@ -117,7 +119,7 @@ class StoreInIspyb(ABC):
         params["imgdir"] = self.detector_params.directory
         params["imgprefix"] = self.detector_params.prefix
         params["imgsuffix"] = EIGER_FILE_SUFFIX
-        params["n_images"] = self.detector_params.num_images
+        params["n_images"] = self.num_images
 
         # Both overlap and n_passes included for backwards compatibility, planned to be removed later
         params["n_passes"] = 1
@@ -228,6 +230,7 @@ class StoreInIspyb3D(StoreInIspyb):
         )
         self.y_steps = self.full_params.grid_scan_params.z_steps
         self.y_step_size = self.full_params.grid_scan_params.z_step_size
+        self.num_images = self.full_params.grid_scan_params.x_steps * self.full_params.grid_scan_params.z_steps
 
 
 class StoreInIspyb2D(StoreInIspyb):
