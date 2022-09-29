@@ -1,10 +1,12 @@
 import argparse
 import os
+from time import sleep
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
+from prometheus_client import Summary
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
@@ -16,6 +18,12 @@ from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.nexus_writing.write_nexus import NexusWriter
 from artemis.parameters import SIM_BEAMLINE, FullParameters
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
+
+# Prometheus metrics
+PLAN_DURATION = Summary(
+    "fgs_duration",
+    "Time spent processing a full fast grid scan",
+)
 
 # Tolerance for how close omega must start to 0
 OMEGA_TOLERANCE = 0.1
@@ -105,6 +113,14 @@ def run_gridscan(
     )
 
 
+@PLAN_DURATION.time()
+def timing_test():
+    print("sleeping")
+    sleep(5)
+    print("awake now")
+    return None
+
+
 def get_plan(parameters: FullParameters):
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -114,6 +130,9 @@ def get_plan(parameters: FullParameters):
     Returns:
         Generator: The plan for the gridscan
     """
+
+    timing_test()
+
     fast_grid_scan_composite = FGSComposite(
         insertion_prefix=parameters.insertion_prefix,
         name="fgs",
