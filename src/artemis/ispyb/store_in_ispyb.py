@@ -4,10 +4,10 @@ from abc import ABC, abstractmethod
 
 import ispyb
 from sqlalchemy.connectors import Connector
+
 from artemis.ispyb.ispyb_dataclass import Orientation
 from artemis.parameters import FullParameters
 from artemis.utils import Point2D
-
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -142,7 +142,7 @@ class StoreInIspyb(ABC):
         params["imgdir"] = self.detector_params.directory
         params["imgprefix"] = self.detector_params.prefix
         params["imgsuffix"] = EIGER_FILE_SUFFIX
-        params["n_images"] = self.detector_params.num_images
+        params["n_images"] = self.full_params.grid_scan_params.x_steps * self.y_steps
 
         # Both overlap and n_passes included for backwards compatibility,
         # planned to be removed later
