@@ -9,7 +9,6 @@ def eiger():
     detector_params: DetectorParams = DetectorParams(
         current_energy=100,
         exposure_time=0.1,
-        acquisition_id="test",
         directory="/tmp",
         prefix="file_name",
         detector_distance=100.0,

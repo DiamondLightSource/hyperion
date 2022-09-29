@@ -1,6 +1,7 @@
 import json
 import threading
 from dataclasses import dataclass
+from sys import argv
 from time import sleep
 from typing import Any, Callable
 from unittest.mock import patch
@@ -8,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from flask.testing import FlaskClient
 
-from artemis.__main__ import Actions, Status, create_app
+from artemis.__main__ import Actions, Status, cli_arg_parse, create_app
 from artemis.parameters import FullParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
@@ -170,3 +171,9 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
         test_parameters_json = test_parameters_file.read()
     response = test_env.client.put(START_ENDPOINT, data=test_parameters_json)
     check_status_in_response(response, Status.SUCCESS)
+
+
+def test_cli_args_parse():
+    argv[1:] = ["--dev", "--logging-level=DEBUG"]
+    test_args = cli_arg_parse()
+    assert test_args == ("DEBUG", True)

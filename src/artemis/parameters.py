@@ -6,7 +6,7 @@ from dataclasses_json import dataclass_json
 from artemis.devices.eiger import DetectorParams
 from artemis.devices.fast_grid_scan import GridScanParams
 from artemis.ispyb.ispyb_dataclass import IspybParams
-from artemis.utils import Point2D, Point3D
+from artemis.utils import Point3D
 
 SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
@@ -41,7 +41,6 @@ class FullParameters:
         DetectorParams(
             current_energy=100,
             exposure_time=0.1,
-            acquisition_id="test",
             directory="/tmp",
             prefix="file_name",
             run_number=0,
@@ -50,6 +49,7 @@ class FullParameters:
             omega_increment=0.1,
             num_images=50,
             use_roi_mode=False,
+            det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
         )
     )
     ispyb_params: IspybParams = default_field(
@@ -59,7 +59,9 @@ class FullParameters:
             undulator_gap=1.0,
             pixels_per_micron_x=None,
             pixels_per_micron_y=None,
-            upper_left=Point2D(x=None, y=None),
+            upper_left=Point3D(
+                x=None, y=None, z=None
+            ),  # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
             sample_barcode=None,
             position=Point3D(x=None, y=None, z=None),
             synchrotron_mode=None,

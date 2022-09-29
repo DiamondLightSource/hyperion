@@ -6,7 +6,6 @@ def create_detector_params_with_directory(directory):
     return DetectorParams(
         100,
         1.0,
-        1,
         directory,
         "test",
         0,
@@ -15,6 +14,7 @@ def create_detector_params_with_directory(directory):
         0.0,
         1,
         False,
+        "src/artemis/devices/unit_tests/test_lookup_table.txt",
         detector_size_constants=EIGER2_X_16M_SIZE,
     )
 

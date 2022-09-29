@@ -4,9 +4,10 @@ from abc import ABC, abstractmethod
 
 import ispyb
 from sqlalchemy.connectors import Connector
-
 from artemis.ispyb.ispyb_dataclass import Orientation
 from artemis.parameters import FullParameters
+from artemis.utils import Point2D
+
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -16,19 +17,48 @@ class StoreInIspyb(ABC):
 
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
-    def __init__(self, ispyb_config):
+    def __init__(self, ispyb_config, parameters=None):
         self.ISPYB_CONFIG_FILE = ispyb_config
-        self.full_params = None
+        self.full_params = parameters
         self.ispyb_params = None
         self.detector_params = None
         self.run_number = None
         self.omega_start = None
         self.experiment_type = None
         self.xtal_snapshots = None
+        self.upper_left = None
+        self.y_steps = None
+        self.y_step_size = None
 
         self.conn: Connector = None
         self.mx_acquisition = None
         self.core = None
+
+        self.datacollection_ids = None
+        self.datacollection_group_id = None
+        self.grid_ids = None
+
+    def __enter__(self):
+        (
+            self.datacollection_ids,
+            self.grid_ids,
+            self.datacollection_group_id,
+        ) = self.store_grid_scan(self.full_params)
+        return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
+
+    def __exit__(self, exception, exception_value, traceback):
+        if exception is not None:
+            run_status = "DataCollection Unsuccessful"
+        else:
+            run_status = "DataCollection Successful"
+        current_time = self.get_current_time_string()
+        for id in self.datacollection_ids:
+            self.update_grid_scan_with_end_time_and_status(
+                current_time,
+                run_status,
+                id,
+                self.datacollection_group_id,
+            )
 
     def store_grid_scan(self, full_params: FullParameters):
 
@@ -38,6 +68,11 @@ class StoreInIspyb(ABC):
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
+        self.upper_left = Point2D(
+            self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.y
+        )
+        self.y_steps = full_params.grid_scan_params.y_steps
+        self.y_step_size = full_params.grid_scan_params.y_step_size
 
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
@@ -64,7 +99,6 @@ class StoreInIspyb(ABC):
             params["parentid"] = datacollection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
-
             return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
@@ -72,13 +106,12 @@ class StoreInIspyb(ABC):
 
         params["parentid"] = ispyb_data_collection_id
         params["dxInMm"] = self.full_params.grid_scan_params.x_step_size
-        params["dyInMm"] = self.full_params.grid_scan_params.y_step_size
+        params["dyInMm"] = self.y_step_size
         params["stepsX"] = self.full_params.grid_scan_params.x_steps
-        params["stepsY"] = self.full_params.grid_scan_params.y_steps
+        params["stepsY"] = self.y_steps
         params["pixelsPerMicronX"] = self.ispyb_params.pixels_per_micron_x
         params["pixelsPerMicronY"] = self.ispyb_params.pixels_per_micron_y
-        upper_left = self.ispyb_params.upper_left
-        params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = upper_left
+        params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = self.upper_left
         params["orientation"] = Orientation.HORIZONTAL.value
         params["snaked"] = True
 
@@ -182,8 +215,8 @@ class StoreInIspyb(ABC):
 
 
 class StoreInIspyb3D(StoreInIspyb):
-    def __init__(self, ispyb_config):
-        super().__init__(ispyb_config)
+    def __init__(self, ispyb_config, parameters=None):
+        super().__init__(ispyb_config, parameters)
         self.experiment_type = "Mesh3D"
 
     def _store_scan_data(self):
@@ -217,11 +250,16 @@ class StoreInIspyb3D(StoreInIspyb):
         self.omega_start += 90
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
+        self.upper_left = Point2D(
+            self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.z
+        )
+        self.y_steps = self.full_params.grid_scan_params.z_steps
+        self.y_step_size = self.full_params.grid_scan_params.z_step_size
 
 
 class StoreInIspyb2D(StoreInIspyb):
-    def __init__(self, ispyb_config):
-        super().__init__(ispyb_config)
+    def __init__(self, ispyb_config, parameters=None):
+        super().__init__(ispyb_config, parameters)
         self.experiment_type = "mesh"
 
     def _store_scan_data(self):
