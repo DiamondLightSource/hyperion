@@ -63,6 +63,17 @@ curl -X PUT http://127.0.0.1:5000/fast_grid_scan/stop
 
 ```
 
+Prometheus Metrics
+==================
+It a development state. 
+
+To be able to see scraped metrics run `setup_metrics.sh`. This will build a prometheus image and run the container on host network `localhost:12201`. Navigate there to search and view metrics.
+
+Currently the only metric is a test metric called `fgs_duration`. This will only populate once a scan has been triggered as it is pretending to time the duration of `get_plan`. It is a summary metric of the time take to execute a dummy `timing_test` function within `get_plan`.
+
+This metric consists of two series, a count and a sum, which can be search in the prometheus web gui with `fgs_duration_count` and `fgs_duration_sum` respectively.
+
+It is currently has only the instance and job labels (default for prometheus metrics).
 
 System tests
 ============
