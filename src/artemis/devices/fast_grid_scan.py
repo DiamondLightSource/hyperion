@@ -23,7 +23,7 @@ from artemis.utils import Point3D
 
 @dataclass
 class GridAxis:
-    start: int
+    start: float
     step_size: float
     full_steps: int
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import Optional, Tuple
 
 from dataclasses_json import config, dataclass_json
 
@@ -47,6 +47,12 @@ class DetectorParams:
             decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name),
         ),
     )
+
+    # The following are optional from GDA as populated internally
+
+    # Where the VDS start index should be in the Nexus file
+    start_index: Optional[int] = 0
+    nexus_file_run_number: Optional[int] = 0
 
     def __post_init__(self):
         if not self.directory.endswith("/"):
@@ -104,3 +110,7 @@ class DetectorParams:
     @property
     def full_filename(self):
         return f"{self.prefix}_{self.run_number}"
+
+    @property
+    def nexus_filename(self):
+        return f"{self.prefix}_{self.nexus_file_run_number}"
