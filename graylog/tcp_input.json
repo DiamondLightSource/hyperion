@@ -1,0 +1,103 @@
+{
+    "id": "c7c601fc-5090-4a0c-a4f3-e757968eeca2",
+    "rev": 1,
+    "v": "1",
+    "name": "Artemis TCP Input",
+    "summary": "Artemis GELF TCP input.",
+    "description": "",
+    "vendor": "DLS",
+    "url": "",
+    "created_at": "2022-09-01T13:55:24.405Z",
+    "server_version": "4.2.13+9c90b93",
+    "parameters": [],
+    "entities": [
+        {
+            "id": "82d25c14-574d-4f3e-be12-dd7e76e6ee03",
+            "type": {
+                "name": "input",
+                "version": "1"
+            },
+            "v": "1",
+            "data": {
+                "title": {
+                    "@type": "string",
+                    "@value": "Artemis GELF TCP"
+                },
+                "configuration": {
+                    "tls_key_file": {
+                        "@type": "string",
+                        "@value": ""
+                    },
+                    "port": {
+                        "@type": "integer",
+                        "@value": 5555
+                    },
+                    "tls_enable": {
+                        "@type": "boolean",
+                        "@value": false
+                    },
+                    "use_null_delimiter": {
+                        "@type": "boolean",
+                        "@value": true
+                    },
+                    "recv_buffer_size": {
+                        "@type": "integer",
+                        "@value": 1048576
+                    },
+                    "tcp_keepalive": {
+                        "@type": "boolean",
+                        "@value": false
+                    },
+                    "tls_client_auth_cert_file": {
+                        "@type": "string",
+                        "@value": ""
+                    },
+                    "bind_address": {
+                        "@type": "string",
+                        "@value": "127.0.0.1"
+                    },
+                    "tls_cert_file": {
+                        "@type": "string",
+                        "@value": ""
+                    },
+                    "max_message_size": {
+                        "@type": "integer",
+                        "@value": 2097152
+                    },
+                    "tls_client_auth": {
+                        "@type": "string",
+                        "@value": "disabled"
+                    },
+                    "decompress_size_limit": {
+                        "@type": "integer",
+                        "@value": 8388608
+                    },
+                    "number_worker_threads": {
+                        "@type": "integer",
+                        "@value": 2
+                    },
+                    "tls_key_password": {
+                        "@type": "string",
+                        "@value": ""
+                    }
+                },
+                "static_fields": {},
+                "type": {
+                    "@type": "string",
+                    "@value": "org.graylog2.inputs.gelf.tcp.GELFTCPInput"
+                },
+                "global": {
+                    "@type": "boolean",
+                    "@value": true
+                },
+                "extractors": []
+            },
+            "constraints": [
+                {
+                    "type": "server-version",
+                    "version": ">=4.2.13+9c90b93"
+                }
+            ]
+        }
+    ]
+}

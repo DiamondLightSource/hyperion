@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 from pytest import mark, raises
 from zocalo.configuration import Configuration
 
-from src.artemis.ispyb.ispyb_dataclass import Point3D
-from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
+from artemis.ispyb.ispyb_dataclass import Point3D
+from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -22,7 +22,7 @@ EXPECTED_RUN_END_MESSAGE = {
 
 
 @patch("zocalo.configuration.from_file")
-@patch("src.artemis.zocalo_interaction.lookup")
+@patch("artemis.zocalo_interaction.lookup")
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
@@ -34,7 +34,7 @@ def _test_zocalo(
 
     func_testing(mock_transport)
 
-    mock_zc.activate.assert_called_once()
+    mock_zc.activate_environment.assert_called_once_with("artemis")
     mock_transport.connect.assert_called_once()
     expected_message = {
         "recipes": ["mimas"],
@@ -87,17 +87,21 @@ def test_run_start_and_end(
 
 @patch("workflows.recipe.wrap_subscribe")
 @patch("zocalo.configuration.from_file")
-@patch("src.artemis.zocalo_interaction.lookup")
+@patch("artemis.zocalo_interaction.lookup")
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
+
+    centre_of_mass_coords = [2.942925659754348, 7.142683401382778, 6.79110544979448]
+
     message = [
         {
             "max_voxel": [3, 5, 5],
-            "centre_of_mass": [2.942925659754348, 7.142683401382778, 6.79110544979448],
+            "centre_of_mass": centre_of_mass_coords,
         }
     ]
-    step_params = {"dcid": "8183741", "dcgid": "7263143"}
+    datacollection_grid_id = 7263143
+    step_params = {"dcid": "8183741", "dcgid": str(datacollection_grid_id)}
 
     mock_zc: Configuration = MagicMock()
     mock_from_file.return_value = mock_zc
@@ -106,7 +110,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup.return_value.return_value = mock_transport
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(wait_for_result, 7263143)
+        future = executor.submit(wait_for_result, datacollection_grid_id)
 
         for _ in range(10):
             sleep(0.1)
@@ -122,4 +126,4 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
         return_value = future.result()
 
     assert type(return_value) == Point3D
-    assert return_value == Point3D(3, 5, 5)
+    assert return_value == Point3D(*reversed(centre_of_mass_coords))

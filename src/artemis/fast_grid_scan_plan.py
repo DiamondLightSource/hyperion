@@ -1,32 +1,24 @@
-import os
-import sys
-from collections import namedtuple
-from selectors import EpollSelector
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
 import argparse
+import os
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
-from bluesky.log import config_bluesky_logging
 from bluesky.utils import ProgressBarManager
-from ophyd.log import config_ophyd_logging
 
-from src.artemis.devices.eiger import EigerDetector
-from src.artemis.devices.fast_grid_scan import set_fast_grid_scan_params
-from src.artemis.devices.fast_grid_scan_composite import FGSComposite
-from src.artemis.devices.slit_gaps import SlitGaps
-from src.artemis.devices.synchrotron import Synchrotron
-from src.artemis.devices.undulator import Undulator
-from src.artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
-from src.artemis.nexus_writing.write_nexus import NexusWriter
-from src.artemis.parameters import SIM_BEAMLINE, FullParameters
-from src.artemis.zocalo_interaction import run_end, run_start, wait_for_result
+from artemis.devices.eiger import EigerDetector
+from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
+from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.devices.slit_gaps import SlitGaps
+from artemis.devices.synchrotron import Synchrotron
+from artemis.devices.undulator import Undulator
+from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
+from artemis.nexus_writing.write_nexus import NexusWriter
+from artemis.parameters import SIM_BEAMLINE, FullParameters
+from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
-config_bluesky_logging(file="/tmp/bluesky.log", level="DEBUG")
-config_ophyd_logging(file="/tmp/ophyd.log", level="DEBUG")
+# Tolerance for how close omega must start to 0
+OMEGA_TOLERANCE = 0.1
 
 
 def update_params_from_epics_devices(
@@ -49,23 +41,28 @@ def run_gridscan(
     eiger: EigerDetector,
     parameters: FullParameters,
 ):
+    sample_motors = fgs_composite.sample_motors
+
+    current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
+    assert abs(current_omega - parameters.detector_params.omega_start) < OMEGA_TOLERANCE
+    assert (
+        abs(current_omega) < OMEGA_TOLERANCE
+    )  # This should eventually be removed, see #154
+
     yield from update_params_from_epics_devices(
         parameters,
         fgs_composite.undulator,
         fgs_composite.synchrotron,
         fgs_composite.slit_gaps,
     )
+
     ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
+
     ispyb = (
-        StoreInIspyb3D(ispyb_config)
+        StoreInIspyb3D(ispyb_config, parameters)
         if parameters.grid_scan_params.is_3d_grid_scan
-        else StoreInIspyb2D(ispyb_config)
+        else StoreInIspyb2D(ispyb_config, parameters)
     )
-
-    datacollection_ids, _, datacollection_group_id = ispyb.store_grid_scan(parameters)
-
-    for id in datacollection_ids:
-        run_start(id)
 
     fgs_motors = fgs_composite.fast_grid_scan
     zebra = fgs_composite.zebra
@@ -78,22 +75,34 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    with NexusWriter(parameters):
+    with ispyb as ispyb_ids, NexusWriter(parameters):
+        datacollection_ids = ispyb_ids[0]
+        datacollection_group_id = ispyb_ids[2]
+        for id in datacollection_ids:
+            run_start(id)
         yield from do_fgs()
-
-    current_time = ispyb.get_current_time_string()
-    for id in datacollection_ids:
-        ispyb.update_grid_scan_with_end_time_and_status(
-            current_time,
-            "DataCollection Successful",
-            id,
-            datacollection_group_id,
-        )
 
     for id in datacollection_ids:
         run_end(id)
 
-    wait_for_result(datacollection_group_id)
+    xray_centre = wait_for_result(datacollection_group_id)
+    xray_centre_motor_position = (
+        parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
+    )
+
+    yield from bps.mv(sample_motors.omega, parameters.detector_params.omega_start)
+
+    # After moving omega we need to wait for x, y and z to have finished moving too
+    yield from bps.wait(sample_motors)
+
+    yield from bps.mv(
+        sample_motors.x,
+        xray_centre_motor_position.x,
+        sample_motors.y,
+        xray_centre_motor_position.y,
+        sample_motors.z,
+        xray_centre_motor_position.z,
+    )
 
 
 def get_plan(parameters: FullParameters):

@@ -1,0 +1,10 @@
+FROM graylog/graylog:4.2
+
+ENV GRAYLOG_ROOT_PASSWORD_SHA2 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+ENV GRAYLOG_PASSWORD_SECRET thisisasecretstring
+
+COPY tcp_input.json /usr/share/graylog/data/contentpacks/tcp_input.json
+
+ENV GRAYLOG_CONTENT_PACKS_LOADER_ENABLED true
+ENV GRAYLOG_CONTENT_PACKS_DIR data/contentpacks
+ENV GRAYLOG_CONTENT_PACKS_AUTO_INSTALL tcp_input.json

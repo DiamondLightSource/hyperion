@@ -16,6 +16,23 @@ on:
     - cron: '0 8 * * MON'
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.10'
+          architecture: x64
+      - name: Checkout Artemis
+        uses: actions/checkout@v3
+      - name: Install flake8
+        run: pip install flake8
+      - name: Run flake8
+        uses: TrueBrain/actions-flake8@v2
+        with:
+          path: src
+
   test:
     strategy:
       fail-fast: false
@@ -49,3 +66,5 @@ jobs:
         with:
           name: ${{ matrix.python }}/${{ matrix.os }}/${{ matrix.pipenv }}
           files: cov.xml
+
+  

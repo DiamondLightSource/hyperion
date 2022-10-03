@@ -1,15 +1,15 @@
-import os
 from dataclasses import dataclass, field
 from typing import Tuple
 
 from dataclasses_json import config, dataclass_json
-from src.artemis.devices.det_dim_constants import (
+
+from artemis.devices.det_dim_constants import (
     EIGER2_X_16M_SIZE,
     DetectorSize,
     DetectorSizeConstants,
     constants_from_type,
 )
-from src.artemis.devices.det_dist_to_beam_converter import (
+from artemis.devices.det_dist_to_beam_converter import (
     Axis,
     DetectorDistanceToBeamXYConverter,
 )
@@ -20,7 +20,6 @@ from src.artemis.devices.det_dist_to_beam_converter import (
 class DetectorParams:
     current_energy: float
     exposure_time: float
-    acquisition_id: int
     directory: str
     prefix: str
     run_number: int
@@ -28,8 +27,8 @@ class DetectorParams:
     omega_start: float
     omega_increment: float
     num_images: int
-
     use_roi_mode: bool
+    det_dist_to_beam_converter_path: str
 
     detector_size_constants: DetectorSizeConstants = field(
         default=EIGER2_X_16M_SIZE,
@@ -38,19 +37,20 @@ class DetectorParams:
             decoder=lambda det_type: constants_from_type(det_type),
         ),
     )
-
     beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
+        init=False,
         default=DetectorDistanceToBeamXYConverter(
-            os.path.join(
-                os.path.dirname(__file__),
-                "det_dist_to_beam_XY_converter.txt",
-            )
+            "src/artemis/devices/unit_tests/test_lookup_table.txt",
         ),
         metadata=config(
             encoder=lambda converter: converter.lookup_file,
             decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name),
         ),
     )
+
+    def __post_init__(self):
+        if not self.directory.endswith("/"):
+            self.directory += "/"
 
     def get_beam_position_mm(self, detector_distance: float) -> Tuple[float, float]:
         x_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist(

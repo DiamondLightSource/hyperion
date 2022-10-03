@@ -1,26 +1,20 @@
-import os
-import sys
-
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-from dataclasses import dataclass
-from flask import Flask, request
-from flask_restful import Resource, Api
-import logging
+import argparse
+import atexit
 import threading
+from dataclasses import dataclass
+from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
-from typing import Optional
-from bluesky import RunEngine
-from typing import Tuple
-from enum import Enum
-from src.artemis.parameters import FullParameters
-from src.artemis.fast_grid_scan_plan import get_plan
-from dataclasses_json import dataclass_json
-import atexit
+from typing import Optional, Tuple
 
-logger = logging.getLogger(__name__)
+from bluesky import RunEngine
+from dataclasses_json import dataclass_json
+from flask import Flask, request
+from flask_restful import Api, Resource
+
+import artemis.log
+from artemis.fast_grid_scan_plan import get_plan
+from artemis.parameters import FullParameters
 
 
 class Actions(Enum):
@@ -63,7 +57,7 @@ class BlueskyRunner:
         self.RE = RE
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
-        logger.info(f"Started with parameters: {parameters}")
+        artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -154,7 +148,26 @@ def create_app(
     return app, runner
 
 
+def cli_arg_parse() -> Tuple[Optional[bool], Optional[str]]:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Use dev options, such as local graylog instances and S03",
+    )
+    parser.add_argument(
+        "--logging-level",
+        type=str,
+        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
+        help="Choose overall logging level, defaults to INFO",
+    )
+    args = parser.parse_args()
+    return args.logging_level, args.dev
+
+
 if __name__ == "__main__":
+    args = cli_arg_parse()
+    artemis.log.set_up_logging_handlers(*args)
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
