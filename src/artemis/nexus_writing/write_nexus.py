@@ -169,6 +169,7 @@ def create_beam_and_attenuator_parameters(
         {"transmission": ispyb_params.transmission},
     )
 
+
 class NexusWriter:
     def __init__(self, parameters: FullParameters) -> None:
         self.detector = create_detector_parameters(parameters.detector_params)
