@@ -11,6 +11,7 @@ class SynchrotronMonitor(Device):
     time_beam_unstable_signal: Signal = Component(Signal)
     threshold_percentage_signal: Signal = Component(Signal)
     topup_gate_signal: Signal = Component(Signal, value=True)
+    dummy_topup_gate_signal: Signal = Component(Signal, value=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -37,6 +38,16 @@ class SynchrotronMonitor(Device):
             not (mode_precludes_gating or sufficient_time_before_topup)
             and topup_degrades_exposure
         )
+        """
+        # for testing
+        return [
+            "not dummy",
+            mode_precludes_gating,
+            sufficient_time_before_topup,
+            topup_degrades_exposure,
+            delay_required,
+        ]
+        """
         return delay_required
 
     @staticmethod

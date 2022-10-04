@@ -25,8 +25,10 @@ def get_synchrotron_monitor_from_parameters(topup_monitor_args: TopupParameters)
     return synchrotron_monitor
 
 
-def dummy_plan(synchrotron_monitor: SynchrotronMonitor):
-    for i in range(600):
+def dummy_plan(
+    synchrotron_monitor: SynchrotronMonitor,
+):
+    for i in range(30000):
         time.sleep(1)
         value = yield from rd(synchrotron_monitor)
         print(f"Plan is running. Step {i}, topup_gate={value}")
