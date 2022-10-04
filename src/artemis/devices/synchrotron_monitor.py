@@ -38,16 +38,7 @@ class SynchrotronMonitor(Device):
             not (mode_precludes_gating or sufficient_time_before_topup)
             and topup_degrades_exposure
         )
-        """
-        # for testing
-        return [
-            "not dummy",
-            mode_precludes_gating,
-            sufficient_time_before_topup,
-            topup_degrades_exposure,
-            delay_required,
-        ]
-        """
+
         return delay_required
 
     @staticmethod
@@ -58,15 +49,7 @@ class SynchrotronMonitor(Device):
         return 100.0 * time_beam_unstable / total_exposure_time > threshold_percentage
 
     def _mode_precludes_gating(self, time_to_topup):
-        return (
-            self._in_decay_mode(time_to_topup)
-            or not self._gating_permitted_in_machine_mode()
-        )
-
-    def _gating_permitted_in_machine_mode(self):
-        machine_mode = self.synchrotron.machine_status.synchrotron_mode.get()
-        permitted_modes = ("User", "Special")
-        return machine_mode in permitted_modes
+        return self._in_decay_mode(time_to_topup)
 
     @staticmethod
     def _in_decay_mode(time_to_topup):
