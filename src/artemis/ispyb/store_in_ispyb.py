@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 import ispyb
 from sqlalchemy.connectors import Connector
 
+import artemis.devices.oav.utils as oav_utils
 from artemis.ispyb.ispyb_dataclass import Orientation
 from artemis.parameters import FullParameters
 from artemis.utils import Point2D
@@ -135,7 +136,7 @@ class StoreInIspyb(ABC):
         params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
         params["transmission"] = self.ispyb_params.transmission
-        bottom_right = self.bottom_right_from_top_left(
+        bottom_right = oav_utils.bottom_right_from_top_left(
             self.upper_left,
             self.full_params.grid_scan_params.x_steps,
             self.y_steps,
@@ -145,7 +146,7 @@ class StoreInIspyb(ABC):
             self.ispyb_params.pixels_per_micron_y,
         )
         params["comments"] = (
-            f"Artemis: Xray centring - Diffraction grid scan of "
+            "Artemis: Xray centring - Diffraction grid scan of "
             f"{self.full_params.grid_scan_params.x_step_size} by "
             f"{self.full_params.grid_scan_params.y_step_size} images. "
             f"Top left: [{self.upper_left.x},{self.upper_left.y}], "
@@ -212,16 +213,6 @@ class StoreInIspyb(ABC):
         params["sample_barcode"] = self.ispyb_params.sample_barcode
 
         return self.mx_acquisition.upsert_data_collection_group(list(params.values()))
-
-    def bottom_right_from_top_left(
-        self, top_left, steps_x, steps_y, size_x, size_y, pix_per_um_x, pix_per_um_y
-    ):
-        # TODO check origin
-        return Point2D(
-            # size is in mm, pix in um
-            int(steps_x * size_x * 1000 * pix_per_um_x + top_left.x),
-            int(steps_y * size_y * 1000 * pix_per_um_y + top_left.y),
-        )
 
     def get_current_time_string(self):
         now = datetime.datetime.now()

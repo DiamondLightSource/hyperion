@@ -7,7 +7,7 @@ from mockito import mock, when
 
 from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.parameters import FullParameters
-from artemis.utils import Point2D, Point3D
+from artemis.utils import Point3D
 
 TEST_DATA_COLLECTION_ID = 12
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -36,19 +36,6 @@ def test_get_current_time_string(dummy_ispyb):
 
     assert type(current_time) == str
     assert re.match(TIME_FORMAT_REGEX, current_time) is not None
-
-
-def test_bottom_right_from_top_left(dummy_ispyb):
-    # TODO check origin
-    top_left = Point2D(123, 123)
-    bottom_right = dummy_ispyb.bottom_right_from_top_left(
-        top_left, 20, 30, 0.1, 0.15, 0.37, 0.37
-    )
-    assert bottom_right.x == 863 and bottom_right.y == 1788
-    bottom_right = dummy_ispyb.bottom_right_from_top_left(
-        top_left, 15, 20, 0.005, 0.007, 1, 1
-    )
-    assert bottom_right.x == 198 and bottom_right.y == 263
 
 
 @pytest.mark.parametrize(
