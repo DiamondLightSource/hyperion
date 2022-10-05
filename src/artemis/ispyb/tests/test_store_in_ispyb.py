@@ -17,6 +17,9 @@ TEST_SESSION_ID = 90
 
 DUMMY_CONFIG = "/file/path/to/config/"
 DUMMY_PARAMS = FullParameters()
+DUMMY_PARAMS.ispyb_params.upper_left = Point3D(100, 100, 100)
+DUMMY_PARAMS.ispyb_params.pixels_per_micron_x = 0.8
+DUMMY_PARAMS.ispyb_params.pixels_per_micron_y = 0.8
 
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
