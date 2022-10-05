@@ -25,3 +25,7 @@ class FGSComposite(Device):
     def __init__(self, insertion_prefix: str, *args, **kwargs):
         self.insertion_prefix = insertion_prefix
         super().__init__(*args, **kwargs)
+
+
+# variable to be assigned and used in fast_grid_scan_plan.get_plan
+FGSComposite_plan_device = None

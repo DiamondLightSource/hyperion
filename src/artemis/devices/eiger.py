@@ -30,6 +30,9 @@ class EigerDetector(Device):
         self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
     ):
         super().__init__(name=name, *args, **kwargs)
+        self.update_params(detector_params)
+
+    def update_params(self, detector_params: DetectorParams):
         self.detector_params = detector_params
         self.check_detector_variables_set()
 
@@ -165,3 +168,7 @@ class EigerDetector(Device):
 
     def disarm_detector(self):
         self.cam.acquire.put(0)
+
+
+# variable to be assigned and used in fast_grid_scan_plan.get_plan
+EigerDetector_plan_device = None

@@ -6,6 +6,9 @@ import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 
+import artemis.devices.fast_grid_scan_composite as fgs_composite
+from artemis.devices import eiger
+from artemis.devices.detector import DetectorParams
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -111,6 +114,41 @@ def run_gridscan(
     )
 
 
+def initialize_EigerDetector(parameters: DetectorParams):
+    """
+    Initializes a new EigerDetector and sets relevant parameters
+
+    Args:
+        parameters (DetectorParams): the detector parameters for the Eiger and FGS
+    Returns:
+        Initialized EigerDetector
+    """
+    return EigerDetector(
+        parameters.detector_params,
+        name="eiger",
+        prefix=f"{parameters.beamline}-EA-EIGER-01:",
+    )
+
+
+def initialize_FGSComposite(parameters: DetectorParams):
+    """
+    Initializes a new FGSComposite and sets relevant parameters, then wait for connection.
+
+    Args:
+        parameters (DetectorParams): the detector parameters for the Eiger and FGS
+    Returns:
+        Initialized FGSComposite
+    """
+    device = FGSComposite(
+        insertion_prefix=parameters.insertion_prefix,
+        name="fgs",
+        prefix=parameters.beamline,
+    )
+
+    device.wait_for_connection()
+    return device
+
+
 def get_plan(parameters: FullParameters):
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -120,22 +158,22 @@ def get_plan(parameters: FullParameters):
     Returns:
         Generator: The plan for the gridscan
     """
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=parameters.insertion_prefix,
-        name="fgs",
-        prefix=parameters.beamline,
+
+    # check to see if the EigerDetector and FGSComposite have
+    # already been initialised, if not, initialise them
+    if eiger.EigerDetector_plan_device is None:
+        eiger.EigerDetector_plan_device = initialize_EigerDetector(parameters)
+    if fgs_composite.FGSComposite_plan_device is None:
+        fgs_composite.FGSComposite_plan_device = initialize_FGSComposite(parameters)
+
+    # the eiger will need to be updated with the new parameters, FGSComposite doesn't
+    # take new parameters after initialization.
+    eiger.EigerDetector_plan_device.update_params(parameters)
+    return run_gridscan(
+        fgs_composite.FGSComposite_plan_device,
+        eiger.EigerDetector_plan_device,
+        parameters,
     )
-
-    # Note, eiger cannot be currently waited on, see #166
-    eiger = EigerDetector(
-        parameters.detector_params,
-        name="eiger",
-        prefix=f"{parameters.beamline}-EA-EIGER-01:",
-    )
-
-    fast_grid_scan_composite.wait_for_connection()
-
-    return run_gridscan(fast_grid_scan_composite, eiger, parameters)
 
 
 if __name__ == "__main__":
