@@ -76,7 +76,7 @@ class FullParameters:
             slit_gap_size_y=None,
             focal_spot_size_x=None,
             focal_spot_size_y=None,
-            comment="",
+            comment="Descriptive comment.",
             resolution=None,
         )
     )

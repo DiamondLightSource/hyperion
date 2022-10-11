@@ -147,8 +147,10 @@ class StoreInIspyb(ABC):
         )
         params["comments"] = (
             "Artemis: Xray centring - Diffraction grid scan of "
-            f"{self.full_params.grid_scan_params.x_step_size} by "
-            f"{self.full_params.grid_scan_params.y_step_size} images. "
+            f"{self.full_params.grid_scan_params.x_steps} by "
+            f"{self.full_params.grid_scan_params.y_steps} images in "
+            f"{self.full_params.grid_scan_params.x_step_size} mm by "
+            f"{self.full_params.grid_scan_params.y_step_size} mm steps. "
             f"Top left: [{self.upper_left.x},{self.upper_left.y}], "
             f"bottom right: [{bottom_right.x},{bottom_right.y}]."
         )
