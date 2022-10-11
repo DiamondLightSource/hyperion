@@ -7,62 +7,64 @@ on:
     # Run every Monday at 8am to check latest versions of dependencies
     - cron: "0 8 * * WED"
 
+
 jobs:
   lint:
-    # pull requests are a duplicate of a branch push if within the same repo.
+     # pull requests are a duplicate of a branch push if within the same repo.
+     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+     runs-on: ubuntu-latest
+     steps:
+        - name: Setup Python
+          uses: actions/setup-python@v1
+          with:
+            python-version: '3.10'
+            architecture: x64
+
+
+        - name: Checkout Artemis
+          uses: actions/checkout@v3
+
+
+        - name: Install flake8
+          run: pip install flake8
+
+
+        - name: Run flake8
+          uses: TrueBrain/actions-flake8@v2
+          with:
+            path: src
+
+
+  tests:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Lint
-        run: |
-          touch requirements_dev.txt requirements.txt
-          pip install -r requirements.txt -r requirements_dev.txt -e .[dev]
-          tox -e pre-commit,mypy
-
-  test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest"] # can add windows-latest, macos-latest
-        python: ["3.10"]
-
-    runs-on: ${{ matrix.os }}
-    env:
-      # https://github.com/pytest-dev/pytest/issues/2042
-      PY_IGNORE_IMPORTMISMATCH: "1"
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+
       - name: Setup python ${{ matrix.python }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
+
       - name: Install with latest dependencies
         run: pip install .[dev]
 
+
       - name: Run tests
-        run: pytest tests
+        run: pytest -m "not s03"
+
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           name: ${{ matrix.python }}/${{ matrix.os }}
           files: cov.xml
+
 
   container:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
