@@ -118,6 +118,26 @@ class StoreInIspyb(ABC):
 
         return self.mx_acquisition.upsert_dc_grid(list(params.values()))
 
+    def _construct_comment(self) -> str:
+        bottom_right = oav_utils.bottom_right_from_top_left(
+            self.upper_left,
+            self.full_params.grid_scan_params.x_steps,
+            self.y_steps,
+            self.full_params.grid_scan_params.x_step_size,
+            self.y_step_size,
+            self.ispyb_params.pixels_per_micron_x,
+            self.ispyb_params.pixels_per_micron_y,
+        )
+        return (
+            "Artemis: Xray centring - Diffraction grid scan of "
+            f"{self.full_params.grid_scan_params.x_steps} by "
+            f"{self.full_params.grid_scan_params.y_steps} images in "
+            f"{self.full_params.grid_scan_params.x_step_size} mm by "
+            f"{self.full_params.grid_scan_params.y_step_size} mm steps. "
+            f"Top left: [{self.upper_left.x},{self.upper_left.y}], "
+            f"bottom right: [{bottom_right.x},{bottom_right.y}]."
+        )
+
     def _store_data_collection_table(self, data_collection_group_id: int) -> int:
         session_id = self.core.retrieve_visit_id(self.get_visit_string())
 
@@ -136,24 +156,7 @@ class StoreInIspyb(ABC):
         params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
         params["transmission"] = self.ispyb_params.transmission
-        bottom_right = oav_utils.bottom_right_from_top_left(
-            self.upper_left,
-            self.full_params.grid_scan_params.x_steps,
-            self.y_steps,
-            self.full_params.grid_scan_params.x_step_size,
-            self.y_step_size,
-            self.ispyb_params.pixels_per_micron_x,
-            self.ispyb_params.pixels_per_micron_y,
-        )
-        params["comments"] = (
-            "Artemis: Xray centring - Diffraction grid scan of "
-            f"{self.full_params.grid_scan_params.x_steps} by "
-            f"{self.full_params.grid_scan_params.y_steps} images in "
-            f"{self.full_params.grid_scan_params.x_step_size} mm by "
-            f"{self.full_params.grid_scan_params.y_step_size} mm steps. "
-            f"Top left: [{self.upper_left.x},{self.upper_left.y}], "
-            f"bottom right: [{bottom_right.x},{bottom_right.y}]."
-        )
+        params["comments"] = self._construct_comment()
         params["datacollection_number"] = self.run_number
         params["detector_distance"] = self.detector_params.detector_distance
         params["exp_time"] = self.detector_params.exposure_time
