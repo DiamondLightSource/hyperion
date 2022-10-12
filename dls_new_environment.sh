@@ -11,10 +11,10 @@ echo "--- installing latest version of pipenv"
 pip install pipenv --user
 
 
+echo "--- removing present virtual env"
+$HOME/.local/bin/pipenv --rm
 if [ ! -d "./.venv" ]
 then
-    echo "--- removing present virtual env"
-    $HOME/.local/bin/pipenv --rm
     mkdir ./.venv
 fi
 
