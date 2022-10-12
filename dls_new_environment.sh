@@ -11,8 +11,6 @@ echo "--- installing latest version of pipenv"
 pip install pipenv --user
 
 
-
-
 if [ ! -d "./.venv" ]
 then
     echo "--- removing present virtual env"
@@ -26,12 +24,10 @@ then
   rm ./Pipfile.lock
 fi
 
-
-
 echo "--- setting up new environment"
 $HOME/.local/bin/pipenv --python python
 $HOME/.local/bin/pipenv install --dev
 
-pipenv run pre-commit install
 
 pipenv run tests
+pipenv run pre-commit install
