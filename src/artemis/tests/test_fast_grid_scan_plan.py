@@ -1,3 +1,4 @@
+import math
 import types
 from unittest.mock import MagicMock, call, patch
 
@@ -17,6 +18,7 @@ from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.fast_grid_scan_plan import run_gridscan, update_params_from_epics_devices
 from artemis.parameters import FullParameters
+from artemis.utils import Point3D
 
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
 GOOD_ISPYB_RUN_STATUS = "DataCollection Successful"
@@ -112,6 +114,60 @@ def test_run_gridscan_zocalo_calls(
 
     with patch("artemis.fast_grid_scan_plan.NexusWriter"):
         list(run_gridscan(*dummy_3d_gridscan_args))
+
+    run_start.assert_has_calls(call(x) for x in dc_ids)
+    assert run_start.call_count == len(dc_ids)
+
+    run_end.assert_has_calls(call(x) for x in dc_ids)
+    assert run_end.call_count == len(dc_ids)
+
+    wait_for_result.assert_called_once_with(dcg_id)
+
+
+@patch("artemis.fast_grid_scan_plan.run_start")
+@patch("artemis.fast_grid_scan_plan.run_end")
+@patch("artemis.fast_grid_scan_plan.wait_for_result")
+@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
+@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
+@patch(
+    "artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+)
+def test_run_gridscan_zocalo_returns_nan_xray_cente_motor_position(
+    mock_ispyb_update_time_and_status: MagicMock,
+    mock_ispyb_get_time: MagicMock,
+    mock_ispyb_store_grid_scan: MagicMock,
+    wait_for_result,
+    run_end,
+    run_start,
+    dummy_3d_gridscan_args,
+):
+    dc_ids = [1, 2]
+    dcg_id = 4
+
+    mock_ispyb_store_grid_scan.return_value = [dc_ids, None, dcg_id]
+    mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
+    mock_ispyb_update_time_and_status.return_value = None
+
+    print(run_start)
+
+    params = FullParameters()
+
+    def dummy_nan_gridscan_return(*args):
+        return Point3D(math.nan, math.nan, math.nan)
+
+    params.grid_scan_params.grid_position_to_motor_position = dummy_nan_gridscan_return
+
+    with patch("artemis.fast_grid_scan_plan.NexusWriter"):
+        from artemis.zocalo_interaction import NoCentreFoundException
+
+        with pytest.raises(NoCentreFoundException):
+            list(
+                run_gridscan(
+                    dummy_3d_gridscan_args[0],
+                    dummy_3d_gridscan_args[1],
+                    params,
+                )
+            )
 
     run_start.assert_has_calls(call(x) for x in dc_ids)
     assert run_start.call_count == len(dc_ids)

@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 
 import bluesky.plan_stubs as bps
@@ -13,13 +14,19 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
+from artemis.log import LOGGER
 from artemis.nexus_writing.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
 from artemis.parameters import SIM_BEAMLINE, FullParameters
-from artemis.zocalo_interaction import run_end, run_start, wait_for_result
+from artemis.zocalo_interaction import (
+    NoCentreFoundException,
+    run_end,
+    run_start,
+    wait_for_result,
+)
 
 # Tolerance for how close omega must start to 0
 OMEGA_TOLERANCE = 0.1
@@ -48,6 +55,11 @@ def run_gridscan(
     sample_motors = fgs_composite.sample_motors
 
     current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
+
+    start_x = yield from bps.rd(sample_motors.x)
+    start_y = yield from bps.rd(sample_motors.y)
+    start_z = yield from bps.rd(sample_motors.z)
+
     assert abs(current_omega - parameters.detector_params.omega_start) < OMEGA_TOLERANCE
     assert (
         abs(current_omega) < OMEGA_TOLERANCE
@@ -79,6 +91,7 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
+    # TODO Where ispyb writes
     with ispyb as ispyb_ids, NexusWriter(
         create_parameters_for_first_file(parameters)
     ), NexusWriter(create_parameters_for_second_file(parameters)):
@@ -98,17 +111,36 @@ def run_gridscan(
 
     yield from bps.mv(sample_motors.omega, parameters.detector_params.omega_start)
 
-    # After moving omega we need to wait for x, y and z to have finished moving too
     yield from bps.wait(sample_motors)
 
-    yield from bps.mv(
-        sample_motors.x,
-        xray_centre_motor_position.x,
-        sample_motors.y,
-        xray_centre_motor_position.y,
-        sample_motors.z,
-        xray_centre_motor_position.z,
-    )
+    if (
+        math.isnan(xray_centre_motor_position.x)
+        or math.isnan(xray_centre_motor_position.y)
+        or math.isnan(xray_centre_motor_position.y)
+    ):
+        log_msg = f"No centre found, moving to optical centre ({start_x}, {start_y}, {start_z})"
+        LOGGER.warn(log_msg)
+        yield from bps.mv(
+            sample_motors.x,
+            start_x,
+            sample_motors.y,
+            start_y,
+            sample_motors.z,
+            start_z,
+        )
+        raise NoCentreFoundException(f"Zocalo: {log_msg}")
+
+    else:
+        log_msg = f"Moving to {xray_centre_motor_position}"
+        LOGGER.info(log_msg)
+        yield from bps.mv(
+            sample_motors.x,
+            xray_centre_motor_position.x,
+            sample_motors.y,
+            xray_centre_motor_position.y,
+            sample_motors.z,
+            xray_centre_motor_position.z,
+        )
 
 
 def get_plan(parameters: FullParameters):

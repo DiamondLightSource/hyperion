@@ -12,6 +12,14 @@ from artemis.utils import Point3D
 TIMEOUT = 30
 
 
+class NoCentreFoundException(Exception):
+    """
+    Error for if zocalo is unable to find the centre.
+    """
+
+    pass
+
+
 def _get_zocalo_connection():
     zc = zocalo.configuration.from_file()
     zc.activate_environment("artemis")

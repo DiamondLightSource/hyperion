@@ -4,10 +4,10 @@ from abc import ABC, abstractmethod
 
 import ispyb
 from sqlalchemy.connectors import Connector
+
 from artemis.ispyb.ispyb_dataclass import Orientation
 from artemis.parameters import FullParameters
 from artemis.utils import Point2D
-
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
