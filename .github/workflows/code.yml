@@ -57,7 +57,7 @@ jobs:
         uses: dls-controls/pipenv-run-action@v1
         with:
           python-version: ${{ matrix.python }}
-          pipenv-install: --dev --${{ matrix.pipenv }} --verbose
+          pipenv-install: --dev --${{ matrix.pipenv }}
           allow-editable-installs: ${{ matrix.pipenv == 'deploy' }}
           pipenv-run: tests
 
