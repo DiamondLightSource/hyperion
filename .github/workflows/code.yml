@@ -63,7 +63,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           name: ${{ matrix.python }}/${{ matrix.os }}
-          files: cov.xml
+          files: tmp/python-artemis.coverage
 
 #  container:
 #    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
