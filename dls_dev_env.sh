@@ -15,4 +15,4 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e .[dev]
 
-pytest src/artemis/tests
+pytest -m "not s03"
