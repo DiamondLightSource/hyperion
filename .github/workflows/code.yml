@@ -42,6 +42,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
+          python-version: '3.10'
           fetch-depth: 0
 
 
@@ -63,7 +64,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           name: ${{ matrix.python }}/${{ matrix.os }}
-          files: tmp/python-artemis.coverage
+          #files: tmp/python-artemis.coverage
 
 #  container:
 #    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
