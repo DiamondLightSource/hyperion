@@ -4,6 +4,8 @@ from ophyd import EpicsMotor
 from ophyd.device import Component
 from ophyd.epics_motor import MotorBundle
 
+from artemis.devices.fast_grid_scan import FastGridScan
+
 
 @dataclass
 class MotorLimitHelper:
@@ -44,6 +46,7 @@ class I03Smargon(MotorBundle):
     y: EpicsMotor = Component(EpicsMotor, "Y")
     z: EpicsMotor = Component(EpicsMotor, "Z")
     omega: EpicsMotor = Component(EpicsMotor, "OMEGA")
+    fast_grid_scan = Component(FastGridScan, "FGS")
 
     def get_xyz_limits(self) -> XYZLimitBundle:
         """Get the limits for the x, y and z axes.

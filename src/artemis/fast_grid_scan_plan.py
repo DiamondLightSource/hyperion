@@ -68,7 +68,7 @@ def run_gridscan(
         else StoreInIspyb2D(ispyb_config, parameters)
     )
 
-    fgs_motors = fgs_composite.fast_grid_scan
+    fgs_motors = fgs_composite.sample_motors.fast_grid_scan
     zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
