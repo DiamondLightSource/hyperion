@@ -109,7 +109,7 @@ jobs:
 
       - name: Run tests in the container locked with requirements_dev.txt
         run: |
-          docker run --name test build bash /project/.github/workflows/container_tests.sh
+          docker run --name test build bash .github/workflows/container_tests.sh  #/project/.github/workflows/container_tests.sh
           docker cp test:/project/dist .
           docker cp test:/project/cov.xml .
 
