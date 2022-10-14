@@ -96,11 +96,6 @@ def run_gridscan(
         parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
     )
 
-    yield from bps.mv(sample_motors.omega, parameters.detector_params.omega_start)
-
-    # After moving omega we need to wait for x, y and z to have finished moving too
-    yield from bps.wait(sample_motors)
-
     yield from bps.mv(
         sample_motors.x,
         xray_centre_motor_position.x,
