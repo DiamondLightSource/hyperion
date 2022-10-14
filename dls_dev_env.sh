@@ -5,6 +5,10 @@ module unload controls_dev
 
 module load python/3.10
 
+if [ -d "./.venv" ]
+then
+rm -rf .venv
+fi
 mkdir .venv
 
 python -m venv .venv
