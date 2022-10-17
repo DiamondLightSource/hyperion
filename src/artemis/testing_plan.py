@@ -20,7 +20,7 @@ def run_fake_scan():
 
     for det in detectors:
         yield from bps.unstage(det)
-        time.sleep(0.05)  # fake unstagiing should take some time
+        time.sleep(0.05)  # fake unstaging should take some time
 
 
 def get_fake_scan():
