@@ -14,7 +14,9 @@ from flask_restful import Api, Resource
 
 import artemis.log
 from artemis.fast_grid_scan_plan import get_plan
+from artemis.fgs_recommender import FGSRecommender
 from artemis.parameters import FullParameters
+from artemis.testing_plan import get_fake_scan
 
 
 class Actions(Enum):
@@ -49,12 +51,14 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
+    fgs_recommender = FGSRecommender()
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
+        RE.subscribe(self.fgs_recommender.cb)
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
@@ -94,9 +98,21 @@ class BlueskyRunner:
         self.command_queue.put(Command(Actions.SHUTDOWN))
 
     def wait_on_queue(self):
+        # TODO abstract plan fetcher from params
         while True:
             command = self.command_queue.get()
             if command.action == Actions.START:
+                if command.parameters["scan"] == "fake":
+                    try:
+                        self.RE(get_fake_scan())
+                    except Exception as exception:
+                        if self.last_run_aborted:
+                            # Aborting will cause an exception here that we want to swallow
+                            self.last_run_aborted = False
+                        else:
+                            self.current_status = StatusAndMessage(
+                                Status.FAILED, str(exception)
+                            )
                 try:
                     self.RE(get_plan(command.parameters))
                     self.current_status = StatusAndMessage(Status.IDLE)
@@ -134,6 +150,23 @@ class FastGridScan(Resource):
         return self.runner.current_status.to_dict()
 
 
+class FakeScan(Resource):
+    def __init__(self, runner: BlueskyRunner) -> None:
+        super().__init__()
+        self.runner = runner
+
+    def put(self, action):
+        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
+        if action == Actions.START.value:
+            status_and_message = self.runner.start(parameters={"scan": "fake"})
+        elif action == Actions.STOP.value:
+            status_and_message = self.runner.stop()
+        return status_and_message.to_dict()
+
+    def get(self, action):
+        return self.runner.current_status.to_dict()
+
+
 def create_app(
     test_config=None, RE: RunEngine = RunEngine({})
 ) -> Tuple[Flask, BlueskyRunner]:
@@ -144,6 +177,9 @@ def create_app(
     api = Api(app)
     api.add_resource(
         FastGridScan, "/fast_grid_scan/<string:action>", resource_class_args=[runner]
+    )
+    api.add_resource(
+        FakeScan, "/fake_scan/<string:action>", resource_class_args=[runner]
     )
     return app, runner
 
