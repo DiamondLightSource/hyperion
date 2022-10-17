@@ -1,21 +1,32 @@
+import time
+
 import artemis.log
 import artemis.zocalo_interaction
 
 
-class FGSRecommender:
-    """Listens to events from the RE and submits:
+class FGSCommunicator:
+    """Class for external communication (e.g. ispyb, zocalo...) during Artemis
+    grid scan experiments.
+
+    Listens to events from the RE and submits:
     - nothing so far
     """
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.active_uid = None
+        self.params = None
+        self.results = None
+        self.processing_time = None
 
     def cb(self, event_name, event_data):
-        artemis.log.LOGGER.info(
-            f"FGSRecommender.cb {self} recieved event '{event_name}' with document {event_data}"
+        artemis.log.LOGGER.debug(
+            f"FGSCommunicator.cb {self} recieved event '{event_name}' with document {event_data}"
         )
-        artemis.log.LOGGER.info(
-            f"FGSRecommender.cb processing event for run {event_data.get('run_start')} during run {self.active_uid}"
+        artemis.log.LOGGER.debug(
+            f"FGSCommunicator.cb processing event for run {event_data.get('run_start')} during run {self.active_uid}"
         )
 
         if event_name == "start":
@@ -38,5 +49,10 @@ class FGSRecommender:
                     f"Run {self.active_uid} successful, submitting data to zocalo"
                 )
                 # zocalo end_run goes here
-
-            self.active_uid = None
+                b4_processing = time.time()
+                time.sleep(0.1)
+                # self.results = waitforresults()
+                self.processing_time = time.time() - b4_processing
+                artemis.log.LOGGER.info(
+                    f"Zocalo processing took {self.processing_time}s"
+                )

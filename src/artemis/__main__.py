@@ -14,7 +14,7 @@ from flask_restful import Api, Resource
 
 import artemis.log
 from artemis.fast_grid_scan_plan import get_plan
-from artemis.fgs_recommender import FGSRecommender
+from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import FullParameters
 from artemis.testing_plan import get_fake_scan
 
@@ -51,17 +51,18 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    fgs_recommender = FGSRecommender()
+    fgs_comunicator = FGSCommunicator()
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
-        RE.subscribe(self.fgs_recommender.cb)
+        RE.subscribe(self.fgs_comunicator.cb)
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
+        self.fgs_comunicator.params = parameters
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
