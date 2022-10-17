@@ -116,7 +116,10 @@ class BlueskyRunner:
                             )
                 try:
                     self.RE(get_plan(command.parameters))
-                    self.current_status = StatusAndMessage(Status.IDLE)
+                    self.current_status = StatusAndMessage(
+                        Status.IDLE,
+                        f"Zocalo processing time: {self.fgs_communicator.processing_time}",
+                    )
                     self.last_run_aborted = False
                 except Exception as exception:
                     if self.last_run_aborted:
