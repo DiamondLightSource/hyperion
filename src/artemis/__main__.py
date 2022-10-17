@@ -51,18 +51,18 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    fgs_comunicator = FGSCommunicator()
+    fgs_communicator = FGSCommunicator()
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
-        RE.subscribe(self.fgs_comunicator.cb)
+        RE.subscribe(self.fgs_communicator.cb)
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-        self.fgs_comunicator.params = parameters
+        self.fgs_communicator.params = parameters
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -103,9 +103,13 @@ class BlueskyRunner:
         while True:
             command = self.command_queue.get()
             if command.action == Actions.START:
-                if command.parameters["scan"] == "fake":
+                if command.parameters.scan_type == "fake":
                     try:
                         self.RE(get_fake_scan())
+                        self.current_status = StatusAndMessage(
+                            Status.IDLE,
+                            f"Zocalo processing time: {self.fgs_communicator.processing_time}",
+                        )
                     except Exception as exception:
                         if self.last_run_aborted:
                             # Aborting will cause an exception here that we want to swallow
@@ -114,23 +118,25 @@ class BlueskyRunner:
                             self.current_status = StatusAndMessage(
                                 Status.FAILED, str(exception)
                             )
-                try:
-                    self.RE(get_plan(command.parameters))
-                    self.current_status = StatusAndMessage(
-                        Status.IDLE,
-                        f"Zocalo processing time: {self.fgs_communicator.processing_time}",
-                    )
-                    self.last_run_aborted = False
-                except Exception as exception:
-                    if self.last_run_aborted:
-                        # Aborting will cause an exception here that we want to swallow
-                        self.last_run_aborted = False
-                    else:
+                else:
+                    try:
+                        self.RE(get_plan(command.parameters))
                         self.current_status = StatusAndMessage(
-                            Status.FAILED, str(exception)
+                            Status.IDLE,
+                            f"Zocalo processing time: {self.fgs_communicator.processing_time}",
                         )
+                        self.last_run_aborted = False
+                    except Exception as exception:
+                        if self.last_run_aborted:
+                            # Aborting will cause an exception here that we want to swallow
+                            self.last_run_aborted = False
+                        else:
+                            self.current_status = StatusAndMessage(
+                                Status.FAILED, str(exception)
+                            )
             elif command.action == Actions.SHUTDOWN:
                 return
+            self.fgs_communicator.reset()
 
 
 class FastGridScan(Resource):
@@ -162,7 +168,9 @@ class FakeScan(Resource):
     def put(self, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
-            status_and_message = self.runner.start(parameters={"scan": "fake"})
+            parameters = FullParameters()
+            parameters.scan_type = "fake"
+            status_and_message = self.runner.start(parameters)
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
         return status_and_message.to_dict()
