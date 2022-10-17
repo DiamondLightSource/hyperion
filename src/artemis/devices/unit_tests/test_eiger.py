@@ -234,3 +234,11 @@ def test_stage_runs_successfully(mock_await, fake_eiger):
     fake_eiger.odin.check_odin_initialised.return_value = (True, "")
     fake_eiger.odin.file_writer.file_path.put(True)
     fake_eiger.stage()
+
+
+def test_check_filename_has_been_written_to(fake_eiger):
+    from artemis.devices.status import await_value
+
+    assert await_value(
+        fake_eiger.odin.meta.file_name, fake_eiger.detector_params.full_filename
+    )
