@@ -11,8 +11,8 @@ from artemis.utils import Point3D
 @dataclass
 class IspybParams:
     visit_path: str
-    pixels_per_micron_x: float
-    pixels_per_micron_y: float
+    pixels_per_micron_x: Optional[float]
+    pixels_per_micron_y: Optional[float]
 
     upper_left: Point3D = field(
         # in px on the image
@@ -35,12 +35,12 @@ class IspybParams:
     transmission: float
     flux: float
     wavelength: float
-    beam_size_x: float
-    beam_size_y: float
-    focal_spot_size_x: float
-    focal_spot_size_y: float
+    beam_size_x: Optional[float]
+    beam_size_y: Optional[float]
+    focal_spot_size_x: Optional[float]
+    focal_spot_size_y: Optional[float]
     comment: str
-    resolution: float
+    resolution: Optional[float]
 
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
