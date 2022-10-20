@@ -71,7 +71,7 @@ class EigerDetector(Device):
         self.arm_detector()
 
     def unstage(self) -> bool:
-        self.odin.file_writer.timeout.put(1)
+        self.odin.file_writer.start_timeout.put(1)
         self.odin.nodes.wait_for_filewriters_to_finish()
         self.disarm_detector()
         self.disable_roi_mode()
@@ -113,7 +113,6 @@ class EigerDetector(Device):
     def set_odin_pvs(self):
         file_prefix = self.detector_params.full_filename
 
-        self.odin.fan.forward_stream.put(True)
         self.odin.file_writer.file_path.put(self.detector_params.directory)
         self.odin.file_writer.file_name.put(file_prefix)
 
@@ -132,14 +131,18 @@ class EigerDetector(Device):
         self.cam.omega_start.put(self.detector_params.omega_start)
         self.cam.omega_incr.put(self.detector_params.omega_increment)
 
-    def set_detector_threshold(self, energy: float) -> bool:
+    def set_detector_threshold(self, energy: float, tolerance: float = 0.1):
+        """Ensures the energy threshold on the detector is set to the specified energy,
+        within the specified tolerance.
+        Args:
+            energy (float): The energy to set
+            tolerance (float, optional): If the energy is already set to within
+                this tolerance it is not set again. Defaults to 0.1.
+        """
         current_energy = self.cam.photon_energy.get()
 
-        if abs(current_energy - energy) > 0.1:
+        if abs(current_energy - energy) > tolerance:
             self.cam.photon_energy.put(energy)
-            return True
-        else:
-            return False
 
     def set_num_triggers_and_captures(self):
         self.cam.num_images.put(1)
@@ -149,11 +152,14 @@ class EigerDetector(Device):
     def wait_for_stale_parameters(self):
         await_value(self.stale_params, 0).wait(self.STALE_PARAMS_TIMEOUT)
 
+    def forward_bit_depth_to_filewriter(self):
+        bit_depth = self.bit_depth.get()
+        self.odin.file_writer.data_type.put(f"UInt{bit_depth}")
+
     def arm_detector(self):
         self.wait_for_stale_parameters()
 
-        bit_depth = self.bit_depth.get()
-        self.odin.file_writer.data_type.put(f"UInt{bit_depth}")
+        self.forward_bit_depth_to_filewriter()
 
         odin_status = self.odin.file_writer.capture.set(1)
         odin_status &= await_value(self.odin.meta.ready, 1)
