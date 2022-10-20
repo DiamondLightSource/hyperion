@@ -2,6 +2,12 @@ import time
 
 import artemis.log
 import artemis.zocalo_interaction
+from artemis.nexus_writing.write_nexus import (
+    NexusWriter,
+    create_parameters_for_first_file,
+    create_parameters_for_second_file,
+)
+from artemis.parameters import FullParameters
 
 
 class FGSCommunicator:
@@ -13,11 +19,11 @@ class FGSCommunicator:
     """
 
     def __init__(self):
-        self.reset()
+        self.reset(FullParameters())
 
-    def reset(self):
+    def reset(self, parameters):
         self.active_uid = None
-        self.params = None
+        self.params = parameters
         self.results = None
         self.processing_time = None
 
@@ -31,6 +37,13 @@ class FGSCommunicator:
 
         if event_name == "start":
             self.active_uid = event_data.get("uid")
+
+            with NexusWriter(
+                create_parameters_for_first_file(self.params)
+            ), NexusWriter(create_parameters_for_second_file(self.params)):
+                artemis.log.LOGGER.info(
+                    f"Creating Nexus files for run {self.active_uid}"
+                )
 
             artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
             # ispyb goes here

@@ -62,7 +62,7 @@ class BlueskyRunner:
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-        self.fgs_communicator.params = parameters
+        self.fgs_communicator.reset(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -136,7 +136,6 @@ class BlueskyRunner:
                             )
             elif command.action == Actions.SHUTDOWN:
                 return
-            self.fgs_communicator.reset()
 
 
 class FastGridScan(Resource):
