@@ -74,8 +74,8 @@ class EigerDetector(Device):
         self.odin.file_writer.timeout.put(1)
         self.odin.nodes.wait_for_filewriters_to_finish()
         self.disarm_detector()
-        self.disable_roi_mode()
         status_ok = self.odin.check_odin_state()
+        self.disable_roi_mode()
         return status_ok
 
     def enable_roi_mode(self):
