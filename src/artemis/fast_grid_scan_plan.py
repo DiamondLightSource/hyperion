@@ -73,7 +73,7 @@ def run_gridscan(
     zebra = fgs_composite.zebra
 
     # start the pre arming steps for the eiger
-    eiger_pre_arm_thread = threading.Thread(target=lambda: eiger.pre_arm)
+    eiger_pre_arm_thread = threading.Thread(target=lambda: eiger.pre_arm())
     eiger_pre_arm_thread.start()
 
     # TODO: Check topup gate
