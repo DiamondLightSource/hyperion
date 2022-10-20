@@ -129,6 +129,7 @@ def test_stage_raises_exception_if_odin_initialisation_status_not_ok(fake_eiger)
     with pytest.raises(
         Exception, match=f"Odin not initialised: {expected_error_message}"
     ):
+        fake_eiger.pre_arm()
         fake_eiger.stage()
 
 
@@ -147,7 +148,7 @@ def test_stage_enables_roi_mode_correctly(
     mock_roi_enable = MagicMock()
     fake_eiger.enable_roi_mode = mock_roi_enable
 
-    fake_eiger.stage()
+    fake_eiger.pre_arm()
     assert mock_roi_enable.call_count == expected_num_roi_enable_calls
 
 
@@ -223,6 +224,7 @@ def test_given_failing_odin_when_stage_then_exception_raised(fake_eiger):
     fake_eiger.odin.check_odin_initialised = MagicMock()
     fake_eiger.odin.check_odin_initialised.return_value = (False, error_contents)
     with pytest.raises(Exception) as e:
+        fake_eiger.pre_arm()
         fake_eiger.stage()
         assert error_contents in e.value
 
@@ -233,4 +235,5 @@ def test_stage_runs_successfully(mock_await, fake_eiger):
     fake_eiger.odin.check_odin_initialised = MagicMock()
     fake_eiger.odin.check_odin_initialised.return_value = (True, "")
     fake_eiger.odin.file_writer.file_path.put(True)
+    fake_eiger.pre_arm()
     fake_eiger.stage()

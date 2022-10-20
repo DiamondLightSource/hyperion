@@ -53,7 +53,13 @@ class EigerDetector(Device):
         if errors:
             raise Exception("\n".join(errors))
 
-    def stage(self):
+    def pre_arm(self):
+        """
+        Setting up for the arm, to be ran concurrently.
+
+        Args: None
+        Returns: None
+        """
         self.odin.nodes.clear_odin_errors()
         status_ok, error_message = self.odin.check_odin_initialised()
         if not status_ok:
@@ -68,6 +74,7 @@ class EigerDetector(Device):
 
         odin_filename_status.wait(self.ODIN_FILEWRITER_TIMEOUT)
 
+    def stage(self):
         self.arm_detector()
 
     def unstage(self) -> bool:

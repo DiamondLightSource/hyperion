@@ -1,5 +1,6 @@
 import argparse
 import os
+import threading
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -71,6 +72,10 @@ def run_gridscan(
     fgs_motors = fgs_composite.fast_grid_scan
     zebra = fgs_composite.zebra
 
+    # start the pre arming steps for the eiger
+    eiger_pre_arm_thread = threading.Thread(target=lambda: eiger.pre_arm)
+    eiger_pre_arm_thread.start()
+
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
 
@@ -86,6 +91,10 @@ def run_gridscan(
         datacollection_group_id = ispyb_ids[2]
         for id in datacollection_ids:
             run_start(id)
+
+        # make sure the eiger is ready before the fgs
+        eiger_pre_arm_thread.join()
+
         yield from do_fgs()
 
     for id in datacollection_ids:
