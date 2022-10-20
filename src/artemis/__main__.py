@@ -58,7 +58,7 @@ class BlueskyRunner:
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
-        RE.subscribe(self.fgs_communicator.cb)
+        RE.subscribe(self.fgs_communicator)
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
@@ -121,10 +121,7 @@ class BlueskyRunner:
                 else:
                     try:
                         self.RE(get_plan(command.parameters))
-                        self.current_status = StatusAndMessage(
-                            Status.IDLE,
-                            f"Zocalo processing time: {self.fgs_communicator.processing_time}",
-                        )
+                        self.current_status = StatusAndMessage(Status.IDLE, "")
                         self.last_run_aborted = False
                     except Exception as exception:
                         if self.last_run_aborted:

@@ -240,7 +240,7 @@ class NexusWriter:
             )
         ]
 
-    def __enter__(self):
+    def create_nexus_file(self):
         """
         Creates a nexus file based on the parameters supplied when this obect was
         initialised.
@@ -284,9 +284,9 @@ class NexusWriter:
                     start_index=self.start_index,
                 )
 
-    def __exit__(self, *_):
+    def update_nexus_file_timestamp(self):
         """
-        Write timestamp when closing file.
+        Write timestamp when finishing run.
         For the nexus file to be updated atomically, changes are written to a
         temporary copy which then replaces the original.
         """
