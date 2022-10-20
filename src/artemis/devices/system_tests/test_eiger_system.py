@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 from artemis.devices.eiger import DetectorParams, EigerDetector
@@ -34,14 +33,6 @@ def eiger():
 
 @pytest.mark.s03
 def test_can_stage_and_unstage_eiger(eiger: EigerDetector):
-    times_id_has_changed = 0
-
-    def file_writer_id_monitor(*_, **kwargs):
-        nonlocal times_id_has_changed
-        if not np.array_equal(kwargs["old_value"], kwargs["value"]):
-            times_id_has_changed += 1
-
-    eiger.odin.file_writer.id.subscribe(file_writer_id_monitor)
     eiger.stage()
     assert eiger.cam.acquire.get() == 1
     # S03 filewriters stay in error
