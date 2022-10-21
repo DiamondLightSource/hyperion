@@ -18,15 +18,18 @@ class FGSCommunicator(CallbackBase):
     """Class for external communication (e.g. ispyb, zocalo...) during Artemis
     grid scan experiments.
 
-    Listens to events from the RE and submits:
-    - nothing so far
+    Listens to documents emitted by the RE and:
+    - prepares nexus files
+    - prepares ipsyb deposition
+    - submits job to zocalo
     """
 
     def __init__(self):
         self.reset(FullParameters())
 
-    def reset(self, parameters):
+    def reset(self, parameters: FullParameters):
         self.active_uid = None
+        self.gridscan_uid = None
         self.params = parameters
         self.params.detector_params.prefix += str(time.time())
         self.results = None
@@ -36,8 +39,12 @@ class FGSCommunicator(CallbackBase):
         self.datacollection_group_id = None
         self.xray_centre_motor_position = None
 
-    def start(self, doc):
+    def start(self, doc: dict):
         self.active_uid = doc.get("uid")
+        # exceptionally, do write nexus files for fake scan
+        if doc.get("plan_name") not in ["run_gridscan", "fake_scan"]:
+            return
+        self.gridscan_uid = doc.get("uid")
 
         artemis.log.LOGGER.info(f"Creating Nexus files for run {self.active_uid}")
         self.nxs_writer_1.create_nexus_file()
@@ -46,7 +53,12 @@ class FGSCommunicator(CallbackBase):
         artemis.log.LOGGER.info(f"Initialising Zocalo for run {self.active_uid}")
         # zocalo run_start goes here
 
-    def event(self, doc):
+    def event(self, doc: dict):
+        if self.params.scan_type == "fake_scan":
+            return
+        # Don't do processing for move_xyz
+        if doc.get("run_start") != self.gridscan_uid:
+            return
         if doc.get("name") == "ispyb_motor_positions":
             artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
 
@@ -66,12 +78,14 @@ class FGSCommunicator(CallbackBase):
 
             for id in datacollection_ids:
                 run_end(id)
-        # ispyb goes here
         # any live update stuff goes here
 
-    def stop(self, doc):
-        if doc.get("run_start") != self.active_uid:
-            raise Exception("Received document for a run which is not open")
+    def stop(self, doc: dict):
+        if self.params.scan_type == "fake_scan":
+            return
+        # Don't do processing for move_xyz
+        if doc.get("run_start") != self.gridscan_uid:
+            return
         if doc.get("exit_status") == "success":
             artemis.log.LOGGER.debug("Updating Nexus file timestamps.")
             self.nxs_writer_1.update_nexus_file_timestamp()

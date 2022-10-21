@@ -32,7 +32,15 @@ def read_hardware_for_ispyb(
 
 
 @bpp.run_decorator()
-def move_xyz(sample_motors, xray_centre_motor_position):
+def move_xyz(
+    sample_motors,
+    xray_centre_motor_position,
+    md={
+        # The name of this plan
+        "plan_name": "move_xyz",
+    },
+):
+
     yield from bps.mv(
         sample_motors.x,
         xray_centre_motor_position.x,
@@ -48,7 +56,12 @@ def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
     parameters: FullParameters,
+    md={
+        # The name of this plan
+        "plan_name": "run_gridscan",
+    },
 ):
+
     sample_motors = fgs_composite.sample_motors
 
     current_omega = yield from bps.rd(sample_motors.omega, default_value=0)

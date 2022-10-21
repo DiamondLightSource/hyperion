@@ -9,7 +9,12 @@ signal = SynSignal(name="undulator_gap")
 
 
 @bpp.run_decorator()
-def run_fake_scan():
+def run_fake_scan(
+    md={
+        # The name of this plan
+        "plan_name": "fake_scan",
+    }
+):
     yield from bps.create(name="fake_ispyb_params")
     yield from bps.read(signal)
     yield from bps.save()
