@@ -1,12 +1,15 @@
 import time
 
 import bluesky.plan_stubs as bps
-from ophyd.sim import det1, det2
+from ophyd.sim import SynSignal, det1, det2
 
 detectors = [det1, det2]
+signal = SynSignal(name="undulator_gap")
 
 
 def run_fake_scan():
+    yield from bps.rd(signal)
+
     # Delays are basically here to make graylog logs appear in ~order
     for det in detectors:
         yield from bps.stage(det)

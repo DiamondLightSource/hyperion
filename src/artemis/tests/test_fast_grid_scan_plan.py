@@ -110,7 +110,7 @@ def test_run_gridscan_zocalo_calls(
 
     print(run_start)
 
-    with patch("artemis.fast_grid_scan_plan.NexusWriter"):
+    with patch("artemis.fgs_communicator.NexusWriter"):
         list(run_gridscan(*dummy_3d_gridscan_args))
 
     run_start.assert_has_calls(call(x) for x in dc_ids)
@@ -148,7 +148,7 @@ def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
 
     with pytest.raises(Exception) as excinfo:
         with patch(
-            "artemis.fast_grid_scan_plan.NexusWriter",
+            "artemis.fgs_communicator.NexusWriter",
             side_effect=Exception("mocked error"),
         ):
             list(run_gridscan(*dummy_3d_gridscan_args))
@@ -186,7 +186,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    with patch("artemis.fast_grid_scan_plan.NexusWriter"):
+    with patch("artemis.fgs_communicator.NexusWriter"):
         list(run_gridscan(*dummy_3d_gridscan_args))
 
     mock_ispyb_update_time_and_status.assert_has_calls(

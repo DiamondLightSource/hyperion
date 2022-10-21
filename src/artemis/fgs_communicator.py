@@ -41,6 +41,7 @@ class FGSCommunicator(CallbackBase):
     def reset(self, parameters):
         self.active_uid = None
         self.params = parameters
+        self.params.detector_params.prefix += str(time.time())
         self.results = None
         self.processing_time = None
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
@@ -67,7 +68,9 @@ class FGSCommunicator(CallbackBase):
         artemis.log.LOGGER.info(f"Initialising Zocalo for run {self.active_uid}")
         # zocalo run_start goes here
 
-    # def event(self, doc):
+    def event(self, doc):
+        print(f"\n\n{doc}\n\n")
+
     # any live update stuff goes here
 
     def stop(self, doc):
