@@ -31,6 +31,7 @@ def read_hardware_for_ispyb(
     yield from bps.save()
 
 
+@bpp.run_decorator()
 def move_xyz(sample_motors, xray_centre_motor_position):
     yield from bps.mv(
         sample_motors.x,
@@ -47,7 +48,6 @@ def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
     parameters: FullParameters,
-    communicator: FGSCommunicator,
 ):
     sample_motors = fgs_composite.sample_motors
 
@@ -76,12 +76,20 @@ def run_gridscan(
 
     yield from do_fgs()
 
-    while communicator.results is None:
-        pass
-    yield from move_xyz(sample_motors, communicator.xray_centre_motor_position)
+
+def run_gridscan_and_move(
+    fgs_composite: FGSComposite,
+    eiger: EigerDetector,
+    parameters: FullParameters,
+    communicator: FGSCommunicator,
+):
+    yield from run_gridscan(fgs_composite, eiger, parameters)
+    yield from move_xyz(
+        fgs_composite.sample_motors, communicator.xray_centre_motor_position
+    )
 
 
-def get_plan(parameters: FullParameters):
+def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
@@ -105,7 +113,9 @@ def get_plan(parameters: FullParameters):
 
     fast_grid_scan_composite.wait_for_connection()
 
-    return run_gridscan(fast_grid_scan_composite, eiger, parameters)
+    return run_gridscan_and_move(
+        fast_grid_scan_composite, eiger, parameters, communicator
+    )
 
 
 if __name__ == "__main__":
@@ -121,5 +131,7 @@ if __name__ == "__main__":
     RE.waiting_hook = ProgressBarManager()
 
     parameters = FullParameters(beamline=args.beamline)
+    communicator = FGSCommunicator()
+    RE.subscribe(communicator)
 
-    RE(get_plan(parameters))
+    RE(get_plan(parameters, communicator))
