@@ -11,21 +11,6 @@ from artemis.nexus_writing.write_nexus import (
 )
 from artemis.parameters import FullParameters
 
-#
-# class MyCallback(CallbackBase):
-#     def start(self, doc):
-#         print("I got a new 'start' Document")
-#         # Do something
-#     def descriptor(self, doc):
-#         print("I got a new 'descriptor' Document")
-#         # Do something
-#     def event(self, doc):
-#         print("I got a new 'event' Document")
-#         # Do something
-#     def stop(self, doc):
-#         print("I got a new 'stop' Document")
-#         # Do something
-
 
 class FGSCommunicator(CallbackBase):
     """Class for external communication (e.g. ispyb, zocalo...) during Artemis
@@ -47,14 +32,6 @@ class FGSCommunicator(CallbackBase):
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
 
-    #    def cb(self, event_name, doc):
-    #        artemis.log.LOGGER.debug(
-    #            f"FGSCommunicator.cb {self} recieved event '{event_name}' with document {doc}"
-    #        )
-    #        artemis.log.LOGGER.debug(
-    #            f"FGSCommunicator.cb processing event for run {doc.get('run_start')} during run {self.active_uid}"
-    #        )
-
     def start(self, doc):
         self.active_uid = doc.get("uid")
 
@@ -69,9 +46,8 @@ class FGSCommunicator(CallbackBase):
         # zocalo run_start goes here
 
     def event(self, doc):
-        print(f"\n\n{doc}\n\n")
-
-    # any live update stuff goes here
+        pass
+        # any live update stuff goes here
 
     def stop(self, doc):
         if doc.get("run_start") != self.active_uid:
@@ -87,7 +63,7 @@ class FGSCommunicator(CallbackBase):
             # zocalo end_run goes here
 
             b4_processing = time.time()
-            time.sleep(0.1)
+            time.sleep(0.1)  # TODO remove once actual mock processing exists
             # self.results = waitforresults()
             self.processing_time = time.time() - b4_processing
             artemis.log.LOGGER.info(f"Zocalo processing took {self.processing_time}s")
