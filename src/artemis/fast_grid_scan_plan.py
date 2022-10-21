@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -12,26 +11,35 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
+from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import SIM_BEAMLINE, FullParameters
-from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 # Tolerance for how close omega must start to 0
 OMEGA_TOLERANCE = 0.1
 
 
-def update_params_from_epics_devices(
-    parameters: FullParameters,
+def read_hardware_for_ispyb(
     undulator: Undulator,
     synchrotron: Synchrotron,
     slit_gap: SlitGaps,
 ):
-    parameters.ispyb_params.undulator_gap = yield from bps.rd(undulator.gap)
-    parameters.ispyb_params.synchrotron_mode = yield from bps.rd(
-        synchrotron.machine_status.synchrotron_mode
+    yield from bps.create(name="ispyb_params")
+    yield from bps.read(undulator.gap)
+    yield from bps.read(synchrotron.machine_status.synchrotron_mode)
+    yield from bps.read(slit_gap.xgap)
+    yield from bps.read(slit_gap.ygap)
+    yield from bps.save()
+
+
+def move_xyz(sample_motors, xray_centre_motor_position):
+    yield from bps.mv(
+        sample_motors.x,
+        xray_centre_motor_position.x,
+        sample_motors.y,
+        xray_centre_motor_position.y,
+        sample_motors.z,
+        xray_centre_motor_position.z,
     )
-    parameters.ispyb_params.slit_gap_size_x = yield from bps.rd(slit_gap.xgap)
-    parameters.ispyb_params.slit_gap_size_y = yield from bps.rd(slit_gap.ygap)
 
 
 @bpp.run_decorator()
@@ -39,6 +47,7 @@ def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
     parameters: FullParameters,
+    communicator: FGSCommunicator,
 ):
     sample_motors = fgs_composite.sample_motors
 
@@ -48,19 +57,10 @@ def run_gridscan(
         abs(current_omega) < OMEGA_TOLERANCE
     )  # This should eventually be removed, see #154
 
-    yield from update_params_from_epics_devices(
-        parameters,
+    yield from read_hardware_for_ispyb(
         fgs_composite.undulator,
         fgs_composite.synchrotron,
         fgs_composite.slit_gaps,
-    )
-
-    ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
-
-    ispyb = (
-        StoreInIspyb3D(ispyb_config, parameters)
-        if parameters.grid_scan_params.is_3d_grid_scan
-        else StoreInIspyb2D(ispyb_config, parameters)
     )
 
     fgs_motors = fgs_composite.fast_grid_scan
@@ -74,29 +74,11 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    with ispyb as ispyb_ids:
-        datacollection_ids = ispyb_ids[0]
-        datacollection_group_id = ispyb_ids[2]
-        for id in datacollection_ids:
-            run_start(id)
-        yield from do_fgs()
+    yield from do_fgs()
 
-    for id in datacollection_ids:
-        run_end(id)
-
-    xray_centre = wait_for_result(datacollection_group_id)
-    xray_centre_motor_position = (
-        parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
-    )
-
-    yield from bps.mv(
-        sample_motors.x,
-        xray_centre_motor_position.x,
-        sample_motors.y,
-        xray_centre_motor_position.y,
-        sample_motors.z,
-        xray_centre_motor_position.z,
-    )
+    while communicator.results is None:
+        pass
+    yield from move_xyz(sample_motors, communicator.xray_centre_motor_position)
 
 
 def get_plan(parameters: FullParameters):

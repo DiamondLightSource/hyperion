@@ -1,15 +1,17 @@
+import os
 import time
 
 from bluesky.callbacks import CallbackBase
 
 import artemis.log
-import artemis.zocalo_interaction
+from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.nexus_writing.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
 from artemis.parameters import FullParameters
+from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 
 class FGSCommunicator(CallbackBase):
@@ -31,6 +33,8 @@ class FGSCommunicator(CallbackBase):
         self.processing_time = None
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
+        self.datacollection_group_id = None
+        self.xray_centre_motor_position = None
 
     def start(self, doc):
         self.active_uid = doc.get("uid")
@@ -43,8 +47,25 @@ class FGSCommunicator(CallbackBase):
         # zocalo run_start goes here
 
     def event(self, doc):
+        if doc.get("name") == "ispyb_motor_positions":
+            artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
 
-        artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
+            ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
+
+            ispyb = (
+                StoreInIspyb3D(ispyb_config, self.params)
+                if self.params.grid_scan_params.is_3d_grid_scan
+                else StoreInIspyb2D(ispyb_config, self.params)
+            )
+
+            with ispyb as ispyb_ids:
+                datacollection_ids = ispyb_ids[0]
+                self.datacollection_group_id = ispyb_ids[2]
+                for id in datacollection_ids:
+                    run_start(id)
+
+            for id in datacollection_ids:
+                run_end(id)
         # ispyb goes here
         # any live update stuff goes here
 
@@ -59,7 +80,12 @@ class FGSCommunicator(CallbackBase):
             artemis.log.LOGGER.info(
                 f"Run {self.active_uid} successful, submitting data to zocalo"
             )
-            # zocalo end_run goes here
+            self.results = wait_for_result(self.datacollection_group_id)
+            self.xray_centre_motor_position = (
+                self.params.grid_scan_params.grid_position_to_motor_position(
+                    self.results
+                )
+            )
 
             b4_processing = time.time()
             time.sleep(0.1)  # TODO remove once actual mock processing exists

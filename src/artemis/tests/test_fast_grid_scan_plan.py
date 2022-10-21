@@ -15,7 +15,7 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.fast_grid_scan_plan import run_gridscan, update_params_from_epics_devices
+from artemis.fast_grid_scan_plan import read_hardware_for_ispyb, run_gridscan
 from artemis.parameters import FullParameters
 
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
@@ -60,7 +60,7 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
     slit_gaps.xgap.sim_put(xgap_test_value)
     slit_gaps.ygap.sim_put(ygap_test_value)
 
-    RE(update_params_from_epics_devices(params, undulator, synchrotron, slit_gaps))
+    RE(read_hardware_for_ispyb(params, undulator, synchrotron, slit_gaps))
 
     assert params.ispyb_params.undulator_gap == undulator_test_value
     assert params.ispyb_params.synchrotron_mode == synchrotron_test_value
