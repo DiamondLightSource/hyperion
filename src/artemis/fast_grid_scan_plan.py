@@ -69,6 +69,11 @@ def run_gridscan(
     )
 
     fgs_motors = fgs_composite.fast_grid_scan
+
+    # If this run is 2D set z_steps to 0 in case last run was 3D
+    if parameters.grid_scan_params.is_3d_grid_scan:
+        yield from bps.mv(fgs_motors.z_steps, 0)
+
     zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
