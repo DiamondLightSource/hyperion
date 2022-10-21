@@ -39,14 +39,13 @@ class FGSCommunicator(CallbackBase):
         self.nxs_writer_1.create_nexus_file()
         self.nxs_writer_2.create_nexus_file()
 
-        artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
-        # ispyb goes here
-
         artemis.log.LOGGER.info(f"Initialising Zocalo for run {self.active_uid}")
         # zocalo run_start goes here
 
     def event(self, doc):
-        pass
+
+        artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
+        # ispyb goes here
         # any live update stuff goes here
 
     def stop(self, doc):
