@@ -67,7 +67,7 @@ def _get_graylog_configuration(dev_mode: bool) -> Tuple[str, int]:
     if dev_mode:
         return "localhost", 5555
     else:
-        return "graylog2.diamond.ac.uk", 12218
+        return "graylog2.diamond.ac.uk", 12201
 
 
 def _get_logging_file_path() -> Path:
