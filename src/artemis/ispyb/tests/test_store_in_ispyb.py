@@ -17,6 +17,9 @@ TEST_SESSION_ID = 90
 
 DUMMY_CONFIG = "/file/path/to/config/"
 DUMMY_PARAMS = FullParameters()
+DUMMY_PARAMS.ispyb_params.upper_left = Point3D(100, 100, 100)
+DUMMY_PARAMS.ispyb_params.pixels_per_micron_x = 0.8
+DUMMY_PARAMS.ispyb_params.pixels_per_micron_y = 0.8
 
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
@@ -248,3 +251,26 @@ def test_no_exception_during_run_results_in_good_run_status(
     upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
     assert "DataCollection Unsuccessful" not in upserted_param_value_list
     assert "DataCollection Successful" in upserted_param_value_list
+
+
+@patch("ispyb.open")
+def test_ispyb_deposition_comment_correct(
+    mock_ispyb_conn: MagicMock,
+    dummy_ispyb,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+    mock_mx_aquisition = (
+        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+    )
+    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+    with dummy_ispyb:
+        pass
+    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
+    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
+        0
+    ]
+    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
+    assert upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 0.1 mm by 0.1 mm steps. Top left: [0,1], bottom right: [320,16001]."
+    )

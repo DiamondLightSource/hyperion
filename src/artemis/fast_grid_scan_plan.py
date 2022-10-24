@@ -13,7 +13,11 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
-from artemis.nexus_writing.write_nexus import NexusWriter
+from artemis.nexus_writing.write_nexus import (
+    NexusWriter,
+    create_parameters_for_first_file,
+    create_parameters_for_second_file,
+)
 from artemis.parameters import SIM_BEAMLINE, FullParameters
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
@@ -75,7 +79,9 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    with ispyb as ispyb_ids, NexusWriter(parameters):
+    with ispyb as ispyb_ids, NexusWriter(
+        create_parameters_for_first_file(parameters)
+    ), NexusWriter(create_parameters_for_second_file(parameters)):
         datacollection_ids = ispyb_ids[0]
         datacollection_group_id = ispyb_ids[2]
         for id in datacollection_ids:
@@ -89,11 +95,6 @@ def run_gridscan(
     xray_centre_motor_position = (
         parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
     )
-
-    yield from bps.mv(sample_motors.omega, parameters.detector_params.omega_start)
-
-    # After moving omega we need to wait for x, y and z to have finished moving too
-    yield from bps.wait(sample_motors)
 
     yield from bps.mv(
         sample_motors.x,

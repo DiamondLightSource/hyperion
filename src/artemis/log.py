@@ -87,8 +87,8 @@ def _get_logging_file_path() -> Path:
         logging_path = Path("/dls_sw/" + beamline + "/logs/bluesky/")
     else:
         logging_path = Path("./tmp/dev/")
-        Path(logging_path).mkdir(parents=True, exist_ok=True)
 
+    Path(logging_path).mkdir(parents=True, exist_ok=True)
     return logging_path
 
 
