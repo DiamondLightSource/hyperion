@@ -64,7 +64,9 @@ class FGSCommunicator(CallbackBase):
         self.descriptors[doc.get("uid")] = doc
 
     def event(self, doc: dict):
-        run_start_uid = self.descriptors.get(doc.get("descriptor")).get("run_start")
+        associated_descriptor_doc = self.descriptors.get(doc.get("descriptor"))
+        assert type(associated_descriptor_doc) is dict
+        run_start_uid = associated_descriptor_doc.get("run_start")
         artemis.log.LOGGER.debug(f"\n\nReceived event document:\n\n {doc}\n")
         if self.params.scan_type == "fake_scan":
             return
