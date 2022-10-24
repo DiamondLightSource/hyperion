@@ -110,6 +110,8 @@ def run_gridscan(
         xray_centre_motor_position.z,
     )
 
+    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+
 
 def get_plan(parameters: FullParameters):
     """Create the plan to run the grid scan based on provided parameters.
