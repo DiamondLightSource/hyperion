@@ -1,7 +1,9 @@
 import types
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
+from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
 
@@ -15,8 +17,14 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.fast_grid_scan_plan import read_hardware_for_ispyb, run_gridscan
+from artemis.fast_grid_scan_plan import (
+    read_hardware_for_ispyb,
+    run_gridscan,
+    run_gridscan_and_move,
+)
+from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import FullParameters
+from artemis.utils import Point3D
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
@@ -56,8 +64,6 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
     slit_gaps.xgap.sim_put(xgap_test_value)
     slit_gaps.ygap.sim_put(ygap_test_value)
 
-    from bluesky.callbacks import CallbackBase
-
     class TestCB(CallbackBase):
         params = FullParameters()
 
@@ -72,13 +78,84 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
     testcb = TestCB()
     testcb.params = params
     RE.subscribe(testcb)
-    RE(read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
+
+    def standalone_read_hardware_for_ispyb(und, syn, slits):
+        yield from bps.open_run()
+        yield from read_hardware_for_ispyb(und, syn, slits)
+        yield from bps.close_run()
+
+    RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
     params = testcb.params
 
     assert params.ispyb_params.undulator_gap == undulator_test_value
     assert params.ispyb_params.synchrotron_mode == synchrotron_test_value
     assert params.ispyb_params.slit_gap_size_x == xgap_test_value
     assert params.ispyb_params.slit_gap_size_y == ygap_test_value
+
+
+@patch("artemis.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.fast_grid_scan_plan.move_xyz")
+def test_results_passed_to_move_xyz(move_xyz, run_gridscan):
+    RE = RunEngine({})
+    params = FullParameters()
+    communicator = FGSCommunicator()
+    communicator.xray_centre_motor_position = Point3D(1, 2, 3)
+    FakeComposite = make_fake_device(FGSComposite)
+    FakeEiger = make_fake_device(EigerDetector)
+    RE(
+        run_gridscan_and_move(
+            FakeComposite("test", name="fakecomposite"),
+            FakeEiger(params.detector_params),
+            params,
+            communicator,
+        )
+    )
+    move_xyz.assert_called_once_with(ANY, Point3D(1, 2, 3))
+
+
+#
+#    FakeComposite = make_fake_device(FGSComposite)
+#
+#    class TestCB(CallbackBase):
+#        params = FullParameters()
+#
+#        def stop(self, doc: dict):
+#            self.xray_centre_motor_position = Point3D(1, 2, 3)
+#
+#    def run_fake_gridscan_and_move(
+#        fgs_composite: FGSComposite,
+#        parameters: FullParameters,
+#        communicator: TestCB,
+#    ):
+#        def fake_gridscan(
+#            comp: FGSComposite,
+#            params: FullParameters,
+#            md={
+#                # The name of this plan
+#                "plan_name": "run_gridscan",
+#            },
+#        ):
+#            yield from bps.open_run()
+#
+#            yield from bps.close_run()
+#
+#        yield from fake_gridscan(fgs_composite, parameters)
+#        yield from move_xyz(
+#            fgs_composite.sample_motors, communicator.xray_centre_motor_position
+#        )
+#
+#    fakecomposite = FakeComposite("test", name="fakecomposite")
+#
+#    testcb = TestCB()
+#    testcb.params = params
+#    RE.subscribe(testcb)
+#    RE(
+#        run_fake_gridscan_and_move(
+#            fakecomposite,
+#            params,
+#            testcb,
+#        )
+#    )
 
 
 @pytest.fixture

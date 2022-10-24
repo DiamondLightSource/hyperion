@@ -23,14 +23,12 @@ def read_hardware_for_ispyb(
     synchrotron: Synchrotron,
     slit_gap: SlitGaps,
 ):
-    yield from bps.open_run()
     yield from bps.create(name="ispyb_params")
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
     yield from bps.read(slit_gap.xgap)
     yield from bps.read(slit_gap.ygap)
     yield from bps.save()
-    yield from bps.close_run()
 
 
 @bpp.run_decorator()
@@ -42,7 +40,6 @@ def move_xyz(
         "plan_name": "move_xyz",
     },
 ):
-
     yield from bps.mv(
         sample_motors.x,
         xray_centre_motor_position.x,
@@ -63,7 +60,6 @@ def run_gridscan(
         "plan_name": "run_gridscan",
     },
 ):
-
     sample_motors = fgs_composite.sample_motors
 
     current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
