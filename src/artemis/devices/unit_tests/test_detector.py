@@ -31,9 +31,6 @@ def test_if_trailing_slash_provided_then_not_appended():
     assert params.directory == "test/dir/"
 
 
-# check the beam xy converter gets the passed in directory
-
-
 @patch(
     "src.artemis.devices.detector.DetectorDistanceToBeamXYConverter.parse_table",
 )
@@ -52,4 +49,5 @@ def test_correct_det_dist_to_beam_converter_path_passed_in(mocked_parse_table):
         "a fake directory",
         detector_size_constants=EIGER2_X_16M_SIZE,
     )
-    assert params.det_dist_to_beam_converter_path == "a fake directory"
+    params.to_json()
+    assert params.beam_xy_converter.lookup_file == "a fake directory"

@@ -38,6 +38,7 @@ class DetectorParams:
         ),
     )
 
+    # The following are optional from GDA as populated internally
     # Where the VDS start index should be in the Nexus file
     start_index: Optional[int] = 0
     nexus_file_run_number: Optional[int] = 0
@@ -46,11 +47,6 @@ class DetectorParams:
         if not self.directory.endswith("/"):
             self.directory += "/"
 
-        if not self.det_dist_to_beam_converter_path:
-            self.det_dist_to_beam_converter_path = (
-                "src/artemis/devices/unit_tests/test_lookup_table.txt"
-            )
-        # The following are optional from GDA as populated internally
         self.beam_xy_converter = DetectorDistanceToBeamXYConverter(
             self.det_dist_to_beam_converter_path
         )
