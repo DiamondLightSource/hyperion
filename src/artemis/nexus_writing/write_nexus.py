@@ -162,7 +162,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
         "flatfield_applied": "_dectris/flatfield_correction_applied",
         "pixel_mask": "mask",
         "pixel_mask_applied": "_dectris/pixel_mask_applied",
-        "image_size": [detector_pixels.height, detector_pixels.width],  # (fast, slow)
+        "image_size": [detector_pixels.height, detector_pixels.width],  # (slow, fast)
         "axes": ["det_z"],
         "depends": ["."],
         "vectors": [0.0, 0.0, 1.0],
