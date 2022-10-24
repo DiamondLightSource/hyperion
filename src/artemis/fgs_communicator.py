@@ -38,8 +38,11 @@ class FGSCommunicator(CallbackBase):
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
         self.datacollection_group_id = None
         self.xray_centre_motor_position = None
+        self.ispyb_ids = None
+        self.descriptors = {}
 
     def start(self, doc: dict):
+        artemis.log.LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")
         self.active_uid = doc.get("uid")
         # exceptionally, do write nexus files for fake scan
         #    if self.params.scan_type == "fake_scan":
@@ -55,15 +58,28 @@ class FGSCommunicator(CallbackBase):
         artemis.log.LOGGER.info(f"Initialising Zocalo for run {self.active_uid}")
         # zocalo run_start goes here
 
+    # TODO is this going to eat too much memory if there are a lot of these with a lot of data?
+    def descriptor(self, doc: dict):
+        artemis.log.LOGGER.debug(f"\n\nReceived descriptor document:\n\n {doc}\n")
+        self.descriptors[doc.get("uid")] = doc
+
     def event(self, doc: dict):
+        run_start_uid = self.descriptors.get(doc.get("descriptor")).get("run_start")
+        artemis.log.LOGGER.debug(f"\n\nReceived event document:\n\n {doc}\n")
         if self.params.scan_type == "fake_scan":
             return
         # Don't do processing for move_xyz
-        if doc.get("run_start") != self.gridscan_uid:
+        if run_start_uid != self.gridscan_uid:
             return
         if doc.get("name") == "ispyb_motor_positions":
-            artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
+            self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
+            self.params.ispyb_params.synchrotron_mode = doc["data"][
+                "synchrotron_machine_status_synchrotron_mode"
+            ]
+            self.params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
+            self.params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
 
+            artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
             ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
 
             ispyb = (
@@ -73,16 +89,16 @@ class FGSCommunicator(CallbackBase):
             )
 
             with ispyb as ispyb_ids:
+                self.ispyb_ids = ispyb_ids
                 datacollection_ids = ispyb_ids[0]
                 self.datacollection_group_id = ispyb_ids[2]
                 for id in datacollection_ids:
                     run_start(id)
 
-            for id in datacollection_ids:
-                run_end(id)
         # any live update stuff goes here
 
     def stop(self, doc: dict):
+        artemis.log.LOGGER.debug(f"\n\nReceived stop document:\n\n {doc}\n")
         if self.params.scan_type == "fake_scan":
             return
         # Don't do processing for move_xyz
@@ -92,6 +108,12 @@ class FGSCommunicator(CallbackBase):
             artemis.log.LOGGER.debug("Updating Nexus file timestamps.")
             self.nxs_writer_1.update_nexus_file_timestamp()
             self.nxs_writer_2.update_nexus_file_timestamp()
+
+            if self.ispyb_ids is None:
+                raise Exception("ispyb was not initialised at run start")
+            datacollection_ids = self.ispyb_ids[0]
+            for id in datacollection_ids:
+                run_end(id)
 
             artemis.log.LOGGER.info(
                 f"Run {self.active_uid} successful, submitting data to zocalo"
