@@ -133,51 +133,6 @@ def test_run_gridscan_runs_in_composite_run(move_xyz, run_gridscan):
     run_gridscan.assert_called_once()
 
 
-#
-#    FakeComposite = make_fake_device(FGSComposite)
-#
-#    class TestCB(CallbackBase):
-#        params = FullParameters()
-#
-#        def stop(self, doc: dict):
-#            self.xray_centre_motor_position = Point3D(1, 2, 3)
-#
-#    def run_fake_gridscan_and_move(
-#        fgs_composite: FGSComposite,
-#        parameters: FullParameters,
-#        communicator: TestCB,
-#    ):
-#        def fake_gridscan(
-#            comp: FGSComposite,
-#            params: FullParameters,
-#            md={
-#                # The name of this plan
-#                "plan_name": "run_gridscan",
-#            },
-#        ):
-#            yield from bps.open_run()
-#
-#            yield from bps.close_run()
-#
-#        yield from fake_gridscan(fgs_composite, parameters)
-#        yield from move_xyz(
-#            fgs_composite.sample_motors, communicator.xray_centre_motor_position
-#        )
-#
-#    fakecomposite = FakeComposite("test", name="fakecomposite")
-#
-#    testcb = TestCB()
-#    testcb.params = params
-#    RE.subscribe(testcb)
-#    RE(
-#        run_fake_gridscan_and_move(
-#            fakecomposite,
-#            params,
-#            testcb,
-#        )
-#    )
-
-
 @pytest.fixture
 def dummy_3d_gridscan_args():
     params = FullParameters()
