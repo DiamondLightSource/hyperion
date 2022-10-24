@@ -58,15 +58,21 @@ class FGSCommunicator(CallbackBase):
         artemis.log.LOGGER.info(f"Initialising Zocalo for run {self.active_uid}")
         # zocalo run_start goes here
 
+    def get_descriptor_doc(self, key) -> dict:
+        associated_descriptor_doc = self.descriptors.get(key)
+        if type(associated_descriptor_doc) is not dict:
+            raise ValueError(
+                "Non-dict object stored in descriptor list, or key not valid."
+            )
+        return associated_descriptor_doc
+
     # TODO is this going to eat too much memory if there are a lot of these with a lot of data?
     def descriptor(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived descriptor document:\n\n {doc}\n")
         self.descriptors[doc.get("uid")] = doc
 
     def event(self, doc: dict):
-        associated_descriptor_doc = self.descriptors.get(doc.get("descriptor"))
-        assert type(associated_descriptor_doc) is dict
-        run_start_uid = associated_descriptor_doc.get("run_start")
+        run_start_uid = self.get_descriptor_doc(doc.get("descriptor")).get("run_start")
         artemis.log.LOGGER.debug(f"\n\nReceived event document:\n\n {doc}\n")
         if self.params.scan_type == "fake_scan":
             return
