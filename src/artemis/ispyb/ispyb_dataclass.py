@@ -42,9 +42,10 @@ class IspybParams:
     comment: str
     resolution: float
 
-    # Optional from GDA as populated by Ophyd
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
+
+    # Optional from GDA as populated by Ophyd
     undulator_gap: Optional[float] = None
     synchrotron_mode: Optional[str] = None
     slit_gap_size_x: Optional[float] = None
