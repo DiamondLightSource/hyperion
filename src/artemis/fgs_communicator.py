@@ -28,17 +28,23 @@ class FGSCommunicator(CallbackBase):
         self.reset(FullParameters())
 
     def reset(self, parameters: FullParameters):
+        self.params = parameters
+        ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
+        self.ispyb = (
+            StoreInIspyb3D(ispyb_config, self.params)
+            if self.params.grid_scan_params.is_3d_grid_scan
+            else StoreInIspyb2D(ispyb_config, self.params)
+        )
         self.active_uid = None
         self.gridscan_uid = None
-        self.params = parameters
         self.params.detector_params.prefix += str(time.time())
         self.results = None
-        self.processing_time = None
+        self.processing_time = 0.0
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
         self.datacollection_group_id = None
         self.xray_centre_motor_position = None
-        self.ispyb_ids = None
+        self.ispyb_ids: tuple = (None, None, None)
         self.descriptors: dict = {}
 
     def start(self, doc: dict):
@@ -88,20 +94,11 @@ class FGSCommunicator(CallbackBase):
             self.params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
 
             artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
-            ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
-
-            ispyb = (
-                StoreInIspyb3D(ispyb_config, self.params)
-                if self.params.grid_scan_params.is_3d_grid_scan
-                else StoreInIspyb2D(ispyb_config, self.params)
-            )
-
-            with ispyb as ispyb_ids:
-                self.ispyb_ids = ispyb_ids
-                datacollection_ids = ispyb_ids[0]
-                self.datacollection_group_id = ispyb_ids[2]
-                for id in datacollection_ids:
-                    run_start(id)
+            self.ispyb_ids = self.ispyb.begin_deposition()
+            datacollection_ids = self.ispyb_ids[0]
+            self.datacollection_group_id = self.ispyb_ids[2]
+            for id in datacollection_ids:
+                run_start(id)
 
         # any live update stuff goes here
 
@@ -112,17 +109,20 @@ class FGSCommunicator(CallbackBase):
         # Don't do processing for move_xyz
         if doc.get("run_start") != self.gridscan_uid:
             return
-        if doc.get("exit_status") == "success":
-            artemis.log.LOGGER.debug("Updating Nexus file timestamps.")
-            self.nxs_writer_1.update_nexus_file_timestamp()
-            self.nxs_writer_2.update_nexus_file_timestamp()
+        exit_status = doc.get("exit_status")
 
-            if self.ispyb_ids is None:
-                raise Exception("ispyb was not initialised at run start")
-            datacollection_ids = self.ispyb_ids[0]
-            for id in datacollection_ids:
-                run_end(id)
+        artemis.log.LOGGER.debug("Updating Nexus file timestamps.")
+        self.nxs_writer_1.update_nexus_file_timestamp()
+        self.nxs_writer_2.update_nexus_file_timestamp()
 
+        if self.ispyb_ids is None:
+            raise Exception("ispyb was not initialised at run start")
+        self.ispyb.end_deposition()
+        datacollection_ids = self.ispyb_ids[0]
+        for id in datacollection_ids:
+            run_end(id)
+
+        if exit_status == "success":
             artemis.log.LOGGER.info(
                 f"Run {self.active_uid} successful, submitting data to zocalo"
             )

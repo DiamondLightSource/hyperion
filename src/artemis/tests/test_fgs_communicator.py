@@ -1,7 +1,13 @@
 from unittest.mock import MagicMock, call, patch
 
+import pytest
+from ophyd.sim import make_fake_device
+
 from artemis import fgs_communicator
+from artemis.devices.eiger import EigerDetector
+from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.parameters import FullParameters
+from artemis.utils import Point3D
 
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
 GOOD_ISPYB_RUN_STATUS = "DataCollection Successful"
@@ -35,6 +41,14 @@ test_stop_document = {
     "time": 1666604300.0310638,
     "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
     "exit_status": "success",
+    "reason": "",
+    "num_events": {"fake_ispyb_params": 1, "primary": 1},
+}
+test_failed_stop_document = {
+    "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+    "time": 1666604300.0310638,
+    "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+    "exit_status": "fail",
     "reason": "",
     "num_events": {"fake_ispyb_params": 1, "primary": 1},
 }
@@ -76,7 +90,6 @@ def test_stop_doesnt_except_on_correct_uid():
     communicator.stop({"run_start": "some uid"})
 
 
-# TODO MOVE TO TEST COMMUNICATOR
 @patch("artemis.fgs_communicator.run_start")
 @patch("artemis.fgs_communicator.run_end")
 @patch("artemis.fgs_communicator.wait_for_result")
@@ -117,44 +130,57 @@ def test_run_gridscan_zocalo_calls(
     wait_for_result.assert_called_once_with(dcg_id)
 
 
-# @patch("artemis.fast_grid_scan_plan.run_start")
-# @patch("artemis.fast_grid_scan_plan.run_end")
-# @patch("artemis.fast_grid_scan_plan.wait_for_result")
-# @patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
-# @patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
-# @patch(
-#     "artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
-# )
-# def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
-#     mock_ispyb_update_time_and_status: MagicMock,
-#     mock_ispyb_get_time: MagicMock,
-#     mock_ispyb_store_grid_scan: MagicMock,
-#     wait_for_result: MagicMock,
-#     run_end: MagicMock,
-#     run_start: MagicMock,
-#     dummy_3d_gridscan_args,
-# ):
-#     dc_ids = [1, 2]
-#     dcg_id = 4
-#
-#     mock_ispyb_store_grid_scan.return_value = [dc_ids, None, dcg_id]
-#     mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
-#     mock_ispyb_update_time_and_status.return_value = None
-#
-#     with pytest.raises(Exception) as excinfo:
-#         with patch(
-#             "artemis.fgs_communicator.NexusWriter",
-#             side_effect=Exception("mocked error"),
-#         ):
-#             list(run_gridscan(*dummy_3d_gridscan_args))
-#
-#     expected_error_message = "mocked error"
-#     assert str(excinfo.value) == expected_error_message
-#
-#     mock_ispyb_update_time_and_status.assert_has_calls(
-#         [call(DUMMY_TIME_STRING, BAD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids]
-#     )
-#     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
+@pytest.fixture
+def dummy_3d_gridscan_args():
+    params = FullParameters()
+    params.grid_scan_params.z_steps = 2
+
+    FakeFGSComposite = make_fake_device(FGSComposite)
+    fgs_composite: FGSComposite = FakeFGSComposite(name="fgs", insertion_prefix="")
+
+    FakeEiger = make_fake_device(EigerDetector)
+    eiger: EigerDetector = FakeEiger(
+        detector_params=params.detector_params, name="eiger"
+    )
+    communicator = fgs_communicator.FGSCommunicator()
+    communicator.xray_centre_motor_position = Point3D(1, 2, 3)
+
+    return fgs_composite, eiger, params, communicator
+
+
+@patch("artemis.fgs_communicator.run_start")
+@patch("artemis.fgs_communicator.run_end")
+@patch("artemis.fgs_communicator.wait_for_result")
+@patch("artemis.fgs_communicator.StoreInIspyb3D.store_grid_scan")
+@patch("artemis.fgs_communicator.StoreInIspyb3D.get_current_time_string")
+@patch(
+    "artemis.fgs_communicator.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+)
+def test_fgs_failing_results_in_bad_run_status_in_ispyb(
+    mock_ispyb_update_time_and_status: MagicMock,
+    mock_ispyb_get_time: MagicMock,
+    mock_ispyb_store_grid_scan: MagicMock,
+    wait_for_result: MagicMock,
+    run_end: MagicMock,
+    run_start: MagicMock,
+    dummy_3d_gridscan_args,
+):
+    dc_ids = [1, 2]
+    dcg_id = 4
+    mock_ispyb_store_grid_scan.return_value = [dc_ids, None, dcg_id]
+    mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
+    mock_ispyb_update_time_and_status.return_value = None
+
+    communicator = fgs_communicator.FGSCommunicator()
+    communicator.params = FullParameters()
+    communicator.start(test_start_document)
+    communicator.descriptor(test_descriptor_document)
+    communicator.event(test_event_document)
+    communicator.stop(test_failed_stop_document)
+    mock_ispyb_update_time_and_status.assert_has_calls(
+        [call(DUMMY_TIME_STRING, BAD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids]
+    )
+    assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
 
 @patch("artemis.fgs_communicator.run_start")
