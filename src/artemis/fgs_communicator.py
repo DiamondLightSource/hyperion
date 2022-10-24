@@ -39,7 +39,7 @@ class FGSCommunicator(CallbackBase):
         self.datacollection_group_id = None
         self.xray_centre_motor_position = None
         self.ispyb_ids = None
-        self.descriptors = {}
+        self.descriptors: dict = {}
 
     def start(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")
