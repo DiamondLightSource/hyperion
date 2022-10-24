@@ -60,7 +60,24 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
     slit_gaps.xgap.sim_put(xgap_test_value)
     slit_gaps.ygap.sim_put(ygap_test_value)
 
-    RE(read_hardware_for_ispyb(params, undulator, synchrotron, slit_gaps))
+    from bluesky.callbacks import CallbackBase
+
+    class TestCB(CallbackBase):
+        params = FullParameters()
+
+        def event(self, doc: dict):
+            params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
+            params.ispyb_params.synchrotron_mode = doc["data"][
+                "synchrotron_machine_status_synchrotron_mode"
+            ]
+            params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
+            params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
+
+    testcb = TestCB()
+    testcb.params = params
+    RE.subscribe(testcb)
+    RE(read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
+    params = testcb.params
 
     assert params.ispyb_params.undulator_gap == undulator_test_value
     assert params.ispyb_params.synchrotron_mode == synchrotron_test_value
@@ -162,8 +179,8 @@ def test_run_gridscan_zocalo_calls(
 #     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
 
-@patch("artemis.fast_grid_scan_plan.run_start")
-@patch("artemis.fast_grid_scan_plan.run_end")
+@patch("artemis.fgs_communicator.run_start")
+@patch("artemis.fgs_communicator.run_end")
 @patch("artemis.fast_grid_scan_plan.wait_for_result")
 @patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
 @patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")

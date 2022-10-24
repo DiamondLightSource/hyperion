@@ -120,7 +120,7 @@ class BlueskyRunner:
                             )
                 else:
                     try:
-                        self.RE(get_plan(command.parameters))
+                        self.RE(get_plan(command.parameters, self.fgs_communicator))
                         self.current_status = StatusAndMessage(Status.IDLE, "")
                         self.last_run_aborted = False
                     except Exception as exception:
@@ -215,7 +215,9 @@ if __name__ == "__main__":
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
-        target=lambda: app.run(host="0.0.0.0", debug=True, use_reloader=False),
+        target=lambda: app.run(
+            host="0.0.0.0", port=5005, debug=True, use_reloader=False
+        ),
         daemon=True,
     )
     flask_thread.start()

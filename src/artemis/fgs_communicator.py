@@ -42,6 +42,8 @@ class FGSCommunicator(CallbackBase):
     def start(self, doc: dict):
         self.active_uid = doc.get("uid")
         # exceptionally, do write nexus files for fake scan
+        #    if self.params.scan_type == "fake_scan":
+        #    return
         if doc.get("plan_name") not in ["run_gridscan", "fake_scan"]:
             return
         self.gridscan_uid = doc.get("uid")

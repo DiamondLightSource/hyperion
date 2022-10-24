@@ -16,6 +16,8 @@ def eiger():
         omega_increment=0.1,
         num_images=50,
         use_roi_mode=False,
+        run_number=0,
+        det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
     )
     eiger = EigerDetector(
         detector_params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
