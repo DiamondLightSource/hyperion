@@ -113,6 +113,26 @@ def test_results_passed_to_move_xyz(move_xyz, run_gridscan):
     move_xyz.assert_called_once_with(ANY, Point3D(1, 2, 3))
 
 
+@patch("artemis.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.fast_grid_scan_plan.move_xyz")
+def test_run_gridscan_runs_in_composite_run(move_xyz, run_gridscan):
+    RE = RunEngine({})
+    params = FullParameters()
+    communicator = FGSCommunicator()
+    communicator.xray_centre_motor_position = Point3D(1, 2, 3)
+    FakeComposite = make_fake_device(FGSComposite)
+    FakeEiger = make_fake_device(EigerDetector)
+    RE(
+        run_gridscan_and_move(
+            FakeComposite("test", name="fakecomposite"),
+            FakeEiger(params.detector_params),
+            params,
+            communicator,
+        )
+    )
+    run_gridscan.assert_called_once()
+
+
 #
 #    FakeComposite = make_fake_device(FGSComposite)
 #
