@@ -60,7 +60,7 @@ test_descriptor_document = {
 
 def test_fgs_communicator_reset():
     communicator = fgs_communicator.FGSCommunicator()
-    assert communicator.processing_time is None
+    assert communicator.processing_time == 0.0
     assert communicator.active_uid is None
     communicator.params.detector_params.prefix = "file_name"
     assert communicator.params == FullParameters()

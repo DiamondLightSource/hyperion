@@ -117,7 +117,7 @@ class FGSCommunicator(CallbackBase):
 
         if self.ispyb_ids is None:
             raise Exception("ispyb was not initialised at run start")
-        self.ispyb.end_deposition()
+        self.ispyb.end_deposition(exit_status)
         datacollection_ids = self.ispyb_ids[0]
         for id in datacollection_ids:
             run_end(id)
