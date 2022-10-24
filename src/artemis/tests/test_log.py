@@ -60,7 +60,7 @@ def test_prod_mode_sets_correct_graypy_handler(
     mock_logger: MagicMock,
 ):
     log.set_up_logging_handlers(None, False)
-    mock_GELFTCPHandler.assert_called_once_with("graylog2.diamond.ac.uk", 12201)
+    mock_GELFTCPHandler.assert_called_once_with("graylog2.diamond.ac.uk", 12218)
 
 
 @patch("artemis.log.GELFTCPHandler")
