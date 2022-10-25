@@ -5,7 +5,19 @@ import bluesky.preprocessors as bpp
 from ophyd.sim import SynSignal, det1, det2
 
 detectors = [det1, det2]
-signal = SynSignal(name="undulator_gap")
+signal0 = SynSignal(name="undulator_gap")
+signal1 = SynSignal(name="synchrotron_machine_status_synchrotron_mode")
+signal2 = SynSignal(name="slit_gaps_xgap")
+signal3 = SynSignal(name="slit_gaps_ygap")
+
+
+def fake_update_ispyb_params():
+    yield from bps.create(name="fake_ispyb_motor_positions")
+    yield from bps.read(signal0)
+    yield from bps.read(signal1)
+    yield from bps.read(signal2)
+    yield from bps.read(signal3)
+    yield from bps.save()
 
 
 @bpp.run_decorator()
@@ -15,9 +27,8 @@ def run_fake_scan(
         "plan_name": "fake_scan",
     }
 ):
-    yield from bps.create(name="fake_ispyb_params")
-    yield from bps.read(signal)
-    yield from bps.save()
+
+    yield from fake_update_ispyb_params()
 
     # Delays are basically here to make graylog logs appear in ~order
     for det in detectors:

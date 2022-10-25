@@ -53,7 +53,7 @@ class FGSCommunicator(CallbackBase):
         # exceptionally, do write nexus files for fake scan
         #    if self.params.scan_type == "fake_scan":
         #    return
-        if doc.get("plan_name") not in ["run_gridscan", "fake_scan"]:
+        if doc.get("plan_name") not in ["run_gridscan", "run_fake_scan"]:
             return
         self.gridscan_uid = doc.get("uid")
 
@@ -78,14 +78,17 @@ class FGSCommunicator(CallbackBase):
         self.descriptors[doc.get("uid")] = doc
 
     def event(self, doc: dict):
-        run_start_uid = self.get_descriptor_doc(doc.get("descriptor")).get("run_start")
+        descriptor = self.get_descriptor_doc(doc.get("descriptor"))
+        run_start_uid = descriptor.get("run_start")
+        event_name = doc.get("name")
         artemis.log.LOGGER.debug(f"\n\nReceived event document:\n\n {doc}\n")
+        # Don't do processing for move_xyz or fake scan
         if self.params.scan_type == "fake_scan":
             return
-        # Don't do processing for move_xyz
         if run_start_uid != self.gridscan_uid:
             return
-        if doc.get("name") == "ispyb_motor_positions":
+        if event_name == "ispyb_motor_positions":
+            # or event_name == "fake_ispyb_motor_positions"
             self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
             self.params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"

@@ -23,7 +23,7 @@ def read_hardware_for_ispyb(
     synchrotron: Synchrotron,
     slit_gap: SlitGaps,
 ):
-    yield from bps.create(name="ispyb_params")
+    yield from bps.create(name="ispyb_motor_positions")
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
     yield from bps.read(slit_gap.xgap)

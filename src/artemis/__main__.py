@@ -166,6 +166,7 @@ class FakeScan(Resource):
         if action == Actions.START.value:
             parameters = FullParameters()
             parameters.scan_type = "fake"
+            parameters.ispyb_params.visit_path = "/tmp/testvisit/TV1234-56/"
             status_and_message = self.runner.start(parameters)
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
