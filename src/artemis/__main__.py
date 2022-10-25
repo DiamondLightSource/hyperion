@@ -58,7 +58,7 @@ class BlueskyRunner:
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
-        RE.subscribe(self.fgs_communicator)
+        # RE.subscribe(self.fgs_communicator)
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
@@ -105,7 +105,7 @@ class BlueskyRunner:
             if command.action == Actions.START:
                 if command.parameters.scan_type == "fake":
                     try:
-                        self.RE(get_fake_scan())
+                        self.RE(get_fake_scan(self.fgs_communicator))
                         self.current_status = StatusAndMessage(
                             Status.IDLE,
                             f"Zocalo processing time: {self.fgs_communicator.processing_time}",

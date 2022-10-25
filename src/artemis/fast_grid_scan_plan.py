@@ -3,6 +3,7 @@ import argparse
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
+from bluesky.preprocessors import subs_decorator
 from bluesky.utils import ProgressBarManager
 
 from artemis.devices.eiger import EigerDetector
@@ -94,10 +95,14 @@ def run_gridscan_and_move(
     parameters: FullParameters,
     communicator: FGSCommunicator,
 ):
-    yield from run_gridscan(fgs_composite, eiger, parameters)
-    yield from move_xyz(
-        fgs_composite.sample_motors, communicator.xray_centre_motor_position
-    )
+    @subs_decorator(communicator)
+    def decorated():
+        yield from run_gridscan(fgs_composite, eiger, parameters)
+        yield from move_xyz(
+            fgs_composite.sample_motors, communicator.xray_centre_motor_position
+        )
+
+    yield from decorated()
 
 
 def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
@@ -143,6 +148,6 @@ if __name__ == "__main__":
 
     parameters = FullParameters(beamline=args.beamline)
     communicator = FGSCommunicator()
-    RE.subscribe(communicator)
+    # RE.subscribe(communicator)
 
     RE(get_plan(parameters, communicator))

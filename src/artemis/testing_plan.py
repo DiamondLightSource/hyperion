@@ -2,6 +2,7 @@ import time
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from bluesky.preprocessors import subs_decorator
 from ophyd.sim import SynSignal, det1, det2
 
 detectors = [det1, det2]
@@ -43,5 +44,9 @@ def run_fake_scan(
         time.sleep(0.05)  # fake unstaging should take some time
 
 
-def get_fake_scan():
-    return run_fake_scan()
+def get_fake_scan(communicator):
+    @subs_decorator(communicator)
+    def decorated():
+        yield from run_fake_scan()
+
+    return decorated()
