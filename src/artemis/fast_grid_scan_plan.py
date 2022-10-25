@@ -57,7 +57,6 @@ def run_gridscan(
     eiger: EigerDetector,
     parameters: FullParameters,
     md={
-        # The name of this plan
         "plan_name": "run_gridscan",
     },
 ):

@@ -100,6 +100,8 @@ class BlueskyRunner:
 
     def wait_on_queue(self):
         # TODO abstract plan fetcher from params
+        # will become less important when fake scan is removed
+        # more important again when we want to add different experiments
         while True:
             command = self.command_queue.get()
             if command.action == Actions.START:

@@ -62,7 +62,6 @@ class FGSCommunicator(CallbackBase):
         self.nxs_writer_2.create_nexus_file()
 
         artemis.log.LOGGER.info(f"Initialising Zocalo for run {self.active_uid}")
-        # zocalo run_start goes here
 
     def get_descriptor_doc(self, key) -> dict:
         associated_descriptor_doc = self.descriptors.get(key)
@@ -88,7 +87,6 @@ class FGSCommunicator(CallbackBase):
         if run_start_uid != self.gridscan_uid:
             return
         if event_name == "ispyb_motor_positions":
-            # or event_name == "fake_ispyb_motor_positions"
             self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
             self.params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"

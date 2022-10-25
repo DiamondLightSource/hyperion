@@ -24,7 +24,6 @@ def fake_update_ispyb_params():
 @bpp.run_decorator()
 def run_fake_scan(
     md={
-        # The name of this plan
         "plan_name": "fake_scan",
     }
 ):
