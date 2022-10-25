@@ -7,7 +7,7 @@ from ophyd.sim import make_fake_device
 from requests import HTTPError, Response
 
 import artemis.devices.oav.utils as oav_utils
-from artemis.devices.oav import OAV
+from artemis.devices.oav.oav_detector import OAV
 from artemis.utils import Point2D
 
 
