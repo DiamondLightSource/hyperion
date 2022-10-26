@@ -6,10 +6,10 @@ from bluesky.preprocessors import subs_decorator
 from ophyd.sim import SynSignal, det1, det2
 
 detectors = [det1, det2]
-signal0 = SynSignal(name="undulator_gap")
-signal1 = SynSignal(name="synchrotron_machine_status_synchrotron_mode")
-signal2 = SynSignal(name="slit_gaps_xgap")
-signal3 = SynSignal(name="slit_gaps_ygap")
+signal0 = SynSignal(name="fgs_undulator_gap")
+signal1 = SynSignal(name="fgs_synchrotron_machine_status_synchrotron_mode")
+signal2 = SynSignal(name="fgs_slit_gaps_xgap")
+signal3 = SynSignal(name="fgs_slit_gaps_ygap")
 
 
 def fake_update_ispyb_params():

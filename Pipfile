@@ -8,6 +8,7 @@ python-artemis = { editable = true, extras = ["dev"], path = "." }
 
 [packages]
 python-artemis = { editable = true, path = "." }
+mysql-connector-python = "*"
 
 [requires]
 python_version = "3.10"

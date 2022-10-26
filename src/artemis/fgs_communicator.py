@@ -53,7 +53,9 @@ class FGSCommunicator(CallbackBase):
         # exceptionally, do write nexus files for fake scan
         #    if self.params.scan_type == "fake_scan":
         #    return
-        if doc.get("plan_name") not in ["run_gridscan", "run_fake_scan"]:
+        # TODO: fix this after making composite plan emit two runs (or running two plans)
+        #           - back to not in ["run_gridscan", "run_fake_scan"]:
+        if doc.get("plan_name") not in ["run_gridscan_and_move", "run_fake_scan"]:
             return
         self.gridscan_uid = doc.get("uid")
 
@@ -79,20 +81,24 @@ class FGSCommunicator(CallbackBase):
     def event(self, doc: dict):
         descriptor = self.get_descriptor_doc(doc.get("descriptor"))
         run_start_uid = descriptor.get("run_start")
-        event_name = doc.get("name")
+        event_name = descriptor.get("name")
         artemis.log.LOGGER.debug(f"\n\nReceived event document:\n\n {doc}\n")
+        artemis.log.LOGGER.debug(f"\n\nEvent name:\n\n {event_name}\n")
+        artemis.log.LOGGER.debug(f"\n\nFor run:\n\n {run_start_uid}\n")
+        artemis.log.LOGGER.debug(f"\n\nIn current run:\n\n {self.active_uid}\n")
+        artemis.log.LOGGER.debug(f"\n\nIn current grid scan:\n\n {self.gridscan_uid}\n")
         # Don't do processing for move_xyz or fake scan
         if self.params.scan_type == "fake_scan":
             return
         if run_start_uid != self.gridscan_uid:
             return
         if event_name == "ispyb_motor_positions":
-            self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
+            self.params.ispyb_params.undulator_gap = doc["data"]["fgs_undulator_gap"]
             self.params.ispyb_params.synchrotron_mode = doc["data"][
-                "synchrotron_machine_status_synchrotron_mode"
+                "fgs_synchrotron_machine_status_synchrotron_mode"
             ]
-            self.params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
-            self.params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
+            self.params.ispyb_params.slit_gap_size_x = doc["data"]["fgs_slit_gaps_xgap"]
+            self.params.ispyb_params.slit_gap_size_y = doc["data"]["fgs_slit_gaps_ygap"]
 
             artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
             self.ispyb_ids = self.ispyb.begin_deposition()
@@ -116,7 +122,7 @@ class FGSCommunicator(CallbackBase):
         self.nxs_writer_1.update_nexus_file_timestamp()
         self.nxs_writer_2.update_nexus_file_timestamp()
 
-        if self.ispyb_ids is None:
+        if self.ispyb_ids == (None, None, None):
             raise Exception("ispyb was not initialised at run start")
         self.ispyb.end_deposition(exit_status)
         datacollection_ids = self.ispyb_ids[0]

@@ -141,7 +141,12 @@ class StoreInIspyb(ABC):
         )
 
     def _store_data_collection_table(self, data_collection_group_id: int) -> int:
-        session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        try:
+            session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        except ispyb.NoResult:
+            raise Exception(
+                f"Not found - session ID for visit {self.get_visit_string()}"
+            )
 
         params = self.mx_acquisition.get_data_collection_params()
         params["visitid"] = session_id
@@ -211,7 +216,12 @@ class StoreInIspyb(ABC):
         return self.mx_acquisition.update_dc_position(list(params.values()))
 
     def _store_data_collection_group_table(self) -> int:
-        session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        try:
+            session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        except ispyb.NoResult:
+            raise Exception(
+                f"Not found - session ID for visit {self.get_visit_string()} where self.ispyb_params.visit_path is {self.ispyb_params.visit_path}"
+            )
 
         params = self.mx_acquisition.get_data_collection_group_params()
         params["parentid"] = session_id
