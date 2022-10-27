@@ -69,6 +69,7 @@ def run_gridscan(
     )
 
     fgs_motors = fgs_composite.fast_grid_scan
+
     zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
@@ -104,6 +105,8 @@ def run_gridscan(
         sample_motors.z,
         xray_centre_motor_position.z,
     )
+
+    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
 def get_plan(parameters: FullParameters):
