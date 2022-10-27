@@ -77,7 +77,7 @@ class FGSCommunicator(CallbackBase):
     def event(self, doc: dict):
         descriptor = self.get_descriptor_doc(doc.get("descriptor"))
         run_start_uid = descriptor.get("run_start")
-        event_name = descriptor.get("name")
+        event_name = doc.get("name")
 
         artemis.log.LOGGER.debug(f"\n\nReceived event document:\n{doc}\n")
         artemis.log.LOGGER.debug(f"Event name:{event_name}\n")
@@ -86,12 +86,12 @@ class FGSCommunicator(CallbackBase):
         artemis.log.LOGGER.debug(f"In current grid scan: {self.gridscan_uid}\n")
 
         if event_name == "ispyb_motor_positions":
-            self.params.ispyb_params.undulator_gap = doc["data"]["fgs_undulator_gap"]
+            self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
             self.params.ispyb_params.synchrotron_mode = doc["data"][
-                "fgs_synchrotron_machine_status_synchrotron_mode"
+                "synchrotron_machine_status_synchrotron_mode"
             ]
-            self.params.ispyb_params.slit_gap_size_x = doc["data"]["fgs_slit_gaps_xgap"]
-            self.params.ispyb_params.slit_gap_size_y = doc["data"]["fgs_slit_gaps_ygap"]
+            self.params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
+            self.params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
 
             artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
             self.ispyb_ids = self.ispyb.begin_deposition()
@@ -123,29 +123,20 @@ class FGSCommunicator(CallbackBase):
         for id in datacollection_ids:
             run_end(id)
 
-        artemis.log.LOGGER.info(
-            f"Run {self.active_uid} ended, waiting for zocalo to process group ID {self.datacollection_group_id}"
-        )
-        self.results = wait_for_result(self.datacollection_group_id)
-        self.xray_centre_motor_position = (
-            self.params.grid_scan_params.grid_position_to_motor_position(self.results)
-        )
-        artemis.log.LOGGER.info(
-            f"Results recieved from zocalo: {self.xray_centre_motor_position}"
-        )
-
         if exit_status == "success":
             artemis.log.LOGGER.info(
                 f"Run {self.active_uid} successful, waiting for results from zocalo"
             )
-            self.results = wait_for_result(self.datacollection_group_id)
+            b4_processing = time.time()
+            datacollection_group_id = self.ispyb_ids[2]
+            self.results = wait_for_result(datacollection_group_id)
             self.xray_centre_motor_position = (
                 self.params.grid_scan_params.grid_position_to_motor_position(
                     self.results
                 )
             )
-
-            b4_processing = time.time()
-            self.results = wait_for_result()
             self.processing_time = time.time() - b4_processing
+            artemis.log.LOGGER.info(
+                f"Results recieved from zocalo: {self.xray_centre_motor_position}"
+            )
             artemis.log.LOGGER.info(f"Zocalo processing took {self.processing_time}s")

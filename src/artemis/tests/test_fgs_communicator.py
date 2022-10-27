@@ -19,7 +19,7 @@ test_start_document = {
     "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
     "scan_id": 1,
     "plan_type": "generator",
-    "plan_name": "run_gridscan",
+    "plan_name": "run_gridscan_and_move",
 }
 test_event_document = {
     "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
