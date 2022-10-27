@@ -94,7 +94,6 @@ class EigerDetector(Device):
         status = self.cam.roi_mode.set(1 if enable else 0)
         status &= self.odin.file_writer.image_height.set(detector_dimensions.height)
         status &= self.odin.file_writer.image_width.set(detector_dimensions.width)
-        status &= self.odin.file_writer.num_frames_chunks.set(1)
         status &= self.odin.file_writer.num_row_chunks.set(detector_dimensions.height)
         status &= self.odin.file_writer.num_col_chunks.set(detector_dimensions.width)
 
@@ -111,6 +110,8 @@ class EigerDetector(Device):
         self.cam.trigger_mode.put(EigerTriggerMode.EXTERNAL_SERIES.value)
 
     def set_odin_pvs(self):
+        set_and_wait(self.odin.file_writer.num_frames_chunks, 1, timeout=10)
+
         file_prefix = self.detector_params.full_filename
 
         self.odin.file_writer.file_path.put(self.detector_params.directory)
