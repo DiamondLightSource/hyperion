@@ -1,7 +1,0 @@
-{
-    "recommendations": [
-        "ms-python.vscode-pylance",
-        "ms-python.python",
-        "ryanluker.vscode-coverage-gutters"
-    ]
-}
