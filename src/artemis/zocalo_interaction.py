@@ -7,14 +7,15 @@ import workflows.transport
 import zocalo.configuration
 from workflows.transport import lookup
 
+import artemis.log
 from artemis.utils import Point3D
 
-TIMEOUT = 30
+TIMEOUT = 90
 
 
 def _get_zocalo_connection():
     zc = zocalo.configuration.from_file()
-    zc.activate_environment("artemis")
+    zc.activate_environment("devrmq")
 
     transport = lookup("PikaTransport")()
     transport.connect()
@@ -47,6 +48,7 @@ def run_start(data_collection_id: int):
         data_collection_id (int): The ID of the data collection representing the
                                   gridscan in ISPyB
     """
+    artemis.log.LOGGER.info(f"Submitting to zocalo with ispyb id {data_collection_id}")
     _send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
 
 
@@ -84,15 +86,15 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
     def receive_result(
         rw: workflows.recipe.RecipeWrapper, header: dict, message: dict
     ) -> None:
-        print(f"Received {message}")
+        artemis.log.LOGGER.info(f"Received {message}")
         recipe_parameters = rw.recipe_step["parameters"]
-        print(f"Recipe step parameters: {recipe_parameters}")
+        artemis.log.LOGGER.info(f"Recipe step parameters: {recipe_parameters}")
         transport.ack(header)
         received_group_id = recipe_parameters["dcgid"]
         if received_group_id == str(data_collection_group_id):
             result_received.put(Point3D(*reversed(message[0]["centre_of_mass"])))
         else:
-            print(
+            artemis.log.LOGGER.warn(
                 f"Warning: results for {received_group_id} received but expected \
                     {data_collection_group_id}"
             )

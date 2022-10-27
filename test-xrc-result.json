@@ -1,0 +1,13 @@
+{
+    "1": { "service": "Send XRC results to GDA",
+           "queue": "xrc.i03",
+           "exchange": "results",
+           "parameters": {
+              "dcid": "1",
+              "dcgid": "8235405"
+            }
+         },
+    "start": [
+       [1, [{"max_voxel": [1,2,3], "centre_of_mass": [1.2, 2.3, 3.4]}]]
+    ]
+}

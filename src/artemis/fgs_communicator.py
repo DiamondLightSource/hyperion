@@ -129,9 +129,20 @@ class FGSCommunicator(CallbackBase):
         for id in datacollection_ids:
             run_end(id)
 
+        artemis.log.LOGGER.info(
+            f"Run {self.active_uid} ended, waiting for zocalo to process group ID {self.datacollection_group_id}"
+        )
+        self.results = wait_for_result(self.datacollection_group_id)
+        self.xray_centre_motor_position = (
+            self.params.grid_scan_params.grid_position_to_motor_position(self.results)
+        )
+        artemis.log.LOGGER.info(
+            f"Results recieved from zocalo: {self.xray_centre_motor_position}"
+        )
+
         if exit_status == "success":
             artemis.log.LOGGER.info(
-                f"Run {self.active_uid} successful, submitting data to zocalo"
+                f"Run {self.active_uid} successful, waiting for results from zocalo"
             )
             self.results = wait_for_result(self.datacollection_group_id)
             self.xray_centre_motor_position = (
@@ -142,6 +153,6 @@ class FGSCommunicator(CallbackBase):
 
             b4_processing = time.time()
             time.sleep(0.1)  # TODO remove once actual mock processing exists
-            # self.results = waitforresults()
+            self.results = wait_for_result()
             self.processing_time = time.time() - b4_processing
             artemis.log.LOGGER.info(f"Zocalo processing took {self.processing_time}s")
