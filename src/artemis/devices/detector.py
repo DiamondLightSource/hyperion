@@ -37,19 +37,8 @@ class DetectorParams:
             decoder=lambda det_type: constants_from_type(det_type),
         ),
     )
-    beam_xy_converter: DetectorDistanceToBeamXYConverter = field(
-        init=False,
-        default=DetectorDistanceToBeamXYConverter(
-            "src/artemis/devices/unit_tests/test_lookup_table.txt",
-        ),
-        metadata=config(
-            encoder=lambda converter: converter.lookup_file,
-            decoder=lambda path_name: DetectorDistanceToBeamXYConverter(path_name),
-        ),
-    )
 
     # The following are optional from GDA as populated internally
-
     # Where the VDS start index should be in the Nexus file
     start_index: Optional[int] = 0
     nexus_file_run_number: Optional[int] = 0
@@ -57,6 +46,10 @@ class DetectorParams:
     def __post_init__(self):
         if not self.directory.endswith("/"):
             self.directory += "/"
+
+        self.beam_xy_converter = DetectorDistanceToBeamXYConverter(
+            self.det_dist_to_beam_converter_path
+        )
 
     def get_beam_position_mm(self, detector_distance: float) -> Tuple[float, float]:
         x_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist(
