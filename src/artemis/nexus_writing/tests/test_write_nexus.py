@@ -190,3 +190,13 @@ def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file):
         actual_mock_calls = mock_h5py_file.mock_calls
         assert all(call in actual_mock_calls for call in calls_with_temp)
         assert all(call not in actual_mock_calls for call in calls_without_temp)
+
+
+def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
+    from artemis.devices.det_dim_constants import (
+        PIXELS_X_EIGER2_X_4M,
+        PIXELS_Y_EIGER2_X_4M,
+    )
+
+    assert single_dummy_file.detector["image_size"][0] == PIXELS_Y_EIGER2_X_4M
+    assert single_dummy_file.detector["image_size"][1] == PIXELS_X_EIGER2_X_4M

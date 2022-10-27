@@ -16,9 +16,6 @@ from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.parameters import SIM_BEAMLINE, FullParameters
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
-# Tolerance for how close omega must start to 0
-OMEGA_TOLERANCE = 0.1
-
 
 def update_params_from_epics_devices(
     parameters: FullParameters,
@@ -42,11 +39,8 @@ def run_gridscan(
 ):
     sample_motors = fgs_composite.sample_motors
 
-    current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
-    assert abs(current_omega - parameters.detector_params.omega_start) < OMEGA_TOLERANCE
-    assert (
-        abs(current_omega) < OMEGA_TOLERANCE
-    )  # This should eventually be removed, see #154
+    # Currently gridscan only works for omega 0, see #154
+    yield from bps.abs_set(sample_motors.omega, 0)
 
     yield from update_params_from_epics_devices(
         parameters,
@@ -64,6 +58,7 @@ def run_gridscan(
     )
 
     fgs_motors = fgs_composite.fast_grid_scan
+
     zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
@@ -71,6 +66,7 @@ def run_gridscan(
 
     @bpp.stage_decorator([zebra, eiger, fgs_motors])
     def do_fgs():
+        yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
@@ -97,6 +93,8 @@ def run_gridscan(
         sample_motors.z,
         xray_centre_motor_position.z,
     )
+
+    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
 def get_plan(parameters: FullParameters):
