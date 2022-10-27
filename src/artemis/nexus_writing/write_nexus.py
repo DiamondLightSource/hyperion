@@ -278,8 +278,8 @@ class NexusWriter:
                     nxsfile,
                     (
                         self.full_num_of_images,
-                        self.detector["image_size"][1],
                         self.detector["image_size"][0],
+                        self.detector["image_size"][1],
                     ),
                     start_index=self.start_index,
                 )
