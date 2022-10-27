@@ -16,7 +16,6 @@ import artemis.log
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import FullParameters
-from artemis.testing_plan import get_fake_scan
 
 
 class Actions(Enum):
@@ -105,34 +104,18 @@ class BlueskyRunner:
         while True:
             command = self.command_queue.get()
             if command.action == Actions.START:
-                if command.parameters.scan_type == "fake":
-                    try:
-                        self.RE(get_fake_scan(self.fgs_communicator))
-                        self.current_status = StatusAndMessage(
-                            Status.IDLE,
-                            f"Zocalo processing time: {self.fgs_communicator.processing_time}",
-                        )
-                    except Exception as exception:
-                        if self.last_run_aborted:
-                            # Aborting will cause an exception here that we want to swallow
-                            self.last_run_aborted = False
-                        else:
-                            self.current_status = StatusAndMessage(
-                                Status.FAILED, str(exception)
-                            )
-                else:
-                    try:
-                        self.RE(get_plan(command.parameters, self.fgs_communicator))
-                        self.current_status = StatusAndMessage(Status.IDLE, "")
+                try:
+                    self.RE(get_plan(command.parameters, self.fgs_communicator))
+                    self.current_status = StatusAndMessage(Status.IDLE, "")
+                    self.last_run_aborted = False
+                except Exception as exception:
+                    if self.last_run_aborted:
+                        # Aborting will cause an exception here that we want to swallow
                         self.last_run_aborted = False
-                    except Exception as exception:
-                        if self.last_run_aborted:
-                            # Aborting will cause an exception here that we want to swallow
-                            self.last_run_aborted = False
-                        else:
-                            self.current_status = StatusAndMessage(
-                                Status.FAILED, str(exception)
-                            )
+                    else:
+                        self.current_status = StatusAndMessage(
+                            Status.FAILED, str(exception)
+                        )
             elif command.action == Actions.SHUTDOWN:
                 return
 
@@ -158,26 +141,6 @@ class FastGridScan(Resource):
         return self.runner.current_status.to_dict()
 
 
-class FakeScan(Resource):
-    def __init__(self, runner: BlueskyRunner) -> None:
-        super().__init__()
-        self.runner = runner
-
-    def put(self, action):
-        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
-        if action == Actions.START.value:
-            parameters = FullParameters()
-            parameters.scan_type = "fake"
-            parameters.ispyb_params.visit_path = "/tmp/testvisit/TV1234-56/"
-            status_and_message = self.runner.start(parameters)
-        elif action == Actions.STOP.value:
-            status_and_message = self.runner.stop()
-        return status_and_message.to_dict()
-
-    def get(self, action):
-        return self.runner.current_status.to_dict()
-
-
 def create_app(
     test_config=None, RE: RunEngine = RunEngine({})
 ) -> Tuple[Flask, BlueskyRunner]:
@@ -188,9 +151,6 @@ def create_app(
     api = Api(app)
     api.add_resource(
         FastGridScan, "/fast_grid_scan/<string:action>", resource_class_args=[runner]
-    )
-    api.add_resource(
-        FakeScan, "/fake_scan/<string:action>", resource_class_args=[runner]
     )
     return app, runner
 

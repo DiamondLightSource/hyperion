@@ -37,7 +37,6 @@ def move_xyz(
     sample_motors,
     xray_centre_motor_position,
     md={
-        # The name of this plan
         "plan_name": "move_xyz",
     },
 ):

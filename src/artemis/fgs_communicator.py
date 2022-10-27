@@ -50,12 +50,7 @@ class FGSCommunicator(CallbackBase):
     def start(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")
         self.active_uid = doc.get("uid")
-        # exceptionally, do write nexus files for fake scan
-        #    if self.params.scan_type == "fake_scan":
-        #    return
-        # TODO: fix this after making composite plan emit two runs (or running two plans)
-        #           - back to not in ["run_gridscan", "run_fake_scan"]:
-        if doc.get("plan_name") not in ["run_gridscan_and_move", "run_fake_scan"]:
+        if doc.get("plan_name") != "run_gridscan_and_move":
             return
         self.gridscan_uid = doc.get("uid")
 
@@ -74,6 +69,7 @@ class FGSCommunicator(CallbackBase):
         return associated_descriptor_doc
 
     # TODO is this going to eat too much memory if there are a lot of these with a lot of data?
+    # It probably gets destroyed on self.reset() ?
     def descriptor(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived descriptor document:\n\n {doc}\n")
         self.descriptors[doc.get("uid")] = doc
@@ -82,16 +78,13 @@ class FGSCommunicator(CallbackBase):
         descriptor = self.get_descriptor_doc(doc.get("descriptor"))
         run_start_uid = descriptor.get("run_start")
         event_name = descriptor.get("name")
-        artemis.log.LOGGER.debug(f"\n\nReceived event document:\n\n {doc}\n")
-        artemis.log.LOGGER.debug(f"\n\nEvent name:\n\n {event_name}\n")
-        artemis.log.LOGGER.debug(f"\n\nFor run:\n\n {run_start_uid}\n")
-        artemis.log.LOGGER.debug(f"\n\nIn current run:\n\n {self.active_uid}\n")
-        artemis.log.LOGGER.debug(f"\n\nIn current grid scan:\n\n {self.gridscan_uid}\n")
-        # Don't do processing for move_xyz or fake scan
-        if self.params.scan_type == "fake_scan":
-            return
-        if run_start_uid != self.gridscan_uid:
-            return
+
+        artemis.log.LOGGER.debug(f"\n\nReceived event document:\n{doc}\n")
+        artemis.log.LOGGER.debug(f"Event name:{event_name}\n")
+        artemis.log.LOGGER.debug(f"For run: {run_start_uid}\n")
+        artemis.log.LOGGER.debug(f"In current run: {self.active_uid}\n")
+        artemis.log.LOGGER.debug(f"In current grid scan: {self.gridscan_uid}\n")
+
         if event_name == "ispyb_motor_positions":
             self.params.ispyb_params.undulator_gap = doc["data"]["fgs_undulator_gap"]
             self.params.ispyb_params.synchrotron_mode = doc["data"][
@@ -111,9 +104,10 @@ class FGSCommunicator(CallbackBase):
 
     def stop(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived stop document:\n\n {doc}\n")
-        if self.params.scan_type == "fake_scan":
-            return
         # Don't do processing for move_xyz
+        # Does nothing until move_xyz sends a separate start doc
+        # Then probably best to remove this and just attach this callback to
+        # run_gridscan instead of the combined plan?
         if doc.get("run_start") != self.gridscan_uid:
             return
         exit_status = doc.get("exit_status")
@@ -152,7 +146,6 @@ class FGSCommunicator(CallbackBase):
             )
 
             b4_processing = time.time()
-            time.sleep(0.1)  # TODO remove once actual mock processing exists
             self.results = wait_for_result()
             self.processing_time = time.time() - b4_processing
             artemis.log.LOGGER.info(f"Zocalo processing took {self.processing_time}s")
