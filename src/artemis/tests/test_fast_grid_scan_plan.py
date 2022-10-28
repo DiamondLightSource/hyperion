@@ -95,11 +95,15 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
 
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
-def test_results_passed_to_move_xyz(move_xyz, run_gridscan):
+@patch("artemis.fgs_communicator.wait_for_result")
+def test_results_passed_to_move_xyz(wait_for_result, move_xyz, run_gridscan):
     RE = RunEngine({})
     params = FullParameters()
     communicator = FGSCommunicator()
-    communicator.xray_centre_motor_position = Point3D(1, 2, 3)
+    wait_for_result.return_value = Point3D(1, 2, 3)
+    motor_position = params.grid_scan_params.grid_position_to_motor_position(
+        Point3D(1, 2, 3)
+    )
     FakeComposite = make_fake_device(FGSComposite)
     FakeEiger = make_fake_device(EigerDetector)
     RE(
@@ -110,12 +114,17 @@ def test_results_passed_to_move_xyz(move_xyz, run_gridscan):
             communicator,
         )
     )
-    move_xyz.assert_called_once_with(ANY, Point3D(1, 2, 3))
+    move_xyz.assert_called_once_with(ANY, motor_position)
 
 
+@patch("artemis.fgs_communicator.wait_for_result")
+@patch("artemis.fgs_communicator.run_end")
+@patch("artemis.fgs_communicator.run_start")
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
-def test_run_gridscan_runs_in_composite_run(move_xyz, run_gridscan):
+def test_individual_plans_triggered_once_and_only_once_in_composite_run(
+    move_xyz, run_gridscan, run_start, run_end, wait_for_result
+):
     RE = RunEngine({})
     params = FullParameters()
     communicator = FGSCommunicator()
@@ -131,6 +140,7 @@ def test_run_gridscan_runs_in_composite_run(move_xyz, run_gridscan):
         )
     )
     run_gridscan.assert_called_once()
+    move_xyz.assert_called_once()
 
 
 @pytest.fixture

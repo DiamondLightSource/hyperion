@@ -36,6 +36,7 @@ class FGSCommunicator(CallbackBase):
             else StoreInIspyb2D(ispyb_config, self.params)
         )
         self.results = None
+        self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
@@ -96,7 +97,7 @@ class FGSCommunicator(CallbackBase):
                 )
             )
 
-    def wait_for_result(self):
+    def wait_for_results(self):
         datacollection_group_id = self.ispyb_ids[2]
         self.results = wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time

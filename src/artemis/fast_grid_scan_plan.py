@@ -90,10 +90,8 @@ def run_gridscan_and_move(
     parameters: FullParameters,
     communicator: FGSCommunicator,
 ):
-    yield from subs_decorator(communicator)(
-        run_gridscan(fgs_composite, eiger, parameters)
-    )
-    communicator.wait_for_result()
+    subs_decorator(communicator)(run_gridscan(fgs_composite, eiger, parameters))
+    communicator.wait_for_results()
     yield from move_xyz(
         fgs_composite.sample_motors, communicator.xray_centre_motor_position
     )
