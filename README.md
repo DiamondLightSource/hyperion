@@ -18,13 +18,14 @@ Starting the bluesky runner
 -------------------------
 You can start the bluesky runner by doing the following:
 ```
-pipenv run artemis
+source .venv/bin/activate
+python -m artemis
 ```
 The default behaviour of which is to run artemis with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/artemis.txt on the shared file system. 
 
 To run locally in a dev environment use
 ```
-pipenv run artemis --dev
+python -m artemis --dev
 ```
 This will log to a local graylog instance instead and into a file at `./tmp/dev/artemis.txt`. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
 
@@ -32,7 +33,7 @@ This uses the generic defaults for a local graylog instance. It can be accessed 
 
 The logging level of artemis can be selected with the flag
 ```
-pipenv run artemis --dev --logging-level DEBUG
+python -m artemis --dev --logging-level DEBUG
 ```
 
 **DO NOT** run artemis at DEBUG level on production (without the --dev flag). This will flood graylog with messages and make people very grumpy.

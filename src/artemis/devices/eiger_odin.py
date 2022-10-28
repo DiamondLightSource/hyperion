@@ -42,7 +42,9 @@ class OdinNode(Device):
     fp_initialised: EpicsSignalRO = Component(EpicsSignalRO, "FPProcessConnected_RBV")
     fr_initialised: EpicsSignalRO = Component(EpicsSignalRO, "FRProcessConnected_RBV")
     clear_errors: EpicsSignal = Component(EpicsSignal, "FPClearErrors")
-    error_message: EpicsSignalRO = Component(EpicsSignalRO, "FPErrorMessage_RBV")
+    error_message: EpicsSignalRO = Component(
+        EpicsSignalRO, "FPErrorMessage_RBV", string=True
+    )
 
 
 class OdinNodesStatus(Device):

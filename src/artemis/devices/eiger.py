@@ -2,7 +2,6 @@ from enum import Enum
 
 from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
-from ophyd.utils.epics_pvs import set_and_wait
 
 from artemis.devices.detector import DetectorParams
 from artemis.devices.eiger_odin import EigerOdin
@@ -74,8 +73,8 @@ class EigerDetector(Device):
         self.odin.file_writer.timeout.put(1)
         self.odin.nodes.wait_for_filewriters_to_finish()
         self.disarm_detector()
-        self.disable_roi_mode()
         status_ok = self.odin.check_odin_state()
+        self.disable_roi_mode()
         return status_ok
 
     def enable_roi_mode(self):
@@ -159,7 +158,7 @@ class EigerDetector(Device):
         odin_status &= await_value(self.odin.meta.ready, 1)
         odin_status.wait(10)
 
-        set_and_wait(self.cam.acquire, 1, timeout=10)
+        self.cam.acquire.set(1).wait(timeout=10)
 
         await_value(self.odin.fan.ready, 1).wait(10)
 
