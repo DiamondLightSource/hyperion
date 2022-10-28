@@ -57,7 +57,6 @@ class BlueskyRunner:
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
-        # RE.subscribe(self.fgs_communicator)
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
@@ -98,9 +97,6 @@ class BlueskyRunner:
         self.command_queue.put(Command(Actions.SHUTDOWN))
 
     def wait_on_queue(self):
-        # TODO abstract plan fetcher from params
-        # will become less important when fake scan is removed
-        # more important again when we want to add different experiments
         while True:
             command = self.command_queue.get()
             if command.action == Actions.START:

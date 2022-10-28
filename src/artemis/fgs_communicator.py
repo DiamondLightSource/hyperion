@@ -38,7 +38,7 @@ class FGSCommunicator(CallbackBase):
         self.active_uid = None
         self.gridscan_uid = None
         # TODO add flag for this or delete?
-        # useful for testing to not duplicate files:
+        # useful for testing, to not duplicate files:
         # self.params.detector_params.prefix += str(time.time())
         self.results = None
         self.processing_time = 0.0
@@ -73,7 +73,7 @@ class FGSCommunicator(CallbackBase):
     # TODO is this going to eat too much memory if there are a lot of these with a lot of data?
     # It probably gets destroyed on self.reset() ?
     def descriptor(self, doc: dict):
-        artemis.log.LOGGER.debug(f"\n\nReceived descriptor document:\n\n {doc}\n")
+        artemis.log.LOGGER.debug(f"\n\nReceived descriptor document: {doc}\n")
         self.descriptors[doc.get("uid")] = doc
 
     def event(self, doc: dict):
@@ -109,6 +109,7 @@ class FGSCommunicator(CallbackBase):
         # Don't do processing for move_xyz
         # Probably best to remove this and just attach this callback to
         # run_gridscan instead of the combined plan?
+        # but complicated because communicator not instantiated there
         if doc.get("run_start") != self.gridscan_uid:
             return
         exit_status = doc.get("exit_status")
