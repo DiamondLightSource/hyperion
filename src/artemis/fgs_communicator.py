@@ -35,8 +35,6 @@ class FGSCommunicator(CallbackBase):
             if self.params.grid_scan_params.is_3d_grid_scan
             else StoreInIspyb2D(ispyb_config, self.params)
         )
-        self.active_uid = None
-        self.gridscan_uid = None
         self.results = None
         self.processing_time = 0.0
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
@@ -48,43 +46,14 @@ class FGSCommunicator(CallbackBase):
 
     def start(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")
-        self.active_uid = doc.get("uid")
-        if doc.get("plan_name") != "run_gridscan_and_move":
-            return
-        self.gridscan_uid = doc.get("uid")
-
-        artemis.log.LOGGER.info(f"Creating Nexus files for run {self.active_uid}")
+        artemis.log.LOGGER.info("Creating Nexus files.")
         self.nxs_writer_1.create_nexus_file()
         self.nxs_writer_2.create_nexus_file()
 
-        artemis.log.LOGGER.info(f"Initialising Zocalo for run {self.active_uid}")
-
-    def get_descriptor_doc(self, key) -> dict:
-        associated_descriptor_doc = self.descriptors.get(key)
-        if type(associated_descriptor_doc) is not dict:
-            raise ValueError(
-                "Non-dict object stored in descriptor list, or key not valid."
-            )
-        return associated_descriptor_doc
-
-    # TODO is this going to eat too much memory if there are a lot of these with a lot of data?
-    # It probably gets destroyed on self.reset() ?
-    def descriptor(self, doc: dict):
-        artemis.log.LOGGER.debug(f"\n\nReceived descriptor document: {doc}\n")
-        self.descriptors[doc.get("uid")] = doc
-
     def event(self, doc: dict):
-        descriptor = self.get_descriptor_doc(doc.get("descriptor"))
-        run_start_uid = descriptor.get("run_start")
-        event_name = doc.get("name")
-
         artemis.log.LOGGER.debug(f"\n\nReceived event document:\n{doc}\n")
-        artemis.log.LOGGER.debug(f"Event name:{event_name}\n")
-        artemis.log.LOGGER.debug(f"For run: {run_start_uid}\n")
-        artemis.log.LOGGER.debug(f"In current run: {self.active_uid}\n")
-        artemis.log.LOGGER.debug(f"In current grid scan: {self.gridscan_uid}\n")
 
-        if event_name == "ispyb_motor_positions":
+        if doc.get("name") == "ispyb_motor_positions":
             self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
             self.params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"
@@ -103,12 +72,6 @@ class FGSCommunicator(CallbackBase):
 
     def stop(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived stop document:\n\n {doc}\n")
-        # Don't do processing for move_xyz
-        # Probably best to remove this and just attach this callback to
-        # run_gridscan instead of the combined plan?
-        # but complicated because communicator not instantiated there
-        if doc.get("run_start") != self.gridscan_uid:
-            return
         exit_status = doc.get("exit_status")
 
         artemis.log.LOGGER.debug("Updating Nexus file timestamps.")
@@ -123,10 +86,8 @@ class FGSCommunicator(CallbackBase):
             run_end(id)
 
         if exit_status == "success":
-            artemis.log.LOGGER.info(
-                f"Run {self.active_uid} successful, waiting for results from zocalo"
-            )
-            b4_processing = time.time()
+            artemis.log.LOGGER.info("Run successful, waiting for results from zocalo")
+            self.processing_start_time = time.time()
             datacollection_group_id = self.ispyb_ids[2]
             self.results = wait_for_result(datacollection_group_id)
             self.xray_centre_motor_position = (
@@ -134,8 +95,15 @@ class FGSCommunicator(CallbackBase):
                     self.results
                 )
             )
-            self.processing_time = time.time() - b4_processing
-            artemis.log.LOGGER.info(
-                f"Results recieved from zocalo: {self.xray_centre_motor_position}"
-            )
-            artemis.log.LOGGER.info(f"Zocalo processing took {self.processing_time}s")
+
+    def wait_for_result(self):
+        datacollection_group_id = self.ispyb_ids[2]
+        self.results = wait_for_result(datacollection_group_id)
+        self.processing_time = time.time() - self.processing_start_time
+        self.xray_centre_motor_position = (
+            self.params.grid_scan_params.grid_position_to_motor_position(self.results)
+        )
+        artemis.log.LOGGER.info(
+            f"Results recieved from zocalo: {self.xray_centre_motor_position}"
+        )
+        artemis.log.LOGGER.info(f"Zocalo processing took {self.processing_time}s")
