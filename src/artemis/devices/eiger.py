@@ -132,12 +132,12 @@ class EigerDetector(Device):
         self.cam.omega_incr.put(self.detector_params.omega_increment)
 
     def set_detector_threshold(self, energy: float, tolerance: float = 0.1):
-        """Ensures the energy threshold on the detector is set to the specified energy,
+        """Ensures the energy threshold on the detector is set to the specified energy (in eV),
         within the specified tolerance.
         Args:
-            energy (float): The energy to set
+            energy (float): The energy to set (in eV)
             tolerance (float, optional): If the energy is already set to within
-                this tolerance it is not set again. Defaults to 0.1.
+                this tolerance it is not set again. Defaults to 0.1eV.
         """
         current_energy = self.cam.photon_energy.get()
 
