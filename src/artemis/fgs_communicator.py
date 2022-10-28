@@ -62,7 +62,7 @@ class FGSCommunicator(CallbackBase):
             self.params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
             self.params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
 
-            artemis.log.LOGGER.info(f"Creating ispyb entry for run {self.active_uid}")
+            artemis.log.LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
             datacollection_ids = self.ispyb_ids[0]
             self.datacollection_group_id = self.ispyb_ids[2]

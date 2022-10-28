@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -61,33 +62,12 @@ test_descriptor_document = {
 def test_fgs_communicator_reset():
     communicator = fgs_communicator.FGSCommunicator()
     assert communicator.processing_time == 0.0
-    assert communicator.active_uid is None
     communicator.params.detector_params.prefix = "file_name"
     assert communicator.params == FullParameters()
 
     communicator.results = "some position to move to"
     communicator.reset(FullParameters())
     assert communicator.results is None
-
-
-def test_start_sets_uid():
-    communicator = fgs_communicator.FGSCommunicator()
-    communicator.start({"uid": "some uid"})
-    assert communicator.active_uid == "some uid"
-
-
-# TODO should no longer except, test in different way
-# def test_stop_excepts_on_wrong_uid():
-#     communicator = fgs_communicator.FGSCommunicator()
-#     communicator.start({"uid": "some uid"})
-#     with pytest.raises(Exception):
-#         communicator.stop({"run_start": "some other uid"})
-
-
-def test_stop_doesnt_except_on_correct_uid():
-    communicator = fgs_communicator.FGSCommunicator()
-    communicator.start({"uid": "some uid"})
-    communicator.stop({"run_start": "some uid"})
 
 
 @patch("artemis.fgs_communicator.run_start")
@@ -114,8 +94,10 @@ def test_run_gridscan_zocalo_calls(
     mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
+    params = FullParameters()
+    params.detector_params.prefix += str(time.time())
     communicator = fgs_communicator.FGSCommunicator()
-    communicator.params = FullParameters()
+    communicator.reset(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
     communicator.event(test_event_document)
@@ -171,8 +153,10 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
+    params = FullParameters()
+    params.detector_params.prefix += str(time.time())
     communicator = fgs_communicator.FGSCommunicator()
-    communicator.params = FullParameters()
+    communicator.reset(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
     communicator.event(test_event_document)
@@ -206,8 +190,10 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
+    params = FullParameters()
+    params.detector_params.prefix += str(time.time())
     communicator = fgs_communicator.FGSCommunicator()
-    communicator.params = FullParameters()
+    communicator.reset(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
     communicator.event(test_event_document)
