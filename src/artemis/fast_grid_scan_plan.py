@@ -15,9 +15,6 @@ from artemis.devices.undulator import Undulator
 from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import SIM_BEAMLINE, FullParameters
 
-# Tolerance for how close omega must start to 0
-OMEGA_TOLERANCE = 0.1
-
 
 def read_hardware_for_ispyb(
     undulator: Undulator,
@@ -61,11 +58,8 @@ def run_gridscan(
 ):
     sample_motors = fgs_composite.sample_motors
 
-    current_omega = yield from bps.rd(sample_motors.omega, default_value=0)
-    assert abs(current_omega - parameters.detector_params.omega_start) < OMEGA_TOLERANCE
-    assert (
-        abs(current_omega) < OMEGA_TOLERANCE
-    )  # This should eventually be removed, see #154
+    # Currently gridscan only works for omega 0, see #154
+    yield from bps.abs_set(sample_motors.omega, 0)
 
     yield from read_hardware_for_ispyb(
         fgs_composite.undulator,
@@ -82,6 +76,7 @@ def run_gridscan(
 
     @bpp.stage_decorator([zebra, eiger, fgs_motors])
     def do_fgs():
+        yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 

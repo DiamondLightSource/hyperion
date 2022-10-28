@@ -199,7 +199,7 @@ def test_change_roi_mode_sets_cam_roi_mode_correctly(
 
 @patch("ophyd.status.Status.__and__")
 def test_unsuccessful_roi_mode_change_results_in_logged_error(mock_and, fake_eiger):
-    dummy_status = Status(success=False)
+    dummy_status = Status()
     dummy_status.wait = MagicMock()
     mock_and.return_value = dummy_status
 

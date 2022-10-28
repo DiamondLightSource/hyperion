@@ -55,28 +55,28 @@ class FullParameters:
     ispyb_params: IspybParams = default_field(
         IspybParams(
             sample_id=None,
+            sample_barcode=None,
             visit_path="",
-            undulator_gap=1.0,
-            pixels_per_micron_x=None,
-            pixels_per_micron_y=None,
+            pixels_per_micron_x=0.0,
+            pixels_per_micron_y=0.0,
             upper_left=Point3D(
                 x=None, y=None, z=None
             ),  # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-            sample_barcode=None,
             position=Point3D(x=None, y=None, z=None),
-            synchrotron_mode=None,
             xtal_snapshots_omega_start=["test_1_y", "test_2_y", "test_3_y"],
             xtal_snapshots_omega_end=["test_1_z", "test_2_z", "test_3_z"],
             transmission=1.0,
             flux=10.0,
             wavelength=0.01,
-            beam_size_x=None,
-            beam_size_y=None,
-            slit_gap_size_x=None,
-            slit_gap_size_y=None,
-            focal_spot_size_x=None,
-            focal_spot_size_y=None,
+            beam_size_x=0.1,
+            beam_size_y=0.1,
+            focal_spot_size_x=0.0,
+            focal_spot_size_y=0.0,
             comment="Descriptive comment.",
-            resolution=None,
+            resolution=1,
+            undulator_gap=1.0,
+            synchrotron_mode=None,
+            slit_gap_size_x=0.1,
+            slit_gap_size_y=0.1,
         )
     )
