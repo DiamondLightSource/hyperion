@@ -224,9 +224,6 @@ def test_fail_result_run_results_in_bad_run_status(
     dummy_ispyb.begin_deposition()
     dummy_ispyb.end_deposition("fail")
 
-    # with pytest.raises(Exception) as _:
-    #     with dummy_ispyb:
-    #         raise Exception
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
         0

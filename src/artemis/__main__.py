@@ -102,7 +102,7 @@ class BlueskyRunner:
             if command.action == Actions.START:
                 try:
                     self.RE(get_plan(command.parameters, self.fgs_communicator))
-                    self.current_status = StatusAndMessage(Status.IDLE, "")
+                    self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
                     if self.last_run_aborted:

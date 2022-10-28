@@ -37,9 +37,6 @@ class FGSCommunicator(CallbackBase):
         )
         self.active_uid = None
         self.gridscan_uid = None
-        # TODO add flag for this or delete?
-        # useful for testing, to not duplicate files:
-        # self.params.detector_params.prefix += str(time.time())
         self.results = None
         self.processing_time = 0.0
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))

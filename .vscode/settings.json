@@ -22,6 +22,5 @@
             88
         ]
     },
-    // Make the terminal more responsive:
     "terminal.integrated.gpuAcceleration": "off",
 }
