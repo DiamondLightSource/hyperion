@@ -79,14 +79,14 @@ def test_start_sets_uid():
 # TODO should no longer except, test in different way
 # def test_stop_excepts_on_wrong_uid():
 #     communicator = fgs_communicator.FGSCommunicator()
-#     communicator.start({"uid": "some uid", "scan_type": "gridscan"})
+#     communicator.start({"uid": "some uid"})
 #     with pytest.raises(Exception):
-#         communicator.stop({"run_start": "some other uid", "scan_type": "gridscan"})
+#         communicator.stop({"run_start": "some other uid"})
 
 
 def test_stop_doesnt_except_on_correct_uid():
     communicator = fgs_communicator.FGSCommunicator()
-    communicator.start({"uid": "some uid", "scan_type": "gridscan"})
+    communicator.start({"uid": "some uid"})
     communicator.stop({"run_start": "some uid"})
 
 

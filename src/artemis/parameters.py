@@ -21,7 +21,6 @@ def default_field(obj):
 class FullParameters:
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
-    scan_type: str = "grid_scan"
     grid_scan_params: GridScanParams = default_field(
         GridScanParams(
             x_steps=4,
