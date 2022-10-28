@@ -25,9 +25,9 @@ class FGSCommunicator(CallbackBase):
     """
 
     def __init__(self):
-        self.reset(FullParameters())
+        self.reset(FullParameters(), write_files=False)
 
-    def reset(self, parameters: FullParameters):
+    def reset(self, parameters: FullParameters, write_files=True):
         self.params = parameters
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
         self.ispyb = (
@@ -35,15 +35,19 @@ class FGSCommunicator(CallbackBase):
             if self.params.grid_scan_params.is_3d_grid_scan
             else StoreInIspyb2D(ispyb_config, self.params)
         )
-        self.results = None
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
-        self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
-        self.datacollection_group_id = None
+        if write_files:
+            self.nxs_writer_1 = NexusWriter(
+                create_parameters_for_first_file(self.params)
+            )
+            self.nxs_writer_2 = NexusWriter(
+                create_parameters_for_second_file(self.params)
+            )
+        self.results = None
         self.xray_centre_motor_position = None
         self.ispyb_ids: tuple = (None, None, None)
-        self.descriptors: dict = {}
+        self.datacollection_group_id = None
 
     def start(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")

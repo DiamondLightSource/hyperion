@@ -38,9 +38,6 @@ class MockRunEngine:
                 raise Exception(self.error)
         self.RE_takes_time = False
 
-    def subscribe(self, *args: Any):
-        pass
-
 
 @dataclass
 class ClientAndRunEngine:

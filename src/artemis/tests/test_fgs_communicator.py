@@ -82,7 +82,7 @@ def test_run_gridscan_zocalo_calls(
     mock_ispyb_update_time_and_status: MagicMock,
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
-    wait_for_result,
+    wait_for_result: MagicMock,
     run_end,
     run_start,
 ):
@@ -203,3 +203,61 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
         [call(DUMMY_TIME_STRING, GOOD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids]
     )
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
+
+
+@patch("artemis.fgs_communicator.create_parameters_for_first_file")
+@patch("artemis.fgs_communicator.create_parameters_for_second_file")
+@patch("artemis.fgs_communicator.NexusWriter")
+def test_writers_setup_on_reset(
+    nexus_writer: MagicMock,
+    param_for_second: MagicMock,
+    param_for_first: MagicMock,
+):
+
+    params = FullParameters()
+    params.detector_params.prefix += str(time.time())
+    communicator = fgs_communicator.FGSCommunicator()
+    communicator.reset(params)
+
+    nexus_writer.assert_has_calls(
+        [
+            call(param_for_first()),
+            call(param_for_second()),
+        ],
+        any_order=True,
+    )
+
+
+@patch("artemis.fgs_communicator.create_parameters_for_first_file")
+@patch("artemis.fgs_communicator.create_parameters_for_second_file")
+@patch("artemis.fgs_communicator.NexusWriter")
+@patch("artemis.fgs_communicator.NexusWriter.create_nexus_file")
+def test_writers_dont_create_on_reset(
+    create_nexus_file: MagicMock,
+    nexus_writer: MagicMock,
+    param_for_second: MagicMock,
+    param_for_first: MagicMock,
+):
+
+    params = FullParameters()
+    params.detector_params.prefix += str(time.time())
+    communicator = fgs_communicator.FGSCommunicator()
+    communicator.reset(params)
+
+    communicator.nxs_writer_1.create_nexus_file.assert_not_called()
+    communicator.nxs_writer_2.create_nexus_file.assert_not_called()
+
+
+@patch("artemis.fgs_communicator.NexusWriter")
+def test_writers_do_create_on_start_doc(
+    nexus_writer: MagicMock,
+):
+
+    params = FullParameters()
+    params.detector_params.prefix += str(time.time())
+    communicator = fgs_communicator.FGSCommunicator()
+    communicator.reset(params)
+    communicator.start(test_start_document)
+
+    assert communicator.nxs_writer_1 == communicator.nxs_writer_2
+    assert communicator.nxs_writer_1.create_nexus_file.call_count == 2
