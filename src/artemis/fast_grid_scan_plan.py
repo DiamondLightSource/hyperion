@@ -143,6 +143,5 @@ if __name__ == "__main__":
 
     parameters = FullParameters(beamline=args.beamline)
     communicator = FGSCommunicator()
-    # RE.subscribe(communicator)
 
     RE(get_plan(parameters, communicator))
