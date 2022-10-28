@@ -76,10 +76,6 @@ def test_dev_mode_sets_correct_file_handler(
     )
 
 
-def do_nothing():
-    pass
-
-
 @patch("artemis.log.Path.mkdir")
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")

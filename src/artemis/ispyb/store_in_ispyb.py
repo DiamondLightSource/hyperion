@@ -163,7 +163,7 @@ class StoreInIspyb(ABC):
         params["imgdir"] = self.detector_params.directory
         params["imgprefix"] = self.detector_params.prefix
         params["imgsuffix"] = EIGER_FILE_SUFFIX
-        params["n_images"] = self.detector_params.num_images
+        params["n_images"] = self.full_params.grid_scan_params.x_steps * self.y_steps
 
         # Both overlap and n_passes included for backwards compatibility,
         # planned to be removed later
