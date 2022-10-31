@@ -37,6 +37,8 @@ def move_xyz(
         "plan_name": "move_xyz",
     },
 ):
+    """Move 'sample motors' to a specific motor position (e.g. a position obtained
+    from gridscan processing results)"""
     yield from bps.mv(
         sample_motors.x,
         xray_centre_motor_position.x,
@@ -90,8 +92,15 @@ def run_gridscan_and_move(
     parameters: FullParameters,
     communicator: FGSCommunicator,
 ):
+    """A multi-run plan which runs a gridscan, gets the results from zocalo
+    and moves to the centre of mass determined by zocalo"""
+    # our communicator should listen to documents only from the actual grid scan
+    # so we subscribe to it with our plan
     subs_decorator(communicator)(run_gridscan(fgs_composite, eiger, parameters))
+    # the data were submitted to zocalo by the communicator during the gridscan,
+    # but results may not be ready
     communicator.wait_for_results()
+    # once we have the results, go to the appropriate position
     yield from move_xyz(
         fgs_composite.sample_motors, communicator.xray_centre_motor_position
     )
