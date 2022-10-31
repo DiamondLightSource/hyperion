@@ -259,5 +259,7 @@ def test_writers_do_create_on_start_doc(
     communicator.reset(params)
     communicator.start(test_start_document)
 
+    # awkwardly, nxs_writer_1 and nxs_writer_2 are mocked by the exact same object,
+    # so can't test them individually
     assert communicator.nxs_writer_1 == communicator.nxs_writer_2
     assert communicator.nxs_writer_1.create_nexus_file.call_count == 2

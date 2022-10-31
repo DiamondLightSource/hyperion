@@ -96,7 +96,9 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
 @patch("artemis.fgs_communicator.wait_for_result")
-def test_results_passed_to_move_xyz(wait_for_result, move_xyz, run_gridscan):
+def test_results_passed_to_move_xyz(
+    wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
+):
     RE = RunEngine({})
     params = FullParameters()
     communicator = FGSCommunicator()
@@ -117,13 +119,41 @@ def test_results_passed_to_move_xyz(wait_for_result, move_xyz, run_gridscan):
     move_xyz.assert_called_once_with(ANY, motor_position)
 
 
+@patch("bluesky.plan_stubs.mv")
+def test_results_passed_to_move_motors(bps_mv: MagicMock):
+    from artemis.fast_grid_scan_plan import move_xyz
+
+    RE = RunEngine({})
+    params = FullParameters()
+    motor_position = params.grid_scan_params.grid_position_to_motor_position(
+        Point3D(1, 2, 3)
+    )
+    FakeComposite = make_fake_device(FGSComposite)
+    RE(
+        move_xyz(
+            FakeComposite("test", name="fakecomposite").sample_motors, motor_position
+        )
+    )
+    x = bps_mv
+    print(x)
+    bps_mv.assert_called_once_with(
+        ANY, motor_position.x, ANY, motor_position.y, ANY, motor_position.z
+    )
+
+
 @patch("artemis.fgs_communicator.wait_for_result")
 @patch("artemis.fgs_communicator.run_end")
 @patch("artemis.fgs_communicator.run_start")
+@patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
-    move_xyz, run_gridscan, run_start, run_end, wait_for_result
+    move_xyz: MagicMock,
+    run_gridscan: MagicMock,
+    do_fgs: MagicMock,
+    run_start: MagicMock,
+    run_end: MagicMock,
+    wait_for_result: MagicMock,
 ):
     RE = RunEngine({})
     params = FullParameters()
@@ -139,6 +169,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
             communicator,
         )
     )
+    do_fgs.assert_called_once
     run_gridscan.assert_called_once()
     move_xyz.assert_called_once()
 
