@@ -169,7 +169,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
             communicator,
         )
     )
-    do_fgs.assert_called_once
+    do_fgs.assert_called_once()
     run_gridscan.assert_called_once()
     move_xyz.assert_called_once()
 
