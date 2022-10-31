@@ -61,13 +61,16 @@ def fake_eiger():
     ],
 )
 def test_detector_threshold(
-    fake_eiger, current_energy: float, request_energy: float, is_energy_change: bool
+    fake_eiger: EigerDetector,
+    current_energy: float,
+    request_energy: float,
+    is_energy_change: bool,
 ):
 
     when(fake_eiger.cam.photon_energy).get().thenReturn(current_energy)
     when(fake_eiger.cam.photon_energy).put(ANY).thenReturn(None)
 
-    assert fake_eiger.set_detector_threshold(request_energy) == is_energy_change
+    fake_eiger.set_detector_threshold(request_energy)
 
     if is_energy_change:
         verify(fake_eiger.cam.photon_energy, times=1).put(request_energy)
