@@ -6,6 +6,7 @@ from bluesky import RunEngine
 from bluesky.preprocessors import subs_decorator
 from bluesky.utils import ProgressBarManager
 
+import artemis.log
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -21,6 +22,9 @@ def read_hardware_for_ispyb(
     synchrotron: Synchrotron,
     slit_gap: SlitGaps,
 ):
+    artemis.log.LOGGER.debug(
+        "Reading status of beamline parameters for ispyb deposition."
+    )
     yield from bps.create(name="ispyb_motor_positions")
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
@@ -102,6 +106,7 @@ def run_gridscan_and_move(
     def gridscan_with_communicator(fgs_comp, det, params):
         yield from run_gridscan(fgs_comp, det, params)
 
+    artemis.log.LOGGER.debug("Starting grid scan")
     yield from gridscan_with_communicator(fgs_composite, eiger, parameters)
 
     # the data were submitted to zocalo by the communicator during the gridscan,
@@ -109,6 +114,7 @@ def run_gridscan_and_move(
     communicator.wait_for_results()
 
     # once we have the results, go to the appropriate position
+    artemis.log.LOGGER.debug("Moving to centre of mass.")
     yield from move_xyz(
         fgs_composite.sample_motors, communicator.xray_centre_motor_position
     )
@@ -123,6 +129,7 @@ def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
     Returns:
         Generator: The plan for the gridscan
     """
+    artemis.log.LOGGER.info("Fetching composite plan")
     fast_grid_scan_composite = FGSComposite(
         insertion_prefix=parameters.insertion_prefix,
         name="fgs",
@@ -136,7 +143,9 @@ def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
         prefix=f"{parameters.beamline}-EA-EIGER-01:",
     )
 
+    artemis.log.LOGGER.debug("Connecting to EPICS devices...")
     fast_grid_scan_composite.wait_for_connection()
+    artemis.log.LOGGER.debug("Connected.")
 
     return run_gridscan_and_move(
         fast_grid_scan_composite, eiger, parameters, communicator

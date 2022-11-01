@@ -65,7 +65,7 @@ def _get_graylog_configuration(dev_mode: bool) -> Tuple[str, int]:
         (host,port): A tuple of the relevent host and port for graylog.
     """
     if dev_mode:
-        return "localhost", 5555
+        return "localhost", 15234
     else:
         return "graylog2.diamond.ac.uk", 12218
 
