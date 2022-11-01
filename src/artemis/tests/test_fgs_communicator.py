@@ -60,15 +60,9 @@ test_descriptor_document = {
 }
 
 
-def test_fgs_communicator_reset():
-    communicator = fgs_communicator.FGSCommunicator()
-    assert communicator.processing_time == 0.0
-    communicator.params.detector_params.prefix = "file_name"
+def test_fgs_communicator_init():
+    communicator = fgs_communicator.FGSCommunicator(FullParameters())
     assert communicator.params == FullParameters()
-
-    communicator.results = "some position to move to"
-    communicator.reset(FullParameters())
-    assert communicator.results is None
 
 
 @patch("artemis.fgs_communicator.run_start")
@@ -97,8 +91,7 @@ def test_run_gridscan_zocalo_calls(
 
     params = FullParameters()
     params.detector_params.prefix += str(time.time())
-    communicator = fgs_communicator.FGSCommunicator()
-    communicator.reset(params)
+    communicator = fgs_communicator.FGSCommunicator(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
     communicator.event(test_event_document)
@@ -125,7 +118,7 @@ def dummy_3d_gridscan_args():
     eiger: EigerDetector = FakeEiger(
         detector_params=params.detector_params, name="eiger"
     )
-    communicator = fgs_communicator.FGSCommunicator()
+    communicator = fgs_communicator.FGSCommunicator(params)
     communicator.xray_centre_motor_position = Point3D(1, 2, 3)
 
     return fgs_composite, eiger, params, communicator
@@ -156,8 +149,7 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
 
     params = FullParameters()
     params.detector_params.prefix += str(time.time())
-    communicator = fgs_communicator.FGSCommunicator()
-    communicator.reset(params)
+    communicator = fgs_communicator.FGSCommunicator(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
     communicator.event(test_event_document)
@@ -193,8 +185,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
 
     params = FullParameters()
     params.detector_params.prefix += str(time.time())
-    communicator = fgs_communicator.FGSCommunicator()
-    communicator.reset(params)
+    communicator = fgs_communicator.FGSCommunicator(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
     communicator.event(test_event_document)
@@ -209,15 +200,16 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
 @patch("artemis.fgs_communicator.create_parameters_for_first_file")
 @patch("artemis.fgs_communicator.create_parameters_for_second_file")
 @patch("artemis.fgs_communicator.NexusWriter")
-def test_writers_setup_on_reset(
+def test_writers_setup_on_init(
     nexus_writer: MagicMock,
     param_for_second: MagicMock,
     param_for_first: MagicMock,
 ):
 
     params = FullParameters()
-    communicator = fgs_communicator.FGSCommunicator()
-    communicator.reset(params)
+    communicator = fgs_communicator.FGSCommunicator(params)
+    # flake8 gives an error if we don't do something with communicator
+    communicator.__init__(params)
 
     nexus_writer.assert_has_calls(
         [
@@ -232,7 +224,7 @@ def test_writers_setup_on_reset(
 @patch("artemis.fgs_communicator.create_parameters_for_second_file")
 @patch("artemis.fgs_communicator.NexusWriter")
 @patch("artemis.fgs_communicator.NexusWriter.create_nexus_file")
-def test_writers_dont_create_on_reset(
+def test_writers_dont_create_on_init(
     create_nexus_file: MagicMock,
     nexus_writer: MagicMock,
     param_for_second: MagicMock,
@@ -241,8 +233,7 @@ def test_writers_dont_create_on_reset(
 
     params = FullParameters()
     params.detector_params.prefix += str(time.time())
-    communicator = fgs_communicator.FGSCommunicator()
-    communicator.reset(params)
+    communicator = fgs_communicator.FGSCommunicator(params)
 
     communicator.nxs_writer_1.create_nexus_file.assert_not_called()
     communicator.nxs_writer_2.create_nexus_file.assert_not_called()
@@ -255,8 +246,7 @@ def test_writers_do_create_on_start_doc(
 
     params = FullParameters()
     params.detector_params.prefix += str(time.time())
-    communicator = fgs_communicator.FGSCommunicator()
-    communicator.reset(params)
+    communicator = fgs_communicator.FGSCommunicator(params)
     communicator.start(test_start_document)
 
     # awkwardly, nxs_writer_1 and nxs_writer_2 are mocked by the exact same object,

@@ -50,7 +50,7 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    fgs_communicator = FGSCommunicator()
+    fgs_communicator: FGSCommunicator
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
@@ -60,7 +60,7 @@ class BlueskyRunner:
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-        self.fgs_communicator.reset(parameters)
+        self.fgs_communicator = FGSCommunicator(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value

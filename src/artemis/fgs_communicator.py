@@ -10,7 +10,6 @@ from artemis.nexus_writing.write_nexus import (
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from artemis.parameters import FullParameters
 from artemis.plan_names import PLAN_NAMES
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
@@ -25,10 +24,7 @@ class FGSCommunicator(CallbackBase):
     - submits job to zocalo
     """
 
-    def __init__(self):
-        self.reset(FullParameters(), write_files=False)
-
-    def reset(self, parameters: FullParameters, write_files=True):
+    def __init__(self, parameters):
         self.params = parameters
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
         self.ispyb = (
@@ -38,13 +34,8 @@ class FGSCommunicator(CallbackBase):
         )
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        if write_files:
-            self.nxs_writer_1 = NexusWriter(
-                create_parameters_for_first_file(self.params)
-            )
-            self.nxs_writer_2 = NexusWriter(
-                create_parameters_for_second_file(self.params)
-            )
+        self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
+        self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
         self.results = None
         self.xray_centre_motor_position = None
         self.ispyb_ids: tuple = (None, None, None)
