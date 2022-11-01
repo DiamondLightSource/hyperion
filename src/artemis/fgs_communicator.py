@@ -73,8 +73,6 @@ class FGSCommunicator(CallbackBase):
             for id in datacollection_ids:
                 run_start(id)
 
-        # any live update stuff goes here
-
     def stop(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived stop document:\n\n {doc}\n")
         exit_status = doc.get("exit_status")
