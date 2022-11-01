@@ -11,6 +11,7 @@ from artemis.nexus_writing.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.parameters import FullParameters
+from artemis.plan_names import PLAN_NAMES
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 
@@ -58,7 +59,7 @@ class FGSCommunicator(CallbackBase):
     def event(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived event document:\n{doc}\n")
 
-        if doc.get("name") == "ispyb_motor_positions":
+        if doc.get("name") == PLAN_NAMES["ispyb_readings"]:
             self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
             self.params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"

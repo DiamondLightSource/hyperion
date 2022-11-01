@@ -8,6 +8,7 @@ from artemis import fgs_communicator
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.parameters import FullParameters
+from artemis.plan_names import PLAN_NAMES
 from artemis.utils import Point3D
 
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
@@ -24,7 +25,7 @@ test_start_document = {
 }
 test_event_document = {
     "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-    "name": "ispyb_motor_positions",
+    "name": PLAN_NAMES["ispyb_readings"],
     "time": 1666604299.828203,
     "data": {
         "slit_gaps_xgap": 0.1234,
