@@ -98,10 +98,16 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
     # our communicator should listen to documents only from the actual grid scan
     # so we subscribe to it with our plan
-    subs_decorator(communicator)(run_gridscan(fgs_composite, eiger, parameters))
+    @subs_decorator(communicator)
+    def gridscan_with_communicator(fgs_comp, det, params):
+        yield from run_gridscan(fgs_comp, det, params)
+
+    yield from gridscan_with_communicator(fgs_composite, eiger, parameters)
+
     # the data were submitted to zocalo by the communicator during the gridscan,
     # but results may not be ready
     communicator.wait_for_results()
+
     # once we have the results, go to the appropriate position
     yield from move_xyz(
         fgs_composite.sample_motors, communicator.xray_centre_motor_position
