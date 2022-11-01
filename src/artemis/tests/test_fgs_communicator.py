@@ -215,7 +215,6 @@ def test_writers_setup_on_reset(
 ):
 
     params = FullParameters()
-    params.detector_params.prefix += str(time.time())
     communicator = fgs_communicator.FGSCommunicator()
     communicator.reset(params)
 
