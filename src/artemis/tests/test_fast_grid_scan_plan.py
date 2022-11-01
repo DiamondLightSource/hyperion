@@ -134,8 +134,6 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
             FakeComposite("test", name="fakecomposite").sample_motors, motor_position
         )
     )
-    x = bps_mv
-    print(x)
     bps_mv.assert_called_once_with(
         ANY, motor_position.x, ANY, motor_position.y, ANY, motor_position.z
     )
