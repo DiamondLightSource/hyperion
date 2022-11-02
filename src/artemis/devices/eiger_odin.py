@@ -23,12 +23,13 @@ class OdinMetaListener(Device):
     initialised: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
     ready: EpicsSignalRO = Component(EpicsSignalRO, "Writing_RBV")
     # file_name should not be set. Set the filewriter file_name and this will be updated in EPICS
-    file_name: EpicsSignalRO = Component(EpicsSignalRO, "FileName")
+    file_name: EpicsSignalRO = Component(EpicsSignalRO, "FileName", string=True)
 
 
 class OdinFileWriter(HDF5Plugin_V22):
     start_timeout: EpicsSignal = Component(EpicsSignal, "StartTimeout")
-    id: EpicsSignalRO = Component(EpicsSignalRO, "AcquisitionID_RBV")
+    # id should not be set. Set the filewriter file_name and this will be updated in EPICS
+    id: EpicsSignalRO = Component(EpicsSignalRO, "AcquisitionID_RBV", string=True)
     image_height: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageHeight")
     image_width: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageWidth")
 
