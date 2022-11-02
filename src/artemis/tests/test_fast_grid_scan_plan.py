@@ -43,7 +43,7 @@ def test_when_run_gridscan_called_then_generator_returned():
     assert isinstance(plan, types.GeneratorType)
 
 
-def test_ispyb_params_update_from_ophyd_devices_correctly():
+def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     RE = RunEngine({})
     params = FullParameters()
 

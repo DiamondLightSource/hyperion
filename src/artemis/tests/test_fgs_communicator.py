@@ -65,6 +65,8 @@ def test_fgs_communicator_init():
     assert communicator.params == FullParameters()
 
 
+@patch("artemis.fgs_communicator.NexusWriter")
+@patch("artemis.fgs_communicator.NexusWriter.create_nexus_file")
 @patch("artemis.fgs_communicator.run_start")
 @patch("artemis.fgs_communicator.run_end")
 @patch("artemis.fgs_communicator.wait_for_result")
@@ -80,6 +82,8 @@ def test_run_gridscan_zocalo_calls(
     wait_for_result: MagicMock,
     run_end,
     run_start,
+    create_nexus_file: MagicMock,
+    nexus_writer: MagicMock,
 ):
 
     dc_ids = [1, 2]
@@ -90,7 +94,6 @@ def test_run_gridscan_zocalo_calls(
     mock_ispyb_update_time_and_status.return_value = None
 
     params = FullParameters()
-    params.detector_params.prefix += str(time.time())
     communicator = fgs_communicator.FGSCommunicator(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
