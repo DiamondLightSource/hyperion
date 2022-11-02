@@ -70,8 +70,8 @@ def run_gridscan(
     # Currently gridscan only works for omega 0, see #154
     yield from bps.abs_set(sample_motors.omega, 0)
 
-    # We only subscribe to the communicator callback for this plan, so this is where we
-    # should generate an event reading the values which need to be included in the
+    # We only subscribe to the communicator callback for run_gridscan, so this is where
+    # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     yield from read_hardware_for_ispyb(
         fgs_composite.undulator,
