@@ -11,7 +11,11 @@ from ophyd import (
     ROIPlugin,
 )
 
-# from artemis.devices.oav.grid_overlay import SnapshotWithGrid
+from artemis.devices.oav.grid_overlay import SnapshotWithGrid
+
+
+class Goniometer(AreaDetector):
+    omega: EpicsSignal = Component(EpicsSignal, "OMEGA")
 
 
 class Camera(AreaDetector):
@@ -27,14 +31,13 @@ class OAV(AreaDetector):
     # on: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
 
     # snapshot PVs
-    # snapshot: SnapshotWithGrid = Component(SnapshotWithGrid, ":MJPG")
     cam = ADC(CamBase, "CAM:")
     roi = ADC(ROIPlugin, "ROI:")
     proc = ADC(ProcessPlugin, "PROC:")
     over = ADC(OverlayPlugin, "OVER:")
     tiff = ADC(OverlayPlugin, "TIFF:")
     hdf5 = ADC(HDF5Plugin, "HDF5:")
-    # snapshot: SnapshotWithGrid = Component(SnapshotWithGrid, ":MJPG")
+    snapshot: SnapshotWithGrid = Component(SnapshotWithGrid, "MJPG")
 
     # Edge detection PVs
     oavColourMode: EpicsSignal = Component(EpicsSignal, "CAM:ColorMode")
