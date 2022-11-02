@@ -243,16 +243,15 @@ def test_writers_dont_create_on_init(
 
 
 @patch("artemis.fgs_communicator.NexusWriter")
-def test_writers_do_create_on_start_doc(
+def test_writers_do_create_one_file_each_on_start_doc(
     nexus_writer: MagicMock,
 ):
+    nexus_writer.side_effect = [MagicMock(), MagicMock()]
 
     params = FullParameters()
     params.detector_params.prefix += str(time.time())
     communicator = fgs_communicator.FGSCommunicator(params)
     communicator.start(test_start_document)
 
-    # awkwardly, nxs_writer_1 and nxs_writer_2 are mocked by the exact same object,
-    # so can't test them individually
-    assert communicator.nxs_writer_1 == communicator.nxs_writer_2
-    assert communicator.nxs_writer_1.create_nexus_file.call_count == 2
+    assert communicator.nxs_writer_1.create_nexus_file.call_count == 1
+    assert communicator.nxs_writer_2.create_nexus_file.call_count == 1
