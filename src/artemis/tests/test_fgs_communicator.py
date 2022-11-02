@@ -1,14 +1,12 @@
 import time
 from unittest.mock import MagicMock, call, patch
 
+import pytest
 from bluesky.run_engine import RunEngine
-from ophyd.sim import make_fake_device
 
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.fast_grid_scan_plan import run_gridscan_and_move
+from artemis.fast_grid_scan_plan import get_plan
 from artemis.fgs_communicator import FGSCommunicator
-from artemis.parameters import FullParameters
+from artemis.parameters import SIM_BEAMLINE, FullParameters
 from artemis.plan_names import PLAN_NAMES
 from artemis.utils import Point3D
 
@@ -239,6 +237,7 @@ def test_writers_do_create_one_file_each_on_start_doc(
     assert communicator.nxs_writer_2.create_nexus_file.call_count == 1
 
 
+@pytest.mark.s03
 @patch("artemis.fgs_communicator.StoreInIspyb3D.end_deposition")
 @patch("artemis.fgs_communicator.StoreInIspyb3D.begin_deposition")
 @patch("artemis.fgs_communicator.NexusWriter")
@@ -255,20 +254,24 @@ def test_communicator_in_composite_run(
     ispyb_begin_deposition: MagicMock,
     ispyb_end_deposition: MagicMock,
 ):
+    nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
 
     params = FullParameters()
+    params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
     communicator = FGSCommunicator(params)
     communicator.xray_centre_motor_position = Point3D(1, 2, 3)
-    FakeComposite = make_fake_device(FGSComposite)
-    FakeEiger = make_fake_device(EigerDetector)
-    RE(
-        run_gridscan_and_move(
-            FakeComposite("test", name="fgs"),
-            FakeEiger(params.detector_params),
-            params,
-            communicator,
-        )
-    )
-    1 + 1
+
+    RE(get_plan(params, communicator))
+
+    # nexus writing
+    assert communicator.nxs_writer_1.create_nexus_file.call_count == 1
+    assert communicator.nxs_writer_2.create_nexus_file.call_count == 1
+    # ispyb
+    ispyb_begin_deposition.assert_called_once()
+    ispyb_end_deposition.assert_called_once()
+    # zocalo
+    run_start.assert_called()
+    run_end.assert_called()
+    wait_for_result.assert_called()

@@ -168,6 +168,6 @@ if __name__ == "__main__":
     RE.waiting_hook = ProgressBarManager()
 
     parameters = FullParameters(beamline=args.beamline)
-    communicator = FGSCommunicator()
+    communicator = FGSCommunicator(parameters)
 
     RE(get_plan(parameters, communicator))
