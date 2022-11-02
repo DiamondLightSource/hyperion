@@ -26,7 +26,9 @@ def read_hardware_for_ispyb(
     artemis.log.LOGGER.debug(
         "Reading status of beamline parameters for ispyb deposition."
     )
-    yield from bps.create(name=PLAN_NAMES["ispyb_readings"])
+    yield from bps.create(
+        name=PLAN_NAMES["ispyb_readings"]
+    )  # gives name to event *descriptor* document
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
     yield from bps.read(slit_gap.xgap)

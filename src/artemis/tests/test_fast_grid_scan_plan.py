@@ -101,7 +101,7 @@ def test_results_passed_to_move_xyz(
 ):
     RE = RunEngine({})
     params = FullParameters()
-    communicator = FGSCommunicator()
+    communicator = FGSCommunicator(params)
     wait_for_result.return_value = Point3D(1, 2, 3)
     motor_position = params.grid_scan_params.grid_position_to_motor_position(
         Point3D(1, 2, 3)
@@ -110,7 +110,7 @@ def test_results_passed_to_move_xyz(
     FakeEiger = make_fake_device(EigerDetector)
     RE(
         run_gridscan_and_move(
-            FakeComposite("test", name="fakecomposite"),
+            FakeComposite("test", name="fgs"),
             FakeEiger(params.detector_params),
             params,
             communicator,
@@ -129,11 +129,7 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
         Point3D(1, 2, 3)
     )
     FakeComposite = make_fake_device(FGSComposite)
-    RE(
-        move_xyz(
-            FakeComposite("test", name="fakecomposite").sample_motors, motor_position
-        )
-    )
+    RE(move_xyz(FakeComposite("test", name="fgs").sample_motors, motor_position))
     bps_mv.assert_called_once_with(
         ANY, motor_position.x, ANY, motor_position.y, ANY, motor_position.z
     )
@@ -155,7 +151,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
 ):
     RE = RunEngine({})
     params = FullParameters()
-    communicator = FGSCommunicator()
+    communicator = FGSCommunicator(params)
     communicator.xray_centre_motor_position = Point3D(1, 2, 3)
     FakeComposite = make_fake_device(FGSComposite)
     FakeEiger = make_fake_device(EigerDetector)

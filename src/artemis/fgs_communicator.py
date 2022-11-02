@@ -10,6 +10,7 @@ from artemis.nexus_writing.write_nexus import (
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
+from artemis.parameters import FullParameters
 from artemis.plan_names import PLAN_NAMES
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
@@ -24,8 +25,9 @@ class FGSCommunicator(CallbackBase):
     - submits job to zocalo
     """
 
-    def __init__(self, parameters):
+    def __init__(self, parameters: FullParameters):
         self.params = parameters
+        self.descriptors: dict = {}
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
         self.ispyb = (
             StoreInIspyb3D(ispyb_config, self.params)
@@ -47,16 +49,20 @@ class FGSCommunicator(CallbackBase):
         self.nxs_writer_1.create_nexus_file()
         self.nxs_writer_2.create_nexus_file()
 
+    def descriptor(self, doc):
+        self.descriptors[doc["uid"]] = doc
+
     def event(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived event document:\n{doc}\n")
+        event_descriptor = self.descriptors[doc["descriptor"]]
 
-        if doc.get("name") == PLAN_NAMES["ispyb_readings"]:
-            self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
+        if event_descriptor.get("name") == PLAN_NAMES["ispyb_readings"]:
+            self.params.ispyb_params.undulator_gap = doc["data"]["fgs_undulator_gap"]
             self.params.ispyb_params.synchrotron_mode = doc["data"][
-                "synchrotron_machine_status_synchrotron_mode"
+                "fgs_synchrotron_machine_status_synchrotron_mode"
             ]
-            self.params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
-            self.params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
+            self.params.ispyb_params.slit_gap_size_x = doc["data"]["fgs_slit_gaps_xgap"]
+            self.params.ispyb_params.slit_gap_size_y = doc["data"]["fgs_slit_gaps_ygap"]
 
             artemis.log.LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
