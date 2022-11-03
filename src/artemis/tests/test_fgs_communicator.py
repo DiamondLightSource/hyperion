@@ -59,7 +59,7 @@ test_failed_stop_document = {
     "time": 1666604300.0310638,
     "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
     "exit_status": "fail",
-    "reason": "",
+    "reason": "could not connect to devices",
     "num_events": {"fake_ispyb_params": 1, "primary": 1},
 }
 
@@ -162,7 +162,16 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     communicator.event(test_event_document)
     communicator.stop(test_failed_stop_document)
     mock_ispyb_update_time_and_status.assert_has_calls(
-        [call(DUMMY_TIME_STRING, BAD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids]
+        [
+            call(
+                DUMMY_TIME_STRING,
+                BAD_ISPYB_RUN_STATUS,
+                "could not connect to devices",
+                id,
+                dcg_id,
+            )
+            for id in dc_ids
+        ]
     )
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
@@ -200,7 +209,10 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     communicator.stop(test_stop_document)
 
     mock_ispyb_update_time_and_status.assert_has_calls(
-        [call(DUMMY_TIME_STRING, GOOD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids]
+        [
+            call(DUMMY_TIME_STRING, GOOD_ISPYB_RUN_STATUS, "", id, dcg_id)
+            for id in dc_ids
+        ]
     )
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
