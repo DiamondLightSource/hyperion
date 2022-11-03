@@ -299,7 +299,9 @@ def test_communicator_in_composite_run(
         name="fgs",
         prefix=params.beamline,
     )
-    fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
+    # this is where it's currently getting stuck:
+    # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
+    # but this is not a solution
     fast_grid_scan_composite.wait_for_connection()
     # Would be better to use get_plan instead but eiger doesn't work well in S03
     RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, communicator))
