@@ -47,7 +47,7 @@ class StoreInIspyb(ABC):
         ) = self.store_grid_scan(self.full_params)
         return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
 
-    def end_deposition(self, success):
+    def end_deposition(self, success, reason):
         if success == "fail":
             run_status = "DataCollection Unsuccessful"
         elif success == "abort":
@@ -57,10 +57,7 @@ class StoreInIspyb(ABC):
         current_time = self.get_current_time_string()
         for id in self.datacollection_ids:
             self.update_grid_scan_with_end_time_and_status(
-                current_time,
-                run_status,
-                id,
-                self.datacollection_group_id,
+                current_time, run_status, reason, id, self.datacollection_group_id
             )
 
     def store_grid_scan(self, full_params: FullParameters):
@@ -91,6 +88,7 @@ class StoreInIspyb(ABC):
         self,
         end_time: str,
         run_status: str,
+        reason: str,
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> int:
@@ -102,6 +100,8 @@ class StoreInIspyb(ABC):
             params["parentid"] = datacollection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
+            if reason != "":
+                params["comments"] += " " + run_status + " reason: " + reason
             return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
