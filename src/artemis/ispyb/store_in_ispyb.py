@@ -100,7 +100,7 @@ class StoreInIspyb(ABC):
             params["parentid"] = datacollection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
-            if reason != "":
+            if reason is not None and reason != "":
                 params["comments"] += " " + run_status + " reason: " + reason
             return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
