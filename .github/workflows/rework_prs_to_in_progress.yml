@@ -6,8 +6,6 @@ jobs:
   get_associated_issue:
     uses: ./.github/workflows/get_issue_from_pr.yml
     with:
-      org: DOramTesting
-      repo: playing_with_workflows
       pr_id: ${{ github.event.pull_request.number }}
     secrets: inherit
   move_to_in_progress_if_not_approved:

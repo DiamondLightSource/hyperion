@@ -22,7 +22,7 @@ jobs:
         # * NEW_OPTION_ID - The ID for the column name we are moving into
         env:
           GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
-          ORGANIZATION: DOramTesting
+          ORGANIZATION: ${{ github.repository_owner }}
           PROJECT_NUMBER: 1
         run: |
           gh api graphql -f query='
