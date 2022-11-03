@@ -73,6 +73,7 @@ class FGSCommunicator(CallbackBase):
     def stop(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived stop document:\n\n {doc}\n")
         exit_status = doc.get("exit_status")
+        reason = doc.get("reason")
 
         artemis.log.LOGGER.debug("Updating Nexus file timestamps.")
         self.nxs_writer_1.update_nexus_file_timestamp()
@@ -80,7 +81,7 @@ class FGSCommunicator(CallbackBase):
 
         if self.ispyb_ids == (None, None, None):
             raise Exception("ispyb was not initialised at run start")
-        self.ispyb.end_deposition(exit_status)
+        self.ispyb.end_deposition(exit_status, reason)
         datacollection_ids = self.ispyb_ids[0]
         for id in datacollection_ids:
             run_end(id)
