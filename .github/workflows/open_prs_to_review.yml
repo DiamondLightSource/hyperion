@@ -1,0 +1,20 @@
+name: Add issues with open PRs to Review
+on:
+  pull_request:
+    types: [ready_for_review, opened, review_requested]
+jobs:
+  get_associated_issue:
+    uses: ./.github/workflows/get_issue_from_pr.yml
+    with:
+      org: DOramTesting
+      repo: playing_with_workflows
+      pr_id: ${{ github.event.pull_request.number }}
+    secrets: inherit
+  move_to_review_if_not_in_draft:
+    needs: get_associated_issue
+    if: github.event.pull_request.draft == false
+    uses: ./.github/workflows/get_project_data.yml
+    with:
+      column_name: Review
+      issue_id: ${{ needs.get_associated_issue.outputs.issue_from_pr }}
+    secrets: inherit
