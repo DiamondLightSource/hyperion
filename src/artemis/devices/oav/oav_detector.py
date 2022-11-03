@@ -3,6 +3,8 @@ from ophyd import (
     AreaDetector,
     CamBase,
     Component,
+    Device,
+    EpicsMotor,
     EpicsSignal,
     EpicsSignalRO,
     HDF5Plugin,
@@ -14,8 +16,11 @@ from ophyd import (
 from artemis.devices.oav.grid_overlay import SnapshotWithGrid
 
 
-class Goniometer(AreaDetector):
-    omega: EpicsSignal = Component(EpicsSignal, "OMEGA")
+class Goniometer(Device):
+    omega: EpicsMotor = Component(EpicsMotor, "OMEGA")
+    x: EpicsMotor = Component(EpicsMotor, "X")
+    y: EpicsMotor = Component(EpicsMotor, "Y")
+    z: EpicsMotor = Component(EpicsMotor, "Z")
 
 
 class Camera(AreaDetector):
