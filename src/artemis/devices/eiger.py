@@ -7,6 +7,7 @@ from ophyd.status import Status
 from artemis.devices.detector import DetectorParams
 from artemis.devices.eiger_odin import EigerOdin
 from artemis.devices.status import await_value
+from artemis.log import LOGGER
 
 
 class EigerTriggerMode(Enum):
@@ -65,6 +66,7 @@ class EigerDetector(Device):
         status &= self.set_mx_settings_pvs()
         status &= self.set_num_triggers_and_captures()
 
+        LOGGER.info("Waiting on parameter callbacks")
         status.wait(self.STALE_PARAMS_TIMEOUT)
 
         self.arm_detector()
@@ -168,6 +170,7 @@ class EigerDetector(Device):
         self.odin.file_writer.data_type.put(f"UInt{bit_depth}")
 
     def arm_detector(self):
+        LOGGER.info("Waiting on stale parameters to go low")
         self.wait_for_stale_parameters()
 
         self.forward_bit_depth_to_filewriter()
@@ -176,6 +179,7 @@ class EigerDetector(Device):
         odin_status &= await_value(self.odin.meta.ready, 1)
         odin_status.wait(10)
 
+        LOGGER.info("Setting aquire")
         self.cam.acquire.set(1).wait(timeout=10)
 
         await_value(self.odin.fan.ready, 1).wait(10)
