@@ -1,4 +1,3 @@
-import time
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -71,7 +70,6 @@ def test_fgs_communicator_init():
 
 
 @patch("artemis.fgs_communicator.NexusWriter")
-@patch("artemis.fgs_communicator.NexusWriter.create_nexus_file")
 @patch("artemis.fgs_communicator.run_start")
 @patch("artemis.fgs_communicator.run_end")
 @patch("artemis.fgs_communicator.wait_for_result")
@@ -85,9 +83,8 @@ def test_run_gridscan_zocalo_calls(
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
     wait_for_result: MagicMock,
-    run_end,
-    run_start,
-    create_nexus_file: MagicMock,
+    run_end: MagicMock,
+    run_start: MagicMock,
     nexus_writer: MagicMock,
 ):
 
@@ -105,15 +102,16 @@ def test_run_gridscan_zocalo_calls(
     communicator.event(test_event_document)
     communicator.stop(test_stop_document)
 
-    run_start.assert_has_calls(call(x) for x in dc_ids)
+    run_start.assert_has_calls([call(x) for x in dc_ids])
     assert run_start.call_count == len(dc_ids)
 
-    run_end.assert_has_calls(call(x) for x in dc_ids)
+    run_end.assert_has_calls([call(x) for x in dc_ids])
     assert run_end.call_count == len(dc_ids)
 
     wait_for_result.assert_called_once_with(dcg_id)
 
 
+@patch("artemis.fgs_communicator.NexusWriter")
 @patch("artemis.fgs_communicator.run_start")
 @patch("artemis.fgs_communicator.run_end")
 @patch("artemis.fgs_communicator.wait_for_result")
@@ -129,6 +127,7 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     wait_for_result: MagicMock,
     run_end: MagicMock,
     run_start: MagicMock,
+    nexus_writer: MagicMock,
 ):
     dc_ids = [1, 2]
     dcg_id = 4
@@ -137,7 +136,6 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     mock_ispyb_update_time_and_status.return_value = None
 
     params = FullParameters()
-    params.detector_params.prefix += str(time.time())
     communicator = FGSCommunicator(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
@@ -149,6 +147,7 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
 
+@patch("artemis.fgs_communicator.NexusWriter")
 @patch("artemis.fgs_communicator.run_start")
 @patch("artemis.fgs_communicator.run_end")
 @patch("artemis.fgs_communicator.wait_for_result")
@@ -164,6 +163,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     wait_for_result: MagicMock,
     run_end: MagicMock,
     run_start: MagicMock,
+    nexus_writer: MagicMock,
 ):
     dc_ids = [1, 2]
     dcg_id = 4
@@ -173,7 +173,6 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_update_time_and_status.return_value = None
 
     params = FullParameters()
-    params.detector_params.prefix += str(time.time())
     communicator = FGSCommunicator(params)
     communicator.start(test_start_document)
     communicator.descriptor(test_descriptor_document)
@@ -212,16 +211,13 @@ def test_writers_setup_on_init(
 @patch("artemis.fgs_communicator.create_parameters_for_first_file")
 @patch("artemis.fgs_communicator.create_parameters_for_second_file")
 @patch("artemis.fgs_communicator.NexusWriter")
-@patch("artemis.fgs_communicator.NexusWriter.create_nexus_file")
 def test_writers_dont_create_on_init(
-    create_nexus_file: MagicMock,
     nexus_writer: MagicMock,
     param_for_second: MagicMock,
     param_for_first: MagicMock,
 ):
 
     params = FullParameters()
-    params.detector_params.prefix += str(time.time())
     communicator = FGSCommunicator(params)
 
     communicator.nxs_writer_1.create_nexus_file.assert_not_called()
@@ -235,7 +231,6 @@ def test_writers_do_create_one_file_each_on_start_doc(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
 
     params = FullParameters()
-    params.detector_params.prefix += str(time.time())
     communicator = FGSCommunicator(params)
     communicator.start(test_start_document)
 
