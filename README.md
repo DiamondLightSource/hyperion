@@ -44,7 +44,7 @@ Starting a scan
 
 To start a scan you can do the following:
 ```
-curl -X PUT http://127.0.0.1:5000/fast_grid_scan/start --data-binary "@test_parameters.json" -H "Content-Type: application/json"
+curl -X PUT http://127.0.0.1:5005/fast_grid_scan/start --data-binary "@test_parameters.json" -H "Content-Type: application/json"
 ```
 
 Getting the Runner Status
@@ -52,7 +52,7 @@ Getting the Runner Status
 
 To get the status of the runner:
 ```
-curl http://127.0.0.1:5000/fast_grid_scan/status
+curl http://127.0.0.1:5005/fast_grid_scan/status
 ```
 
 Stopping the Scan
@@ -60,11 +60,7 @@ Stopping the Scan
 
 To stop a scan that is currently running:
 ```
-curl -X PUT http://127.0.0.1:5000/fast_grid_scan/stop
+curl -X PUT http://127.0.0.1:5005/fast_grid_scan/stop
 
 ```
 
-
-System tests
-============
-Currently to run against s03 the flask app port needs to be changed as the eiger control uses 5000 and this interferes (it also uses 5001 and 5002).

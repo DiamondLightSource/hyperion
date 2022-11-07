@@ -87,7 +87,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
     grid_scan_params: GridScanParams = minimal_params.grid_scan_params
-    nexus_writer_1.__enter__()
+    nexus_writer_1.create_nexus_file()
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
@@ -106,10 +106,10 @@ def test_given_dummy_data_then_datafile_written_correctly(
 
     assert_data_edge_at(nexus_writer_1.nexus_file, 799)
 
-    nexus_writer_1.__exit__()
+    nexus_writer_1.update_nexus_file_timestamp()
     assert_end_data_correct(nexus_writer_1)
 
-    nexus_writer_2.__enter__()
+    nexus_writer_2.create_nexus_file()
 
     for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
@@ -183,10 +183,10 @@ def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file):
     calls_with_temp = [call(temp_nexus_file, "r+"), call(temp_master_file, "r+")]
     calls_without_temp = [call(nexus_file, "r+"), call(master_file, "r+")]
 
-    single_dummy_file.__enter__()
+    single_dummy_file.create_nexus_file()
 
     with patch("h5py.File") as mock_h5py_file:
-        single_dummy_file.__exit__()
+        single_dummy_file.update_nexus_file_timestamp()
         actual_mock_calls = mock_h5py_file.mock_calls
         assert all(call in actual_mock_calls for call in calls_with_temp)
         assert all(call not in actual_mock_calls for call in calls_without_temp)

@@ -1,39 +1,58 @@
 import argparse
-import os
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
+from bluesky.preprocessors import subs_decorator
 from bluesky.utils import ProgressBarManager
 
+import artemis.log
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
-from artemis.nexus_writing.write_nexus import (
-    NexusWriter,
-    create_parameters_for_first_file,
-    create_parameters_for_second_file,
-)
-from artemis.parameters import SIM_BEAMLINE, FullParameters
-from artemis.zocalo_interaction import run_end, run_start, wait_for_result
+from artemis.fgs_communicator import FGSCommunicator
+from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 
 
-def update_params_from_epics_devices(
-    parameters: FullParameters,
+def read_hardware_for_ispyb(
     undulator: Undulator,
     synchrotron: Synchrotron,
     slit_gap: SlitGaps,
 ):
-    parameters.ispyb_params.undulator_gap = yield from bps.rd(undulator.gap)
-    parameters.ispyb_params.synchrotron_mode = yield from bps.rd(
-        synchrotron.machine_status.synchrotron_mode
+    artemis.log.LOGGER.debug(
+        "Reading status of beamline parameters for ispyb deposition."
     )
-    parameters.ispyb_params.slit_gap_size_x = yield from bps.rd(slit_gap.xgap)
-    parameters.ispyb_params.slit_gap_size_y = yield from bps.rd(slit_gap.ygap)
+    yield from bps.create(
+        name=ISPYB_PLAN_NAME
+    )  # gives name to event *descriptor* document
+    yield from bps.read(undulator.gap)
+    yield from bps.read(synchrotron.machine_status.synchrotron_mode)
+    yield from bps.read(slit_gap.xgap)
+    yield from bps.read(slit_gap.ygap)
+    yield from bps.save()
+
+
+@bpp.run_decorator()
+def move_xyz(
+    sample_motors,
+    xray_centre_motor_position,
+    md={
+        "plan_name": "move_xyz",
+    },
+):
+    """Move 'sample motors' to a specific motor position (e.g. a position obtained
+    from gridscan processing results)"""
+    yield from bps.mv(
+        sample_motors.x,
+        xray_centre_motor_position.x,
+        sample_motors.y,
+        xray_centre_motor_position.y,
+        sample_motors.z,
+        xray_centre_motor_position.z,
+    )
 
 
 @bpp.run_decorator()
@@ -41,29 +60,25 @@ def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
     parameters: FullParameters,
+    md={
+        "plan_name": "run_gridscan",
+    },
 ):
     sample_motors = fgs_composite.sample_motors
 
     # Currently gridscan only works for omega 0, see #154
     yield from bps.abs_set(sample_motors.omega, 0)
 
-    yield from update_params_from_epics_devices(
-        parameters,
+    # We only subscribe to the communicator callback for run_gridscan, so this is where
+    # we should generate an event reading the values which need to be included in the
+    # ispyb deposition
+    yield from read_hardware_for_ispyb(
         fgs_composite.undulator,
         fgs_composite.synchrotron,
         fgs_composite.slit_gaps,
     )
 
-    ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
-
-    ispyb = (
-        StoreInIspyb3D(ispyb_config, parameters)
-        if parameters.grid_scan_params.is_3d_grid_scan
-        else StoreInIspyb2D(ispyb_config, parameters)
-    )
-
     fgs_motors = fgs_composite.fast_grid_scan
-
     zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
@@ -75,36 +90,40 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    with ispyb as ispyb_ids, NexusWriter(
-        create_parameters_for_first_file(parameters)
-    ), NexusWriter(create_parameters_for_second_file(parameters)):
-        datacollection_ids = ispyb_ids[0]
-        datacollection_group_id = ispyb_ids[2]
-        for id in datacollection_ids:
-            run_start(id)
-        yield from do_fgs()
-
-    for id in datacollection_ids:
-        run_end(id)
-
-    xray_centre = wait_for_result(datacollection_group_id)
-    xray_centre_motor_position = (
-        parameters.grid_scan_params.grid_position_to_motor_position(xray_centre)
-    )
-
-    yield from bps.mv(
-        sample_motors.x,
-        xray_centre_motor_position.x,
-        sample_motors.y,
-        xray_centre_motor_position.y,
-        sample_motors.z,
-        xray_centre_motor_position.z,
-    )
-
+    yield from do_fgs()
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
-def get_plan(parameters: FullParameters):
+def run_gridscan_and_move(
+    fgs_composite: FGSComposite,
+    eiger: EigerDetector,
+    parameters: FullParameters,
+    communicator: FGSCommunicator,
+):
+    """A multi-run plan which runs a gridscan, gets the results from zocalo
+    and moves to the centre of mass determined by zocalo"""
+    # our communicator should listen to documents only from the actual grid scan
+    # so we subscribe to it with our plan
+    @subs_decorator(communicator)
+    def gridscan_with_communicator(fgs_comp, det, params):
+        yield from run_gridscan(fgs_comp, det, params)
+
+    artemis.log.LOGGER.debug("Starting grid scan")
+    yield from gridscan_with_communicator(fgs_composite, eiger, parameters)
+
+    # the data were submitted to zocalo by the communicator during the gridscan,
+    # but results may not be ready.
+    # it might not be ideal to block for this, see #327
+    communicator.wait_for_results()
+
+    # once we have the results, go to the appropriate position
+    artemis.log.LOGGER.debug("Moving to centre of mass.")
+    yield from move_xyz(
+        fgs_composite.sample_motors, communicator.xray_centre_motor_position
+    )
+
+
+def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
@@ -113,6 +132,7 @@ def get_plan(parameters: FullParameters):
     Returns:
         Generator: The plan for the gridscan
     """
+    artemis.log.LOGGER.info("Fetching composite plan")
     fast_grid_scan_composite = FGSComposite(
         insertion_prefix=parameters.insertion_prefix,
         name="fgs",
@@ -126,9 +146,13 @@ def get_plan(parameters: FullParameters):
         prefix=f"{parameters.beamline}-EA-EIGER-01:",
     )
 
+    artemis.log.LOGGER.debug("Connecting to EPICS devices...")
     fast_grid_scan_composite.wait_for_connection()
+    artemis.log.LOGGER.debug("Connected.")
 
-    return run_gridscan(fast_grid_scan_composite, eiger, parameters)
+    return run_gridscan_and_move(
+        fast_grid_scan_composite, eiger, parameters, communicator
+    )
 
 
 if __name__ == "__main__":
@@ -144,5 +168,6 @@ if __name__ == "__main__":
     RE.waiting_hook = ProgressBarManager()
 
     parameters = FullParameters(beamline=args.beamline)
+    communicator = FGSCommunicator(parameters)
 
-    RE(get_plan(parameters))
+    RE(get_plan(parameters, communicator))

@@ -10,6 +10,7 @@ from artemis.utils import Point3D
 
 SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
+ISPYB_PLAN_NAME = "ispyb_readings"
 
 
 def default_field(obj):
@@ -47,7 +48,7 @@ class FullParameters:
             detector_distance=100.0,
             omega_start=0.0,
             omega_increment=0.0,
-            num_images=300,
+            num_images=2000,
             use_roi_mode=False,
             det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
         )

@@ -1,7 +1,9 @@
 import types
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
+from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
 
@@ -15,12 +17,14 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.fast_grid_scan_plan import run_gridscan, update_params_from_epics_devices
+from artemis.fast_grid_scan_plan import (
+    read_hardware_for_ispyb,
+    run_gridscan,
+    run_gridscan_and_move,
+)
+from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import FullParameters
-
-DUMMY_TIME_STRING = "1970-01-01 00:00:00"
-GOOD_ISPYB_RUN_STATUS = "DataCollection Successful"
-BAD_ISPYB_RUN_STATUS = "DataCollection Unsuccessful"
+from artemis.utils import Point3D
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
@@ -39,7 +43,7 @@ def test_when_run_gridscan_called_then_generator_returned():
     assert isinstance(plan, types.GeneratorType)
 
 
-def test_ispyb_params_update_from_ophyd_devices_correctly():
+def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     RE = RunEngine({})
     params = FullParameters()
 
@@ -60,12 +64,107 @@ def test_ispyb_params_update_from_ophyd_devices_correctly():
     slit_gaps.xgap.sim_put(xgap_test_value)
     slit_gaps.ygap.sim_put(ygap_test_value)
 
-    RE(update_params_from_epics_devices(params, undulator, synchrotron, slit_gaps))
+    class TestCB(CallbackBase):
+        params = FullParameters()
+
+        def event(self, doc: dict):
+            params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
+            params.ispyb_params.synchrotron_mode = doc["data"][
+                "synchrotron_machine_status_synchrotron_mode"
+            ]
+            params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
+            params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
+
+    testcb = TestCB()
+    testcb.params = params
+    RE.subscribe(testcb)
+
+    def standalone_read_hardware_for_ispyb(und, syn, slits):
+        yield from bps.open_run()
+        yield from read_hardware_for_ispyb(und, syn, slits)
+        yield from bps.close_run()
+
+    RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
+    params = testcb.params
 
     assert params.ispyb_params.undulator_gap == undulator_test_value
     assert params.ispyb_params.synchrotron_mode == synchrotron_test_value
     assert params.ispyb_params.slit_gap_size_x == xgap_test_value
     assert params.ispyb_params.slit_gap_size_y == ygap_test_value
+
+
+@patch("artemis.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.fast_grid_scan_plan.move_xyz")
+@patch("artemis.fgs_communicator.wait_for_result")
+def test_results_passed_to_move_xyz(
+    wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
+):
+    RE = RunEngine({})
+    params = FullParameters()
+    communicator = FGSCommunicator(params)
+    wait_for_result.return_value = Point3D(1, 2, 3)
+    motor_position = params.grid_scan_params.grid_position_to_motor_position(
+        Point3D(1, 2, 3)
+    )
+    FakeComposite = make_fake_device(FGSComposite)
+    FakeEiger = make_fake_device(EigerDetector)
+    RE(
+        run_gridscan_and_move(
+            FakeComposite("test", name="fgs"),
+            FakeEiger(params.detector_params),
+            params,
+            communicator,
+        )
+    )
+    move_xyz.assert_called_once_with(ANY, motor_position)
+
+
+@patch("bluesky.plan_stubs.mv")
+def test_results_passed_to_move_motors(bps_mv: MagicMock):
+    from artemis.fast_grid_scan_plan import move_xyz
+
+    RE = RunEngine({})
+    params = FullParameters()
+    motor_position = params.grid_scan_params.grid_position_to_motor_position(
+        Point3D(1, 2, 3)
+    )
+    FakeComposite = make_fake_device(FGSComposite)
+    RE(move_xyz(FakeComposite("test", name="fgs").sample_motors, motor_position))
+    bps_mv.assert_called_once_with(
+        ANY, motor_position.x, ANY, motor_position.y, ANY, motor_position.z
+    )
+
+
+@patch("artemis.fgs_communicator.wait_for_result")
+@patch("artemis.fgs_communicator.run_end")
+@patch("artemis.fgs_communicator.run_start")
+@patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
+@patch("artemis.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.fast_grid_scan_plan.move_xyz")
+def test_individual_plans_triggered_once_and_only_once_in_composite_run(
+    move_xyz: MagicMock,
+    run_gridscan: MagicMock,
+    do_fgs: MagicMock,
+    run_start: MagicMock,
+    run_end: MagicMock,
+    wait_for_result: MagicMock,
+):
+    RE = RunEngine({})
+    params = FullParameters()
+    communicator = FGSCommunicator(params)
+    communicator.xray_centre_motor_position = Point3D(1, 2, 3)
+    FakeComposite = make_fake_device(FGSComposite)
+    FakeEiger = make_fake_device(EigerDetector)
+    RE(
+        run_gridscan_and_move(
+            FakeComposite("test", name="fakecomposite"),
+            FakeEiger(params.detector_params),
+            params,
+            communicator,
+        )
+    )
+    run_gridscan.assert_called_once()
+    move_xyz.assert_called_once()
 
 
 @pytest.fixture
@@ -82,114 +181,3 @@ def dummy_3d_gridscan_args():
     )
 
     return fgs_composite, eiger, params
-
-
-@patch("artemis.fast_grid_scan_plan.run_start")
-@patch("artemis.fast_grid_scan_plan.run_end")
-@patch("artemis.fast_grid_scan_plan.wait_for_result")
-@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
-@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
-@patch(
-    "artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
-)
-def test_run_gridscan_zocalo_calls(
-    mock_ispyb_update_time_and_status: MagicMock,
-    mock_ispyb_get_time: MagicMock,
-    mock_ispyb_store_grid_scan: MagicMock,
-    wait_for_result,
-    run_end,
-    run_start,
-    dummy_3d_gridscan_args,
-):
-    dc_ids = [1, 2]
-    dcg_id = 4
-
-    mock_ispyb_store_grid_scan.return_value = [dc_ids, None, dcg_id]
-    mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
-    mock_ispyb_update_time_and_status.return_value = None
-
-    print(run_start)
-
-    with patch("artemis.fast_grid_scan_plan.NexusWriter"):
-        list(run_gridscan(*dummy_3d_gridscan_args))
-
-    run_start.assert_has_calls(call(x) for x in dc_ids)
-    assert run_start.call_count == len(dc_ids)
-
-    run_end.assert_has_calls(call(x) for x in dc_ids)
-    assert run_end.call_count == len(dc_ids)
-
-    wait_for_result.assert_called_once_with(dcg_id)
-
-
-@patch("artemis.fast_grid_scan_plan.run_start")
-@patch("artemis.fast_grid_scan_plan.run_end")
-@patch("artemis.fast_grid_scan_plan.wait_for_result")
-@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
-@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
-@patch(
-    "artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
-)
-def test_fgs_raising_exception_results_in_bad_run_status_in_ispyb(
-    mock_ispyb_update_time_and_status: MagicMock,
-    mock_ispyb_get_time: MagicMock,
-    mock_ispyb_store_grid_scan: MagicMock,
-    wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
-    dummy_3d_gridscan_args,
-):
-    dc_ids = [1, 2]
-    dcg_id = 4
-
-    mock_ispyb_store_grid_scan.return_value = [dc_ids, None, dcg_id]
-    mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
-    mock_ispyb_update_time_and_status.return_value = None
-
-    with pytest.raises(Exception) as excinfo:
-        with patch(
-            "artemis.fast_grid_scan_plan.NexusWriter",
-            side_effect=Exception("mocked error"),
-        ):
-            list(run_gridscan(*dummy_3d_gridscan_args))
-
-    expected_error_message = "mocked error"
-    assert str(excinfo.value) == expected_error_message
-
-    mock_ispyb_update_time_and_status.assert_has_calls(
-        [call(DUMMY_TIME_STRING, BAD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids]
-    )
-    assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
-
-
-@patch("artemis.fast_grid_scan_plan.run_start")
-@patch("artemis.fast_grid_scan_plan.run_end")
-@patch("artemis.fast_grid_scan_plan.wait_for_result")
-@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.store_grid_scan")
-@patch("artemis.fast_grid_scan_plan.StoreInIspyb3D.get_current_time_string")
-@patch(
-    "artemis.fast_grid_scan_plan.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
-)
-def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
-    mock_ispyb_update_time_and_status: MagicMock,
-    mock_ispyb_get_time: MagicMock,
-    mock_ispyb_store_grid_scan: MagicMock,
-    wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
-    dummy_3d_gridscan_args,
-):
-    dc_ids = [1, 2]
-    dcg_id = 4
-
-    mock_ispyb_store_grid_scan.return_value = [dc_ids, None, dcg_id]
-    mock_ispyb_get_time.return_value = DUMMY_TIME_STRING
-    mock_ispyb_update_time_and_status.return_value = None
-
-    with patch("artemis.fast_grid_scan_plan.NexusWriter"):
-        list(run_gridscan(*dummy_3d_gridscan_args))
-
-    mock_ispyb_update_time_and_status.assert_has_calls(
-        [call(DUMMY_TIME_STRING, GOOD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids]
-    )
-    assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)

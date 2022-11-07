@@ -212,7 +212,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
 
 
 @patch("ispyb.open")
-def test_exception_during_run_results_in_bad_run_status(
+def test_fail_result_run_results_in_bad_run_status(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb,
 ):
@@ -221,9 +221,10 @@ def test_exception_during_run_results_in_bad_run_status(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    with pytest.raises(Exception) as _:
-        with dummy_ispyb:
-            raise Exception
+
+    dummy_ispyb.begin_deposition()
+    dummy_ispyb.end_deposition("fail")
+
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
         0
@@ -243,8 +244,8 @@ def test_no_exception_during_run_results_in_good_run_status(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    with dummy_ispyb:
-        pass
+    dummy_ispyb.begin_deposition()
+    dummy_ispyb.end_deposition("success")
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
         0
@@ -264,8 +265,8 @@ def test_ispyb_deposition_comment_correct(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    with dummy_ispyb:
-        pass
+    dummy_ispyb.begin_deposition()
+    dummy_ispyb.end_deposition("success")
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
         0
