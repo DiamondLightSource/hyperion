@@ -66,16 +66,19 @@ def test_detector_threshold(
     request_energy: float,
     is_energy_change: bool,
 ):
-
+    status_obj = MagicMock()
     when(fake_eiger.cam.photon_energy).get().thenReturn(current_energy)
-    when(fake_eiger.cam.photon_energy).put(ANY).thenReturn(None)
+    when(fake_eiger.cam.photon_energy).set(ANY).thenReturn(status_obj)
 
-    fake_eiger.set_detector_threshold(request_energy)
+    returned_status = fake_eiger.set_detector_threshold(request_energy)
 
     if is_energy_change:
-        verify(fake_eiger.cam.photon_energy, times=1).put(request_energy)
+        verify(fake_eiger.cam.photon_energy, times=1).set(request_energy)
+        assert returned_status == status_obj
     else:
-        verify(fake_eiger.cam.photon_energy, times=0).put(ANY)
+        verify(fake_eiger.cam.photon_energy, times=0).set(ANY)
+        returned_status.wait(0.1)
+        assert returned_status.success
 
 
 @pytest.mark.parametrize(

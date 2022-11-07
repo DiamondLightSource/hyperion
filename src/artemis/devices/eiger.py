@@ -2,6 +2,7 @@ from enum import Enum
 
 from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
+from ophyd.status import Status
 
 from artemis.devices.detector import DetectorParams
 from artemis.devices.eiger_odin import EigerOdin
@@ -23,7 +24,6 @@ class EigerDetector(Device):
     bit_depth: EpicsSignalRO = Component(EpicsSignalRO, "CAM:BitDepthImage_RBV")
 
     STALE_PARAMS_TIMEOUT = 60
-    ODIN_FILEWRITER_TIMEOUT = 30
 
     def __init__(
         self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
@@ -59,13 +59,13 @@ class EigerDetector(Device):
             raise Exception(f"Odin not initialised: {error_message}")
         if self.detector_params.use_roi_mode:
             self.enable_roi_mode()
-        self.set_detector_threshold(self.detector_params.current_energy)
-        self.set_cam_pvs()
-        odin_filename_status = self.set_odin_pvs()
-        self.set_mx_settings_pvs()
-        self.set_num_triggers_and_captures()
+        status = self.set_detector_threshold(self.detector_params.current_energy)
+        status &= self.set_cam_pvs()
+        status &= self.set_odin_pvs()
+        status &= self.set_mx_settings_pvs()
+        status &= self.set_num_triggers_and_captures()
 
-        odin_filename_status.wait(self.ODIN_FILEWRITER_TIMEOUT)
+        status.wait(self.STALE_PARAMS_TIMEOUT)
 
         self.arm_detector()
 
@@ -101,53 +101,64 @@ class EigerDetector(Device):
         if not status.success:
             self.log.error("Failed to switch to ROI mode")
 
-    def set_cam_pvs(self):
-        self.cam.acquire_time.put(self.detector_params.exposure_time)
-        self.cam.acquire_period.put(self.detector_params.exposure_time)
-        self.cam.num_exposures.put(1)
-        self.cam.image_mode.put(self.cam.ImageMode.MULTIPLE)
-        self.cam.trigger_mode.put(EigerTriggerMode.EXTERNAL_SERIES.value)
+    def set_cam_pvs(self) -> Status:
+        status = self.cam.acquire_time.set(self.detector_params.exposure_time)
+        status &= self.cam.acquire_period.set(self.detector_params.exposure_time)
+        status &= self.cam.num_exposures.set(1)
+        status &= self.cam.image_mode.set(self.cam.ImageMode.MULTIPLE)
+        status &= self.cam.trigger_mode.set(EigerTriggerMode.EXTERNAL_SERIES.value)
+        return status
 
     def set_odin_pvs(self):
         self.odin.file_writer.num_frames_chunks.set(1).wait(10)
 
         file_prefix = self.detector_params.full_filename
 
-        self.odin.file_writer.file_path.put(self.detector_params.directory)
-        self.odin.file_writer.file_name.put(file_prefix)
+        odin_status = self.odin.file_writer.file_path.set(
+            self.detector_params.directory
+        )
+        odin_status &= self.odin.file_writer.file_name.set(file_prefix)
 
-        odin_status = await_value(self.odin.meta.file_name, file_prefix)
+        odin_status &= await_value(self.odin.meta.file_name, file_prefix)
         odin_status &= await_value(self.odin.file_writer.id, file_prefix)
 
         return odin_status
 
-    def set_mx_settings_pvs(self):
+    def set_mx_settings_pvs(self) -> Status:
         beam_x_pixels, beam_y_pixels = self.detector_params.get_beam_position_pixels(
             self.detector_params.detector_distance
         )
-        self.cam.beam_center_x.put(beam_x_pixels)
-        self.cam.beam_center_y.put(beam_y_pixels)
-        self.cam.det_distance.put(self.detector_params.detector_distance)
-        self.cam.omega_start.put(self.detector_params.omega_start)
-        self.cam.omega_incr.put(self.detector_params.omega_increment)
+        status = self.cam.beam_center_x.set(beam_x_pixels)
+        status &= self.cam.beam_center_y.set(beam_y_pixels)
+        status &= self.cam.det_distance.set(self.detector_params.detector_distance)
+        status &= self.cam.omega_start.set(self.detector_params.omega_start)
+        status &= self.cam.omega_incr.set(self.detector_params.omega_increment)
+        return status
 
-    def set_detector_threshold(self, energy: float, tolerance: float = 0.1):
+    def set_detector_threshold(self, energy: float, tolerance: float = 0.1) -> Status:
         """Ensures the energy threshold on the detector is set to the specified energy (in eV),
         within the specified tolerance.
         Args:
             energy (float): The energy to set (in eV)
             tolerance (float, optional): If the energy is already set to within
                 this tolerance it is not set again. Defaults to 0.1eV.
+        Returns:
+            status object that is Done when the threshold has been set correctly
         """
         current_energy = self.cam.photon_energy.get()
 
         if abs(current_energy - energy) > tolerance:
-            self.cam.photon_energy.put(energy)
+            return self.cam.photon_energy.set(energy)
+        else:
+            status = Status(self)
+            status.set_finished()
+            return status
 
-    def set_num_triggers_and_captures(self):
-        self.cam.num_images.put(1)
-        self.cam.num_triggers.put(self.detector_params.num_images)
-        self.odin.file_writer.num_capture.put(self.detector_params.num_images)
+    def set_num_triggers_and_captures(self) -> Status:
+        status = self.cam.num_images.set(1)
+        status &= self.cam.num_triggers.set(self.detector_params.num_images)
+        status &= self.odin.file_writer.num_capture.set(self.detector_params.num_images)
+        return status
 
     def wait_for_stale_parameters(self):
         await_value(self.stale_params, 0).wait(self.STALE_PARAMS_TIMEOUT)
