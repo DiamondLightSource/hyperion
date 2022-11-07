@@ -8,8 +8,12 @@ from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.fgs_communicator import FGSCommunicator
-from artemis.parameters import SIM_BEAMLINE, DetectorParams, FullParameters
-from artemis.plan_names import PLAN_NAMES
+from artemis.parameters import (
+    ISPYB_PLAN_NAME,
+    SIM_BEAMLINE,
+    DetectorParams,
+    FullParameters,
+)
 from artemis.utils import Point3D
 
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
@@ -27,7 +31,7 @@ test_start_document = {
 test_descriptor_document = {
     "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
     "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-    "name": PLAN_NAMES["ispyb_readings"],
+    "name": ISPYB_PLAN_NAME,
 }
 test_event_document = {
     "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",

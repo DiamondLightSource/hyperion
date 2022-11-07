@@ -10,6 +10,7 @@ from artemis.utils import Point3D
 
 SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
+ISPYB_PLAN_NAME = "ispyb_readings"
 
 
 def default_field(obj):

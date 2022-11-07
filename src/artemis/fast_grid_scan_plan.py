@@ -14,8 +14,7 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.fgs_communicator import FGSCommunicator
-from artemis.parameters import SIM_BEAMLINE, FullParameters
-from artemis.plan_names import PLAN_NAMES
+from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 
 
 def read_hardware_for_ispyb(
@@ -27,7 +26,7 @@ def read_hardware_for_ispyb(
         "Reading status of beamline parameters for ispyb deposition."
     )
     yield from bps.create(
-        name=PLAN_NAMES["ispyb_readings"]
+        name=ISPYB_PLAN_NAME
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
