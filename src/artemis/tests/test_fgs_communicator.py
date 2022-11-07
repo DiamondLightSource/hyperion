@@ -108,7 +108,27 @@ def test_run_gridscan_zocalo_calls(
     run_end.assert_has_calls([call(x) for x in dc_ids])
     assert run_end.call_count == len(dc_ids)
 
-    wait_for_result.assert_called_once_with(dcg_id)
+    wait_for_result.assert_not_called()
+
+
+@patch("artemis.fgs_communicator.wait_for_result")
+def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
+    wait_for_result: MagicMock,
+):
+    params = FullParameters()
+    communicator = FGSCommunicator(params)
+    communicator.ispyb_ids = (0, 0, 100)
+    expected_centre_grid_coords = Point3D(1, 2, 3)
+    wait_for_result.return_value = expected_centre_grid_coords
+
+    communicator.wait_for_results()
+    wait_for_result.assert_called_once_with(100)
+    expected_centre_motor_coords = (
+        params.grid_scan_params.grid_position_to_motor_position(
+            expected_centre_grid_coords
+        )
+    )
+    assert communicator.xray_centre_motor_position == expected_centre_motor_coords
 
 
 @patch("artemis.fgs_communicator.NexusWriter")

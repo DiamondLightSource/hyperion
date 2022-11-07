@@ -85,17 +85,6 @@ class FGSCommunicator(CallbackBase):
         for id in datacollection_ids:
             run_end(id)
 
-        if exit_status == "success":
-            artemis.log.LOGGER.info("Run successful, waiting for results from zocalo")
-            self.processing_start_time = time.time()
-            datacollection_group_id = self.ispyb_ids[2]
-            self.results = wait_for_result(datacollection_group_id)
-            self.xray_centre_motor_position = (
-                self.params.grid_scan_params.grid_position_to_motor_position(
-                    self.results
-                )
-            )
-
     def wait_for_results(self):
         datacollection_group_id = self.ispyb_ids[2]
         self.results = wait_for_result(datacollection_group_id)
