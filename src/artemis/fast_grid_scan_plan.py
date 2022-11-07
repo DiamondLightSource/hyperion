@@ -113,7 +113,9 @@ def run_gridscan_and_move(
     yield from gridscan_with_communicator(fgs_composite, eiger, parameters)
 
     # the data were submitted to zocalo by the communicator during the gridscan,
-    # but results may not be ready
+    # but results may not be ready.
+    # it might not be ideal to block for this, may need to change to something like:
+    # while(haven't got results): yield from bps.sleep()
     communicator.wait_for_results()
 
     # once we have the results, go to the appropriate position
