@@ -11,6 +11,7 @@ from artemis.nexus_writing.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
+from artemis.tracing import TRACER
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 
@@ -82,12 +83,17 @@ class FGSCommunicator(CallbackBase):
             raise Exception("ispyb was not initialised at run start")
         self.ispyb.end_deposition(exit_status)
         datacollection_ids = self.ispyb_ids[0]
+        self.result_span = TRACER.start_span("get_zocalo_results")
         for id in datacollection_ids:
             run_end(id)
 
     def wait_for_results(self):
         datacollection_group_id = self.ispyb_ids[2]
         self.results = wait_for_result(datacollection_group_id)
+        try:
+            self.result_span.end()
+        except Exception:
+            artemis.log.LOGGER.warn("No open tracing span for zocalo result.")
         self.processing_time = time.time() - self.processing_start_time
         self.xray_centre_motor_position = (
             self.params.grid_scan_params.grid_position_to_motor_position(self.results)

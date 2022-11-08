@@ -15,6 +15,7 @@ from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
+from artemis.tracing import TRACER
 
 
 def read_hardware_for_ispyb(
@@ -72,11 +73,12 @@ def run_gridscan(
     # We only subscribe to the communicator callback for run_gridscan, so this is where
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
-    yield from read_hardware_for_ispyb(
-        fgs_composite.undulator,
-        fgs_composite.synchrotron,
-        fgs_composite.slit_gaps,
-    )
+    with TRACER.start_span("ispyb_hardware_readings"):
+        yield from read_hardware_for_ispyb(
+            fgs_composite.undulator,
+            fgs_composite.synchrotron,
+            fgs_composite.slit_gaps,
+        )
 
     fgs_motors = fgs_composite.fast_grid_scan
     zebra = fgs_composite.zebra
@@ -90,8 +92,11 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    yield from do_fgs()
-    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+    with TRACER.start_span("do_fgs"):
+        yield from do_fgs()
+
+    with TRACER.start_span("move_to_result"):
+        yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
 def run_gridscan_and_move(
