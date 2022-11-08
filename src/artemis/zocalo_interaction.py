@@ -13,9 +13,9 @@ from artemis.utils import Point3D
 TIMEOUT = 90
 
 
-def _get_zocalo_connection():
+def _get_zocalo_connection(env):
     zc = zocalo.configuration.from_file()
-    zc.activate_environment("artemis")
+    zc.activate_environment(env)
 
     transport = lookup("PikaTransport")()
     transport.connect()
@@ -23,8 +23,8 @@ def _get_zocalo_connection():
     return transport
 
 
-def _send_to_zocalo(parameters: dict):
-    transport = _get_zocalo_connection()
+def _send_to_zocalo(parameters: dict, env: str):
+    transport = _get_zocalo_connection(env)
 
     try:
         message = {
@@ -40,7 +40,7 @@ def _send_to_zocalo(parameters: dict):
         transport.disconnect()
 
 
-def run_start(data_collection_id: int):
+def run_start(data_collection_id: int, env: str):
     """Tells the data analysis pipeline we have started a grid scan.
     Assumes that appropriate data has already been put into ISPyB
 
@@ -49,10 +49,10 @@ def run_start(data_collection_id: int):
                                   gridscan in ISPyB
     """
     artemis.log.LOGGER.info(f"Submitting to zocalo with ispyb id {data_collection_id}")
-    _send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
+    _send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id}, env)
 
 
-def run_end(data_collection_id: int):
+def run_end(data_collection_id: int, env: str):
     """Tells the data analysis pipeline we have finished a grid scan.
     Assumes that appropriate data has already been put into ISPyB
 
@@ -66,11 +66,14 @@ def run_end(data_collection_id: int):
             "event": "end",
             "ispyb_wait_for_runstatus": "1",
             "ispyb_dcid": data_collection_id,
-        }
+        },
+        env,
     )
 
 
-def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Point3D:
+def wait_for_result(
+    data_collection_group_id: int, env: str, timeout: int = TIMEOUT
+) -> Point3D:
     """Block until a result is received from Zocalo.
     Args:
         data_collection_group_id (int): The ID of the data collection group representing
@@ -80,7 +83,7 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
     Returns:
         Point in grid co-ordinates that is the centre point to move to
     """
-    transport = _get_zocalo_connection()
+    transport = _get_zocalo_connection(env)
     result_received: queue.Queue = queue.Queue()
 
     def receive_result(

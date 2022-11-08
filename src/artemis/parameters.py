@@ -20,6 +20,7 @@ def default_field(obj):
 @dataclass_json
 @dataclass
 class FullParameters:
+    zocalo_environment: str = "artemis"
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
     grid_scan_params: GridScanParams = default_field(

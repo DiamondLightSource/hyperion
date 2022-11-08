@@ -68,7 +68,7 @@ class FGSCommunicator(CallbackBase):
             datacollection_ids = self.ispyb_ids[0]
             self.datacollection_group_id = self.ispyb_ids[2]
             for id in datacollection_ids:
-                run_start(id)
+                run_start(id, self.params.zocalo_environment)
 
     def stop(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived stop document:\n\n {doc}\n")
@@ -83,11 +83,13 @@ class FGSCommunicator(CallbackBase):
         self.ispyb.end_deposition(exit_status)
         datacollection_ids = self.ispyb_ids[0]
         for id in datacollection_ids:
-            run_end(id)
+            run_end(id, self.params.zocalo_environment)
 
     def wait_for_results(self):
         datacollection_group_id = self.ispyb_ids[2]
-        self.results = wait_for_result(datacollection_group_id)
+        self.results = wait_for_result(
+            datacollection_group_id, self.params.zocalo_environment
+        )
         self.processing_time = time.time() - self.processing_start_time
         self.xray_centre_motor_position = (
             self.params.grid_scan_params.grid_position_to_motor_position(self.results)
