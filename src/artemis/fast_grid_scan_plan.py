@@ -67,8 +67,9 @@ def run_gridscan(
 ):
     sample_motors = fgs_composite.sample_motors
 
-    # Currently gridscan only works for omega 0, see #154
-    yield from bps.abs_set(sample_motors.omega, 0)
+    # Currently gridscan only works for omega 0, see #
+    with TRACER.start_span("moving_omega_to_0"):
+        yield from bps.abs_set(sample_motors.omega, 0)
 
     # We only subscribe to the communicator callback for run_gridscan, so this is where
     # we should generate an event reading the values which need to be included in the

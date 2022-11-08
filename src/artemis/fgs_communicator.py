@@ -46,8 +46,9 @@ class FGSCommunicator(CallbackBase):
     def start(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")
         artemis.log.LOGGER.info("Creating Nexus files.")
-        self.nxs_writer_1.create_nexus_file()
-        self.nxs_writer_2.create_nexus_file()
+        with TRACER.start_span("creating_nexus_files"):
+            self.nxs_writer_1.create_nexus_file()
+            self.nxs_writer_2.create_nexus_file()
 
     def descriptor(self, doc):
         self.descriptors[doc["uid"]] = doc
@@ -65,7 +66,8 @@ class FGSCommunicator(CallbackBase):
             self.params.ispyb_params.slit_gap_size_y = doc["data"]["fgs_slit_gaps_ygap"]
 
             artemis.log.LOGGER.info("Creating ispyb entry.")
-            self.ispyb_ids = self.ispyb.begin_deposition()
+            with TRACER.start_span("prepare_ispyb_deposition"):
+                self.ispyb_ids = self.ispyb.begin_deposition()
             datacollection_ids = self.ispyb_ids[0]
             self.datacollection_group_id = self.ispyb_ids[2]
             for id in datacollection_ids:
@@ -81,7 +83,8 @@ class FGSCommunicator(CallbackBase):
 
         if self.ispyb_ids == (None, None, None):
             raise Exception("ispyb was not initialised at run start")
-        self.ispyb.end_deposition(exit_status)
+        with TRACER.start_span("end_ispyb_deposition"):
+            self.ispyb.end_deposition(exit_status)
         datacollection_ids = self.ispyb_ids[0]
         self.result_span = TRACER.start_span("get_zocalo_results")
         for id in datacollection_ids:
