@@ -33,6 +33,12 @@ def det_move_robot_load():
         pass
     else:
         yield from bps.mv(det.z, 337)  # read det safe position from beamline parameters
+        if det.in_robot_load_safe_position.get() == 1:
+            pass
+        else:
+            print(
+                "Detector not in safe position for robot approach"
+            )  # error: abort with message, log and handle properly
 
 
 RE(det_move_robot_load())
