@@ -5,6 +5,7 @@ import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.preprocessors import subs_decorator
 from bluesky.utils import ProgressBarManager
+from ophyd.utils.errors import WaitTimeoutError
 
 import artemis.log
 from artemis.devices.eiger import EigerDetector
@@ -94,9 +95,12 @@ def run_gridscan(
         yield from bps.complete(fgs_motors, wait=True)
 
     with TRACER.start_span("do_fgs"):
-        yield from do_fgs()
+        try:
+            yield from do_fgs()
+        except WaitTimeoutError:
+            artemis.log.LOGGER.debug("Filewriter/staleparams timeout")
 
-    with TRACER.start_span("move_to_result"):
+    with TRACER.start_span("move_to_z_0"):
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
@@ -114,7 +118,7 @@ def run_gridscan_and_move(
     def gridscan_with_communicator(fgs_comp, det, params):
         yield from run_gridscan(fgs_comp, det, params)
 
-    artemis.log.LOGGER.debug("Starting grid scan")
+    artemis.log.LOGGER.info("Starting grid scan")
     yield from gridscan_with_communicator(fgs_composite, eiger, parameters)
 
     # the data were submitted to zocalo by the communicator during the gridscan,
@@ -123,10 +127,11 @@ def run_gridscan_and_move(
     communicator.wait_for_results()
 
     # once we have the results, go to the appropriate position
-    artemis.log.LOGGER.debug("Moving to centre of mass.")
-    yield from move_xyz(
-        fgs_composite.sample_motors, communicator.xray_centre_motor_position
-    )
+    artemis.log.LOGGER.info("Moving to centre of mass.")
+    with TRACER.start_span("move_to_result"):
+        yield from move_xyz(
+            fgs_composite.sample_motors, communicator.xray_centre_motor_position
+        )
 
 
 def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
