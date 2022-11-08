@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 from typing import List
 
-from bluesky.plan_stubs import mv
+from bluesky.plan_stubs import mv, rd
 from dataclasses_json import dataclass_json
 from ophyd import (
     Component,
@@ -262,6 +262,7 @@ class FastGridScan(Device):
 
 
 def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
+    """Sets the scan parameters. Will throw an Exception if the scan is invalid."""
     yield from mv(
         scan.x_steps,
         params.x_steps,
@@ -288,3 +289,6 @@ def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
         scan.z2_start,
         params.z2_start,
     )
+    scan_invalid = yield from rd(scan.scan_invalid)
+    if scan_invalid:
+        raise Exception("Provided grid scan parameters out of controller range")
