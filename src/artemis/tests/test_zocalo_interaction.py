@@ -80,7 +80,7 @@ def test_run_start_and_end(
         function_wrapper (Callable): A wrapper around the function, used to test for expected exceptions
         expected_message (Dict): The expected dictionary sent to zocalo
     """
-    function_to_run = partial(function_to_test, EXPECTED_DCID)
+    function_to_run = partial(function_to_test, EXPECTED_DCID, "artemis")
     function_to_run = partial(function_wrapper, function_to_run)
     _test_zocalo(function_to_run, expected_message)
 
@@ -110,7 +110,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup.return_value.return_value = mock_transport
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(wait_for_result, datacollection_grid_id)
+        future = executor.submit(wait_for_result, datacollection_grid_id, "artemis")
 
         for _ in range(10):
             sleep(0.1)

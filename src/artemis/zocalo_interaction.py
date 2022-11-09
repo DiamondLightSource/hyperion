@@ -13,7 +13,7 @@ from artemis.utils import Point3D
 TIMEOUT = 90
 
 
-def _get_zocalo_connection(env):
+def _get_zocalo_connection(env: str = "artemis"):
     zc = zocalo.configuration.from_file()
     zc.activate_environment(env)
 
