@@ -1,5 +1,7 @@
 from ophyd import Component, Device, EpicsSignal
 
+"""Simple device to trigger the pneumatic in/out """
+
 
 class Backlight(Device):
     OUT = 0

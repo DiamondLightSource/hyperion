@@ -1,6 +1,8 @@
 from ophyd import Component as Cpt
 from ophyd import Device, EpicsMotor, EpicsSignal, EpicsSignalRO
 
+"""physical motion and interlocks for detector travel"""
+
 
 class Det(Device):
     upstream_x: EpicsMotor = Cpt(EpicsMotor, "-MO-DET-01:UPSTREAMX")
