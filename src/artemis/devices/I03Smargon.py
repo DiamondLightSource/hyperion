@@ -4,6 +4,7 @@ from ophyd import Device, EpicsMotor, EpicsSignal
 """
 Real motors added to allow stops following pin load (e.g. real_x1.stop() )
 Stub offsets are calibration values that are required to move between calibration pin position and spine pins. These are set in EPCICS and applied via the proc.
+X1 and X2 real motors provide compound chi motion as well as the compound X travel, increasing the gap between x1 and x2 changes chi, moving together changes virtual x. Robot loading can nudge these and lead to errors.
 """
 
 
