@@ -4,8 +4,6 @@ from ophyd import Device, EpicsMotor, EpicsSignalRO
 
 class DCM(Device):
 
-    # upstream_x: EpicsMotor = Cpt(EpicsMotor, '-MO-DET-01:UPSTREAMX')
-
     bragg: EpicsMotor = Cpt(EpicsMotor, "-MO-DCM-01:BRAGG")
     roll: EpicsMotor = Cpt(EpicsMotor, "-MO-DCM-01:ROLL")
     offset: EpicsMotor = Cpt(EpicsMotor, "-MO-DCM-01:OFFSET")
