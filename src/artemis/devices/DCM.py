@@ -1,6 +1,11 @@
 from ophyd import Component as Cpt
 from ophyd import Device, EpicsMotor, EpicsSignalRO
 
+"""
+perp describes the gap between the 2 DCM crystals which has to change as you alter the angle to select the requested energy
+offset ensures that the beam exits the DCM at the same point, regardless of energy.
+"""
+
 
 class DCM(Device):
 
