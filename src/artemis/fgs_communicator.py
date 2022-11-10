@@ -91,7 +91,7 @@ class FGSCommunicator(CallbackBase):
             run_end(id)
 
     def wait_for_results(self):
-        datacollection_group_id = self.ispyb_ids[2]
+        datacollection_group_id = 4
         self.results = wait_for_result(datacollection_group_id)
         try:
             self.result_span.end()
