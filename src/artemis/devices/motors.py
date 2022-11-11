@@ -43,7 +43,7 @@ class I03Smargon(MotorBundle):
     x: EpicsMotor = Component(EpicsMotor, "X")
     y: EpicsMotor = Component(EpicsMotor, "Y")
     z: EpicsMotor = Component(EpicsMotor, "Z")
-    omega: EpicsMotor = Component(EpicsMotor, "Omega")
+    omega: EpicsMotor = Component(EpicsMotor, "OMEGA")
 
     def get_xyz_limits(self) -> XYZLimitBundle:
         """Get the limits for the x, y and z axes.
