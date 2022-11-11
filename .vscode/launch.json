@@ -14,8 +14,16 @@
         {
             "name": "Debug Unit Test",
             "type": "python",
-            "request": "test",
+            "request": "launch",
             "justMyCode": false,
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "purpose": [
+                "debug-test"
+            ],
+            "env": {
+                "PYTEST_ADDOPTS": "--no-cov"
+            },
         },
     ]
 }

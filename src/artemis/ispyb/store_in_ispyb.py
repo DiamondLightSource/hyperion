@@ -4,10 +4,11 @@ from abc import ABC, abstractmethod
 
 import ispyb
 from sqlalchemy.connectors import Connector
+
+import artemis.devices.oav.utils as oav_utils
 from artemis.ispyb.ispyb_dataclass import Orientation
 from artemis.parameters import FullParameters
 from artemis.utils import Point2D
-
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -38,7 +39,7 @@ class StoreInIspyb(ABC):
         self.datacollection_group_id = None
         self.grid_ids = None
 
-    def __enter__(self):
+    def begin_deposition(self):
         (
             self.datacollection_ids,
             self.grid_ids,
@@ -46,8 +47,10 @@ class StoreInIspyb(ABC):
         ) = self.store_grid_scan(self.full_params)
         return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
 
-    def __exit__(self, exception, exception_value, traceback):
-        if exception is not None:
+    def end_deposition(self, success):
+        if success == "fail":
+            run_status = "DataCollection Unsuccessful"
+        elif success == "abort":
             run_status = "DataCollection Unsuccessful"
         else:
             run_status = "DataCollection Successful"
@@ -117,8 +120,33 @@ class StoreInIspyb(ABC):
 
         return self.mx_acquisition.upsert_dc_grid(list(params.values()))
 
+    def _construct_comment(self) -> str:
+        bottom_right = oav_utils.bottom_right_from_top_left(
+            self.upper_left,
+            self.full_params.grid_scan_params.x_steps,
+            self.y_steps,
+            self.full_params.grid_scan_params.x_step_size,
+            self.y_step_size,
+            self.ispyb_params.pixels_per_micron_x,
+            self.ispyb_params.pixels_per_micron_y,
+        )
+        return (
+            "Artemis: Xray centring - Diffraction grid scan of "
+            f"{self.full_params.grid_scan_params.x_steps} by "
+            f"{self.full_params.grid_scan_params.y_steps} images in "
+            f"{self.full_params.grid_scan_params.x_step_size} mm by "
+            f"{self.full_params.grid_scan_params.y_step_size} mm steps. "
+            f"Top left: [{self.upper_left.x},{self.upper_left.y}], "
+            f"bottom right: [{bottom_right.x},{bottom_right.y}]."
+        )
+
     def _store_data_collection_table(self, data_collection_group_id: int) -> int:
-        session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        try:
+            session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        except ispyb.NoResult:
+            raise Exception(
+                f"Not found - session ID for visit {self.get_visit_string()}"
+            )
 
         params = self.mx_acquisition.get_data_collection_params()
         params["visitid"] = session_id
@@ -135,14 +163,14 @@ class StoreInIspyb(ABC):
         params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
         params["transmission"] = self.ispyb_params.transmission
-        params["comments"] = "Artemis: " + self.ispyb_params.comment
+        params["comments"] = self._construct_comment()
         params["datacollection_number"] = self.run_number
         params["detector_distance"] = self.detector_params.detector_distance
         params["exp_time"] = self.detector_params.exposure_time
         params["imgdir"] = self.detector_params.directory
         params["imgprefix"] = self.detector_params.prefix
         params["imgsuffix"] = EIGER_FILE_SUFFIX
-        params["n_images"] = self.detector_params.num_images
+        params["n_images"] = self.full_params.grid_scan_params.x_steps * self.y_steps
 
         # Both overlap and n_passes included for backwards compatibility,
         # planned to be removed later
@@ -188,7 +216,12 @@ class StoreInIspyb(ABC):
         return self.mx_acquisition.update_dc_position(list(params.values()))
 
     def _store_data_collection_group_table(self) -> int:
-        session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        try:
+            session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        except ispyb.NoResult:
+            raise Exception(
+                f"Not found - session ID for visit {self.get_visit_string()} where self.ispyb_params.visit_path is {self.ispyb_params.visit_path}"
+            )
 
         params = self.mx_acquisition.get_data_collection_group_params()
         params["parentid"] = session_id

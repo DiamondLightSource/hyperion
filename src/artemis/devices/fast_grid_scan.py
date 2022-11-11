@@ -254,6 +254,12 @@ class FastGridScan(Device):
     def complete(self) -> DeviceStatus:
         return GridScanCompleteStatus(self)
 
+    def collect(self):
+        return {}
+
+    def describe_collect(self):
+        return {}
+
 
 def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
     yield from mv(

@@ -5,15 +5,14 @@ module unload controls_dev
 
 module load python/3.10
 
-if [[ -d "./.venv" ]]
+if [ -d "./.venv" ]
 then
-    pipenv --rm
+rm -rf .venv
 fi
-
 mkdir .venv
 
-pipenv install --dev
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
 
-pipenv run pre-commit install
-
-pipenv run tests
+pytest -m "not s03"

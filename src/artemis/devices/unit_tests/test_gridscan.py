@@ -1,4 +1,6 @@
 import pytest
+from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from mockito import mock, unstub, verify, when
 from mockito.matchers import ANY, ARGS, KWARGS
@@ -345,3 +347,14 @@ def test_given_various_x_y_z_when_get_motor_positions_then_expected_positions_re
     assert motor_positions.x == expected_x
     assert motor_positions.y == expected_y
     assert motor_positions.z == expected_z
+
+
+def test_can_run_fast_grid_scan_in_run_engine(fast_grid_scan):
+    @bpp.run_decorator()
+    def kickoff_and_complete(device):
+        yield from bps.kickoff(device)
+        yield from bps.complete(device)
+
+    RE = RunEngine()
+    RE(kickoff_and_complete(fast_grid_scan))
+    assert RE.state == "idle"

@@ -6,7 +6,9 @@ import pytest
 from ophyd.sim import make_fake_device
 from requests import HTTPError, Response
 
+import artemis.devices.oav.utils as oav_utils
 from artemis.devices.oav import OAV
+from artemis.utils import Point2D
 
 
 @pytest.fixture
@@ -84,3 +86,15 @@ def test_correct_grid_drawn_on_image(
     actual_grid_calls = mock_grid_overlay.mock_calls
     assert actual_border_calls == expected_border_calls
     assert actual_grid_calls == expected_grid_calls
+
+
+def test_bottom_right_from_top_left():
+    top_left = Point2D(123, 123)
+    bottom_right = oav_utils.bottom_right_from_top_left(
+        top_left, 20, 30, 0.1, 0.15, 0.37, 0.37
+    )
+    assert bottom_right.x == 863 and bottom_right.y == 1788
+    bottom_right = oav_utils.bottom_right_from_top_left(
+        top_left, 15, 20, 0.005, 0.007, 1, 1
+    )
+    assert bottom_right.x == 198 and bottom_right.y == 263

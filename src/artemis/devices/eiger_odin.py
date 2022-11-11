@@ -22,12 +22,14 @@ class EigerFan(Device):
 class OdinMetaListener(Device):
     initialised: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
     ready: EpicsSignalRO = Component(EpicsSignalRO, "Writing_RBV")
-    file_name: EpicsSignal = Component(EpicsSignal, "FileName")
+    # file_name should not be set. Set the filewriter file_name and this will be updated in EPICS
+    file_name: EpicsSignalRO = Component(EpicsSignalRO, "FileName", string=True)
 
 
 class OdinFileWriter(HDF5Plugin_V22):
-    timeout: EpicsSignal = Component(EpicsSignal, "StartTimeout")
-    id: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "AcquisitionID")
+    start_timeout: EpicsSignal = Component(EpicsSignal, "StartTimeout")
+    # id should not be set. Set the filewriter file_name and this will be updated in EPICS
+    id: EpicsSignalRO = Component(EpicsSignalRO, "AcquisitionID_RBV", string=True)
     image_height: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageHeight")
     image_width: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageWidth")
 
@@ -40,7 +42,9 @@ class OdinNode(Device):
     fp_initialised: EpicsSignalRO = Component(EpicsSignalRO, "FPProcessConnected_RBV")
     fr_initialised: EpicsSignalRO = Component(EpicsSignalRO, "FRProcessConnected_RBV")
     clear_errors: EpicsSignal = Component(EpicsSignal, "FPClearErrors")
-    error_message: EpicsSignalRO = Component(EpicsSignalRO, "FPErrorMessage_RBV")
+    error_message: EpicsSignalRO = Component(
+        EpicsSignalRO, "FPErrorMessage_RBV", string=True
+    )
 
 
 class OdinNodesStatus(Device):

@@ -17,6 +17,9 @@ TEST_SESSION_ID = 90
 
 DUMMY_CONFIG = "/file/path/to/config/"
 DUMMY_PARAMS = FullParameters()
+DUMMY_PARAMS.ispyb_params.upper_left = Point3D(100, 100, 100)
+DUMMY_PARAMS.ispyb_params.pixels_per_micron_x = 0.8
+DUMMY_PARAMS.ispyb_params.pixels_per_micron_y = 0.8
 
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
@@ -157,7 +160,7 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
 
 
 def _test_when_grid_scan_stored_then_data_present_in_upserts(
-    ispyb_conn, dummy_ispyb, test_function
+    ispyb_conn, dummy_ispyb, test_function, test_group=False
 ):
     setup_mock_return_values(ispyb_conn)
 
@@ -165,17 +168,18 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
-    upsert_data_collection_group_arg_list = (
-        mx_acquisition.upsert_data_collection_group.call_args_list[0][0]
-    )
-    actual = upsert_data_collection_group_arg_list[0]
-    assert test_function(MXAcquisition.get_data_collection_group_params(), actual)
-
     upsert_data_collection_arg_list = (
         mx_acquisition.upsert_data_collection.call_args_list[0][0]
     )
     actual = upsert_data_collection_arg_list[0]
     assert test_function(MXAcquisition.get_data_collection_params(), actual)
+
+    if test_group:
+        upsert_data_collection_group_arg_list = (
+            mx_acquisition.upsert_data_collection_group.call_args_list[0][0]
+        )
+        actual = upsert_data_collection_group_arg_list[0]
+        assert test_function(MXAcquisition.get_data_collection_group_params(), actual)
 
 
 @patch("ispyb.open")
@@ -187,7 +191,7 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
         return actual[sampleid_idx] == default_params["sampleid"]
 
     _test_when_grid_scan_stored_then_data_present_in_upserts(
-        ispyb_conn, dummy_ispyb, test_sample_id
+        ispyb_conn, dummy_ispyb, test_sample_id, True
     )
 
 
@@ -203,12 +207,12 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
         return actual[sampleid_idx] == expected_sample_id
 
     _test_when_grid_scan_stored_then_data_present_in_upserts(
-        ispyb_conn, dummy_ispyb, test_sample_id
+        ispyb_conn, dummy_ispyb, test_sample_id, True
     )
 
 
 @patch("ispyb.open")
-def test_exception_during_run_results_in_bad_run_status(
+def test_fail_result_run_results_in_bad_run_status(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb,
 ):
@@ -217,9 +221,10 @@ def test_exception_during_run_results_in_bad_run_status(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    with pytest.raises(Exception) as _:
-        with dummy_ispyb:
-            raise Exception
+
+    dummy_ispyb.begin_deposition()
+    dummy_ispyb.end_deposition("fail")
+
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
         0
@@ -239,8 +244,8 @@ def test_no_exception_during_run_results_in_good_run_status(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    with dummy_ispyb:
-        pass
+    dummy_ispyb.begin_deposition()
+    dummy_ispyb.end_deposition("success")
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
         0
@@ -248,3 +253,44 @@ def test_no_exception_during_run_results_in_good_run_status(
     upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
     assert "DataCollection Unsuccessful" not in upserted_param_value_list
     assert "DataCollection Successful" in upserted_param_value_list
+
+
+@patch("ispyb.open")
+def test_ispyb_deposition_comment_correct(
+    mock_ispyb_conn: MagicMock,
+    dummy_ispyb,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+    mock_mx_aquisition = (
+        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+    )
+    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+    dummy_ispyb.begin_deposition()
+    dummy_ispyb.end_deposition("success")
+    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
+    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
+        0
+    ]
+    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
+    assert upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 0.1 mm by 0.1 mm steps. Top left: [0,1], bottom right: [320,16001]."
+    )
+
+
+@patch("ispyb.open")
+def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
+    ispyb_conn, dummy_ispyb
+):
+    expected_number_of_steps = 200 * 3
+    DUMMY_PARAMS.grid_scan_params.x_steps = 200
+    DUMMY_PARAMS.grid_scan_params.y_steps = 3
+
+    def test_number_of_steps(default_params, actual):
+        # Note that internally the ispyb API removes underscores so this is the same as n_images
+        number_of_steps_idx = list(default_params).index("nimages")
+        return actual[number_of_steps_idx] == expected_number_of_steps
+
+    _test_when_grid_scan_stored_then_data_present_in_upserts(
+        ispyb_conn, dummy_ispyb, test_number_of_steps
+    )

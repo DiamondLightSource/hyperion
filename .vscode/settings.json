@@ -17,7 +17,10 @@
         "black"
     ],
     "python.pythonPath": ".venv/bin/python",
-    "[python]": {"editor.rulers": [88]},
-    // Make the terminal more responsive:
+    "[python]": {
+        "editor.rulers": [
+            88
+        ]
+    },
     "terminal.integrated.gpuAcceleration": "off",
 }
