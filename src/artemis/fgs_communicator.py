@@ -38,7 +38,7 @@ class FGSCommunicator(CallbackBase):
         self.processing_time = 0.0
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
-        self.results = None
+        self.results: Point3D = None
         self.xray_centre_motor_position = None
         self.ispyb_ids: tuple = (None, None, None)
         self.datacollection_group_id = None
@@ -90,9 +90,7 @@ class FGSCommunicator(CallbackBase):
         datacollection_group_id = self.ispyb_ids[2]
         raw_results = wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time
-        self.results = Point3D(
-            raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
-        )
+        self.results = raw_results - [0.5, 0.5, 0.5]
         self.xray_centre_motor_position = (
             self.params.grid_scan_params.grid_position_to_motor_position(self.results)
         )
