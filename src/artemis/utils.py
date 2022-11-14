@@ -25,7 +25,7 @@ class Point2D(np.ndarray):
         self[1] = y
 
     def __eq__(self, other):
-        return np.all(self == other)
+        return np.array_equal(self, other, equal_nan=True)
 
     def _asdict(self):
         return {"x": self.x, "y": self.y}
@@ -64,7 +64,7 @@ class Point3D(np.ndarray):
         self[2] = z
 
     def __eq__(self, other):
-        return np.all(self == other)
+        return np.array_equal(self, other, equal_nan=True)
 
     def _asdict(self):
         return {"x": self.x, "y": self.y, "z": self.z}
