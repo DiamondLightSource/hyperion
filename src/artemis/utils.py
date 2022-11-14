@@ -18,7 +18,7 @@ class Point3D(np.ndarray):
 
 
 class Point2D(np.ndarray):
-    def __new__(self, x: float, y: float, z: float):
+    def __new__(self, x: float, y: float):
         a = super().__new__(Point2D, shape=2, dtype=float)
         a.x = a[0] = x
         a.y = a[1] = y
