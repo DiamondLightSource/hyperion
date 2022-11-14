@@ -1,10 +1,10 @@
+from enum import IntEnum
+
 from ophyd import ADComponent as ADC
 from ophyd import (
     AreaDetector,
     CamBase,
     Component,
-    Device,
-    EpicsMotor,
     EpicsSignal,
     EpicsSignalRO,
     HDF5Plugin,
@@ -16,19 +16,35 @@ from ophyd import (
 from artemis.devices.oav.grid_overlay import SnapshotWithGrid
 
 
-class Goniometer(Device):
-    omega: EpicsMotor = Component(EpicsMotor, "OMEGA")
-    x: EpicsMotor = Component(EpicsMotor, "X")
-    y: EpicsMotor = Component(EpicsMotor, "Y")
-    z: EpicsMotor = Component(EpicsMotor, "Z")
+class ColorMode(IntEnum):
+    """
+    Enum to store the various color modes of the camera. We use RGB1.
+    """
+
+    MONO = 0
+    BAYER = 1
+    RGB1 = 2
+    RGB2 = 3
+    RGB3 = 4
+    YUV444 = 5
+    YUV422 = 6
+    YUV421 = 7
 
 
 class Camera(CamBase):
     zoom: EpicsSignal = Component(EpicsSignal, "FZOOM:ZOOMPOSCMD")
 
 
-class Backlight(Device):
-    control: EpicsSignal = Component(EpicsSignal, "CTRL")
+class EdgeOutputArrayImageType(IntEnum):
+    """
+    Enum to store the types of image to tweak the output array. We use Original.
+    """
+
+    ORIGINAL = 0
+    GREYSCALE = 1
+    PREPROCESSED = 2
+    CANNY_EDGES = 3
+    CLOSED_EDGES = 4
 
 
 class OAV(AreaDetector):
@@ -36,12 +52,12 @@ class OAV(AreaDetector):
     # on: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
 
     # snapshot PVs
-    cam = ADC(CamBase, "CAM:")
-    roi = ADC(ROIPlugin, "ROI:")
-    proc = ADC(ProcessPlugin, "PROC:")
-    over = ADC(OverlayPlugin, "OVER:")
-    tiff = ADC(OverlayPlugin, "TIFF:")
-    hdf5 = ADC(HDF5Plugin, "HDF5:")
+    cam: ADC = ADC(CamBase, "CAM:")
+    roi: ADC = ADC(ROIPlugin, "ROI:")
+    proc: ADC = ADC(ProcessPlugin, "PROC:")
+    over: ADC = ADC(OverlayPlugin, "OVER:")
+    tiff: ADC = ADC(OverlayPlugin, "TIFF:")
+    hdf5: ADC = ADC(HDF5Plugin, "HDF5:")
     snapshot: SnapshotWithGrid = Component(SnapshotWithGrid, "MJPG")
 
     # Edge detection PVs
