@@ -236,9 +236,13 @@ class OAVCentring:
         """
         yield from bps.abs_set(self.oav.input_plugin_pv, input_plugin)
 
-        # For an explanation of callbacks see https://nsls-ii.github.io/ophyd/area-detector.html
+        # turns the area detector plugin on
         yield from bps.abs_set(self.oav.enable_callbacks_pv, 1)
+
+        # the minimum time between updates of the plugin
         yield from bps.abs_set(self.oav.min_callback_time_pv, min_callback_time)
+
+        # stops the plugin from blocking the IOC and hogging all the CPU
         yield from bps.abs_set(self.oav.blocking_callbacks_pv, 0)
 
         # Set the python file to use for calculating the edge waveforms
