@@ -226,7 +226,7 @@ class OAVCentring:
 
     def start_mxsc(self, input_plugin, min_callback_time, filename):
         """
-        Sets PVs relevant to edge detection.
+        Sets PVs relevant to edge detection plugin.
 
         Args:
             input_plugin: link to the camera stream
@@ -236,13 +236,13 @@ class OAVCentring:
         """
         yield from bps.abs_set(self.oav.input_plugin_pv, input_plugin)
 
-        # turns the area detector plugin on
+        # Turns the area detector plugin on
         yield from bps.abs_set(self.oav.enable_callbacks_pv, 1)
 
-        # the minimum time between updates of the plugin
+        # Set the minimum time between updates of the plugin
         yield from bps.abs_set(self.oav.min_callback_time_pv, min_callback_time)
 
-        # stops the plugin from blocking the IOC and hogging all the CPU
+        # Stop the plugin from blocking the IOC and hogging all the CPU
         yield from bps.abs_set(self.oav.blocking_callbacks_pv, 0)
 
         # Set the python file to use for calculating the edge waveforms
