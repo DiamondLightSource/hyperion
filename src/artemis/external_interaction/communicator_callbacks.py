@@ -1,5 +1,6 @@
 import os
 import time
+from typing import NamedTuple, Optional
 
 from bluesky.callbacks import CallbackBase
 
@@ -111,3 +112,11 @@ class FGSCommunicator(CallbackBase):
             f"Results recieved from zocalo: {self.xray_centre_motor_position}"
         )
         artemis.log.LOGGER.info(f"Zocalo processing took {self.processing_time}s")
+
+
+class FGSCallbackCollection(NamedTuple):
+    nexus_handler: Optional[NexusFileHandlerCallback] = None
+    fgs_communicator: Optional[FGSCommunicator] = None
+
+    def __iter__(self):
+        return [c for c in self if c is not None]

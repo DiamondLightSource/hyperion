@@ -13,7 +13,11 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 
 import artemis.log
-from artemis.external_interaction.communicator_callbacks import FGSCommunicator
+from artemis.external_interaction.communicator_callbacks import (
+    FGSCallbackCollection,
+    FGSCommunicator,
+    NexusFileHandlerCallback,
+)
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
 
@@ -50,17 +54,19 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    fgs_communicator: FGSCommunicator
+    callbacks: FGSCallbackCollection
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
     def __init__(self, RE: RunEngine) -> None:
+        self.callbacks = FGSCallbackCollection()
         self.RE = RE
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-        self.fgs_communicator = FGSCommunicator(parameters)
+        self.callbacks.fgs_communicator = FGSCommunicator(parameters)
+        self.callbacks.nexus_handler = NexusFileHandlerCallback(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -101,7 +107,7 @@ class BlueskyRunner:
             command = self.command_queue.get()
             if command.action == Actions.START:
                 try:
-                    self.RE(get_plan(command.parameters, self.fgs_communicator))
+                    self.RE(get_plan(command.parameters, self.callbacks))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
