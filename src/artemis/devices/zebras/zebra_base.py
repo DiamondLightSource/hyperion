@@ -87,12 +87,6 @@ class ZebraOutputPanel(Device):
         """
         return [None, self.out_1, self.out_2, self.out_3, self.out_4]
 
-    def setup_fast_grid_scan(self):
-        self.out_pvs[TTL_DETECTOR].put(IN3_TTL)
-        self.out_pvs[TTL_SHUTTER].put(IN4_TTL)
-        self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
-        self.pulse_1_input.put(DISCONNECT)
-
     def disable_fluo_collection(self):
         self.pulse_1_input.put(DISCONNECT)
         self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
@@ -195,8 +189,8 @@ class LogicGateConfiguration:
     NUMBER_OF_INPUTS = 4
 
     def __init__(self, input_source: int, invert: bool = False) -> None:
-        self.sources = []
-        self.invert = []
+        self.sources: List[int] = []
+        self.invert: List[bool] = []
         self.add_input(input_source, invert)
 
     def add_input(
@@ -225,21 +219,3 @@ class LogicGateConfiguration:
             input_strings.append(f"INP{input+1}={'!' if invert else ''}{source}")
 
         return ", ".join(input_strings)
-
-
-class Zebra(Device):
-    pc: PositionCompare = Component(PositionCompare, "")
-    output: ZebraOutputPanel = Component(ZebraOutputPanel, "")
-    logic_gates: LogicGateConfigurer = Component(LogicGateConfigurer, "")
-
-    def setup_fast_grid_scan(self):
-        self.output.setup_fast_grid_scan()
-
-    def stage(self) -> List[object]:
-        self.setup_fast_grid_scan()
-        self.output.disable_fluo_collection()
-        return super().stage()
-
-    def unstage(self) -> List[object]:
-        self.output.set_shutter_to_manual()
-        return super().unstage()

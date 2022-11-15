@@ -2,7 +2,7 @@ import pytest
 from mockito import mock, verify
 from ophyd.sim import make_fake_device
 
-from artemis.devices.zebra import (
+from artemis.devices.zebras.zebra_base import (
     GateType,
     LogicGateConfiguration,
     LogicGateConfigurer,

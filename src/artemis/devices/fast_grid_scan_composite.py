@@ -5,7 +5,7 @@ from artemis.devices.motors import I03Smargon
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.devices.zebra import Zebra
+from artemis.devices.zebras.FGSzebra import FGSZebra
 
 
 class FGSComposite(Device):
@@ -13,7 +13,7 @@ class FGSComposite(Device):
 
     fast_grid_scan = Component(FastGridScan, "-MO-SGON-01:FGS:")
 
-    zebra = Component(Zebra, "-EA-ZEBRA-01:")
+    zebra = Component(FGSZebra, "-EA-ZEBRA-01:")
 
     undulator = FormattedComponent(Undulator, "{insertion_prefix}-MO-SERVC-01:")
 
