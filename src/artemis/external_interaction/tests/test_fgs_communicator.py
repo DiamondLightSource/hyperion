@@ -18,7 +18,6 @@ from artemis.utils import Point3D
 DUMMY_TIME_STRING = "1970-01-01 00:00:00"
 GOOD_ISPYB_RUN_STATUS = "DataCollection Successful"
 BAD_ISPYB_RUN_STATUS = "DataCollection Unsuccessful"
-
 test_start_document = {
     "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
     "time": 1666604299.6149616,
@@ -64,21 +63,53 @@ test_failed_stop_document = {
 }
 
 
+@pytest.fixture
+def nexus_writer():
+    with patch("artemis.external_interaction.communicator_callbacks.NexusWriter") as nw:
+        yield nw
+
+
+@pytest.fixture
+def run_start():
+    with patch("artemis.external_interaction.communicator_callbacks.run_start") as p:
+        yield p
+
+
+@pytest.fixture
+def run_end():
+    with patch("artemis.external_interaction.communicator_callbacks.run_end") as p:
+        yield p
+
+
+@pytest.fixture
+def wait_for_result():
+    with patch(
+        "artemis.external_interaction.communicator_callbacks.wait_for_result"
+    ) as wfr:
+        yield wfr
+
+
+@pytest.fixture
+def mock_ispyb_get_time():
+    with patch(
+        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
+    ) as wfr:
+        yield wfr
+
+
+@pytest.fixture
+def mock_ispyb_store_grid_scan():
+    with patch(
+        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
+    ) as wfr:
+        yield wfr
+
+
 def test_fgs_communicator_init():
     communicator = FGSCommunicator(FullParameters())
     assert communicator.params == FullParameters()
 
 
-@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
-@patch("artemis.external_interaction.communicator_callbacks.run_start")
-@patch("artemis.external_interaction.communicator_callbacks.run_end")
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
-@patch(
-    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
-)
-@patch(
-    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
-)
 @patch(
     "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
@@ -115,7 +146,6 @@ def test_run_gridscan_zocalo_calls(
     wait_for_result.assert_not_called()
 
 
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
     wait_for_result: MagicMock,
 ):
@@ -135,16 +165,6 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     assert communicator.xray_centre_motor_position == expected_centre_motor_coords
 
 
-@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
-@patch("artemis.external_interaction.communicator_callbacks.run_start")
-@patch("artemis.external_interaction.communicator_callbacks.run_end")
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
-@patch(
-    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
-)
-@patch(
-    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
-)
 @patch(
     "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
@@ -175,16 +195,6 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
 
-@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
-@patch("artemis.external_interaction.communicator_callbacks.run_start")
-@patch("artemis.external_interaction.communicator_callbacks.run_end")
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
-@patch(
-    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
-)
-@patch(
-    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
-)
 @patch(
     "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
@@ -215,67 +225,6 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
         [call(DUMMY_TIME_STRING, GOOD_ISPYB_RUN_STATUS, id, dcg_id) for id in dc_ids]
     )
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
-
-
-@patch(
-    "artemis.external_interaction.communicator_callbacks.create_parameters_for_first_file"
-)
-@patch(
-    "artemis.external_interaction.communicator_callbacks.create_parameters_for_second_file"
-)
-@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
-def test_writers_setup_on_init(
-    nexus_writer: MagicMock,
-    param_for_second: MagicMock,
-    param_for_first: MagicMock,
-):
-
-    params = FullParameters()
-    communicator = FGSCommunicator(params)
-    # flake8 gives an error if we don't do something with communicator
-    communicator.__init__(params)
-
-    nexus_writer.assert_has_calls(
-        [
-            call(param_for_first()),
-            call(param_for_second()),
-        ],
-        any_order=True,
-    )
-
-
-@patch(
-    "artemis.external_interaction.communicator_callbacks.create_parameters_for_first_file"
-)
-@patch(
-    "artemis.external_interaction.communicator_callbacks.create_parameters_for_second_file"
-)
-@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
-def test_writers_dont_create_on_init(
-    nexus_writer: MagicMock,
-    param_for_second: MagicMock,
-    param_for_first: MagicMock,
-):
-
-    params = FullParameters()
-    communicator = FGSCommunicator(params)
-
-    communicator.nxs_writer_1.create_nexus_file.assert_not_called()
-    communicator.nxs_writer_2.create_nexus_file.assert_not_called()
-
-
-@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
-def test_writers_do_create_one_file_each_on_start_doc(
-    nexus_writer: MagicMock,
-):
-    nexus_writer.side_effect = [MagicMock(), MagicMock()]
-
-    params = FullParameters()
-    communicator = FGSCommunicator(params)
-    communicator.start(test_start_document)
-
-    assert communicator.nxs_writer_1.create_nexus_file.call_count == 1
-    assert communicator.nxs_writer_2.create_nexus_file.call_count == 1
 
 
 @pytest.fixture()

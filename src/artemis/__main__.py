@@ -54,19 +54,23 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    callbacks: FGSCallbackCollection
+    callbacks: FGSCallbackCollection = FGSCallbackCollection(
+        nexus_handler=NexusFileHandlerCallback(FullParameters()),
+        fgs_communicator=FGSCommunicator(FullParameters()),
+    )
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
     def __init__(self, RE: RunEngine) -> None:
-        self.callbacks = FGSCallbackCollection()
         self.RE = RE
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-        self.callbacks.fgs_communicator = FGSCommunicator(parameters)
-        self.callbacks.nexus_handler = NexusFileHandlerCallback(parameters)
+        self.callbacks = FGSCallbackCollection(
+            nexus_handler=NexusFileHandlerCallback(parameters),
+            fgs_communicator=FGSCommunicator(parameters),
+        )
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value

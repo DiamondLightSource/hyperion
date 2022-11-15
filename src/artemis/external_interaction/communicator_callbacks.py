@@ -1,6 +1,6 @@
 import os
 import time
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 from bluesky.callbacks import CallbackBase
 
@@ -115,8 +115,5 @@ class FGSCommunicator(CallbackBase):
 
 
 class FGSCallbackCollection(NamedTuple):
-    nexus_handler: Optional[NexusFileHandlerCallback] = None
-    fgs_communicator: Optional[FGSCommunicator] = None
-
-    def __iter__(self):
-        return [c for c in self if c is not None]
+    nexus_handler: NexusFileHandlerCallback
+    fgs_communicator: FGSCommunicator
