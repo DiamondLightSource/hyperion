@@ -17,6 +17,30 @@ from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 
+class NexusFileHandlerCallback(CallbackBase):
+    """Callback class to handle the creation of Nexus files based on experiment
+    parameters. Creates the Nexus files on recieving a 'start' document, and updates the
+    timestamps on recieving a 'stop' document.
+
+    To use, subscribe the Bluesky RunEngine to an instance of this class.
+    """
+
+    def __init__(self, parameters: FullParameters):
+        self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(parameters))
+        self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(parameters))
+
+    def start(self, doc: dict):
+        artemis.log.LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")
+        artemis.log.LOGGER.info("Creating Nexus files.")
+        self.nxs_writer_1.create_nexus_file()
+        self.nxs_writer_2.create_nexus_file()
+
+    def stop(self, doc: dict):
+        artemis.log.LOGGER.debug("Updating Nexus file timestamps.")
+        self.nxs_writer_1.update_nexus_file_timestamp()
+        self.nxs_writer_2.update_nexus_file_timestamp()
+
+
 class FGSCommunicator(CallbackBase):
     """Class for external communication (e.g. ispyb, zocalo...) during Artemis
     grid scan experiments.
@@ -38,18 +62,10 @@ class FGSCommunicator(CallbackBase):
         )
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(self.params))
-        self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(self.params))
         self.results = None
         self.xray_centre_motor_position = None
         self.ispyb_ids: tuple = (None, None, None)
         self.datacollection_group_id = None
-
-    def start(self, doc: dict):
-        artemis.log.LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")
-        artemis.log.LOGGER.info("Creating Nexus files.")
-        self.nxs_writer_1.create_nexus_file()
-        self.nxs_writer_2.create_nexus_file()
 
     def descriptor(self, doc):
         self.descriptors[doc["uid"]] = doc
@@ -76,10 +92,6 @@ class FGSCommunicator(CallbackBase):
     def stop(self, doc: dict):
         artemis.log.LOGGER.debug(f"\n\nReceived stop document:\n\n {doc}\n")
         exit_status = doc.get("exit_status")
-
-        artemis.log.LOGGER.debug("Updating Nexus file timestamps.")
-        self.nxs_writer_1.update_nexus_file_timestamp()
-        self.nxs_writer_2.update_nexus_file_timestamp()
 
         if self.ispyb_ids == (None, None, None):
             raise Exception("ispyb was not initialised at run start")
