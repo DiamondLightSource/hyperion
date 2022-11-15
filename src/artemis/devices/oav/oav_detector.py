@@ -117,10 +117,3 @@ class OAV(AreaDetector):
     output_array_pv: EpicsSignal = Component(EpicsSignal, "MXSC:OutputArray")
     draw_tip_pv: EpicsSignal = Component(EpicsSignal, "MXSC:DrawTip")
     draw_edges_pv: EpicsSignal = Component(EpicsSignal, "MXSC:DrawEdges")
-
-
-if __name__ == "__main__":
-
-    beamline = "BL04I"
-    oav = OAV(name="oav", prefix=f"{beamline}-DI-OAV-01:")
-    oav.wait_for_connection()

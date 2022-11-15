@@ -3,6 +3,7 @@ from enum import IntEnum
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import numpy as np
 from bluesky import RunEngine
 
 from artemis.devices.backlight import Backlight
@@ -256,6 +257,112 @@ class OAVCentring:
         # Use the original image type for the edge output array
         yield from bps.abs_set(
             self.oav.output_array_pv, EdgeOutputArrayImageType.ORIGINAL
+        )
+
+    def get_formatted_edge_waveforms(self):
+        """
+        Get the waveforms from the PVs as numpy arrays.
+        """
+        top = np.array((yield from bps.rd(self.oav.top_pv)))
+        bottom = np.array((yield from bps.rd(self.oav.bottom_pv)))
+        return (top, bottom)
+
+    def smooth(self, y):
+        "Remove noise from waveform."
+
+        # the smoothing window is set to 50 on i03
+        smoothing_window = 50
+        box = np.ones(smoothing_window) / smoothing_window
+        y_smooth = np.convolve(y, box, mode="same")
+        return y_smooth
+
+    def find_midpoint(self, top, bottom):
+        "Finds the midpoint from edge PVs. The midpoint is considered the place where"
+
+        # widths between top and bottom
+        widths = bottom - top
+
+        # line going through the middle
+        mid_line = (bottom + top) * 0.5
+
+        smoothed_width = self.smooth(widths)  # smoothed widths
+        first_derivative = np.gradient(smoothed_width)  # gradient
+
+        # the derivative introduces more noise, so another application of smooth is neccessary
+        # the gradient is reversed prior to since a new index has been introduced in smoothing, that is
+        # negated by smoothing in the reversed array
+        reversed_deriv = first_derivative[::-1]
+        reversed_grad = self.smooth(reversed_deriv)
+        grad = reversed_grad[::-1]
+
+        # np.sign gives us the positions where the gradient is positive and negative.
+        # Taking the diff of that gives us an array with all 0's apart from the places
+        # sign of the gradient went from -1 -> 1 or 1 -> -1.
+        # np.where will give all non-zero positions from the np.sign call, however it returns a singleton tuple.
+        # We get the [0] index of the singleton tuple, then the [0] element of that to
+        # get the first index where the gradient is 0.
+        x_pos = np.where(np.diff(np.sign(grad)))[0][0]
+
+        y_pos = mid_line[int(x_pos)]
+        diff_at_x_pos = widths[int(x_pos)]
+        return (x_pos, y_pos, diff_at_x_pos, mid_line)
+
+    def calculate_centres_at_different_rotations(self, points: int):
+        """
+        Calculate relevant spacial points at each rotation and save them in lists.
+
+        Args:
+            points: the number of rotation points
+        Returns:
+            Relevant lists for each rotation:
+                x_y_positions: tuples of the form (x,y) for found centres
+                widths: the widths between the top and bottom waveforms at the centre point
+                omega_angles: the angle of the goniometer at which the measurement was taken
+                mid_lines: the waveform going between the top and bottom waveforms
+                tip_x_y_positions: tuples of the form (x,y) for the measured x and y tips
+        """
+        self.oav_goniometer.wait_for_connection()
+
+        # number of degrees to rotate to
+        increment = 180.0 / points
+
+        # if the rotation threshhold would be exceeded flip the rotation direction
+        if (yield from bps.rd(self.oav_goniometer.omega)) + 180 > (
+            yield from self.oav_goniometer.omega.high_limit
+        ):
+            increment = -increment
+
+        # Arrays to hold positiona data of the pin at each rotation
+        x_y_positions = []
+        widths = []
+        omega_angles = []
+        mid_lines = []
+        tip_x_y_positions = []
+
+        for i in range(points):
+            current_omega = yield from self.oav_goniometer.omega
+            (a, b) = self.get_formatted_edge_waveforms()
+            (x, y, width, mid_line) = self.find_midpoint(a, b)
+
+            # Build arrays of edges and width, and store corresponding gonomega
+            x_y_positions.append((x, y))
+            widths.append(width)
+            omega_angles.append(current_omega)
+            mid_lines.append(mid_line)
+            tip_x = yield from bps.rd(self.oav.tip_x_pv)
+            tip_y = yield from bps.rd(self.oav.tip_x_pv)
+            tip_x_y_positions.append((tip_x, tip_y))
+
+            # rotate the pin to take next measurement, unless it's the last measurement
+            if i < points - 1:
+                yield from bps.mv(self.oav_goniometer.omega, current_omega + increment)
+
+        return (
+            x_y_positions,
+            widths,
+            omega_angles,
+            mid_lines,
+            tip_x_y_positions,
         )
 
 
