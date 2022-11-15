@@ -111,3 +111,11 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
         return result_received.get(timeout=timeout)
     finally:
         transport.disconnect()
+
+
+class NoCentreFoundException(Exception):
+    """
+    Error for if zocalo is unable to find the centre during a gridscan.
+    """
+
+    pass

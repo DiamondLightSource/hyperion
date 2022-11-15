@@ -1,4 +1,5 @@
 import argparse
+import math
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -15,6 +16,8 @@ from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
+from artemis.utils import Point3D
+from artemis.zocalo_interaction import NoCentreFoundException
 
 
 def read_hardware_for_ispyb(
@@ -52,6 +55,15 @@ def move_xyz(
         xray_centre_motor_position.y,
         sample_motors.z,
         xray_centre_motor_position.z,
+    )
+
+
+@bpp.run_decorator()
+def get_xyz(sample_motors):
+    return Point3D(
+        (yield from bps.rd(sample_motors.x)),
+        (yield from bps.rd(sample_motors.y)),
+        (yield from bps.rd(sample_motors.z)),
     )
 
 
@@ -102,6 +114,10 @@ def run_gridscan_and_move(
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
+
+    # We get the initial motor positions so we can return to them on zocalo failure
+    initial_xyz = yield from get_xyz(fgs_composite.sample_motors)
+
     # our communicator should listen to documents only from the actual grid scan
     # so we subscribe to it with our plan
     @subs_decorator(communicator)
@@ -115,6 +131,13 @@ def run_gridscan_and_move(
     # but results may not be ready.
     # it might not be ideal to block for this, see #327
     communicator.wait_for_results()
+
+    # We move back to the centre if results aren't found
+    if math.nan in communicator.xray_centre_motor_position:
+        log_msg = f"No centre found, moving to optical centre {initial_xyz}"
+        artemis.log.LOGGER.error(log_msg)
+        yield from move_xyz(fgs_composite.sample_motors, initial_xyz)
+        raise NoCentreFoundException(f"Zocalo: {log_msg}")
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.debug("Moving to centre of mass.")
