@@ -5,7 +5,7 @@ from bluesky.run_engine import RunEngine
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.external_interaction.fgs_communicator import FGSCommunicator
+from artemis.external_interaction.communicator_callbacks import FGSCommunicator
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.parameters import (
     ISPYB_PLAN_NAME,
@@ -69,16 +69,18 @@ def test_fgs_communicator_init():
     assert communicator.params == FullParameters()
 
 
-@patch("artemis.external_interaction.fgs_communicator.NexusWriter")
-@patch("artemis.external_interaction.fgs_communicator.run_start")
-@patch("artemis.external_interaction.fgs_communicator.run_end")
-@patch("artemis.external_interaction.fgs_communicator.wait_for_result")
-@patch("artemis.external_interaction.fgs_communicator.StoreInIspyb3D.store_grid_scan")
+@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
+@patch("artemis.external_interaction.communicator_callbacks.run_start")
+@patch("artemis.external_interaction.communicator_callbacks.run_end")
+@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 @patch(
-    "artemis.external_interaction.fgs_communicator.StoreInIspyb3D.get_current_time_string"
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
 )
 @patch(
-    "artemis.external_interaction.fgs_communicator.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
+)
+@patch(
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
 def test_run_gridscan_zocalo_calls(
     mock_ispyb_update_time_and_status: MagicMock,
@@ -113,7 +115,7 @@ def test_run_gridscan_zocalo_calls(
     wait_for_result.assert_not_called()
 
 
-@patch("artemis.external_interaction.fgs_communicator.wait_for_result")
+@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
     wait_for_result: MagicMock,
 ):
@@ -133,16 +135,18 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     assert communicator.xray_centre_motor_position == expected_centre_motor_coords
 
 
-@patch("artemis.external_interaction.fgs_communicator.NexusWriter")
-@patch("artemis.external_interaction.fgs_communicator.run_start")
-@patch("artemis.external_interaction.fgs_communicator.run_end")
-@patch("artemis.external_interaction.fgs_communicator.wait_for_result")
-@patch("artemis.external_interaction.fgs_communicator.StoreInIspyb3D.store_grid_scan")
+@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
+@patch("artemis.external_interaction.communicator_callbacks.run_start")
+@patch("artemis.external_interaction.communicator_callbacks.run_end")
+@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 @patch(
-    "artemis.external_interaction.fgs_communicator.StoreInIspyb3D.get_current_time_string"
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
 )
 @patch(
-    "artemis.external_interaction.fgs_communicator.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
+)
+@patch(
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
 def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     mock_ispyb_update_time_and_status: MagicMock,
@@ -171,16 +175,18 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
 
-@patch("artemis.external_interaction.fgs_communicator.NexusWriter")
-@patch("artemis.external_interaction.fgs_communicator.run_start")
-@patch("artemis.external_interaction.fgs_communicator.run_end")
-@patch("artemis.external_interaction.fgs_communicator.wait_for_result")
-@patch("artemis.external_interaction.fgs_communicator.StoreInIspyb3D.store_grid_scan")
+@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
+@patch("artemis.external_interaction.communicator_callbacks.run_start")
+@patch("artemis.external_interaction.communicator_callbacks.run_end")
+@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 @patch(
-    "artemis.external_interaction.fgs_communicator.StoreInIspyb3D.get_current_time_string"
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
 )
 @patch(
-    "artemis.external_interaction.fgs_communicator.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
+)
+@patch(
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
 )
 def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_update_time_and_status: MagicMock,
@@ -211,11 +217,13 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     assert mock_ispyb_update_time_and_status.call_count == len(dc_ids)
 
 
-@patch("artemis.external_interaction.fgs_communicator.create_parameters_for_first_file")
 @patch(
-    "artemis.external_interaction.fgs_communicator.create_parameters_for_second_file"
+    "artemis.external_interaction.communicator_callbacks.create_parameters_for_first_file"
 )
-@patch("artemis.external_interaction.fgs_communicator.NexusWriter")
+@patch(
+    "artemis.external_interaction.communicator_callbacks.create_parameters_for_second_file"
+)
+@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
 def test_writers_setup_on_init(
     nexus_writer: MagicMock,
     param_for_second: MagicMock,
@@ -236,11 +244,13 @@ def test_writers_setup_on_init(
     )
 
 
-@patch("artemis.external_interaction.fgs_communicator.create_parameters_for_first_file")
 @patch(
-    "artemis.external_interaction.fgs_communicator.create_parameters_for_second_file"
+    "artemis.external_interaction.communicator_callbacks.create_parameters_for_first_file"
 )
-@patch("artemis.external_interaction.fgs_communicator.NexusWriter")
+@patch(
+    "artemis.external_interaction.communicator_callbacks.create_parameters_for_second_file"
+)
+@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
 def test_writers_dont_create_on_init(
     nexus_writer: MagicMock,
     param_for_second: MagicMock,
@@ -254,7 +264,7 @@ def test_writers_dont_create_on_init(
     communicator.nxs_writer_2.create_nexus_file.assert_not_called()
 
 
-@patch("artemis.external_interaction.fgs_communicator.NexusWriter")
+@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
 def test_writers_do_create_one_file_each_on_start_doc(
     nexus_writer: MagicMock,
 ):
@@ -299,12 +309,16 @@ def eiger():
 
 @pytest.mark.skip(reason="Needs better S03 or some other workaround.")
 @pytest.mark.s03
-@patch("artemis.external_interaction.fgs_communicator.StoreInIspyb3D.end_deposition")
-@patch("artemis.external_interaction.fgs_communicator.StoreInIspyb3D.begin_deposition")
-@patch("artemis.external_interaction.fgs_communicator.NexusWriter")
-@patch("artemis.external_interaction.fgs_communicator.wait_for_result")
-@patch("artemis.external_interaction.fgs_communicator.run_end")
-@patch("artemis.external_interaction.fgs_communicator.run_start")
+@patch(
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.end_deposition"
+)
+@patch(
+    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.begin_deposition"
+)
+@patch("artemis.external_interaction.communicator_callbacks.NexusWriter")
+@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
+@patch("artemis.external_interaction.communicator_callbacks.run_end")
+@patch("artemis.external_interaction.communicator_callbacks.run_start")
 def test_communicator_in_composite_run(
     run_start: MagicMock,
     run_end: MagicMock,
