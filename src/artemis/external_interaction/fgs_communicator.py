@@ -4,8 +4,11 @@ import time
 from bluesky.callbacks import CallbackBase
 
 import artemis.log
-from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
-from artemis.nexus_writing.write_nexus import (
+from artemis.external_interaction.ispyb.store_in_ispyb import (
+    StoreInIspyb2D,
+    StoreInIspyb3D,
+)
+from artemis.external_interaction.nexus_writing.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
     create_parameters_for_second_file,

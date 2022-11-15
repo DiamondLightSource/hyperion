@@ -17,12 +17,12 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
+from artemis.external_interaction.fgs_communicator import FGSCommunicator
 from artemis.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,
 )
-from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
@@ -95,7 +95,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
 
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
-@patch("artemis.fgs_communicator.wait_for_result")
+@patch("artemis.external_interaction.fgs_communicator.wait_for_result")
 def test_results_passed_to_move_xyz(
     wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
 ):
@@ -135,9 +135,9 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
     )
 
 
-@patch("artemis.fgs_communicator.wait_for_result")
-@patch("artemis.fgs_communicator.run_end")
-@patch("artemis.fgs_communicator.run_start")
+@patch("artemis.external_interaction.fgs_communicator.wait_for_result")
+@patch("artemis.external_interaction.fgs_communicator.run_end")
+@patch("artemis.external_interaction.fgs_communicator.run_start")
 @patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")

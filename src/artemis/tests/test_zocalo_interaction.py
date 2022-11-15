@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 from pytest import mark, raises
 from zocalo.configuration import Configuration
 
-from artemis.ispyb.ispyb_dataclass import Point3D
+from artemis.external_interaction.ispyb.ispyb_dataclass import Point3D
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 EXPECTED_DCID = 100
