@@ -29,9 +29,13 @@ def test_run_gridscan_zocalo_calls(
     params = FullParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.ispyb_handler.start(td.test_start_document)
+    callbacks.zocalo_handler.start(td.test_start_document)
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document)
+    callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
     callbacks.ispyb_handler.event(td.test_event_document)
+    callbacks.zocalo_handler.event(td.test_event_document)
     callbacks.ispyb_handler.stop(td.test_stop_document)
+    callbacks.zocalo_handler.stop(td.test_stop_document)
 
     run_start.assert_has_calls([call(x) for x in dc_ids])
     assert run_start.call_count == len(dc_ids)
@@ -47,15 +51,18 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
 ):
     params = FullParameters()
     callbacks = FGSCallbackCollection.from_params(params)
-    callbacks.ispyb.ispyb_ids = (0, 0, 100)
+    callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
     expected_centre_grid_coords = Point3D(1, 2, 3)
     wait_for_result.return_value = expected_centre_grid_coords
 
-    callbacks.wait_for_results()
+    callbacks.zocalo_handler.wait_for_results()
     wait_for_result.assert_called_once_with(100)
     expected_centre_motor_coords = (
         params.grid_scan_params.grid_position_to_motor_position(
             expected_centre_grid_coords
         )
     )
-    assert callbacks.xray_centre_motor_position == expected_centre_motor_coords
+    assert (
+        callbacks.zocalo_handler.xray_centre_motor_position
+        == expected_centre_motor_coords
+    )
