@@ -18,6 +18,12 @@ from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 
+class ISPyBDepositionNotMade(Exception):
+    """Raised when the ISPyB or Zocalo callbacks can't access ISPyB deposition numbers."""
+
+    pass
+
+
 class NexusFileHandlerCallback(CallbackBase):
     """Callback class to handle the creation of Nexus files based on experiment
     parameters. Creates the Nexus files on recieving a 'start' document, and updates the
@@ -108,6 +114,8 @@ class ZocaloHandlerCallback(CallbackBase):
             datacollection_ids = self.ispyb.ispyb_ids[0]
             for id in datacollection_ids:
                 run_start(id)
+        else:
+            raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
     def stop(self, doc: dict):
         LOGGER.debug(f"\n\nZocalo handler received stop document:\n\n {doc}\n")
@@ -115,7 +123,7 @@ class ZocaloHandlerCallback(CallbackBase):
         if exit_status != "success":
             return
         if self.ispyb.ispyb_ids == (None, None, None):
-            raise Exception("ispyb was not initialised!")
+            raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
         datacollection_ids = self.ispyb.ispyb_ids[0]
         for id in datacollection_ids:
             run_end(id)
