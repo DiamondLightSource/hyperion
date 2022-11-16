@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, call, patch
 
-import artemis.external_interaction.tests.testdata as td
 from artemis.external_interaction.communicator_callbacks import ISPyBHandlerCallback
 from artemis.parameters import FullParameters
 
@@ -16,6 +15,7 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     run_end: MagicMock,
     run_start: MagicMock,
     nexus_writer: MagicMock,
+    td,
 ):
     dc_ids = [1, 2]
     dcg_id = 4
@@ -49,6 +49,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     run_end: MagicMock,
     run_start: MagicMock,
     nexus_writer: MagicMock,
+    td,
 ):
     dc_ids = [1, 2]
     dcg_id = 4

@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, call, patch
 
-import artemis.external_interaction.tests.testdata as td
 from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
@@ -17,6 +16,7 @@ def test_run_gridscan_zocalo_calls(
     run_end: MagicMock,
     run_start: MagicMock,
     nexus_writer: MagicMock,
+    td,
 ):
 
     dc_ids = [1, 2]
