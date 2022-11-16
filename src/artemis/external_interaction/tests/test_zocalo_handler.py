@@ -1,13 +1,10 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, call
 
 from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
 
-@patch(
-    "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
-)
 def test_run_gridscan_zocalo_calls(
     mock_ispyb_update_time_and_status: MagicMock,
     mock_ispyb_get_time: MagicMock,

@@ -35,16 +35,40 @@ def wait_for_result():
 def mock_ispyb_get_time():
     with patch(
         "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
-    ) as wfr:
-        yield wfr
+    ) as p:
+        yield p
 
 
 @pytest.fixture
 def mock_ispyb_store_grid_scan():
     with patch(
         "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
-    ) as wfr:
-        yield wfr
+    ) as p:
+        yield p
+
+
+@pytest.fixture
+def mock_ispyb_update_time_and_status():
+    with patch(
+        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+    ) as p:
+        yield p
+
+
+@pytest.fixture
+def mock_ispyb_begin_deposition():
+    with patch(
+        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.begin_deposition"
+    ) as p:
+        yield p
+
+
+@pytest.fixture
+def mock_ispyb_end_deposition():
+    with patch(
+        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.end_deposition"
+    ) as p:
+        yield p
 
 
 class TestData:
