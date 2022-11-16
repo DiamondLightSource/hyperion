@@ -15,7 +15,7 @@ TIMEOUT = 90
 
 def _get_zocalo_connection():
     zc = zocalo.configuration.from_file()
-    zc.activate_environment("artemis")
+    zc.activate_environment("devrmq")
 
     transport = lookup("PikaTransport")()
     transport.connect()
