@@ -109,8 +109,8 @@ def run_gridscan_and_move(
     # our communicator should listen to documents only from the actual grid scan
     # so we subscribe to it with our plan
     @subs_decorator(list(subscriptions))
-    def gridscan_with_subscriptions(fgs_comp, det, params):
-        yield from run_gridscan(fgs_comp, det, params)
+    def gridscan_with_subscriptions(fgs_composite, detector, params):
+        yield from run_gridscan(fgs_composite, detector, params)
 
     artemis.log.LOGGER.debug("Starting grid scan")
     yield from gridscan_with_subscriptions(fgs_composite, eiger, parameters)
@@ -118,13 +118,13 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the communicator during the gridscan,
     # but results may not be ready.
     # it might not be ideal to block for this, see #327
-    subscriptions.fgs_communicator.wait_for_results()
+    subscriptions.zocalo_handler.wait_for_results()
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.debug("Moving to centre of mass.")
     yield from move_xyz(
         fgs_composite.sample_motors,
-        subscriptions.fgs_communicator.xray_centre_motor_position,
+        subscriptions.zocalo_handler.xray_centre_motor_position,
     )
 
 

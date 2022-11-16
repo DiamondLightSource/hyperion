@@ -15,8 +15,9 @@ from flask_restful import Api, Resource
 import artemis.log
 from artemis.external_interaction.communicator_callbacks import (
     FGSCallbackCollection,
-    FGSCommunicator,
+    ISPyBHandlerCallback,
     NexusFileHandlerCallback,
+    ZocaloHandlerCallback,
 )
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
@@ -56,7 +57,8 @@ class StatusAndMessage:
 class BlueskyRunner:
     callbacks: FGSCallbackCollection = FGSCallbackCollection(
         nexus_handler=NexusFileHandlerCallback(FullParameters()),
-        fgs_communicator=FGSCommunicator(FullParameters()),
+        ispyb_handler=ISPyBHandlerCallback(FullParameters()),
+        zocalo_handler=ZocaloHandlerCallback(FullParameters()),
     )
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
@@ -69,7 +71,8 @@ class BlueskyRunner:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
         self.callbacks = FGSCallbackCollection(
             nexus_handler=NexusFileHandlerCallback(parameters),
-            fgs_communicator=FGSCommunicator(parameters),
+            ispyb_handler=ISPyBHandlerCallback(parameters),
+            zocalo_handler=ZocaloHandlerCallback(parameters),
         )
         if (
             self.current_status.status == Status.BUSY.value
