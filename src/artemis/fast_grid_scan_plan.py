@@ -13,11 +13,7 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.external_interaction.communicator_callbacks import (
-    FGSCallbackCollection,
-    FGSCommunicator,
-    NexusFileHandlerCallback,
-)
+from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 
 
@@ -173,9 +169,6 @@ if __name__ == "__main__":
     RE.waiting_hook = ProgressBarManager()
 
     parameters = FullParameters(beamline=args.beamline)
-    subscriptions = FGSCallbackCollection(
-        nexus_handler=NexusFileHandlerCallback(parameters),
-        fgs_communicator=FGSCommunicator(parameters),
-    )
+    subscriptions = FGSCallbackCollection.from_params(parameters)
 
     RE(get_plan(parameters, subscriptions))
