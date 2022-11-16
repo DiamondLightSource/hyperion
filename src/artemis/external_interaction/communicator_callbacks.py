@@ -94,34 +94,35 @@ class ZocaloHandlerCallback(CallbackBase):
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     """
 
-    def __init__(self, parameters: FullParameters):
+    def __init__(self, parameters: FullParameters, ispyb_handler: ISPyBHandlerCallback):
         self.params = parameters
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.results = None
         self.xray_centre_motor_position = None
-        self.ispyb_ids: tuple = (None, None, None)
+        self.ispyb = ispyb_handler
 
     def event(self, doc: dict):
         LOGGER.debug(f"\n\nZocalo handler received event document:\n\n {doc}\n")
-        datacollection_ids = self.ispyb_ids[0]
-        for id in datacollection_ids:
-            run_start(id)
+        if self.ispyb.ispyb_ids[0] is not None:
+            datacollection_ids = self.ispyb.ispyb_ids[0]
+            for id in datacollection_ids:
+                run_start(id)
 
     def stop(self, doc: dict):
         LOGGER.debug(f"\n\nZocalo handler received stop document:\n\n {doc}\n")
         exit_status = doc.get("exit_status")
         if exit_status != "success":
             return
-        if self.ispyb_ids == (None, None, None):
-            raise Exception("ispyb was not initialised at run start")
-        datacollection_ids = self.ispyb_ids[0]
+        if self.ispyb.ispyb_ids == (None, None, None):
+            raise Exception("ispyb was not initialised!")
+        datacollection_ids = self.ispyb.ispyb_ids[0]
         for id in datacollection_ids:
             run_end(id)
         self.processing_start_time
 
     def wait_for_results(self):
-        datacollection_group_id = self.ispyb_ids[2]
+        datacollection_group_id = self.ispyb.ispyb_ids[2]
         self.results = wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time
         self.xray_centre_motor_position = (
@@ -135,3 +136,15 @@ class FGSCallbackCollection(NamedTuple):
     nexus_handler: NexusFileHandlerCallback
     ispyb_handler: ISPyBHandlerCallback
     zocalo_handler: ZocaloHandlerCallback
+
+    @classmethod
+    def from_params(cls, parameters: FullParameters):
+        nexus_handler = NexusFileHandlerCallback(parameters)
+        ispyb_handler = ISPyBHandlerCallback(parameters)
+        zocalo_handler = ZocaloHandlerCallback(parameters, ispyb_handler)
+        callback_collection = cls(
+            nexus_handler=nexus_handler,
+            ispyb_handler=ispyb_handler,
+            zocalo_handler=zocalo_handler,
+        )
+        return callback_collection
