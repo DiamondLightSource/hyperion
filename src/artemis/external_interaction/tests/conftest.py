@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from unittest.mock import patch
 
 import pytest
@@ -48,7 +47,6 @@ def mock_ispyb_store_grid_scan():
         yield wfr
 
 
-@dataclass
 class TestData:
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
     GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
