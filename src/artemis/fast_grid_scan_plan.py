@@ -3,7 +3,6 @@ import argparse
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
-from bluesky.preprocessors import subs_decorator
 from bluesky.utils import ProgressBarManager
 
 import artemis.log
@@ -104,7 +103,7 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
     # our communicator should listen to documents only from the actual grid scan
     # so we subscribe to it with our plan
-    @subs_decorator(list(subscriptions))
+    @bpp.subs_decorator(list(subscriptions))
     def gridscan_with_subscriptions(fgs_composite, detector, params):
         yield from run_gridscan(fgs_composite, detector, params)
 
