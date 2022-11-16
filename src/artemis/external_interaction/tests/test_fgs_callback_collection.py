@@ -1,20 +1,100 @@
 from unittest.mock import MagicMock
 
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from ophyd.sim import SynSignal
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
+from artemis.external_interaction.communicator_callbacks import (
+    FGSCallbackCollection,
+    ISPyBDepositionNotMade,
+)
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
-from artemis.parameters import SIM_BEAMLINE, DetectorParams, FullParameters
+from artemis.parameters import (
+    ISPYB_PLAN_NAME,
+    SIM_BEAMLINE,
+    DetectorParams,
+    FullParameters,
+)
 from artemis.utils import Point3D
 
 
-def test_callback_collection_init():
+def test_callback_collection_init(
+    wait_for_result: MagicMock,
+    run_end: MagicMock,
+    run_start: MagicMock,
+):
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     assert callbacks.ispyb_handler.params == FullParameters()
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
+
+
+def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
+    nexus_writer: MagicMock,
+    mock_ispyb_begin_deposition: MagicMock,
+    mock_ispyb_end_deposition: MagicMock,
+    wait_for_result: MagicMock,
+    run_end: MagicMock,
+    run_start: MagicMock,
+):
+    RE = RunEngine({})
+
+    mock_ispyb_begin_deposition.return_value = ([1, 2], None, 4)
+
+    fgs_undulator_gap = SynSignal(name="fgs_undulator_gap")
+    fgs_synchrotron_machine_status_synchrotron_mode = SynSignal(
+        name="fgs_synchrotron_machine_status_synchrotron_mode"
+    )
+    fgs_slit_gaps_xgap = SynSignal(name="fgs_slit_gaps_xgap")
+    fgs_slit_gaps_ygap = SynSignal(name="fgs_slit_gaps_ygap")
+    detector = SynSignal(name="detector")
+
+    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    callbacklist_right_order = [
+        callbacks.nexus_handler,
+        callbacks.ispyb_handler,
+        callbacks.zocalo_handler,
+    ]
+    assert callbacklist_right_order == list(callbacks)
+
+    @bpp.subs_decorator(list(callbacks))
+    @bpp.run_decorator()
+    def fake_plan():
+        yield from bps.create(ISPYB_PLAN_NAME)
+        yield from bps.read(fgs_undulator_gap)
+        yield from bps.read(fgs_synchrotron_machine_status_synchrotron_mode)
+        yield from bps.read(fgs_slit_gaps_xgap)
+        yield from bps.read(fgs_slit_gaps_ygap)
+        yield from bps.save()
+        yield from bps.read(detector)
+
+    RE(fake_plan())
+    # assert blah
+
+    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    callbacklist_wrong_order = [
+        callbacks.nexus_handler,
+        callbacks.zocalo_handler,
+        callbacks.ispyb_handler,
+    ]
+    assert callbacklist_wrong_order != list(callbacks)
+    assert callbacks.ispyb_handler.ispyb_ids == (None, None, None)
+
+    @bpp.subs_decorator(callbacklist_wrong_order)
+    @bpp.run_decorator()
+    def fake_plan_wrong_order():
+        yield from bps.create(ISPYB_PLAN_NAME)
+        yield from bps.read(fgs_undulator_gap)
+        yield from bps.read(fgs_synchrotron_machine_status_synchrotron_mode)
+        yield from bps.read(fgs_slit_gaps_xgap)
+        yield from bps.read(fgs_slit_gaps_ygap)
+        yield from bps.save()
+
+    with pytest.raises(ISPyBDepositionNotMade):
+        RE(fake_plan_wrong_order())
 
 
 @pytest.fixture()

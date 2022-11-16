@@ -87,9 +87,8 @@ class ISPyBHandlerCallback(CallbackBase):
     def stop(self, doc: dict):
         LOGGER.debug(f"\n\nISPyB handler received stop document:\n\n {doc}\n")
         exit_status = doc.get("exit_status")
-
         if self.ispyb_ids == (None, None, None):
-            raise Exception("ispyb was not initialised at run start")
+            raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
         self.ispyb.end_deposition(exit_status)
 
 
