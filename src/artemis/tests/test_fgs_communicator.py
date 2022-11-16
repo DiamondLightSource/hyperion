@@ -10,6 +10,7 @@ from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import (
     ISPYB_PLAN_NAME,
     SIM_BEAMLINE,
+    SIM_ZOCALO_ENV,
     DetectorParams,
     FullParameters,
 )
@@ -102,10 +103,10 @@ def test_run_gridscan_zocalo_calls(
     communicator.event(test_event_document)
     communicator.stop(test_stop_document)
 
-    run_start.assert_has_calls([call(x, "artemis") for x in dc_ids])
+    run_start.assert_has_calls([call(x, SIM_ZOCALO_ENV) for x in dc_ids])
     assert run_start.call_count == len(dc_ids)
 
-    run_end.assert_has_calls([call(x, "artemis") for x in dc_ids])
+    run_end.assert_has_calls([call(x, SIM_ZOCALO_ENV) for x in dc_ids])
     assert run_end.call_count == len(dc_ids)
 
     wait_for_result.assert_not_called()
@@ -122,7 +123,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     wait_for_result.return_value = expected_centre_grid_coords
 
     communicator.wait_for_results()
-    wait_for_result.assert_called_once_with(100, "artemis")
+    wait_for_result.assert_called_once_with(100, SIM_ZOCALO_ENV)
     expected_centre_motor_coords = (
         params.grid_scan_params.grid_position_to_motor_position(
             expected_centre_grid_coords

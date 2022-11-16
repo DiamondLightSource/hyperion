@@ -10,7 +10,7 @@ from pytest import mark, raises
 from zocalo.configuration import Configuration
 
 from artemis.ispyb.ispyb_dataclass import Point3D
-from artemis.parameters import FullParameters
+from artemis.parameters import SIM_ZOCALO_ENV
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
 
 EXPECTED_DCID = 100
@@ -20,8 +20,6 @@ EXPECTED_RUN_END_MESSAGE = {
     "ispyb_dcid": EXPECTED_DCID,
     "ispyb_wait_for_runstatus": "1",
 }
-params = FullParameters()
-ZOCALO_ENV = params.zocalo_environment
 
 
 @patch("zocalo.configuration.from_file")
@@ -37,7 +35,7 @@ def _test_zocalo(
 
     func_testing(mock_transport)
 
-    mock_zc.activate_environment.assert_called_once_with(ZOCALO_ENV)
+    mock_zc.activate_environment.assert_called_once_with(SIM_ZOCALO_ENV)
     mock_transport.connect.assert_called_once()
     expected_message = {
         "recipes": ["mimas"],
@@ -83,7 +81,7 @@ def test_run_start_and_end(
         function_wrapper (Callable): A wrapper around the function, used to test for expected exceptions
         expected_message (Dict): The expected dictionary sent to zocalo
     """
-    function_to_run = partial(function_to_test, EXPECTED_DCID, ZOCALO_ENV)
+    function_to_run = partial(function_to_test, EXPECTED_DCID, SIM_ZOCALO_ENV)
     function_to_run = partial(function_wrapper, function_to_run)
     _test_zocalo(function_to_run, expected_message)
 
@@ -113,7 +111,9 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup.return_value.return_value = mock_transport
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(wait_for_result, datacollection_grid_id, ZOCALO_ENV)
+        future = executor.submit(
+            wait_for_result, datacollection_grid_id, SIM_ZOCALO_ENV
+        )
 
         for _ in range(10):
             sleep(0.1)
