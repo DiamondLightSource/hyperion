@@ -1,37 +1,25 @@
-from artemis.devices.zebra import Zebra
+import bluesky.plan_stubs as bps
 
-# FROM OUTPUT PANEL
-#     def setup_fast_grid_scan(self):
-#         self.out_pvs[TTL_DETECTOR].put(IN3_TTL)
-#         self.out_pvs[TTL_SHUTTER].put(IN4_TTL)
-#         self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
-#         self.pulse_1_input.put(DISCONNECT)
-#
-#     def disable_fluo_collection(self):
-#         self.pulse_1_input.put(DISCONNECT)
-#         self.out_pvs[TTL_XSPRESS3].put(DISCONNECT)
-#
-#     def set_shutter_to_manual(self):
-#         self.out_pvs[TTL_DETECTOR].put(PC_PULSE)
-#         self.out_pvs[TTL_SHUTTER].put(OR1)
-
-# FROM ZEBRA CLASS
-#    def setup_fast_grid_scan(self):
-#        self.output.setup_fast_grid_scan()
-#
-#    def stage(self) -> List[object]:
-#        self.setup_fast_grid_scan()
-#        self.output.disable_fluo_collection()
-#        return super().stage()
-#
-#    def unstage(self) -> List[object]:
-#        self.output.set_shutter_to_manual()
-#        return super().unstage()
+from artemis.devices.zebra import (
+    DISCONNECT,
+    IN3_TTL,
+    IN4_TTL,
+    OR1,
+    PC_PULSE,
+    TTL_DETECTOR,
+    TTL_SHUTTER,
+    TTL_XSPRESS3,
+    Zebra,
+)
 
 
 def setup_zebra_for_fgs(zebra: Zebra):
-    pass
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL)
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL)
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT)
+    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT)
 
 
 def set_zebra_shutter_to_manual(zebra: Zebra):
-    pass
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE)
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1)
