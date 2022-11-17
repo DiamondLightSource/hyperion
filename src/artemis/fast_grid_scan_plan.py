@@ -7,6 +7,10 @@ from bluesky.preprocessors import subs_decorator
 from bluesky.utils import ProgressBarManager
 
 import artemis.log
+from artemis.device_setup_plans.setup_zebra_for_fgs import (
+    set_zebra_shutter_to_manual,
+    setup_zebra_for_fgs,
+)
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -79,12 +83,11 @@ def run_gridscan(
     )
 
     fgs_motors = fgs_composite.fast_grid_scan
-    zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
 
-    @bpp.stage_decorator([zebra, eiger, fgs_motors])
+    @bpp.stage_decorator([eiger, fgs_motors])
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
@@ -102,6 +105,9 @@ def run_gridscan_and_move(
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
+
+    yield from setup_zebra_for_fgs(fgs_composite.zebra)
+
     # our communicator should listen to documents only from the actual grid scan
     # so we subscribe to it with our plan
     @subs_decorator(communicator)
@@ -121,6 +127,9 @@ def run_gridscan_and_move(
     yield from move_xyz(
         fgs_composite.sample_motors, communicator.xray_centre_motor_position
     )
+
+    # tidy up
+    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
 
 def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
