@@ -104,6 +104,31 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert "data_000002" not in data_path
             assert np.all(data_path["omega"][:] == 0.0)
 
+            assert np.all(
+                written_nexus_file["/entry/data/omega"].attrs.get("vector")
+                == [
+                    -1.0,
+                    0.0,
+                    0.0,
+                ]
+            )
+            assert np.all(
+                written_nexus_file["/entry/data/omega"].attrs.get("sam_x")
+                == [
+                    1.0,
+                    0.0,
+                    0.0,
+                ]
+            )
+            assert np.all(
+                written_nexus_file["/entry/data/omega"].attrs.get("sam_z")
+                == [
+                    0.0,
+                    0.0,
+                    1.0,
+                ]
+            )
+
     assert_data_edge_at(nexus_writer_1.nexus_file, 799)
 
     nexus_writer_1.update_nexus_file_timestamp()
