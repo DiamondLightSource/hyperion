@@ -113,7 +113,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 ]
             )
             assert np.all(
-                written_nexus_file["/entry/data/omega"].attrs.get("sam_x")
+                written_nexus_file["/entry/data/sam_x"].attrs.get("vector")
                 == [
                     1.0,
                     0.0,
@@ -121,11 +121,11 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 ]
             )
             assert np.all(
-                written_nexus_file["/entry/data/omega"].attrs.get("sam_z")
+                written_nexus_file["/entry/data/sam_y"].attrs.get("vector")
                 == [
                     0.0,
-                    0.0,
                     1.0,
+                    0.0,
                 ]
             )
 
@@ -150,6 +150,14 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
             assert_contains_external_link(data_path, "data_000002", "dummy_0_000002.h5")
             assert np.all(data_path["omega"][:] == 90.0)
+            assert np.all(
+                written_nexus_file["/entry/data/sam_z"].attrs.get("vector")
+                == [
+                    0.0,
+                    0.0,
+                    1.0,
+                ]
+            )
 
     assert_data_edge_at(nexus_writer_2.nexus_file, 243)
 
