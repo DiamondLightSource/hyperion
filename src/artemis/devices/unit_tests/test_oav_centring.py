@@ -21,9 +21,7 @@ def test_oav__extract_dict_parameter_not_found_fallback_value_present():
     parameters = OAVParameters("src/artemis/devices/unit_tests/test_OAVCentring.json")
     parameters.load_json()
     assert (
-        parameters._extract_dict_parameter(
-            "loopCentring", "a_key_not_in_the_json", fallback_value=1
-        )
+        parameters._extract_dict_parameter("a_key_not_in_the_json", fallback_value=1)
         == 1
     )
 
@@ -32,7 +30,7 @@ def test_oav__extract_dict_parameter_not_found_fallback_value_not_present():
     parameters = OAVParameters("src/artemis/devices/unit_tests/test_OAVCentring.json")
     parameters.load_json()
     with pytest.raises(KeyError):
-        parameters._extract_dict_parameter("loopCentring", "a_key_not_in_the_json")
+        parameters._extract_dict_parameter("a_key_not_in_the_json")
 
 
 @patch("artemis.devices.oav.oav_centring.OAV")
@@ -43,10 +41,15 @@ def test_find_midpoint_symmetric_pin(
     fake_oav, fake_camera, fake_backlight, fake_goniometer
 ):
     centring = OAVCentring("src/artemis/devices/unit_tests/test_OAVCentring.json")
-    centring.oav_parameters.crossing_to_use = 0
-    x_squared = np.square(np.arange(-10, 10, 20 / 1024))
-    top = -1 * x_squared + 100
-    bottom = x_squared - 100
+    x = np.arange(-10, 10, 20 / 1024)
+    x2 = x**2
+    top = -1 * x2 + 100
+    bottom = x2 - 100
+
+    # set the waveforms to 0 before the edge is found
+    top[np.where(top < bottom)[0]] = 0
+    bottom[np.where(bottom > top)[0]] = 0
+
     (x_pos, y_pos, diff_at_x_pos, mid) = centring.find_midpoint(top, bottom)
     assert x_pos == 512
 
@@ -59,11 +62,17 @@ def test_find_midpoint_non_symmetric_pin(
     fake_oav, fake_camera, fake_backlight, fake_goniometer
 ):
     centring = OAVCentring("src/artemis/devices/unit_tests/test_OAVCentring.json")
-    centring.oav_parameters.crossing_to_use = 0
-    x_squared = np.square(np.arange(-2.35, 2.35, 4.7 / 1024))
-    x_pow4 = np.square(x_squared)
-    top = -1 * x_squared + 6
-    bottom = x_pow4 - 5 * x_squared - 3
+    x = np.arange(-2.35, 2.35, 4.7 / 1024)
+    x2 = x**2
+    x4 = x2**2
+    top = -1 * x2 + 6
+    bottom = x4 - 5 * x2 - 3
+
+    # set the waveforms to 0 before the edge is found
+    top[np.where(top < bottom)[0]] = 0
+    bottom[np.where(bottom > top)[0]] = 0
+
     (x_pos, y_pos, diff_at_x_pos, mid) = centring.find_midpoint(top, bottom)
     assert x_pos == 205
-    # x = 205/1024*4.7 - 2.35 ≈ -1.41 which is the first stationary point on our midpoint line
+    # x = 205/1024*4.7 - 2.35 ≈ -1.41 which is the first stationary point of the width on
+    # our midpoint line
