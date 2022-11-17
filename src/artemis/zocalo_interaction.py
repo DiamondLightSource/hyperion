@@ -78,7 +78,8 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
 
         timeout (float): The time in seconds to wait for the result to be received.
     Returns:
-        Point in grid co-ordinates that is the centre point to move to
+        Returns the centre of the grid box with the strongest diffraction, i.e.,
+        which contains the centre of the crystal and which we want to move to.
     """
     transport = _get_zocalo_connection()
     result_received: queue.Queue = queue.Queue()
