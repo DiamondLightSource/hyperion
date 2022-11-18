@@ -123,7 +123,9 @@ class ZocaloHandlerCallback(CallbackBase):
     """
 
     def __init__(self, parameters: FullParameters, ispyb_handler: ISPyBHandlerCallback):
-        self.params = parameters
+        self.grid_position_to_motor_position = (
+            parameters.grid_scan_params.grid_position_to_motor_position
+        )
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.results = None
@@ -159,8 +161,8 @@ class ZocaloHandlerCallback(CallbackBase):
         self.results = Point3D(
             raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
         )
-        self.xray_centre_motor_position = (
-            self.params.grid_scan_params.grid_position_to_motor_position(self.results)
+        self.xray_centre_motor_position = self.grid_position_to_motor_position(
+            self.results
         )
 
         LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
