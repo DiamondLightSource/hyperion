@@ -134,12 +134,16 @@ class ZocaloHandlerCallback(CallbackBase):
 
     def event(self, doc: dict):
         LOGGER.debug(f"\n\nZocalo handler received event document:\n\n {doc}\n")
-        if self.ispyb.ispyb_ids[0] is not None:
-            datacollection_ids = self.ispyb.ispyb_ids[0]
-            for id in datacollection_ids:
-                run_start(id)
-        else:
-            raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
+        event_name = self.ispyb.descriptors.get(doc["descriptor"])
+        if event_name is None:
+            raise Exception("Zocalo handler could not find descriptor for event doc!")
+        if event_name == ISPYB_PLAN_NAME:
+            if self.ispyb.ispyb_ids[0] is not None:
+                datacollection_ids = self.ispyb.ispyb_ids[0]
+                for id in datacollection_ids:
+                    run_start(id)
+            else:
+                raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
     def stop(self, doc: dict):
         LOGGER.debug(f"\n\nZocalo handler received stop document:\n\n {doc}\n")
