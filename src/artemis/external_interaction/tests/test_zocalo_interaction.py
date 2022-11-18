@@ -26,7 +26,7 @@ EXPECTED_RUN_END_MESSAGE = {
 
 
 @patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo_interaction_interaction.lookup")
+@patch("artemis.external_interaction.zocalo_interaction.lookup")
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
@@ -91,7 +91,7 @@ def test_run_start_and_end(
 
 @patch("workflows.recipe.wrap_subscribe")
 @patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo_interaction_interaction.lookup")
+@patch("artemis.external_interaction.zocalo_interaction.lookup")
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
