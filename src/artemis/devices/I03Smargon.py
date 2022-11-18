@@ -1,8 +1,11 @@
 from ophyd import Component as Cpt
-from ophyd import Device, EpicsMotor, EpicsSignal
+from ophyd import EpicsMotor, EpicsSignal
+from ophyd.epics_motor import MotorBundle
+
+from artemis.devices.motors import MotorLimitHelper, XYZLimitBundle
 
 
-class I03Smargon(Device):
+class I03Smargon(MotorBundle):
     """
     Real motors added to allow stops following pin load (e.g. real_x1.stop() )
     X1 and X2 real motors provide compound chi motion as well as the compound X travel,
@@ -27,3 +30,18 @@ class I03Smargon(Device):
     real_z: EpicsMotor = Cpt(EpicsMotor, "-MO-SGON-01:MOTOR_2")
     real_phi: EpicsMotor = Cpt(EpicsMotor, "-MO-SGON-01:MOTOR_5")
     real_chi: EpicsMotor = Cpt(EpicsMotor, "-MO-SGON-01:MOTOR_6")
+
+    def get_xyz_limits(self) -> XYZLimitBundle:
+        """Get the limits for the x, y and z axes.
+
+        Note that these limits may not yet be valid until wait_for_connection is called
+        on this MotorBundle.
+
+        Returns:
+            XYZLimitBundle: The limits for the underlying motors.
+        """
+        return XYZLimitBundle(
+            MotorLimitHelper(self.x),
+            MotorLimitHelper(self.y),
+            MotorLimitHelper(self.z),
+        )
