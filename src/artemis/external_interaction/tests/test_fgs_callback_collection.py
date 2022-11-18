@@ -69,10 +69,11 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
         yield from bps.read(fgs_slit_gaps_xgap)
         yield from bps.read(fgs_slit_gaps_ygap)
         yield from bps.save()
+        # we need to read from something here - otherwise it is the end of the run and
+        # the event document is not sent in the format we expect.
         yield from bps.read(detector)
 
     RE(fake_plan())
-    # assert blah
 
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     callbacklist_wrong_order = [
