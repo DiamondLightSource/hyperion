@@ -7,7 +7,6 @@ from typing import Callable, Dict
 from unittest.mock import MagicMock, patch
 
 from pytest import mark, raises
-from zocalo.configuration import Configuration
 
 from artemis.ispyb.ispyb_dataclass import Point3D
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
@@ -103,7 +102,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     datacollection_grid_id = 7263143
     step_params = {"dcid": "8183741", "dcgid": str(datacollection_grid_id)}
 
-    mock_zc: Configuration = MagicMock()
+    mock_zc = MagicMock()
     mock_from_file.return_value = mock_zc
     mock_transport = MagicMock()
     mock_transport_lookup.return_value = MagicMock()
