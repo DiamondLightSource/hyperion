@@ -17,7 +17,6 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     run_end: MagicMock,
     run_start: MagicMock,
     nexus_writer: MagicMock,
-    td: TestData,
 ):
 
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
@@ -47,7 +46,6 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     run_end: MagicMock,
     run_start: MagicMock,
     nexus_writer: MagicMock,
-    td: TestData,
 ):
 
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]

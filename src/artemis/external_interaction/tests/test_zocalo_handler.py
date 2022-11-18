@@ -3,8 +3,11 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
+from artemis.external_interaction.tests.conftest import TestData
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
+
+td = TestData()
 
 
 def test_execution_of_run_gridscan_triggers_zocalo_calls(
@@ -15,7 +18,6 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     run_end: MagicMock,
     run_start: MagicMock,
     nexus_writer: MagicMock,
-    td,
 ):
 
     dc_ids = [1, 2]
@@ -49,7 +51,6 @@ def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
     run_end: MagicMock,
     run_start: MagicMock,
     nexus_writer: MagicMock,
-    td,
 ):
 
     params = FullParameters()
