@@ -40,7 +40,7 @@ def test_oav__extract_dict_parameter_not_found_fallback_value_not_present():
 def test_find_midpoint_symmetric_pin(
     fake_oav, fake_camera, fake_backlight, fake_goniometer
 ):
-    centring = OAVCentring("src/artemis/devices/unit_tests/test_OAVCentring.json")
+    centring = OAVCentring("src/artemis/devices/unit_tests/test_OAVCentring.json", "")
     x = np.arange(-10, 10, 20 / 1024)
     x2 = x**2
     top = -1 * x2 + 100
@@ -61,7 +61,7 @@ def test_find_midpoint_symmetric_pin(
 def test_find_midpoint_non_symmetric_pin(
     fake_oav, fake_camera, fake_backlight, fake_goniometer
 ):
-    centring = OAVCentring("src/artemis/devices/unit_tests/test_OAVCentring.json")
+    centring = OAVCentring("src/artemis/devices/unit_tests/test_OAVCentring.json", "")
     x = np.arange(-2.35, 2.35, 4.7 / 1024)
     x2 = x**2
     x4 = x2**2
@@ -76,3 +76,30 @@ def test_find_midpoint_non_symmetric_pin(
     assert x_pos == 205
     # x = 205/1024*4.7 - 2.35 ≈ -1.41 which is the first stationary point of the width on
     # our midpoint line
+
+
+@patch("artemis.devices.oav.oav_centring.OAV")
+@patch("artemis.devices.oav.oav_centring.Camera")
+@patch("artemis.devices.oav.oav_centring.Backlight")
+@patch("artemis.devices.oav.oav_centring.I03Smargon")
+@pytest.mark.parametrize(
+    "zoom_level,expected_xCentre,expected_yCentre",
+    [(1.0, 368, 365), (5.0, 383, 353), (10.0, 381, 335)],
+)
+def test_extract_beam_position_different_beam_postitions(
+    fake_oav,
+    fake_camera,
+    fake_backlight,
+    fake_goniometer,
+    zoom_level,
+    expected_xCentre,
+    expected_yCentre,
+):
+    centring = OAVCentring(
+        "src/artemis/devices/unit_tests/test_OAVCentring.json",
+        "src/artemis/devices/unit_tests/test_display.configuration",
+    )
+    centring.oav_parameters.zoom = zoom_level
+    centring._extract_beam_position()
+    assert centring.beam_centre_x == expected_xCentre
+    assert centring.beam_centre_y == expected_yCentre

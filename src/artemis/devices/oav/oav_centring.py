@@ -13,8 +13,9 @@ from artemis.devices.oav.oav_detector import (
     ColorMode,
     EdgeOutputArrayImageType,
 )
+from artemis.log import LOGGER
 
-# from artemis.log import LOGGER
+# import math
 
 
 class OAVParameters:
@@ -128,7 +129,8 @@ class OAVParameters:
 
 
 class OAVCentring:
-    def __init__(self, parameters_file, beamline="BL03I"):
+    def __init__(self, parameters_file, display_configuration_path, beamline="BL03I"):
+        self.display_configuration_path = display_configuration_path
         self.oav = OAV(name="oav", prefix=beamline + "-DI-OAV-01:")
         self.oav_camera = Camera(name="oav-camera", prefix=beamline + "-EA-OAV-01:")
         self.oav_backlight = Backlight(name="oav-backlight", prefix=beamline)
@@ -246,6 +248,30 @@ class OAVCentring:
         yield from bps.abs_set(
             self.oav.output_array_pv, EdgeOutputArrayImageType.ORIGINAL
         )
+
+    def _extract_beam_position(self):
+        """
+
+        Extracts the beam location in pixels `xCentre` `yCentre` extracted
+        from the file display.configuration. The beam location is manually
+        inputted by the beamline operator GDA by clicking where on screen a
+        scintillator ligths up.
+        """
+        with open(self.display_configuration_path, "r") as f:
+            file_lines = f.readlines()
+            for i in range(len(file_lines)):
+                if file_lines[i].startswith(
+                    "zoomLevel = " + str(self.oav_parameters.zoom)
+                ):
+                    crosshair_x_line = file_lines[i + 1]
+                    crosshair_y_line = file_lines[i + 2]
+                    break
+
+            if crosshair_x_line is None or crosshair_y_line is None:
+                pass  # TODO throw error
+
+            self.beam_centre_x = int(crosshair_x_line.split(" = ")[1])
+            self.beam_centre_y = int(crosshair_y_line.split(" = ")[1])
 
     def get_formatted_edge_waveforms(self):
         """
@@ -370,198 +396,191 @@ class OAVCentring:
         # the algorithm will try for a maximum of `repeat` times to find the centre
         run_num = 0
         while run_num < max_run_num:
+            if not rotation_points:
+                rotation_points = 2
+                # TODO replace rotation_points with MxProperties.GDA_MX_LOOP_CENTRING_OMEGA_STEPS
 
-            """
-                if not steps:
-                    steps = 2
-                    # TODO replace steps with MxProperties.GDA_MX_LOOP_CENTRING_OMEGA_STEPS
+            # do omega spin and harvest edge information
+            (
+                x_positions,
+                y_positions,
+                widths,
+                omega_angles,
+                mid_lines,
+                tip_x_positions,
+                tip_y_positions,
+            ) = self.calculate_centres_at_different_rotations(rotation_points)
 
-                # do omega spin and harvest edge information
-                (
-                    x_positions,
-                    y_positions,
-                    widths,
-                    omega_angles,
-                    mid_lines,
-                    tip_x_positions,
-                    tip_y_positions,
-                ) = self.calculate_centres_at_different_rotations(steps)
+            # filter out 0 elements
+            zero_x_positions = np.where(x_positions == 0)[0]
+            zero_y_positions = np.where(y_positions == 0)[0]
+            indices_to_remove = np.union1d(zero_x_positions, zero_y_positions)
+            x_positions_filtered = np.delete(x_positions, indices_to_remove)
+            y_positions_filtered = np.delete(y_positions, indices_to_remove)
+            widths_filtered = np.delete(widths, indices_to_remove)
+            omega_angles_filtered = np.delete(omega_angles, indices_to_remove)
 
-                # filter out 0 elements
-                zero_x_positions = np.where(x_positions == 0)[0]
-                zero_y_positions = np.where(y_positions == 0)[0]
-                indices_to_remove = np.union1d(zero_x_positions, zero_y_positions)
-                x_positions_filtered = np.delete(x_positions, indices_to_remove)
-                y_positions_filtered = np.delete(y_positions, indices_to_remove)
-                widths_filtered = np.delete(widths, indices_to_remove)
-                omega_angles_filtered = np.delete(omega_angles, indices_to_remove)
+            # If all arrays are 0 it means there has been a problem
+            if not x_positions.size:
+                LOGGER.warn("Unable to find loop - all values zero")
+                return
 
-                # If all arrays are 0 it means there has been a problem
-                if not x_positions.size:
-                    LOGGER.warn("Unable to find loop - all values zero")
-                    return
+            # find the average of the non zero elements of the array
+            x_median = np.median(x_positions_filtered)
 
-                # find the average of the non zero elements of the array
-                x_median = np.median(x_positions_filtered)
+            # filter out outliers
+            outlier_x_positions = np.where(x_positions_filtered - x_median < 100)[0]
+            x_positions_filtered = np.delete(x_positions_filtered, outlier_x_positions)
+            y_positions_filtered = np.delete(y_positions_filtered, outlier_x_positions)
+            widths_filtered = np.delete(widths_filtered, outlier_x_positions)
+            omega_angles_filtered = np.delete(
+                omega_angles_filtered, outlier_x_positions
+            )
 
-                # filter out outliers
-                outlier_x_positions = np.where(x_positions_filtered - x_median < 100)[0]
-                x_positions_filtered = np.delete(x_positions_filtered, outlier_x_positions)
-                y_positions_filtered = np.delete(y_positions_filtered, outlier_x_positions)
-                widths_filtered = np.delete(widths_filtered, outlier_x_positions)
-                omega_angles_filtered = np.delete(
-                    omega_angles_filtered, outlier_x_positions
+            if not widths_filtered.size:
+                LOGGER.error("Unable to find loop - no values pass validity test")
+                return
+
+            # Find omega for face-on position: where bulge was widest
+            pos_with_largest_size = widths_filtered.argmax()
+            best_omega_angle = omega_angles[pos_with_largest_size]
+            x = x_positions[pos_with_largest_size]
+            y = y_positions[pos_with_largest_size]
+
+            # Find the best angles orthogonal to the best_omega_angle
+            try:
+                omega_angles_orthogonal_to_best_angle = np.where(
+                    (85 < abs(omega_angles - best_omega_angle))
+                    & (abs(omega_angles - best_omega_angle) < 95)
+                )[0]
+            except (IndexError):
+                LOGGER.error("Unable to find loop at 2 orthogonal angles")
+                return
+
+            # get the angle sufficiently orthogonal to the best omega and
+            # store its mid line - which will be the magnitude in the z axis on 90 degree rotation
+            pos_with_largest_size_90 = omega_angles_orthogonal_to_best_angle[-1]
+            best_omega_angle_90 = omega_angles[pos_with_largest_size_90]
+            z = mid_lines[pos_with_largest_size_90][x]
+
+            # we need to store the tips of the angles orthogonal-ish to the best angle
+            orthogonal_tips_x = tip_x_positions[omega_angles_orthogonal_to_best_angle]
+
+            # best_omega_angle_90 could be zero, which used to cause a failure - d'oh!
+            if best_omega_angle_90 is None:
+                LOGGER.error("Unable to find loop at 2 orthogonal angles")
+                return
+
+            # extract the max_tip_distance again as it could have changed
+            self.oav_parameters.max_tip_distance = (
+                self.oav_parameters._extract_dict_parameter(
+                    "max_tip_distance", reload_json=True
                 )
+            )
+            # extract the microns per pixel of the zoom level of the camera
+            self.oav_parameters.load_microns_per_pixel(str(self.oav_parameters.zoom))
 
-                if not widths_filtered.size:
-                    LOGGER.error("Unable to find loop - no values pass validity test")
-                    return
+            # get the max tip distance in pixels
+            max_tip_distance_pixels = (
+                self.oav_parameters.max_tip_distance
+                / self.oav_parameters.micronsPerXPixel
+            )
 
-                # Find omega for face-on position: where bulge was widest
-                pos_with_largest_size = widths_filtered.argmax()
-                best_omega_angle = omega_angles[pos_with_largest_size]
-                x = x_positions[pos_with_largest_size]
-                y = y_positions[pos_with_largest_size]
+            # get the average distance between the tips
+            tip_x = np.median(orthogonal_tips_x)
 
-                # Find the best angles orthogonal to the best_omega_angle
-                try:
-                    omega_angles_orthogonal_to_best_angle = np.where(
-                        (85 < abs(omega_angles - best_omega_angle))
-                        & (abs(omega_angles - best_omega_angle) < 95)
-                    )[0]
-                except (IndexError):
-                    LOGGER.error("Unable to find loop at 2 orthogonal angles")
-                    return
+            # if x exceeds the max tip distance then set it to the max tip distance
+            tip_distance_pixels = x - tip_x
+            if tip_distance_pixels > max_tip_distance_pixels:
+                x = max_tip_distance_pixels + tip_x
 
-                # get the angle sufficiently orthogonal to the best omega and
-                # store its mid line - which will be the magnitude in the z axis on 90 degree rotation
-                pos_with_largest_size_90 = omega_angles_orthogonal_to_best_angle[-1]
-                best_omega_angle_90 = omega_angles[pos_with_largest_size_90]
-                z = mid_lines[pos_with_largest_size_90][x]
+            # get the scales of the image in microns
+            x_size = yield from bps.rd(self.oav.x_size_pv)
+            y_size = yield from bps.rd(self.oav.y_size_pv)
+            x_scale = 1024.0 / x_size
+            y_scale = 768.0 / y_size
+            x_move, y_move = self.calculate_beam_distance_in_microns(
+                int(x * x_scale), int(y * y_scale)
+            )
+            x_y_z_move = self.micronToXYZMove(x_move, y_move, best_omega_angle)
 
-                # we need to store the tips of the angles orthogonal-ish to the best angle
-                orthogonal_tips_x = tip_x_positions[omega_angles_orthogonal_to_best_angle]
-
-                # best_omega_angle_90 could be zero, which used to cause a failure - d'oh!
-                if best_omega_angle_90 is None:
-                    LOGGER.error("Unable to find loop at 2 orthogonal angles")
-                    return
-
-                # extract the max_tip_distance again as it could have changed
-                self.oav_parameters.max_tip_distance = (
-                    self.oav_parameters._extract_dict_parameter(
-                        "max_tip_distance", reload_json=True
-                    )
+            # if we've succeeded and it's the last run then set the x_move_and y_move
+            if z is not None and run_num == (max_run_num - 1):
+                x_move, z_move = self.calculate_beam_distance_in_microns(
+                    int(x * x_scale), int(z * y_scale)
                 )
-                # extract the microns per pixel of the zoom level of the camera
-                self.oav_parameters.load_microns_per_pixel(str(self.oav_parameters.zoom))
+            else:
+                z_move = 0  # might need to repeat process?
 
-                # get the max tip distance in pixels
-                max_tip_distance_pixels = (
-                    self.oav_parameters.max_tip_distance
-                    / self.oav_parameters.micronsPerXPixel
-                )
+            x_y_z_move_2 = self.micronToXYZMove(0, z_move, best_omega_angle_90)
+            current_motor_xyz = np.array(
+                [
+                    (yield from bps.rd(self.oav_goniometer.x)),
+                    (yield from bps.rd(self.oav_goniometer.y)),
+                    (yield from bps.rd(self.oav_goniometer.z)),
+                ]
+            )
+            new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move + x_y_z_move_2)
+            new_y = max(new_y, -1500)
+            new_y = min(new_y, 1500)
+            new_z = max(new_z, -1500)
+            new_z = min(new_z, 1500)
 
-                # get the average distance between the tips
-                tip_x = np.median(orthogonal_tips_x)
+            run_num += 1
 
-                # if x exceeds the max tip distance then set it to the max tip distance
-                tip_distance_pixels = x - tip_x
-                if tip_distance_pixels > max_tip_distance_pixels:
-                    x = max_tip_distance_pixels + tip_x
+            # Now move loop to cross hair; but only wait for the move if there's another iteration coming.  FvD 2014-05-28
+            yield from bps.mv(
+                self.oav_goniometer.x,
+                new_x,
+                self.oav_goniometer.y,
+                new_y,
+                self.oav_goniometer.z,
+                new_z,
+            )
 
-                # get the scales of the image in microns
-                x_size = yield from bps.rd(self.oav.x_size_pv)
-                y_size = yield from bps.rd(self.oav.y_size_pv)
-                x_scale = 1024.0 / x_size
-                y_scale = 768.0 / y_size
-                x_move, y_move = Utilities.pixelToMicronMove(
-                    int(x * x_scale), int(y * y_scale)
-                )
-                x_y_z_move = Utilities.micronToXYZMove(x_move, y_move, best_omega_angle)
+        # omega is happy to move at same time as xyz
+        yield from bps.mv(self.oav_goniometer.omega, pos_with_largest_size)
+        LOGGER.info("exiting OAVCentre")
 
-                # if we've succeeded and it's the last run then set the x_move_and y_move
-                if z is not None and run_num == (max_run_num - 1):
-                    x_move, z_move = Utilities.pixelToMicronMove(
-                        int(x * x_scale), int(z * y_scale)
-                    )
-                else:
-                    z_move = 0  # might need to repeat process?
+    def calculate_beam_distance_in_microns(self, x, y, microns):
+        self._extract_beam_position()
+        y_to_move = y - self.beam_centre_y
+        x_to_move = self.beam_centre_x - x
+        x_microns = int(x_to_move * self.oav_parameters.micronsPerXPixel)
+        y_microns = int(y_to_move * self.oav_parameters.micronsPerYPixel)
+        return (x_microns, y_microns)
 
-                x_y_z_move_2 = Utilities.micronToXYZMove(0, z_move, best_gon_omega_90)
-                current_motor_xyz = np.array(
-                    [
-                        (yield from bps.rd(self.oav_goniometer.x)),
-                        (yield from bps.rd(self.oav_goniometer.y)),
-                        (yield from bps.rd(self.oav_goniometer.z)),
-                    ]
-                )
-                new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move + x_y_z_move_2)
-                new_y = max(new_y, -1500)
-                new_y = min(new_y, 1500)
-                new_z = max(new_z, -1500)
-                new_z = min(new_z, 1500)
-
-                run_num += 1
-
-                # Now move loop to cross hair; but only wait for the move if there's another iteration coming.  FvD 2014-05-28
-                yield from bps.mv(
-                    self.oav_goniometer.x,
-                    new_x,
-                    self.oav_goniometer.y,
-                    new_y,
-                    self.oav_goniometer.z,
-                    new_z,
-                )
-
-            # omega is happy to move at same time as xyz
-            yield from bps.mv(self.oav_goniometer.omega, pos_with_largest_size)
-            LOGGER.info("exiting OAVCentre")
-            """
-
-
-"""
-    def micronToXYZMove(h, v, b, omega, gonio_right_of_image=True):
+    """
+    def micronToXYZMove(x, y, b, omega, gonio_right_of_image=True):
         This is designed for phase 1 mx, with the hardware located to the right of the beam, and the z axis is
         perpendicular to the beam and normal to the rotational plane of the omega axis. When the x axis is vertical
         then the y axis is anti-parallel to the beam direction.
         By definition, when omega = 0, the x axis will be positive in the vertical direction and a positive omega
         movement will rotate clockwise when looking at the viewed down z-axis. This is standard in
         crystallography.
-        z = gonio_right_of_image * -h + (not gonio_right_of_image) * h
+        z = gonio_right_of_image * -x + (not gonio_right_of_image) * x
         angle = math.radians(omega)
         cosine = math.cos(angle)
-            These calculations are done as though we are looking at the back of
-            the gonio, with the beam coming from the left. They follow the
-            mathematical convention that X +ve goes right, Y +ve goes vertically
-            up. Z +ve is away from the gonio (away from you). This is NOT the
-            standard phase I convention.
-            x = b * cos - v * sin, y = b * sin + v * cos : when b is zero, only calculate v terms
+        These calculations are done as though we are looking at the back of
+        the gonio, with the beam coming from the left. They follow the
+        mathematical convention that X +ve goes right, Y +ve goes vertically
+        up. Z +ve is away from the gonio (away from you). This is NOT the
+        standard phase I convention.
+        x = b * cos - v * sin, y = b * sin + v * cos : when b is zero, only calculate v terms
         anticlockwise_omega = omega_direction == OmegaDirection.ANTICLOCKWISE;
-        // flipping the expected sign of sine(angle) here simplifies the net x,y expressions,
-        // the anti-clockwise is a negative angle
-        double minus_sine = anticlockwiseOmega ? sin(angle) : -sin(angle);
-        double x = v * minus_sine;
-        double y = v * cosine;
+        # flipping the expected sign of sine(angle) here simplifies the net x,y expressions,
+        # the anti-clockwise is a negative angle
+        minus_sine = anticlockwiseOmega ? math.sin(angle) : -math.sin(angle);
+        x = v * minus_sine;
+        y = v * cosine;
         if (allowBeamAxisMovement) {
             x += b * cosine;
             y -= b * minus_sine;
         }
-        RealVector movement = MatrixUtils.createRealVector(new double[] {x, y, z});
-        RealVector beamlineMovement = axisOrientationMatrix.operate(movement);
-        return beamlineMovement.getData();
-"""
-"""
-    public double[] pixelToMicronMove(int horizDisplayClicked, int vertDisplayClicked) {
-        BeamData currentBeamData = beamDataComponent.getCurrentBeamData();
-        if (currentBeamData == null) {
-            return new double[] {0, 0};
-        }
-        int vertMove = vertDisplayClicked - currentBeamData.yCentre;
-        int horizMove = currentBeamData.xCentre - horizDisplayClicked;
-        return pixelsToMicrons(horizMove, vertMove);
-    }
-"""
+        movement = MatrixUtils.createRealVector(new double[] {x, y, z});
+        beamlineMovement = axisOrientationMatrix.operate(movement);
+       return beamlineMovement.getData();
+    """
 
 
 @bpp.run_decorator()
@@ -571,7 +590,9 @@ def oav_plan(oav: OAVCentring):
 
 if __name__ == "__main__":
     oav = OAVCentring(
-        "src/artemis/devices/unit_tests/test_OAVCentring.json", beamline="S03SIM"
+        "src/artemis/devices/unit_tests/test_OAVCentring.json",
+        "src/artemis/devices/unit_tests/test_display.configuration",
+        beamline="S03SIM",
     )
 
     RE = RunEngine()
