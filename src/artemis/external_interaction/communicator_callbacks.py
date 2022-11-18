@@ -150,9 +150,6 @@ class ZocaloHandlerCallback(CallbackBase):
 
     def stop(self, doc: dict):
         LOGGER.debug(f"\n\nZocalo handler received stop document:\n\n {doc}\n")
-        exit_status = doc.get("exit_status")
-        if exit_status != "success":
-            return
         if self.ispyb.ispyb_ids == (None, None, None):
             raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
         datacollection_ids = self.ispyb.ispyb_ids[0]

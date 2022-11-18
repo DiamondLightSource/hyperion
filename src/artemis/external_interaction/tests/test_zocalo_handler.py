@@ -5,7 +5,7 @@ from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
 
-def test_run_gridscan_zocalo_calls(
+def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_update_time_and_status: MagicMock,
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
