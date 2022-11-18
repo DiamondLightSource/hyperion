@@ -59,6 +59,10 @@ def move_xyz(
     )
 
 
+def tidy_up_plans(fgs_composite: FGSComposite):
+    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
+
+
 @bpp.run_decorator()
 def run_gridscan(
     fgs_composite: FGSComposite,
@@ -128,9 +132,6 @@ def run_gridscan_and_move(
         fgs_composite.sample_motors, communicator.xray_centre_motor_position
     )
 
-    # tidy up
-    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
-
 
 def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
     """Create the plan to run the grid scan based on provided parameters.
@@ -159,7 +160,11 @@ def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
     fast_grid_scan_composite.wait_for_connection()
     artemis.log.LOGGER.debug("Connected.")
 
-    return run_gridscan_and_move(
+    @bpp.finalize_decorator(tidy_up_plans(fast_grid_scan_composite))
+    def run_gridscan_and_move_and_tidy(fgs_composite, detector, params, comms):
+        yield from run_gridscan_and_move(fgs_composite, detector, params, comms)
+
+    return run_gridscan_and_move_and_tidy(
         fast_grid_scan_composite, eiger, parameters, communicator
     )
 

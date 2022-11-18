@@ -6,7 +6,7 @@ from bluesky.run_engine import RunEngine
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.fast_grid_scan_plan import read_hardware_for_ispyb, run_gridscan
+from artemis.fast_grid_scan_plan import get_plan, read_hardware_for_ispyb, run_gridscan
 from artemis.parameters import SIM_BEAMLINE, DetectorParams, FullParameters
 
 
@@ -93,3 +93,50 @@ def test_read_hardware_for_ispyb(
 
     fgs_composite.wait_for_connection()
     RE(read_run(undulator, synchrotron, slit_gaps))
+
+
+@pytest.mark.s03
+@patch("bluesky.plan_stubs.wait")
+@patch("bluesky.plan_stubs.kickoff")
+@patch("bluesky.plan_stubs.complete")
+@patch("artemis.fgs_communicator.FGSCommunicator")
+@patch("artemis.fast_grid_scan_plan.tidy_up_plans")
+@patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
+def test_full_plan_tidies_at_end(
+    run_gridscan_and_move: MagicMock,
+    tidy_plans: MagicMock,
+    communicator: MagicMock,
+    complete: MagicMock,
+    kickoff: MagicMock,
+    wait: MagicMock,
+    eiger: EigerDetector,
+    RE: RunEngine,
+    fgs_composite: FGSComposite,
+):
+
+    RE(get_plan(params, communicator))
+    tidy_plans.assert_called_once()
+
+
+@pytest.mark.s03
+@patch("bluesky.plan_stubs.wait")
+@patch("bluesky.plan_stubs.kickoff")
+@patch("bluesky.plan_stubs.complete")
+@patch("artemis.fgs_communicator.FGSCommunicator")
+@patch("artemis.fast_grid_scan_plan.tidy_up_plans")
+@patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
+def test_full_plan_tidies_at_end_when_plan_fails(
+    run_gridscan_and_move: MagicMock,
+    tidy_plans: MagicMock,
+    communicator: MagicMock,
+    complete: MagicMock,
+    kickoff: MagicMock,
+    wait: MagicMock,
+    eiger: EigerDetector,
+    RE: RunEngine,
+    fgs_composite: FGSComposite,
+):
+    run_gridscan_and_move.side_effect = Exception()
+    with pytest.raises(Exception):
+        RE(get_plan(params, communicator))
+    tidy_plans.assert_called_once()
