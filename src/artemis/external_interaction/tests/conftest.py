@@ -118,8 +118,3 @@ class TestData:
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
     }
-
-
-@pytest.fixture
-def td():
-    return TestData()
