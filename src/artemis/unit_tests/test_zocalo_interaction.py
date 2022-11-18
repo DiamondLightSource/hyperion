@@ -26,7 +26,7 @@ EXPECTED_RUN_END_MESSAGE = {
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
-    mock_zc: Configuration = MagicMock()
+    mock_zc = MagicMock()
     mock_from_file.return_value = mock_zc
     mock_transport = MagicMock()
     mock_transport_lookup.return_value = MagicMock()
