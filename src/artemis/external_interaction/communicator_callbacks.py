@@ -16,6 +16,7 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.zocalo_interaction import run_end, run_start, wait_for_result
+from artemis.utils import Point3D
 
 
 class ISPyBDepositionNotMade(Exception):
@@ -126,16 +127,23 @@ class ZocaloHandlerCallback(CallbackBase):
         datacollection_ids = self.ispyb.ispyb_ids[0]
         for id in datacollection_ids:
             run_end(id)
-        self.processing_start_time
+        self.processing_start_time = time.time()
 
     def wait_for_results(self):
         datacollection_group_id = self.ispyb.ispyb_ids[2]
-        self.results = wait_for_result(datacollection_group_id)
+        raw_results = wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time
+        # wait_for_result returns the centre of the grid box, but we want the corner
+        self.results = Point3D(
+            raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
+        )
         self.xray_centre_motor_position = (
             self.params.grid_scan_params.grid_position_to_motor_position(self.results)
         )
-        LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
+
+        LOGGER.info(
+            f"Results recieved from zocalo: {self.xray_centre_motor_position}"
+        )
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
 
 
