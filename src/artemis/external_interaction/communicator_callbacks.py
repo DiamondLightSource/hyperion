@@ -15,7 +15,11 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
 )
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
-from artemis.zocalo_interaction import run_end, run_start, wait_for_result
+from artemis.external_interaction.zocalo_interaction import (
+    run_end,
+    run_start,
+    wait_for_result,
+)
 from artemis.utils import Point3D
 
 
@@ -141,9 +145,7 @@ class ZocaloHandlerCallback(CallbackBase):
             self.params.grid_scan_params.grid_position_to_motor_position(self.results)
         )
 
-        LOGGER.info(
-            f"Results recieved from zocalo: {self.xray_centre_motor_position}"
-        )
+        LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
 
 

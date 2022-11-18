@@ -10,7 +10,11 @@ from pytest import mark, raises
 from zocalo.configuration import Configuration
 
 from artemis.external_interaction.ispyb.ispyb_dataclass import Point3D
-from artemis.zocalo_interaction import run_end, run_start, wait_for_result
+from artemis.external_interaction.zocalo_interaction import (
+    run_end,
+    run_start,
+    wait_for_result,
+)
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -22,11 +26,11 @@ EXPECTED_RUN_END_MESSAGE = {
 
 
 @patch("zocalo.configuration.from_file")
-@patch("artemis.zocalo_interaction.lookup")
+@patch("artemis.external_interaction.zocalo_interaction_interaction.lookup")
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
-    mock_zc: Configuration = MagicMock()
+    mock_zc = MagicMock()
     mock_from_file.return_value = mock_zc
     mock_transport = MagicMock()
     mock_transport_lookup.return_value = MagicMock()
@@ -87,7 +91,7 @@ def test_run_start_and_end(
 
 @patch("workflows.recipe.wrap_subscribe")
 @patch("zocalo.configuration.from_file")
-@patch("artemis.zocalo_interaction.lookup")
+@patch("artemis.external_interaction.zocalo_interaction_interaction.lookup")
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
