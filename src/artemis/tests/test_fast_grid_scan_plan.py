@@ -152,7 +152,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     RE = RunEngine({})
     params = FullParameters()
     subscriptions = FGSCallbackCollection.from_params(params)
-    subscriptions.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
+    wait_for_result.return_value = Point3D(1, 2, 3)
     FakeComposite = make_fake_device(FGSComposite)
     FakeEiger = make_fake_device(EigerDetector)
     fake_composite = FakeComposite("test", name="fakecomposite")
