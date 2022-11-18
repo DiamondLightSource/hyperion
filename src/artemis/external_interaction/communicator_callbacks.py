@@ -13,13 +13,13 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from artemis.log import LOGGER
-from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.external_interaction.zocalo_interaction import (
     run_end,
     run_start,
     wait_for_result,
 )
+from artemis.log import LOGGER
+from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.utils import Point3D
 
 
@@ -35,6 +35,12 @@ class NexusFileHandlerCallback(CallbackBase):
     timestamps on recieving a 'stop' document.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
+    E.g.:
+        nexus_file_handler_callback = NexusFileHandlerCallback(parameters)
+        RE.subscribe(nexus_file_handler_callback)
+
+    Or decorate a plan using bluesky.preprocessors.subs_decorator.
+    See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
     def __init__(self, parameters: FullParameters):
@@ -58,6 +64,12 @@ class ISPyBHandlerCallback(CallbackBase):
     database. Listens for 'event' and 'descriptor' documents.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
+    E.g.:
+        nexus_file_handler_callback = NexusFileHandlerCallback(parameters)
+        RE.subscribe(nexus_file_handler_callback)
+
+    Or decorate a plan using bluesky.preprocessors.subs_decorator.
+    See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
     def __init__(self, parameters: FullParameters):
@@ -102,6 +114,12 @@ class ZocaloHandlerCallback(CallbackBase):
     Listens for 'event' and 'stop' documents.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
+    E.g.:
+        nexus_file_handler_callback = NexusFileHandlerCallback(parameters)
+        RE.subscribe(nexus_file_handler_callback)
+
+    Or decorate a plan using bluesky.preprocessors.subs_decorator.
+    See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
     def __init__(self, parameters: FullParameters, ispyb_handler: ISPyBHandlerCallback):
