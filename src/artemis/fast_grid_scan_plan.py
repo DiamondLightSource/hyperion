@@ -68,9 +68,9 @@ def run_gridscan(
     # Currently gridscan only works for omega 0, see #154
     yield from bps.abs_set(sample_motors.omega, 0)
 
-    # We only subscribe to the communicator callback for run_gridscan, so this is where
-    # we should generate an event reading the values which need to be included in the
-    # ispyb deposition
+    # We only subscribe to the external interaction callbacks for run_gridscan, so this
+    # is where we should generate an event reading the values which need to be included
+    # in the ispyb deposition
     yield from read_hardware_for_ispyb(
         fgs_composite.undulator,
         fgs_composite.synchrotron,
@@ -101,8 +101,8 @@ def run_gridscan_and_move(
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
-    # our communicator should listen to documents only from the actual grid scan
-    # so we subscribe to it with our plan
+    # our callbacks should listen to documents only from the actual grid scan
+    # so we subscribe to them with our plan
     @bpp.subs_decorator(list(subscriptions))
     def gridscan_with_subscriptions(fgs_composite, detector, params):
         yield from run_gridscan(fgs_composite, detector, params)
@@ -110,8 +110,8 @@ def run_gridscan_and_move(
     artemis.log.LOGGER.debug("Starting grid scan")
     yield from gridscan_with_subscriptions(fgs_composite, eiger, parameters)
 
-    # the data were submitted to zocalo by the communicator during the gridscan,
-    # but results may not be ready.
+    # the data were submitted to zocalo by the zocalo callback during the gridscan,
+    # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
     subscriptions.zocalo_handler.wait_for_results()
 
