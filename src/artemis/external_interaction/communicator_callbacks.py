@@ -113,6 +113,9 @@ class ZocaloHandlerCallback(CallbackBase):
     """Callback class to handle the triggering of Zocalo processing.
     Listens for 'event' and 'stop' documents.
 
+    Needs to be connected to an ISPyBHandlerCallback subscribed to the same run in order
+    to have access to the deposition numbers to pass on to Zocalo.
+
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
         nexus_file_handler_callback = NexusFileHandlerCallback(parameters)
@@ -134,9 +137,9 @@ class ZocaloHandlerCallback(CallbackBase):
 
     def event(self, doc: dict):
         LOGGER.debug(f"\n\nZocalo handler received event document:\n\n {doc}\n")
-        event_name = self.ispyb.descriptors.get(doc["descriptor"])
-        if event_name is None:
-            raise Exception("Zocalo handler could not find descriptor for event doc!")
+        descriptor = self.ispyb.descriptors.get(doc["descriptor"])
+        assert descriptor is not None
+        event_name = descriptor.get("name")
         if event_name == ISPYB_PLAN_NAME:
             if self.ispyb.ispyb_ids[0] is not None:
                 datacollection_ids = self.ispyb.ispyb_ids[0]
