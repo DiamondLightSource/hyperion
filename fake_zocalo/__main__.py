@@ -68,6 +68,7 @@ def main():
     conn = pika.BlockingConnection(params)
     channel = conn.channel()
     channel.basic_consume(queue="processing_recipe", on_message_callback=on_request)
+    print("Listening for zocalo requests")
     channel.start_consuming()
 
 
