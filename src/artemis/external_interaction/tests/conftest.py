@@ -115,6 +115,6 @@ class TestData:
         "time": 1666604300.0310638,
         "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
         "exit_status": "fail",
-        "reason": "",
+        "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
     }

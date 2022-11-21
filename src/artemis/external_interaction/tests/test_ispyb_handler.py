@@ -31,7 +31,13 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     ispyb_handler.stop(td.test_failed_stop_document)
     mock_ispyb_update_time_and_status.assert_has_calls(
         [
-            call(td.DUMMY_TIME_STRING, td.BAD_ISPYB_RUN_STATUS, id, DCG_ID)
+            call(
+                td.DUMMY_TIME_STRING,
+                td.BAD_ISPYB_RUN_STATUS,
+                "could not connect to devices",
+                id,
+                DCG_ID,
+            )
             for id in DC_IDS
         ]
     )
@@ -61,7 +67,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
 
     mock_ispyb_update_time_and_status.assert_has_calls(
         [
-            call(td.DUMMY_TIME_STRING, td.GOOD_ISPYB_RUN_STATUS, id, DCG_ID)
+            call(td.DUMMY_TIME_STRING, td.GOOD_ISPYB_RUN_STATUS, "", id, DCG_ID)
             for id in DC_IDS
         ]
     )

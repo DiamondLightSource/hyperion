@@ -104,9 +104,10 @@ class ISPyBHandlerCallback(CallbackBase):
     def stop(self, doc: dict):
         LOGGER.debug(f"\n\nISPyB handler received stop document:\n\n {doc}\n")
         exit_status = doc.get("exit_status")
+        reason = doc.get("reason")
         if self.ispyb_ids == (None, None, None):
             raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
-        self.ispyb.end_deposition(exit_status)
+        self.ispyb.end_deposition(exit_status, reason)
 
 
 class ZocaloHandlerCallback(CallbackBase):
