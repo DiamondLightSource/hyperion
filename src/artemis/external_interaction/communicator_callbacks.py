@@ -1,5 +1,4 @@
 import os
-import time
 from typing import Dict, NamedTuple
 
 from bluesky.callbacks import CallbackBase
@@ -13,14 +12,9 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from artemis.external_interaction.zocalo_interaction import (
-    run_end,
-    run_start,
-    wait_for_result,
-)
+from artemis.external_interaction.zocalo_interaction import ZocaloHandlerCallback
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
-from artemis.utils import Point3D
 
 
 class ISPyBDepositionNotMade(Exception):
@@ -108,70 +102,6 @@ class ISPyBHandlerCallback(CallbackBase):
         if self.ispyb_ids == (None, None, None):
             raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
         self.ispyb.end_deposition(exit_status, reason)
-
-
-class ZocaloHandlerCallback(CallbackBase):
-    """Callback class to handle the triggering of Zocalo processing.
-    Listens for 'event' and 'stop' documents.
-
-    Needs to be connected to an ISPyBHandlerCallback subscribed to the same run in order
-    to have access to the deposition numbers to pass on to Zocalo.
-
-    To use, subscribe the Bluesky RunEngine to an instance of this class.
-    E.g.:
-        nexus_file_handler_callback = NexusFileHandlerCallback(parameters)
-        RE.subscribe(nexus_file_handler_callback)
-
-    Or decorate a plan using bluesky.preprocessors.subs_decorator.
-    See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
-    """
-
-    def __init__(self, parameters: FullParameters, ispyb_handler: ISPyBHandlerCallback):
-        self.grid_position_to_motor_position = (
-            parameters.grid_scan_params.grid_position_to_motor_position
-        )
-        self.processing_start_time = 0.0
-        self.processing_time = 0.0
-        self.results = None
-        self.xray_centre_motor_position = None
-        self.ispyb = ispyb_handler
-
-    def event(self, doc: dict):
-        LOGGER.debug(f"\n\nZocalo handler received event document:\n\n {doc}\n")
-        descriptor = self.ispyb.descriptors.get(doc["descriptor"])
-        assert descriptor is not None
-        event_name = descriptor.get("name")
-        if event_name == ISPYB_PLAN_NAME:
-            if self.ispyb.ispyb_ids[0] is not None:
-                datacollection_ids = self.ispyb.ispyb_ids[0]
-                for id in datacollection_ids:
-                    run_start(id)
-            else:
-                raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
-
-    def stop(self, doc: dict):
-        LOGGER.debug(f"\n\nZocalo handler received stop document:\n\n {doc}\n")
-        if self.ispyb.ispyb_ids == (None, None, None):
-            raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
-        datacollection_ids = self.ispyb.ispyb_ids[0]
-        for id in datacollection_ids:
-            run_end(id)
-        self.processing_start_time = time.time()
-
-    def wait_for_results(self):
-        datacollection_group_id = self.ispyb.ispyb_ids[2]
-        raw_results = wait_for_result(datacollection_group_id)
-        self.processing_time = time.time() - self.processing_start_time
-        # wait_for_result returns the centre of the grid box, but we want the corner
-        self.results = Point3D(
-            raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
-        )
-        self.xray_centre_motor_position = self.grid_position_to_motor_position(
-            self.results
-        )
-
-        LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
-        LOGGER.info(f"Zocalo processing took {self.processing_time}s")
 
 
 class FGSCallbackCollection(NamedTuple):
