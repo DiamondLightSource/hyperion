@@ -41,6 +41,7 @@ class ZocaloHandlerCallback(CallbackBase):
         self.grid_position_to_motor_position = (
             parameters.grid_scan_params.grid_position_to_motor_position
         )
+        self.zocalo_env = parameters.zocalo_environment
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.results = None
@@ -84,9 +85,9 @@ class ZocaloHandlerCallback(CallbackBase):
         LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
 
-    def _get_zocalo_connection(self):
+    def _get_zocalo_connection(self, env: str = "artemis"):
         zc = zocalo.configuration.from_file()
-        zc.activate_environment("devrmq")
+        zc.activate_environment(env)
 
         transport = lookup("PikaTransport")()
         transport.connect()
@@ -94,7 +95,7 @@ class ZocaloHandlerCallback(CallbackBase):
         return transport
 
     def _send_to_zocalo(self, parameters: dict):
-        transport = self._get_zocalo_connection()
+        transport = self._get_zocalo_connection(self.zocalo_env)
 
         try:
             message = {
@@ -152,7 +153,7 @@ class ZocaloHandlerCallback(CallbackBase):
             Returns the centre of the grid box with the strongest diffraction, i.e.,
             which contains the centre of the crystal and which we want to move to.
         """
-        transport = self._get_zocalo_connection()
+        transport = self._get_zocalo_connection(self.zocalo_env)
         result_received: queue.Queue = queue.Queue()
 
         def receive_result(
