@@ -101,7 +101,7 @@ class StoreInIspyb(ABC):
             params["endtime"] = end_time
             params["run_status"] = run_status
             if reason is not None and reason != "":
-                params["comments"] += " " + run_status + " reason: " + reason
+                params["comments"] += f" {run_status} reason: {reason}"
             return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
