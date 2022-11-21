@@ -1,3 +1,4 @@
+import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -66,16 +67,19 @@ def test_detector_threshold(
     request_energy: float,
     is_energy_change: bool,
 ):
-
+    status_obj = MagicMock()
     when(fake_eiger.cam.photon_energy).get().thenReturn(current_energy)
-    when(fake_eiger.cam.photon_energy).put(ANY).thenReturn(None)
+    when(fake_eiger.cam.photon_energy).set(ANY).thenReturn(status_obj)
 
-    fake_eiger.set_detector_threshold(request_energy)
+    returned_status = fake_eiger.set_detector_threshold(request_energy)
 
     if is_energy_change:
-        verify(fake_eiger.cam.photon_energy, times=1).put(request_energy)
+        verify(fake_eiger.cam.photon_energy, times=1).set(request_energy)
+        assert returned_status == status_obj
     else:
-        verify(fake_eiger.cam.photon_energy, times=0).put(ANY)
+        verify(fake_eiger.cam.photon_energy, times=0).set(ANY)
+        returned_status.wait(0.1)
+        assert returned_status.success
 
 
 @pytest.mark.parametrize(
@@ -237,3 +241,35 @@ def test_stage_runs_successfully(mock_await, fake_eiger):
     fake_eiger.odin.check_odin_initialised.return_value = (True, "")
     fake_eiger.odin.file_writer.file_path.put(True)
     fake_eiger.stage()
+
+
+@patch("artemis.devices.eiger.await_value")
+def test_given_stale_parameters_goes_high_before_callbacks_then_stale_parameters_waited_on(
+    mock_await,
+    fake_eiger: EigerDetector,
+):
+    fake_eiger.odin.nodes.clear_odin_errors = MagicMock()
+    fake_eiger.odin.check_odin_initialised = MagicMock()
+    fake_eiger.odin.check_odin_initialised.return_value = (True, "")
+    fake_eiger.odin.file_writer.file_path.put(True)
+
+    def wait_on_staging():
+        fake_eiger.stage()
+
+    waiting_status = Status()
+    fake_eiger.cam.num_images.set = MagicMock(return_value=waiting_status)
+
+    thread = threading.Thread(target=wait_on_staging, daemon=True)
+    thread.start()
+
+    assert thread.is_alive()
+
+    fake_eiger.stale_params.sim_put(1)
+    waiting_status.set_finished()
+
+    assert thread.is_alive()
+
+    fake_eiger.stale_params.sim_put(0)
+
+    thread.join(0.2)
+    assert not thread.is_alive()

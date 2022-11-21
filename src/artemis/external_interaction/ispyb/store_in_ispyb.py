@@ -6,7 +6,7 @@ import ispyb
 from sqlalchemy.connectors import Connector
 
 import artemis.devices.oav.utils as oav_utils
-from artemis.ispyb.ispyb_dataclass import Orientation
+from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.parameters import FullParameters
 from artemis.utils import Point2D
 

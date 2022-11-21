@@ -1,4 +1,4 @@
-Fixes # (issue)
+Fixes #(issue)
 
 ### To test:
 1. Do thing x
