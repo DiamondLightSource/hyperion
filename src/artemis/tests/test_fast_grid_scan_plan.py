@@ -17,12 +17,12 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
-from artemis.fast_grid_scan_plan import (
+from artemis.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,
 )
+from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
@@ -93,8 +93,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     assert params.ispyb_params.slit_gap_size_y == ygap_test_value
 
 
-@patch("artemis.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.fast_grid_scan_plan.move_xyz")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
 @patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 def test_results_adjusted_and_passed_to_move_xyz(
     wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
@@ -121,7 +121,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(bps_mv: MagicMock):
-    from artemis.fast_grid_scan_plan import move_xyz
+    from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
     RE = RunEngine({})
     params = FullParameters()
@@ -138,9 +138,9 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
 @patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 @patch("artemis.external_interaction.communicator_callbacks.run_end")
 @patch("artemis.external_interaction.communicator_callbacks.run_start")
-@patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
-@patch("artemis.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.fast_grid_scan_plan.move_xyz")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,

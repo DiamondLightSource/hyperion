@@ -8,11 +8,11 @@ from ophyd.sim import SynSignal
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.experiment_plans.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.external_interaction.communicator_callbacks import (
     FGSCallbackCollection,
     ISPyBDepositionNotMade,
 )
-from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.parameters import (
     ISPYB_PLAN_NAME,
     SIM_BEAMLINE,

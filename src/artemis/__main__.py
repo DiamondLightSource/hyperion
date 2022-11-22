@@ -13,8 +13,8 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 
 import artemis.log
+from artemis.experiment_plans.fast_grid_scan_plan import get_plan
 from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
-from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
 
 
