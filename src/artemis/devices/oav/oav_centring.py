@@ -7,12 +7,7 @@ from bluesky import RunEngine
 
 from artemis.devices.backlight import Backlight
 from artemis.devices.motors import I03Smargon
-from artemis.devices.oav.oav_detector import (
-    OAV,
-    Camera,
-    ColorMode,
-    EdgeOutputArrayImageType,
-)
+from artemis.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
 
 
 class OAVParameters:
@@ -113,26 +108,21 @@ class OAVParameters:
             f"Searched in {self.file} for key {key} in context {self.context} but no value was found. No fallback value was given."
         )
 
-    def load_microns_per_pixel(self, zoom):
-        zoom_levels_filename = "src/artemis/oav/microns_for_zoom_levels.json"
-        f = open(zoom_levels_filename)
-        json_dict = json.load(f)
-        self.micronsPerXPixel = json_dict[zoom]["micronsPerXPixel"]
-        self.micronsPerYPixel = json_dict[zoom]["micronsPerYPixel"]
-        if self.micronsPerXPixel is None or self.micronsPerYPixel is None:
-            raise KeyError(
-                f"Could not find the micronsPer[X,Y]Pixel parameters in {zoom_levels_filename}."
-            )
-
 
 class OAVCentring:
-    def __init__(self, parameters_file, display_configuration_path, beamline="BL03I"):
-        self.display_configuration_path = display_configuration_path
-        self.oav = OAV(name="oav", prefix=beamline + "-DI-OAV-01:")
-        self.oav_camera = Camera(name="oav-camera", prefix=beamline + "-EA-OAV-01:")
-        self.oav_backlight = Backlight(name="oav-backlight", prefix=beamline)
-        self.oav_goniometer = I03Smargon(name="oav-goniometer", prefix="-MO-SGON-01:")
+    def __init__(
+        self,
+        oav: OAV,
+        smargon: I03Smargon,
+        backlight: Backlight,
+        parameters_file,
+        display_configuration_path,
+    ):
+        self.oav = oav
+        self.smargon = smargon
+        self.backlight = backlight
         self.oav_parameters = OAVParameters(parameters_file)
+        self.display_configuration_path = display_configuration_path
         self.oav.wait_for_connection()
 
     def pre_centring_setup_oav(self):
@@ -140,41 +130,43 @@ class OAVCentring:
 
         self.oav_parameters.load_parameters_from_json()
 
-        yield from bps.abs_set(self.oav.colour_mode_pv, ColorMode.RGB1)
+        yield from bps.abs_set(self.oav.cam.color_mode, ColorMode.RGB1)
         yield from bps.abs_set(
-            self.oav.acquire_period_pv, self.oav_parameters.acquire_period
+            self.oav.cam.acquire_period, self.oav_parameters.acquire_period
         )
-        yield from bps.abs_set(self.oav.exposure_pv, self.oav_parameters.exposure)
-        yield from bps.abs_set(self.oav.gain_pv, self.oav_parameters.gain)
+        yield from bps.abs_set(self.oav.cam.acquire_time, self.oav_parameters.exposure)
+        yield from bps.abs_set(self.oav.cam.gain, self.oav_parameters.gain)
 
         # select which blur to apply to image
         yield from bps.abs_set(
-            self.oav.preprocess_operation_pv, self.oav_parameters.preprocess
+            self.oav.mxsc.preprocess_operation, self.oav_parameters.preprocess
         )
 
         # sets length scale for blurring
         yield from bps.abs_set(
-            self.oav.preprocess_ksize_pv, self.oav_parameters.preprocess_K_size
+            self.oav.mxsc.preprocess_ksize, self.oav_parameters.preprocess_K_size
         )
 
         # Canny edge detect
         yield from bps.abs_set(
-            self.oav.canny_lower_threshold_pv,
+            self.oav.mxsc.canny_lower_threshold,
             self.oav_parameters.canny_edge_lower_threshold,
         )
         yield from bps.abs_set(
-            self.oav.canny_upper_threshold_pv,
+            self.oav.mxsc.canny_upper_threshold,
             self.oav_parameters.canny_edge_upper_threshold,
         )
         # "Close" morphological operation
-        yield from bps.abs_set(self.oav.close_ksize_pv, self.oav_parameters.close_ksize)
+        yield from bps.abs_set(
+            self.oav.mxsc.close_ksize, self.oav_parameters.close_ksize
+        )
 
         # Sample detection
         yield from bps.abs_set(
-            self.oav.sample_detection_scan_direction_pv, self.oav_parameters.direction
+            self.oav.mxsc.sample_detection_scan_direction, self.oav_parameters.direction
         )
         yield from bps.abs_set(
-            self.oav.sample_detection_min_tip_height_pv,
+            self.oav.mxsc.sample_detection_min_tip_height,
             self.oav_parameters.minimum_height,
         )
 
@@ -194,11 +186,13 @@ class OAVCentring:
         # zoomString = '%1.0dx' % float(zoom)
         # which seems suspicious, we may want to think about doing this in a nicer way
         yield from bps.abs_set(
-            self.oav_camera.zoom, f"{float(int(self.oav_parameters.zoom))}x", wait=True
+            self.oav.zoom_controller.zoom,
+            f"{float(int(self.oav_parameters.zoom))}x",
+            wait=True,
         )
 
-        if (yield from bps.rd(self.oav_backlight.pos)) == 0:
-            yield from bps.abs_set(self.oav_backlight.pos, 1, wait=True)
+        if (yield from bps.rd(self.oav.backlight.pos)) == 0:
+            yield from bps.abs_set(self.oav.backlight.pos, 1, wait=True)
 
         """
        TODO: currently can't find the backlight brightness
@@ -222,74 +216,56 @@ class OAVCentring:
             filename: filename of the python script to detect edge waveforms from camera stream.
         Returns: None
         """
-        yield from bps.abs_set(self.oav.input_plugin_pv, input_plugin)
+        yield from bps.abs_set(self.oav.mxsc.input_plugin_pv, input_plugin)
 
         # Turns the area detector plugin on
-        yield from bps.abs_set(self.oav.enable_callbacks_pv, 1)
+        yield from bps.abs_set(self.oav.mxsc.enable_callbacks_pv, 1)
 
         # Set the minimum time between updates of the plugin
-        yield from bps.abs_set(self.oav.min_callback_time_pv, min_callback_time)
+        yield from bps.abs_set(self.oav.mxsc.min_callback_time_pv, min_callback_time)
 
         # Stop the plugin from blocking the IOC and hogging all the CPU
-        yield from bps.abs_set(self.oav.blocking_callbacks_pv, 0)
+        yield from bps.abs_set(self.oav.mxsc.blocking_callbacks_pv, 0)
 
         # Set the python file to use for calculating the edge waveforms
-        yield from bps.abs_set(self.oav.py_filename_pv, filename, wait=True)
-        yield from bps.abs_set(self.oav.read_file_pv, 1)
+        yield from bps.abs_set(self.oav.mxsc.py_filename, filename, wait=True)
+        yield from bps.abs_set(self.oav.mxsc.read_file, 1)
 
         # Image annotations
-        yield from bps.abs_set(self.oav.draw_tip_pv, True)
-        yield from bps.abs_set(self.oav.draw_edges_pv, True)
+        yield from bps.abs_set(self.oav.mxsc.draw_tip, True)
+        yield from bps.abs_set(self.oav.mxsc.draw_edges, True)
 
         # Use the original image type for the edge output array
         yield from bps.abs_set(
-            self.oav.output_array_pv, EdgeOutputArrayImageType.ORIGINAL
+            self.oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL
         )
-
-    def _extract_beam_position(self):
-        """
-
-        Extracts the beam location in pixels `xCentre` `yCentre` extracted
-        from the file display.configuration. The beam location is manually
-        inputted by the beamline operator GDA by clicking where on screen a
-        scintillator ligths up.
-        """
-        with open(self.display_configuration_path, "r") as f:
-            file_lines = f.readlines()
-            for i in range(len(file_lines)):
-                if file_lines[i].startswith(
-                    "zoomLevel = " + str(self.oav_parameters.zoom)
-                ):
-                    crosshair_x_line = file_lines[i + 1]
-                    crosshair_y_line = file_lines[i + 2]
-                    break
-
-            if crosshair_x_line is None or crosshair_y_line is None:
-                pass  # TODO throw error
-
-            self.beam_centre_x = int(crosshair_x_line.split(" = ")[1])
-            self.beam_centre_y = int(crosshair_y_line.split(" = ")[1])
 
     def get_formatted_edge_waveforms(self):
         """
         Get the waveforms from the PVs as numpy arrays.
         """
-        top = np.array((yield from bps.rd(self.oav.top_pv)))
-        bottom = np.array((yield from bps.rd(self.oav.bottom_pv)))
+        top = np.array((yield from bps.rd(self.oav.mxsc.top)))
+        bottom = np.array((yield from bps.rd(self.oav.mxsc.bottom)))
         return (top, bottom)
 
 
 @bpp.run_decorator()
-def oav_plan(oav: OAVCentring):
-    yield from oav.pre_centring_setup_oav()
+def oav_plan(oav_centring: OAVCentring):
+    yield from oav_centring.pre_centring_setup_oav()
 
 
 if __name__ == "__main__":
-    oav = OAVCentring(
+    beamline = "S03SIM"
+    oav = OAV(name="oav", prefix=beamline)
+    smargon = I03Smargon(prefix="-MO-SGON-01:")
+    backlight = Backlight(prefix="-EA-BL-01:")
+    oav_centring = OAVCentring(
+        oav,
+        smargon,
+        backlight,
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
         "src/artemis/devices/unit_tests/test_display.configuration",
-        beamline="S03SIM",
     )
 
     RE = RunEngine()
-    RE(oav_plan(oav))
+    RE(oav_plan(oav_centring))

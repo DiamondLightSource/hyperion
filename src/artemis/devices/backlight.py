@@ -5,4 +5,4 @@ class Backlight(Device):
     OUT = 0
     IN = 1
 
-    pos: EpicsSignal = Component(EpicsSignal, "-EA-BL-01:CTRL")
+    pos: EpicsSignal = Component(EpicsSignal, "CTRL")
