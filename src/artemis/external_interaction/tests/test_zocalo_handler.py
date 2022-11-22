@@ -31,7 +31,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_update_time_and_status: MagicMock,
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
-    wait_for_result: MagicMock,
+    _wait_for_result: MagicMock,
     run_end: MagicMock,
     run_start: MagicMock,
     nexus_writer: MagicMock,
@@ -61,7 +61,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     run_end.assert_has_calls([call(x) for x in dc_ids])
     assert run_end.call_count == len(dc_ids)
 
-    wait_for_result.assert_not_called()
+    _wait_for_result.assert_not_called()
 
 
 def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
@@ -79,16 +79,16 @@ def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
 
 
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
-    wait_for_result: MagicMock,
+    _wait_for_result: MagicMock,
 ):
     params = FullParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
     expected_centre_grid_coords = Point3D(1, 2, 3)
-    wait_for_result.return_value = expected_centre_grid_coords
+    _wait_for_result.return_value = expected_centre_grid_coords
 
     callbacks.zocalo_handler.wait_for_results()
-    wait_for_result.assert_called_once_with(100)
+    _wait_for_result.assert_called_once_with(100)
     expected_centre_motor_coords = (
         params.grid_scan_params.grid_position_to_motor_position(
             Point3D(
@@ -201,7 +201,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future = executor.submit(
-            callbacks.zocalo_handler.wait_for_result, datacollection_grid_id
+            callbacks.zocalo_handler._wait_for_result, datacollection_grid_id
         )
 
         for _ in range(10):

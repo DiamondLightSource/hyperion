@@ -96,15 +96,15 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
 @patch(
-    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.wait_for_result"
+    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._wait_for_result"
 )
 def test_results_adjusted_and_passed_to_move_xyz(
-    wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
+    _wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
 ):
     RE = RunEngine({})
     params = FullParameters()
     subscriptions = FGSCallbackCollection.from_params(params)
-    wait_for_result.return_value = Point3D(1, 2, 3)
+    _wait_for_result.return_value = Point3D(1, 2, 3)
     motor_position = params.grid_scan_params.grid_position_to_motor_position(
         Point3D(0.5, 1.5, 2.5)
     )
@@ -138,7 +138,7 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
 
 
 @patch(
-    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.wait_for_result"
+    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._wait_for_result"
 )
 @patch("artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_end")
 @patch(
@@ -153,12 +153,12 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     do_fgs: MagicMock,
     run_start: MagicMock,
     run_end: MagicMock,
-    wait_for_result: MagicMock,
+    _wait_for_result: MagicMock,
 ):
     RE = RunEngine({})
     params = FullParameters()
     subscriptions = FGSCallbackCollection.from_params(params)
-    wait_for_result.return_value = Point3D(1, 2, 3)
+    _wait_for_result.return_value = Point3D(1, 2, 3)
     FakeComposite = make_fake_device(FGSComposite)
     FakeEiger = make_fake_device(EigerDetector)
     fake_composite = FakeComposite("test", name="fakecomposite")

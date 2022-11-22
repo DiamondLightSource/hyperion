@@ -28,9 +28,9 @@ def run_end():
 
 
 @pytest.fixture
-def wait_for_result():
+def _wait_for_result():
     with patch(
-        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.wait_for_result"
+        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._wait_for_result"
     ) as wfr:
         yield wfr
 

@@ -21,7 +21,7 @@ from artemis.utils import Point3D
 
 
 def test_callback_collection_init(
-    wait_for_result: MagicMock,
+    _wait_for_result: MagicMock,
     run_end: MagicMock,
     run_start: MagicMock,
 ):
@@ -34,7 +34,7 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
     nexus_writer: MagicMock,
     mock_ispyb_begin_deposition: MagicMock,
     mock_ispyb_end_deposition: MagicMock,
-    wait_for_result: MagicMock,
+    _wait_for_result: MagicMock,
     run_end: MagicMock,
     run_start: MagicMock,
 ):
@@ -130,7 +130,7 @@ def eiger():
 def test_communicator_in_composite_run(
     run_start: MagicMock,
     run_end: MagicMock,
-    wait_for_result: MagicMock,
+    _wait_for_result: MagicMock,
     nexus_writer: MagicMock,
     ispyb_begin_deposition: MagicMock,
     ispyb_end_deposition: MagicMock,
@@ -166,4 +166,4 @@ def test_communicator_in_composite_run(
     # zocalo
     run_start.assert_called()
     run_end.assert_called()
-    wait_for_result.assert_called_once()
+    _wait_for_result.assert_called_once()

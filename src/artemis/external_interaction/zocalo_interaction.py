@@ -70,9 +70,9 @@ class ZocaloHandlerCallback(CallbackBase):
 
     def wait_for_results(self):
         datacollection_group_id = self.ispyb.ispyb_ids[2]
-        raw_results = self.wait_for_result(datacollection_group_id)
+        raw_results = self._wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time
-        # wait_for_result returns the centre of the grid box, but we want the corner
+        # _wait_for_result returns the centre of the grid box, but we want the corner
         self.results = Point3D(
             raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
         )
@@ -138,7 +138,7 @@ class ZocaloHandlerCallback(CallbackBase):
             }
         )
 
-    def wait_for_result(
+    def _wait_for_result(
         self, data_collection_group_id: int, timeout: int = TIMEOUT
     ) -> Point3D:
         """Block until a result is received from Zocalo.
