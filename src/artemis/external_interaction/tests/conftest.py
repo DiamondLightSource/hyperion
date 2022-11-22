@@ -13,20 +13,24 @@ def nexus_writer():
 
 @pytest.fixture
 def run_start():
-    with patch("artemis.external_interaction.communicator_callbacks.run_start") as p:
+    with patch(
+        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_start"
+    ) as p:
         yield p
 
 
 @pytest.fixture
 def run_end():
-    with patch("artemis.external_interaction.communicator_callbacks.run_end") as p:
+    with patch(
+        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_end"
+    ) as p:
         yield p
 
 
 @pytest.fixture
 def wait_for_result():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.wait_for_result"
+        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.wait_for_result"
     ) as wfr:
         yield wfr
 

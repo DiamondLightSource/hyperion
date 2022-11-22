@@ -10,13 +10,9 @@ import pytest
 from pytest import mark, raises
 from zocalo.configuration import Configuration
 
-from artemis.external_interaction.communicator_callbacks import (
-    FGSCallbackCollection,
-    ISPyBHandlerCallback,
-)
+from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.external_interaction.ispyb.ispyb_dataclass import Point3D
 from artemis.external_interaction.tests.conftest import TestData
-from artemis.external_interaction.zocalo_interaction import ZocaloHandlerCallback
 from artemis.parameters import SIM_ZOCALO_ENV, FullParameters
 from artemis.utils import Point3D
 
@@ -29,9 +25,6 @@ EXPECTED_RUN_END_MESSAGE = {
 }
 
 td = TestData()
-test_zocalo_handler = ZocaloHandlerCallback(
-    FullParameters(), ISPyBHandlerCallback(FullParameters())
-)
 
 
 def test_execution_of_run_gridscan_triggers_zocalo_calls(
@@ -62,10 +55,10 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks.ispyb_handler.stop(td.test_stop_document)
     callbacks.zocalo_handler.stop(td.test_stop_document)
 
-    run_start.assert_has_calls([call(x, SIM_ZOCALO_ENV) for x in dc_ids])
+    run_start.assert_has_calls([call(x) for x in dc_ids])
     assert run_start.call_count == len(dc_ids)
 
-    run_end.assert_has_calls([call(x, SIM_ZOCALO_ENV) for x in dc_ids])
+    run_end.assert_has_calls([call(x) for x in dc_ids])
     assert run_end.call_count == len(dc_ids)
 
     wait_for_result.assert_not_called()
@@ -95,7 +88,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     wait_for_result.return_value = expected_centre_grid_coords
 
     callbacks.zocalo_handler.wait_for_results()
-    wait_for_result.assert_called_once_with(100, SIM_ZOCALO_ENV)
+    wait_for_result.assert_called_once_with(100)
     expected_centre_motor_coords = (
         params.grid_scan_params.grid_position_to_motor_position(
             Point3D(
@@ -152,13 +145,20 @@ def with_exception(function_to_run, mock_transport):
         function_to_run()
 
 
+callbacks = FGSCallbackCollection.from_params(FullParameters())
+
+
 @mark.parametrize(
     "function_to_test,function_wrapper,expected_message",
     [
-        (test_zocalo_handler.run_start, normally, EXPECTED_RUN_START_MESSAGE),
-        (test_zocalo_handler.run_start, with_exception, EXPECTED_RUN_START_MESSAGE),
-        (test_zocalo_handler.run_end, normally, EXPECTED_RUN_END_MESSAGE),
-        (test_zocalo_handler.run_end, with_exception, EXPECTED_RUN_END_MESSAGE),
+        (callbacks.zocalo_handler.run_start, normally, EXPECTED_RUN_START_MESSAGE),
+        (
+            callbacks.zocalo_handler.run_start,
+            with_exception,
+            EXPECTED_RUN_START_MESSAGE,
+        ),
+        (callbacks.zocalo_handler.run_end, normally, EXPECTED_RUN_END_MESSAGE),
+        (callbacks.zocalo_handler.run_end, with_exception, EXPECTED_RUN_END_MESSAGE),
     ],
 )
 def test_run_start_and_end(
@@ -170,7 +170,7 @@ def test_run_start_and_end(
         function_wrapper (Callable): A wrapper around the function, used to test for expected exceptions
         expected_message (Dict): The expected dictionary sent to zocalo
     """
-    function_to_run = partial(function_to_test, EXPECTED_DCID, SIM_ZOCALO_ENV)
+    function_to_run = partial(function_to_test, EXPECTED_DCID)
     function_to_run = partial(function_wrapper, function_to_run)
     _test_zocalo(function_to_run, expected_message)
 
@@ -201,7 +201,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future = executor.submit(
-            test_zocalo_handler.wait_for_result, datacollection_grid_id, SIM_ZOCALO_ENV
+            test_zocalo_handler.wait_for_result, datacollection_grid_id
         )
 
         for _ in range(10):

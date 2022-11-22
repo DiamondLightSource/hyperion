@@ -17,7 +17,7 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
+from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
@@ -95,7 +95,9 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
 
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
+@patch(
+    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.wait_for_result"
+)
 def test_results_adjusted_and_passed_to_move_xyz(
     wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
 ):
@@ -135,9 +137,13 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
     )
 
 
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
-@patch("artemis.external_interaction.communicator_callbacks.run_end")
-@patch("artemis.external_interaction.communicator_callbacks.run_start")
+@patch(
+    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.wait_for_result"
+)
+@patch("artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_end")
+@patch(
+    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_start"
+)
 @patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
