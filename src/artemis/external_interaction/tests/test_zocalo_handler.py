@@ -201,7 +201,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future = executor.submit(
-            test_zocalo_handler.wait_for_result, datacollection_grid_id
+            callbacks.zocalo_handler.wait_for_result, datacollection_grid_id
         )
 
         for _ in range(10):
