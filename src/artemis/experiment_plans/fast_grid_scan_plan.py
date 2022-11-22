@@ -1,4 +1,5 @@
 import argparse
+from typing import Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -123,7 +124,9 @@ def run_gridscan_and_move(
     )
 
 
-def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
+def get_plan(
+    parameters: FullParameters, subscriptions: FGSCallbackCollection
+) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:

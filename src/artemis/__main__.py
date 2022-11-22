@@ -13,7 +13,7 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 
 import artemis.log
-from artemis.experiment_plans.fast_grid_scan_plan import get_plan
+from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
 from artemis.parameters import FullParameters
 
@@ -34,6 +34,7 @@ class Status(Enum):
 
 @dataclass
 class Command:
+    experiment: str
     action: Actions
     parameters: Optional[FullParameters] = None
 
@@ -60,8 +61,8 @@ class BlueskyRunner:
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
 
-    def start(self, parameters: FullParameters) -> StatusAndMessage:
-        artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
+    def start(self, experiment: str, parameters: FullParameters) -> StatusAndMessage:
+        artemis.log.LOGGER.info(f"Started {experiment} with parameters: {parameters}")
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
@@ -70,7 +71,7 @@ class BlueskyRunner:
             return StatusAndMessage(Status.FAILED, "Bluesky already running")
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
-            self.command_queue.put(Command(Actions.START, parameters))
+            self.command_queue.put(Command(experiment, Actions.START, parameters))
             return StatusAndMessage(Status.SUCCESS)
 
     def stopping_thread(self):
@@ -96,14 +97,17 @@ class BlueskyRunner:
         """Stops the run engine and the loop waiting for messages."""
         print("Shutting down: Stopping the run engine gracefully")
         self.stop()
-        self.command_queue.put(Command(Actions.SHUTDOWN))
+        self.command_queue.put(Command("RunEngine", Actions.SHUTDOWN))
 
     def wait_on_queue(self):
         while True:
             command = self.command_queue.get()
-            if command.action == Actions.START:
+            if command.action == Actions.SHUTDOWN:
+                return
+            elif command.action == Actions.START:
                 try:
-                    self.RE(get_plan(command.parameters, self.callbacks))
+                    plan = PLAN_REGISTRY.get(command.experiment)
+                    self.RE(plan(command.parameters, self.callbacks))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
@@ -114,28 +118,47 @@ class BlueskyRunner:
                         self.current_status = StatusAndMessage(
                             Status.FAILED, str(exception)
                         )
-            elif command.action == Actions.SHUTDOWN:
-                return
 
 
-class FastGridScan(Resource):
+# class FastGridScan(Resource):
+#     def __init__(self, runner: BlueskyRunner) -> None:
+#         super().__init__()
+#         self.runner = runner
+#
+#     def put(self, action):
+#         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
+#         if action == Actions.START.value:
+#             try:
+#                 parameters = FullParameters.from_json(request.data)
+#                 status_and_message = self.runner.start(parameters)
+#             except JSONDecodeError as exception:
+#                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
+#         elif action == Actions.STOP.value:
+#             status_and_message = self.runner.stop()
+#         return status_and_message.to_dict()
+#
+#     def get(self, action):
+#         return self.runner.current_status.to_dict()
+
+
+class RunExperiment(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
         super().__init__()
         self.runner = runner
 
-    def put(self, action):
+    def put(self, experiment, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
                 parameters = FullParameters.from_json(request.data)
-                status_and_message = self.runner.start(parameters)
+                status_and_message = self.runner.start(experiment, parameters)
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
         return status_and_message.to_dict()
 
-    def get(self, action):
+    def get(self, experiment, action):
         return self.runner.current_status.to_dict()
 
 
@@ -148,7 +171,9 @@ def create_app(
         app.config.update(test_config)
     api = Api(app)
     api.add_resource(
-        FastGridScan, "/fast_grid_scan/<string:action>", resource_class_args=[runner]
+        RunExperiment,
+        "/<string:experiment>/<string:action>",
+        resource_class_args=[runner],
     )
     return app, runner
 

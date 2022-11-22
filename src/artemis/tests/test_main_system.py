@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from sys import argv
 from time import sleep
 from typing import Any, Callable, Optional
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from flask.testing import FlaskClient
@@ -52,7 +52,9 @@ def test_env():
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
     with app.test_client() as client:
-        with patch("artemis.__main__.get_plan") as _:
+        with patch.dict(
+            "artemis.__main__.PLAN_REGISTRY", {"fast_grid_scan": MagicMock()}
+        ):
             yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()
