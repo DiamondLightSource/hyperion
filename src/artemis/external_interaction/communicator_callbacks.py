@@ -1,8 +1,9 @@
 import os
-from typing import Dict, NamedTuple
+from typing import Dict
 
 from bluesky.callbacks import CallbackBase
 
+from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
@@ -12,15 +13,8 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from artemis.external_interaction.zocalo_interaction import ZocaloHandlerCallback
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
-
-
-class ISPyBDepositionNotMade(Exception):
-    """Raised when the ISPyB or Zocalo callbacks can't access ISPyB deposition numbers."""
-
-    pass
 
 
 class NexusFileHandlerCallback(CallbackBase):
@@ -102,27 +96,3 @@ class ISPyBHandlerCallback(CallbackBase):
         if self.ispyb_ids == (None, None, None):
             raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
         self.ispyb.end_deposition(exit_status, reason)
-
-
-class FGSCallbackCollection(NamedTuple):
-    """Groups the callbacks for external interactions in the fast grid scan, and
-    connects the Zocalo and ISPyB handlers. Cast to a list to pass it to
-    Bluesky.preprocessors.subs_decorator()."""
-
-    # Callbacks are triggered in this order, which is important: ISPyB deposition must
-    # be initialised before the Zocalo handler can do its thing.
-    nexus_handler: NexusFileHandlerCallback
-    ispyb_handler: ISPyBHandlerCallback
-    zocalo_handler: ZocaloHandlerCallback
-
-    @classmethod
-    def from_params(cls, parameters: FullParameters):
-        nexus_handler = NexusFileHandlerCallback(parameters)
-        ispyb_handler = ISPyBHandlerCallback(parameters)
-        zocalo_handler = ZocaloHandlerCallback(parameters, ispyb_handler)
-        callback_collection = cls(
-            nexus_handler=nexus_handler,
-            ispyb_handler=ispyb_handler,
-            zocalo_handler=zocalo_handler,
-        )
-        return callback_collection

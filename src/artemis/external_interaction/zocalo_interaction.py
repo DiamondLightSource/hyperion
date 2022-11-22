@@ -10,10 +10,8 @@ from bluesky.callbacks import CallbackBase
 from workflows.transport import lookup
 
 import artemis.log
-from artemis.external_interaction.communicator_callbacks import (
-    ISPyBDepositionNotMade,
-    ISPyBHandlerCallback,
-)
+from artemis.external_interaction.communicator_callbacks import ISPyBHandlerCallback
+from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.utils import Point3D
