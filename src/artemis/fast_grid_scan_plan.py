@@ -3,9 +3,7 @@ import argparse
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
-from bluesky.preprocessors import subs_decorator
 from bluesky.utils import ProgressBarManager
-from ophyd.utils.errors import WaitTimeoutError
 
 import artemis.log
 from artemis.devices.eiger import EigerDetector
@@ -14,7 +12,7 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.fgs_communicator import FGSCommunicator
+from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 from artemis.tracing import TRACER
 
@@ -95,10 +93,7 @@ def run_gridscan(
         yield from bps.complete(fgs_motors, wait=True)
 
     with TRACER.start_span("do_fgs"):
-        try:
-            yield from do_fgs()
-        except WaitTimeoutError:
-            artemis.log.LOGGER.debug("Filewriter/staleparams timeout")
+        yield from do_fgs()
 
     with TRACER.start_span("move_to_z_0"):
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
@@ -108,33 +103,34 @@ def run_gridscan_and_move(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
     parameters: FullParameters,
-    communicator: FGSCommunicator,
+    subscriptions: FGSCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
-    # our communicator should listen to documents only from the actual grid scan
-    # so we subscribe to it with our plan
-    @subs_decorator(communicator)
-    def gridscan_with_communicator(fgs_comp, det, params):
-        yield from run_gridscan(fgs_comp, det, params)
+    # our callbacks should listen to documents only from the actual grid scan
+    # so we subscribe to them with our plan
+    @bpp.subs_decorator(list(subscriptions))
+    def gridscan_with_subscriptions(fgs_composite, detector, params):
+        yield from run_gridscan(fgs_composite, detector, params)
 
-    artemis.log.LOGGER.info("Starting grid scan")
-    yield from gridscan_with_communicator(fgs_composite, eiger, parameters)
+    artemis.log.LOGGER.debug("Starting grid scan")
+    yield from gridscan_with_subscriptions(fgs_composite, eiger, parameters)
 
-    # the data were submitted to zocalo by the communicator during the gridscan,
-    # but results may not be ready.
+    # the data were submitted to zocalo by the zocalo callback during the gridscan,
+    # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    communicator.wait_for_results()
+    subscriptions.zocalo_handler.wait_for_results()
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
         yield from move_xyz(
-            fgs_composite.sample_motors, communicator.xray_centre_motor_position
+            fgs_composite.sample_motors,
+            subscriptions.zocalo_handler.xray_centre_motor_position,
         )
 
 
-def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
+def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
@@ -162,7 +158,7 @@ def get_plan(parameters: FullParameters, communicator: FGSCommunicator):
     artemis.log.LOGGER.debug("Connected.")
 
     return run_gridscan_and_move(
-        fast_grid_scan_composite, eiger, parameters, communicator
+        fast_grid_scan_composite, eiger, parameters, subscriptions
     )
 
 
@@ -179,6 +175,6 @@ if __name__ == "__main__":
     RE.waiting_hook = ProgressBarManager()
 
     parameters = FullParameters(beamline=args.beamline)
-    communicator = FGSCommunicator(parameters)
+    subscriptions = FGSCallbackCollection.from_params(parameters)
 
-    RE(get_plan(parameters, communicator))
+    RE(get_plan(parameters, subscriptions))

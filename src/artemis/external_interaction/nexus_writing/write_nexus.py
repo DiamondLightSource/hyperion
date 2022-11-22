@@ -18,7 +18,7 @@ from nexgen.tools.VDS_tools import image_vds_writer
 
 from artemis.devices.detector import DetectorParams
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
-from artemis.ispyb.ispyb_dataclass import IspybParams
+from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.parameters import FullParameters
 
 source = {
@@ -94,12 +94,12 @@ def create_goniometer_axes(
         "axes": ["omega", "sam_z", "sam_y", "sam_x", "chi", "phi"],
         "depends": [".", "omega", "sam_z", "sam_y", "sam_x", "chi"],
         "vectors": [
-            -1, 0.0, 0.0,
-            0.0, 0.0, 1.0,
-            0.0, 1.0, 0.0,
-            1.0, 0.0, 0.0,
-            0.006, -0.0264, 0.9996,
-            -1, -0.0025, -0.0056,
+            (-1, 0.0, 0.0),
+            (0.0, 0.0, 1.0),
+            (0.0, 1.0, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.006, -0.0264, 0.9996),
+            (-1, -0.0025, -0.0056),
         ],
         "types": [
             "rotation",
