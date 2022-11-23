@@ -12,30 +12,6 @@ def nexus_writer():
 
 
 @pytest.fixture
-def _run_start():
-    with patch(
-        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._run_start"
-    ) as p:
-        yield p
-
-
-@pytest.fixture
-def _run_end():
-    with patch(
-        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._run_end"
-    ) as p:
-        yield p
-
-
-@pytest.fixture
-def _wait_for_result():
-    with patch(
-        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._wait_for_result"
-    ) as wfr:
-        yield wfr
-
-
-@pytest.fixture
 def mock_ispyb_get_time():
     with patch(
         "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
