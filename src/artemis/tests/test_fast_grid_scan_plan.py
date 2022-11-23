@@ -2,7 +2,6 @@ import types
 from unittest.mock import ANY, MagicMock, patch
 
 import bluesky.plan_stubs as bps
-import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
