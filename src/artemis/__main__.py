@@ -122,27 +122,6 @@ class BlueskyRunner:
                         )
 
 
-# class FastGridScan(Resource):
-#     def __init__(self, runner: BlueskyRunner) -> None:
-#         super().__init__()
-#         self.runner = runner
-#
-#     def put(self, action):
-#         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
-#         if action == Actions.START.value:
-#             try:
-#                 parameters = FullParameters.from_json(request.data)
-#                 status_and_message = self.runner.start(parameters)
-#             except JSONDecodeError as exception:
-#                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
-#         elif action == Actions.STOP.value:
-#             status_and_message = self.runner.stop()
-#         return status_and_message.to_dict()
-#
-#     def get(self, action):
-#         return self.runner.current_status.to_dict()
-
-
 class RunExperiment(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
         super().__init__()
