@@ -38,6 +38,12 @@ python -m artemis --dev --logging-level DEBUG
 
 **DO NOT** run artemis at DEBUG level on production (without the --dev flag). This will flood graylog with messages and make people very grumpy.
 
+Testing
+--------------
+To be able to run the system tests, or a complete fake scan, we need the simulated S03 beamline. This can be found at: https://gitlab.diamond.ac.uk/controls/python3/s03_utils
+
+To fake interaction and processing with Zocalo, you can run `fake_zocalo/dls_start_fake_zocalo.sh`, and make sure to run `module load dials/latest` before starting artemis (in the same terminal).
+
 Tracing
 --------------
 
