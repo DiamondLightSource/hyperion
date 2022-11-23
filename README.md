@@ -38,6 +38,11 @@ python -m artemis --dev --logging-level DEBUG
 
 **DO NOT** run artemis at DEBUG level on production (without the --dev flag). This will flood graylog with messages and make people very grumpy.
 
+Tracing
+--------------
+
+Tracing information (the time taken to complete different steps of experiments) is collected by an [OpenTelemetry](https://opentelemetry.io/) tracer, and currently we export this information to a local Jaeger monitor (if available). To see the tracing output, run the [Jaeger all-in-one container](https://www.jaegertracing.io/docs/1.6/getting-started/), and go to the web interface at http://localhost:16686. 
+
 
 Starting a scan
 --------------
