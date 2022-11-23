@@ -140,9 +140,9 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
 @patch(
     "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._wait_for_result"
 )
-@patch("artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_end")
+@patch("artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._run_end")
 @patch(
-    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_start"
+    "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._run_start"
 )
 @patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
@@ -151,8 +151,8 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     do_fgs: MagicMock,
-    run_start: MagicMock,
-    run_end: MagicMock,
+    _run_start: MagicMock,
+    _run_end: MagicMock,
     _wait_for_result: MagicMock,
 ):
     RE = RunEngine({})

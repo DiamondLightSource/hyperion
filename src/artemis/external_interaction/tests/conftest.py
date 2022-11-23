@@ -12,17 +12,17 @@ def nexus_writer():
 
 
 @pytest.fixture
-def run_start():
+def _run_start():
     with patch(
-        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_start"
+        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._run_start"
     ) as p:
         yield p
 
 
 @pytest.fixture
-def run_end():
+def _run_end():
     with patch(
-        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback.run_end"
+        "artemis.external_interaction.zocalo_interaction.ZocaloHandlerCallback._run_end"
     ) as p:
         yield p
 

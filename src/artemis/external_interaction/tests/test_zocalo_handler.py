@@ -32,8 +32,8 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
     _wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
+    _run_end: MagicMock,
+    _run_start: MagicMock,
     nexus_writer: MagicMock,
 ):
 
@@ -55,23 +55,23 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks.ispyb_handler.stop(td.test_stop_document)
     callbacks.zocalo_handler.stop(td.test_stop_document)
 
-    run_start.assert_has_calls([call(x) for x in dc_ids])
-    assert run_start.call_count == len(dc_ids)
+    _run_start.assert_has_calls([call(x) for x in dc_ids])
+    assert _run_start.call_count == len(dc_ids)
 
-    run_end.assert_has_calls([call(x) for x in dc_ids])
-    assert run_end.call_count == len(dc_ids)
+    _run_end.assert_has_calls([call(x) for x in dc_ids])
+    assert _run_end.call_count == len(dc_ids)
 
     _wait_for_result.assert_not_called()
 
 
 def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
-    run_end: MagicMock,
-    run_start: MagicMock,
     nexus_writer: MagicMock,
 ):
 
     params = FullParameters()
     callbacks = FGSCallbackCollection.from_params(params)
+    callbacks.zocalo_handler._run_start = MagicMock()
+    callbacks.zocalo_handler._run_end = MagicMock()
     callbacks.zocalo_handler.start(td.test_start_document)
     callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
     with pytest.raises(AssertionError):
@@ -151,17 +151,17 @@ callbacks = FGSCallbackCollection.from_params(FullParameters())
 @mark.parametrize(
     "function_to_test,function_wrapper,expected_message",
     [
-        (callbacks.zocalo_handler.run_start, normally, EXPECTED_RUN_START_MESSAGE),
+        (callbacks.zocalo_handler._run_start, normally, EXPECTED_RUN_START_MESSAGE),
         (
-            callbacks.zocalo_handler.run_start,
+            callbacks.zocalo_handler._run_start,
             with_exception,
             EXPECTED_RUN_START_MESSAGE,
         ),
-        (callbacks.zocalo_handler.run_end, normally, EXPECTED_RUN_END_MESSAGE),
-        (callbacks.zocalo_handler.run_end, with_exception, EXPECTED_RUN_END_MESSAGE),
+        (callbacks.zocalo_handler._run_end, normally, EXPECTED_RUN_END_MESSAGE),
+        (callbacks.zocalo_handler._run_end, with_exception, EXPECTED_RUN_END_MESSAGE),
     ],
 )
-def test_run_start_and_end(
+def test__run_start_and_end(
     function_to_test: Callable, function_wrapper: Callable, expected_message: Dict
 ):
     """

@@ -22,8 +22,8 @@ from artemis.utils import Point3D
 
 def test_callback_collection_init(
     _wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
+    _run_end: MagicMock,
+    _run_start: MagicMock,
 ):
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     assert callbacks.ispyb_handler.params == FullParameters()
@@ -35,8 +35,8 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
     mock_ispyb_begin_deposition: MagicMock,
     mock_ispyb_end_deposition: MagicMock,
     _wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
+    _run_end: MagicMock,
+    _run_start: MagicMock,
 ):
     RE = RunEngine({})
 
@@ -128,8 +128,8 @@ def eiger():
 @pytest.mark.skip(reason="Needs better S03 or some other workaround.")
 @pytest.mark.s03
 def test_communicator_in_composite_run(
-    run_start: MagicMock,
-    run_end: MagicMock,
+    _run_start: MagicMock,
+    _run_end: MagicMock,
     _wait_for_result: MagicMock,
     nexus_writer: MagicMock,
     ispyb_begin_deposition: MagicMock,
@@ -164,6 +164,6 @@ def test_communicator_in_composite_run(
     ispyb_begin_deposition.assert_called_once()
     ispyb_end_deposition.assert_called_once()
     # zocalo
-    run_start.assert_called()
-    run_end.assert_called()
+    _run_start.assert_called()
+    _run_end.assert_called()
     _wait_for_result.assert_called_once()

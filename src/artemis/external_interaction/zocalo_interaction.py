@@ -55,7 +55,7 @@ class ZocaloHandlerCallback(CallbackBase):
             if self.ispyb.ispyb_ids[0] is not None:
                 datacollection_ids = self.ispyb.ispyb_ids[0]
                 for id in datacollection_ids:
-                    self.run_start(id)
+                    self._run_start(id)
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
@@ -65,7 +65,7 @@ class ZocaloHandlerCallback(CallbackBase):
             raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
         datacollection_ids = self.ispyb.ispyb_ids[0]
         for id in datacollection_ids:
-            self.run_end(id)
+            self._run_end(id)
         self.processing_start_time = time.time()
 
     def wait_for_results(self):
@@ -108,7 +108,7 @@ class ZocaloHandlerCallback(CallbackBase):
         finally:
             transport.disconnect()
 
-    def run_start(self, data_collection_id: int):
+    def _run_start(self, data_collection_id: int):
         """Tells the data analysis pipeline we have started a grid scan.
         Assumes that appropriate data has already been put into ISPyB
 
@@ -121,7 +121,7 @@ class ZocaloHandlerCallback(CallbackBase):
         )
         self._send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
 
-    def run_end(self, data_collection_id: int):
+    def _run_end(self, data_collection_id: int):
         """Tells the data analysis pipeline we have finished a grid scan.
         Assumes that appropriate data has already been put into ISPyB
 
