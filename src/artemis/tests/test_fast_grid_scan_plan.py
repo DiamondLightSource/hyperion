@@ -96,15 +96,17 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
 def test_results_adjusted_and_passed_to_move_xyz(
-    _wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
+    move_xyz: MagicMock, run_gridscan: MagicMock
 ):
     RE = RunEngine({})
     params = FullParameters()
     subscriptions = FGSCallbackCollection.from_params(params)
+
     subscriptions.zocalo_handler._wait_for_result = MagicMock()
     subscriptions.zocalo_handler._run_end = MagicMock()
     subscriptions.zocalo_handler._run_start = MagicMock()
-    _wait_for_result.return_value = Point3D(1, 2, 3)
+    subscriptions.zocalo_handler._wait_for_result.return_value = Point3D(1, 2, 3)
+
     motor_position = params.grid_scan_params.grid_position_to_motor_position(
         Point3D(0.5, 1.5, 2.5)
     )
