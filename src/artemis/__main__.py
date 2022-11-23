@@ -16,6 +16,7 @@ import artemis.log
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
 from artemis.parameters import FullParameters
+from artemis.tracing import TRACER
 
 
 class Actions(Enum):
@@ -107,7 +108,8 @@ class BlueskyRunner:
             elif command.action == Actions.START:
                 try:
                     plan = PLAN_REGISTRY.get(command.experiment)
-                    self.RE(plan(command.parameters, self.callbacks))
+                    with TRACER.start_span("do_run"):
+                        self.RE(plan(command.parameters, self.callbacks))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:
