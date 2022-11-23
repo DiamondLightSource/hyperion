@@ -14,6 +14,7 @@ from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
+from artemis.tracing import TRACER
 
 
 def read_hardware_for_ispyb(
@@ -65,17 +66,19 @@ def run_gridscan(
 ):
     sample_motors = fgs_composite.sample_motors
 
-    # Currently gridscan only works for omega 0, see #154
-    yield from bps.abs_set(sample_motors.omega, 0)
+    # Currently gridscan only works for omega 0, see #
+    with TRACER.start_span("moving_omega_to_0"):
+        yield from bps.abs_set(sample_motors.omega, 0)
 
-    # We only subscribe to the external interaction callbacks for run_gridscan, so this
-    # is where we should generate an event reading the values which need to be included
-    # in the ispyb deposition
-    yield from read_hardware_for_ispyb(
-        fgs_composite.undulator,
-        fgs_composite.synchrotron,
-        fgs_composite.slit_gaps,
-    )
+    # We only subscribe to the communicator callback for run_gridscan, so this is where
+    # we should generate an event reading the values which need to be included in the
+    # ispyb deposition
+    with TRACER.start_span("ispyb_hardware_readings"):
+        yield from read_hardware_for_ispyb(
+            fgs_composite.undulator,
+            fgs_composite.synchrotron,
+            fgs_composite.slit_gaps,
+        )
 
     fgs_motors = fgs_composite.fast_grid_scan
     zebra = fgs_composite.zebra
@@ -89,8 +92,11 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    yield from do_fgs()
-    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+    with TRACER.start_span("do_fgs"):
+        yield from do_fgs()
+
+    with TRACER.start_span("move_to_z_0"):
+        yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
 def run_gridscan_and_move(
@@ -116,11 +122,12 @@ def run_gridscan_and_move(
     subscriptions.zocalo_handler.wait_for_results()
 
     # once we have the results, go to the appropriate position
-    artemis.log.LOGGER.debug("Moving to centre of mass.")
-    yield from move_xyz(
-        fgs_composite.sample_motors,
-        subscriptions.zocalo_handler.xray_centre_motor_position,
-    )
+    artemis.log.LOGGER.info("Moving to centre of mass.")
+    with TRACER.start_span("move_to_result"):
+        yield from move_xyz(
+            fgs_composite.sample_motors,
+            subscriptions.zocalo_handler.xray_centre_motor_position,
+        )
 
 
 def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
