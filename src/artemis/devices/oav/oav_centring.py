@@ -178,21 +178,17 @@ class OAVCentring:
         )
 
         yield from bps.abs_set(
-            self.oav.input_pv, self.oav_parameters.input_plugin + ".MXSC"
+            self.oav.snapshot.input_pv, self.oav_parameters.input_plugin + ".MXSC"
         )
 
-        # zoom is an integer value, stored as a float in a string so
-        # we may need a .0 on the end? GDA does this with
-        # zoomString = '%1.0dx' % float(zoom)
-        # which seems suspicious, we may want to think about doing this in a nicer way
         yield from bps.abs_set(
             self.oav.zoom_controller.zoom,
-            f"{float(int(self.oav_parameters.zoom))}x",
+            f"{float(self.oav_parameters.zoom)}x",
             wait=True,
         )
 
-        if (yield from bps.rd(self.oav.backlight.pos)) == 0:
-            yield from bps.abs_set(self.oav.backlight.pos, 1, wait=True)
+        if (yield from bps.rd(self.backlight.pos)) == 0:
+            yield from bps.abs_set(self.backlight.pos, 1, wait=True)
 
         """
        TODO: currently can't find the backlight brightness

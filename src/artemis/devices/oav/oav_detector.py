@@ -99,7 +99,7 @@ class OAV(AreaDetector):
 
 if __name__ == "__main__":
 
-    beamline = "BL03I"
+    beamline = "S03SIM"
     smargon: I03Smargon = Component(I03Smargon, "-MO-SGON-01:")
     backlight: Backlight = Component(Backlight, "-EA-BL-01:")
     oav = OAV(name="oav", prefix=beamline)
