@@ -3,7 +3,7 @@ import threading
 from dataclasses import dataclass
 from sys import argv
 from time import sleep
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from unittest.mock import patch
 
 import pytest
@@ -23,7 +23,7 @@ TEST_PARAMS = FullParameters().to_json()
 class MockRunEngine:
     RE_takes_time = True
     aborting_takes_time = False
-    error: str = None
+    error: Optional[str] = None
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         while self.RE_takes_time:
