@@ -7,7 +7,7 @@ from bluesky.utils import ProgressBarManager
 
 import artemis.log
 from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
+from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
@@ -55,6 +55,18 @@ def move_xyz(
     )
 
 
+def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
+    artemis.log.LOGGER.info("Waiting for valid fgs_params")
+    SLEEP_PER_CHECK = 0.1
+    times_to_check = timeout / SLEEP_PER_CHECK
+    for _ in range(times_to_check):
+        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
+        pos_counter = yield from bps.rd(fgs_motors.position_counter)
+        if not scan_invalid and pos_counter == 0:
+            raise Exception("Scan parameters invalid")
+        yield from bps.sleep(SLEEP_PER_CHECK)
+
+
 @bpp.run_decorator()
 def run_gridscan(
     fgs_composite: FGSComposite,
@@ -85,6 +97,7 @@ def run_gridscan(
 
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
+    yield from wait_for_fgs_valid(fgs_motors)
 
     @bpp.stage_decorator([zebra, eiger, fgs_motors])
     def do_fgs():
