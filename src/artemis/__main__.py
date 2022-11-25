@@ -13,6 +13,7 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 
 import artemis.log
+from artemis.exceptions import WarningException
 from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
@@ -26,6 +27,7 @@ class Actions(Enum):
 
 
 class Status(Enum):
+    WARN = "Warn"
     FAILED = "Failed"
     SUCCESS = "Success"
     BUSY = "Busy"
@@ -108,6 +110,8 @@ class BlueskyRunner:
                         self.RE(get_plan(command.parameters, self.callbacks))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
+                except WarningException as exception:
+                    self.current_status = StatusAndMessage(Status.WARN, str(exception))
                 except Exception as exception:
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow

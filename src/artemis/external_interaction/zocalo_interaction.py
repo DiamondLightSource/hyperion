@@ -8,6 +8,7 @@ import zocalo.configuration
 from workflows.transport import lookup
 
 import artemis.log
+from artemis.exceptions import WarningException
 from artemis.utils import Point3D
 
 TIMEOUT = 90
@@ -114,7 +115,7 @@ def wait_for_result(data_collection_group_id: int, timeout: int = TIMEOUT) -> Po
         transport.disconnect()
 
 
-class NoCentreFoundException(Exception):
+class NoCentreFoundException(WarningException):
     """
     Error for if zocalo is unable to find the centre during a gridscan.
     """
