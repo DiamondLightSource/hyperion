@@ -139,8 +139,8 @@ def run_gridscan_and_move(
 
     # We move back to the centre if results aren't found
     if math.nan in subscriptions.zocalo_handler.xray_centre_motor_position:
-        log_msg = f"No centre found, moving to optical centre {initial_xyz}"
-        artemis.log.LOGGER.error(log_msg)
+        log_msg = f"No diffraction found, moving to optical centre {initial_xyz}"
+        artemis.log.LOGGER.warn(log_msg)
         yield from move_xyz(fgs_composite.sample_motors, initial_xyz)
         raise NoCentreFoundException(f"Zocalo: {log_msg}")
 
