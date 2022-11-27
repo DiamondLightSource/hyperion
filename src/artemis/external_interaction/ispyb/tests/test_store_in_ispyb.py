@@ -19,22 +19,27 @@ TEST_POSITION_ID = 78
 TEST_SESSION_ID = 90
 
 DUMMY_CONFIG = "/file/path/to/config/"
-DUMMY_PARAMS = FullParameters()
-DUMMY_PARAMS.ispyb_params.upper_left = Point3D(100, 100, 100)
-DUMMY_PARAMS.ispyb_params.pixels_per_micron_x = 0.8
-DUMMY_PARAMS.ispyb_params.pixels_per_micron_y = 0.8
-
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 
 @pytest.fixture
-def dummy_ispyb():
-    return StoreInIspyb2D(DUMMY_CONFIG, DUMMY_PARAMS)
+def dummy_params():
+    dummy_params = FullParameters()
+    dummy_params.ispyb_params.upper_left = Point3D(100, 100, 100)
+    dummy_params.ispyb_params.pixels_per_micron_x = 0.8
+    dummy_params.ispyb_params.pixels_per_micron_y = 0.8
+    return dummy_params
 
 
 @pytest.fixture
-def dummy_ispyb_3d():
-    return StoreInIspyb3D(DUMMY_CONFIG, DUMMY_PARAMS)
+def dummy_ispyb(dummy_params):
+    # print(DUMMY_PARAMS)
+    return StoreInIspyb2D(DUMMY_CONFIG, dummy_params)
+
+
+@pytest.fixture
+def dummy_ispyb_3d(dummy_params):
+    return StoreInIspyb3D(DUMMY_CONFIG, dummy_params)
 
 
 def test_get_current_time_string(dummy_ispyb):
@@ -58,7 +63,7 @@ def test_regex_string(dummy_ispyb, visit_path: str, expected_match: str):
 
 
 @patch("ispyb.open", new_callable=mock_open)
-def test_store_grid_scan(ispyb_conn, dummy_ispyb):
+def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
@@ -77,7 +82,7 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
 
     assert dummy_ispyb.experiment_type == "mesh"
 
-    assert dummy_ispyb.store_grid_scan(DUMMY_PARAMS) == (
+    assert dummy_ispyb.store_grid_scan(dummy_params) == (
         [TEST_DATA_COLLECTION_ID],
         [TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
@@ -85,7 +90,7 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb):
 
 
 @patch("ispyb.open", new_callable=mock_open)
-def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
+def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d, dummy_params):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
@@ -105,25 +110,25 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
     x = 0
     y = 1
     z = 2
-    DUMMY_PARAMS.ispyb_params.upper_left = Point3D(x, y, z)
-    DUMMY_PARAMS.grid_scan_params.z_step_size = 0.2
+    dummy_params.ispyb_params.upper_left = Point3D(x, y, z)
+    dummy_params.grid_scan_params.z_step_size = 0.2
 
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
 
-    assert dummy_ispyb_3d.store_grid_scan(DUMMY_PARAMS) == (
+    assert dummy_ispyb_3d.store_grid_scan(dummy_params) == (
         [TEST_DATA_COLLECTION_ID, TEST_DATA_COLLECTION_ID],
         [TEST_GRID_INFO_ID, TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    assert dummy_ispyb_3d.omega_start == DUMMY_PARAMS.detector_params.omega_start + 90
-    assert dummy_ispyb_3d.run_number == DUMMY_PARAMS.detector_params.run_number + 1
+    assert dummy_ispyb_3d.omega_start == dummy_params.detector_params.omega_start + 90
+    assert dummy_ispyb_3d.run_number == dummy_params.detector_params.run_number + 1
     assert (
         dummy_ispyb_3d.xtal_snapshots
-        == DUMMY_PARAMS.ispyb_params.xtal_snapshots_omega_end
+        == dummy_params.ispyb_params.xtal_snapshots_omega_end
     )
-    assert dummy_ispyb_3d.y_step_size == DUMMY_PARAMS.grid_scan_params.z_step_size
-    assert dummy_ispyb_3d.y_steps == DUMMY_PARAMS.grid_scan_params.z_steps
+    assert dummy_ispyb_3d.y_step_size == dummy_params.grid_scan_params.z_step_size
+    assert dummy_ispyb_3d.y_steps == dummy_params.grid_scan_params.z_steps
     assert dummy_ispyb_3d.upper_left.x == x
     assert dummy_ispyb_3d.upper_left.y == z
 
@@ -152,10 +157,10 @@ def setup_mock_return_values(ispyb_conn):
 
 
 @patch("ispyb.open")
-def test_param_keys(ispyb_conn, dummy_ispyb):
+def test_param_keys(ispyb_conn, dummy_ispyb, dummy_params):
     setup_mock_return_values(ispyb_conn)
 
-    assert dummy_ispyb.store_grid_scan(DUMMY_PARAMS) == (
+    assert dummy_ispyb.store_grid_scan(dummy_params) == (
         [TEST_DATA_COLLECTION_ID],
         [TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
@@ -163,11 +168,11 @@ def test_param_keys(ispyb_conn, dummy_ispyb):
 
 
 def _test_when_grid_scan_stored_then_data_present_in_upserts(
-    ispyb_conn, dummy_ispyb, test_function, test_group=False
+    ispyb_conn, dummy_ispyb, dummy_params, test_function, test_group=False
 ):
     setup_mock_return_values(ispyb_conn)
 
-    dummy_ispyb.store_grid_scan(DUMMY_PARAMS)
+    dummy_ispyb.store_grid_scan(dummy_params)
 
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
@@ -187,30 +192,30 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 
 @patch("ispyb.open")
 def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
-    ispyb_conn, dummy_ispyb
+    ispyb_conn, dummy_ispyb, dummy_params
 ):
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")
         return actual[sampleid_idx] == default_params["sampleid"]
 
     _test_when_grid_scan_stored_then_data_present_in_upserts(
-        ispyb_conn, dummy_ispyb, test_sample_id, True
+        ispyb_conn, dummy_ispyb, dummy_params, test_sample_id, True
     )
 
 
 @patch("ispyb.open")
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
-    ispyb_conn, dummy_ispyb
+    ispyb_conn, dummy_ispyb, dummy_params
 ):
     expected_sample_id = "0001"
-    DUMMY_PARAMS.ispyb_params.sample_id = expected_sample_id
+    dummy_params.ispyb_params.sample_id = expected_sample_id
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")
         return actual[sampleid_idx] == expected_sample_id
 
     _test_when_grid_scan_stored_then_data_present_in_upserts(
-        ispyb_conn, dummy_ispyb, test_sample_id, True
+        ispyb_conn, dummy_ispyb, dummy_params, test_sample_id, True
     )
 
 
@@ -307,11 +312,11 @@ def test_ispyb_deposition_comment_correct_on_failure(
 
 @patch("ispyb.open")
 def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
-    ispyb_conn, dummy_ispyb
+    ispyb_conn, dummy_ispyb, dummy_params
 ):
     expected_number_of_steps = 200 * 3
-    DUMMY_PARAMS.grid_scan_params.x_steps = 200
-    DUMMY_PARAMS.grid_scan_params.y_steps = 3
+    dummy_params.grid_scan_params.x_steps = 200
+    dummy_params.grid_scan_params.y_steps = 3
 
     def test_number_of_steps(default_params, actual):
         # Note that internally the ispyb API removes underscores so this is the same as n_images
@@ -319,5 +324,5 @@ def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_t
         return actual[number_of_steps_idx] == expected_number_of_steps
 
     _test_when_grid_scan_stored_then_data_present_in_upserts(
-        ispyb_conn, dummy_ispyb, test_number_of_steps
+        ispyb_conn, dummy_ispyb, dummy_params, test_number_of_steps
     )
