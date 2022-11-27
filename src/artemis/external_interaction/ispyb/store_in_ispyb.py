@@ -136,7 +136,7 @@ class StoreInIspyb(ABC):
             f"{self.y_steps} images in "
             f"{self.full_params.grid_scan_params.x_step_size} mm by "
             f"{self.y_step_size} mm steps. "
-            f"Top left: [{self.upper_left.x},{self.upper_left.y}], "
+            f"Top left: [{int(self.upper_left.x)},{int(self.upper_left.y)}], "
             f"bottom right: [{bottom_right.x},{bottom_right.y}]."
         )
 
