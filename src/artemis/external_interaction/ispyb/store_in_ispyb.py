@@ -136,8 +136,8 @@ class StoreInIspyb(ABC):
             f"{self.y_steps} images in "
             f"{self.full_params.grid_scan_params.x_step_size} mm by "
             f"{self.y_step_size} mm steps. "
-            f"Top left: [{int(self.upper_left.x)},{int(self.upper_left.y)}], "
-            f"bottom right: [{bottom_right.x},{bottom_right.y}]."
+            f"Top left (px): [{int(self.upper_left.x)},{int(self.upper_left.y)}], "
+            f"bottom right (px): [{bottom_right.x},{bottom_right.y}]."
         )
 
     def _store_data_collection_table(self, data_collection_group_id: int) -> int:
