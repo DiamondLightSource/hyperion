@@ -25,7 +25,7 @@ TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 @pytest.fixture
 def dummy_params():
     dummy_params = FullParameters()
-    dummy_params.ispyb_params.upper_left = Point3D(100, 100, 100)
+    dummy_params.ispyb_params.upper_left = Point3D(100, 100, 50)
     dummy_params.ispyb_params.pixels_per_micron_x = 0.8
     dummy_params.ispyb_params.pixels_per_micron_y = 0.8
     return dummy_params
@@ -33,7 +33,6 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params):
-    # print(DUMMY_PARAMS)
     return StoreInIspyb2D(DUMMY_CONFIG, dummy_params)
 
 
@@ -266,7 +265,7 @@ def test_no_exception_during_run_results_in_good_run_status(
 @patch("ispyb.open")
 def test_ispyb_deposition_comment_correct(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb,
+    dummy_ispyb: StoreInIspyb2D,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -274,12 +273,9 @@ def test_ispyb_deposition_comment_correct(
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
     dummy_ispyb.begin_deposition()
-    dummy_ispyb.end_deposition("success", "")
-    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
-    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
-        0
-    ]
-    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
+    mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
+
+    upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
         "in 0.1 mm by 0.1 mm steps. Top left: [100,100], bottom right: [420,16100]."
@@ -287,9 +283,32 @@ def test_ispyb_deposition_comment_correct(
 
 
 @patch("ispyb.open")
+def test_ispyb_deposition_comment_for_3D_correct(
+    mock_ispyb_conn: MagicMock,
+    dummy_ispyb_3d: StoreInIspyb3D,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+    mock_mx_aquisition = (
+        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+    )
+    mock_upsert_dc = mock_mx_aquisition.upsert_data_collection
+    dummy_ispyb_3d.begin_deposition()
+    first_upserted_param_value_list = mock_upsert_dc.call_args_list[0][0][0]
+    second_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
+    assert first_upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 0.1 mm by 0.1 mm steps. Top left: [100,100], bottom right: [420,16100]."
+    )
+    assert second_upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
+        "in 0.1 mm by 0.1 mm steps. Top left: [100,50], bottom right: [420,4930]."
+    )
+
+
+@patch("ispyb.open")
 def test_ispyb_deposition_comment_correct_on_failure(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb,
+    dummy_ispyb: StoreInIspyb2D,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
