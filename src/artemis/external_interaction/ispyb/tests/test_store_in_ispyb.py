@@ -351,6 +351,34 @@ def test_ispyb_deposition_comment_correct_on_failure(
 
 
 @patch("ispyb.open")
+def test_ispyb_deposition_comment_correct_for_3D_on_failure(
+    mock_ispyb_conn: MagicMock,
+    dummy_ispyb_3d: StoreInIspyb3D,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+    mock_mx_aquisition = (
+        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+    )
+    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+    dummy_ispyb_3d.begin_deposition()
+    dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
+    mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
+    # Using 2nd and 4th here as 1st and 3rd are the start collections
+    second_upserted_param_value_list = mock_upsert_dc_calls[1][0][0]
+    forth_upserted_param_value_list = mock_upsert_dc_calls[3][0][0]
+    assert second_upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
+        "DataCollection Unsuccessful reason: could not connect to devices"
+    )
+    assert forth_upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
+        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,4930]. "
+        "DataCollection Unsuccessful reason: could not connect to devices"
+    )
+
+
+@patch("ispyb.open")
 def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
     ispyb_conn, dummy_ispyb, dummy_params
 ):
