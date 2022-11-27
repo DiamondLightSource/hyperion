@@ -282,7 +282,7 @@ def test_ispyb_deposition_comment_correct(
     upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
     assert upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left: [0,1], bottom right: [320,16001]."
+        "in 0.1 mm by 0.1 mm steps. Top left: [100,100], bottom right: [420,16100]."
     )
 
 
@@ -305,7 +305,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
     assert upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left: [0,1], bottom right: [320,16001]. "
+        "in 0.1 mm by 0.1 mm steps. Top left: [100,100], bottom right: [420,16100]. "
         "DataCollection Unsuccessful reason: could not connect to devices"
     )
 
