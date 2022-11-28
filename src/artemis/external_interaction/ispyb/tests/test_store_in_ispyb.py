@@ -1,5 +1,5 @@
 import re
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
@@ -12,7 +12,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
-TEST_DATA_COLLECTION_ID = 12
+TEST_DATA_COLLECTION_IDS = [12, 13]
 TEST_DATA_COLLECTION_GROUP_ID = 34
 TEST_GRID_INFO_ID = 56
 TEST_POSITION_ID = 78
@@ -72,7 +72,7 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
-    when(dummy_ispyb)._store_position_table(TEST_DATA_COLLECTION_ID).thenReturn(
+    when(dummy_ispyb)._store_position_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
         TEST_POSITION_ID
     )
     when(dummy_ispyb)._store_data_collection_group_table().thenReturn(
@@ -80,15 +80,15 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
     )
     when(dummy_ispyb)._store_data_collection_table(
         TEST_DATA_COLLECTION_GROUP_ID
-    ).thenReturn(TEST_DATA_COLLECTION_ID)
-    when(dummy_ispyb)._store_grid_info_table(TEST_DATA_COLLECTION_ID).thenReturn(
+    ).thenReturn(TEST_DATA_COLLECTION_IDS[0])
+    when(dummy_ispyb)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
         TEST_GRID_INFO_ID
     )
 
     assert dummy_ispyb.experiment_type == "mesh"
 
     assert dummy_ispyb.store_grid_scan(dummy_params) == (
-        [TEST_DATA_COLLECTION_ID],
+        [TEST_DATA_COLLECTION_IDS[0]],
         [TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
     )
@@ -99,17 +99,25 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d, dummy_params):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
-    when(dummy_ispyb_3d)._store_position_table(TEST_DATA_COLLECTION_ID).thenReturn(
+    when(dummy_ispyb_3d)._store_position_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
+        TEST_POSITION_ID
+    )
+    when(dummy_ispyb_3d)._store_position_table(TEST_DATA_COLLECTION_IDS[1]).thenReturn(
         TEST_POSITION_ID
     )
     when(dummy_ispyb_3d)._store_data_collection_group_table().thenReturn(
         TEST_DATA_COLLECTION_GROUP_ID
     )
-    when(dummy_ispyb_3d)._store_data_collection_table(
-        TEST_DATA_COLLECTION_GROUP_ID
-    ).thenReturn(TEST_DATA_COLLECTION_ID)
-    when(dummy_ispyb_3d)._store_grid_info_table(TEST_DATA_COLLECTION_ID).thenReturn(
+
+    when(dummy_ispyb_3d)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
         TEST_GRID_INFO_ID
+    )
+    when(dummy_ispyb_3d)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[1]).thenReturn(
+        TEST_GRID_INFO_ID
+    )
+
+    dummy_ispyb_3d._store_data_collection_table = Mock(
+        side_effect=TEST_DATA_COLLECTION_IDS
     )
 
     x = 0
@@ -121,7 +129,7 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d, dummy_params):
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
 
     assert dummy_ispyb_3d.store_grid_scan(dummy_params) == (
-        [TEST_DATA_COLLECTION_ID, TEST_DATA_COLLECTION_ID],
+        TEST_DATA_COLLECTION_IDS,
         [TEST_GRID_INFO_ID, TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
     )
@@ -150,7 +158,7 @@ def setup_mock_return_values(ispyb_conn):
     mx_acquisition.get_dc_position_params = MXAcquisition.get_dc_position_params
 
     ispyb_conn.return_value.core.retrieve_visit_id.return_value = TEST_SESSION_ID
-    mx_acquisition.upsert_data_collection.return_value = TEST_DATA_COLLECTION_ID
+    mx_acquisition.upsert_data_collection.side_effect = TEST_DATA_COLLECTION_IDS * 2
     mx_acquisition.update_dc_position.return_value = TEST_POSITION_ID
     mx_acquisition.upsert_data_collection_group.return_value = (
         TEST_DATA_COLLECTION_GROUP_ID
@@ -163,7 +171,7 @@ def test_param_keys(ispyb_conn, dummy_ispyb, dummy_params):
     setup_mock_return_values(ispyb_conn)
 
     assert dummy_ispyb.store_grid_scan(dummy_params) == (
-        [TEST_DATA_COLLECTION_ID],
+        [TEST_DATA_COLLECTION_IDS[0]],
         [TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
     )
@@ -367,17 +375,34 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
     dummy_ispyb_3d.begin_deposition()
-    dummy_ispyb_3d.get_current_datacollection_comment.return_value = (
-        dummy_ispyb_3d._construct_comment()
-    )
-    dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
+
     mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
-    # Using 2nd and 4th here as 1st and 3rd are the start collections
+    first_upserted_param_value_list = mock_upsert_dc_calls[0][0][0]
     second_upserted_param_value_list = mock_upsert_dc_calls[1][0][0]
-    fourth_upserted_param_value_list = mock_upsert_dc_calls[3][0][0]
+
+    assert first_upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]."
+    )
     assert second_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]. "
+        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]."
+    )
+
+    dummy_ispyb_3d.get_current_datacollection_comment.side_effect = [
+        first_upserted_param_value_list[29],
+        second_upserted_param_value_list[29],
+    ]
+
+    dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
+
+    mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
+    third_upserted_param_value_list = mock_upsert_dc_calls[2][0][0]
+    fourth_upserted_param_value_list = mock_upsert_dc_calls[3][0][0]
+
+    assert third_upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
         "DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert fourth_upserted_param_value_list[29] == (
