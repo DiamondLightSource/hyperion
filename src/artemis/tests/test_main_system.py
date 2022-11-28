@@ -10,7 +10,7 @@ import pytest
 from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, Status, cli_arg_parse, create_app
-from artemis.parameters import DEV_ISPYB_CONFIG, FullParameters
+from artemis.parameters import FullParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value

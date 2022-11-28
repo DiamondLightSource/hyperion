@@ -9,7 +9,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
-from artemis.parameters import DEV_ISPYB_CONFIG, FullParameters
+from artemis.parameters import SIM_ISPYB_CONFIG, FullParameters
 from artemis.utils import Point3D
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
@@ -33,7 +33,7 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params):
-    store_in_ispyb_2d = StoreInIspyb2D(DEV_ISPYB_CONFIG, dummy_params)
+    store_in_ispyb_2d = StoreInIspyb2D(SIM_ISPYB_CONFIG, dummy_params)
     store_in_ispyb_2d.get_current_datacollection_comment = MagicMock()
     store_in_ispyb_2d.get_current_datacollection_comment.return_value = ""
     return store_in_ispyb_2d
@@ -41,7 +41,7 @@ def dummy_ispyb(dummy_params):
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params):
-    store_in_ispyb_3d = StoreInIspyb3D(DEV_ISPYB_CONFIG, dummy_params)
+    store_in_ispyb_3d = StoreInIspyb3D(SIM_ISPYB_CONFIG, dummy_params)
     store_in_ispyb_3d.get_current_datacollection_comment = MagicMock()
     store_in_ispyb_3d.get_current_datacollection_comment.return_value = ""
     return store_in_ispyb_3d

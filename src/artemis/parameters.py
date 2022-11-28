@@ -11,7 +11,7 @@ from artemis.utils import Point3D
 SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_PLAN_NAME = "ispyb_readings"
-DEV_ISPYB_CONFIG = "src/artemis/external_interaction/ispyb/tests/test_config.cfg"
+SIM_ISPYB_CONFIG = "src/artemis/external_interaction/ispyb/tests/test_config.cfg"
 
 
 def default_field(obj):
