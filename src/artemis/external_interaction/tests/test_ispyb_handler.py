@@ -13,9 +13,6 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     mock_ispyb_update_time_and_status: MagicMock,
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
-    wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
     nexus_writer: MagicMock,
 ):
 
@@ -48,9 +45,6 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_update_time_and_status: MagicMock,
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
-    wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
     nexus_writer: MagicMock,
 ):
 
