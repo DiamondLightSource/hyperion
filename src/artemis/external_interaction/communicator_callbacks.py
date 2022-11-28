@@ -15,13 +15,6 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
 )
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
-from artemis.utils import Point3D
-
-
-class ISPyBDepositionNotMade(Exception):
-    """Raised when the ISPyB or Zocalo callbacks can't access ISPyB deposition numbers."""
-
-    pass
 
 
 class NexusFileHandlerCallback(CallbackBase):
