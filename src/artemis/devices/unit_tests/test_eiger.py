@@ -217,9 +217,10 @@ def test_unsuccessful_roi_mode_change_results_in_logged_error(mock_and, fake_eig
 
 @patch("artemis.devices.eiger.EigerOdin.check_odin_state")
 def test_bad_odin_state_results_in_unstage_returning_bad_status(
-    mock_check_odin_state, fake_eiger
+    mock_check_odin_state, fake_eiger: EigerDetector
 ):
     mock_check_odin_state.return_value = False
+    fake_eiger.filewriters_finished = Status(done=True, success=True)
     returned_status = fake_eiger.unstage()
     assert returned_status is False
 
