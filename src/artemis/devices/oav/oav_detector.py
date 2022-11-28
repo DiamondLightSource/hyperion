@@ -1,5 +1,7 @@
 from enum import IntEnum
 
+import bluesky.plan_stubs as bps
+import numpy as np
 from ophyd import ADComponent as ADC
 from ophyd import (
     AreaDetector,
@@ -117,3 +119,13 @@ class OAV(AreaDetector):
     output_array_pv: EpicsSignal = Component(EpicsSignal, "MXSC:OutputArray")
     draw_tip_pv: EpicsSignal = Component(EpicsSignal, "MXSC:DrawTip")
     draw_edges_pv: EpicsSignal = Component(EpicsSignal, "MXSC:DrawEdges")
+
+    def get_edge_waveforms(self):
+        """
+        Get the waveforms from the PVs as numpy arrays.
+        """
+        yield from bps.rd(self.top_pv)
+        yield from bps.rd(self.bottom_pv)
+
+    def get_edge_waveforms_as_numpy_arrays(self):
+        return (np.array(pv) for pv in tuple(self.get_edge_waveforms()))

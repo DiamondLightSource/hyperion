@@ -1,5 +1,6 @@
 import json
 import math
+import xml.etree.cElementTree as et
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -14,7 +15,15 @@ from artemis.devices.oav.oav_detector import (
     ColorMode,
     EdgeOutputArrayImageType,
 )
+from artemis.devices.oav.oav_errors import (
+    OAVError_MissingRotations,
+    OAVError_NoRotationsPassValidityTest,
+    OAVError_WaveformAllZero,
+    OAVError_ZoomLevelNotFound,
+)
 from artemis.log import LOGGER
+
+OAVError_MissingRotations
 
 # Scaling factors used in GDA. We should look into improving by not using these.
 _X_SCALING_FACTOR = 1024
@@ -22,9 +31,10 @@ _Y_SCALING_FACTOR = 768
 
 
 class OAVParameters:
-    def __init__(self, file, context="loopCentring"):
+    def __init__(self, file, microns_zoom_levels_xml, context="loopCentring"):
         self.file = file
         self.context = context
+        self.microns_zoom_levels_xml = microns_zoom_levels_xml
 
     def load_json(self):
         """
@@ -120,25 +130,34 @@ class OAVParameters:
         )
 
     def load_microns_per_pixel(self, zoom):
-        zoom_levels_filename = "src/artemis/oav/microns_for_zoom_levels.json"
-        f = open(zoom_levels_filename)
-        json_dict = json.load(f)
-        self.micronsPerXPixel = json_dict[zoom]["micronsPerXPixel"]
-        self.micronsPerYPixel = json_dict[zoom]["micronsPerYPixel"]
+        tree = et.parse(self.microns_zoom_levels_xml)
+        self.micronsPerXPixel = self.micronsPerYPixel = None
+        root = tree.getroot()
+        levels = root.findall(".//zoomLevel")
+        for node in levels:
+            if float(node.find("level").text) == zoom:
+                self.micronsPerXPixel = float(node.find("micronsPerXPixel").text)
+                self.micronsPerYPixel = float(node.find("micronsPerYPixel").text)
         if self.micronsPerXPixel is None or self.micronsPerYPixel is None:
-            raise KeyError(
-                f"Could not find the micronsPer[X,Y]Pixel parameters in {zoom_levels_filename}."
+            raise OAVError_ZoomLevelNotFound(
+                f"Could not find the micronsPer[X,Y]Pixel parameters in {self.microns_zoom_levels_xml} for zoom level {zoom}."
             )
 
 
 class OAVCentring:
-    def __init__(self, parameters_file, display_configuration_path, beamline="BL03I"):
-        self.display_configuration_path = display_configuration_path
+    def __init__(
+        self,
+        parameters_file,
+        display_configuration_file,
+        microns_zoom_levels_xml,
+        beamline="BL03I",
+    ):
+        self.display_configuration_file = display_configuration_file
         self.oav = OAV(name="oav", prefix=beamline + "-DI-OAV-01:")
         self.oav_camera = Camera(name="oav-camera", prefix=beamline + "-EA-OAV-01:")
         self.oav_backlight = Backlight(name="oav-backlight", prefix=beamline)
         self.oav_goniometer = I03Smargon(name="oav-goniometer", prefix="-MO-SGON-01:")
-        self.oav_parameters = OAVParameters(parameters_file)
+        self.oav_parameters = OAVParameters(parameters_file, microns_zoom_levels_xml)
         self.oav.wait_for_connection()
 
     def pre_centring_setup_oav(self):
@@ -260,7 +279,7 @@ class OAVCentring:
         inputted by the beamline operator GDA by clicking where on screen a
         scintillator ligths up.
         """
-        with open(self.display_configuration_path, "r") as f:
+        with open(self.display_configuration_file, "r") as f:
             file_lines = f.readlines()
             for i in range(len(file_lines)):
                 if file_lines[i].startswith(
@@ -276,13 +295,6 @@ class OAVCentring:
             self.beam_centre_x = int(crosshair_x_line.split(" = ")[1])
             self.beam_centre_y = int(crosshair_y_line.split(" = ")[1])
 
-    def get_formatted_edge_waveforms(self):
-        """
-        Get the waveforms from the PVs as numpy arrays.
-        """
-        yield from bps.rd(self.oav.top_pv)
-        yield from bps.rd(self.oav.bottom_pv)
-
     def smooth(self, y):
         "Remove noise from waveform."
 
@@ -293,7 +305,10 @@ class OAVCentring:
         return y_smooth
 
     def find_midpoint(self, top, bottom):
-        "Finds the midpoint from edge PVs. The midpoint is considered the place where"
+        """
+        Finds the midpoint from edge PVs. The midpoint is considered the centre of the first
+        bulge in the waveforms. This will correspond to the pin where the sample is located.
+        """
 
         # widths between top and bottom
         widths = bottom - top
@@ -312,12 +327,18 @@ class OAVCentring:
         grad = reversed_grad[::-1]
 
         # np.sign gives us the positions where the gradient is positive and negative.
-        # Taking the diff of that gives us an array with all 0's apart from the places
+        # Taking the diff of th/at gives us an array with all 0's apart from the places
         # sign of the gradient went from -1 -> 1 or 1 -> -1.
-        # np.where will give all non-zero positions from the np.sign call, however it returns a singleton tuple.
-        # We get the [0] index of the singleton tuple, then the [0] element of that to
-        # get the first index where the gradient is 0.
-        x_pos = np.where(np.diff(np.sign(grad)))[0][0]
+        # indices are -1 for decreasing width, +1 for increasing width
+        increasing_or_decreasing = np.sign(grad)
+
+        # Taking the difference will give us an array with -2/2 for the places the gradient where the gradient
+        # went from negative->positive/postitive->negative, and 0 where it didn't change
+        gradient_changed = np.diff(increasing_or_decreasing)
+
+        # np.where will give all non-zero indices: the indices where the gradient changed.
+        # We take the 0th element as the x pos since it's the first place where the gradient changed, indicating a bulge.
+        x_pos = np.where(gradient_changed)[0][0]
 
         y_pos = mid_line[int(x_pos)]
         diff_at_x_pos = widths[int(x_pos)]
@@ -325,7 +346,7 @@ class OAVCentring:
 
     def extract_data_from_pvs(self):
         yield from bps.rd(self.oav_goniometer.omega)
-        yield from self.get_formatted_edge_waveforms()
+        yield from self.oav.get_edge_waveforms()
         yield from bps.rd(self.oav.tip_x_pv)
         yield from bps.rd(self.oav.tip_y_pv)
         yield from bps.rd(self.oav_goniometer.omega.high_limit_travel)
@@ -347,9 +368,9 @@ class OAVCentring:
 
         return increment
 
-    def get_spacial_data_from_pin_at_different_rotations(self, rotations: int):
+    def rotate_pin_and_collect_values(self, rotations: int):
         """
-        Calculate relevant spacial points at each rotation and save them in lists.
+        Calculate relevant spacial values (waveforms, and pixel positions) at each rotation and save them in lists.
 
         Args:
             points: the number of rotation points
@@ -384,6 +405,12 @@ class OAVCentring:
             current_omega, top, bottom, tip_x, tip_y, omega_limit = tuple(
                 self.extract_data_from_pvs()
             )
+            for waveform in (top, bottom):
+                if np.all(waveform == 0):
+                    raise OAVError_WaveformAllZero(
+                        f"error at rotation {current_omega}, one of the waveforms is all 0"
+                    )
+
             (x, y, width, mid_line) = self.find_midpoint(top, bottom)
 
             # Build arrays of edges and width, and store corresponding gonomega
@@ -409,8 +436,52 @@ class OAVCentring:
             tip_y_positions,
         )
 
+    def filter_rotation_data(
+        self,
+        x_positions,
+        y_positions,
+        widths,
+        omega_angles,
+        acceptable_x_difference=100,
+    ):
+        """
+        Filters out outlier positions, and zero points.
+
+        Args:
+            x_positions: the x positions of centres
+            y_positions: the y positions of centres
+            widths: the widths between the top and bottom waveforms at the centre point
+            omega_angles: the angle of the goniometer at which the measurement was taken
+            acceptable_x_difference: the acceptable difference between the average value of x and
+                any individual value of x. We don't want to use exceptional positions for calculation.
+        Returns:
+            x_positions_filtered: the x_positions with outliers filtered out
+            y_positions_filtered: the y_positions with outliers filtered out
+            widths_filtered: the widths with outliers filtered out
+            omega_angles_filtered: the omega_angles with outliers filtered out
+        """
+        # find the average of the non zero elements of the array
+        x_median = np.median(x_positions)
+
+        # filter out outliers
+        outlier_x_positions = np.where(
+            x_positions - x_median < acceptable_x_difference
+        )[0]
+        widths_filtered = np.delete(widths, outlier_x_positions)
+        omega_angles_filtered = np.delete(omega_angles, outlier_x_positions)
+
+        if not widths_filtered.size:
+            raise OAVError_NoRotationsPassValidityTest(
+                "No rotations pass the validity test."
+            )
+
+        return (
+            widths_filtered,
+            omega_angles_filtered,
+        )
+
     def find_widest_point_and_orthogonal_point(
-        x_positions, y_positions, widths, omega_angles
+        self, x_positions, y_positions, widths, omega_angles
     ):
         """
         Find the widest point from the sampled positions, and the angles orthogonal to this.
@@ -426,53 +497,38 @@ class OAVCentring:
         Returns: The index  of the sample which is wildest.
         """
 
-        # filter out 0 elements
-        zero_x_positions = np.where(x_positions == 0)[0]
-        zero_y_positions = np.where(y_positions == 0)[0]
-        indices_to_remove = np.union1d(zero_x_positions, zero_y_positions)
-        x_positions_filtered = np.delete(x_positions, indices_to_remove)
-        y_positions_filtered = np.delete(y_positions, indices_to_remove)
-        widths_filtered = np.delete(widths, indices_to_remove)
-        omega_angles_filtered = np.delete(omega_angles, indices_to_remove)
-
-        # If all arrays are 0 it means there has been a problem
-        if not x_positions.size:
-            LOGGER.warn("Unable to find loop - all values zero")
-            return
-
-        # find the average of the non zero elements of the array
-        x_median = np.median(x_positions_filtered)
-
-        # filter out outliers
-        outlier_x_positions = np.where(x_positions_filtered - x_median < 100)[0]
-        x_positions_filtered = np.delete(x_positions_filtered, outlier_x_positions)
-        y_positions_filtered = np.delete(y_positions_filtered, outlier_x_positions)
-        widths_filtered = np.delete(widths_filtered, outlier_x_positions)
-        omega_angles_filtered = np.delete(omega_angles_filtered, outlier_x_positions)
-
-        if not widths_filtered.size:
-            LOGGER.error("Unable to find loop - no values pass validity test")
-            return
+        (
+            widths_filtered,
+            omega_angles_filtered,
+        ) = self.filter_rotation_data(x_positions, y_positions, widths, omega_angles)
 
         # Find omega for face-on position: where bulge was widest
-        index_of_largest_width = widths_filtered.argmax()
+        index_of_largest_width_filtered = widths_filtered.argmax()
 
         # find largest width index in original unfiltered list
-        index_of_largest_width = widths[
-            np.where(omega_angles == omega_angles_filtered[index_of_largest_width])[0]
-        ]
-        best_omega_angle = omega_angles[index_of_largest_width]
+        best_omega_angle = omega_angles_filtered[index_of_largest_width_filtered]
+        index_of_largest_width = np.where(
+            omega_angles == omega_angles_filtered[index_of_largest_width_filtered]
+        )[0]
 
         # Find the best angles orthogonal to the best_omega_angle
         try:
-            indices_orthogonal_to_largest_width = np.where(
-                (85 < abs(omega_angles - best_omega_angle))
-                & (abs(omega_angles - best_omega_angle) < 95)
+            indices_orthogonal_to_largest_width_filtered = np.where(
+                (85 < abs(omega_angles_filtered - best_omega_angle))
+                & (abs(omega_angles_filtered - best_omega_angle) < 95)
             )[0]
         except (IndexError):
-            errmsg = "Unable to find loop at 2 orthogonal angles"
-            LOGGER.error(errmsg)
-            raise IndexError(errmsg)
+            raise OAVError_MissingRotations(
+                "Unable to find loop at 2 orthogonal angles"
+            )
+
+        indices_orthogonal_to_largest_width = np.array([])
+        for angle in omega_angles_filtered[
+            indices_orthogonal_to_largest_width_filtered
+        ]:
+            indices_orthogonal_to_largest_width = np.append(
+                indices_orthogonal_to_largest_width, np.where(omega_angles == angle)[0]
+            )
 
         return index_of_largest_width, indices_orthogonal_to_largest_width
 
@@ -498,6 +554,106 @@ class OAVCentring:
         """
         return _X_SCALING_FACTOR / x_size, _Y_SCALING_FACTOR / y_size
 
+    def extract_coordinates_from_rotation_data(
+        self,
+        x_positions,
+        y_positions,
+        index_of_largest_width,
+        indices_orthogonal_to_largest_width,
+        omega_angles,
+    ):
+        """
+        Takes the rotations being used and gets the neccessary data in terms of x,y,z and angles.
+        This is much nicer to read.
+        """
+        x = x_positions[index_of_largest_width]
+        y = y_positions[index_of_largest_width]
+        best_omega_angle = omega_angles[index_of_largest_width]
+
+        # Get the angle sufficiently orthogonal to the best omega and
+        index_orthogonal_to_largest_width = indices_orthogonal_to_largest_width[-1]
+        best_omega_angle_orthogonal = omega_angles[index_orthogonal_to_largest_width]
+
+        # Store the y value which will be the magnitude in the z axis on 90 degree rotation
+        z = y_positions[index_orthogonal_to_largest_width]
+
+        # best_omega_angle_90 could be zero, which used to cause a failure - d'oh!
+        if best_omega_angle_orthogonal is None:
+            LOGGER.error("Unable to find loop at 2 orthogonal angles")
+            return
+
+        return x, y, z, best_omega_angle, best_omega_angle_orthogonal
+
+    def get_motor_movement_xyz(
+        self,
+        x,
+        y,
+        z,
+        tip_x_positions,
+        indices_orthogonal_to_largest_width,
+        best_omega_angle,
+        best_omega_angle_orthogonal,
+        last_run,
+    ):
+        """
+        Gets the x,y,z values the motor should move to (microns).
+        """
+
+        # extract the microns per pixel of the zoom level of the camera
+        self.oav_parameters.load_microns_per_pixel(str(self.oav_parameters.zoom))
+
+        # get the max tip distance in pixels
+        max_tip_distance_pixels = (
+            self.oav_parameters.max_tip_distance / self.oav_parameters.micronsPerXPixel
+        )
+
+        # we need to store the tips of the angles orthogonal-ish to the best angle
+        orthogonal_tips_x = tip_x_positions[indices_orthogonal_to_largest_width]
+        # get the average tip distance of the orthogonal rotations
+        tip_x = np.median(orthogonal_tips_x)
+
+        # if x exceeds the max tip distance then set it to the max tip distance
+        tip_distance_pixels = x - tip_x
+        if tip_distance_pixels > max_tip_distance_pixels:
+            x = max_tip_distance_pixels + tip_x
+
+        # get the scales of the image in microns, and the distance in microns to the beam centre location
+        x_size, y_size = list(self.get_sizes_from_pvs())
+        x_scale, y_scale = self.get_scale(x_size, y_size)
+        x_move, y_move = self.calculate_beam_distance_in_microns(
+            int(x * x_scale), int(y * y_scale)
+        )
+
+        # convert the distance in microns to motor incremements
+        x_y_z_move = self.distance_from_beam_centre_to_motor_coords(
+            x_move, y_move, best_omega_angle
+        )
+
+        # it's the last run then also move calculate the motor coordinates to take the orthogonal angle into account.
+        if last_run:
+            x_move, z_move = self.calculate_beam_distance_in_microns(
+                int(x * x_scale), int(z * y_scale)
+            )
+        else:
+            z_move = 0
+
+        # This will be 0 if z_move is 0
+        x_y_z_move_2 = self.distance_from_beam_centre_to_motor_coords(
+            0, z_move, best_omega_angle_orthogonal
+        )
+
+        current_motor_xyz = np.array(
+            [
+                (yield from bps.rd(self.oav_goniometer.x)),
+                (yield from bps.rd(self.oav_goniometer.y)),
+                (yield from bps.rd(self.oav_goniometer.z)),
+            ]
+        )
+        new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move + x_y_z_move_2)
+        new_y = keep_inside_bounds(new_y, -1500, 1500)
+        new_z = keep_inside_bounds(new_z, -1500, 1500)
+        return new_x, new_y, new_z
+
     def find_centre(self, max_run_num=3, rotation_points=6):
         """
         Will attempt to find the OAV centre using rotation points.
@@ -505,8 +661,7 @@ class OAVCentring:
         If it is unsuccessful in finding the points it will try centering a default maximum of 3 times.
         """
 
-        # on success iteration is set equal to repeat, otherwise it is iterated
-        # the algorithm will try for a maximum of `repeat` times to find the centre
+        # we attempt to find the centre `max_run_num` times.
         run_num = 0
         while run_num < max_run_num:
 
@@ -519,9 +674,7 @@ class OAVCentring:
                 mid_lines,
                 tip_x_positions,
                 tip_y_positions,
-            ) = tuple(
-                self.get_spacial_data_from_pin_at_different_rotations(rotation_points)
-            )
+            ) = tuple(self.rotate_pin_and_collect_values(rotation_points))
 
             (
                 index_of_largest_width,
@@ -530,79 +683,30 @@ class OAVCentring:
                 x_positions, y_positions, widths, omega_angles
             )
 
-            x = x_positions[index_of_largest_width]
-            y = y_positions[index_of_largest_width]
-            best_omega_angle = omega_angles[index_of_largest_width]
-
-            # get the angle sufficiently orthogonal to the best omega and
-            # store its mid line - which will be the magnitude in the z axis on 90 degree rotation
-            index_orthogonal_to_largest_width = indices_orthogonal_to_largest_width[-1]
-            best_omega_angle_orthogonal = omega_angles[
-                index_orthogonal_to_largest_width
-            ]
-            z = mid_lines[index_orthogonal_to_largest_width][x]
-
-            # we need to store the tips of the angles orthogonal-ish to the best angle
-            orthogonal_tips_x = tip_x_positions[indices_orthogonal_to_largest_width]
-
-            # best_omega_angle_90 could be zero, which used to cause a failure - d'oh!
-            if best_omega_angle_orthogonal is None:
-                LOGGER.error("Unable to find loop at 2 orthogonal angles")
-                return
-
-            # extract the max_tip_distance again as it could have changed
-            self.oav_parameters.max_tip_distance = (
-                self.oav_parameters._extract_dict_parameter(
-                    "max_tip_distance", reload_json=True
-                )
-            )
-            # extract the microns per pixel of the zoom level of the camera
-            self.oav_parameters.load_microns_per_pixel(str(self.oav_parameters.zoom))
-
-            # get the max tip distance in pixels
-            max_tip_distance_pixels = (
-                self.oav_parameters.max_tip_distance
-                / self.oav_parameters.micronsPerXPixel
+            (
+                x,
+                y,
+                z,
+                best_omega_angle,
+                best_omega_angle_orthogonal,
+            ) = self.extract_coordinates_from_rotation_data(
+                x_positions,
+                y_positions,
+                index_of_largest_width,
+                indices_orthogonal_to_largest_width,
+                omega_angles,
             )
 
-            # get the average distance between the tips
-            tip_x = np.median(orthogonal_tips_x)
-
-            # if x exceeds the max tip distance then set it to the max tip distance
-            tip_distance_pixels = x - tip_x
-            if tip_distance_pixels > max_tip_distance_pixels:
-                x = max_tip_distance_pixels + tip_x
-
-            # get the scales of the image in microns
-            x_size, y_size = (pv.obj.value for pv in self.get_sizes_from_pvs())
-            x_scale, y_scale = self.get_scale(x_size, y_size)
-            x_move, y_move = self.calculate_beam_distance_in_microns(
-                int(x * x_scale), int(y * y_scale)
+            new_x, new_y, new_z = self.get_motor_movement_xyz(
+                x,
+                y,
+                z,
+                tip_x_positions,
+                indices_orthogonal_to_largest_width,
+                best_omega_angle,
+                best_omega_angle_orthogonal,
+                run_num == max_run_num - 1,
             )
-            x_y_z_move = self.microns_to_xyz_move(x_move, y_move, best_omega_angle)
-
-            # if we've succeeded and it's the last run then set the x_move_and y_move
-            if z is not None and run_num == (max_run_num - 1):
-                x_move, z_move = self.calculate_beam_distance_in_microns(
-                    int(x * x_scale), int(z * y_scale)
-                )
-            else:
-                z_move = 0  # might need to repeat process?
-
-            x_y_z_move_2 = self.microns_to_xyz_move(
-                0, z_move, best_omega_angle_orthogonal
-            )
-            current_motor_xyz = np.array(
-                [
-                    (yield from bps.rd(self.oav_goniometer.x)),
-                    (yield from bps.rd(self.oav_goniometer.y)),
-                    (yield from bps.rd(self.oav_goniometer.z)),
-                ]
-            )
-            new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move + x_y_z_move_2)
-            new_y = keep_inside_bounds(new_y, -1500, 1500)
-            new_z = keep_inside_bounds(new_z, -1500, 1500)
-
             run_num += 1
 
             # Now move loop to cross hair
@@ -615,7 +719,7 @@ class OAVCentring:
                 new_z,
             )
 
-        # Omega is happy to move at same time as xyz
+        # We've moved to the best angle. Now rotate to the largest bulge.
         yield from bps.mv(self.oav_goniometer.omega, best_omega_angle)
         LOGGER.info("exiting OAVCentre")
 
@@ -627,7 +731,7 @@ class OAVCentring:
         y_microns = int(y_to_move * self.oav_parameters.micronsPerYPixel)
         return (x_microns, y_microns)
 
-    def microns_to_xyz_move(self, h, v, omega):
+    def distance_from_beam_centre_to_motor_coords(self, horizontal, vertical, omega):
         """
         Converts micron measurements from pixels into to (x, y, z) motor coordinates. For an overview of the
         coordinate system for I03 see https://github.com/DiamondLightSource/python-artemis/wiki/Gridscan-Coordinate-System.
@@ -639,7 +743,7 @@ class OAVCentring:
         movement will rotate clockwise when looking at the viewed down x-axis. This is standard in
         crystallography.
         """
-        x = -h
+        x = -horizontal
         angle = math.radians(omega)
         cosine = math.cos(angle)
         """
@@ -650,8 +754,8 @@ class OAVCentring:
         standard phase I convention.
         """
         sine = math.sin(angle)
-        z = v * sine
-        y = v * cosine
+        z = vertical * sine
+        y = vertical * cosine
         return np.array([x, y, z])
 
 
@@ -670,8 +774,8 @@ def keep_inside_bounds(value, lower_bound, upper_bound):
     above_upper = value > upper_bound
 
     return (
-        below_lower * -1500
-        + above_upper * 1500
+        below_lower * lower_bound
+        + above_upper * upper_bound
         + (not above_upper or below_lower) * value
     )
 
@@ -685,6 +789,7 @@ if __name__ == "__main__":
     oav = OAVCentring(
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
         "src/artemis/devices/unit_tests/test_display.configuration",
+        "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
         beamline="S03SIM",
     )
 
