@@ -136,15 +136,12 @@ def setup_mock_return_values(ispyb_conn):
 
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
-    dcg_params = MXAcquisition.get_data_collection_group_params()
-    dc_params = MXAcquisition.get_data_collection_params()
-    grid_params = MXAcquisition.get_dc_grid_params()
-    position_params = MXAcquisition.get_dc_position_params()
-
-    mx_acquisition.get_data_collection_group_params.return_value = dcg_params
-    mx_acquisition.get_data_collection_params.return_value = dc_params
-    mx_acquisition.get_dc_grid_params.return_value = grid_params
-    mx_acquisition.get_dc_position_params.return_value = position_params
+    mx_acquisition.get_data_collection_group_params = (
+        MXAcquisition.get_data_collection_group_params
+    )
+    mx_acquisition.get_data_collection_params = MXAcquisition.get_data_collection_params
+    mx_acquisition.get_dc_grid_params = MXAcquisition.get_dc_grid_params
+    mx_acquisition.get_dc_position_params = MXAcquisition.get_dc_position_params
 
     ispyb_conn.return_value.core.retrieve_visit_id.return_value = TEST_SESSION_ID
     mx_acquisition.upsert_data_collection.return_value = TEST_DATA_COLLECTION_ID
@@ -365,15 +362,14 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
     # Using 2nd and 4th here as 1st and 3rd are the start collections
     second_upserted_param_value_list = mock_upsert_dc_calls[1][0][0]
-    forth_upserted_param_value_list = mock_upsert_dc_calls[3][0][0]
+    fourth_upserted_param_value_list = mock_upsert_dc_calls[3][0][0]
     assert second_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
-        "DataCollection Unsuccessful reason: could not connect to devices"
-    )
-    assert forth_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,4930]. "
+        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]."
+    )
+    assert fourth_upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
+        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]. "
         "DataCollection Unsuccessful reason: could not connect to devices"
     )
 

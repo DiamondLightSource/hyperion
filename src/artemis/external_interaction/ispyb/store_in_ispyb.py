@@ -3,11 +3,16 @@ import re
 from abc import ABC, abstractmethod
 
 import ispyb
+import ispyb.sqlalchemy
+from ispyb.sqlalchemy import DataCollection
+from sqlalchemy import create_engine
 from sqlalchemy.connectors import Connector
+from sqlalchemy.orm import sessionmaker
 
 import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.parameters import FullParameters
+from artemis.tracing import TRACER
 from artemis.utils import Point2D
 
 I03_EIGER_DETECTOR = 78
@@ -31,6 +36,12 @@ class StoreInIspyb(ABC):
         self.y_steps = None
         self.y_step_size = None
 
+        # reading from ispyb
+        url = ispyb.sqlalchemy.url(self.ISPYB_CONFIG_FILE)
+        engine = create_engine(url, connect_args={"use_pure": True})
+        self.Session = sessionmaker(engine)
+
+        # writing to ispyb
         self.conn: Connector = None
         self.mx_acquisition = None
         self.core = None
@@ -92,8 +103,15 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> int:
+
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
+            with TRACER.start_span("read_comment_from_ispyb"):
+                with self.Session() as session:
+                    query = session.query(DataCollection).filter(
+                        DataCollection.dataCollectionId == datacollection_id
+                    )
+                    current_comment: str = query.first().comments
 
             params = self.mx_acquisition.get_data_collection_params()
             params["id"] = datacollection_id
@@ -101,7 +119,7 @@ class StoreInIspyb(ABC):
             params["endtime"] = end_time
             params["run_status"] = run_status
             if reason is not None and reason != "":
-                params["comments"] += f" {run_status} reason: {reason}"
+                params["comments"] = current_comment + f" {run_status} reason: {reason}"
             return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
