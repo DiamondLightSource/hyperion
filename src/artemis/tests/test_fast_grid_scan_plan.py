@@ -2,7 +2,6 @@ import types
 from unittest.mock import ANY, MagicMock, patch
 
 import bluesky.plan_stubs as bps
-import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
@@ -17,7 +16,7 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
+from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
@@ -95,14 +94,18 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
 
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 def test_results_adjusted_and_passed_to_move_xyz(
-    wait_for_result: MagicMock, move_xyz: MagicMock, run_gridscan: MagicMock
+    move_xyz: MagicMock, run_gridscan: MagicMock
 ):
     RE = RunEngine({})
     params = FullParameters()
     subscriptions = FGSCallbackCollection.from_params(params)
-    wait_for_result.return_value = Point3D(1, 2, 3)
+
+    subscriptions.zocalo_handler._wait_for_result = MagicMock()
+    subscriptions.zocalo_handler._run_end = MagicMock()
+    subscriptions.zocalo_handler._run_start = MagicMock()
+    subscriptions.zocalo_handler._wait_for_result.return_value = Point3D(1, 2, 3)
+
     motor_position = params.grid_scan_params.grid_position_to_motor_position(
         Point3D(0.5, 1.5, 2.5)
     )
@@ -135,9 +138,6 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
     )
 
 
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
-@patch("artemis.external_interaction.communicator_callbacks.run_end")
-@patch("artemis.external_interaction.communicator_callbacks.run_start")
 @patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.fast_grid_scan_plan.move_xyz")
@@ -145,18 +145,21 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     do_fgs: MagicMock,
-    run_start: MagicMock,
-    run_end: MagicMock,
-    wait_for_result: MagicMock,
 ):
     RE = RunEngine({})
     params = FullParameters()
+
     subscriptions = FGSCallbackCollection.from_params(params)
-    wait_for_result.return_value = Point3D(1, 2, 3)
+    subscriptions.zocalo_handler._wait_for_result = MagicMock()
+    subscriptions.zocalo_handler._run_end = MagicMock()
+    subscriptions.zocalo_handler._run_start = MagicMock()
+    subscriptions.zocalo_handler._wait_for_result.return_value = Point3D(1, 2, 3)
+
     FakeComposite = make_fake_device(FGSComposite)
     FakeEiger = make_fake_device(EigerDetector)
     fake_composite = FakeComposite("test", name="fakecomposite")
     fake_eiger = FakeEiger(params.detector_params)
+
     RE(
         run_gridscan_and_move(
             fake_composite,
@@ -165,21 +168,6 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
             subscriptions,
         )
     )
+
     run_gridscan.assert_called_once_with(fake_composite, fake_eiger, params)
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
-
-
-@pytest.fixture
-def dummy_3d_gridscan_args():
-    params = FullParameters()
-    params.grid_scan_params.z_steps = 2
-
-    FakeFGSComposite = make_fake_device(FGSComposite)
-    fgs_composite: FGSComposite = FakeFGSComposite(name="fgs", insertion_prefix="")
-
-    FakeEiger = make_fake_device(EigerDetector)
-    eiger: EigerDetector = FakeEiger(
-        detector_params=params.detector_params, name="eiger"
-    )
-
-    return fgs_composite, eiger, params
