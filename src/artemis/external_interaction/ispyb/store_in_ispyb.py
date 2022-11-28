@@ -121,13 +121,13 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> int:
-        current_comment = self.get_current_datacollection_comment(datacollection_id)
         params = self.mx_acquisition.get_data_collection_params()
         params["id"] = datacollection_id
         params["parentid"] = datacollection_group_id
         params["endtime"] = end_time
         params["run_status"] = run_status
         if reason is not None and reason != "":
+            current_comment = self.get_current_datacollection_comment(datacollection_id)
             params["comments"] = current_comment + f" {run_status} reason: {reason}"
         return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
