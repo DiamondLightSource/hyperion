@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 
 import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
+from artemis.log import LOGGER
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point2D
@@ -99,6 +100,7 @@ class StoreInIspyb(ABC):
         """Read the 'comments' field from the given datacollection id ISPyB entry.
         Returns an empty string if the comment is not yet initialised.
         """
+        LOGGER.debug("Getting comment from ISPyB")
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             with TRACER.start_span("read_comment_from_ispyb"):
                 with self.Session() as session:
@@ -108,6 +110,7 @@ class StoreInIspyb(ABC):
                     current_comment: str = query.first().comments
         if current_comment is None:
             current_comment = ""
+        LOGGER.debug(f"Current comment: {current_comment}")
         return current_comment
 
     def update_grid_scan_with_end_time_and_status(

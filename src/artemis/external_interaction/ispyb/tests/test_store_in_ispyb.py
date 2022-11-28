@@ -18,7 +18,7 @@ TEST_GRID_INFO_ID = 56
 TEST_POSITION_ID = 78
 TEST_SESSION_ID = 90
 
-DUMMY_CONFIG = "/file/path/to/config/"
+DUMMY_CONFIG = "src/artemis/external_interaction/ispyb/tests/test_config.cfg"
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 
@@ -33,12 +33,18 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params):
-    return StoreInIspyb2D(DUMMY_CONFIG, dummy_params)
+    store_in_ispyb_2d = StoreInIspyb2D(DUMMY_CONFIG, dummy_params)
+    store_in_ispyb_2d.get_current_datacollection_comment = MagicMock()
+    store_in_ispyb_2d.get_current_datacollection_comment.return_value = ""
+    return store_in_ispyb_2d
 
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params):
-    return StoreInIspyb3D(DUMMY_CONFIG, dummy_params)
+    store_in_ispyb_3d = StoreInIspyb3D(DUMMY_CONFIG, dummy_params)
+    store_in_ispyb_3d.get_current_datacollection_comment = MagicMock()
+    store_in_ispyb_3d.get_current_datacollection_comment.return_value = ""
+    return store_in_ispyb_3d
 
 
 def test_get_current_time_string(dummy_ispyb):
@@ -334,6 +340,9 @@ def test_ispyb_deposition_comment_correct_on_failure(
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
     dummy_ispyb.begin_deposition()
+    dummy_ispyb.get_current_datacollection_comment.return_value = (
+        dummy_ispyb._construct_comment()
+    )
     dummy_ispyb.end_deposition("fail", "could not connect to devices")
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
@@ -358,6 +367,9 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
     dummy_ispyb_3d.begin_deposition()
+    dummy_ispyb_3d.get_current_datacollection_comment.return_value = (
+        dummy_ispyb_3d._construct_comment()
+    )
     dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
     mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
     # Using 2nd and 4th here as 1st and 3rd are the start collections
@@ -365,7 +377,8 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     fourth_upserted_param_value_list = mock_upsert_dc_calls[3][0][0]
     assert second_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]."
+        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]. "
+        "DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert fourth_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
