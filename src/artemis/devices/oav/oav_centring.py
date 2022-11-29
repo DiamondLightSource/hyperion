@@ -614,7 +614,7 @@ class OAVCentring:
         )
         new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move + x_y_z_move_2)
         new_y = keep_inside_bounds(new_y, _Y_LOWER_BOUND, _Y_UPPER_BOUND)
-        new_z = keep_inside_bounds(new_z, _Z_LOWER_BOUND, _Y_UPPER_BOUND)
+        new_z = keep_inside_bounds(new_z, _Z_LOWER_BOUND, _Z_UPPER_BOUND)
         return new_x, new_y, new_z
 
     def find_centre(self, max_run_num=3, rotation_points=6):
