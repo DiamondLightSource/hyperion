@@ -1,5 +1,4 @@
 import argparse
-import math
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -14,7 +13,6 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
-from artemis.external_interaction.zocalo_interaction import NoCentreFoundException
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
@@ -135,14 +133,7 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    subscriptions.zocalo_handler.wait_for_results()
-
-    # We move back to the centre if results aren't found
-    if math.nan in subscriptions.zocalo_handler.xray_centre_motor_position:
-        log_msg = f"No diffraction found, moving to optical centre {initial_xyz}"
-        artemis.log.LOGGER.warn(log_msg)
-        yield from move_xyz(fgs_composite.sample_motors, initial_xyz)
-        raise NoCentreFoundException(f"Zocalo: {log_msg}")
+    subscriptions.zocalo_handler.wait_for_results(initial_xyz)
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")

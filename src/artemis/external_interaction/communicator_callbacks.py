@@ -1,3 +1,4 @@
+import math
 import os
 import time
 from typing import Dict, NamedTuple
@@ -158,7 +159,7 @@ class ZocaloHandlerCallback(CallbackBase):
             run_end(id)
         self.processing_start_time = time.time()
 
-    def wait_for_results(self):
+    def wait_for_results(self, fallback_xyz):
         datacollection_group_id = self.ispyb.ispyb_ids[2]
         raw_results = wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time
@@ -169,6 +170,14 @@ class ZocaloHandlerCallback(CallbackBase):
         self.xray_centre_motor_position = self.grid_position_to_motor_position(
             self.results
         )
+
+        # We move back to the centre if results aren't found
+        if math.nan in self.xray_centre_motor_position:
+            log_msg = (
+                f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
+            )
+            self.xray_centre_motor_position = fallback_xyz
+            LOGGER.warn(log_msg)
 
         LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
