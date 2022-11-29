@@ -3,18 +3,13 @@ import math
 import xml.etree.cElementTree as et
 
 import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
+
+# import bluesky.preprocessors as bpp
 import numpy as np
-from bluesky import RunEngine
 
 from artemis.devices.backlight import Backlight
 from artemis.devices.motors import I03Smargon
-from artemis.devices.oav.oav_detector import (
-    OAV,
-    Camera,
-    ColorMode,
-    EdgeOutputArrayImageType,
-)
+from artemis.devices.oav.oav_detector import OAV, Camera, ColorMode
 from artemis.devices.oav.oav_errors import (
     OAVError_MissingRotations,
     OAVError_NoRotationsPassValidityTest,
@@ -23,24 +18,37 @@ from artemis.devices.oav.oav_errors import (
 )
 from artemis.log import LOGGER
 
-OAVError_MissingRotations
+# from bluesky import RunEngine
+
 
 # Scaling factors used in GDA. We should look into improving by not using these.
 _X_SCALING_FACTOR = 1024
 _Y_SCALING_FACTOR = 768
 
+# Z and Y bounds are hardcoded into GDA (we don't want to exceed them). We should look
+# at streamlining this
+_Z_LOWER_BOUND = _Y_LOWER_BOUND = -1500
+_Z_UPPER_BOUND = _Y_UPPER_BOUND = 1500
+
 
 class OAVParameters:
-    def __init__(self, file, microns_zoom_levels_xml, context="loopCentring"):
-        self.file = file
+    def __init__(
+        self,
+        centring_params_json,
+        camera_zoom_levels_file,
+        display_configuration_file,
+        context="loopCentring",
+    ):
+        self.centring_params_json = centring_params_json
+        self.camera_zoom_levels_file = camera_zoom_levels_file
+        self.display_configuration_file = display_configuration_file
         self.context = context
-        self.microns_zoom_levels_xml = microns_zoom_levels_xml
 
     def load_json(self):
         """
-        Loads the json from the json file at self.file.
+        Loads the json from the json file at self.centring_params_json
         """
-        with open(f"{self.file}") as f:
+        with open(f"{self.centring_params_json}") as f:
             self.parameters = json.load(f)
 
     def load_parameters_from_json(
@@ -126,11 +134,11 @@ class OAVParameters:
 
         # No fallback_value was given and the key wasn't found
         raise KeyError(
-            f"Searched in {self.file} for key {key} in context {self.context} but no value was found. No fallback value was given."
+            f"Searched in {self.centring_params_json} for key {key} in context {self.context} but no value was found. No fallback value was given."
         )
 
     def load_microns_per_pixel(self, zoom):
-        tree = et.parse(self.microns_zoom_levels_xml)
+        tree = et.parse(self.camera_zoom_levels_file)
         self.micronsPerXPixel = self.micronsPerYPixel = None
         root = tree.getroot()
         levels = root.findall(".//zoomLevel")
@@ -140,24 +148,47 @@ class OAVParameters:
                 self.micronsPerYPixel = float(node.find("micronsPerYPixel").text)
         if self.micronsPerXPixel is None or self.micronsPerYPixel is None:
             raise OAVError_ZoomLevelNotFound(
-                f"Could not find the micronsPer[X,Y]Pixel parameters in {self.microns_zoom_levels_xml} for zoom level {zoom}."
+                f"Could not find the micronsPer[X,Y]Pixel parameters in {self.camera_zoom_levels_file} for zoom level {zoom}."
             )
+
+    def _extract_beam_position(self, zoom):
+        """
+
+        Extracts the beam location in pixels `xCentre` `yCentre` extracted
+        from the file display.configuration. The beam location is manually
+        inputted by the beamline operator GDA by clicking where on screen a
+        scintillator ligths up.
+        """
+        with open(self.display_configuration_file, "r") as f:
+            file_lines = f.readlines()
+            for i in range(len(file_lines)):
+                if file_lines[i].startswith("zoomLevel = " + str(zoom)):
+                    crosshair_x_line = file_lines[i + 1]
+                    crosshair_y_line = file_lines[i + 2]
+                    break
+
+            if crosshair_x_line is None or crosshair_y_line is None:
+                pass  # TODO throw error
+
+            self.beam_centre_x = int(crosshair_x_line.split(" = ")[1])
+            self.beam_centre_y = int(crosshair_y_line.split(" = ")[1])
 
 
 class OAVCentring:
     def __init__(
         self,
-        parameters_file,
+        centring_parameters,
+        camera_zoom_levels,
         display_configuration_file,
-        microns_zoom_levels_xml,
         beamline="BL03I",
     ):
-        self.display_configuration_file = display_configuration_file
         self.oav = OAV(name="oav", prefix=beamline + "-DI-OAV-01:")
         self.oav_camera = Camera(name="oav-camera", prefix=beamline + "-EA-OAV-01:")
         self.oav_backlight = Backlight(name="oav-backlight", prefix=beamline)
         self.oav_goniometer = I03Smargon(name="oav-goniometer", prefix="-MO-SGON-01:")
-        self.oav_parameters = OAVParameters(parameters_file, microns_zoom_levels_xml)
+        self.oav_parameters = OAVParameters(
+            centring_parameters, camera_zoom_levels, display_configuration_file
+        )
         self.oav.wait_for_connection()
 
     def pre_centring_setup_oav(self):
@@ -204,7 +235,7 @@ class OAVCentring:
         )
 
         # Connect MXSC output to MJPG input
-        yield from self.start_mxsc(
+        yield from self.oav.start_mxsc(
             self.oav_parameters.input_plugin + "." + self.oav_parameters.mxsc_input,
             self.oav_parameters.min_callback_time,
             self.oav_parameters.filename,
@@ -236,64 +267,6 @@ class OAVCentring:
 
         blbrightness.moveTo(brightnessToUse)
         """
-
-    def start_mxsc(self, input_plugin, min_callback_time, filename):
-        """
-        Sets PVs relevant to edge detection plugin.
-
-        Args:
-            input_plugin: link to the camera stream
-            min_callback_time: the value to set the minimum callback time to
-            filename: filename of the python script to detect edge waveforms from camera stream.
-        Returns: None
-        """
-        yield from bps.abs_set(self.oav.input_plugin_pv, input_plugin)
-
-        # Turns the area detector plugin on
-        yield from bps.abs_set(self.oav.enable_callbacks_pv, 1)
-
-        # Set the minimum time between updates of the plugin
-        yield from bps.abs_set(self.oav.min_callback_time_pv, min_callback_time)
-
-        # Stop the plugin from blocking the IOC and hogging all the CPU
-        yield from bps.abs_set(self.oav.blocking_callbacks_pv, 0)
-
-        # Set the python file to use for calculating the edge waveforms
-        yield from bps.abs_set(self.oav.py_filename_pv, filename, wait=True)
-        yield from bps.abs_set(self.oav.read_file_pv, 1)
-
-        # Image annotations
-        yield from bps.abs_set(self.oav.draw_tip_pv, True)
-        yield from bps.abs_set(self.oav.draw_edges_pv, True)
-
-        # Use the original image type for the edge output array
-        yield from bps.abs_set(
-            self.oav.output_array_pv, EdgeOutputArrayImageType.ORIGINAL
-        )
-
-    def _extract_beam_position(self):
-        """
-
-        Extracts the beam location in pixels `xCentre` `yCentre` extracted
-        from the file display.configuration. The beam location is manually
-        inputted by the beamline operator GDA by clicking where on screen a
-        scintillator ligths up.
-        """
-        with open(self.display_configuration_file, "r") as f:
-            file_lines = f.readlines()
-            for i in range(len(file_lines)):
-                if file_lines[i].startswith(
-                    "zoomLevel = " + str(self.oav_parameters.zoom)
-                ):
-                    crosshair_x_line = file_lines[i + 1]
-                    crosshair_y_line = file_lines[i + 2]
-                    break
-
-            if crosshair_x_line is None or crosshair_y_line is None:
-                pass  # TODO throw error
-
-            self.beam_centre_x = int(crosshair_x_line.split(" = ")[1])
-            self.beam_centre_y = int(crosshair_y_line.split(" = ")[1])
 
     def smooth(self, y):
         "Remove noise from waveform."
@@ -532,16 +505,6 @@ class OAVCentring:
 
         return index_of_largest_width, indices_orthogonal_to_largest_width
 
-    def get_sizes_from_pvs(self):
-        """
-        Yields the sizes from PVs.
-        Args: None
-        Yields:
-            The values from x_size_pv, y_size_pv.
-        """
-        yield from bps.rd(self.oav.x_size_pv)
-        yield from bps.rd(self.oav.y_size_pv)
-
     def get_scale(self, x_size, y_size):
         """
         Returns the scale of the image. The standard calculation for the image is based
@@ -618,7 +581,7 @@ class OAVCentring:
             x = max_tip_distance_pixels + tip_x
 
         # get the scales of the image in microns, and the distance in microns to the beam centre location
-        x_size, y_size = list(self.get_sizes_from_pvs())
+        x_size, y_size = list(self.oav.get_sizes_from_pvs())
         x_scale, y_scale = self.get_scale(x_size, y_size)
         x_move, y_move = self.calculate_beam_distance_in_microns(
             int(x * x_scale), int(y * y_scale)
@@ -650,8 +613,8 @@ class OAVCentring:
             ]
         )
         new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move + x_y_z_move_2)
-        new_y = keep_inside_bounds(new_y, -1500, 1500)
-        new_z = keep_inside_bounds(new_z, -1500, 1500)
+        new_y = keep_inside_bounds(new_y, _Y_LOWER_BOUND, _Y_UPPER_BOUND)
+        new_z = keep_inside_bounds(new_z, _Z_LOWER_BOUND, _Y_UPPER_BOUND)
         return new_x, new_y, new_z
 
     def find_centre(self, max_run_num=3, rotation_points=6):
@@ -719,7 +682,7 @@ class OAVCentring:
                 new_z,
             )
 
-        # We've moved to the best angle. Now rotate to the largest bulge.
+        # We've moved to the best x,y,z already. Now rotate to the largest bulge.
         yield from bps.mv(self.oav_goniometer.omega, best_omega_angle)
         LOGGER.info("exiting OAVCentre")
 
@@ -776,13 +739,21 @@ def keep_inside_bounds(value, lower_bound, upper_bound):
     return (
         below_lower * lower_bound
         + above_upper * upper_bound
-        + (not above_upper or below_lower) * value
+        + (not above_upper and not below_lower) * value
     )
 
 
+def print_test(oav: OAV):
+    x = yield from bps.rd(oav.enable_overlay_pv)
+    print(x)
+
+
+"""
 @bpp.run_decorator()
-def oav_plan(oav: OAVCentring):
-    yield from oav.pre_centring_setup_oav()
+def oav_plan(oav: OAVCentring, centring_params_file, beam_centre_file, camera_zoom_levels_file
+):
+    OAVParameters()
+    yield from print_test(oav.oav)
 
 
 if __name__ == "__main__":
@@ -790,8 +761,9 @@ if __name__ == "__main__":
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
         "src/artemis/devices/unit_tests/test_display.configuration",
         "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
-        beamline="S03SIM",
+        beamline="BL03I",
     )
-
+    oav.oav.wait_for_connection()
     RE = RunEngine()
     RE(oav_plan(oav))
+"""

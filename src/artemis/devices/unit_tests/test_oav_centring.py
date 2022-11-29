@@ -33,8 +33,8 @@ def mock_centring(
 ):
     centring = OAVCentring(
         OAV_CENTRING_JSON,
-        DISPLAY_CONFIGURATION,
         ZOOM_LEVELS_XML,
+        DISPLAY_CONFIGURATION,
         beamline="NOT A REAL BL OR SO3",
     )
     centring.oav_camera = make_fake_device(Camera)(name="camera")
@@ -44,31 +44,45 @@ def mock_centring(
     return centring
 
 
+@pytest.fixture
+def mock_parameters():
+    parameters = OAVParameters(
+        OAV_CENTRING_JSON, ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION
+    )
+    return parameters
+
+
 @pytest.mark.parametrize(
     "parameter_name,expected_value",
     [("canny_edge_lower_threshold", 5.0), ("close_ksize", 11), ("direction", 1)],
 )
-def test_oav_parameters_load_parameters_from_json(parameter_name, expected_value):
-    parameters = OAVParameters(OAV_CENTRING_JSON, ZOOM_LEVELS_XML)
-    parameters.load_parameters_from_json()
+def test_oav_parameters_load_parameters_from_json(
+    parameter_name, expected_value, mock_parameters: OAVParameters
+):
 
-    assert parameters.__dict__[parameter_name] == expected_value
+    mock_parameters.load_parameters_from_json()
+
+    assert mock_parameters.__dict__[parameter_name] == expected_value
 
 
-def test_oav__extract_dict_parameter_not_found_fallback_value_present():
-    parameters = OAVParameters(OAV_CENTRING_JSON, ZOOM_LEVELS_XML)
-    parameters.load_json()
+def test_oav__extract_dict_parameter_not_found_fallback_value_present(
+    mock_parameters: OAVParameters,
+):
+    mock_parameters.load_json()
     assert (
-        parameters._extract_dict_parameter("a_key_not_in_the_json", fallback_value=1)
+        mock_parameters._extract_dict_parameter(
+            "a_key_not_in_the_json", fallback_value=1
+        )
         == 1
     )
 
 
-def test_oav__extract_dict_parameter_not_found_fallback_value_not_present():
-    parameters = OAVParameters(OAV_CENTRING_JSON, ZOOM_LEVELS_XML)
-    parameters.load_json()
+def test_oav__extract_dict_parameter_not_found_fallback_value_not_present(
+    mock_parameters,
+):
+    mock_parameters.load_json()
     with pytest.raises(KeyError):
-        parameters._extract_dict_parameter("a_key_not_in_the_json")
+        mock_parameters._extract_dict_parameter("a_key_not_in_the_json")
 
 
 def test_find_midpoint_symmetric_pin(mock_centring: OAVCentring):
@@ -103,7 +117,7 @@ def test_all_zero_waveform(mock_centring: OAVCentring):
         ) = mock_centring.rotate_pin_and_collect_values(6)
 
 
-def test_find_midpoint_non_symmetric_pin(mock_centring):
+def test_find_midpoint_non_symmetric_pin(mock_centring: OAVCentring):
     x = np.arange(-2.35, 2.35, 4.7 / 1024)
     x2 = x**2
     x4 = x2**2
@@ -131,9 +145,9 @@ def test_extract_beam_position_different_beam_postitions(
     mock_centring: OAVCentring,
 ):
     mock_centring.oav_parameters.zoom = zoom_level
-    mock_centring._extract_beam_position()
-    assert mock_centring.beam_centre_x == expected_xCentre
-    assert mock_centring.beam_centre_y == expected_yCentre
+    mock_centring.oav_parameters._extract_beam_position(zoom_level)
+    assert mock_centring.oav_parameters.beam_centre_x == expected_xCentre
+    assert mock_centring.oav_parameters.beam_centre_y == expected_yCentre
 
 
 @pytest.mark.parametrize(
@@ -208,3 +222,13 @@ def test_load_microns_per_pixel_entries_found(
 def test_load_microns_per_pixel_entry_not_found(mock_centring: OAVCentring):
     with pytest.raises(OAVError_ZoomLevelNotFound):
         mock_centring.oav_parameters.load_microns_per_pixel(0.000001)
+
+
+@pytest.mark.parametrize(
+    "value,lower_bound,upper_bound,expected_value",
+    [(0.5, -10, 10, 0.5), (-100, -10, 10, -10), (10000, -213, 50, 50)],
+)
+def test_keep_inside_bounds(value, lower_bound, upper_bound, expected_value):
+    from src.artemis.devices.oav.oav_centring import keep_inside_bounds
+
+    assert keep_inside_bounds(value, lower_bound, upper_bound) == expected_value

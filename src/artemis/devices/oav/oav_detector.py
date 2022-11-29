@@ -129,3 +129,45 @@ class OAV(AreaDetector):
 
     def get_edge_waveforms_as_numpy_arrays(self):
         return (np.array(pv) for pv in tuple(self.get_edge_waveforms()))
+
+    def start_mxsc(self, input_plugin, min_callback_time, filename):
+        """
+        Sets PVs relevant to edge detection plugin.
+
+        Args:
+            input_plugin: link to the camera stream
+            min_callback_time: the value to set the minimum callback time to
+            filename: filename of the python script to detect edge waveforms from camera stream.
+        Returns: None
+        """
+        yield from bps.abs_set(self.input_plugin_pv, input_plugin)
+
+        # Turns the area detector plugin on
+        yield from bps.abs_set(self.enable_callbacks_pv, 1)
+
+        # Set the minimum time between updates of the plugin
+        yield from bps.abs_set(self.min_callback_time_pv, min_callback_time)
+
+        # Stop the plugin from blocking the IOC and hogging all the CPU
+        yield from bps.abs_set(self.blocking_callbacks_pv, 0)
+
+        # Set the python file to use for calculating the edge waveforms
+        yield from bps.abs_set(self.py_filename_pv, filename, wait=True)
+        yield from bps.abs_set(self.read_file_pv, 1)
+
+        # Image annotations
+        yield from bps.abs_set(self.draw_tip_pv, True)
+        yield from bps.abs_set(self.draw_edges_pv, True)
+
+        # Use the original image type for the edge output array
+        yield from bps.abs_set(self.output_array_pv, EdgeOutputArrayImageType.ORIGINAL)
+
+    def get_sizes_from_pvs(self):
+        """
+        Yields the sizes from PVs.
+        Args: None
+        Yields:
+            The values from x_size_pv, y_size_pv.
+        """
+        yield from bps.rd(self.x_size_pv)
+        yield from bps.rd(self.y_size_pv)
