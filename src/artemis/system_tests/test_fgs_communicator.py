@@ -5,8 +5,8 @@ from bluesky.run_engine import RunEngine
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
-from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import SIM_BEAMLINE, DetectorParams, FullParameters
 from artemis.utils import Point3D
 
@@ -63,8 +63,8 @@ def test_communicator_in_composite_run(
     params = FullParameters()
     params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
-    communicator = FGSCommunicator(params)
-    communicator.xray_centre_motor_position = Point3D(1, 2, 3)
+    callbacks = FGSCallbackCollection.from_params(params)
+    callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
 
     fast_grid_scan_composite = FGSComposite(
         insertion_prefix=params.insertion_prefix,
@@ -76,11 +76,11 @@ def test_communicator_in_composite_run(
     # but this is not a solution
     fast_grid_scan_composite.wait_for_connection()
     # Would be better to use get_plan instead but eiger doesn't work well in S03
-    RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, communicator))
+    RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, callbacks))
 
     # nexus writing
-    communicator.nxs_writer_1.assert_called_once()
-    communicator.nxs_writer_2.assert_called_once()
+    callbacks.nexus_handler.nxs_writer_1.assert_called_once()
+    callbacks.nexus_handler.assert_called_once()
     # ispyb
     ispyb_begin_deposition.assert_called_once()
     ispyb_end_deposition.assert_called_once()
