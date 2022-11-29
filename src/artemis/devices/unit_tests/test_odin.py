@@ -87,3 +87,36 @@ def test_given_node_in_error_node_error_status_gives_message_and_node_number(
     assert in_error
     assert "0" in message
     assert ERR_MESSAGE in message
+
+
+@pytest.mark.parametrize(
+    "meta_writing, OD1_writing, OD2_writing",
+    [
+        (True, False, False),
+        (True, True, True),
+        (True, True, False),
+    ],
+)
+def test_wait_for_all_filewriters_to_finish(
+    fake_odin: EigerOdin, meta_writing, OD1_writing, OD2_writing
+):
+    fake_odin.meta.ready.sim_put(meta_writing)
+    fake_odin.nodes.nodes[0].writing.sim_put(OD1_writing)
+    fake_odin.nodes.nodes[1].writing.sim_put(OD2_writing)
+    fake_odin.nodes.nodes[2].writing.sim_put(0)
+    fake_odin.nodes.nodes[3].writing.sim_put(0)
+
+    status = fake_odin.create_finished_status()
+
+    assert not status.done
+
+    for writer in [
+        fake_odin.meta.ready,
+        fake_odin.nodes.nodes[0].writing,
+        fake_odin.nodes.nodes[1].writing,
+    ]:
+        writer.sim_put(0)
+
+    status.wait(1)
+    assert status.done
+    assert status.success
