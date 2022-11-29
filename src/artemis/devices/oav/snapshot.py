@@ -2,14 +2,18 @@ import threading
 from pathlib import Path
 
 import requests
-from ophyd import Component, Device, DeviceStatus, EpicsSignal, Signal
+from ophyd import Component, Device, DeviceStatus, EpicsSignal, EpicsSignalRO, Signal
 from PIL import Image
 
 
 class Snapshot(Device):
     filename: Signal = Component(Signal)
     directory: Signal = Component(Signal)
-    url: EpicsSignal = Component(EpicsSignal, ":JPG_URL_RBV", string=True)
+    url: EpicsSignal = Component(EpicsSignal, "JPG_URL_RBV", string=True)
+    x_size_pv: EpicsSignalRO = Component(EpicsSignalRO, "ArraySize1_RBV")
+    y_size_pv: EpicsSignalRO = Component(EpicsSignalRO, "ArraySize2_RBV")
+    input_rbpv: EpicsSignalRO = Component(EpicsSignalRO, "NDArrayPort_RBV")
+    input_pv: EpicsSignal = Component(EpicsSignal, "NDArrayPort")
     KICKOFF_TIMEOUT: float = 10.0
 
     def trigger(self):

@@ -2,7 +2,7 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky import RunEngine
 
-from artemis.devices.oav import OAV
+from artemis.devices.oav.oav_detector import OAV
 
 TEST_GRID_TOP_LEFT_X = 100
 TEST_GRID_TOP_LEFT_Y = 100
