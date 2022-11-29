@@ -13,9 +13,10 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 
 import artemis.log
+from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import get_plan
-from artemis.fgs_communicator import FGSCommunicator
 from artemis.parameters import FullParameters
+from artemis.tracing import TRACER
 
 
 class Actions(Enum):
@@ -50,7 +51,9 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    fgs_communicator: FGSCommunicator
+    callbacks: FGSCallbackCollection = FGSCallbackCollection.from_params(
+        FullParameters()
+    )
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
@@ -60,7 +63,7 @@ class BlueskyRunner:
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-        self.fgs_communicator = FGSCommunicator(parameters)
+        self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -101,7 +104,8 @@ class BlueskyRunner:
             command = self.command_queue.get()
             if command.action == Actions.START:
                 try:
-                    self.RE(get_plan(command.parameters, self.fgs_communicator))
+                    with TRACER.start_span("do_run"):
+                        self.RE(get_plan(command.parameters, self.callbacks))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except Exception as exception:

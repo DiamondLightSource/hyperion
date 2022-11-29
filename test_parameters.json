@@ -1,10 +1,11 @@
 {
     "beamline": "BL03S",
     "detector": "EIGER2_X_16M",
+    "zocalo_environment": "devrmq",
     "grid_scan_params": {
         "x_steps": 5,
         "y_steps": 10,
-        "z_steps": 0,
+        "z_steps": 2,
         "x_step_size": 0.1,
         "y_step_size": 0.1,
         "z_step_size": 0.1,

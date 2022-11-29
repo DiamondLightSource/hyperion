@@ -5,12 +5,13 @@ from dataclasses_json import dataclass_json
 
 from artemis.devices.eiger import DetectorParams
 from artemis.devices.fast_grid_scan import GridScanParams
-from artemis.ispyb.ispyb_dataclass import IspybParams
+from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.utils import Point3D
 
 SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_PLAN_NAME = "ispyb_readings"
+SIM_ZOCALO_ENV = "devrmq"
 
 
 def default_field(obj):
@@ -20,6 +21,7 @@ def default_field(obj):
 @dataclass_json
 @dataclass
 class FullParameters:
+    zocalo_environment: str = SIM_ZOCALO_ENV
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
     grid_scan_params: GridScanParams = default_field(

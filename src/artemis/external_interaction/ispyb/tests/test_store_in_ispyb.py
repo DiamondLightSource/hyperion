@@ -5,7 +5,10 @@ import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
-from artemis.ispyb.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
+from artemis.external_interaction.ispyb.store_in_ispyb import (
+    StoreInIspyb2D,
+    StoreInIspyb3D,
+)
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
@@ -223,7 +226,7 @@ def test_fail_result_run_results_in_bad_run_status(
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
 
     dummy_ispyb.begin_deposition()
-    dummy_ispyb.end_deposition("fail")
+    dummy_ispyb.end_deposition("fail", "test specifies failure")
 
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
@@ -245,7 +248,7 @@ def test_no_exception_during_run_results_in_good_run_status(
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
     dummy_ispyb.begin_deposition()
-    dummy_ispyb.end_deposition("success")
+    dummy_ispyb.end_deposition("success", "")
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
         0
@@ -266,7 +269,7 @@ def test_ispyb_deposition_comment_correct(
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
     dummy_ispyb.begin_deposition()
-    dummy_ispyb.end_deposition("success")
+    dummy_ispyb.end_deposition("success", "")
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
         0
@@ -275,6 +278,30 @@ def test_ispyb_deposition_comment_correct(
     assert upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
         "in 0.1 mm by 0.1 mm steps. Top left: [0,1], bottom right: [320,16001]."
+    )
+
+
+@patch("ispyb.open")
+def test_ispyb_deposition_comment_correct_on_failure(
+    mock_ispyb_conn: MagicMock,
+    dummy_ispyb,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+    mock_mx_aquisition = (
+        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+    )
+    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+    dummy_ispyb.begin_deposition()
+    dummy_ispyb.end_deposition("fail", "could not connect to devices")
+    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
+    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
+        0
+    ]
+    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
+    assert upserted_param_value_list[29] == (
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 0.1 mm by 0.1 mm steps. Top left: [0,1], bottom right: [320,16001]. "
+        "DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
