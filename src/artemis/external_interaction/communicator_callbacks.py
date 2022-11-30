@@ -66,7 +66,7 @@ class ISPyBHandlerCallback(CallbackBase):
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
         self.ispyb = (
             StoreInIspyb3D(ispyb_config, self.params)
-            if self.params.grid_scan_params.is_3d_grid_scan
+            if self.params.experiment_params.is_3d_grid_scan
             else StoreInIspyb2D(ispyb_config, self.params)
         )
         self.ispyb_ids: tuple = (None, None, None)
@@ -79,12 +79,18 @@ class ISPyBHandlerCallback(CallbackBase):
         event_descriptor = self.descriptors[doc["descriptor"]]
 
         if event_descriptor.get("name") == ISPYB_PLAN_NAME:
-            self.params.artemis_params.ispyb_params.undulator_gap = doc["data"]["fgs_undulator_gap"]
+            self.params.artemis_params.ispyb_params.undulator_gap = doc["data"][
+                "fgs_undulator_gap"
+            ]
             self.params.artemis_params.ispyb_params.synchrotron_mode = doc["data"][
                 "fgs_synchrotron_machine_status_synchrotron_mode"
             ]
-            self.params.artemis_params.ispyb_params.slit_gap_size_x = doc["data"]["fgs_slit_gaps_xgap"]
-            self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"]["fgs_slit_gaps_ygap"]
+            self.params.artemis_params.ispyb_params.slit_gap_size_x = doc["data"][
+                "fgs_slit_gaps_xgap"
+            ]
+            self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
+                "fgs_slit_gaps_ygap"
+            ]
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()

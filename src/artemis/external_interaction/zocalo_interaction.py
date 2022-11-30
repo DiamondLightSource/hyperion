@@ -37,7 +37,7 @@ class ZocaloHandlerCallback(CallbackBase):
 
     def __init__(self, parameters: FullParameters, ispyb_handler: ISPyBHandlerCallback):
         self.grid_position_to_motor_position = (
-            parameters.grid_scan_params.grid_position_to_motor_position
+            parameters.experiment_params.grid_position_to_motor_position
         )
         self.zocalo_env = parameters.zocalo_environment
         self.processing_start_time = 0.0

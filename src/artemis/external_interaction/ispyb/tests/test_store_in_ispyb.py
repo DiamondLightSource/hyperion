@@ -106,7 +106,7 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
     y = 1
     z = 2
     DUMMY_PARAMS.artemis_params.ispyb_params.upper_left = Point3D(x, y, z)
-    DUMMY_PARAMS.grid_scan_params.z_step_size = 0.2
+    DUMMY_PARAMS.experiment_params.z_step_size = 0.2
 
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
 
@@ -128,8 +128,8 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
         dummy_ispyb_3d.xtal_snapshots
         == DUMMY_PARAMS.artemis_params.ispyb_params.xtal_snapshots_omega_end
     )
-    assert dummy_ispyb_3d.y_step_size == DUMMY_PARAMS.grid_scan_params.z_step_size
-    assert dummy_ispyb_3d.y_steps == DUMMY_PARAMS.grid_scan_params.z_steps
+    assert dummy_ispyb_3d.y_step_size == DUMMY_PARAMS.experiment_params.z_step_size
+    assert dummy_ispyb_3d.y_steps == DUMMY_PARAMS.experiment_params.z_steps
     assert dummy_ispyb_3d.upper_left.x == x
     assert dummy_ispyb_3d.upper_left.y == z
 
@@ -316,8 +316,8 @@ def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_t
     ispyb_conn, dummy_ispyb
 ):
     expected_number_of_steps = 200 * 3
-    DUMMY_PARAMS.grid_scan_params.x_steps = 200
-    DUMMY_PARAMS.grid_scan_params.y_steps = 3
+    DUMMY_PARAMS.experiment_params.x_steps = 200
+    DUMMY_PARAMS.experiment_params.y_steps = 3
 
     def test_number_of_steps(default_params, actual):
         # Note that internally the ispyb API removes underscores so this is the same as n_images

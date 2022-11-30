@@ -91,8 +91,8 @@ class FullParameters:
 
     def __init__(
         self,
-        artemis_parameters: ArtemisParameters,
-        experiment_parameters: GridScanParams,
+        artemis_parameters: ArtemisParameters = ArtemisParameters(),
+        experiment_parameters: GridScanParams = GridScanParams(),
     ) -> None:
         self.artemis_params = artemis_parameters
         self.experiment_params = experiment_parameters

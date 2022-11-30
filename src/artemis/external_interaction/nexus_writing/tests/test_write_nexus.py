@@ -86,7 +86,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
     minimal_params, dummy_nexus_writers
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
-    grid_scan_params: GridScanParams = minimal_params.grid_scan_params
+    grid_scan_params: GridScanParams = minimal_params.experiment_params
     nexus_writer_1.create_nexus_file()
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:

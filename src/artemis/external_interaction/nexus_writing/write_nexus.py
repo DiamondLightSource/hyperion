@@ -51,11 +51,11 @@ module = {
 
 def create_parameters_for_first_file(parameters: FullParameters):
     new_params = deepcopy(parameters)
-    new_params.grid_scan_params.z_axis = GridAxis(
-        parameters.grid_scan_params.z1_start, 0, 0
+    new_params.experiment_params.z_axis = GridAxis(
+        parameters.experiment_params.z1_start, 0, 0
     )
     new_params.artemis_params.detector_params.num_images = (
-        parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
+        parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
     )
     new_params.artemis_params.detector_params.nexus_file_run_number = (
         parameters.artemis_params.detector_params.run_number
@@ -65,15 +65,15 @@ def create_parameters_for_first_file(parameters: FullParameters):
 
 def create_parameters_for_second_file(parameters: FullParameters):
     new_params = deepcopy(parameters)
-    new_params.grid_scan_params.y_axis = GridAxis(
-        parameters.grid_scan_params.y2_start, 0, 0
+    new_params.experiment_params.y_axis = GridAxis(
+        parameters.experiment_params.y2_start, 0, 0
     )
     new_params.artemis_params.detector_params.omega_start += 90
     new_params.artemis_params.detector_params.nexus_file_run_number = (
         parameters.artemis_params.detector_params.run_number + 1
     )
     new_params.artemis_params.detector_params.start_index = (
-        parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
+        parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
     )
     return new_params
 
@@ -214,7 +214,7 @@ class NexusWriter:
         )
 
         self.goniometer = create_goniometer_axes(
-            parameters.artemis_params.detector_params, parameters.grid_scan_params
+            parameters.artemis_params.detector_params, parameters.experiment_params
         )
         self.directory = Path(parameters.artemis_params.detector_params.directory)
         self.filename = parameters.artemis_params.detector_params.full_filename

@@ -84,7 +84,7 @@ def run_gridscan(
     zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
-    yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
+    yield from set_fast_grid_scan_params(fgs_motors, parameters.experiment_params)
 
     @bpp.stage_decorator([zebra, eiger, fgs_motors])
     def do_fgs():
