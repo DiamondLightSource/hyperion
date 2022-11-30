@@ -6,7 +6,7 @@ import numpy as np
 from bluesky import RunEngine
 
 from artemis.devices.backlight import Backlight
-from artemis.devices.motors import I03Smargon
+from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
 
 

@@ -14,7 +14,7 @@ from ophyd import (
 )
 
 from artemis.devices.backlight import Backlight
-from artemis.devices.motors import I03Smargon
+from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.oav.grid_overlay import SnapshotWithGrid
 
 
