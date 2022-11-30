@@ -96,7 +96,7 @@ class StoreInIspyb(ABC):
     def _store_scan_data(self):
         pass
 
-    @TRACER.start_span("read_comment_from_ispyb")
+    @TRACER.start_as_current_span("read_comment_from_ispyb")
     def get_current_datacollection_comment(self, dcid: int) -> str:
         """Read the 'comments' field from the given datacollection id's ISPyB entry.
         Returns an empty string if the comment is not yet initialised.

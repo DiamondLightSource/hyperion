@@ -20,3 +20,5 @@ def test_ispyb_get_comment_from_collection_correctly():
     assert (
         ispyb.get_current_datacollection_comment(8292317) == expected_comment_contents
     )
+
+    assert ispyb.get_current_datacollection_comment(2) == ""
