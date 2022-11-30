@@ -23,5 +23,5 @@ class FGSComposite(Device):
     sample_motors: I03Smargon = Component(I03Smargon, "-MO-SGON-01:")
 
     def __init__(self, insertion_prefix: str, *args, **kwargs):
-        self.insertion_prefix = insertion_prefix
+        self.artemis_parameters.insertion_prefix = insertion_prefix
         super().__init__(*args, **kwargs)

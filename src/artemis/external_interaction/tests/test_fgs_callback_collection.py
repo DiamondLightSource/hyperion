@@ -137,7 +137,7 @@ def test_communicator_in_composite_run(
     RE = RunEngine({})
 
     params = FullParameters()
-    params.beamline = SIM_BEAMLINE
+    params.artemis_parameters.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
     callbacks = FGSCallbackCollection.from_params(params)
@@ -147,9 +147,9 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
 
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=params.insertion_prefix,
+        insertion_prefix=params.artemis_parameters.insertion_prefix,
         name="fgs",
-        prefix=params.beamline,
+        prefix=params.artemis_parameters.beamline,
     )
     # this is where it's currently getting stuck:
     # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False

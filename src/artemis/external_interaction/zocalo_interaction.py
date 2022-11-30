@@ -39,7 +39,9 @@ class ZocaloHandlerCallback(CallbackBase):
         self.grid_position_to_motor_position = (
             parameters.experiment_params.grid_position_to_motor_position
         )
-        self.zocalo_env = parameters.zocalo_environment
+        self.zocalo_env = (
+            parameters.artemis_parameters.artemis_parameters.zocalo_environment
+        )
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.results = None

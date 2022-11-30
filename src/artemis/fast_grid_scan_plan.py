@@ -141,16 +141,16 @@ def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
     """
     artemis.log.LOGGER.info("Fetching composite plan")
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=parameters.insertion_prefix,
+        insertion_prefix=parameters.artemis_parameters.insertion_prefix,
         name="fgs",
-        prefix=parameters.beamline,
+        prefix=parameters.artemis_parameters.beamline,
     )
 
     # Note, eiger cannot be currently waited on, see #166
     eiger = EigerDetector(
         parameters.artemis_params.detector_params,
         name="eiger",
-        prefix=f"{parameters.beamline}-EA-EIGER-01:",
+        prefix=f"{parameters.artemis_parameters.beamline}-EA-EIGER-01:",
     )
 
     artemis.log.LOGGER.debug("Connecting to EPICS devices...")
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
 
-    parameters = FullParameters(beamline=args.beamline)
+    parameters = FullParameters(beamline=args.artemis_parameters.beamline)
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     RE(get_plan(parameters, subscriptions))
