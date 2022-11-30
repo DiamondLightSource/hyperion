@@ -23,3 +23,8 @@ class OAVError_NoRotationsPassValidityTest(Exception):
 class OAVError_MissingRotations(Exception):
     def __init__(self, errmsg):
         LOGGER.error(errmsg)
+
+
+class OAVError_TipDistanceExceedsMax(Exception):
+    def __init__(self, errmsg):
+        LOGGER.error(errmsg)
