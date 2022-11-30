@@ -430,8 +430,8 @@ def test_ispyb_comment_fetching_returns_empty_string_on_exception(
     mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
     second_upserted_param_value_list = mock_upsert_dc_calls[1][0][0]
     # Not easily possible to access what get_current_datacollection_comment() returns
-    # but we know that " DataCollection Unsuccessful reason: {reason}" should be
-    # appended to the result of it
+    # but we know that " DataCollection Unsuccessful reason: {reason}" must be appended
+    # to the result of it
     assert (
         second_upserted_param_value_list[29]
         == " DataCollection Unsuccessful reason: bad stuff happened"
