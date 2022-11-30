@@ -1,7 +1,8 @@
 import copy
+import json
 from dataclasses import dataclass, field
 
-from dataclasses_json import dataclass_json
+from dataclasses_json import DataClassJsonMixin
 
 from artemis.devices.eiger import DetectorParams
 from artemis.devices.fast_grid_scan import GridScanParams
@@ -18,28 +19,12 @@ def default_field(obj):
     return field(default_factory=lambda: copy.deepcopy(obj))
 
 
-@dataclass_json
 @dataclass
-class FullParameters:
+class ArtemisParameters(DataClassJsonMixin):
     zocalo_environment: str = SIM_ZOCALO_ENV
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
-    grid_scan_params: GridScanParams = default_field(
-        GridScanParams(
-            x_steps=4,
-            y_steps=200,
-            z_steps=61,
-            x_step_size=0.1,
-            y_step_size=0.1,
-            z_step_size=0.1,
-            dwell_time=0.2,
-            x_start=0.0,
-            y1_start=0.0,
-            y2_start=0.0,
-            z1_start=0.0,
-            z2_start=0.0,
-        )
-    )
+
     detector_params: DetectorParams = default_field(
         DetectorParams(
             current_energy=100,
@@ -83,3 +68,52 @@ class FullParameters:
             slit_gap_size_y=0.1,
         )
     )
+
+
+class FullParameters:
+    experiment_params: GridScanParams = default_field(
+        GridScanParams(
+            x_steps=4,
+            y_steps=200,
+            z_steps=61,
+            x_step_size=0.1,
+            y_step_size=0.1,
+            z_step_size=0.1,
+            dwell_time=0.2,
+            x_start=0.0,
+            y1_start=0.0,
+            y2_start=0.0,
+            z1_start=0.0,
+            z2_start=0.0,
+        )
+    )
+    artemis_params: ArtemisParameters = default_field(ArtemisParameters())
+
+    def __init__(
+        self,
+        artemis_parameters: ArtemisParameters,
+        experiment_parameters: GridScanParams,
+    ) -> None:
+        self.artemis_params = artemis_parameters
+        self.experiment_params = experiment_parameters
+
+    def to_dict(self) -> dict[str, dict]:
+        return {
+            "artemis_params": self.artemis_params.to_dict(),
+            "experiment_params": self.experiment_params.to_dict(),
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, dict_params: dict[str, dict]):
+        return cls(
+            ArtemisParameters.from_dict(dict_params["artemis_params"]),
+            GridScanParams.from_dict(dict_params["experiment_params"]),
+        )
+
+    @classmethod
+    def from_json(cls, json_params: str):
+        dict_params = json.loads(json_params)
+        return cls.from_dict(dict_params)

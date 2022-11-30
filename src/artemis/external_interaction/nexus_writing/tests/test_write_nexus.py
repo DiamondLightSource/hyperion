@@ -28,15 +28,15 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 @pytest.fixture(params=[1044])
 def minimal_params(request):
     params = FullParameters()
-    params.ispyb_params.wavelength = 1.0
-    params.ispyb_params.flux = 9.0
-    params.ispyb_params.transmission = 0.5
-    params.detector_params.use_roi_mode = True
-    params.detector_params.num_images = request.param
-    params.detector_params.directory = (
+    params.artemis_params.ispyb_params.wavelength = 1.0
+    params.artemis_params.ispyb_params.flux = 9.0
+    params.artemis_params.ispyb_params.transmission = 0.5
+    params.artemis_params.detector_params.use_roi_mode = True
+    params.artemis_params.detector_params.num_images = request.param
+    params.artemis_params.detector_params.directory = (
         os.path.dirname(os.path.realpath(__file__)) + "/test_data"
     )
-    params.detector_params.prefix = "dummy"
+    params.artemis_params.detector_params.prefix = "dummy"
     yield params
 
 
@@ -204,7 +204,9 @@ def test_nexus_writer_files_are_formatted_as_expected(
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
-        expected_file_name_prefix = minimal_params.detector_params.prefix + "_0"
+        expected_file_name_prefix = (
+            minimal_params.artemis_params.detector_params.prefix + "_0"
+        )
         assert file_name.startswith(expected_file_name_prefix)
 
 

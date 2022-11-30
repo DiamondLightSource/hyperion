@@ -33,7 +33,9 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
     )
     params["detector_params"]["detector_size_constants"] = EIGER_TYPE_EIGER2_X_4M
     params: FullParameters = FullParameters.from_dict(params)
-    det_dimension = params.detector_params.detector_size_constants.det_dimension
+    det_dimension = (
+        params.artemis_params.detector_params.detector_size_constants.det_dimension
+    )
     assert det_dimension == EIGER2_X_4M_DIMENSION
 
 
@@ -67,12 +69,18 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
         params = FullParameters()
 
         def event(self, doc: dict):
-            params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
-            params.ispyb_params.synchrotron_mode = doc["data"][
+            params.artemis_params.ispyb_params.undulator_gap = doc["data"][
+                "undulator_gap"
+            ]
+            params.artemis_params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"
             ]
-            params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
-            params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
+            params.artemis_params.ispyb_params.slit_gap_size_x = doc["data"][
+                "slit_gaps_xgap"
+            ]
+            params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
+                "slit_gaps_ygap"
+            ]
 
     testcb = TestCB()
     testcb.params = params
@@ -86,10 +94,10 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
     params = testcb.params
 
-    assert params.ispyb_params.undulator_gap == undulator_test_value
-    assert params.ispyb_params.synchrotron_mode == synchrotron_test_value
-    assert params.ispyb_params.slit_gap_size_x == xgap_test_value
-    assert params.ispyb_params.slit_gap_size_y == ygap_test_value
+    assert params.artemis_params.ispyb_params.undulator_gap == undulator_test_value
+    assert params.artemis_params.ispyb_params.synchrotron_mode == synchrotron_test_value
+    assert params.artemis_params.ispyb_params.slit_gap_size_x == xgap_test_value
+    assert params.artemis_params.ispyb_params.slit_gap_size_y == ygap_test_value
 
 
 @patch("artemis.fast_grid_scan_plan.run_gridscan")
@@ -114,7 +122,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE(
         run_gridscan_and_move(
             FakeComposite("test", name="fgs"),
-            FakeEiger(params.detector_params),
+            FakeEiger(params.artemis_params.detector_params),
             params,
             subscriptions,
         )
@@ -158,7 +166,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     FakeComposite = make_fake_device(FGSComposite)
     FakeEiger = make_fake_device(EigerDetector)
     fake_composite = FakeComposite("test", name="fakecomposite")
-    fake_eiger = FakeEiger(params.detector_params)
+    fake_eiger = FakeEiger(params.artemis_params.detector_params)
 
     RE(
         run_gridscan_and_move(

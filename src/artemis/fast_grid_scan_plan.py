@@ -148,7 +148,7 @@ def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
 
     # Note, eiger cannot be currently waited on, see #166
     eiger = EigerDetector(
-        parameters.detector_params,
+        parameters.artemis_params.detector_params,
         name="eiger",
         prefix=f"{parameters.beamline}-EA-EIGER-01:",
     )

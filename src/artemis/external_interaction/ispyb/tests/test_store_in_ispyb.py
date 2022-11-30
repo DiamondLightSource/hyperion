@@ -20,9 +20,9 @@ TEST_SESSION_ID = 90
 
 DUMMY_CONFIG = "/file/path/to/config/"
 DUMMY_PARAMS = FullParameters()
-DUMMY_PARAMS.ispyb_params.upper_left = Point3D(100, 100, 100)
-DUMMY_PARAMS.ispyb_params.pixels_per_micron_x = 0.8
-DUMMY_PARAMS.ispyb_params.pixels_per_micron_y = 0.8
+DUMMY_PARAMS.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 100)
+DUMMY_PARAMS.artemis_params.ispyb_params.pixels_per_micron_x = 0.8
+DUMMY_PARAMS.artemis_params.ispyb_params.pixels_per_micron_y = 0.8
 
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
@@ -105,7 +105,7 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
     x = 0
     y = 1
     z = 2
-    DUMMY_PARAMS.ispyb_params.upper_left = Point3D(x, y, z)
+    DUMMY_PARAMS.artemis_params.ispyb_params.upper_left = Point3D(x, y, z)
     DUMMY_PARAMS.grid_scan_params.z_step_size = 0.2
 
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
@@ -116,11 +116,17 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d):
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    assert dummy_ispyb_3d.omega_start == DUMMY_PARAMS.detector_params.omega_start + 90
-    assert dummy_ispyb_3d.run_number == DUMMY_PARAMS.detector_params.run_number + 1
+    assert (
+        dummy_ispyb_3d.omega_start
+        == DUMMY_PARAMS.artemis_params.detector_params.omega_start + 90
+    )
+    assert (
+        dummy_ispyb_3d.run_number
+        == DUMMY_PARAMS.artemis_params.detector_params.run_number + 1
+    )
     assert (
         dummy_ispyb_3d.xtal_snapshots
-        == DUMMY_PARAMS.ispyb_params.xtal_snapshots_omega_end
+        == DUMMY_PARAMS.artemis_params.ispyb_params.xtal_snapshots_omega_end
     )
     assert dummy_ispyb_3d.y_step_size == DUMMY_PARAMS.grid_scan_params.z_step_size
     assert dummy_ispyb_3d.y_steps == DUMMY_PARAMS.grid_scan_params.z_steps
@@ -203,7 +209,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     ispyb_conn, dummy_ispyb
 ):
     expected_sample_id = "0001"
-    DUMMY_PARAMS.ispyb_params.sample_id = expected_sample_id
+    DUMMY_PARAMS.artemis_params.ispyb_params.sample_id = expected_sample_id
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")
