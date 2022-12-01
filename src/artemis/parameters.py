@@ -1,11 +1,13 @@
 import copy
 import json
 from dataclasses import dataclass, field
+from typing import Union
 
 from dataclasses_json import DataClassJsonMixin
 
 from artemis.devices.eiger import DetectorParams
 from artemis.devices.fast_grid_scan import GridScanParams
+from artemis.devices.rotation_scan import RotationScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.utils import Point3D
 
@@ -13,10 +15,20 @@ SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_PLAN_NAME = "ispyb_readings"
 SIM_ZOCALO_ENV = "devrmq"
+DEFAULT_EXPERIMENT_TYPE = "grid_scan"
+
+EXPERIMENT_NAMES = ["grid_scan", "rotation_scan"]
+EXPERIMENT_TYPE_LIST = [GridScanParams, RotationScanParams]
+EXPERIMENT_DICT = dict(zip(EXPERIMENT_NAMES, EXPERIMENT_TYPE_LIST))
+EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
 
 
 def default_field(obj):
     return field(default_factory=lambda: copy.deepcopy(obj))
+
+
+class WrongExperimentParameterSpecification(Exception):
+    pass
 
 
 @dataclass
@@ -24,7 +36,7 @@ class ArtemisParameters(DataClassJsonMixin):
     zocalo_environment: str = SIM_ZOCALO_ENV
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
-
+    experiment_type: str = EXPERIMENT_NAMES[0]
     detector_params: DetectorParams = default_field(
         DetectorParams(
             current_energy=100,
@@ -72,7 +84,7 @@ class ArtemisParameters(DataClassJsonMixin):
 
 class FullParameters:
     artemis_params: ArtemisParameters
-    experiment_params: GridScanParams
+    experiment_params: EXPERIMENT_TYPES
 
     def __init__(
         self,
@@ -115,12 +127,27 @@ class FullParameters:
 
     @classmethod
     def from_dict(cls, dict_params: dict[str, dict]):
+        experiment_type: EXPERIMENT_TYPES = EXPERIMENT_DICT.get(
+            dict_params["artemis_params"]["experiment_type"]
+        )
+        try:
+            assert experiment_type is not None
+            experiment_params = experiment_type.from_dict(
+                dict_params["experiment_params"]
+            )
+        except Exception:
+            raise WrongExperimentParameterSpecification
         return cls(
             ArtemisParameters.from_dict(dict_params["artemis_params"]),
-            GridScanParams.from_dict(dict_params["experiment_params"]),
+            experiment_params,
         )
 
     @classmethod
     def from_json(cls, json_params: str):
         dict_params = json.loads(json_params)
         return cls.from_dict(dict_params)
+
+    @classmethod
+    def from_file(cls, json_filename: str):
+        with open(json_filename) as f:
+            return cls.from_json(f.read())
