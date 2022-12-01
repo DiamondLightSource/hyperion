@@ -71,8 +71,13 @@ class ArtemisParameters(DataClassJsonMixin):
 
 
 class FullParameters:
-    experiment_params: GridScanParams = default_field(
-        GridScanParams(
+    artemis_params: ArtemisParameters
+    experiment_params: GridScanParams
+
+    def __init__(
+        self,
+        artemis_parameters: ArtemisParameters = ArtemisParameters(),
+        experiment_parameters: GridScanParams = GridScanParams(
             x_steps=4,
             y_steps=200,
             z_steps=61,
@@ -85,17 +90,19 @@ class FullParameters:
             y2_start=0.0,
             z1_start=0.0,
             z2_start=0.0,
-        )
-    )
-    artemis_params: ArtemisParameters = default_field(ArtemisParameters())
-
-    def __init__(
-        self,
-        artemis_parameters: ArtemisParameters = ArtemisParameters(),
-        experiment_parameters: GridScanParams = GridScanParams(),
+        ),
     ) -> None:
-        self.artemis_params = artemis_parameters
-        self.experiment_params = experiment_parameters
+        self.artemis_params = copy.deepcopy(artemis_parameters)
+        self.experiment_params = copy.deepcopy(experiment_parameters)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, FullParameters):
+            raise NotImplemented
+        if self.artemis_params != other.artemis_params:
+            return False
+        if self.experiment_params != other.experiment_params:
+            return False
+        return True
 
     def to_dict(self) -> dict[str, dict]:
         return {

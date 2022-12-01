@@ -32,6 +32,7 @@ def eiger():
 
 
 @pytest.mark.s03
+@pytest.mark.skip(reason="see #406")
 def test_can_stage_and_unstage_eiger(eiger: EigerDetector):
     eiger.stage()
     assert eiger.cam.acquire.get() == 1

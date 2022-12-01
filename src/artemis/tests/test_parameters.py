@@ -4,7 +4,8 @@ from artemis.parameters import FullParameters
 def test_new_parameters_is_a_deep_copy():
     first_copy = FullParameters()
     second_copy = FullParameters()
-
+    assert first_copy == second_copy
+    assert first_copy is not second_copy
     assert (
         first_copy.artemis_params.detector_params
         is not second_copy.artemis_params.detector_params

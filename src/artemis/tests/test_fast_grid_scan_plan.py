@@ -29,9 +29,12 @@ from artemis.utils import Point3D
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
     params = FullParameters().to_dict()
     assert (
-        params["detector_params"]["detector_size_constants"] == EIGER_TYPE_EIGER2_X_16M
+        params["artemis_params"]["detector_params"]["detector_size_constants"]
+        == EIGER_TYPE_EIGER2_X_16M
     )
-    params["detector_params"]["detector_size_constants"] = EIGER_TYPE_EIGER2_X_4M
+    params["artemis_params"]["detector_params"][
+        "detector_size_constants"
+    ] = EIGER_TYPE_EIGER2_X_4M
     params: FullParameters = FullParameters.from_dict(params)
     det_dimension = (
         params.artemis_params.detector_params.detector_size_constants.det_dimension

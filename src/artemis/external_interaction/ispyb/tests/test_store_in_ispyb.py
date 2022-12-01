@@ -267,7 +267,7 @@ def test_no_exception_during_run_results_in_good_run_status(
 @patch("ispyb.open")
 def test_ispyb_deposition_comment_correct(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb,
+    dummy_ispyb: StoreInIspyb2D,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
