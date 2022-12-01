@@ -1,6 +1,10 @@
+import json
+
+from pytest import raises
+
 from artemis.devices.fast_grid_scan import GridScanParams
 from artemis.devices.rotation_scan import RotationScanParams
-from artemis.parameters import FullParameters
+from artemis.parameters import FullParameters, WrongExperimentParameterSpecification
 
 
 def test_new_parameters_is_a_deep_copy():
@@ -47,3 +51,28 @@ def test_parameters_load_from_file():
     assert expt_params.x == 1.0
     assert expt_params.y == 2.0
     assert expt_params.z == 3.0
+
+
+def test_parameter_eq():
+    params = FullParameters()
+
+    assert not params == 6
+    assert not params == ""
+
+    params2 = FullParameters()
+    assert params == params2
+    params2.artemis_params.insertion_prefix = ""
+    assert not params == params2
+
+    params2 = FullParameters()
+    assert params == params2
+    params2.experiment_params.x_start = 12345
+    assert not params == params2
+
+
+def test_parameter_init_with_bad_type_raises_exception():
+    with open("test_parameters.json") as f:
+        param_dict = json.load(f)
+    param_dict["artemis_params"]["experiment_type"] = "nonsense_scan"
+    with raises(WrongExperimentParameterSpecification):
+        params = FullParameters.from_dict(param_dict)

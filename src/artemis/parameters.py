@@ -109,7 +109,7 @@ class FullParameters:
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, FullParameters):
-            raise NotImplemented
+            return NotImplemented
         if self.artemis_params != other.artemis_params:
             return False
         if self.experiment_params != other.experiment_params:
@@ -136,7 +136,10 @@ class FullParameters:
                 dict_params["experiment_params"]
             )
         except Exception:
-            raise WrongExperimentParameterSpecification
+            raise WrongExperimentParameterSpecification(
+                "Either the experiment type parameter does not match a known experiment"
+                "type, or the experiment parameters were not correct."
+            )
         return cls(
             ArtemisParameters.from_dict(dict_params["artemis_params"]),
             experiment_params,
