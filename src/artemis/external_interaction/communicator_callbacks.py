@@ -1,3 +1,4 @@
+import math
 import os
 from typing import Dict
 
@@ -14,7 +15,7 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.log import LOGGER
-from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
+from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
 
 
 class NexusFileHandlerCallback(CallbackBase):
@@ -63,7 +64,12 @@ class ISPyBHandlerCallback(CallbackBase):
     def __init__(self, parameters: FullParameters):
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
-        ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
+        ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
+        if ispyb_config == SIM_ISPYB_CONFIG:
+            LOGGER.warn(
+                "Using dev ISPyB database. If you want to use the real database, please"
+                " set the ISPYB_CONFIG_PATH environment variable."
+            )
         self.ispyb = (
             StoreInIspyb3D(ispyb_config, self.params)
             if self.params.grid_scan_params.is_3d_grid_scan
