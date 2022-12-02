@@ -90,11 +90,9 @@ class MXSC(Device):
         """
         Get the waveforms from the PVs as numpy arrays.
         """
-        yield from bps.rd(self.top)
-        yield from bps.rd(self.bottom)
-
-    def get_edge_waveforms_as_numpy_arrays(self):
-        return (np.array(pv) for pv in tuple(self.get_edge_waveforms()))
+        top = yield from bps.rd(self.top)
+        bottom = yield from bps.rd(self.bottom)
+        return np.array(top), np.array(bottom)
 
     def start_mxsc(self, input_plugin, min_callback_time, filename):
         """

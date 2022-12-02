@@ -28,11 +28,18 @@ _Y_SCALING_FACTOR = 768
 _Z_LOWER_BOUND = _Y_LOWER_BOUND = -1500
 _Z_UPPER_BOUND = _Y_UPPER_BOUND = 1500
 
+# The smargon can  rotate indefinitely, so the [high/low]_limit_travel is set as 0 to
+# reflect this. Despite this, Neil would like to have omega to oscillate so we will
+# hard code limits so gridscans will switch rotation directions and |omega| will stay pretty low.
+_DESIRED_HIGH_LIMIT = 181
+_DESIRED_LOW_LIMIT = -181
+
 
 def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParameters):
     """Setup OAV PVs with required values."""
 
     parameters.load_parameters_from_json()
+    print(parameters.zoom)
 
     yield from bps.abs_set(oav.cam.color_mode, ColorMode.RGB1)
     yield from bps.abs_set(oav.cam.acquire_period, parameters.acquire_period)
@@ -146,6 +153,7 @@ def get_rotation_increment(rotations: int, omega: int, high_limit: int) -> float
     but if we can't rotate 180 degrees clockwise without exceeding the threshold
     then the goniometer rotates in the anticlockwise direction.
     """
+
     # number of degrees to rotate to
     increment = 180.0 / rotations
 
@@ -157,14 +165,19 @@ def get_rotation_increment(rotations: int, omega: int, high_limit: int) -> float
 
 
 def yield_rotation_data(oav: OAV, smargon: I03Smargon):
-    current_omega, top, bottom, tip_x, tip_y, omega_limit = (
+    current_omega, top, bottom, tip_x, tip_y = (
         (yield from bps.rd(smargon.omega)),
         (yield from bps.rd(oav.mxsc.top)),
         (yield from bps.rd(oav.mxsc.bottom)),
         (yield from bps.rd(oav.mxsc.tip_x)),
         (yield from bps.rd(oav.mxsc.tip_y)),
-        (yield from bps.rd(smargon.omega.high_limit_travel)),
     )
+    omega_limit = yield from bps.rd(smargon.omega.high_limit_travel)
+
+    # If omega  can rotate indefinitely (indicated by high_limit_travel=0), we set the hard coded limit
+    if omega_limit == 0:
+        omega_limit = _DESIRED_HIGH_LIMIT
+
     return current_omega, np.array(top), np.array(bottom), tip_x, tip_y, omega_limit
 
 
@@ -278,7 +291,7 @@ def filter_rotation_data(
     x_median = np.median(x_positions)
 
     # filter out outliers
-    outlier_x_positions = np.where(x_positions - x_median < acceptable_x_difference)[0]
+    outlier_x_positions = np.where(x_positions - x_median > acceptable_x_difference)[0]
     widths_filtered = np.delete(widths, outlier_x_positions)
     omega_angles_filtered = np.delete(omega_angles, outlier_x_positions)
 
@@ -333,7 +346,7 @@ def find_widest_point_and_orthogonal_point(
     except (IndexError):
         raise OAVError_MissingRotations("Unable to find loop at 2 orthogonal angles")
 
-    indices_orthogonal_to_largest_width = np.array([])
+    indices_orthogonal_to_largest_width = np.array([], dtype=np.uint32)
     for angle in omega_angles_filtered[indices_orthogonal_to_largest_width_filtered]:
         indices_orthogonal_to_largest_width = np.append(
             indices_orthogonal_to_largest_width, np.where(omega_angles == angle)[0]
@@ -476,6 +489,7 @@ def centring_plan(
     """
 
     pre_centring_setup_oav(oav, backlight, parameters)
+    print(parameters.zoom)
 
     # we attempt to find the centre `max_run_num` times.
     run_num = 0
@@ -603,6 +617,18 @@ def keep_inside_bounds(value, lower_bound, upper_bound):
 
 
 if __name__ == "__main__":
+
+    def plot_top_bottom(oav: OAV):
+        import matplotlib.pyplot as plt
+
+        top, bottom = yield from oav.mxsc.get_edge_waveforms()
+        print(top)
+        print(bottom)
+        plt.plot(top)
+        plt.plot(bottom)
+        plt.show()
+
+    SIM_BEAMLINE = "BL03S"
     oav = OAV(name="oav", prefix=SIM_BEAMLINE)
     smargon = I03Smargon(name="smargon", prefix=SIM_BEAMLINE + "-MO-SGON-01:")
     backlight = Backlight(name="backlight", prefix=SIM_BEAMLINE)
@@ -611,7 +637,7 @@ if __name__ == "__main__":
         "src/artemis/devices/unit_tests/test_display.configuration",
         "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
     )
-
     oav.wait_for_connection()
     RE = RunEngine()
+    # RE(plot_top_bottom(oav))
     RE(centring_plan(oav, parameters, smargon, backlight))
