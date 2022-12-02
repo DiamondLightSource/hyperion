@@ -1,6 +1,6 @@
 from enum import Enum
 
-from ophyd import Component, Device, EpicsSignalRO
+from ophyd import Component, Device, EpicsSignalRO, StatusBase
 from ophyd.areadetector.cam import EigerDetectorCam
 from ophyd.status import Status
 
@@ -25,6 +25,8 @@ class EigerDetector(Device):
     bit_depth: EpicsSignalRO = Component(EpicsSignalRO, "CAM:BitDepthImage_RBV")
 
     STALE_PARAMS_TIMEOUT = 60
+
+    filewriters_finished: StatusBase
 
     def __init__(
         self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
@@ -73,7 +75,7 @@ class EigerDetector(Device):
 
     def unstage(self) -> bool:
         self.odin.file_writer.start_timeout.put(1)
-        self.odin.nodes.wait_for_filewriters_to_finish()
+        self.filewriters_finished.wait(30)
         self.disarm_detector()
         status_ok = self.odin.check_odin_state()
         self.disable_roi_mode()
@@ -181,6 +183,8 @@ class EigerDetector(Device):
 
         LOGGER.info("Setting aquire")
         self.cam.acquire.set(1).wait(timeout=10)
+
+        self.filewriters_finished = self.odin.create_finished_status()
 
         await_value(self.odin.fan.ready, 1).wait(10)
 

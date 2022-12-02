@@ -13,7 +13,7 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
+from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 from artemis.tracing import TRACER
 
