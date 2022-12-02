@@ -12,26 +12,6 @@ def nexus_writer():
 
 
 @pytest.fixture
-def run_start():
-    with patch("artemis.external_interaction.communicator_callbacks.run_start") as p:
-        yield p
-
-
-@pytest.fixture
-def run_end():
-    with patch("artemis.external_interaction.communicator_callbacks.run_end") as p:
-        yield p
-
-
-@pytest.fixture
-def wait_for_result():
-    with patch(
-        "artemis.external_interaction.communicator_callbacks.wait_for_result"
-    ) as wfr:
-        yield wfr
-
-
-@pytest.fixture
 def mock_ispyb_get_time():
     with patch(
         "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"

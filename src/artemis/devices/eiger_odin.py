@@ -1,6 +1,13 @@
 from typing import List, Tuple
 
-from ophyd import Component, Device, EpicsSignal, EpicsSignalRO, EpicsSignalWithRBV
+from ophyd import (
+    Component,
+    Device,
+    EpicsSignal,
+    EpicsSignalRO,
+    EpicsSignalWithRBV,
+    StatusBase,
+)
 from ophyd.areadetector.plugins import HDF5Plugin_V22
 
 from artemis.devices.status import await_value
@@ -57,11 +64,6 @@ class OdinNodesStatus(Device):
     def nodes(self) -> List[OdinNode]:
         return [self.node_0, self.node_1, self.node_2, self.node_3]
 
-    def wait_for_filewriters_to_finish(self):
-        for node_number, node_pv in enumerate(self.nodes):
-            if node_pv.writing.get():
-                await_value(node_pv.writing, 0).wait(30)
-
     def check_node_frames_from_attr(
         self, node_get_func, error_message_verb: str
     ) -> Tuple[bool, str]:
@@ -117,6 +119,12 @@ class EigerOdin(Device):
     file_writer: OdinFileWriter = Component(OdinFileWriter, "OD:")
     meta: OdinMetaListener = Component(OdinMetaListener, "OD:META:")
     nodes: OdinNodesStatus = Component(OdinNodesStatus, "")
+
+    def create_finished_status(self) -> StatusBase:
+        writing_finished = await_value(self.meta.ready, 0)
+        for node_pv in self.nodes.nodes:
+            writing_finished &= await_value(node_pv.writing, 0)
+        return writing_finished
 
     def check_odin_state(self) -> bool:
         is_initialised, error_message = self.check_odin_initialised()
