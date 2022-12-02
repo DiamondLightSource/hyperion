@@ -94,7 +94,6 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
 def test_results_adjusted_and_passed_to_move_xyz(
     move_xyz: MagicMock, run_gridscan: MagicMock
 ):
@@ -139,9 +138,6 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
     )
 
 
-@patch("artemis.external_interaction.communicator_callbacks.wait_for_result")
-@patch("artemis.external_interaction.communicator_callbacks.run_end")
-@patch("artemis.external_interaction.communicator_callbacks.run_start")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
