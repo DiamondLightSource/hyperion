@@ -100,7 +100,7 @@ class BlueskyRunner:
         """Stops the run engine and the loop waiting for messages."""
         print("Shutting down: Stopping the run engine gracefully")
         self.stop()
-        self.command_queue.put(Command("RunEngine", Actions.SHUTDOWN))
+        self.command_queue.put(Command(Actions.SHUTDOWN))
 
     def wait_on_queue(self):
         while True:
@@ -147,6 +147,10 @@ class RunExperiment(Resource):
 
 
 class StopOrStatus(Resource):
+    def __init__(self, runner: BlueskyRunner) -> None:
+        super().__init__()
+        self.runner = runner
+
     def put(self, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STOP.value:

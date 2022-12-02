@@ -14,8 +14,8 @@ from ophyd import (
 )
 
 from artemis.devices.backlight import Backlight
-from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.oav.grid_overlay import SnapshotWithGrid
+from artemis.devices.TESTING_I03Smargon import I03Smargon
 
 
 class ColorMode(IntEnum):

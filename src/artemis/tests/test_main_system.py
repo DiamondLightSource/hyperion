@@ -14,9 +14,9 @@ from artemis.parameters import FullParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
-STOP_ENDPOINT = FGS_ENDPOINT + Actions.STOP.value
-STATUS_ENDPOINT = FGS_ENDPOINT + "status"
-SHUTDOWN_ENDPOINT = FGS_ENDPOINT + Actions.SHUTDOWN.value
+STOP_ENDPOINT = Actions.STOP.value
+STATUS_ENDPOINT = "status"
+SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_PARAMS = FullParameters().to_json()
 
 

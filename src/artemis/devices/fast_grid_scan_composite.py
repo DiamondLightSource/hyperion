@@ -1,9 +1,9 @@
 from ophyd import Component, Device, FormattedComponent
 
 from artemis.devices.fast_grid_scan import FastGridScan
-from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
+from artemis.devices.TESTING_I03Smargon import I03Smargon
 from artemis.devices.undulator import Undulator
 from artemis.devices.zebra import Zebra
 
