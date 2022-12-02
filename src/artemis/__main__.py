@@ -13,8 +13,8 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 
 import artemis.log
-from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.exceptions import WarningException
+from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER
@@ -37,8 +37,8 @@ class Status(Enum):
 
 @dataclass
 class Command:
-    experiment: str
     action: Actions
+    experiment: Optional[str] = None
     parameters: Optional[FullParameters] = None
 
 
@@ -74,7 +74,7 @@ class BlueskyRunner:
             return StatusAndMessage(Status.FAILED, "Bluesky already running")
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
-            self.command_queue.put(Command(experiment, Actions.START, parameters))
+            self.command_queue.put(Command(Actions.START, experiment, parameters))
             return StatusAndMessage(Status.SUCCESS)
 
     def stopping_thread(self):
@@ -110,6 +110,8 @@ class BlueskyRunner:
             elif command.action == Actions.START:
                 try:
                     plan = PLAN_REGISTRY.get(command.experiment)
+                    if plan is None:
+                        raise PlanNotFound
                     with TRACER.start_span("do_run"):
                         self.RE(plan(command.parameters, self.callbacks))
                     self.current_status = StatusAndMessage(Status.IDLE)
@@ -143,7 +145,15 @@ class RunExperiment(Resource):
             status_and_message = self.runner.stop()
         return status_and_message.to_dict()
 
-    def get(self, experiment, action):
+
+class StopOrStatus(Resource):
+    def put(self, action):
+        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
+        if action == Actions.STOP.value:
+            status_and_message = self.runner.stop()
+        return status_and_message.to_dict()
+
+    def get(self, action):
         return self.runner.current_status.to_dict()
 
 
@@ -158,6 +168,11 @@ def create_app(
     api.add_resource(
         RunExperiment,
         "/<string:experiment>/<string:action>",
+        resource_class_args=[runner],
+    )
+    api.add_resource(
+        StopOrStatus,
+        "/<string:action>",
         resource_class_args=[runner],
     )
     return app, runner
