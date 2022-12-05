@@ -61,7 +61,7 @@ class StoreInIspyb(ABC):
 
     def end_deposition(self, success, reason):
         LOGGER.info(
-            f"End ispyb deposition with status '{success}' and reason '{reason}'"
+            f"End ispyb deposition with status '{success}' and reason '{reason}'."
         )
         if success == "fail":
             run_status = "DataCollection Unsuccessful"
@@ -105,7 +105,6 @@ class StoreInIspyb(ABC):
         Returns an empty string if the comment is not yet initialised.
         """
         try:
-            LOGGER.debug("Getting comment from ISPyB")
             with self.Session() as session:
                 query = session.query(DataCollection).filter(
                     DataCollection.dataCollectionId == dcid
@@ -113,7 +112,7 @@ class StoreInIspyb(ABC):
                 current_comment: str = query.first().comments
             if current_comment is None:
                 current_comment = ""
-            LOGGER.debug(f"Current comment: {current_comment}")
+            LOGGER.info(f"Fetched current ISPyB comment: {current_comment}")
         except Exception as e:
             LOGGER.warn("Exception occured when reading comment from ISPyB database:\n")
             LOGGER.error(e, exc_info=True)
@@ -130,7 +129,6 @@ class StoreInIspyb(ABC):
     ) -> int:
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
-            LOGGER.info("updating ispyb deposition")
             params = self.mx_acquisition.get_data_collection_params()
             params["id"] = datacollection_id
             params["parentid"] = datacollection_group_id
@@ -141,7 +139,6 @@ class StoreInIspyb(ABC):
                     datacollection_id
                 )
                 params["comments"] = current_comment + f" {run_status} reason: {reason}"
-                LOGGER.info(f"fetched current ispyb comment: {current_comment}")
             return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
