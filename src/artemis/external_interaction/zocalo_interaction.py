@@ -1,7 +1,9 @@
 import getpass
+import math
 import queue
 import socket
 import time
+from typing import Callable
 
 import workflows.recipe
 import workflows.transport
@@ -10,6 +12,7 @@ from bluesky.callbacks import CallbackBase
 from workflows.transport import lookup
 
 import artemis.log
+from artemis.exceptions import WarningException
 from artemis.external_interaction.communicator_callbacks import ISPyBHandlerCallback
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.log import LOGGER
@@ -36,9 +39,9 @@ class ZocaloHandlerCallback(CallbackBase):
     """
 
     def __init__(self, parameters: FullParameters, ispyb_handler: ISPyBHandlerCallback):
-        self.grid_position_to_motor_position = (
-            parameters.grid_scan_params.grid_position_to_motor_position
-        )
+        self.grid_position_to_motor_position: Callable[
+            [Point3D], Point3D
+        ] = parameters.grid_scan_params.grid_position_to_motor_position
         self.zocalo_env = parameters.zocalo_environment
         self.processing_start_time = 0.0
         self.processing_time = 0.0
@@ -68,7 +71,7 @@ class ZocaloHandlerCallback(CallbackBase):
             self._run_end(id)
         self.processing_start_time = time.time()
 
-    def wait_for_results(self):
+    def wait_for_results(self, fallback_xyz: Point3D):
         datacollection_group_id = self.ispyb.ispyb_ids[2]
         raw_results = self._wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time
@@ -79,6 +82,15 @@ class ZocaloHandlerCallback(CallbackBase):
         self.xray_centre_motor_position = self.grid_position_to_motor_position(
             self.results
         )
+
+        # We move back to the centre if results aren't found
+        assert self.xray_centre_motor_position is not None
+        if math.nan in self.xray_centre_motor_position:
+            log_msg = (
+                f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
+            )
+            self.xray_centre_motor_position = fallback_xyz
+            LOGGER.warn(log_msg)
 
         LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
@@ -182,3 +194,11 @@ class ZocaloHandlerCallback(CallbackBase):
             return result_received.get(timeout=timeout)
         finally:
             transport.disconnect()
+
+
+class NoCentreFoundException(WarningException):
+    """
+    Error for if zocalo is unable to find the centre during a gridscan.
+    """
+
+    pass

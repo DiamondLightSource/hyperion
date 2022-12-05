@@ -6,7 +6,7 @@ from artemis.devices.det_dist_to_beam_converter import (
     DetectorDistanceToBeamXYConverter,
 )
 
-LOOKUP_TABLE_TEST_VALUES = [[100.0, 200.0], [150.0, 151.0], [160.0, 165.0]]
+LOOKUP_TABLE_TEST_VALUES = [(100.0, 200.0), (150.0, 151.0), (160.0, 165.0)]
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def test_get_beam_in_pixels(fake_converter: DetectorDistanceToBeamXYConverter):
 
 
 def test_parse_table():
-    test_file = "test_beam_converter.py"
+    test_file = "src/artemis/devices/unit_tests/test_lookup_table.txt"
     test_converter = DetectorDistanceToBeamXYConverter(test_file)
 
     assert test_converter.lookup_file == test_file
