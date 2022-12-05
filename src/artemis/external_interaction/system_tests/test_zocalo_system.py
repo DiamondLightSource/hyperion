@@ -9,6 +9,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_zocalo_callback import (
 from artemis.parameters import FullParameters, Point3D
 
 
+@pytest.mark.skip(reason="needs fake zocalo")
 @pytest.mark.s03
 def test_when_running_start_stop_then_get_expected_returned_results():
     params = FullParameters()
