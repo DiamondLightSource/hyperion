@@ -85,63 +85,6 @@ class MXSC(Device):
     draw_tip: EpicsSignal = Component(EpicsSignal, "DrawTip")
     draw_edges: EpicsSignal = Component(EpicsSignal, "DrawEdges")
 
-    def start_mxsc(self, input_plugin, min_callback_time, filename):
-        """
-        Sets PVs relevant to edge detection plugin.
-
-        Args:
-            input_plugin: link to the camera stream
-            min_callback_time: the value to set the minimum callback time to
-            filename: filename of the python script to detect edge waveforms from camera stream.
-        Returns: None
-        """
-        yield from bps.abs_set(self.input_plugin_pv, input_plugin)
-
-        # Turns the area detector plugin on
-        yield from bps.abs_set(self.enable_callbacks_pv, 1)
-
-        # Set the minimum time between updates of the plugin
-        yield from bps.abs_set(self.min_callback_time_pv, min_callback_time)
-
-        # Stop the plugin from blocking the IOC and hogging all the CPU
-        yield from bps.abs_set(self.blocking_callbacks_pv, 0)
-
-        # Set the python file to use for calculating the edge waveforms
-        yield from bps.abs_set(self.py_filename, filename, wait=True)
-        yield from bps.abs_set(self.read_file, 1)
-
-        # Image annotations
-        yield from bps.abs_set(self.draw_tip, True)
-        yield from bps.abs_set(self.draw_edges, True)
-
-        # Use the original image type for the edge output array
-        yield from bps.abs_set(self.output_array, EdgeOutputArrayImageType.ORIGINAL)
-        """
-        yield from bps.mv(
-            self.input_plugin_pv,
-            input_plugin,
-            self.enable_callbacks_pv,
-            1,
-            self.min_callback_time_pv,
-            min_callback_time,
-            # Stop the plugin from blocking the IOC and hogging all the CPU
-            self.blocking_callbacks_pv,
-            0,
-            # Set the python file to use for calculating the edge waveforms
-            self.py_filename,
-            filename,
-            self.read_file,
-            1,
-        )
-        """
-
-        # Image annotations
-        yield from bps.abs_set(self.draw_tip, True)
-        yield from bps.abs_set(self.draw_edges, True)
-
-        # Use the original image type for the edge output array
-        yield from bps.abs_set(self.output_array, EdgeOutputArrayImageType.ORIGINAL)
-
 
 class OAV(AreaDetector):
     cam: CamBase = ADC(CamBase, "-DI-OAV-01:CAM:")
