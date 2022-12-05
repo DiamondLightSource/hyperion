@@ -1,7 +1,6 @@
 import threading
 from pathlib import Path
 
-import bluesky.plan_stubs as bps
 import requests
 from ophyd import Component, Device, DeviceStatus, EpicsSignal, EpicsSignalRO, Signal
 from PIL import Image
@@ -41,12 +40,3 @@ class Snapshot(Device):
 
     def post_processing(self, image: Image.Image):
         pass
-
-    def get_sizes_from_pvs(self):
-
-        print(self.x_size_pv)
-        x_size = yield from bps.rd(self.x_size_pv)
-        y_size = yield from bps.rd(self.y_size_pv)
-        print("\n\n\nSIZESSSSS")
-        print(x_size, y_size)
-        return x_size, y_size

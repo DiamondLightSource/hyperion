@@ -1,7 +1,6 @@
 from enum import IntEnum
 
 import bluesky.plan_stubs as bps
-import numpy as np
 from ophyd import ADComponent as ADC
 from ophyd import (
     AreaDetector,
@@ -86,14 +85,6 @@ class MXSC(Device):
     draw_tip: EpicsSignal = Component(EpicsSignal, "DrawTip")
     draw_edges: EpicsSignal = Component(EpicsSignal, "DrawEdges")
 
-    def get_edge_waveforms(self):
-        """
-        Get the waveforms from the PVs as numpy arrays.
-        """
-        top = yield from bps.rd(self.top)
-        bottom = yield from bps.rd(self.bottom)
-        return np.array(top), np.array(bottom)
-
     def start_mxsc(self, input_plugin, min_callback_time, filename):
         """
         Sets PVs relevant to edge detection plugin.
@@ -125,6 +116,31 @@ class MXSC(Device):
 
         # Use the original image type for the edge output array
         yield from bps.abs_set(self.output_array, EdgeOutputArrayImageType.ORIGINAL)
+        """
+        yield from bps.mv(
+            self.input_plugin_pv,
+            input_plugin,
+            self.enable_callbacks_pv,
+            1,
+            self.min_callback_time_pv,
+            min_callback_time,
+            # Stop the plugin from blocking the IOC and hogging all the CPU
+            self.blocking_callbacks_pv,
+            0,
+            # Set the python file to use for calculating the edge waveforms
+            self.py_filename,
+            filename,
+            self.read_file,
+            1,
+        )
+        """
+
+        # Image annotations
+        yield from bps.abs_set(self.draw_tip, True)
+        yield from bps.abs_set(self.draw_edges, True)
+
+        # Use the original image type for the edge output array
+        yield from bps.abs_set(self.output_array, EdgeOutputArrayImageType.ORIGINAL)
 
 
 class OAV(AreaDetector):
@@ -141,8 +157,8 @@ class OAV(AreaDetector):
 
 if __name__ == "__main__":
 
-    beamline = "S03SIM"
-    smargon: I03Smargon = Component(I03Smargon, "-MO-SGON-01:")
+    beamline = "BL03I"
+    smargon: I03Smargon = I03Smargon(name="smargon", prefix=beamline + "-MO-SGON-01:")
     backlight: Backlight = Component(Backlight, "-EA-BL-01:")
     oav = OAV(name="oav", prefix=beamline)
     oav.wait_for_connection()

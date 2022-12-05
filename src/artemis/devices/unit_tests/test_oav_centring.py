@@ -183,17 +183,6 @@ def test_get_rotation_increment_threshold_exceeded():
     assert increment == -180 / 6
 
 
-def test_get_edge_waveforms(mock_oav: OAV):
-    set_top = np.array([1, 2, 3, 4, 5])
-    set_bottom = np.array([5, 4, 3, 2, 1])
-    mock_oav.mxsc.top.sim_put(set_top)
-    mock_oav.mxsc.bottom.sim_put(set_bottom)
-
-    recieved_top, recieved_bottom = tuple(mock_oav.mxsc.get_edge_waveforms())
-    assert np.array_equal(recieved_bottom.obj.value, set_bottom)
-    assert np.array_equal(recieved_top.obj.value, set_top)
-
-
 @pytest.mark.parametrize(
     "zoom_level,expected_microns_x,expected_microns_y",
     [(2.5, 2.31, 2.31), (15.0, 0.302, 0.302)],
