@@ -256,6 +256,7 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
     assert single_dummy_file.detector["image_size"][1] == PIXELS_X_EIGER2_X_4M
 
 
+@pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
 ):
@@ -277,6 +278,7 @@ def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
             )
 
 
+@pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
