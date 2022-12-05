@@ -47,9 +47,9 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
 
     callbacks = FGSCallbackCollection.from_params(FullParameters())
 
-    callbacks.zocalo_handler._wait_for_result = MagicMock()
-    callbacks.zocalo_handler._run_end = MagicMock()
-    callbacks.zocalo_handler._run_start = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
 
     callbacklist_right_order = [
         callbacks.nexus_handler,

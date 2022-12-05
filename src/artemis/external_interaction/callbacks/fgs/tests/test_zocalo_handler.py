@@ -20,7 +20,6 @@ EXPECTED_RUN_END_MESSAGE = {
 td = TestData()
 
 
-@pytest.fixture
 def mock_zocalo_functions(callbacks: FGSCallbackCollection):
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
