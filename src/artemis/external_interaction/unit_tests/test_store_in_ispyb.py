@@ -362,7 +362,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
 
 
 @patch("ispyb.open")
-@patch("artemis.external_interaction.ispyb.store_in_ispyb.sessionmaker")
+@patch("artemis.external_interaction.store_in_ispyb.sessionmaker")
 def test_ispyb_comment_fetching_on_fail(
     sessionmaker: MagicMock,
     mock_ispyb_conn: MagicMock,
@@ -388,7 +388,7 @@ def test_ispyb_comment_fetching_on_fail(
 
 
 @patch("ispyb.open")
-@patch("artemis.external_interaction.ispyb.store_in_ispyb.sessionmaker")
+@patch("artemis.external_interaction.store_in_ispyb.sessionmaker")
 def test_ispyb_no_comment_fetching_on_success(
     sessionmaker: MagicMock,
     mock_ispyb_conn: MagicMock,
@@ -406,7 +406,7 @@ def test_ispyb_no_comment_fetching_on_success(
 
 
 @patch("ispyb.open")
-@patch("artemis.external_interaction.ispyb.store_in_ispyb.sessionmaker")
+@patch("artemis.external_interaction.store_in_ispyb.sessionmaker")
 def test_ispyb_comment_fetching_returns_empty_string_on_exception(
     sessionmaker: MagicMock,
     mock_ispyb_conn: MagicMock,

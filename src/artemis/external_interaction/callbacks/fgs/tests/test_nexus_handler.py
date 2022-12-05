@@ -19,14 +19,16 @@ test_start_document = {
 
 @pytest.fixture
 def nexus_writer():
-    with patch("artemis.external_interaction.communicator_callbacks.NexusWriter") as nw:
+    with patch(
+        "artemis.external_interaction.callbacks.fgs.fgs_nexus_callback.NexusWriter"
+    ) as nw:
         yield nw
 
 
 @pytest.fixture
 def params_for_first():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.create_parameters_for_first_file"
+        "artemis.external_interaction.callbacks.fgs.fgs_nexus_callback.create_parameters_for_first_file"
     ) as p:
         yield p
 
@@ -34,7 +36,7 @@ def params_for_first():
 @pytest.fixture
 def params_for_second():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.create_parameters_for_second_file"
+        "artemis.external_interaction.callbacks.fgs.fgs_nexus_callback.create_parameters_for_second_file"
     ) as p:
         yield p
 

@@ -110,7 +110,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
 
 
 @patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo_interaction.lookup")
+@patch("artemis.external_interaction.callbacks.fgs.fgs_zocalo_callback.lookup")
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
@@ -182,7 +182,7 @@ def test__run_start_and_end(
 
 @patch("workflows.recipe.wrap_subscribe")
 @patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo_interaction.lookup")
+@patch("artemis.external_interaction.callbacks.fgs.fgs_zocalo_callback.lookup")
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):

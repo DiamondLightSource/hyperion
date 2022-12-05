@@ -12,7 +12,7 @@ SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_PLAN_NAME = "ispyb_readings"
 SIM_ZOCALO_ENV = "devrmq"
-SIM_ISPYB_CONFIG = "src/artemis/external_interaction/ispyb/tests/test_config.cfg"
+SIM_ISPYB_CONFIG = "src/artemis/external_interaction/unit_tests/test_config.cfg"
 
 
 def default_field(obj):
