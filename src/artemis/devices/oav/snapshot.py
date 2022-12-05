@@ -43,6 +43,10 @@ class Snapshot(Device):
         pass
 
     def get_sizes_from_pvs(self):
+
+        print(self.x_size_pv)
         x_size = yield from bps.rd(self.x_size_pv)
         y_size = yield from bps.rd(self.y_size_pv)
+        print("\n\n\nSIZESSSSS")
+        print(x_size, y_size)
         return x_size, y_size

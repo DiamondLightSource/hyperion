@@ -39,7 +39,6 @@ def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParame
     """Setup OAV PVs with required values."""
 
     parameters.load_parameters_from_json()
-    print(parameters.zoom)
 
     yield from bps.abs_set(oav.cam.color_mode, ColorMode.RGB1)
     yield from bps.abs_set(oav.cam.acquire_period, parameters.acquire_period)
@@ -416,7 +415,7 @@ def get_motor_movement_xyz(
     """
 
     # extract the microns per pixel of the zoom level of the camera
-    parameters.load_microns_per_pixel(str(parameters.zoom))
+    parameters.load_microns_per_pixel(parameters.zoom)
 
     # get the max tip distance in pixels
     max_tip_distance_pixels = parameters.max_tip_distance / parameters.micronsPerXPixel
@@ -437,7 +436,7 @@ def get_motor_movement_xyz(
         )
 
     # get the scales of the image in microns, and the distance in microns to the beam centre location
-    x_size, y_size = oav.snapshot.get_sizes_from_pvs()
+    x_size, y_size = yield from oav.snapshot.get_sizes_from_pvs()
     x_scale, y_scale = get_scale(x_size, y_size)
     x_move, y_move = calculate_beam_distance_in_microns(
         parameters, int(x * x_scale), int(y * y_scale)
@@ -488,8 +487,7 @@ def centring_plan(
     If it is unsuccessful in finding the points it will try centering a default maximum of 3 times.
     """
 
-    pre_centring_setup_oav(oav, backlight, parameters)
-    print(parameters.zoom)
+    yield from pre_centring_setup_oav(oav, backlight, parameters)
 
     # we attempt to find the centre `max_run_num` times.
     run_num = 0
@@ -527,6 +525,7 @@ def centring_plan(
             omega_angles,
         )
 
+        print(parameters.zoom)
         new_x, new_y, new_z = get_motor_movement_xyz(
             oav,
             parameters,
@@ -634,8 +633,8 @@ if __name__ == "__main__":
     backlight = Backlight(name="backlight", prefix=SIM_BEAMLINE)
     parameters = OAVParameters(
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
-        "src/artemis/devices/unit_tests/test_display.configuration",
         "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
+        "src/artemis/devices/unit_tests/test_disply.configuration",
     )
     oav.wait_for_connection()
     RE = RunEngine()

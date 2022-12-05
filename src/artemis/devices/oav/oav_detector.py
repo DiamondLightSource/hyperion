@@ -128,7 +128,7 @@ class MXSC(Device):
 
 
 class OAV(AreaDetector):
-    cam: CamBase = ADC(CamBase, "-EA-OAV-01:CAM:")
+    cam: CamBase = ADC(CamBase, "-DI-OAV-01:CAM:")
     roi: ADC = ADC(ROIPlugin, "-DI-OAV-01:ROI:")
     proc: ADC = ADC(ProcessPlugin, "-DI-OAV-01:PROC:")
     over: ADC = ADC(OverlayPlugin, "-DI-OAV-01:OVER:")
@@ -136,7 +136,7 @@ class OAV(AreaDetector):
     hdf5: ADC = ADC(HDF5Plugin, "-DI-OAV-01:HDF5:")
     snapshot: SnapshotWithGrid = Component(SnapshotWithGrid, "-DI-OAV-01:MJPG:")
     mxsc: MXSC = ADC(MXSC, "-DI-OAV-01:MXSC:")
-    zoom_controller: ZoomController = ADC(ZoomController, "-EA-OAV-01-FZOOM:")
+    zoom_controller: ZoomController = ADC(ZoomController, "-EA-OAV-01:FZOOM:")
 
 
 if __name__ == "__main__":
