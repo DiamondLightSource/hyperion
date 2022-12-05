@@ -6,7 +6,7 @@ from bluesky.run_engine import RunEngine
 
 from artemis.devices.backlight import Backlight
 from artemis.devices.motors import I03Smargon
-from artemis.devices.oav.oav_detector import OAV, ColorMode
+from artemis.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
 from artemis.devices.oav.oav_errors import (
     OAVError_MissingRotations,
     OAVError_NoRotationsPassValidityTest,
@@ -33,6 +33,46 @@ _Z_UPPER_BOUND = _Y_UPPER_BOUND = 1500
 # hard code limits so gridscans will switch rotation directions and |omega| will stay pretty low.
 _DESIRED_HIGH_LIMIT = 181
 _DESIRED_LOW_LIMIT = -181
+
+
+def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
+    """
+    Sets PVs relevant to edge detection plugin.
+
+    Args:
+        input_plugin: link to the camera stream
+        min_callback_time: the value to set the minimum callback time to
+        filename: filename of the python script to detect edge waveforms from camera stream.
+    Returns: None
+    """
+    yield from bps.abs_set(oav.mxsc.input_plugin_pv, input_plugin)
+
+    # Turns the area detector plugin on
+    yield from bps.abs_set(oav.mxsc.enable_callbacks_pv, 1)
+
+    # Set the minimum time between updates of the plugin
+    yield from bps.abs_set(oav.mxsc.min_callback_time_pv, min_callback_time)
+
+    # Stop the plugin from blocking the IOC and hogging all the CPU
+    yield from bps.abs_set(oav.mxsc.blocking_callbacks_pv, 0)
+
+    # Set the python file to use for calculating the edge waveforms
+    yield from bps.abs_set(oav.mxsc.py_filename, filename, wait=True)
+    yield from bps.abs_set(oav.mxsc.read_file, 1)
+
+    # Image annotations
+    yield from bps.abs_set(oav.mxsc.draw_tip, True)
+    yield from bps.abs_set(oav.mxsc.draw_edges, True)
+
+    # Use the original image type for the edge output array
+    yield from bps.abs_set(oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL)
+
+    # Image annotations
+    yield from bps.abs_set(oav.mxsc.draw_tip, True)
+    yield from bps.abs_set(oav.mxsc.draw_edges, True)
+
+    # Use the original image type for the edge output array
+    yield from bps.abs_set(oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL)
 
 
 def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParameters):
@@ -73,7 +113,8 @@ def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParame
     )
 
     # Connect MXSC output to MJPG input
-    yield from oav.mxsc.start_mxsc(
+    yield from start_mxsc(
+        oav,
         parameters.input_plugin + "." + parameters.mxsc_input,
         parameters.min_callback_time,
         parameters.filename,
@@ -87,8 +128,7 @@ def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParame
         wait=True,
     )
 
-    if (yield from bps.rd(backlight.pos)) == 0:
-        yield from bps.abs_set(backlight.pos, 1, wait=True)
+    yield from bps.abs_set(backlight.pos, 1, wait=True)
 
     """
     TODO: We require setting the backlight brightness to that in the json, we can't do this currently without a PV.
@@ -157,30 +197,16 @@ def get_rotation_increment(rotations: int, omega: int, high_limit: int) -> float
     increment = 180.0 / rotations
 
     # if the rotation threshhold would be exceeded flip the rotation direction
+    print("\n\n\n\nOMEGA:", omega)
     if omega + 180 > high_limit:
         increment = -increment
 
     return increment
 
 
-def yield_rotation_data(oav: OAV, smargon: I03Smargon):
-    current_omega, top, bottom, tip_x, tip_y = (
-        (yield from bps.rd(smargon.omega)),
-        (yield from bps.rd(oav.mxsc.top)),
-        (yield from bps.rd(oav.mxsc.bottom)),
-        (yield from bps.rd(oav.mxsc.tip_x)),
-        (yield from bps.rd(oav.mxsc.tip_y)),
-    )
-    omega_limit = yield from bps.rd(smargon.omega.high_limit_travel)
-
-    # If omega  can rotate indefinitely (indicated by high_limit_travel=0), we set the hard coded limit
-    if omega_limit == 0:
-        omega_limit = _DESIRED_HIGH_LIMIT
-
-    return current_omega, np.array(top), np.array(bottom), tip_x, tip_y, omega_limit
-
-
-def rotate_pin_and_collect_values(oav: OAV, smargon: I03Smargon, rotations: int):
+def rotate_pin_and_collect_positional_data(
+    oav: OAV, smargon: I03Smargon, rotations: int, omega_high_limit
+):
     """
     Calculate relevant spacial values (waveforms, and pixel positions) at each rotation and save them in lists.
 
@@ -198,20 +224,15 @@ def rotate_pin_and_collect_values(oav: OAV, smargon: I03Smargon, rotations: int)
             tip_y_positions: the measured y tip at a given rotation
     """
     smargon.wait_for_connection()
-    (
-        current_omega,
-        top,
-        bottom,
-        tip_x,
-        tip_y,
-        omega_limit,
-    ) = yield from yield_rotation_data(oav, smargon)
+    current_omega = yield from bps.rd(smargon.omega)
 
     # The angle to rotate by on each iteration
-    increment = get_rotation_increment(rotations, current_omega, omega_limit)
+    increment = get_rotation_increment(rotations, current_omega, omega_high_limit)
+    print("\n\n\nnew_increment:", increment)
 
     # Arrays to hold positions data of the pin at each rotation
     # These need to be np arrays for their use in centring
+    print("0.1")
 
     x_positions = np.array([], dtype=np.int32)
     y_positions = np.array([], dtype=np.int32)
@@ -222,14 +243,14 @@ def rotate_pin_and_collect_values(oav: OAV, smargon: I03Smargon, rotations: int)
     tip_y_positions = np.array([], dtype=np.int32)
 
     for i in range(rotations):
-        (
-            current_omega,
-            top,
-            bottom,
-            tip_x,
-            tip_y,
-            omega_limit,
-        ) = yield from yield_rotation_data(oav, smargon)
+        print(f"0.1{i+1}")
+        current_omega = yield from bps.rd(smargon.omega)
+        top = np.array((yield from bps.rd(oav.mxsc.top)))
+
+        yield from bps.abs_set(oav.mxsc.tip_x, np.where(top != 0)[0][0])
+        bottom = np.array((yield from bps.rd(oav.mxsc.bottom)))
+        tip_x = yield from bps.rd(oav.mxsc.tip_x)
+        tip_y = yield from bps.rd(oav.mxsc.tip_y)
 
         for waveform in (top, bottom):
             if np.all(waveform == 0):
@@ -362,7 +383,7 @@ def get_scale(x_size, y_size):
         x_size: the x size of the image, in pixels
         y_size: the y size of the image, in pixels
     Returns:
-
+        The (x,y) where x, y is the dimensions of the image in microns
     """
     return _X_SCALING_FACTOR / x_size, _Y_SCALING_FACTOR / y_size
 
@@ -398,9 +419,7 @@ def extract_coordinates_from_rotation_data(
 
 
 def get_motor_movement_xyz(
-    oav: OAV,
     parameters: OAVParameters,
-    smargon: I03Smargon,
     x,
     y,
     z,
@@ -409,6 +428,9 @@ def get_motor_movement_xyz(
     best_omega_angle,
     best_omega_angle_orthogonal,
     last_run,
+    x_size,
+    y_size,
+    current_motor_xyz,
 ):
     """
     Gets the x,y,z values the motor should move to (microns).
@@ -430,13 +452,13 @@ def get_motor_movement_xyz(
     # functional. OAV centring only needs to get in the right ballpark so Xray centring can do its thing.
     tip_distance_pixels = x - tip_x
     if tip_distance_pixels > max_tip_distance_pixels:
-        x = max_tip_distance_pixels + tip_x
         LOGGER.warn(
-            f"x found ({x}) exceeds maximum tip distance {max_tip_distance_pixels}, using setting x within the max tip distance"
+            f"x={x} exceeds maximum tip distance {max_tip_distance_pixels}, using setting x within the max tip distance"
         )
+        x = max_tip_distance_pixels + tip_x
 
     # get the scales of the image in microns, and the distance in microns to the beam centre location
-    x_size, y_size = yield from oav.snapshot.get_sizes_from_pvs()
+
     x_scale, y_scale = get_scale(x_size, y_size)
     x_move, y_move = calculate_beam_distance_in_microns(
         parameters, int(x * x_scale), int(y * y_scale)
@@ -460,13 +482,6 @@ def get_motor_movement_xyz(
         0, z_move, best_omega_angle_orthogonal
     )
 
-    current_motor_xyz = np.array(
-        [
-            (yield from bps.rd(smargon.x)),
-            (yield from bps.rd(smargon.y)),
-            (yield from bps.rd(smargon.z)),
-        ]
-    )
     new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move + x_y_z_move_2)
     new_y = keep_inside_bounds(new_y, _Y_LOWER_BOUND, _Y_UPPER_BOUND)
     new_z = keep_inside_bounds(new_z, _Z_LOWER_BOUND, _Z_UPPER_BOUND)
@@ -487,7 +502,13 @@ def centring_plan(
     If it is unsuccessful in finding the points it will try centering a default maximum of 3 times.
     """
 
+    # Set relevant PVs to whatever the config dictates
     yield from pre_centring_setup_oav(oav, backlight, parameters)
+
+    # If omega  can rotate indefinitely (indicated by high_limit_travel=0), we set the hard coded limit
+    omega_high_limit = yield from bps.rd(smargon.omega.high_limit_travel)
+    if not omega_high_limit:
+        omega_high_limit = _DESIRED_HIGH_LIMIT
 
     # we attempt to find the centre `max_run_num` times.
     run_num = 0
@@ -502,7 +523,10 @@ def centring_plan(
             mid_lines,
             tip_x_positions,
             tip_y_positions,
-        ) = yield from rotate_pin_and_collect_values(oav, smargon, rotation_points)
+        ) = yield from rotate_pin_and_collect_positional_data(
+            oav, smargon, rotation_points, omega_high_limit
+        )
+        print("1")
 
         (
             index_of_largest_width,
@@ -510,6 +534,7 @@ def centring_plan(
         ) = find_widest_point_and_orthogonal_point(
             x_positions, y_positions, widths, omega_angles
         )
+        print("2")
 
         (
             x,
@@ -524,12 +549,22 @@ def centring_plan(
             indices_orthogonal_to_largest_width,
             omega_angles,
         )
+        print("3")
 
-        print(parameters.zoom)
+        x_size = yield from bps.rd(oav.snapshot.x_size_pv)
+        y_size = yield from bps.rd(oav.snapshot.y_size_pv)
+
+        current_motor_xyz = np.array(
+            [
+                (yield from bps.rd(smargon.x)),
+                (yield from bps.rd(smargon.y)),
+                (yield from bps.rd(smargon.z)),
+            ]
+        )
+
+        print("4")
         new_x, new_y, new_z = get_motor_movement_xyz(
-            oav,
             parameters,
-            smargon,
             x,
             y,
             z,
@@ -538,21 +573,33 @@ def centring_plan(
             best_omega_angle,
             best_omega_angle_orthogonal,
             run_num == max_run_num - 1,
+            x_size,
+            y_size,
+            current_motor_xyz,
         )
-        run_num += 1
+        print("5")
 
-        # Now move loop to cross hair
-        yield from bps.mv(
-            smargon.x,
-            new_x,
-            smargon.y,
-            new_y,
-            smargon.z,
-            new_z,
-        )
+        print(f"\nrun {run_num} result:")
+        run_num += 1
+        print("current x: ", (yield from bps.rd(smargon.x)))
+        print("current y: ", (yield from bps.rd(smargon.y)))
+        print("current z: ", (yield from bps.rd(smargon.z)))
+        print("new x    : ", new_x * 1e-3)
+        print("new y    : ", new_y * 1e-3)
+        print("new z    : ", new_z * 1e-3)
+
+        # Now move loop to cross hair, converting microns to mm
+        yield from bps.mv(smargon.x, new_x * 1e-3)
+        print("5.x")
+        yield from bps.mv(smargon.y, new_y * 1e-3)
+        print("5.y")
+        yield from bps.mv(smargon.z, new_z * 1e-3)
+        print("5.z")
+        print(6)
 
     # We've moved to the best x,y,z already. Now rotate to the largest bulge.
     yield from bps.mv(smargon.omega, best_omega_angle)
+    print("\n\n\n\nBEST OMEGA ANGLE:", best_omega_angle)
     LOGGER.info("exiting OAVCentre")
 
 
@@ -617,15 +664,19 @@ def keep_inside_bounds(value, lower_bound, upper_bound):
 
 if __name__ == "__main__":
 
-    def plot_top_bottom(oav: OAV):
+    def plot_top_bottom(oav: OAV, parameters, smargon, backlight):
         import matplotlib.pyplot as plt
 
-        top, bottom = yield from oav.mxsc.get_edge_waveforms()
+        top = yield from bps.rd(oav.mxsc.top)
+        bottom = yield from bps.rd(oav.mxsc.bottom)
+        top = np.array(top)
+        bottom = np.array(bottom)
         print(top)
         print(bottom)
         plt.plot(top)
         plt.plot(bottom)
         plt.show()
+        yield from centring_plan(oav, parameters, smargon, backlight)
 
     SIM_BEAMLINE = "BL03S"
     oav = OAV(name="oav", prefix=SIM_BEAMLINE)
@@ -634,9 +685,10 @@ if __name__ == "__main__":
     parameters = OAVParameters(
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
         "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
-        "src/artemis/devices/unit_tests/test_disply.configuration",
+        "src/artemis/devices/unit_tests/test_display.configuration",
     )
     oav.wait_for_connection()
+    smargon.wait_for_connection()
     RE = RunEngine()
-    # RE(plot_top_bottom(oav))
     RE(centring_plan(oav, parameters, smargon, backlight))
+    # RE(plot_top_bottom(oav, parameters, smargon, backlight))

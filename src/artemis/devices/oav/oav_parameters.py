@@ -111,7 +111,6 @@ class OAVParameters:
         )
 
     def load_microns_per_pixel(self, zoom):
-        print(self.camera_zoom_levels_file)
         tree = et.parse(self.camera_zoom_levels_file)
         self.micronsPerXPixel = self.micronsPerYPixel = None
         root = tree.getroot()
