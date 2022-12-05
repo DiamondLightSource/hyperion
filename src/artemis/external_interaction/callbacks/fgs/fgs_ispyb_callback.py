@@ -6,7 +6,7 @@ from bluesky.callbacks import CallbackBase
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.log import LOGGER
-from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
+from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
 
 
 class FGSISPyBHandlerCallback(CallbackBase):
@@ -25,7 +25,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
     def __init__(self, parameters: FullParameters):
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
-        ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", "TEST_CONFIG")
+        ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
         self.ispyb = (
             StoreInIspyb3D(ispyb_config, self.params)
             if self.params.grid_scan_params.is_3d_grid_scan
