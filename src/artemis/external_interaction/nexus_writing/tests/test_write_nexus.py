@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from unittest.mock import call, patch
 
-import dlstbx.swmr.h5check
 import h5py
 import numpy as np
 import pytest
@@ -260,6 +259,8 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
 def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
 ):
+    import dlstbx.swmr.h5check
+
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
 
     nexus_writer_1.create_nexus_file()
@@ -282,6 +283,8 @@ def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
 def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
+    import dlstbx.swmr.h5check
+
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
 
     nexus_writer_1.create_nexus_file()
