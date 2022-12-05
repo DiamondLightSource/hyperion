@@ -25,9 +25,11 @@ class FGSZocaloCallback(CallbackBase):
     E.g.:
         nexus_file_handler_callback = NexusFileHandlerCallback(parameters)
         RE.subscribe(nexus_file_handler_callback)
-
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
+
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
+
+    Usually used as part of an FGSCallbackCollection.
     """
 
     def __init__(

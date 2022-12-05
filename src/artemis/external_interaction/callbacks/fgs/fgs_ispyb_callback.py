@@ -17,15 +17,22 @@ class FGSISPyBHandlerCallback(CallbackBase):
     E.g.:
         nexus_file_handler_callback = NexusFileHandlerCallback(parameters)
         RE.subscribe(nexus_file_handler_callback)
-
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
+
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
+
+    Usually used as part of an FGSCallbackCollection.
     """
 
     def __init__(self, parameters: FullParameters):
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
+        if ispyb_config == SIM_ISPYB_CONFIG:
+            LOGGER.warn(
+                "Using dev ISPyB database. If you want to use the real database, please"
+                " set the ISPYB_CONFIG_PATH environment variable."
+            )
         self.ispyb = (
             StoreInIspyb3D(ispyb_config, self.params)
             if self.params.grid_scan_params.is_3d_grid_scan
