@@ -19,7 +19,7 @@ from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.utils import Point3D
 
-TIMEOUT = 90
+TIMEOUT = 10 * 60
 
 
 class ZocaloHandlerCallback(CallbackBase):

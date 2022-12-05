@@ -142,7 +142,9 @@ if [[ $START == 1 ]]; then
 
     export ISPYB_CONFIG_PATH
 
-    pipenv run artemis &
+    source .venv/bin/activate
+    python -m artemis &
+
 fi
 
 sleep 1
