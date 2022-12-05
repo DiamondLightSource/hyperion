@@ -128,10 +128,9 @@ if [[ $START == 1 ]]; then
         ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk
     fi
 
-    if [[ -z $(pgrep -f artemis) ]]; then
-        pkill -f artemis
-    fi
-
+    echo "Killing art"
+    pkill -f "python -m artemis"
+    
     cd ${ARTEMIS_PATH}
 
     module unload controls_dev
