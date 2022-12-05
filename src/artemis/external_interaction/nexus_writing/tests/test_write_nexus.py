@@ -1,5 +1,4 @@
 import os
-import sys
 from pathlib import Path
 from unittest.mock import call, patch
 
@@ -43,7 +42,27 @@ def minimal_params(request):
 
 
 @pytest.fixture
-def dummy_nexus_writers(minimal_params):
+def dummy_nexus_writers(minimal_params: FullParameters):
+    first_file_params = create_parameters_for_first_file(minimal_params)
+    nexus_writer_1 = NexusWriter(first_file_params)
+
+    second_file_params = create_parameters_for_second_file(minimal_params)
+    nexus_writer_2 = NexusWriter(second_file_params)
+
+    yield nexus_writer_1, nexus_writer_2
+
+    for writer in [nexus_writer_1, nexus_writer_2]:
+        os.remove(writer.nexus_file)
+        os.remove(writer.master_file)
+
+
+@pytest.fixture
+def dummy_nexus_writers_with_more_images(minimal_params: FullParameters):
+    x, y, z = 100, 50, 30
+    minimal_params.grid_scan_params.x_steps = x
+    minimal_params.grid_scan_params.y_steps = y
+    minimal_params.grid_scan_params.z_steps = z
+    minimal_params.detector_params.num_images = x * y + x * z
     first_file_params = create_parameters_for_first_file(minimal_params)
     nexus_writer_1 = NexusWriter(first_file_params)
 
@@ -237,10 +256,31 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
     assert single_dummy_file.detector["image_size"][1] == PIXELS_X_EIGER2_X_4M
 
 
-def test_nexus_file_validity_for_zocalo(
+def test_nexus_file_validity_for_zocalo_with_two_vds(
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
+
+    nexus_writer_1.create_nexus_file()
+    nexus_writer_2.create_nexus_file()
+
+    for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            dlstbx.swmr.h5check.get_real_frames(
+                written_nexus_file, written_nexus_file["entry/data/data"]
+            )
+
+    for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            dlstbx.swmr.h5check.get_real_frames(
+                written_nexus_file, written_nexus_file["entry/data/data"]
+            )
+
+
+def test_nexus_file_validity_for_zocalo_with_three_vds(
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
+):
+    nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
 
     nexus_writer_1.create_nexus_file()
     nexus_writer_2.create_nexus_file()
