@@ -12,7 +12,9 @@ from bluesky.callbacks import CallbackBase
 from workflows.transport import lookup
 
 import artemis.log
-from artemis.external_interaction.callbacks import FGSISPyBHandlerCallback
+from artemis.external_interaction.callbacks.fgs.fgs_ispyb_callback import (
+    FGSISPyBHandlerCallback,
+)
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters

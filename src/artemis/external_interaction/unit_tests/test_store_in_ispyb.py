@@ -5,10 +5,7 @@ import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
-from artemis.external_interaction.ispyb.store_in_ispyb import (
-    StoreInIspyb2D,
-    StoreInIspyb3D,
-)
+from artemis.external_interaction.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
 from artemis.parameters import SIM_ISPYB_CONFIG, FullParameters
 from artemis.utils import Point3D
 

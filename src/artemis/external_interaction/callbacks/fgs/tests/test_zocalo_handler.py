@@ -10,9 +10,11 @@ import pytest
 from pytest import mark, raises
 from zocalo.configuration import Configuration
 
-from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
-from artemis.external_interaction.ispyb.ispyb_dataclass import Point3D
-from artemis.external_interaction.tests.conftest import TestData
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
+from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
+from artemis.external_interaction.ispyb_dataclass import Point3D
 from artemis.parameters import SIM_ZOCALO_ENV, FullParameters
 from artemis.utils import Point3D
 
