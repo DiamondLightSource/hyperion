@@ -12,8 +12,7 @@ from bluesky.callbacks import CallbackBase
 from workflows.transport import lookup
 
 import artemis.log
-from artemis.exceptions import WarningException
-from artemis.external_interaction.communicator_callbacks import ISPyBHandlerCallback
+from artemis.external_interaction.callbacks import FGSISPyBHandlerCallback
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
@@ -22,7 +21,7 @@ from artemis.utils import Point3D
 TIMEOUT = 90
 
 
-class ZocaloHandlerCallback(CallbackBase):
+class FGSZocaloCallback(CallbackBase):
     """Callback class to handle the triggering of Zocalo processing.
     Listens for 'event' and 'stop' documents.
 
@@ -38,7 +37,9 @@ class ZocaloHandlerCallback(CallbackBase):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self, parameters: FullParameters, ispyb_handler: ISPyBHandlerCallback):
+    def __init__(
+        self, parameters: FullParameters, ispyb_handler: FGSISPyBHandlerCallback
+    ):
         self.grid_position_to_motor_position: Callable[
             [Point3D], Point3D
         ] = parameters.grid_scan_params.grid_position_to_motor_position
@@ -194,11 +195,3 @@ class ZocaloHandlerCallback(CallbackBase):
             return result_received.get(timeout=timeout)
         finally:
             transport.disconnect()
-
-
-class NoCentreFoundException(WarningException):
-    """
-    Error for if zocalo is unable to find the centre during a gridscan.
-    """
-
-    pass

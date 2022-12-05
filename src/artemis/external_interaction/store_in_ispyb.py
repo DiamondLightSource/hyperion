@@ -10,7 +10,7 @@ from sqlalchemy.connectors import Connector
 from sqlalchemy.orm import sessionmaker
 
 import artemis.devices.oav.utils as oav_utils
-from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
+from artemis.external_interaction.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER

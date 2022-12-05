@@ -18,7 +18,7 @@ from nexgen.tools.VDS_tools import image_vds_writer
 
 from artemis.devices.detector import DetectorParams
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
-from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
+from artemis.external_interaction.ispyb_dataclass import IspybParams
 from artemis.parameters import FullParameters
 
 source = {
