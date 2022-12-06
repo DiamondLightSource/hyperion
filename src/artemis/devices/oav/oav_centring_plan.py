@@ -129,6 +129,7 @@ def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParame
     )
 
     yield from bps.abs_set(backlight.pos, 1, wait=True)
+    yield from bps.wait()
 
     """
     TODO: We require setting the backlight brightness to that in the json, we can't do this currently without a PV.
@@ -259,7 +260,6 @@ def rotate_pin_and_collect_positional_data(
                 )
 
         (x, y, width, mid_line) = find_midpoint(top, bottom)
-
         # Build arrays of edges and width, and store corresponding gonomega
         x_positions = np.append(x_positions, x)
         y_positions = np.append(y_positions, y)
@@ -401,11 +401,12 @@ def extract_coordinates_from_rotation_data(
     """
     x = x_positions[index_of_largest_width]
     y = y_positions[index_of_largest_width]
-    best_omega_angle = omega_angles[index_of_largest_width]
+
+    best_omega_angle = float(omega_angles[index_of_largest_width])
 
     # Get the angle sufficiently orthogonal to the best omega and
     index_orthogonal_to_largest_width = indices_orthogonal_to_largest_width[-1]
-    best_omega_angle_orthogonal = omega_angles[index_orthogonal_to_largest_width]
+    best_omega_angle_orthogonal = float(omega_angles[index_orthogonal_to_largest_width])
 
     # Store the y value which will be the magnitude in the z axis on 90 degree rotation
     z = y_positions[index_orthogonal_to_largest_width]
@@ -502,6 +503,8 @@ def centring_plan(
     If it is unsuccessful in finding the points it will try centering a default maximum of 3 times.
     """
 
+    yield from bps.wait()
+
     # Set relevant PVs to whatever the config dictates
     yield from pre_centring_setup_oav(oav, backlight, parameters)
 
@@ -527,6 +530,7 @@ def centring_plan(
             oav, smargon, rotation_points, omega_high_limit
         )
         print("1")
+        print("OMEGA ANGLES", omega_angles)
 
         (
             index_of_largest_width,
@@ -550,6 +554,7 @@ def centring_plan(
             omega_angles,
         )
         print("3")
+        print("BEST OMEGA ANGLE", best_omega_angle)
 
         x_size = yield from bps.rd(oav.snapshot.x_size_pv)
         y_size = yield from bps.rd(oav.snapshot.y_size_pv)
@@ -589,12 +594,9 @@ def centring_plan(
         print("new z    : ", new_z * 1e-3)
 
         # Now move loop to cross hair, converting microns to mm
-        yield from bps.mv(smargon.x, new_x * 1e-3)
-        print("5.x")
-        yield from bps.mv(smargon.y, new_y * 1e-3)
-        print("5.y")
-        yield from bps.mv(smargon.z, new_z * 1e-3)
-        print("5.z")
+        yield from bps.mv(
+            smargon.x, new_x * 1e-3, smargon.y, new_y * 1e-3, smargon.z, new_z * 1e-3
+        )
         print(6)
 
     # We've moved to the best x,y,z already. Now rotate to the largest bulge.
@@ -663,25 +665,10 @@ def keep_inside_bounds(value, lower_bound, upper_bound):
 
 
 if __name__ == "__main__":
-
-    def plot_top_bottom(oav: OAV, parameters, smargon, backlight):
-        import matplotlib.pyplot as plt
-
-        top = yield from bps.rd(oav.mxsc.top)
-        bottom = yield from bps.rd(oav.mxsc.bottom)
-        top = np.array(top)
-        bottom = np.array(bottom)
-        print(top)
-        print(bottom)
-        plt.plot(top)
-        plt.plot(bottom)
-        plt.show()
-        yield from centring_plan(oav, parameters, smargon, backlight)
-
-    SIM_BEAMLINE = "BL03S"
-    oav = OAV(name="oav", prefix=SIM_BEAMLINE)
-    smargon = I03Smargon(name="smargon", prefix=SIM_BEAMLINE + "-MO-SGON-01:")
-    backlight = Backlight(name="backlight", prefix=SIM_BEAMLINE)
+    beamline = SIM_BEAMLINE
+    oav = OAV(name="oav", prefix=beamline)
+    smargon = I03Smargon(name="smargon", prefix=beamline + "-MO-SGON-01:")
+    backlight = Backlight(name="backlight", prefix=beamline)
     parameters = OAVParameters(
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
         "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
@@ -691,4 +678,3 @@ if __name__ == "__main__":
     smargon.wait_for_connection()
     RE = RunEngine()
     RE(centring_plan(oav, parameters, smargon, backlight))
-    # RE(plot_top_bottom(oav, parameters, smargon, backlight))

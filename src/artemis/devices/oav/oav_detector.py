@@ -1,6 +1,5 @@
 from enum import IntEnum
 
-import bluesky.plan_stubs as bps
 from ophyd import ADComponent as ADC
 from ophyd import (
     AreaDetector,
