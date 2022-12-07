@@ -57,7 +57,7 @@ def dummy_nexus_writers(minimal_params: FullParameters):
 
 @pytest.fixture
 def dummy_nexus_writers_with_more_images(minimal_params: FullParameters):
-    x, y, z = 100, 50, 30
+    x, y, z = 45, 35, 25
     minimal_params.grid_scan_params.x_steps = x
     minimal_params.grid_scan_params.y_steps = y
     minimal_params.grid_scan_params.z_steps = z
