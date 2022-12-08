@@ -8,7 +8,7 @@ from artemis.parameters import ISPYB_PLAN_NAME
 @pytest.fixture
 def nexus_writer():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_nexus_callback.NexusWriter"
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter"
     ) as nw:
         yield nw
 
@@ -16,7 +16,7 @@ def nexus_writer():
 @pytest.fixture
 def mock_ispyb_get_time():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_ispyb_callback.StoreInIspyb3D.get_current_time_string"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.get_current_time_string"
     ) as p:
         yield p
 
@@ -24,7 +24,7 @@ def mock_ispyb_get_time():
 @pytest.fixture
 def mock_ispyb_store_grid_scan():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_ispyb_callback.StoreInIspyb3D.store_grid_scan"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.store_grid_scan"
     ) as p:
         yield p
 
@@ -32,7 +32,7 @@ def mock_ispyb_store_grid_scan():
 @pytest.fixture
 def mock_ispyb_update_time_and_status():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_ispyb_callback.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
     ) as p:
         yield p
 
@@ -40,7 +40,7 @@ def mock_ispyb_update_time_and_status():
 @pytest.fixture
 def mock_ispyb_begin_deposition():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_ispyb_callback.StoreInIspyb3D.begin_deposition"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.begin_deposition"
     ) as p:
         yield p
 
@@ -48,7 +48,7 @@ def mock_ispyb_begin_deposition():
 @pytest.fixture
 def mock_ispyb_end_deposition():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_ispyb_callback.StoreInIspyb3D.end_deposition"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.end_deposition"
     ) as p:
         yield p
 

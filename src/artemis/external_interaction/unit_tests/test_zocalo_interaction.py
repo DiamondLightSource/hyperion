@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 from pytest import mark, raises
 from zocalo.configuration import Configuration
 
-from artemis.external_interaction.zocalo_interaction import ZocaloInteractor
+from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from artemis.parameters import SIM_ZOCALO_ENV
 from artemis.utils import Point3D
 
@@ -23,7 +23,7 @@ EXPECTED_RUN_END_MESSAGE = {
 
 
 @patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo_interaction.lookup")
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
@@ -95,7 +95,7 @@ def test__run_start_and_end(
 
 @patch("workflows.recipe.wrap_subscribe")
 @patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo_interaction.lookup")
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):

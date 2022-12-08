@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from artemis.external_interaction.callbacks.fgs.fgs_nexus_callback import (
+from artemis.external_interaction.callbacks.fgs.nexus_callback import (
     FGSNexusFileHandlerCallback,
 )
 from artemis.parameters import FullParameters
@@ -20,7 +20,7 @@ test_start_document = {
 @pytest.fixture
 def nexus_writer():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_nexus_callback.NexusWriter"
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter"
     ) as nw:
         yield nw
 
@@ -28,7 +28,7 @@ def nexus_writer():
 @pytest.fixture
 def params_for_first():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_nexus_callback.create_parameters_for_first_file"
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.create_parameters_for_first_file"
     ) as p:
         yield p
 
@@ -36,7 +36,7 @@ def params_for_first():
 @pytest.fixture
 def params_for_second():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_nexus_callback.create_parameters_for_second_file"
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.create_parameters_for_second_file"
     ) as p:
         yield p
 

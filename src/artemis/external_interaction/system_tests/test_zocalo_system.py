@@ -3,7 +3,7 @@ import pytest
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
-from artemis.external_interaction.callbacks.fgs.fgs_zocalo_callback import (
+from artemis.external_interaction.callbacks.fgs.zocalo_callback import (
     FGSZocaloCallback,
 )
 from artemis.parameters import FullParameters, Point3D

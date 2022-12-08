@@ -1,6 +1,6 @@
 from bluesky.callbacks import CallbackBase
 
-from artemis.external_interaction.write_nexus import (
+from artemis.external_interaction.nexus.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
     create_parameters_for_second_file,

@@ -1,6 +1,6 @@
 import pytest
 
-from artemis.external_interaction.store_in_ispyb import StoreInIspyb2D
+from artemis.external_interaction.ispyb.store_in_ispyb import StoreInIspyb2D
 from artemis.parameters import FullParameters
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"

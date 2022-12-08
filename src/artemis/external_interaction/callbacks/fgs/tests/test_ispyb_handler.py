@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, call
 
-from artemis.external_interaction.callbacks.fgs.fgs_ispyb_callback import (
+from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
 )
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData

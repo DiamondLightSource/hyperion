@@ -4,11 +4,11 @@ from typing import Callable
 
 from bluesky.callbacks import CallbackBase
 
-from artemis.external_interaction.callbacks.fgs.fgs_ispyb_callback import (
+from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
 )
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.external_interaction.zocalo_interaction import ZocaloInteractor
+from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.utils import Point3D

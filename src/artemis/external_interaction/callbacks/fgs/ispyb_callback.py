@@ -4,7 +4,10 @@ from typing import Dict
 from bluesky.callbacks import CallbackBase
 
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.external_interaction.store_in_ispyb import StoreInIspyb2D, StoreInIspyb3D
+from artemis.external_interaction.ispyb.store_in_ispyb import (
+    StoreInIspyb2D,
+    StoreInIspyb3D,
+)
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
 
