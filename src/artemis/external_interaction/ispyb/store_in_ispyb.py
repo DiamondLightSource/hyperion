@@ -3,11 +3,17 @@ import re
 from abc import ABC, abstractmethod
 
 import ispyb
+import ispyb.sqlalchemy
+from ispyb.sqlalchemy import DataCollection
+from sqlalchemy import create_engine
 from sqlalchemy.connectors import Connector
+from sqlalchemy.orm import sessionmaker
 
 import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
+from artemis.log import LOGGER
 from artemis.parameters import FullParameters
+from artemis.tracing import TRACER
 from artemis.utils import Point2D
 
 I03_EIGER_DETECTOR = 78
@@ -31,6 +37,12 @@ class StoreInIspyb(ABC):
         self.y_steps = None
         self.y_step_size = None
 
+        # reading from ispyb
+        url = ispyb.sqlalchemy.url(self.ISPYB_CONFIG_FILE)
+        engine = create_engine(url, connect_args={"use_pure": True})
+        self.Session = sessionmaker(engine)
+
+        # writing to ispyb
         self.conn: Connector = None
         self.mx_acquisition = None
         self.core = None
@@ -85,6 +97,27 @@ class StoreInIspyb(ABC):
     def _store_scan_data(self):
         pass
 
+    @TRACER.start_as_current_span("read_comment_from_ispyb")
+    def get_current_datacollection_comment(self, dcid: int) -> str:
+        """Read the 'comments' field from the given datacollection id's ISPyB entry.
+        Returns an empty string if the comment is not yet initialised.
+        """
+        try:
+            LOGGER.debug("Getting comment from ISPyB")
+            with self.Session() as session:
+                query = session.query(DataCollection).filter(
+                    DataCollection.dataCollectionId == dcid
+                )
+                current_comment: str = query.first().comments
+            if current_comment is None:
+                current_comment = ""
+            LOGGER.debug(f"Current comment: {current_comment}")
+        except Exception as e:
+            LOGGER.warn("Exception occured when reading comment from ISPyB database:\n")
+            LOGGER.error(e, exc_info=True)
+            current_comment = ""
+        return current_comment
+
     def update_grid_scan_with_end_time_and_status(
         self,
         end_time: str,
@@ -93,17 +126,15 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> int:
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
-            self.mx_acquisition = self.conn.mx_acquisition
-
-            params = self.mx_acquisition.get_data_collection_params()
-            params["id"] = datacollection_id
-            params["parentid"] = datacollection_group_id
-            params["endtime"] = end_time
-            params["run_status"] = run_status
-            if reason is not None and reason != "":
-                params["comments"] += f" {run_status} reason: {reason}"
-            return self.mx_acquisition.upsert_data_collection(list(params.values()))
+        params = self.mx_acquisition.get_data_collection_params()
+        params["id"] = datacollection_id
+        params["parentid"] = datacollection_group_id
+        params["endtime"] = end_time
+        params["run_status"] = run_status
+        if reason is not None and reason != "":
+            current_comment = self.get_current_datacollection_comment(datacollection_id)
+            params["comments"] = current_comment + f" {run_status} reason: {reason}"
+        return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
         params = self.mx_acquisition.get_dc_grid_params()
@@ -134,11 +165,11 @@ class StoreInIspyb(ABC):
         return (
             "Artemis: Xray centring - Diffraction grid scan of "
             f"{self.full_params.experiment_params.x_steps} by "
-            f"{self.full_params.experiment_params.y_steps} images in "
+            f"{self.y_steps} images in "
             f"{self.full_params.experiment_params.x_step_size} mm by "
-            f"{self.full_params.experiment_params.y_step_size} mm steps. "
-            f"Top left: [{self.upper_left.x},{self.upper_left.y}], "
-            f"bottom right: [{bottom_right.x},{bottom_right.y}]."
+            f"{self.y_step_size} mm steps. "
+            f"Top left (px): [{int(self.upper_left.x)},{int(self.upper_left.y)}], "
+            f"bottom right (px): [{bottom_right.x},{bottom_right.y}]."
         )
 
     def _store_data_collection_table(self, data_collection_group_id: int) -> int:

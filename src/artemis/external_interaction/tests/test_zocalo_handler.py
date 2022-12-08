@@ -90,7 +90,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     expected_centre_grid_coords = Point3D(1, 2, 3)
     callbacks.zocalo_handler._wait_for_result.return_value = expected_centre_grid_coords
 
-    callbacks.zocalo_handler.wait_for_results()
+    callbacks.zocalo_handler.wait_for_results(Point3D(0, 0, 0))
     callbacks.zocalo_handler._wait_for_result.assert_called_once_with(100)
     expected_centre_motor_coords = (
         params.experiment_params.grid_position_to_motor_position(
