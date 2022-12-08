@@ -75,4 +75,4 @@ def test_parameter_init_with_bad_type_raises_exception():
         param_dict = json.load(f)
     param_dict["artemis_params"]["experiment_type"] = "nonsense_scan"
     with raises(WrongExperimentParameterSpecification):
-        params = FullParameters.from_dict(param_dict)
+        params = FullParameters.from_dict(param_dict)  # noqa: F841
