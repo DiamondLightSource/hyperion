@@ -288,3 +288,24 @@ def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
     check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
+
+
+def test_GIVEN_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
+):
+    nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
+
+    nexus_writer_1.create_nexus_file()
+    nexus_writer_2.create_nexus_file()
+
+    for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            assert "data_000001" in written_nexus_file["entry/data"]
+            assert "data_000002" in written_nexus_file["entry/data"]
+            assert "data_000003" not in written_nexus_file["entry/data"]
+
+    for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            assert "data_000001" not in written_nexus_file["entry/data"]
+            assert "data_000002" in written_nexus_file["entry/data"]
+            assert "data_000003" in written_nexus_file["entry/data"]
