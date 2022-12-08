@@ -41,7 +41,27 @@ def minimal_params(request):
 
 
 @pytest.fixture
-def dummy_nexus_writers(minimal_params):
+def dummy_nexus_writers(minimal_params: FullParameters):
+    first_file_params = create_parameters_for_first_file(minimal_params)
+    nexus_writer_1 = NexusWriter(first_file_params)
+
+    second_file_params = create_parameters_for_second_file(minimal_params)
+    nexus_writer_2 = NexusWriter(second_file_params)
+
+    yield nexus_writer_1, nexus_writer_2
+
+    for writer in [nexus_writer_1, nexus_writer_2]:
+        os.remove(writer.nexus_file)
+        os.remove(writer.master_file)
+
+
+@pytest.fixture
+def dummy_nexus_writers_with_more_images(minimal_params: FullParameters):
+    x, y, z = 45, 35, 25
+    minimal_params.grid_scan_params.x_steps = x
+    minimal_params.grid_scan_params.y_steps = y
+    minimal_params.grid_scan_params.z_steps = z
+    minimal_params.detector_params.num_images = x * y + x * z
     first_file_params = create_parameters_for_first_file(minimal_params)
     nexus_writer_1 = NexusWriter(first_file_params)
 
@@ -83,7 +103,7 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
-    minimal_params, dummy_nexus_writers
+    minimal_params, dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
     grid_scan_params: GridScanParams = minimal_params.grid_scan_params
@@ -200,7 +220,7 @@ def assert_contains_external_link(data_path, entry_name, file_name):
 
 
 def test_nexus_writer_files_are_formatted_as_expected(
-    minimal_params, single_dummy_file
+    minimal_params: FullParameters, single_dummy_file: NexusWriter
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
@@ -208,7 +228,7 @@ def test_nexus_writer_files_are_formatted_as_expected(
         assert file_name.startswith(expected_file_name_prefix)
 
 
-def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file):
+def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: NexusWriter):
     nexus_file = single_dummy_file.nexus_file
     master_file = single_dummy_file.master_file
     temp_nexus_file = Path(f"{str(nexus_file)}.tmp")
@@ -233,3 +253,59 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
 
     assert single_dummy_file.detector["image_size"][0] == PIXELS_Y_EIGER2_X_4M
     assert single_dummy_file.detector["image_size"][1] == PIXELS_X_EIGER2_X_4M
+
+
+def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]):
+    import dlstbx.swmr.h5check
+
+    nexus_writer_1, nexus_writer_2 = nexus_writers
+
+    nexus_writer_1.create_nexus_file()
+    nexus_writer_2.create_nexus_file()
+
+    for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            dlstbx.swmr.h5check.get_real_frames(
+                written_nexus_file, written_nexus_file["entry/data/data"]
+            )
+
+    for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            dlstbx.swmr.h5check.get_real_frames(
+                written_nexus_file, written_nexus_file["entry/data/data"]
+            )
+
+
+@pytest.mark.dlstbx
+def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
+    dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
+):
+    check_validity_through_zocalo(dummy_nexus_writers)
+
+
+@pytest.mark.dlstbx
+def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
+):
+    check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
+
+
+def test_GIVEN_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
+):
+    nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
+
+    nexus_writer_1.create_nexus_file()
+    nexus_writer_2.create_nexus_file()
+
+    for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            assert "data_000001" in written_nexus_file["entry/data"]
+            assert "data_000002" in written_nexus_file["entry/data"]
+            assert "data_000003" not in written_nexus_file["entry/data"]
+
+    for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
+        with h5py.File(filename, "r") as written_nexus_file:
+            assert "data_000001" not in written_nexus_file["entry/data"]
+            assert "data_000002" in written_nexus_file["entry/data"]
+            assert "data_000003" in written_nexus_file["entry/data"]
