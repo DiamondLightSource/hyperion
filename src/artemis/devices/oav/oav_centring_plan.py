@@ -11,6 +11,7 @@ from artemis.devices.oav.oav_errors import (
     OAVError_MissingRotations,
     OAVError_NoRotationsPassValidityTest,
     OAVError_WaveformAllZero,
+    OAVError_ZoomLevelNotFound,
 )
 from artemis.devices.oav.oav_parameters import OAVParameters
 from artemis.log import LOGGER
@@ -57,15 +58,8 @@ def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
     yield from bps.abs_set(oav.mxsc.blocking_callbacks_pv, 0)
 
     # Set the python file to use for calculating the edge waveforms
-    yield from bps.abs_set(oav.mxsc.py_filename, filename, wait=True)
+    yield from bps.abs_set(oav.mxsc.py_filename, filename)
     yield from bps.abs_set(oav.mxsc.read_file, 1)
-
-    # Image annotations
-    yield from bps.abs_set(oav.mxsc.draw_tip, True)
-    yield from bps.abs_set(oav.mxsc.draw_edges, True)
-
-    # Use the original image type for the edge output array
-    yield from bps.abs_set(oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL)
 
     # Image annotations
     yield from bps.abs_set(oav.mxsc.draw_tip, True)
@@ -122,13 +116,19 @@ def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParame
 
     yield from bps.abs_set(oav.snapshot.input_pv, parameters.input_plugin + ".MXSC")
 
+    zoom_level_str = f"{float(parameters.zoom)}x"
+    if zoom_level_str not in oav.zoom_controller.allowed_zooms:
+        raise OAVError_ZoomLevelNotFound(
+            f"Found {zoom_level_str} as a zoom level but expected one of {oav.zoom_controller.allowed_zooms}"
+        )
+
     yield from bps.abs_set(
-        oav.zoom_controller.zoom,
-        f"{float(parameters.zoom)}x",
+        oav.zoom_controller.level,
+        zoom_level_str,
         wait=True,
     )
 
-    yield from bps.abs_set(backlight.pos, 1, wait=True)
+    yield from bps.abs_set(backlight.pos, 1)
     yield from bps.wait()
 
     """
@@ -271,7 +271,10 @@ def rotate_pin_and_collect_positional_data(
 
         # rotate the pin to take next measurement, unless it's the last measurement
         if i < rotations - 1:
-            yield from bps.mv(smargon.omega, current_omega + increment)
+            yield from bps.mv(
+                smargon.omega,
+                current_omega + increment,
+            )
 
     return (
         x_positions,
@@ -399,8 +402,8 @@ def extract_coordinates_from_rotation_data(
     Takes the rotations being used and gets the neccessary data in terms of x,y,z and angles.
     This is much nicer to read.
     """
-    x = x_positions[index_of_largest_width]
-    y = y_positions[index_of_largest_width]
+    x_pixels = x_positions[index_of_largest_width]
+    y_pixels = y_positions[index_of_largest_width]
 
     best_omega_angle = float(omega_angles[index_of_largest_width])
 
@@ -409,60 +412,56 @@ def extract_coordinates_from_rotation_data(
     best_omega_angle_orthogonal = float(omega_angles[index_orthogonal_to_largest_width])
 
     # Store the y value which will be the magnitude in the z axis on 90 degree rotation
-    z = y_positions[index_orthogonal_to_largest_width]
+    z_pixels = y_positions[index_orthogonal_to_largest_width]
 
     # best_omega_angle_90 could be zero, which used to cause a failure - d'oh!
     if best_omega_angle_orthogonal is None:
         LOGGER.error("Unable to find loop at 2 orthogonal angles")
         return
 
-    return x, y, z, best_omega_angle, best_omega_angle_orthogonal
+    return x_pixels, y_pixels, z_pixels, best_omega_angle, best_omega_angle_orthogonal
 
 
-def get_motor_movement_xyz(
-    parameters: OAVParameters,
-    x,
-    y,
-    z,
-    tip_x_positions,
-    indices_orthogonal_to_largest_width,
-    best_omega_angle,
-    best_omega_angle_orthogonal,
-    last_run,
-    x_size,
-    y_size,
-    current_motor_xyz,
-):
-    """
-    Gets the x,y,z values the motor should move to (microns).
-    """
-
+def check_x_within_bounds(parameters: OAVParameters, tip_x, x_pixels):
     # extract the microns per pixel of the zoom level of the camera
     parameters.load_microns_per_pixel(parameters.zoom)
 
     # get the max tip distance in pixels
     max_tip_distance_pixels = parameters.max_tip_distance / parameters.micronsPerXPixel
 
-    # we need to store the tips of the angles orthogonal-ish to the best angle
-    orthogonal_tips_x = tip_x_positions[indices_orthogonal_to_largest_width]
-    # get the average tip distance of the orthogonal rotations
-    tip_x = np.median(orthogonal_tips_x)
-
     # If x exceeds the max tip distance then set it to the max tip distance.
     # This is necessary as some users send in wierd loops for which the differential method isn't
     # functional. OAV centring only needs to get in the right ballpark so Xray centring can do its thing.
-    tip_distance_pixels = x - tip_x
+    tip_distance_pixels = x_pixels - tip_x
     if tip_distance_pixels > max_tip_distance_pixels:
         LOGGER.warn(
-            f"x={x} exceeds maximum tip distance {max_tip_distance_pixels}, using setting x within the max tip distance"
+            f"x_pixels={x_pixels} exceeds maximum tip distance {max_tip_distance_pixels}, using setting x_pixels within the max tip distance"
         )
-        x = max_tip_distance_pixels + tip_x
+        x_pixels = max_tip_distance_pixels + tip_x
+    return x_pixels
 
-    # get the scales of the image in microns, and the distance in microns to the beam centre location
 
-    x_scale, y_scale = get_scale(x_size, y_size)
-    x_move, y_move = calculate_beam_distance_in_microns(
-        parameters, int(x * x_scale), int(y * y_scale)
+def get_motor_movement_xyz(
+    parameters: OAVParameters,
+    current_motor_xyz,
+    x_pixels,
+    y_pixels,
+    z_pixels,
+    best_omega_angle,
+    best_omega_angle_orthogonal,
+    last_run,
+    x_scale,
+    y_scale,
+):
+    """
+    Gets the x,y,z values the motor should move to (microns).
+    """
+
+    # Get the scales of the image in microns, and the distance in microns to the beam centre location.
+    x_move, y_move = calculate_beam_distance(
+        parameters,
+        int(x_pixels * x_scale),
+        int(y_pixels * y_scale),
     )
 
     # convert the distance in microns to motor incremements
@@ -470,20 +469,18 @@ def get_motor_movement_xyz(
         x_move, y_move, best_omega_angle
     )
 
-    # it's the last run then also move calculate the motor coordinates to take the orthogonal angle into account.
+    # It's the last run then also move calculate the motor coordinates taking
     if last_run:
-        x_move, z_move = calculate_beam_distance_in_microns(
-            parameters, int(x * x_scale), int(z * y_scale)
+        x_move, z_move = calculate_beam_distance(
+            parameters,
+            int(x_pixels * x_scale),
+            int(z_pixels * y_scale),
         )
-    else:
-        z_move = 0
+        x_y_z_move += distance_from_beam_centre_to_motor_coords(
+            0, z_move, best_omega_angle_orthogonal
+        )
 
-    # This will be 0 if z_move is 0
-    x_y_z_move_2 = distance_from_beam_centre_to_motor_coords(
-        0, z_move, best_omega_angle_orthogonal
-    )
-
-    new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move + x_y_z_move_2)
+    new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move)
     new_y = keep_inside_bounds(new_y, _Y_LOWER_BOUND, _Y_UPPER_BOUND)
     new_z = keep_inside_bounds(new_z, _Z_LOWER_BOUND, _Z_UPPER_BOUND)
     return new_x, new_y, new_z
@@ -512,6 +509,7 @@ def centring_plan(
     omega_high_limit = yield from bps.rd(smargon.omega.high_limit_travel)
     if not omega_high_limit:
         omega_high_limit = _DESIRED_HIGH_LIMIT
+    omega_high_limit = _DESIRED_HIGH_LIMIT
 
     # we attempt to find the centre `max_run_num` times.
     run_num = 0
@@ -541,9 +539,9 @@ def centring_plan(
         print("2")
 
         (
-            x,
-            y,
-            z,
+            x_pixels,
+            y_pixels,
+            z_pixels,
             best_omega_angle,
             best_omega_angle_orthogonal,
         ) = extract_coordinates_from_rotation_data(
@@ -556,31 +554,39 @@ def centring_plan(
         print("3")
         print("BEST OMEGA ANGLE", best_omega_angle)
 
+        # get the average tip distance of the orthogonal rotations, check if our
+        # x value exceeds the
+        tip_x = np.median(tip_x_positions[indices_orthogonal_to_largest_width])
+        x_pixels = check_x_within_bounds(parameters, tip_x, x_pixels)
+
         x_size = yield from bps.rd(oav.snapshot.x_size_pv)
         y_size = yield from bps.rd(oav.snapshot.y_size_pv)
+        x_scale, y_scale = get_scale(x_size, y_size)
 
-        current_motor_xyz = np.array(
-            [
-                (yield from bps.rd(smargon.x)),
-                (yield from bps.rd(smargon.y)),
-                (yield from bps.rd(smargon.z)),
-            ]
+        # Smargon levels are in mm, we convert them to microns here
+        current_motor_xyz = (
+            np.array(
+                [
+                    (yield from bps.rd(smargon.x)),
+                    (yield from bps.rd(smargon.y)),
+                    (yield from bps.rd(smargon.z)),
+                ]
+            )
+            * 1e3
         )
 
         print("4")
         new_x, new_y, new_z = get_motor_movement_xyz(
             parameters,
-            x,
-            y,
-            z,
-            tip_x_positions,
-            indices_orthogonal_to_largest_width,
+            current_motor_xyz,
+            x_pixels,
+            y_pixels,
+            z_pixels,
             best_omega_angle,
             best_omega_angle_orthogonal,
             run_num == max_run_num - 1,
-            x_size,
-            y_size,
-            current_motor_xyz,
+            x_scale,
+            y_scale,
         )
         print("5")
 
@@ -593,7 +599,7 @@ def centring_plan(
         print("new y    : ", new_y * 1e-3)
         print("new z    : ", new_z * 1e-3)
 
-        # Now move loop to cross hair, converting microns to mm
+        # Now move loop to cross hair
         yield from bps.mv(
             smargon.x, new_x * 1e-3, smargon.y, new_y * 1e-3, smargon.z, new_z * 1e-3
         )
@@ -605,41 +611,40 @@ def centring_plan(
     LOGGER.info("exiting OAVCentre")
 
 
-def calculate_beam_distance_in_microns(parameters: OAVParameters, x, y):
+def calculate_beam_distance(
+    parameters: OAVParameters,
+    horizontal,
+    vertical,
+    use_microns=True,
+):
 
     parameters._extract_beam_position()
-    y_to_move = y - parameters.beam_centre_y
-    x_to_move = parameters.beam_centre_x - x
-    x_microns = int(x_to_move * parameters.micronsPerXPixel)
-    y_microns = int(y_to_move * parameters.micronsPerYPixel)
-    return (x_microns, y_microns)
+
+    horizontal_to_move = parameters.beam_centre_x - horizontal
+
+    vertical_to_move = parameters.beam_centre_y - vertical
+
+    if use_microns:
+        horizontal_to_move = int(horizontal_to_move * parameters.micronsPerXPixel)
+        vertical_to_move = int(vertical_to_move * parameters.micronsPerYPixel)
+
+    return (horizontal_to_move, vertical_to_move)
 
 
 def distance_from_beam_centre_to_motor_coords(horizontal, vertical, omega):
     """
-    Converts micron measurements from pixels into to (x, y, z) motor coordinates. For an overview of the
-    coordinate system for I03 see https://github.com/DiamondLightSource/python-artemis/wiki/Gridscan-Coordinate-System.
-
-    This is designed for phase 1 mx, with the hardware located to the right of the beam, and the z axis is
-    perpendicular to the beam and normal to the rotational plane of the omega axis. When the x axis is vertical
-    then the y axis is anti-parallel to the beam direction.
-    By definition, when omega = 0, the z axis will be positive in the vertical direction and a positive omega
-    movement will rotate clockwise when looking at the viewed down x-axis. This is standard in
-    crystallography.
+    Converts from (horizontal,vertical) micron measurements from the OAV camera into to (x, y, z) motor coordinates.
+    For an overview of the coordinate system for I03 see https://github.com/DiamondLightSource/python-artemis/wiki/Gridscan-Coordinate-System.
     """
+    # +ve x in the OAV camera becomes -ve x in the smargon motors
     x = -horizontal
-    angle = math.radians(omega)
-    cosine = math.cos(angle)
-    """
-    These calculations are done as though we are looking at the back of
-    the gonio, with the beam coming from the left. They follow the
-    mathematical convention that Z +ve goes right, Y +ve goes vertically
-    up. X +ve is away from the gonio (away from you). This is NOT the
-    standard phase I convention.
-    """
-    sine = math.sin(angle)
-    z = vertical * sine
-    y = vertical * cosine
+    radians = math.radians(omega)
+    cosine = math.cos(radians)
+    sine = math.sin(radians)
+
+    # +ve y in the OAV camera becomes -ve y in the smargon motors
+    y = -vertical * cosine
+    z = -vertical * sine
     return np.array([x, y, z])
 
 
@@ -654,21 +659,19 @@ def keep_inside_bounds(value, lower_bound, upper_bound):
         lower_bound: the lower bound
         lower_bound: the upper bound
     """
-    below_lower = value < lower_bound
-    above_upper = value > upper_bound
-
-    return (
-        below_lower * lower_bound
-        + above_upper * upper_bound
-        + (not above_upper and not below_lower) * value
-    )
+    if value < lower_bound:
+        return lower_bound
+    if value > upper_bound:
+        return upper_bound
+    return value
 
 
 if __name__ == "__main__":
     beamline = SIM_BEAMLINE
     oav = OAV(name="oav", prefix=beamline)
-    smargon = I03Smargon(name="smargon", prefix=beamline + "-MO-SGON-01:")
-    backlight = Backlight(name="backlight", prefix=beamline)
+
+    smargon: I03Smargon = I03Smargon(name="smargon", prefix=beamline)
+    backlight: Backlight = Backlight(name="backlight", prefix=beamline)
     parameters = OAVParameters(
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
         "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
