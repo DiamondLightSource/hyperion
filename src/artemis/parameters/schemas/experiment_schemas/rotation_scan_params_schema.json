@@ -1,0 +1,40 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "rotation_axis": {
+            "type": "string"
+        },
+        "rotation_angle": {
+            "type": "string"
+        },
+        "omega_start": {
+            "type": "string"
+        },
+        "phi_start": {
+            "type": "string"
+        },
+        "kappa_start": {
+            "type": "object"
+        },
+        "x": {
+            "type": "object"
+        },
+        "y": {
+            "type": "object"
+        },
+        "z": {
+            "type": "object"
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "rotation_axis",
+        "rotation_angle",
+        "omega_start",
+        "phi_start",
+        "x",
+        "y",
+        "z"
+    ]
+}

@@ -16,7 +16,7 @@ from artemis.exceptions import WarningException
 from artemis.external_interaction.communicator_callbacks import ISPyBHandlerCallback
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.log import LOGGER
-from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
+from artemis.parameters.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.utils import Point3D
 
 TIMEOUT = 90

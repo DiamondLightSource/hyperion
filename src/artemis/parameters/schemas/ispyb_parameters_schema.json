@@ -1,0 +1,96 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "visit_path": {
+            "type": "string"
+        },
+        "pixels_per_micron_x": {
+            "type": "number"
+        },
+        "pixels_per_micron_y": {
+            "type": "number"
+        },
+        "upper_left": {
+            "type": "object",
+            "properties": {
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
+        "position": {
+            "type": "object",
+            "properties": {
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
+        "xtal_snapshots_omega_start": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "xtal_snapshots_omega_end": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "xtal_snapshots": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "transmission": {
+            "type": "number"
+        },
+        "flux": {
+            "type": "number"
+        },
+        "wavelength": {
+            "type": "number"
+        },
+        "beam_size_x": {
+            "type": "number"
+        },
+        "beam_size_y": {
+            "type": "number"
+        },
+        "slit_gap_size_x": {
+            "type": "number"
+        },
+        "slit_gap_size_y": {
+            "type": "number"
+        },
+        "focal_spot_size_x": {
+            "type": "number"
+        },
+        "focal_spot_size_y": {
+            "type": "number"
+        },
+        "comment": {
+            "type": "string"
+        },
+        "resolution": {
+            "type": "number"
+        }
+    },
+    "additionalProperties": false,
+    "minProperties": 19
+}

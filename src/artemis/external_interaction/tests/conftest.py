@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from artemis.parameters import ISPYB_PLAN_NAME
+from artemis.parameters.parameters import ISPYB_PLAN_NAME
 
 
 @pytest.fixture

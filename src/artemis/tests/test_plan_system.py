@@ -6,7 +6,7 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.fast_grid_scan_plan import read_hardware_for_ispyb
-from artemis.parameters import SIM_BEAMLINE, SIM_INSERTION_PREFIX
+from artemis.parameters.parameters import SIM_BEAMLINE, SIM_INSERTION_PREFIX
 
 
 @pytest.mark.s03

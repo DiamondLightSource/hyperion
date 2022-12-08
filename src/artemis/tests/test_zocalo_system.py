@@ -1,6 +1,6 @@
 # import pytest
 #
-# from artemis.parameters import Point3D
+# artemis.parameters.parameters Point3D
 # from artemis.external_interaction.zocalo_interaction import run_end, run_start, wait_for_result
 #
 # #This is dangerous until this is resolved, we can break prod zocalo with fake messages

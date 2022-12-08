@@ -14,7 +14,11 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.log import LOGGER
-from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
+from artemis.parameters.parameters import (
+    ISPYB_PLAN_NAME,
+    SIM_ISPYB_CONFIG,
+    FullParameters,
+)
 
 
 class NexusFileHandlerCallback(CallbackBase):

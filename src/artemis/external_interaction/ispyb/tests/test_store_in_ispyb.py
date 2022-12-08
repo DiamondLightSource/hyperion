@@ -9,7 +9,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
-from artemis.parameters import SIM_ISPYB_CONFIG, FullParameters
+from artemis.parameters.parameters import SIM_ISPYB_CONFIG, FullParameters
 from artemis.utils import Point3D
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
@@ -30,9 +30,9 @@ TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 @pytest.fixture
 def dummy_params():
     dummy_params = FullParameters()
-    dummy_params.ispyb_params.upper_left = Point3D(100, 100, 50)
-    dummy_params.ispyb_params.pixels_per_micron_x = 0.8
-    dummy_params.ispyb_params.pixels_per_micron_y = 0.8
+    dummy_params.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 50)
+    dummy_params.artemis_params.ispyb_params.pixels_per_micron_x = 0.8
+    dummy_params.artemis_params.ispyb_params.pixels_per_micron_y = 0.8
     return dummy_params
 
 
@@ -318,7 +318,9 @@ def test_ispyb_deposition_rounds_to_int(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    dummy_ispyb.full_params.ispyb_params.upper_left = Point3D(0.01, 100, 50)
+    dummy_ispyb.full_params.artemis_params.ispyb_params.upper_left = Point3D(
+        0.01, 100, 50
+    )
     dummy_ispyb.begin_deposition()
     mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
 

@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "params_version": {
+            "const": 0.1
+        },
+        "artemis_params": {
+            "type": "object",
+            "$ref": "artemis_parameters_schema.json"
+        },
+        "experiment_params": {
+            "oneOf": [
+                {
+                    "$ref": "experiment_schemas/grid_scan_params_schema.json"
+                },
+                {
+                    "$ref": "experiment_schemas/rotation_scan_params_schema.json"
+                }
+            ]
+        }
+    },
+    "additionalProperties": false,
+    "minProperties": 3
+}

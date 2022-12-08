@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "beamline": {
+            "type": "string"
+        },
+        "detector": {
+            "type": "string"
+        },
+        "zocalo_environment": {
+            "type": "string"
+        },
+        "experiment_type": {
+            "type": "string"
+        },
+        "detector_params": {
+            "$ref": "detector_parameters_schema.json"
+        },
+        "ispyb_params": {
+            "$ref": "ispyb_parameters_schema.json"
+        }
+    },
+    "additionalProperties": false,
+    "minProperties": 6
+}
