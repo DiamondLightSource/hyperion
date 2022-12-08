@@ -39,7 +39,12 @@ class ZoomController(Device):
     from CAM.
     """
 
-    zoom: EpicsSignal = Component(EpicsSignal, "ZOOMPOSCMD")
+    percentage: EpicsSignal = Component(EpicsSignal, "ZOOMPOSCMD")
+
+    # Level is the arbitrary level  that corresponds to a zoom percentage.
+    # When a zoom is fed in from GDA this is the level it is refering to.
+    level: EpicsSignal = Component(EpicsSignal, "MP:SELECT")
+    allowed_zooms = ["1.0x", "2.5x", "5.0x", "7.5x", "10.0x"]
 
 
 class EdgeOutputArrayImageType(IntEnum):

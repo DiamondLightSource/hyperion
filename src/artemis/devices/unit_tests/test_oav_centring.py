@@ -156,9 +156,9 @@ def test_extract_beam_position_different_beam_postitions(
     "h,v,omega,expected_values",
     [
         (0.0, 0.0, 0.0, [0.0, 0.0, 0.0]),
-        (10, 5, 90, [-10, 3.062e-16, 5]),
-        (100, 50, 40, [-100, 38.302, 32.139]),
-        (10, -100, -4, [-10, -99.756, 6.976]),
+        (10, -5, 90, [-10, 3.062e-16, 5]),
+        (100, -50, 40, [-100, 38.302, 32.139]),
+        (10, 100, -4, [-10, -99.756, 6.976]),
     ],
 )
 def test_distance_from_beam_centre_to_motor_coords_returns_the_same_values_as_GDA(
