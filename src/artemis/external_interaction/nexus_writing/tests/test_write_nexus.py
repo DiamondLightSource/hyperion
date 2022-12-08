@@ -255,13 +255,10 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
     assert single_dummy_file.detector["image_size"][1] == PIXELS_X_EIGER2_X_4M
 
 
-@pytest.mark.dlstbx
-def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
-    dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
-):
+def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]):
     import dlstbx.swmr.h5check
 
-    nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
+    nexus_writer_1, nexus_writer_2 = nexus_writers
 
     nexus_writer_1.create_nexus_file()
     nexus_writer_2.create_nexus_file()
@@ -277,27 +274,17 @@ def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
             dlstbx.swmr.h5check.get_real_frames(
                 written_nexus_file, written_nexus_file["entry/data/data"]
             )
+
+
+@pytest.mark.dlstbx
+def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
+    dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
+):
+    check_validity_through_zocalo(dummy_nexus_writers)
 
 
 @pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
-    import dlstbx.swmr.h5check
-
-    nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
-
-    nexus_writer_1.create_nexus_file()
-    nexus_writer_2.create_nexus_file()
-
-    for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
-        with h5py.File(filename, "r") as written_nexus_file:
-            dlstbx.swmr.h5check.get_real_frames(
-                written_nexus_file, written_nexus_file["entry/data/data"]
-            )
-
-    for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
-        with h5py.File(filename, "r") as written_nexus_file:
-            dlstbx.swmr.h5check.get_real_frames(
-                written_nexus_file, written_nexus_file["entry/data/data"]
-            )
+    check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
