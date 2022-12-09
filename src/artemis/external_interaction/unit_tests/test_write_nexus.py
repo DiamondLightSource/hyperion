@@ -41,7 +41,7 @@ def minimal_params(request):
 
 
 @pytest.fixture
-def dummy_nexus_writers(minimal_params: FullParameters):
+def dummy_nexus_writers(minimal_params: InternalParameters):
     first_file_params = create_parameters_for_first_file(minimal_params)
     nexus_writer_1 = NexusWriter(first_file_params)
 
@@ -56,12 +56,12 @@ def dummy_nexus_writers(minimal_params: FullParameters):
 
 
 @pytest.fixture
-def dummy_nexus_writers_with_more_images(minimal_params: FullParameters):
+def dummy_nexus_writers_with_more_images(minimal_params: InternalParameters):
     x, y, z = 45, 35, 25
-    minimal_params.grid_scan_params.x_steps = x
-    minimal_params.grid_scan_params.y_steps = y
-    minimal_params.grid_scan_params.z_steps = z
-    minimal_params.detector_params.num_images = x * y + x * z
+    minimal_params.experiment_params.x_steps = x
+    minimal_params.experiment_params.y_steps = y
+    minimal_params.experiment_params.z_steps = z
+    minimal_params.artemis_params.detector_params.num_images = x * y + x * z
     first_file_params = create_parameters_for_first_file(minimal_params)
     nexus_writer_1 = NexusWriter(first_file_params)
 
@@ -90,7 +90,7 @@ def single_dummy_file(minimal_params):
     indirect=["minimal_params"],
 )
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
-    minimal_params, expected_num_of_files, single_dummy_file
+    minimal_params: InternalParameters, expected_num_of_files, single_dummy_file
 ):
     first_writer = single_dummy_file
     assert len(first_writer.get_image_datafiles()) == expected_num_of_files
@@ -103,7 +103,8 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
-    minimal_params, dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
+    minimal_params: InternalParameters,
+    dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
     grid_scan_params: GridScanParams = minimal_params.experiment_params
@@ -220,7 +221,7 @@ def assert_contains_external_link(data_path, entry_name, file_name):
 
 
 def test_nexus_writer_files_are_formatted_as_expected(
-    minimal_params: FullParameters, single_dummy_file: NexusWriter
+    minimal_params: InternalParameters, single_dummy_file: NexusWriter
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
@@ -292,7 +293,7 @@ def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
     check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
 
 
-def test_GIVEN_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
+def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images

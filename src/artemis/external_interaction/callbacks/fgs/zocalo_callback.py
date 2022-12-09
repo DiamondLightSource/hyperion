@@ -45,7 +45,7 @@ class FGSZocaloCallback(CallbackBase):
         self.results = None
         self.xray_centre_motor_position = None
         self.ispyb = ispyb_handler
-        self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
+        self.zocalo_interactor = ZocaloInteractor(self.zocalo_env)
 
     def event(self, doc: dict):
         LOGGER.debug(f"\n\nZocalo handler received event document:\n\n {doc}\n")

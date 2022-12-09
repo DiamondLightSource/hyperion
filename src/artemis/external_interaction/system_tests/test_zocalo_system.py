@@ -3,16 +3,15 @@ import pytest
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
-from artemis.external_interaction.callbacks.fgs.zocalo_callback import (
-    FGSZocaloCallback,
-)
-from artemis.parameters import FullParameters, Point3D
+from artemis.external_interaction.callbacks.fgs.zocalo_callback import FGSZocaloCallback
+from artemis.parameters import InternalParameters
+from artemis.utils import Point3D
 
 
 @pytest.mark.skip(reason="needs fake zocalo")
 @pytest.mark.s03
 def test_when_running_start_stop_then_get_expected_returned_results():
-    params = FullParameters()
+    params = InternalParameters()
     zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
     dcids = [1, 2]
     for dcid in dcids:

@@ -6,7 +6,7 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.log import LOGGER
-from artemis.parameters import FullParameters
+from artemis.parameters import InternalParameters
 
 
 class FGSNexusFileHandlerCallback(CallbackBase):
@@ -25,7 +25,7 @@ class FGSNexusFileHandlerCallback(CallbackBase):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self, parameters: FullParameters):
+    def __init__(self, parameters: InternalParameters):
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(parameters))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(parameters))
 
