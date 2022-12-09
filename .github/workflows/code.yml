@@ -41,8 +41,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
 
       - name: Setup python
@@ -52,118 +50,15 @@ jobs:
 
 
       - name: Install with latest dependencies
-        run: pip install .[dev]
+        run: pip install -e .[dev]
 
 
       - name: Run tests
-        run: pytest -m "not s03"
+        run: pytest -m "not (s03 or dlstbx)"
 
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          name: ${{ matrix.python }}/${{ matrix.os }}
+          name: ubuntu-latest
           files: cov.xml
-
-  container:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Log in to GitHub Docker Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build developer image for testing
-        uses: docker/build-push-action@v3
-        with:
-          tags: build:latest
-          context: .
-          target: build
-          load: true
-
-      - name: Run tests in the container locked with requirements_dev.txt
-        run: |
-          docker run --name test build bash /project/.github/workflows/container_tests.sh
-          docker cp test:/project/dist .
-          docker cp test:/project/cov.xml .
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          name: 3.10-locked/ubuntu-latest
-          files: cov.xml
-
-#      - name: Build runtime image
-#        uses: docker/build-push-action@v3
-#        with:
-#          push: ${{ github.event_name != 'pull_request' }}
-#          tags: ${{ steps.meta.outputs.tags }}
-#          context: .
-#          labels: ${{ steps.meta.outputs.labels }}
-#
-#      - name: Test cli works in runtime image
-#        # check that the first tag can run with --version parameter
-#        run: docker run $(echo ${{ steps.meta.outputs.tags }} | head -1) --version
-#
-#      - name: Test cli works in sdist installed in local python
-#        # ${GITHUB_REPOSITORY##*/} is the repo name without org
-#        # Replace this with the cli command if different to the repo name
-#        run: pip install dist/*.gz && ${GITHUB_REPOSITORY##*/} --version
-#
-#      - name: Upload build files
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: dist
-#          path: dist
-
-  release:
-    # upload to PyPI and make a release on every tag
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    #needs: container
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/download-artifact@v3
-
-      - name: Github Release
-        # We pin to the SHA, not the tag, for security reasons.
-        # https://docs.github.com/en/actions/learn-github-actions/security-hardening-for-github-actions#using-third-party-actions
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
-        with:
-          prerelease: ${{ contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'rc') }}
-          files: dist/*
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: pipx run twine upload dist/*.whl dist/*.tar.gz

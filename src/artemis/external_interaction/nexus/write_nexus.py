@@ -14,7 +14,7 @@ import h5py
 import numpy as np
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
-from nexgen.tools.VDS_tools import image_vds_writer
+from nexgen.tools.VDS_tools import clean_unused_links, image_vds_writer
 
 from artemis.devices.detector import DetectorParams
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
@@ -275,6 +275,16 @@ class NexusWriter:
                 )
 
                 image_vds_writer(
+                    nxsfile,
+                    (
+                        self.full_num_of_images,
+                        self.detector["image_size"][0],
+                        self.detector["image_size"][1],
+                    ),
+                    start_index=self.start_index,
+                )
+
+                clean_unused_links(
                     nxsfile,
                     (
                         self.full_num_of_images,

@@ -14,7 +14,7 @@ from flask_restful import Api, Resource
 
 import artemis.log
 from artemis.exceptions import WarningException
-from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
+from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER
