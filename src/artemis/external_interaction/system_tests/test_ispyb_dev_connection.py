@@ -22,3 +22,17 @@ def test_ispyb_get_comment_from_collection_correctly():
     )
 
     assert ispyb.get_current_datacollection_comment(2) == ""
+
+
+@pytest.mark.s03
+def test_can_store_2D_ispyb_data_correctly_when_in_error():
+    test_params = FullParameters()
+    test_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
+    ispyb = StoreInIspyb2D(ISPYB_CONFIG, test_params)
+    dc_ids, grid_ids, dcg_id = ispyb.begin_deposition()
+
+    assert len(dc_ids) == 1
+    assert len(grid_ids) == 1
+    assert isinstance(dcg_id, int)
+
+    ispyb.end_deposition(False, "In error")
