@@ -2,6 +2,7 @@ import types
 from unittest.mock import ANY, MagicMock, patch
 
 import bluesky.plan_stubs as bps
+import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
@@ -12,15 +13,18 @@ from artemis.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
 from artemis.devices.eiger import EigerDetector
+from artemis.devices.fast_grid_scan import FastGridScan
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
+from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,
+    wait_for_fgs_valid,
 )
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
@@ -175,3 +179,35 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
 
     run_gridscan.assert_called_once_with(fake_composite, fake_eiger, params)
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
+
+
+@patch("artemis.fast_grid_scan_plan.bps.sleep")
+def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
+    patch_sleep: MagicMock,
+):
+    test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
+
+    test_fgs.scan_invalid.sim_put(False)
+    test_fgs.position_counter.sim_put(0)
+
+    RE = RunEngine({})
+
+    RE(wait_for_fgs_valid(test_fgs))
+
+    patch_sleep.assert_not_called()
+
+
+@patch("artemis.fast_grid_scan_plan.bps.sleep")
+def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
+    patch_sleep: MagicMock,
+):
+    test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
+
+    test_fgs.scan_invalid.sim_put(True)
+    test_fgs.position_counter.sim_put(0)
+
+    RE = RunEngine({})
+    with pytest.raises(WarningException):
+        RE(wait_for_fgs_valid(test_fgs))
+
+    patch_sleep.assert_called()
