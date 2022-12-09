@@ -64,9 +64,9 @@ class FullParameters:
             pixels_per_micron_x=0.0,
             pixels_per_micron_y=0.0,
             upper_left=Point3D(
-                x=None, y=None, z=None
+                x=0, y=0, z=0
             ),  # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-            position=Point3D(x=None, y=None, z=None),
+            position=Point3D(x=0, y=0, z=0),
             xtal_snapshots_omega_start=["test_1_y", "test_2_y", "test_3_y"],
             xtal_snapshots_omega_end=["test_1_z", "test_2_z", "test_3_z"],
             transmission=1.0,
