@@ -181,7 +181,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
 
 
-@patch("artemis.fast_grid_scan_plan.bps.sleep")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     patch_sleep: MagicMock,
 ):
@@ -197,7 +197,7 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     patch_sleep.assert_not_called()
 
 
-@patch("artemis.fast_grid_scan_plan.bps.sleep")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
     patch_sleep: MagicMock,
 ):
