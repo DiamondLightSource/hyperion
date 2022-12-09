@@ -9,12 +9,9 @@ from unittest.mock import MagicMock, patch
 from pytest import mark, raises
 from zocalo.configuration import Configuration
 
-from artemis.external_interaction.ispyb.ispyb_dataclass import Point3D
-from artemis.external_interaction.zocalo_interaction import (
-    run_end,
-    run_start,
-    wait_for_result,
-)
+from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
+from artemis.parameters import SIM_ZOCALO_ENV
+from artemis.utils import Point3D
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -26,7 +23,7 @@ EXPECTED_RUN_END_MESSAGE = {
 
 
 @patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo_interaction.lookup")
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
@@ -38,7 +35,7 @@ def _test_zocalo(
 
     func_testing(mock_transport)
 
-    mock_zc.activate_environment.assert_called_once_with("devrmq")
+    mock_zc.activate_environment.assert_called_once_with(SIM_ZOCALO_ENV)
     mock_transport.connect.assert_called_once()
     expected_message = {
         "recipes": ["mimas"],
@@ -66,16 +63,23 @@ def with_exception(function_to_run, mock_transport):
         function_to_run()
 
 
+zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
+
+
 @mark.parametrize(
     "function_to_test,function_wrapper,expected_message",
     [
-        (run_start, normally, EXPECTED_RUN_START_MESSAGE),
-        (run_start, with_exception, EXPECTED_RUN_START_MESSAGE),
-        (run_end, normally, EXPECTED_RUN_END_MESSAGE),
-        (run_end, with_exception, EXPECTED_RUN_END_MESSAGE),
+        (zc.run_start, normally, EXPECTED_RUN_START_MESSAGE),
+        (
+            zc.run_start,
+            with_exception,
+            EXPECTED_RUN_START_MESSAGE,
+        ),
+        (zc.run_end, normally, EXPECTED_RUN_END_MESSAGE),
+        (zc.run_end, with_exception, EXPECTED_RUN_END_MESSAGE),
     ],
 )
-def test_run_start_and_end(
+def test__run_start_and_end(
     function_to_test: Callable, function_wrapper: Callable, expected_message: Dict
 ):
     """
@@ -91,11 +95,11 @@ def test_run_start_and_end(
 
 @patch("workflows.recipe.wrap_subscribe")
 @patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo_interaction.lookup")
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
-
+    zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
     centre_of_mass_coords = [2.942925659754348, 7.142683401382778, 6.79110544979448]
 
     message = [
@@ -114,7 +118,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup.return_value.return_value = mock_transport
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(wait_for_result, datacollection_grid_id)
+        future = executor.submit(zc.wait_for_result, datacollection_grid_id)
 
         for _ in range(10):
             sleep(0.1)

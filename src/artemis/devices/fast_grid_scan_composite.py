@@ -20,7 +20,7 @@ class FGSComposite(Device):
     synchrotron = FormattedComponent(Synchrotron)
     slit_gaps = Component(SlitGaps, "-AL-SLITS-04:")
 
-    sample_motors: I03Smargon = Component(I03Smargon, "-MO-SGON-01:")
+    sample_motors: I03Smargon = Component(I03Smargon, "")
 
     def __init__(self, insertion_prefix: str, *args, **kwargs):
         self.insertion_prefix = insertion_prefix

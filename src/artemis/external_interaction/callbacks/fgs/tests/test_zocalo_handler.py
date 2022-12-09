@@ -2,21 +2,34 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
-from artemis.external_interaction.tests.conftest import TestData
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
+from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
+EXPECTED_DCID = 100
+EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
+EXPECTED_RUN_END_MESSAGE = {
+    "event": "end",
+    "ispyb_dcid": EXPECTED_DCID,
+    "ispyb_wait_for_runstatus": "1",
+}
+
 td = TestData()
+
+
+def mock_zocalo_functions(callbacks: FGSCallbackCollection):
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
 
 
 def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_update_time_and_status: MagicMock,
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
-    wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
     nexus_writer: MagicMock,
 ):
 
@@ -29,6 +42,8 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
 
     params = FullParameters()
     callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
+
     callbacks.ispyb_handler.start(td.test_start_document)
     callbacks.zocalo_handler.start(td.test_start_document)
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document)
@@ -38,40 +53,48 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks.ispyb_handler.stop(td.test_stop_document)
     callbacks.zocalo_handler.stop(td.test_stop_document)
 
-    run_start.assert_has_calls([call(x) for x in dc_ids])
-    assert run_start.call_count == len(dc_ids)
+    callbacks.zocalo_handler.zocalo_interactor.run_start.assert_has_calls(
+        [call(x) for x in dc_ids]
+    )
+    assert callbacks.zocalo_handler.zocalo_interactor.run_start.call_count == len(
+        dc_ids
+    )
 
-    run_end.assert_has_calls([call(x) for x in dc_ids])
-    assert run_end.call_count == len(dc_ids)
+    callbacks.zocalo_handler.zocalo_interactor.run_end.assert_has_calls(
+        [call(x) for x in dc_ids]
+    )
+    assert callbacks.zocalo_handler.zocalo_interactor.run_end.call_count == len(dc_ids)
 
-    wait_for_result.assert_not_called()
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_not_called()
 
 
 def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
-    run_end: MagicMock,
-    run_start: MagicMock,
     nexus_writer: MagicMock,
 ):
 
     params = FullParameters()
     callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
     callbacks.zocalo_handler.start(td.test_start_document)
     callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
     with pytest.raises(AssertionError):
         callbacks.zocalo_handler.event(td.test_event_document)
 
 
-def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
-    wait_for_result: MagicMock,
-):
+def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called():
     params = FullParameters()
     callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
     expected_centre_grid_coords = Point3D(1, 2, 3)
-    wait_for_result.return_value = expected_centre_grid_coords
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        expected_centre_grid_coords
+    )
 
-    callbacks.zocalo_handler.wait_for_results()
-    wait_for_result.assert_called_once_with(100)
+    callbacks.zocalo_handler.wait_for_results(Point3D(0, 0, 0))
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
+        100
+    )
     expected_centre_motor_coords = (
         params.grid_scan_params.grid_position_to_motor_position(
             Point3D(

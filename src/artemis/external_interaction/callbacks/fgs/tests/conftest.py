@@ -7,34 +7,16 @@ from artemis.parameters import ISPYB_PLAN_NAME
 
 @pytest.fixture
 def nexus_writer():
-    with patch("artemis.external_interaction.communicator_callbacks.NexusWriter") as nw:
-        yield nw
-
-
-@pytest.fixture
-def run_start():
-    with patch("artemis.external_interaction.communicator_callbacks.run_start") as p:
-        yield p
-
-
-@pytest.fixture
-def run_end():
-    with patch("artemis.external_interaction.communicator_callbacks.run_end") as p:
-        yield p
-
-
-@pytest.fixture
-def wait_for_result():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.wait_for_result"
-    ) as wfr:
-        yield wfr
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter"
+    ) as nw:
+        yield nw
 
 
 @pytest.fixture
 def mock_ispyb_get_time():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.get_current_time_string"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.get_current_time_string"
     ) as p:
         yield p
 
@@ -42,7 +24,7 @@ def mock_ispyb_get_time():
 @pytest.fixture
 def mock_ispyb_store_grid_scan():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.store_grid_scan"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.store_grid_scan"
     ) as p:
         yield p
 
@@ -50,7 +32,7 @@ def mock_ispyb_store_grid_scan():
 @pytest.fixture
 def mock_ispyb_update_time_and_status():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.update_grid_scan_with_end_time_and_status"
     ) as p:
         yield p
 
@@ -58,7 +40,7 @@ def mock_ispyb_update_time_and_status():
 @pytest.fixture
 def mock_ispyb_begin_deposition():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.begin_deposition"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.begin_deposition"
     ) as p:
         yield p
 
@@ -66,7 +48,7 @@ def mock_ispyb_begin_deposition():
 @pytest.fixture
 def mock_ispyb_end_deposition():
     with patch(
-        "artemis.external_interaction.communicator_callbacks.StoreInIspyb3D.end_deposition"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.StoreInIspyb3D.end_deposition"
     ) as p:
         yield p
 

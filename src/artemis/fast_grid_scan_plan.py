@@ -12,9 +12,10 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.external_interaction.communicator_callbacks import FGSCallbackCollection
+from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 from artemis.tracing import TRACER
+from artemis.utils import Point3D
 
 
 def read_hardware_for_ispyb(
@@ -65,6 +66,15 @@ def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
         if not scan_invalid and pos_counter == 0:
             raise Exception("Scan parameters invalid")
         yield from bps.sleep(SLEEP_PER_CHECK)
+
+
+@bpp.run_decorator()
+def get_xyz(sample_motors):
+    return Point3D(
+        (yield from bps.rd(sample_motors.x)),
+        (yield from bps.rd(sample_motors.y)),
+        (yield from bps.rd(sample_motors.z)),
+    )
 
 
 @bpp.run_decorator()
@@ -120,6 +130,10 @@ def run_gridscan_and_move(
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
+
+    # We get the initial motor positions so we can return to them on zocalo failure
+    initial_xyz = yield from get_xyz(fgs_composite.sample_motors)
+
     # our callbacks should listen to documents only from the actual grid scan
     # so we subscribe to them with our plan
     @bpp.subs_decorator(list(subscriptions))
@@ -132,7 +146,7 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    subscriptions.zocalo_handler.wait_for_results()
+    subscriptions.zocalo_handler.wait_for_results(initial_xyz)
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")

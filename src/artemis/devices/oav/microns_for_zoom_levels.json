@@ -1,0 +1,55 @@
+{
+    "XRatio": 0.485,
+    "YRatio": 0.353,
+    "tolerance": 1.0,
+    "1.0": {
+        "position": 1.0,
+        "micronsPerXPixel": 2.309,
+        "micronsPerYPixel": 3.266
+    },
+    "2.0": {
+        "position": 2.0,
+        "micronsPerXPixel": 1.775,
+        "micronsPerYPixel": 2.493
+    },
+    "3.0": {
+        "position": 3.0,
+        "micronsPerXPixel": 1.334,
+        "micronsPerYPixel": 1.856
+    },
+    "4.0": {
+        "position": 4.0,
+        "micronsPerXPixel": 1.037,
+        "micronsPerYPixel": 1.425
+    },
+    "5.0": {
+        "position": 5.0,
+        "micronsPerXPixel": 0.798,
+        "micronsPerYPixel": 1.091
+    },
+    "6.0": {
+        "position": 6.0,
+        "micronsPerXPixel": 0.627,
+        "micronsPerYPixel": 0.870
+    },
+    "7.0": {
+        "position": 7.0,
+        "micronsPerXPixel": 0.487,
+        "micronsPerYPixel": 0.666
+    },
+    "8.0": {
+        "position": 8.0,
+        "micronsPerXPixel": 0.379,
+        "micronsPerYPixel": 0.516
+    },
+    "9.0": {
+        "position": 9.0,
+        "micronsPerXPixel": 0.289,
+        "micronsPerYPixel": 0.405
+    },
+    "10.0": {
+        "position": 10.0,
+        "micronsPerXPixel": 0.227,
+        "micronsPerYPixel": 0.314
+    }
+}

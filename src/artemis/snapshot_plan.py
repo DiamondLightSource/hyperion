@@ -4,7 +4,7 @@ from bluesky import RunEngine
 
 from artemis.devices.aperture import Aperture
 from artemis.devices.backlight import Backlight
-from artemis.devices.oav import OAV
+from artemis.devices.oav.oav_detector import OAV
 
 
 def prepare_for_snapshot(backlight: Backlight, aperture: Aperture):

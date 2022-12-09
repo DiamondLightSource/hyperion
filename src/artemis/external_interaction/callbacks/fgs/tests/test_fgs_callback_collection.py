@@ -8,10 +8,10 @@ from ophyd.sim import SynSignal
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.external_interaction.communicator_callbacks import (
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
-    ISPyBDepositionNotMade,
 )
+from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.parameters import (
     ISPYB_PLAN_NAME,
@@ -22,11 +22,7 @@ from artemis.parameters import (
 from artemis.utils import Point3D
 
 
-def test_callback_collection_init(
-    wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
-):
+def test_callback_collection_init():
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     assert callbacks.ispyb_handler.params == FullParameters()
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
@@ -36,9 +32,6 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
     nexus_writer: MagicMock,
     mock_ispyb_begin_deposition: MagicMock,
     mock_ispyb_end_deposition: MagicMock,
-    wait_for_result: MagicMock,
-    run_end: MagicMock,
-    run_start: MagicMock,
 ):
     RE = RunEngine({})
 
@@ -53,6 +46,11 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
     detector = SynSignal(name="detector")
 
     callbacks = FGSCallbackCollection.from_params(FullParameters())
+
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
+
     callbacklist_right_order = [
         callbacks.nexus_handler,
         callbacks.ispyb_handler,
@@ -127,12 +125,11 @@ def eiger():
     yield eiger
 
 
-@pytest.mark.skip(reason="Needs better S03 or some other workaround.")
+@pytest.mark.skip(
+    reason="Needs better S03 or some other workaround for eiger/odin timeout."
+)
 @pytest.mark.s03
 def test_communicator_in_composite_run(
-    run_start: MagicMock,
-    run_end: MagicMock,
-    wait_for_result: MagicMock,
     nexus_writer: MagicMock,
     ispyb_begin_deposition: MagicMock,
     ispyb_end_deposition: MagicMock,
@@ -144,7 +141,11 @@ def test_communicator_in_composite_run(
     params = FullParameters()
     params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
+
     callbacks = FGSCallbackCollection.from_params(params)
+    callbacks.zocalo_handler._wait_for_result = MagicMock()
+    callbacks.zocalo_handler._run_end = MagicMock()
+    callbacks.zocalo_handler._run_start = MagicMock()
     callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
 
     fast_grid_scan_composite = FGSComposite(
@@ -161,11 +162,11 @@ def test_communicator_in_composite_run(
 
     # nexus writing
     callbacks.nexus_handler.nxs_writer_1.assert_called_once()
-    callbacks.nexus_handler.assert_called_once()
+    callbacks.nexus_handler.nxs_writer_2.assert_called_once()
     # ispyb
     ispyb_begin_deposition.assert_called_once()
     ispyb_end_deposition.assert_called_once()
     # zocalo
-    run_start.assert_called()
-    run_end.assert_called()
-    wait_for_result.assert_called_once()
+    callbacks.zocalo_handler._run_start.assert_called()
+    callbacks.zocalo_handler._run_end.assert_called()
+    callbacks.zocalo_handler._wait_for_result.assert_called_once()
