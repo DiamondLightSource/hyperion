@@ -85,9 +85,10 @@ SSH_KEY_FILE_LOC="/dls_sw/${BEAMLINE}/software/gda_versions/var/.ssh/${BEAMLINE}
 
 if [[ $STOP == 1 ]]; then
     if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" ]]; then
-        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} ${BEAMLINE}-control.diamond.ac.uk
+        echo "Must be run from beamline control machine as gda2"
+        exit 1
     fi
-    pkill -f artemis
+    pkill -f "python -m artemis"
     exit 0
 fi
 
@@ -120,17 +121,24 @@ if [[ $DEPLOY == 1 ]]; then
     module unload controls_dev
     module load python/3.10
 
-    pipenv install --python 3.10
+    if [ -d "./.venv" ]
+    then
+    rm -rf .venv
+    fi
+    mkdir .venv
+
+    python -m venv .venv
+
+    pip install -e .
 fi
 
 if [[ $START == 1 ]]; then
     if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" || $USERNAME != "gda2" ]]; then
-        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk
+        echo "Must be run from beamline control machine as gda2"
+        exit 1
     fi
 
-    if [[ -z $(pgrep -f artemis) ]]; then
-        pkill -f artemis
-    fi
+    pkill -f "python -m artemis"
 
     cd ${ARTEMIS_PATH}
 
@@ -142,7 +150,8 @@ if [[ $START == 1 ]]; then
 
     export ISPYB_CONFIG_PATH
 
-    pipenv run artemis &
+    source .venv/bin/activate
+    python -m artemis &
 fi
 
 sleep 1
