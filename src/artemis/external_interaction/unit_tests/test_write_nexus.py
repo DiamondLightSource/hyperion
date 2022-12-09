@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
-from artemis.external_interaction.nexus_writing.write_nexus import (
+from artemis.external_interaction.nexus.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
     create_parameters_for_second_file,
