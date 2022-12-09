@@ -11,11 +11,12 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     setup_zebra_for_fgs,
 )
 from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan import set_fast_grid_scan_params
+from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
+from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 from artemis.tracing import TRACER
@@ -60,6 +61,19 @@ def move_xyz(
     )
 
 
+def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
+    artemis.log.LOGGER.info("Waiting for valid fgs_params")
+    SLEEP_PER_CHECK = 0.1
+    times_to_check = int(timeout / SLEEP_PER_CHECK)
+    for _ in range(times_to_check):
+        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
+        pos_counter = yield from bps.rd(fgs_motors.position_counter)
+        if not scan_invalid and pos_counter == 0:
+            return
+        yield from bps.sleep(SLEEP_PER_CHECK)
+    raise WarningException(f"Scan parameters invalid after {timeout} seconds")
+
+
 @bpp.run_decorator()
 def get_xyz(sample_motors):
     return Point3D(
@@ -102,6 +116,7 @@ def run_gridscan(
 
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
+    yield from wait_for_fgs_valid(fgs_motors)
 
     @bpp.stage_decorator([eiger, fgs_motors])
     def do_fgs():

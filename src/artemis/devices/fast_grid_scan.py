@@ -231,11 +231,8 @@ class FastGridScan(Device):
         # Check running already here?
         st = DeviceStatus(device=self, timeout=self.KICKOFF_TIMEOUT)
 
-        def check_valid_and_scan():
+        def scan():
             try:
-                self.log.debug("Waiting on position counter reset and valid settings")
-                while self.is_invalid() or not self.position_counter.get() == 0:
-                    time.sleep(0.1)
                 self.log.debug("Running scan")
                 self.run_cmd.put(1)
                 self.log.debug("Waiting for scan to start")
@@ -244,7 +241,7 @@ class FastGridScan(Device):
             except Exception as e:
                 st.set_exception(e)
 
-        threading.Thread(target=check_valid_and_scan, daemon=True).start()
+        threading.Thread(target=scan, daemon=True).start()
         return st
 
     def stage(self) -> List[object]:
