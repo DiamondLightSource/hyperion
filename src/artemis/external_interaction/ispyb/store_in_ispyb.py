@@ -59,7 +59,13 @@ class StoreInIspyb(ABC):
         ) = self.store_grid_scan(self.full_params)
         return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
 
-    def end_deposition(self, success, reason):
+    def end_deposition(self, success: str, reason: str):
+        """Write the end of datacollection data.
+
+        Args:
+            success (str): The success of the run, could be fail or abort
+            reason (str):If the run failed, the reason why
+        """
         LOGGER.info(
             f"End ispyb deposition with status '{success}' and reason '{reason}'."
         )
