@@ -59,7 +59,16 @@ class StoreInIspyb(ABC):
         ) = self.store_grid_scan(self.full_params)
         return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
 
-    def end_deposition(self, success, reason):
+    def end_deposition(self, success: str, reason: str):
+        """Write the end of datacollection data.
+
+        Args:
+            success (str): The success of the run, could be fail or abort
+            reason (str):If the run failed, the reason why
+        """
+        LOGGER.info(
+            f"End ispyb deposition with status '{success}' and reason '{reason}'."
+        )
         if success == "fail":
             run_status = "DataCollection Unsuccessful"
         elif success == "abort":
@@ -112,7 +121,9 @@ class StoreInIspyb(ABC):
                 current_comment = ""
             LOGGER.debug(f"Current comment: {current_comment}")
         except Exception as e:
-            LOGGER.warn("Exception occured when reading comment from ISPyB database:\n")
+            LOGGER.warning(
+                "Exception occured when reading comment from ISPyB database:\n"
+            )
             LOGGER.error(e, exc_info=True)
             current_comment = ""
         return current_comment
@@ -125,15 +136,19 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> int:
-        params = self.mx_acquisition.get_data_collection_params()
-        params["id"] = datacollection_id
-        params["parentid"] = datacollection_group_id
-        params["endtime"] = end_time
-        params["run_status"] = run_status
-        if reason is not None and reason != "":
-            current_comment = self.get_current_datacollection_comment(datacollection_id)
-            params["comments"] = current_comment + f" {run_status} reason: {reason}"
-        return self.mx_acquisition.upsert_data_collection(list(params.values()))
+        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+            self.mx_acquisition = self.conn.mx_acquisition
+            params = self.mx_acquisition.get_data_collection_params()
+            params["id"] = datacollection_id
+            params["parentid"] = datacollection_group_id
+            params["endtime"] = end_time
+            params["run_status"] = run_status
+            if reason is not None and reason != "":
+                current_comment = self.get_current_datacollection_comment(
+                    datacollection_id
+                )
+                params["comments"] = current_comment + f" {run_status} reason: {reason}"
+            return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
         params = self.mx_acquisition.get_dc_grid_params()
