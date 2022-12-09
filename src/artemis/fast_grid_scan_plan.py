@@ -12,6 +12,7 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
+from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
 from artemis.tracing import TRACER
@@ -59,13 +60,14 @@ def move_xyz(
 def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
     artemis.log.LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
-    times_to_check = timeout / SLEEP_PER_CHECK
+    times_to_check = int(timeout / SLEEP_PER_CHECK)
     for _ in range(times_to_check):
         scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
         pos_counter = yield from bps.rd(fgs_motors.position_counter)
         if not scan_invalid and pos_counter == 0:
-            raise Exception("Scan parameters invalid")
+            return
         yield from bps.sleep(SLEEP_PER_CHECK)
+    raise WarningException(f"Scan parameters invalid after {timeout} seconds")
 
 
 @bpp.run_decorator()
