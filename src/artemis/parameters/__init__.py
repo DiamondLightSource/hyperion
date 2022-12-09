@@ -5,5 +5,10 @@ from artemis.parameters.external_parameters import (
     RawParameters,
     WrongExperimentParameterSpecification,
 )
+from artemis.parameters.internal_parameters import InternalParameters
 
-__all__ = ["RawParameters", "WrongExperimentParameterSpecification"]
+__all__ = [
+    "RawParameters",
+    "InternalParameters",
+    "WrongExperimentParameterSpecification",
+]

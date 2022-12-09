@@ -8,8 +8,10 @@ from ophyd.sim import SynSignal
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.parameters.external_parameters import DetectorParams
@@ -43,9 +45,9 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
 
     callbacks = FGSCallbackCollection.from_params(InternalParameters())
 
-    callbacks.zocalo_handler._wait_for_result = MagicMock()
-    callbacks.zocalo_handler._run_end = MagicMock()
-    callbacks.zocalo_handler._run_start = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
 
     callbacklist_right_order = [
         callbacks.nexus_handler,

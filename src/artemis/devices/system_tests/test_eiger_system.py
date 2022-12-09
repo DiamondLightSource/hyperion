@@ -31,6 +31,7 @@ def eiger():
     yield eiger
 
 
+@pytest.mark.skip(reason="Eiger/odin is broken in S03")
 @pytest.mark.s03
 @pytest.mark.skip(reason="see #406")
 def test_can_stage_and_unstage_eiger(eiger: EigerDetector):

@@ -16,7 +16,7 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
-from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
+from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
@@ -113,10 +113,12 @@ def test_results_adjusted_and_passed_to_move_xyz(
     params = InternalParameters()
     subscriptions = FGSCallbackCollection.from_params(params)
 
-    subscriptions.zocalo_handler._wait_for_result = MagicMock()
-    subscriptions.zocalo_handler._run_end = MagicMock()
-    subscriptions.zocalo_handler._run_start = MagicMock()
-    subscriptions.zocalo_handler._wait_for_result.return_value = Point3D(1, 2, 3)
+    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        Point3D(1, 2, 3)
+    )
 
     motor_position = params.experiment_params.grid_position_to_motor_position(
         Point3D(0.5, 1.5, 2.5)
@@ -162,10 +164,12 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     params = InternalParameters()
 
     subscriptions = FGSCallbackCollection.from_params(params)
-    subscriptions.zocalo_handler._wait_for_result = MagicMock()
-    subscriptions.zocalo_handler._run_end = MagicMock()
-    subscriptions.zocalo_handler._run_start = MagicMock()
-    subscriptions.zocalo_handler._wait_for_result.return_value = Point3D(1, 2, 3)
+    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        Point3D(1, 2, 3)
+    )
 
     FakeComposite = make_fake_device(FGSComposite)
     FakeEiger = make_fake_device(EigerDetector)
