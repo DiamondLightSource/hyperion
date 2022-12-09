@@ -5,7 +5,7 @@ from artemis.external_interaction.communicator_callbacks import (
     NexusFileHandlerCallback,
 )
 from artemis.external_interaction.zocalo_interaction import ZocaloHandlerCallback
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 class FGSCallbackCollection(NamedTuple):
@@ -20,7 +20,7 @@ class FGSCallbackCollection(NamedTuple):
     zocalo_handler: ZocaloHandlerCallback
 
     @classmethod
-    def from_params(cls, parameters: FullParameters):
+    def from_params(cls, parameters: InternalParameters):
         nexus_handler = NexusFileHandlerCallback(parameters)
         ispyb_handler = ISPyBHandlerCallback(parameters)
         zocalo_handler = ZocaloHandlerCallback(parameters, ispyb_handler)

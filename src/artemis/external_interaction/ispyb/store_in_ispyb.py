@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point2D
 
@@ -72,7 +72,7 @@ class StoreInIspyb(ABC):
                 current_time, run_status, reason, id, self.datacollection_group_id
             )
 
-    def store_grid_scan(self, full_params: FullParameters):
+    def store_grid_scan(self, full_params: InternalParameters):
 
         self.full_params = full_params
         self.ispyb_params = full_params.artemis_params.ispyb_params

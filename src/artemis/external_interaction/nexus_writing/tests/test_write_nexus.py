@@ -12,7 +12,7 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
@@ -27,7 +27,7 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 @pytest.fixture(params=[1044])
 def minimal_params(request):
-    params = FullParameters()
+    params = InternalParameters()
     params.artemis_params.ispyb_params.wavelength = 1.0
     params.artemis_params.ispyb_params.flux = 9.0
     params.artemis_params.ispyb_params.transmission = 0.5

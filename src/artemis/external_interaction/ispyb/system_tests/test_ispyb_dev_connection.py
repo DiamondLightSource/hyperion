@@ -1,14 +1,14 @@
 import pytest
 
 from artemis.external_interaction.ispyb.store_in_ispyb import StoreInIspyb2D
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
 
 @pytest.mark.s03
 def test_ispyb_get_comment_from_collection_correctly():
-    test_params = FullParameters()
+    test_params = InternalParameters()
     ispyb = StoreInIspyb2D(ISPYB_CONFIG, test_params)
 
     expected_comment_contents = (

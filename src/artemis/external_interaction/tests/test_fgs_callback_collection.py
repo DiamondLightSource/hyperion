@@ -11,18 +11,16 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
-from artemis.parameters.parameters import (
-    ISPYB_PLAN_NAME,
-    SIM_BEAMLINE,
-    DetectorParams,
-    FullParameters,
-)
+from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
+from artemis.parameters.external_parameters import DetectorParams
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 
 def test_callback_collection_init():
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
-    assert callbacks.ispyb_handler.params == FullParameters()
+    callbacks = FGSCallbackCollection.from_params(InternalParameters())
+    test_parameters = InternalParameters()
+    assert callbacks.ispyb_handler.params == test_parameters
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
 
 
@@ -43,7 +41,7 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
     fgs_slit_gaps_ygap = SynSignal(name="fgs_slit_gaps_ygap")
     detector = SynSignal(name="detector")
 
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    callbacks = FGSCallbackCollection.from_params(InternalParameters())
 
     callbacks.zocalo_handler._wait_for_result = MagicMock()
     callbacks.zocalo_handler._run_end = MagicMock()
@@ -71,7 +69,7 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
 
     RE(fake_plan())
 
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    callbacks = FGSCallbackCollection.from_params(InternalParameters())
     callbacklist_wrong_order = [
         callbacks.nexus_handler,
         callbacks.zocalo_handler,
@@ -136,7 +134,7 @@ def test_communicator_in_composite_run(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
 
-    params = FullParameters()
+    params = InternalParameters()
     params.artemis_parameters.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 

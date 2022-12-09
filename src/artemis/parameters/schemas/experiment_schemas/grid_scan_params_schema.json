@@ -39,6 +39,5 @@
             "type": "number"
         }
     },
-    "additionalProperties": false,
     "minProperties": 12
 }

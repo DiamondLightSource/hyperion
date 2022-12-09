@@ -14,6 +14,9 @@
         "experiment_type": {
             "type": "string"
         },
+        "insertion_prefix": {
+            "type": "string"
+        },
         "detector_params": {
             "$ref": "detector_parameters_schema.json"
         },
@@ -21,6 +24,5 @@
             "$ref": "ispyb_parameters_schema.json"
         }
     },
-    "additionalProperties": false,
     "minProperties": 6
 }

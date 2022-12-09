@@ -19,7 +19,7 @@ from nexgen.tools.VDS_tools import image_vds_writer
 from artemis.devices.detector import DetectorParams
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 source = {
     "name": "Diamond Light Source",
@@ -49,7 +49,7 @@ module = {
 }
 
 
-def create_parameters_for_first_file(parameters: FullParameters):
+def create_parameters_for_first_file(parameters: InternalParameters):
     new_params = deepcopy(parameters)
     new_params.experiment_params.z_axis = GridAxis(
         parameters.experiment_params.z1_start, 0, 0
@@ -63,7 +63,7 @@ def create_parameters_for_first_file(parameters: FullParameters):
     return new_params
 
 
-def create_parameters_for_second_file(parameters: FullParameters):
+def create_parameters_for_second_file(parameters: InternalParameters):
     new_params = deepcopy(parameters)
     new_params.experiment_params.y_axis = GridAxis(
         parameters.experiment_params.y2_start, 0, 0
@@ -204,7 +204,7 @@ def create_beam_and_attenuator_parameters(
 class NexusWriter:
     def __init__(
         self,
-        parameters: FullParameters,
+        parameters: InternalParameters,
     ) -> None:
         self.detector = create_detector_parameters(
             parameters.artemis_params.detector_params

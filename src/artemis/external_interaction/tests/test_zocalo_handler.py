@@ -13,7 +13,8 @@ from zocalo.configuration import Configuration
 from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.external_interaction.ispyb.ispyb_dataclass import Point3D
 from artemis.external_interaction.tests.conftest import TestData
-from artemis.parameters.parameters import SIM_ZOCALO_ENV, FullParameters
+from artemis.parameters.constants import SIM_ZOCALO_ENV
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 EXPECTED_DCID = 100
@@ -41,7 +42,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.zocalo_handler._wait_for_result = MagicMock()
     callbacks.zocalo_handler._run_end = MagicMock()
@@ -69,7 +70,7 @@ def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
     nexus_writer: MagicMock,
 ):
 
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.zocalo_handler._run_start = MagicMock()
     callbacks.zocalo_handler._run_end = MagicMock()
@@ -81,7 +82,7 @@ def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
 
 
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called():
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.zocalo_handler._run_start = MagicMock()
     callbacks.zocalo_handler._run_end = MagicMock()
@@ -148,7 +149,7 @@ def with_exception(function_to_run, mock_transport):
         function_to_run()
 
 
-callbacks = FGSCallbackCollection.from_params(FullParameters())
+callbacks = FGSCallbackCollection.from_params(InternalParameters())
 
 
 @mark.parametrize(

@@ -15,13 +15,22 @@
             "type": "object",
             "properties": {
                 "x": {
-                    "type": "number"
+                    "type": [
+                        "number",
+                        "null"
+                    ]
                 },
                 "y": {
-                    "type": "number"
+                    "type": [
+                        "number",
+                        "null"
+                    ]
                 },
                 "z": {
-                    "type": "number"
+                    "type": [
+                        "number",
+                        "null"
+                    ]
                 }
             }
         },
@@ -29,13 +38,22 @@
             "type": "object",
             "properties": {
                 "x": {
-                    "type": "number"
+                    "type": [
+                        "number",
+                        "null"
+                    ]
                 },
                 "y": {
-                    "type": "number"
+                    "type": [
+                        "number",
+                        "null"
+                    ]
                 },
                 "z": {
-                    "type": "number"
+                    "type": [
+                        "number",
+                        "null"
+                    ]
                 }
             }
         },
@@ -91,6 +109,5 @@
             "type": "number"
         }
     },
-    "additionalProperties": false,
     "minProperties": 19
 }

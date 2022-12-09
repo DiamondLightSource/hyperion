@@ -15,7 +15,16 @@ with open("src/artemis/parameters/schemas/detector_parameters_schema.json", "r")
     detector_schema = json.load(f)
 with open("src/artemis/parameters/schemas/ispyb_parameters_schema.json", "r") as f:
     ispyb_schema = json.load(f)
-
+with open(
+    "src/artemis/parameters/schemas/experiment_schemas/grid_scan_params_schema.json",
+    "r",
+) as f:
+    grid_scan_schema = json.load(f)
+with open(
+    "src/artemis/parameters/schemas/experiment_schemas/rotation_scan_params_schema.json",
+    "r",
+) as f:
+    rotation_scan_schema = json.load(f)
 with open("src/artemis/parameters/tests/test_data/good_test_parameters.json", "r") as f:
     params = json.load(f)
 
@@ -26,23 +35,40 @@ resolver = jsonschema.validators.RefResolver(
 )
 
 
-def test_good_schema_validates():
+def test_good_params_validates():
     jsonschema.validate(params, full_schema, resolver=resolver)
 
 
-def test_good_schema_artemisparams_validates():
+def test_good_params_artemisparams_validates():
     jsonschema.validate(params["artemis_params"], artemis_schema, resolver=resolver)
 
 
-def test_good_schema_ispybparams_validates():
+def test_good_params_ispybparams_validates():
     jsonschema.validate(
         params["artemis_params"]["ispyb_params"], ispyb_schema, resolver=resolver
     )
 
 
-def test_good_schema_detectorparams_validates():
+def test_good_params_detectorparams_validates():
     jsonschema.validate(
         params["artemis_params"]["detector_params"], detector_schema, resolver=resolver
+    )
+
+
+def test_good_params_gitparams_validates():
+    jsonschema.validate(
+        params["experiment_params"], grid_scan_schema, resolver=resolver
+    )
+
+
+def test_good_params_rotationparams_validates():
+    with open(
+        "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json",
+        "r",
+    ) as f:
+        params = json.load(f)
+    jsonschema.validate(
+        params["experiment_params"], rotation_scan_schema, resolver=resolver
     )
 
 

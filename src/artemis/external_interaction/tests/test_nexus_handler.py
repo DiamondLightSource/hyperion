@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 
 from artemis.external_interaction.communicator_callbacks import NexusFileHandlerCallback
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 test_start_document = {
     "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -43,7 +43,7 @@ def test_writers_setup_on_init(
     nexus_writer: MagicMock,
 ):
 
-    params = FullParameters()
+    params = InternalParameters()
     nexus_handler = NexusFileHandlerCallback(params)
     # flake8 gives an error if we don't do something with communicator
     nexus_handler.__init__(params)
@@ -63,7 +63,7 @@ def test_writers_dont_create_on_init(
     nexus_writer: MagicMock,
 ):
 
-    params = FullParameters()
+    params = InternalParameters()
     nexus_handler = NexusFileHandlerCallback(params)
 
     nexus_handler.nxs_writer_1.create_nexus_file.assert_not_called()
@@ -75,7 +75,7 @@ def test_writers_do_create_one_file_each_on_start_doc(
 ):
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
 
-    params = FullParameters()
+    params = InternalParameters()
     nexus_handler = NexusFileHandlerCallback(params)
     nexus_handler.start(test_start_document)
 

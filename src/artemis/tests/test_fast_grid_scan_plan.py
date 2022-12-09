@@ -22,12 +22,13 @@ from artemis.fast_grid_scan_plan import (
     run_gridscan,
     run_gridscan_and_move,
 )
-from artemis.parameters import FullParameters
+from artemis.parameters.external_parameters import RawParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
-    params = FullParameters().to_dict()
+    params = RawParameters().to_dict()
     assert (
         params["artemis_params"]["detector_params"]["detector_size_constants"]
         == EIGER_TYPE_EIGER2_X_16M
@@ -35,7 +36,7 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
     params["artemis_params"]["detector_params"][
         "detector_size_constants"
     ] = EIGER_TYPE_EIGER2_X_4M
-    params: FullParameters = FullParameters.from_dict(params)
+    params: InternalParameters = InternalParameters(RawParameters.from_dict(params))
     det_dimension = (
         params.artemis_params.detector_params.detector_size_constants.det_dimension
     )
@@ -49,7 +50,7 @@ def test_when_run_gridscan_called_then_generator_returned():
 
 def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     RE = RunEngine({})
-    params = FullParameters()
+    params = InternalParameters()
 
     undulator_test_value = 1.234
     FakeUndulator = make_fake_device(Undulator)
@@ -69,7 +70,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     slit_gaps.ygap.sim_put(ygap_test_value)
 
     class TestCB(CallbackBase):
-        params = FullParameters()
+        params = InternalParameters()
 
         def event(self, doc: dict):
             params.artemis_params.ispyb_params.undulator_gap = doc["data"][
@@ -109,7 +110,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_xyz: MagicMock, run_gridscan: MagicMock
 ):
     RE = RunEngine({})
-    params = FullParameters()
+    params = InternalParameters()
     subscriptions = FGSCallbackCollection.from_params(params)
 
     subscriptions.zocalo_handler._wait_for_result = MagicMock()
@@ -138,7 +139,7 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
     from artemis.fast_grid_scan_plan import move_xyz
 
     RE = RunEngine({})
-    params = FullParameters()
+    params = InternalParameters()
     motor_position = params.experiment_params.grid_position_to_motor_position(
         Point3D(1, 2, 3)
     )
@@ -158,7 +159,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     do_fgs: MagicMock,
 ):
     RE = RunEngine({})
-    params = FullParameters()
+    params = InternalParameters()
 
     subscriptions = FGSCallbackCollection.from_params(params)
     subscriptions.zocalo_handler._wait_for_result = MagicMock()

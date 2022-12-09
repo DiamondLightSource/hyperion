@@ -14,11 +14,8 @@ from artemis.external_interaction.nexus_writing.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.log import LOGGER
-from artemis.parameters.parameters import (
-    ISPYB_PLAN_NAME,
-    SIM_ISPYB_CONFIG,
-    FullParameters,
-)
+from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 class NexusFileHandlerCallback(CallbackBase):
@@ -35,7 +32,7 @@ class NexusFileHandlerCallback(CallbackBase):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self, parameters: FullParameters):
+    def __init__(self, parameters: InternalParameters):
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(parameters))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(parameters))
 
@@ -64,7 +61,7 @@ class ISPyBHandlerCallback(CallbackBase):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self, parameters: FullParameters):
+    def __init__(self, parameters: InternalParameters):
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)

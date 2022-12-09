@@ -6,28 +6,30 @@
             "type": "string"
         },
         "rotation_angle": {
-            "type": "string"
+            "type": "number"
         },
         "omega_start": {
-            "type": "string"
+            "type": "number"
         },
         "phi_start": {
-            "type": "string"
+            "type": "number"
+        },
+        "chi_start": {
+            "type": "number"
         },
         "kappa_start": {
-            "type": "object"
+            "type": "number"
         },
         "x": {
-            "type": "object"
+            "type": "number"
         },
         "y": {
-            "type": "object"
+            "type": "number"
         },
         "z": {
-            "type": "object"
+            "type": "number"
         }
     },
-    "additionalProperties": false,
     "required": [
         "rotation_axis",
         "rotation_angle",

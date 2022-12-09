@@ -20,6 +20,5 @@
             ]
         }
     },
-    "additionalProperties": false,
     "minProperties": 3
 }

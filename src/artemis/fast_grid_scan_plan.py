@@ -13,7 +13,8 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
-from artemis.parameters.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
+from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
 
@@ -69,7 +70,7 @@ def get_xyz(sample_motors):
 def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
-    parameters: FullParameters,
+    parameters: InternalParameters,
     md={
         "plan_name": "run_gridscan",
     },
@@ -112,7 +113,7 @@ def run_gridscan(
 def run_gridscan_and_move(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
-    parameters: FullParameters,
+    parameters: InternalParameters,
     subscriptions: FGSCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
@@ -144,11 +145,11 @@ def run_gridscan_and_move(
         )
 
 
-def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
+def get_plan(parameters: InternalParameters, subscriptions: FGSCallbackCollection):
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
-        parameters (FullParameters): The parameters to run the scan.
+        parameters (InternalParameters): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -188,7 +189,7 @@ if __name__ == "__main__":
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
 
-    parameters = FullParameters(beamline=args.artemis_parameters.beamline)
+    parameters = InternalParameters(beamline=args.artemis_parameters.beamline)
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     RE(get_plan(parameters, subscriptions))

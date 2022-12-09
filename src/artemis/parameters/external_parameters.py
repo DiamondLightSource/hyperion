@@ -1,27 +1,24 @@
 import copy
 import json
 from dataclasses import dataclass, field
-from typing import Union
+from pathlib import Path
 
+import jsonschema
 from dataclasses_json import DataClassJsonMixin
 
 from artemis.devices.eiger import DetectorParams
 from artemis.devices.fast_grid_scan import GridScanParams
-from artemis.devices.rotation_scan import RotationScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
+from artemis.parameters.constants import (
+    EXPERIMENT_DICT,
+    EXPERIMENT_NAMES,
+    EXPERIMENT_TYPES,
+    PARAMETER_VERSION,
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+    SIM_ZOCALO_ENV,
+)
 from artemis.utils import Point3D
-
-SIM_BEAMLINE = "BL03S"
-SIM_INSERTION_PREFIX = "SR03S"
-ISPYB_PLAN_NAME = "ispyb_readings"
-SIM_ZOCALO_ENV = "devrmq"
-DEFAULT_EXPERIMENT_TYPE = "grid_scan"
-
-EXPERIMENT_NAMES = ["grid_scan", "rotation_scan"]
-EXPERIMENT_TYPE_LIST = [GridScanParams, RotationScanParams]
-EXPERIMENT_DICT = dict(zip(EXPERIMENT_NAMES, EXPERIMENT_TYPE_LIST))
-EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
-SIM_ISPYB_CONFIG = "src/artemis/external_interaction/ispyb/tests/test_config.cfg"
 
 
 def default_field(obj):
@@ -83,7 +80,7 @@ class ArtemisParameters(DataClassJsonMixin):
     )
 
 
-class FullParameters:
+class RawParameters:
     artemis_params: ArtemisParameters
     experiment_params: EXPERIMENT_TYPES
 
@@ -109,7 +106,7 @@ class FullParameters:
         self.experiment_params = copy.deepcopy(experiment_parameters)
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, FullParameters):
+        if not isinstance(other, RawParameters):
             return NotImplemented
         if self.artemis_params != other.artemis_params:
             return False
@@ -119,6 +116,7 @@ class FullParameters:
 
     def to_dict(self) -> dict[str, dict]:
         return {
+            "params_version": PARAMETER_VERSION,
             "artemis_params": self.artemis_params.to_dict(),
             "experiment_params": self.experiment_params.to_dict(),
         }
@@ -128,6 +126,18 @@ class FullParameters:
 
     @classmethod
     def from_dict(cls, dict_params: dict[str, dict]):
+        with open(
+            "src/artemis/parameters/schemas/full_external_parameters_schema.json", "r"
+        ) as f:
+            full_schema = json.load(f)
+
+        path = Path("src/artemis/parameters/schemas/").absolute()
+        resolver = jsonschema.validators.RefResolver(
+            base_uri=f"{path.as_uri()}/",
+            referrer=True,
+        )
+        # TODO improve failed validation error messages
+        jsonschema.validate(dict_params, full_schema, resolver=resolver)
         experiment_type: EXPERIMENT_TYPES = EXPERIMENT_DICT.get(
             dict_params["artemis_params"]["experiment_type"]
         )

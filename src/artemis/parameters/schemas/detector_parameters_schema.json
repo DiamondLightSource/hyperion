@@ -36,6 +36,5 @@
             "type": "string"
         }
     },
-    "additionalProperties": false,
     "minProperties": 11
 }

@@ -1,9 +1,9 @@
 """This module handles the translation between externally supplied parameters and the
 internal parameter model."""
 
-from artemis.parameters.parameters import (
-    FullParameters,
+from artemis.parameters.external_parameters import (
+    RawParameters,
     WrongExperimentParameterSpecification,
 )
 
-__all__ = ["FullParameters", "WrongExperimentParameterSpecification"]
+__all__ = ["RawParameters", "WrongExperimentParameterSpecification"]

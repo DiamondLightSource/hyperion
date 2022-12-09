@@ -1,7 +1,7 @@
 import pytest
 
 from artemis.devices.synchrotron import Synchrotron
-from artemis.parameters.parameters import SIM_BEAMLINE
+from artemis.parameters.constants import SIM_BEAMLINE
 
 
 @pytest.fixture

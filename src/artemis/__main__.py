@@ -2,7 +2,6 @@ import argparse
 import atexit
 import threading
 from dataclasses import dataclass
-from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
 from typing import Optional, Tuple
@@ -16,29 +15,15 @@ import artemis.log
 from artemis.exceptions import WarningException
 from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import get_plan
-from artemis.parameters import FullParameters
+from artemis.parameters.constants import Actions, Status
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
-
-
-class Actions(Enum):
-    START = "start"
-    STOP = "stop"
-    SHUTDOWN = "shutdown"
-
-
-class Status(Enum):
-    WARN = "Warn"
-    FAILED = "Failed"
-    SUCCESS = "Success"
-    BUSY = "Busy"
-    ABORTING = "Aborting"
-    IDLE = "Idle"
 
 
 @dataclass
 class Command:
     action: Actions
-    parameters: Optional[FullParameters] = None
+    parameters: Optional[InternalParameters] = None
 
 
 @dataclass_json
@@ -54,7 +39,7 @@ class StatusAndMessage:
 
 class BlueskyRunner:
     callbacks: FGSCallbackCollection = FGSCallbackCollection.from_params(
-        FullParameters()
+        InternalParameters()
     )
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
@@ -63,7 +48,7 @@ class BlueskyRunner:
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
 
-    def start(self, parameters: FullParameters) -> StatusAndMessage:
+    def start(self, parameters: InternalParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
@@ -133,7 +118,7 @@ class FastGridScan(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                parameters = FullParameters.from_json(request.data)
+                parameters = InternalParameters.from_json(request.data)
                 status_and_message = self.runner.start(parameters)
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))

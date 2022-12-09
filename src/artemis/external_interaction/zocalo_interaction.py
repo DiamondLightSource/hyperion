@@ -16,7 +16,8 @@ from artemis.exceptions import WarningException
 from artemis.external_interaction.communicator_callbacks import ISPyBHandlerCallback
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.log import LOGGER
-from artemis.parameters.parameters import ISPYB_PLAN_NAME, FullParameters
+from artemis.parameters.constants import ISPYB_PLAN_NAME
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 TIMEOUT = 90
@@ -38,7 +39,9 @@ class ZocaloHandlerCallback(CallbackBase):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self, parameters: FullParameters, ispyb_handler: ISPyBHandlerCallback):
+    def __init__(
+        self, parameters: InternalParameters, ispyb_handler: ISPyBHandlerCallback
+    ):
         self.grid_position_to_motor_position: Callable[
             [Point3D], Point3D
         ] = parameters.experiment_params.grid_position_to_motor_position
