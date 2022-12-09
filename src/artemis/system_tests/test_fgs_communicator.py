@@ -5,7 +5,7 @@ from bluesky.run_engine import RunEngine
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.external_interaction.fgs_callback_collection import FGSCallbackCollection
+from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.parameters import SIM_BEAMLINE, DetectorParams, FullParameters
 from artemis.utils import Point3D
