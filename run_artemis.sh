@@ -84,8 +84,9 @@ fi
 SSH_KEY_FILE_LOC="/dls_sw/${BEAMLINE}/software/gda_versions/var/.ssh/${BEAMLINE}-ssh.key"
 
 if [[ $STOP == 1 ]]; then
-    if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" ]]; then
+    if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
         echo "Must be run from beamline control machine as gda2"
+        echo "Current host is $HOSTNAME and user is $USER"
         exit 1
     fi
     pkill -f "python -m artemis"
@@ -133,8 +134,9 @@ if [[ $DEPLOY == 1 ]]; then
 fi
 
 if [[ $START == 1 ]]; then
-    if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" || $USERNAME != "gda2" ]]; then
+    if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
         echo "Must be run from beamline control machine as gda2"
+        echo "Current host is $HOSTNAME and user is $USER"
         exit 1
     fi
 
