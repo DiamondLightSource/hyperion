@@ -10,6 +10,7 @@ from ophyd.sim import make_fake_device
 from artemis.devices.backlight import Backlight
 from artemis.devices.motors import I03Smargon
 from artemis.devices.oav.oav_centring_plan import (
+    calculate_beam_distance,
     distance_from_beam_centre_to_motor_coords,
     find_midpoint,
     get_rotation_increment,
@@ -105,32 +106,39 @@ def test_oav__extract_dict_parameter_not_found_fallback_value_not_present(
 
 
 def test_find_midpoint_symmetric_pin():
-    x = np.arange(-10, 10, 20 / 1024)
+    x = np.arange(-15, 10, 25 / 1024)
     x2 = x**2
     top = -1 * x2 + 100
     bottom = x2 - 100
+    top += 500
+    bottom += 500
 
     # set the waveforms to 0 before the edge is found
     top[np.where(top < bottom)[0]] = 0
     bottom[np.where(bottom > top)[0]] = 0
 
     (x_pos, y_pos, diff_at_x_pos, mid) = find_midpoint(top, bottom)
-    assert x_pos == 512
+    assert x_pos == 614
+    assert y_pos == 500
 
 
 def test_find_midpoint_non_symmetric_pin():
-    x = np.arange(-2.35, 2.35, 4.7 / 1024)
+    x = np.arange(-4, 2.35, 6.35 / 1024)
     x2 = x**2
     x4 = x2**2
     top = -1 * x2 + 6
     bottom = x4 - 5 * x2 - 3
 
+    top += 400
+    bottom += 400
+
     # set the waveforms to 0 before the edge is found
     top[np.where(top < bottom)[0]] = 0
     bottom[np.where(bottom > top)[0]] = 0
 
     (x_pos, y_pos, diff_at_x_pos, mid) = find_midpoint(top, bottom)
-    assert x_pos == 205
+    assert x_pos == 419
+    assert np.floor(y_pos) == 397
     # x = 205/1024*4.7 - 2.35 ≈ -1.41 which is the first stationary point of the width on
     # our midpoint line
 
@@ -210,9 +218,27 @@ def test_keep_inside_bounds(value, lower_bound, upper_bound, expected_value):
     assert keep_inside_bounds(value, lower_bound, upper_bound) == expected_value
 
 
+@pytest.mark.parametrize(
+    "h, v, expected_x, expected_y, flip_y",
+    [
+        (54, 100, 329, 253, False),
+        (0, 0, 383, -415, True),
+        (500, 500, -117, 85, True),
+    ],
+)
+def test_calculate_beam_distance(
+    h, v, expected_x, expected_y, flip_y, mock_parameters: OAVParameters
+):
+    mock_parameters.zoom = 5.0  # beam centre will be (383, 353)
+    assert calculate_beam_distance(
+        mock_parameters, h, v, use_microns=False, flip_vertical=flip_y
+    ) == (expected_x, expected_y)
+
+
 # Can't run the below test without decent FakeEpicsDevice motors.
+
 """
-def test_all_zero_waveform(fake_mv, mock_oav: OAV, mock_smargon: I03Smargon):
+def test_all_zero_waveform(mock_oav: OAV, mock_smargon: I03Smargon):
 
     x = np.zeros(1024)
 
@@ -229,14 +255,13 @@ def test_all_zero_waveform(fake_mv, mock_oav: OAV, mock_smargon: I03Smargon):
             y_pos,
             diff_at_x_pos,
             mid,
-        ) = rotate_pin_and_collect_values(mock_oav, mock_smargon, 6)
+        ) = rotate_pin_and_collect_positional_data(mock_oav, mock_smargon, 6)
 
     with pytest.raises(OAVError_WaveformAllZero):
         RE = RunEngine()
         RE(
             fake_run(mock_oav, mock_smargon),
         )
-
 
 """
 
