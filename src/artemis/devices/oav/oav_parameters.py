@@ -1,7 +1,10 @@
 import json
 import xml.etree.cElementTree as et
 
-from artemis.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
+from artemis.devices.oav.oav_errors import (
+    OAVError_BeamPositionNotFound,
+    OAVError_ZoomLevelNotFound,
+)
 
 
 class OAVParameters:
@@ -141,7 +144,10 @@ class OAVParameters:
                     break
 
             if crosshair_x_line is None or crosshair_y_line is None:
-                pass  # TODO throw error
+                raise OAVError_BeamPositionNotFound(
+                    f"Could not extract beam position at zoom level {self.zoom}"
+                )
 
             self.beam_centre_x = int(crosshair_x_line.split(" = ")[1])
             self.beam_centre_y = int(crosshair_y_line.split(" = ")[1])
+            print("BEAM_CENTRE:", self.beam_centre_x, self.beam_centre_y)

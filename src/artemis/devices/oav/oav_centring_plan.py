@@ -180,7 +180,10 @@ def find_midpoint(top, bottom):
 
     # np.where will give all non-zero indices: the indices where the gradient changed.
     # We take the 0th element as the x pos since it's the first place where the gradient changed, indicating a bulge.
-    x_pos = np.where(gradient_changed)[0][0]
+    stationary_points = np.where(gradient_changed)[0]
+
+    # We'll have one stationary point before the midpoint.
+    x_pos = stationary_points[1]
 
     y_pos = mid_line[int(x_pos)]
     diff_at_x_pos = widths[int(x_pos)]
@@ -248,7 +251,6 @@ def rotate_pin_and_collect_positional_data(
         current_omega = yield from bps.rd(smargon.omega)
         top = np.array((yield from bps.rd(oav.mxsc.top)))
 
-        yield from bps.abs_set(oav.mxsc.tip_x, np.where(top != 0)[0][0])
         bottom = np.array((yield from bps.rd(oav.mxsc.bottom)))
         tip_x = yield from bps.rd(oav.mxsc.tip_x)
         tip_y = yield from bps.rd(oav.mxsc.tip_y)
@@ -403,6 +405,7 @@ def extract_coordinates_from_rotation_data(
     This is much nicer to read.
     """
     x_pixels = x_positions[index_of_largest_width]
+    print("YPOSITIONS", y_positions)
     y_pixels = y_positions[index_of_largest_width]
 
     best_omega_angle = float(omega_angles[index_of_largest_width])
@@ -459,9 +462,7 @@ def get_motor_movement_xyz(
 
     # Get the scales of the image in microns, and the distance in microns to the beam centre location.
     x_move, y_move = calculate_beam_distance(
-        parameters,
-        int(x_pixels * x_scale),
-        int(y_pixels * y_scale),
+        parameters, int(x_pixels * x_scale), int(y_pixels * y_scale), flip_vertical=True
     )
 
     # convert the distance in microns to motor incremements
@@ -475,12 +476,15 @@ def get_motor_movement_xyz(
             parameters,
             int(x_pixels * x_scale),
             int(z_pixels * y_scale),
+            flip_vertical=True,
         )
         x_y_z_move += distance_from_beam_centre_to_motor_coords(
             0, z_move, best_omega_angle_orthogonal
         )
 
     new_x, new_y, new_z = tuple(current_motor_xyz + x_y_z_move)
+    print("new_XYZ (before bounding):", new_x, new_y, new_z)
+
     new_y = keep_inside_bounds(new_y, _Y_LOWER_BOUND, _Y_UPPER_BOUND)
     new_z = keep_inside_bounds(new_z, _Z_LOWER_BOUND, _Z_UPPER_BOUND)
     return new_x, new_y, new_z
@@ -509,7 +513,6 @@ def centring_plan(
     omega_high_limit = yield from bps.rd(smargon.omega.high_limit_travel)
     if not omega_high_limit:
         omega_high_limit = _DESIRED_HIGH_LIMIT
-    omega_high_limit = _DESIRED_HIGH_LIMIT
 
     # we attempt to find the centre `max_run_num` times.
     run_num = 0
@@ -574,6 +577,8 @@ def centring_plan(
             )
             * 1e3
         )
+        print("XPIXELS", x_pixels)
+        print("YPIXELS", y_pixels)
 
         print("4")
         new_x, new_y, new_z = get_motor_movement_xyz(
@@ -616,17 +621,28 @@ def calculate_beam_distance(
     horizontal,
     vertical,
     use_microns=True,
+    flip_vertical=False,
 ):
+    """
+    Calculates the distance between the beam centre and the beam centre and a given (horizontal, vertical),
+    optionally returning the result in microns.
+    """
 
     parameters._extract_beam_position()
 
-    horizontal_to_move = parameters.beam_centre_x - horizontal
+    # The waveform is flipped from the standard x,y of the image.
+    # This means we need to negate the y to have the distance in the standard image coordinate system.
+    if flip_vertical:
+        vertical = _Y_SCALING_FACTOR - vertical
 
+    horizontal_to_move = parameters.beam_centre_x - horizontal
     vertical_to_move = parameters.beam_centre_y - vertical
 
     if use_microns:
         horizontal_to_move = int(horizontal_to_move * parameters.micronsPerXPixel)
+        print("VERTICAL TO MOVE:", vertical_to_move)
         vertical_to_move = int(vertical_to_move * parameters.micronsPerYPixel)
+        print("VERTICAL TO MOVE_microns:", vertical_to_move)
 
     return (horizontal_to_move, vertical_to_move)
 
@@ -638,12 +654,19 @@ def distance_from_beam_centre_to_motor_coords(horizontal, vertical, omega):
     """
     # +ve x in the OAV camera becomes -ve x in the smargon motors
     x = -horizontal
+
+    # Rotating the camera causes the position on the vertical horizontal to change by raising or lowering the centre.
+    # We can negate this change by multiplying sin and cosine of the omega.
     radians = math.radians(omega)
     cosine = math.cos(radians)
     sine = math.sin(radians)
+    y = -vertical
 
-    # +ve y in the OAV camera becomes -ve y in the smargon motors
+    # +ve y in the OAV camera becomes -ve y in the smargon motors/
     y = -vertical * cosine
+
+    # The Z motor is only calculated (moved by the width of the pin when orthogonal) in the last run of the main centring loop,
+    # however we still need to offset the error introduced by rotation here.
     z = -vertical * sine
     return np.array([x, y, z])
 

@@ -10,6 +10,11 @@ class OAVError_ZoomLevelNotFound(Exception):
         LOGGER.error(errmsg)
 
 
+class OAVError_BeamPositionNotFound(Exception):
+    def __init__(self, errmsg):
+        LOGGER.error(errmsg)
+
+
 class OAVError_WaveformAllZero(Exception):
     def __init__(self, errmsg):
         LOGGER.error(errmsg)
