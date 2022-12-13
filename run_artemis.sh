@@ -147,7 +147,7 @@ if [[ $START == 1 ]]; then
     module load dials
 
     source .venv/bin/activate
-    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` &
+    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` >/dev/null 2>&1 &
 
     echo "Artemis started"
 fi
