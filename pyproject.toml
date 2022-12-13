@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 markers = [
     "s03: marks tests as requiring the s03 simulator running (deselect with '-m \"not s03\"')",
+    "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
 ]
 addopts = "--cov=src/artemis --cov-report term --cov-report xml:cov.xml"
 testpaths = "src"
