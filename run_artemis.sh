@@ -76,33 +76,24 @@ for option in "$@"; do
     esac
 done
 
-if [[ -z "${BEAMLINE}" ]]; then
-    echo "BEAMLINE parameter not set. Use the option -b, --beamline=BEAMLNE to set it manually"
-    exit 1
+if [ -z "${BEAMLINE}" ]; then
+    echo "BEAMLINE parameter not set, assuming running on a dev machine."
+    echo "If you would like to run not in dev use the option -b, --beamline=BEAMLNE to set it manually"
 fi
-
-SSH_KEY_FILE_LOC="/dls_sw/${BEAMLINE}/software/gda_versions/var/.ssh/${BEAMLINE}-ssh.key"
 
 if [[ $STOP == 1 ]]; then
-    if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
-        echo "Must be run from beamline control machine as gda2"
-        echo "Current host is $HOSTNAME and user is $USER"
-        exit 1
+    if [ -n "${BEAMLINE}" ]; then
+        if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
+            echo "Must be run from beamline control machine as gda2"
+            echo "Current host is $HOSTNAME and user is $USER"
+            exit 1
+        fi
     fi
     pkill -f "python -m artemis"
+
+    echo "Artemis stopped"
     exit 0
 fi
-
-ARTEMIS_PATH="/dls_sw/${BEAMLINE}/software/artemis"
-
-if [[ -d "${ARTEMIS_PATH}" ]]; then
-    cd ${ARTEMIS_PATH}
-else
-    echo "Couldn't find artemis installation at ${ARTEMIS_PATH} terminating script"
-    exit 1
-fi
-
-
 
 if [[ $DEPLOY == 1 ]]; then
     git fetch --all --tags --prune
@@ -134,26 +125,28 @@ if [[ $DEPLOY == 1 ]]; then
 fi
 
 if [[ $START == 1 ]]; then
-    if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
-        echo "Must be run from beamline control machine as gda2"
-        echo "Current host is $HOSTNAME and user is $USER"
-        exit 1
+    if [ -n "${BEAMLINE}" ]; then
+        if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
+            echo "Must be run from beamline control machine as gda2"
+            echo "Current host is $HOSTNAME and user is $USER"
+            exit 1
+        fi
+
+        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
+        export ISPYB_CONFIG_PATH
+
     fi
 
     pkill -f "python -m artemis"
-
-    cd ${ARTEMIS_PATH}
 
     module unload controls_dev
     module load python/3.10
     module load dials
 
-    ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
-
-    export ISPYB_CONFIG_PATH
-
     source .venv/bin/activate
     python -m artemis &
+
+    echo "Artemis started"
 fi
 
 sleep 1
