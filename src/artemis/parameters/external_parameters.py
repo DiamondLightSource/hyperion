@@ -2,13 +2,11 @@ import copy
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional, Union
 
 import jsonschema
 from dataclasses_json import DataClassJsonMixin
 
-from artemis.devices.eiger import DetectorParams
-from artemis.devices.fast_grid_scan import GridScanParams
-from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.parameters.constants import (
     EXPERIMENT_DICT,
     EXPERIMENT_NAMES,
@@ -30,76 +28,106 @@ class WrongExperimentParameterSpecification(Exception):
 
 
 @dataclass
-class ArtemisParameters(DataClassJsonMixin):
+class ExternalDetectorParameters(DataClassJsonMixin):
+    current_energy: int = 100
+    exposure_time: float = 0.1
+    directory: str = "/tmp"
+    prefix: str = "file_name"
+    run_number: int = 0
+    detector_distance: float = 100.0
+    omega_start: float = 0.0
+    omega_increment: float = 0.0
+    num_images: int = 2000
+    use_roi_mode: bool = False
+    det_dist_to_beam_converter_path: str = (
+        "src/artemis/devices/unit_tests/test_lookup_table.txt"
+    )
+
+
+@dataclass
+class ExternalISPyBParameters(DataClassJsonMixin):
+    sample_id: Optional[int] = None
+    sample_barcode = None
+    visit_path = ""
+    pixels_per_micron_x = 0.0
+    pixels_per_micron_y = 0.0
+    # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
+    upper_left = Point3D(x=0, y=0, z=0)
+    position = Point3D(x=0, y=0, z=0)
+    xtal_snapshots_omega_start = ["test_1_y", "test_2_y", "test_3_y"]
+    xtal_snapshots_omega_end = ["test_1_z", "test_2_z", "test_3_z"]
+    transmission = 1.0
+    flux = 10.0
+    wavelength = 0.01
+    beam_size_x = 0.1
+    beam_size_y = 0.1
+    focal_spot_size_x = 0.0
+    focal_spot_size_y = 0.0
+    comment = "Descriptive comment."
+    resolution = 1
+    undulator_gap = 1.0
+    synchrotron_mode = None
+    slit_gap_size_x = 0.1
+    slit_gap_size_y = 0.1
+
+
+@dataclass
+class ExternalGridScanParameters(DataClassJsonMixin):
+    x_steps: int = 4
+    y_steps: int = 200
+    z_steps: int = 61
+    x_step_size: float = 0.1
+    y_step_size: float = 0.1
+    z_step_size: float = 0.1
+    dwell_time: float = 0.2
+    x_start: float = 0.0
+    y1_start: float = 0.0
+    y2_start: float = 0.0
+    z1_start: float = 0.0
+    z2_start: float = 0.0
+
+
+@dataclass
+class ExternalRotationScanParameters(DataClassJsonMixin):
+    x_steps: int = 4
+    y_steps: int = 200
+    z_steps: int = 61
+    x_step_size: float = 0.1
+    y_step_size: float = 0.1
+    z_step_size: float = 0.1
+    dwell_time: float = 0.2
+    x_start: float = 0.0
+    y1_start: float = 0.0
+    y2_start: float = 0.0
+    z1_start: float = 0.0
+    z2_start: float = 0.0
+
+
+@dataclass
+class ExternalArtemisParameters(DataClassJsonMixin):
     zocalo_environment: str = SIM_ZOCALO_ENV
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
     experiment_type: str = EXPERIMENT_NAMES[0]
-    detector_params: DetectorParams = default_field(
-        DetectorParams(
-            current_energy=100,
-            exposure_time=0.1,
-            directory="/tmp",
-            prefix="file_name",
-            run_number=0,
-            detector_distance=100.0,
-            omega_start=0.0,
-            omega_increment=0.0,
-            num_images=2000,
-            use_roi_mode=False,
-            det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
-        )
+    detector_params: ExternalDetectorParameters = default_field(
+        ExternalDetectorParameters()
     )
-    ispyb_params: IspybParams = default_field(
-        IspybParams(
-            sample_id=None,
-            sample_barcode=None,
-            visit_path="",
-            pixels_per_micron_x=0.0,
-            pixels_per_micron_y=0.0,
-            # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-            upper_left=Point3D(x=0, y=0, z=0),
-            position=Point3D(x=0, y=0, z=0),
-            xtal_snapshots_omega_start=["test_1_y", "test_2_y", "test_3_y"],
-            xtal_snapshots_omega_end=["test_1_z", "test_2_z", "test_3_z"],
-            transmission=1.0,
-            flux=10.0,
-            wavelength=0.01,
-            beam_size_x=0.1,
-            beam_size_y=0.1,
-            focal_spot_size_x=0.0,
-            focal_spot_size_y=0.0,
-            comment="Descriptive comment.",
-            resolution=1,
-            undulator_gap=1.0,
-            synchrotron_mode=None,
-            slit_gap_size_x=0.1,
-            slit_gap_size_y=0.1,
-        )
-    )
+    ispyb_params: ExternalISPyBParameters = default_field(ExternalISPyBParameters())
+
+
+EXTERNAL_EXPERIMENT_PARAM_TYPES = Union[
+    ExternalGridScanParameters, ExternalRotationScanParameters
+]
 
 
 class RawParameters:
-    artemis_params: ArtemisParameters
-    experiment_params: EXPERIMENT_TYPES
+    artemis_params: ExternalArtemisParameters
+    experiment_params: EXTERNAL_EXPERIMENT_PARAM_TYPES
 
     def __init__(
         self,
-        artemis_parameters: ArtemisParameters = ArtemisParameters(),
-        experiment_parameters: GridScanParams = GridScanParams(
-            x_steps=4,
-            y_steps=200,
-            z_steps=61,
-            x_step_size=0.1,
-            y_step_size=0.1,
-            z_step_size=0.1,
-            dwell_time=0.2,
-            x_start=0.0,
-            y1_start=0.0,
-            y2_start=0.0,
-            z1_start=0.0,
-            z2_start=0.0,
-        ),
+        artemis_parameters: ExternalArtemisParameters = ExternalArtemisParameters(),
+        experiment_parameters: EXTERNAL_EXPERIMENT_PARAM_TYPES = ExternalGridScanParameters(),
     ) -> None:
         self.artemis_params = copy.deepcopy(artemis_parameters)
         self.experiment_params = copy.deepcopy(experiment_parameters)
@@ -151,7 +179,7 @@ class RawParameters:
                 "type, or the experiment parameters were not correct."
             )
         return cls(
-            ArtemisParameters.from_dict(dict_params["artemis_params"]),
+            ExternalArtemisParameters.from_dict(dict_params["artemis_params"]),
             experiment_params,
         )
 

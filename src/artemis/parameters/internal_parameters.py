@@ -1,7 +1,62 @@
 import copy
 
-from artemis.parameters.constants import EXPERIMENT_TYPES
-from artemis.parameters.external_parameters import ArtemisParameters, RawParameters
+from artemis.devices.eiger import DetectorParams
+from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
+from artemis.parameters.constants import (
+    EXPERIMENT_NAMES,
+    EXPERIMENT_TYPES,
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+    SIM_ZOCALO_ENV,
+)
+from artemis.parameters.external_parameters import RawParameters
+from artemis.utils import Point3D
+
+
+class ArtemisParameters:
+    zocalo_environment: str = SIM_ZOCALO_ENV
+    beamline: str = SIM_BEAMLINE
+    insertion_prefix: str = SIM_INSERTION_PREFIX
+    experiment_type: str = EXPERIMENT_NAMES[0]
+    detector_params: DetectorParams = DetectorParams(
+        current_energy=100,
+        exposure_time=0.1,
+        directory="/tmp",
+        prefix="file_name",
+        run_number=0,
+        detector_distance=100.0,
+        omega_start=0.0,
+        omega_increment=0.0,
+        num_images=2000,
+        use_roi_mode=False,
+        det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
+    )
+
+    ispyb_params: IspybParams = IspybParams(
+        sample_id=None,
+        sample_barcode=None,
+        visit_path="",
+        pixels_per_micron_x=0.0,
+        pixels_per_micron_y=0.0,
+        # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
+        upper_left=Point3D(x=0, y=0, z=0),
+        position=Point3D(x=0, y=0, z=0),
+        xtal_snapshots_omega_start=["test_1_y", "test_2_y", "test_3_y"],
+        xtal_snapshots_omega_end=["test_1_z", "test_2_z", "test_3_z"],
+        transmission=1.0,
+        flux=10.0,
+        wavelength=0.01,
+        beam_size_x=0.1,
+        beam_size_y=0.1,
+        focal_spot_size_x=0.0,
+        focal_spot_size_y=0.0,
+        comment="Descriptive comment.",
+        resolution=1,
+        undulator_gap=1.0,
+        synchrotron_mode=None,
+        slit_gap_size_x=0.1,
+        slit_gap_size_y=0.1,
+    )
 
 
 class InternalParameters:
