@@ -79,10 +79,13 @@ done
 if [ -z "${BEAMLINE}" ]; then
     echo "BEAMLINE parameter not set, assuming running on a dev machine."
     echo "If you would like to run not in dev use the option -b, --beamline=BEAMLNE to set it manually"
+    IN_DEV=true
+else
+    IN_DEV=false
 fi
 
 if [[ $STOP == 1 ]]; then
-    if [ -n "${BEAMLINE}" ]; then
+    if [ $IN_DEV == false ]; then
         if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
             echo "Must be run from beamline control machine as gda2"
             echo "Current host is $HOSTNAME and user is $USER"
@@ -125,7 +128,7 @@ if [[ $DEPLOY == 1 ]]; then
 fi
 
 if [[ $START == 1 ]]; then
-    if [ -n "${BEAMLINE}" ]; then
+    if [ $IN_DEV == false ]; then
         if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
             echo "Must be run from beamline control machine as gda2"
             echo "Current host is $HOSTNAME and user is $USER"
@@ -144,7 +147,7 @@ if [[ $START == 1 ]]; then
     module load dials
 
     source .venv/bin/activate
-    python -m artemis &
+    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` &
 
     echo "Artemis started"
 fi
