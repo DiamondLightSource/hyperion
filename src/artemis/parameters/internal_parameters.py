@@ -1,3 +1,5 @@
+from enum import Enum
+
 from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
@@ -11,6 +13,12 @@ from artemis.parameters.constants import (
 )
 from artemis.parameters.external_parameters import RawParameters
 from artemis.utils import Point3D
+
+
+class InternalParameterCompleteness(Enum):
+    MINIMAL = 0  # The minimum necessary externally supplied parameters
+    EXPANDED = 1  #
+    COMPLETE = 2
 
 
 class ArtemisParameters:
@@ -30,7 +38,6 @@ class ArtemisParameters:
         num_images=2000,
         use_roi_mode=False,
         det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
-        # detector_size_constants="EIGER2_X_16M_SIZE"
     )
 
     ispyb_params: IspybParams = IspybParams(
@@ -132,6 +139,7 @@ class ArtemisParameters:
 class InternalParameters:
     artemis_params: ArtemisParameters
     experiment_params: EXPERIMENT_TYPES
+    completeness: InternalParameterCompleteness
 
     def __init__(self, external_params: RawParameters = RawParameters()):
         self.artemis_params = ArtemisParameters(
@@ -157,6 +165,7 @@ class InternalParameters:
         self.experiment_params = EXPERIMENT_DICT[ArtemisParameters.experiment_type](
             **external_params.experiment_params.to_dict()
         )
+        self.completeness = self.check_completeness()
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, InternalParameters):
@@ -167,8 +176,20 @@ class InternalParameters:
             return False
         return True
 
+    def check_completeness(self) -> InternalParameterCompleteness:
+        return InternalParameterCompleteness.MINIMAL
+
+    def expand(self) -> None:
+        pass
+
     @classmethod
-    def from_json(cls, json_data):
+    def from_external_json(cls, json_data):
         """Convenience method to generate from external parameter JSON blob, uses
         RawParameters.from_json()"""
         return cls(RawParameters.from_json(json_data))
+
+    @classmethod
+    def from_external_dict(cls, dict_data):
+        """Convenience method to generate from external parameter dictionary, uses
+        RawParameters.from_dict()"""
+        return cls(RawParameters.from_dict(dict_data))

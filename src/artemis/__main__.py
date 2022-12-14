@@ -118,7 +118,7 @@ class FastGridScan(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                parameters = InternalParameters.from_json(request.data)
+                parameters = InternalParameters.from_external_json(request.data)
                 status_and_message = self.runner.start(parameters)
             except JSONDecodeError as exception:
                 status_and_message = StatusAndMessage(Status.FAILED, str(exception))
