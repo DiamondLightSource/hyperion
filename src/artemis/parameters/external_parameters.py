@@ -2,7 +2,7 @@ import copy
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Union
+from typing import NamedTuple, Optional, Union
 
 import jsonschema
 from dataclasses_json import DataClassJsonMixin
@@ -47,28 +47,32 @@ class ExternalDetectorParameters(DataClassJsonMixin):
 @dataclass
 class ExternalISPyBParameters(DataClassJsonMixin):
     sample_id: Optional[int] = None
-    sample_barcode = None
-    visit_path = ""
-    pixels_per_micron_x = 0.0
-    pixels_per_micron_y = 0.0
+    sample_barcode: Optional[str] = None
+    visit_path: str = ""
+    pixels_per_micron_x: float = 0.0
+    pixels_per_micron_y: float = 0.0
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    upper_left = Point3D(x=0, y=0, z=0)
-    position = Point3D(x=0, y=0, z=0)
-    xtal_snapshots_omega_start = ["test_1_y", "test_2_y", "test_3_y"]
-    xtal_snapshots_omega_end = ["test_1_z", "test_2_z", "test_3_z"]
-    transmission = 1.0
-    flux = 10.0
-    wavelength = 0.01
-    beam_size_x = 0.1
-    beam_size_y = 0.1
-    focal_spot_size_x = 0.0
-    focal_spot_size_y = 0.0
-    comment = "Descriptive comment."
-    resolution = 1
-    undulator_gap = 1.0
-    synchrotron_mode = None
-    slit_gap_size_x = 0.1
-    slit_gap_size_y = 0.1
+    upper_left: NamedTuple = Point3D(x=0, y=0, z=0)
+    position: NamedTuple = Point3D(x=0, y=0, z=0)
+    xtal_snapshots_omega_start: list[str] = default_field(
+        ["test_1_y", "test_2_y", "test_3_y"]
+    )
+    xtal_snapshots_omega_end: list[str] = default_field(
+        ["test_1_y", "test_2_y", "test_3_y"]
+    )
+    transmission: float = 1.0
+    flux: float = 10.0
+    wavelength: float = 0.01
+    beam_size_x: float = 0.1
+    beam_size_y: float = 0.1
+    focal_spot_size_x: float = 0.0
+    focal_spot_size_y: float = 0.0
+    comment: str = "Descriptive comment."
+    resolution: float = 1
+    undulator_gap: float = 1.0
+    synchrotron_mode: Optional[str] = None
+    slit_gap_size_x: float = 0.1
+    slit_gap_size_y: float = 0.1
 
 
 @dataclass

@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from ophyd.sim import SynSignal
 
-from artemis.devices.eiger import EigerDetector
+from artemis.devices.eiger import DetectorParams, EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
@@ -14,7 +14,6 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
-from artemis.parameters.external_parameters import DetectorParams
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
@@ -22,6 +21,21 @@ from artemis.utils import Point3D
 def test_callback_collection_init():
     callbacks = FGSCallbackCollection.from_params(InternalParameters())
     test_parameters = InternalParameters()
+    assert (
+        callbacks.ispyb_handler.params.experiment_params
+        == test_parameters.experiment_params
+    )
+    assert (
+        callbacks.ispyb_handler.params.artemis_params.detector_params
+        == test_parameters.artemis_params.detector_params
+    )
+    assert (
+        callbacks.ispyb_handler.params.artemis_params.ispyb_params
+        == test_parameters.artemis_params.ispyb_params
+    )
+    assert (
+        callbacks.ispyb_handler.params.artemis_params == test_parameters.artemis_params
+    )
     assert callbacks.ispyb_handler.params == test_parameters
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
 
