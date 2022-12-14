@@ -29,15 +29,15 @@ class WrongExperimentParameterSpecification(Exception):
 
 @dataclass
 class ExternalDetectorParameters(DataClassJsonMixin):
-    current_energy: int = 100
-    exposure_time: float = 0.1
+    current_energy: Optional[int] = None
+    exposure_time: Optional[float] = None
     directory: str = "/tmp"
     prefix: str = "file_name"
     run_number: int = 0
-    detector_distance: float = 100.0
-    omega_start: float = 0.0
-    omega_increment: float = 0.0
-    num_images: int = 2000
+    detector_distance: Optional[float] = None
+    omega_start: Optional[float] = None
+    omega_increment: Optional[float] = None
+    num_images: Optional[int] = None
     use_roi_mode: bool = False
     det_dist_to_beam_converter_path: str = (
         "src/artemis/devices/unit_tests/test_lookup_table.txt"
@@ -50,8 +50,8 @@ class ExternalISPyBParameters(DataClassJsonMixin):
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
     visit_path: str = ""
-    pixels_per_micron_x: float = 0.0
-    pixels_per_micron_y: float = 0.0
+    pixels_per_micron_x: Optional[float] = None
+    pixels_per_micron_y: Optional[float] = None
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     upper_left: NamedTuple = Point3D(x=0, y=0, z=0)
     position: NamedTuple = Point3D(x=0, y=0, z=0)
@@ -61,19 +61,19 @@ class ExternalISPyBParameters(DataClassJsonMixin):
     xtal_snapshots_omega_end: list[str] = default_field(
         ["test_1_y", "test_2_y", "test_3_y"]
     )
-    transmission: float = 1.0
-    flux: float = 10.0
-    wavelength: float = 0.01
-    beam_size_x: float = 0.1
-    beam_size_y: float = 0.1
-    focal_spot_size_x: float = 0.0
-    focal_spot_size_y: float = 0.0
+    transmission: Optional[float] = None
+    flux: Optional[float] = None
+    wavelength: Optional[float] = None
+    beam_size_x: Optional[float] = None
+    beam_size_y: Optional[float] = None
+    focal_spot_size_x: Optional[float] = None
+    focal_spot_size_y: Optional[float] = None
     comment: str = "Descriptive comment."
-    resolution: float = 1
-    undulator_gap: float = 1.0
+    resolution: Optional[float] = None
+    undulator_gap: Optional[float] = None
     synchrotron_mode: Optional[str] = None
-    slit_gap_size_x: float = 0.1
-    slit_gap_size_y: float = 0.1
+    slit_gap_size_x: Optional[float] = None
+    slit_gap_size_y: Optional[float] = None
 
 
 @dataclass
