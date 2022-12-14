@@ -42,6 +42,7 @@ class ExternalDetectorParameters(DataClassJsonMixin):
     det_dist_to_beam_converter_path: str = (
         "src/artemis/devices/unit_tests/test_lookup_table.txt"
     )
+    detector_size_constants: Optional[str] = "EIGER2_X_16M"
 
 
 @dataclass

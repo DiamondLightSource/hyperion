@@ -1,3 +1,4 @@
+from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.parameters.constants import (
@@ -139,8 +140,19 @@ class InternalParameters:
         self.artemis_params.detector_params = DetectorParams(
             **self.artemis_params.detector_params
         )
+        self.artemis_params.detector_params.detector_size_constants = (
+            constants_from_type(
+                self.artemis_params.detector_params.detector_size_constants
+            )
+        )
         self.artemis_params.ispyb_params = IspybParams(
             **self.artemis_params.ispyb_params
+        )
+        self.artemis_params.ispyb_params.upper_left = Point3D(
+            *self.artemis_params.ispyb_params.upper_left
+        )
+        self.artemis_params.ispyb_params.position = Point3D(
+            *self.artemis_params.ispyb_params.position
         )
         self.experiment_params = EXPERIMENT_DICT[ArtemisParameters.experiment_type](
             **external_params.experiment_params.to_dict()
