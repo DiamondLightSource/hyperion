@@ -88,6 +88,8 @@ class MXSC(Device):
     output_array: EpicsSignal = Component(EpicsSignal, "OutputArray")
     draw_tip: EpicsSignal = Component(EpicsSignal, "DrawTip")
     draw_edges: EpicsSignal = Component(EpicsSignal, "DrawEdges")
+    waveform_size_x: EpicsSignal = Component(EpicsSignal, "ArraySize1_RBV")
+    waveform_size_y: EpicsSignal = Component(EpicsSignal, "ArraySize2_RBV")
 
 
 class OAV(AreaDetector):
