@@ -32,7 +32,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
         self.descriptors: Dict[str, dict] = {}
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
         if ispyb_config == SIM_ISPYB_CONFIG:
-            LOGGER.warn(
+            LOGGER.warning(
                 "Using dev ISPyB database. If you want to use the real database, please"
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
@@ -47,7 +47,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
         self.descriptors[doc["uid"]] = doc
 
     def event(self, doc: dict):
-        LOGGER.debug(f"\n\nISPyB handler received event document:\n{doc}\n")
+        LOGGER.debug("ISPyB handler received event document.")
         event_descriptor = self.descriptors[doc["descriptor"]]
 
         if event_descriptor.get("name") == ISPYB_PLAN_NAME:
@@ -62,7 +62,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
             self.ispyb_ids = self.ispyb.begin_deposition()
 
     def stop(self, doc: dict):
-        LOGGER.debug(f"\n\nISPyB handler received stop document:\n\n {doc}\n")
+        LOGGER.debug("ISPyB handler received stop document.")
         exit_status = doc.get("exit_status")
         reason = doc.get("reason")
         if self.ispyb_ids == (None, None, None):

@@ -138,7 +138,7 @@ def run_gridscan_and_move(
 
     # our callbacks should listen to documents only from the actual grid scan
     # so we subscribe to them with our plan
-    @bpp.subs_decorator(list(subscriptions))
+    @bpp.subs_decorator(subscriptions.get_list())
     def gridscan_with_subscriptions(fgs_composite, detector, params):
         yield from run_gridscan(fgs_composite, detector, params)
 
@@ -174,9 +174,9 @@ def create_devices():
         prefix="BL03S-EA-EIGER-01:",
     )
 
-    artemis.log.LOGGER.debug("Connecting to EPICS devices...")
+    artemis.log.LOGGER.info("Connecting to EPICS devices...")
     fast_grid_scan_composite.wait_for_connection()
-    artemis.log.LOGGER.debug("Connected.")
+    artemis.log.LOGGER.info("Connected.")
     return fast_grid_scan_composite, eiger
 
 

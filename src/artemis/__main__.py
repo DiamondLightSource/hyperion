@@ -19,6 +19,8 @@ from artemis.fast_grid_scan_plan import create_devices, get_plan
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER
 
+VERBOSE_EVENT_LOGGING: Optional[bool] = None
+
 
 class Actions(Enum):
     START = "start"
@@ -54,7 +56,7 @@ class StatusAndMessage:
 
 class BlueskyRunner:
     callbacks: FGSCallbackCollection = FGSCallbackCollection.from_params(
-        FullParameters()
+        FullParameters(), VERBOSE_EVENT_LOGGING
     )
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
@@ -167,12 +169,17 @@ def create_app(
     return app, runner
 
 
-def cli_arg_parse() -> Tuple[Optional[bool], Optional[str]]:
+def cli_arg_parse() -> Tuple[Optional[str], Optional[bool], Optional[bool]]:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dev",
         action="store_true",
         help="Use dev options, such as local graylog instances and S03",
+    )
+    parser.add_argument(
+        "--verbose-event-logging",
+        action="store_true",
+        help="Log all bluesky event documents to graylog",
     )
     parser.add_argument(
         "--logging-level",
@@ -181,20 +188,25 @@ def cli_arg_parse() -> Tuple[Optional[bool], Optional[str]]:
         help="Choose overall logging level, defaults to INFO",
     )
     args = parser.parse_args()
-    return args.logging_level, args.dev
+    return args.logging_level, args.verbose_event_logging, args.dev
 
 
 if __name__ == "__main__":
-    args = cli_arg_parse()
-    artemis.log.set_up_logging_handlers(*args)
+    artemis_port = 5005
+    logging_level, VERBOSE_EVENT_LOGGING, dev_mode = cli_arg_parse()
+
+    artemis.log.set_up_logging_handlers(logging_level, dev_mode)
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
-            host="0.0.0.0", port=5005, debug=True, use_reloader=False
+            host="0.0.0.0", port=artemis_port, debug=True, use_reloader=False
         ),
         daemon=True,
     )
     flask_thread.start()
+    artemis.log.LOGGER.info(
+        f"Artemis now listening on {artemis_port} ({'IN DEV' if dev_mode else ''})"
+    )
     runner.wait_on_queue()
     flask_thread.join()
