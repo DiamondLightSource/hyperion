@@ -56,9 +56,9 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
         callbacks.ispyb_handler,
         callbacks.zocalo_handler,
     ]
-    assert callbacklist_right_order == list(callbacks)
+    assert callbacklist_right_order == callbacks.get_list()
 
-    @bpp.subs_decorator(list(callbacks))
+    @bpp.subs_decorator(callbacks.get_list())
     @bpp.run_decorator()
     def fake_plan():
         yield from bps.create(ISPYB_PLAN_NAME)
@@ -79,7 +79,7 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
         callbacks.zocalo_handler,
         callbacks.ispyb_handler,
     ]
-    assert callbacklist_wrong_order != list(callbacks)
+    assert callbacklist_wrong_order != callbacks.get_list()
     assert callbacks.ispyb_handler.ispyb_ids == (None, None, None)
 
     @bpp.subs_decorator(callbacklist_wrong_order)
