@@ -8,10 +8,10 @@ from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
 
 from artemis.devices.backlight import Backlight
-from artemis.devices.motors import I03Smargon
-from artemis.devices.oav.oav_centring_plan import (
-    calculate_beam_distance,
-    distance_from_beam_centre_to_motor_coords,
+from artemis.devices.I03Smargon import I03Smargon
+from artemis.devices.oav.oav_calculations import (
+    check_x_within_bounds,
+    filter_rotation_data,
     find_midpoint,
     get_rotation_increment,
 )
@@ -117,7 +117,7 @@ def test_find_midpoint_symmetric_pin():
     top[np.where(top < bottom)[0]] = 0
     bottom[np.where(bottom > top)[0]] = 0
 
-    (x_pos, y_pos, diff_at_x_pos, mid) = find_midpoint(top, bottom)
+    (x_pos, y_pos, width) = find_midpoint(top, bottom)
     assert x_pos == 614
     assert y_pos == 500
 
@@ -136,7 +136,7 @@ def test_find_midpoint_non_symmetric_pin():
     top[np.where(top < bottom)[0]] = 0
     bottom[np.where(bottom > top)[0]] = 0
 
-    (x_pos, y_pos, diff_at_x_pos, mid) = find_midpoint(top, bottom)
+    (x_pos, y_pos, width) = find_midpoint(top, bottom)
     assert x_pos == 419
     assert np.floor(y_pos) == 397
     # x = 205/1024*4.7 - 2.35 ≈ -1.41 which is the first stationary point of the width on
@@ -160,28 +160,7 @@ def test_extract_beam_position_different_beam_postitions(
     assert mock_parameters.beam_centre_y == expected_yCentre
 
 
-@pytest.mark.parametrize(
-    "h,v,omega,expected_values",
-    [
-        (0.0, 0.0, 0.0, [0.0, 0.0, 0.0]),
-        (10, -5, 90, [-10, 3.062e-16, 5]),
-        (100, -50, 40, [-100, 38.302, 32.139]),
-        (10, 100, -4, [-10, -99.756, 6.976]),
-    ],
-)
-def test_distance_from_beam_centre_to_motor_coords_returns_the_same_values_as_GDA(
-    h, v, omega, expected_values
-):
-    results = np.around(
-        distance_from_beam_centre_to_motor_coords(h, v, omega), decimals=2
-    )
-    expected_values = np.around(expected_values, decimals=2)
-    assert np.array_equal(results, expected_values)
-
-
-def test_get_rotation_increment_threshold_within_180(
-    mock_oav: OAV, mock_smargon: I03Smargon
-):
+def test_get_rotation_increment_threshold_within_180():
     increment = get_rotation_increment(6, 0, 180)
     assert increment == 180 / 6
 
@@ -219,19 +198,19 @@ def test_keep_inside_bounds(value, lower_bound, upper_bound, expected_value):
 
 
 @pytest.mark.parametrize(
-    "h, v, expected_x, expected_y, flip_y",
+    "h, v, expected_x, expected_y",
     [
-        (54, 100, 329, 253, False),
-        (0, 0, 383, -415, True),
-        (500, 500, -117, 85, True),
+        (54, 100, 383 - 54, 353 - 100),
+        (0, 0, 383, 353),
+        (500, 500, 383 - 500, 353 - 500),
     ],
 )
 def test_calculate_beam_distance(
-    h, v, expected_x, expected_y, flip_y, mock_parameters: OAVParameters
+    h, v, expected_x, expected_y, mock_parameters: OAVParameters
 ):
-    mock_parameters.zoom = 5.0  # beam centre will be (383, 353)
-    assert calculate_beam_distance(
-        mock_parameters, h, v, use_microns=False, flip_vertical=flip_y
+    assert mock_parameters.calculate_beam_distance(
+        h,
+        v,
     ) == (expected_x, expected_y)
 
 
@@ -292,4 +271,65 @@ def test_all_zero_waveform(fake_mv, mock_oav: OAV, mock_smargon: I03Smargon):
         )
 
 
+"""
+
+
+def test_filter_rotation_data():
+    x_positions = np.array([400, 450, 7, 500])
+    y_positions = np.array([400, 450, 7, 500])
+    widths = np.array([400, 450, 7, 500])
+    omegas = np.array([400, 450, 7, 500])
+
+    (
+        filtered_x,
+        filtered_y,
+        filtered_widths,
+        filtered_omegas,
+    ) = filter_rotation_data(x_positions, y_positions, widths, omegas)
+
+    assert filtered_x[2] == 500
+    assert filtered_omegas[2] == 500
+
+
+@pytest.mark.parametrize(
+    "max_tip_distance, tip_x, x, expected_return",
+    [
+        (180, 400, 600, 580),
+        (180, 400, 450, 450),
+    ],
+)
+def test_keep_x_within_bounds(max_tip_distance, tip_x, x, expected_return):
+    assert check_x_within_bounds(max_tip_distance, tip_x, x) == expected_return
+
+
+"""
+@pytest.mark.parametrize(
+    "h,v,omega,expected_values",
+    [
+        (0.0, 0.0, 0.0, np.array([0.0, 0.0, 0.0])),
+        (10, -5, 90, np.array([-10, 3.062e-16, -5])),
+        (100, -50, 40, np.array([-100, 38.302, -32.139])),
+        (10, 100, -4, np.array([-10, -99.756, -6.976])),
+    ],
+)
+def test_distance_from_beam_centre_to_motor_coords_returns_the_same_values_as_GDA(
+    h, v, omega, expected_values, mock_parameters: OAVParameters
+):
+
+    mock_parameters.zoom = 5.0
+    mock_parameters.load_microns_per_pixel()
+    results = camera_coordinates_to_xyz(
+        h,
+        v,
+        omega,
+        mock_parameters.micronsPerXPixel,
+        mock_parameters.micronsPerYPixel,
+    )
+    expected_values = expected_values * 1e-3
+    expected_values[0] /= mock_parameters.micronsPerXPixel
+    expected_values[1] /= mock_parameters.micronsPerYPixel
+    expected_values[2] /= mock_parameters.micronsPerYPixel
+    expected_values = np.around(expected_values, decimals=5)
+
+    assert np.array_equal(np.around(results, decimals=5), expected_values)
 """

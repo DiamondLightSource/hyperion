@@ -20,6 +20,10 @@ class OAVParameters:
         self.display_configuration_file = display_configuration_file
         self.context = context
 
+        self.load_parameters_from_json()
+        self.load_microns_per_pixel()
+        self._extract_beam_position()
+
     def load_json(self):
         """
         Loads the json from the json file at self.centring_params_json
@@ -113,7 +117,10 @@ class OAVParameters:
             f"Searched in {self.centring_params_json} for key {key} in context {self.context} but no value was found. No fallback value was given."
         )
 
-    def load_microns_per_pixel(self, zoom):
+    def load_microns_per_pixel(self, zoom=None):
+        if not zoom:
+            zoom = self.zoom
+
         tree = et.parse(self.camera_zoom_levels_file)
         self.micronsPerXPixel = self.micronsPerYPixel = None
         root = tree.getroot()
@@ -126,6 +133,9 @@ class OAVParameters:
             raise OAVError_ZoomLevelNotFound(
                 f"Could not find the micronsPer[X,Y]Pixel parameters in {self.camera_zoom_levels_file} for zoom level {zoom}."
             )
+
+        # get the max tip distance in pixels
+        self.max_tip_distance_pixels = self.max_tip_distance / self.micronsPerXPixel
 
     def _extract_beam_position(self):
         """
@@ -150,4 +160,13 @@ class OAVParameters:
 
             self.beam_centre_x = int(crosshair_x_line.split(" = ")[1])
             self.beam_centre_y = int(crosshair_y_line.split(" = ")[1])
-            print("BEAM_CENTRE:", self.beam_centre_x, self.beam_centre_y)
+
+    def calculate_beam_distance(self, horizontal_pixels: int, vertical_pixels: int):
+        """
+        Calculates the distance between the beam centre and the given (horizontal, vertical),
+        """
+
+        return (
+            self.beam_centre_x - horizontal_pixels,
+            self.beam_centre_y - vertical_pixels,
+        )
