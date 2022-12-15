@@ -2,6 +2,15 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "type": "object",
     "properties": {
+        "exposure_time": {
+            "type": "number"
+        },
+        "omega_start": {
+            "type": "number"
+        },
+        "angle_increment": {
+            "type": "number"
+        },
         "x_steps": {
             "type": "number"
         },
