@@ -15,7 +15,7 @@ from flask_restful import Api, Resource
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.fast_grid_scan_plan import get_plan
+from artemis.fast_grid_scan_plan import create_devices, get_plan
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER
 
@@ -62,6 +62,7 @@ class BlueskyRunner:
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
+        self.fast_grid_scan_composite, self.eiger = create_devices()
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
@@ -107,7 +108,14 @@ class BlueskyRunner:
             if command.action == Actions.START:
                 try:
                     with TRACER.start_span("do_run"):
-                        self.RE(get_plan(command.parameters, self.callbacks))
+                        self.RE(
+                            get_plan(
+                                self.fast_grid_scan_composite,
+                                self.eiger,
+                                command.parameters,
+                                self.callbacks,
+                            )
+                        )
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except WarningException as exception:

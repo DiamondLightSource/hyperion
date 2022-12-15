@@ -28,10 +28,10 @@ class EigerDetector(Device):
 
     filewriters_finished: StatusBase
 
-    def __init__(
-        self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
-    ):
+    def __init__(self, name="Eiger Detector", *args, **kwargs):
         super().__init__(name=name, *args, **kwargs)
+
+    def set_params(self, detector_params: DetectorParams):
         self.detector_params = detector_params
         self.check_detector_variables_set()
 

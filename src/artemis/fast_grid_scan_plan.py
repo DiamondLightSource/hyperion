@@ -159,7 +159,33 @@ def run_gridscan_and_move(
         )
 
 
-def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
+def create_devices():
+    """Hack that does this quickly, do not merge to main"""
+    artemis.log.LOGGER.info("Fetching composite plan")
+    fast_grid_scan_composite = FGSComposite(
+        insertion_prefix="SR03I",
+        name="fgs",
+        prefix="BL03S",
+    )
+
+    # Note, eiger cannot be currently waited on, see #166
+    eiger = EigerDetector(
+        name="eiger",
+        prefix="BL03S-EA-EIGER-01:",
+    )
+
+    artemis.log.LOGGER.debug("Connecting to EPICS devices...")
+    fast_grid_scan_composite.wait_for_connection()
+    artemis.log.LOGGER.debug("Connected.")
+    return fast_grid_scan_composite, eiger
+
+
+def get_plan(
+    fast_grid_scan_composite: FGSComposite,
+    eiger: EigerDetector,
+    parameters: FullParameters,
+    subscriptions: FGSCallbackCollection,
+):
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
@@ -168,24 +194,7 @@ def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
     Returns:
         Generator: The plan for the gridscan
     """
-    artemis.log.LOGGER.info("Fetching composite plan")
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=parameters.insertion_prefix,
-        name="fgs",
-        prefix=parameters.beamline,
-    )
-
-    # Note, eiger cannot be currently waited on, see #166
-    eiger = EigerDetector(
-        parameters.detector_params,
-        name="eiger",
-        prefix=f"{parameters.beamline}-EA-EIGER-01:",
-    )
-
-    artemis.log.LOGGER.debug("Connecting to EPICS devices...")
-    fast_grid_scan_composite.wait_for_connection()
-    artemis.log.LOGGER.debug("Connected.")
-
+    eiger.set_params(parameters.detector_params)
     return run_gridscan_and_move(
         fast_grid_scan_composite, eiger, parameters, subscriptions
     )
