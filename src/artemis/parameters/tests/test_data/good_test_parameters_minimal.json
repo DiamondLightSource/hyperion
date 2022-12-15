@@ -6,19 +6,14 @@
         "zocalo_environment": "devrmq",
         "experiment_type": "grid_scan",
         "detector_params": {
-            "exposure_time": 0.1,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,
-            "omega_start": 0.0,
-            "omega_increment": 0.1,
             "use_roi_mode": false,
             "det_dist_to_beam_converter_path": "src/artemis/devices/unit_tests/test_lookup_table.txt"
         },
         "ispyb_params": {
             "visit_path": "/tmp/cm31105-4/",
-            "pixels_per_micron_x": 1.0,
-            "pixels_per_micron_y": 1.0,
             "upper_left": {
                 "x": 10.0,
                 "y": 20.0,
@@ -51,6 +46,9 @@
         }
     },
     "experiment_params": {
+        "exposure_time": 0.1,
+        "omega_start": 0.0,
+        "omega_increment": 0.1,
         "x_steps": 5,
         "y_steps": 10,
         "z_steps": 2,

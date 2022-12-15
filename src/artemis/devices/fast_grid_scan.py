@@ -3,7 +3,6 @@ import time
 from dataclasses import dataclass
 
 from bluesky.plan_stubs import mv
-from dataclasses_json import DataClassJsonMixin
 from ophyd import (
     Component,
     Device,
@@ -16,6 +15,7 @@ from ophyd.status import DeviceStatus, StatusBase
 
 from artemis.devices.motors import XYZLimitBundle
 from artemis.devices.status import await_value
+from artemis.parameters.base_experiment_parameters import BaseExperimentParameters
 from artemis.utils import Point3D
 
 
@@ -36,8 +36,7 @@ class GridAxis:
         return 0 <= steps <= self.full_steps
 
 
-@dataclass
-class GridScanParams(DataClassJsonMixin):
+class GridScanParams(BaseExperimentParameters):
     """
     Holder class for the parameters of a grid scan in a similar
     layout to EPICS.
@@ -58,6 +57,16 @@ class GridScanParams(DataClassJsonMixin):
     y2_start: float = 0.1
     z1_start: float = 0.1
     z2_start: float = 0.1
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+    def get_num_images(self):
+        if self.num_images is not None:
+            return self.num_images
+        else:
+            self.num_images = self.x_steps * self.y_steps + self.x_steps * self.z_steps
+            return self.num_images
 
     def __post_init__(self):
         self.x_axis = GridAxis(self.x_start, self.x_step_size, self.x_steps)

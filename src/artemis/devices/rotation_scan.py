@@ -1,19 +1,17 @@
-from dataclasses import dataclass
 from typing import Optional
 
-from dataclasses_json import DataClassJsonMixin
-
 from artemis.devices.motors import XYZLimitBundle
+from artemis.parameters.base_experiment_parameters import BaseExperimentParameters
 
 
-@dataclass
-class RotationScanParams(DataClassJsonMixin):
+class RotationScanParams(BaseExperimentParameters):
     """
     Holder class for the parameters of a rotation data collection.
     """
 
     rotation_axis: str = "omega"
     rotation_angle: float = 360.0
+    frame_width: float = 0.1
     omega_start: float = 0.0
     phi_start: float = 0.0
     chi_start: Optional[float] = None
@@ -21,6 +19,12 @@ class RotationScanParams(DataClassJsonMixin):
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+    def get_num_images(self):
+        return int(self.rotation_angle / self.frame_width)
 
     def xyz_are_valid(self, limits: XYZLimitBundle) -> bool:
         """
