@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 
 from artemis.devices.oav.oav_errors import (
@@ -13,7 +15,8 @@ def smooth(y):
 
     Args:
         y (np.ndarray): waveform to be smoothed.
-    Returns: y_smooth (np.ndarray): y with noise removed.
+    Returns:
+        y_smooth (np.ndarray): y with noise removed.
     """
 
     # the smoothing window is set to 50 on i03
@@ -32,8 +35,8 @@ def find_midpoint(top, bottom):
         top (np.ndarray): The waveform corresponding to the top of the pin.
         bottom (np.ndarray): The waveform corresponding to the bottom of the pin.
     Returns:
-        x_pos (int): The x position of the located centre (in pixels).
-        y_pos (int): The y position of the located centre (in pixels).
+        x_pixel (int): The x position of the located centre (in pixels).
+        y_pixel (int): The y position of the located centre (in pixels).
         width (int): The width of the pin at the midpoint (in pixels).
     """
 
@@ -69,23 +72,25 @@ def find_midpoint(top, bottom):
     stationary_points = np.where(gradient_changed)[0]
 
     # We'll have one stationary point before the midpoint.
-    x_pos = stationary_points[1]
+    x_pixel = stationary_points[1]
 
-    y_pos = middle_line[int(x_pos)]
-    width = widths[int(x_pos)]
-    return (x_pos, y_pos, width)
+    y_pixel = middle_line[int(x_pixel)]
+    width = widths[int(x_pixel)]
+    return (x_pixel, y_pixel, width)
 
 
 def get_rotation_increment(rotations: int, omega: int, high_limit: int) -> float:
     """
-    By default we'll rotate clockwise (viewing the goniometer from the front),
-    but if we can't rotate 180 degrees clockwise without exceeding the threshold
-    then the goniometer rotates in the anticlockwise direction.
+    By default we'll rotate clockwise (viewing the goniometer from the front), but if we
+    can't rotate 180 degrees clockwise without exceeding the high_limit threshold then
+    the goniometer rotates in the anticlockwise direction.
 
     Args:
         rotations (int): The number of rotations we want to add up to 180/-180
         omega (int): The current omega angle of the smargon.
         high_limit (int): The maximum allowed angle we want the smargon omega to have.
+    Returns:
+        The inrement we should rotate omega by.
     """
 
     # number of degrees to rotate to
@@ -99,20 +104,19 @@ def get_rotation_increment(rotations: int, omega: int, high_limit: int) -> float
 
 
 def filter_rotation_data(
-    x_positions,
-    y_positions,
-    widths,
-    omega_angles,
+    x_positions: np.ndarray,
+    y_positions: np.ndarray,
+    widths: np.ndarray,
+    omega_angles: np.ndarray,
     acceptable_x_difference=100,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Filters out outlier positions, and zero points.
+    Filters out outlier positions - those for which the x value of the midpoint unreasonably differs from the median of the x values at other rotations.
 
     Args:
-        x_positions: the x positions of centres
-        y_positions: the y positions of centres
-        widths: the widths between the top and bottom waveforms at the centre point
-        omega_angles: the angle of the goniometer at which the measurement was taken
+        x_positions (numpy.ndarray): Array where the i-th element corresponds to the x value (in pixels) of the midpoint at rotation i.
+        y_positions (numpy.ndarray): Array where the i-th element corresponds to the y value (in pixels) of the midpoint at rotation i.
+        widths (numpy.ndarray): Array where the i-th element corresponds to the pin width (in pixels) of the midpoint at rotation i.
         acceptable_x_difference: the acceptable difference between the average value of x and
             any individual value of x. We don't want to use exceptional positions for calculation.
     Returns:
@@ -146,11 +150,15 @@ def filter_rotation_data(
     )
 
 
-def check_x_within_bounds(max_tip_distance_pixels: int, tip_x: int, x_pixels: int):
+def check_x_within_bounds(
+    max_tip_distance_pixels: int, tip_x: int, x_pixels: int
+) -> int:
+    """
+    Checks if x_pixels exceeds max tip distance (in pixels), if so returns max_tip_distance, else x_pixels.
+    This is necessary as some users send in wierd loops for which the differential method isn't functional.
+    OAV centring only needs to get in the right ballpark so Xray centring can do its thing.
+    """
 
-    # If x exceeds the max tip distance then set it to the max tip distance.
-    # This is necessary as some users send in wierd loops for which the differential method isn't
-    # functional. OAV centring only needs to get in the right ballpark so Xray centring can do its thing.
     tip_distance_pixels = x_pixels - tip_x
     if tip_distance_pixels > max_tip_distance_pixels:
         LOGGER.warn(
@@ -161,13 +169,26 @@ def check_x_within_bounds(max_tip_distance_pixels: int, tip_x: int, x_pixels: in
 
 
 def extract_coordinates_from_rotation_data(
-    x_positions,
-    y_positions,
-    widths,
-    omega_angles,
-):
+    x_positions: np.ndarray,
+    y_positions: np.ndarray,
+    widths: np.ndarray,
+    omega_angles: np.ndarray,
+) -> Tuple[int, int, int, float, float]:
     """
-    Takes the rotations being used and gets the neccessary data in terms of x,y,z and angles.
+    Takes the obtained midpoints x_positions, y_positions, the pin widths, omega_angles from the rotations
+    and returns x, y, z, widest angle, and the angle orthogonal to it.
+
+    Args:
+        x_positions (numpy.ndarray): Array where the i-th element corresponds to the x value (in pixels) of the midpoint at rotation i.
+        y_positions (numpy.ndarray): Array where the i-th element corresponds to the y value (in pixels) of the midpoint at rotation i.
+        widths (numpy.ndarray): Array where the i-th element corresponds to the pin width (in pixels) of the midpoint at rotation i.
+        omega_angles (numpy.ndarray): Array where the i-th element corresponds to the omega angle at rotation i.
+    Returns:
+        x_pixels (int): The x value (in pixels) of the midpoint when omega is equal to widest_omega_angle
+        y_pixels (int): The y value (in pixels) of the midpoint when omega is equal to widest_omega_angle
+        z_pixels (int): The y value (in pixels) of the midpoint when omega is equal to widest_omega_angle_orthogonal
+        widest_omega_angle (float): The value of omega where the pin is widest in the image.
+        widest_omega_angle_orthogonal (float): The value of omega orthogonal to the angle where the pin is widest in the image.
     """
 
     (
@@ -178,19 +199,21 @@ def extract_coordinates_from_rotation_data(
     )
 
     x_pixels = int(x_positions[index_of_largest_width])
-    y_pixels = y_positions[index_of_largest_width]
+    y_pixels = int(y_positions[index_of_largest_width])
 
-    best_omega_angle = float(omega_angles[index_of_largest_width])
+    widest_omega_angle = float(omega_angles[index_of_largest_width])
 
-    # Get the angle sufficiently orthogonal to the best omega and
+    # Get the angle sufficiently orthogonal to the omega where the pin is widest
     index_orthogonal_to_largest_width = indices_orthogonal_to_largest_width[-1]
-    best_omega_angle_orthogonal = float(omega_angles[index_orthogonal_to_largest_width])
+    widest_omega_angle_orthogonal = float(
+        omega_angles[index_orthogonal_to_largest_width]
+    )
 
     # Store the y value which will be the magnitude in the z axis on 90 degree rotation
     z_pixels = int(y_positions[index_orthogonal_to_largest_width])
 
     #
-    if best_omega_angle_orthogonal is None:
+    if widest_omega_angle_orthogonal is None:
         LOGGER.error("Unable to find loop at 2 orthogonal angles")
         return
 
@@ -198,17 +221,28 @@ def extract_coordinates_from_rotation_data(
         x_pixels,
         y_pixels,
         z_pixels,
-        best_omega_angle,
-        best_omega_angle_orthogonal,
+        widest_omega_angle,
+        widest_omega_angle_orthogonal,
     )
 
 
 def camera_coordinates_to_xyz(
-    horizontal, vertical, omega, microns_per_x_pixel, microns_per_y_pixel
-):
+    horizontal: float,
+    vertical: float,
+    omega: float,
+    microns_per_x_pixel: float,
+    microns_per_y_pixel: float,
+) -> np.ndarray:
     """
-    Converts from (horizontal,vertical) pixel measurements from the OAV camera into to (x, y, z) motor coordinates in mm.
+    Converts from (horizontal,vertical) pixel measurements from the OAV camera into to (x, y, z) motor coordinates in millmeters.
     For an overview of the coordinate system for I03 see https://github.com/DiamondLightSource/python-artemis/wiki/Gridscan-Coordinate-System.
+
+    Args:
+        horizontal (float): A x value from the camera in pixels.
+        vertical (float): A y value from the camera in pixels.
+        omega (float): The omega angle of the smargon that the horizontal, vertical measurements were obtained at.
+        microns_per_x_pixel (float): The number of microns per x pixel, adjusted for the zoom level horizontal was measured at.
+        microns_per_y_pixel (float): The number of microns per y pixel, adjusted for the zoom level vertical was measured at.
     """
     # Convert the vertical and horizontal into mm
     vertical *= microns_per_x_pixel * 1e-3
@@ -230,16 +264,16 @@ def camera_coordinates_to_xyz(
     return np.array([x, y, z], dtype=np.float64)
 
 
-def keep_inside_bounds(value, lower_bound, upper_bound):
+def keep_inside_bounds(value: float, lower_bound: float, upper_bound: float) -> float:
     """
     If value is above an upper bound then the upper bound is returned.
     If value is below a lower bound then the lower bound is returned.
-    If value is within bounds then the value is returned
+    If value is within bounds then the value is returned.
 
     Args:
-        value: the value being checked against bounds
-        lower_bound: the lower bound
-        lower_bound: the upper bound
+        value (float): The value being checked against bounds.
+        lower_bound (float): The lower bound.
+        lower_bound (float): The upper bound.
     """
     if value < lower_bound:
         return lower_bound
@@ -249,20 +283,20 @@ def keep_inside_bounds(value, lower_bound, upper_bound):
 
 
 def find_widest_point_and_orthogonal_point(
-    x_positions, y_positions, widths, omega_angles
-):
+    x_positions: np.ndarray,
+    y_positions: np.ndarray,
+    widths: np.ndarray,
+    omega_angles: np.ndarray,
+) -> Tuple[int, np.ndarray]:
     """
-    Find the widest point from the sampled positions, and the angles orthogonal to this.
+    Find the index of the rotation where the pin was widest in the camera, and the indices of rotations orthogonal to it.
 
     Args: Lists of values taken, the i-th value of the list is the i-th point sampled:
-            x_positions: the x positions of centres
-            y_positions: the y positions of centres
-            widths: the widths between the top and bottom waveforms at the centre point
-            omega_angles: the angle of the goniometer at which the measurement was taken
-            mid_lines: the waveform going between the top and bottom waveforms
-            tip_x_positions: the measured x tip at a given rotation
-            tip_y_positions: the measured y tip at a given rotation
-    Returns: The index of the sample which is widest, and the index orthogonal to that.
+            x_positions (numpy.ndarray): Array where the i-th element corresponds to the x value (in pixels) of the midpoint at rotation i.
+            y_positions (numpy.ndarray): Array where the i-th element corresponds to the y value (in pixels) of the midpoint at rotation i.
+            widths (numpy.ndarray): Array where the i-th element corresponds to the pin width (in pixels) of the midpoint at rotation i.
+            omega_angles (numpy.ndarray): Array where the i-th element corresponds to the omega angle at rotation i.
+    Returns: The index of the sample which had the widest pin as an int, and the indices orthogonal to that as a numpy array.
     """
 
     (
@@ -275,9 +309,11 @@ def find_widest_point_and_orthogonal_point(
     # Find omega for face-on position: where bulge was widest
     index_of_largest_width_filtered = widths_filtered.argmax()
 
-    index_of_largest_width = np.where(
-        omega_angles == omega_angles_filtered[index_of_largest_width_filtered]
-    )[0]
+    index_of_largest_width = int(
+        np.where(
+            omega_angles == omega_angles_filtered[index_of_largest_width_filtered]
+        )[0]
+    )
 
     # find largest width index in original unfiltered list
     widest_omega_angle = omega_angles[index_of_largest_width]
