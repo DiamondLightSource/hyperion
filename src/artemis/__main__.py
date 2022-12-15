@@ -55,9 +55,7 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    callbacks: FGSCallbackCollection = FGSCallbackCollection.from_params(
-        FullParameters(), VERBOSE_EVENT_LOGGING
-    )
+    callbacks: FGSCallbackCollection
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
@@ -67,7 +65,9 @@ class BlueskyRunner:
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-        self.callbacks = FGSCallbackCollection.from_params(parameters)
+        self.callbacks = FGSCallbackCollection.from_params(
+            parameters, VERBOSE_EVENT_LOGGING
+        )
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value

@@ -34,7 +34,7 @@ def test_callback_collection_init():
         FullParameters(), verbose_event_logging=True
     )
     assert len(callbacks.get_list()) == 4
-    assert callbacks.event_logger == VerbosePlanExecutionLoggingCallback()
+    assert isinstance(callbacks.event_logger, VerbosePlanExecutionLoggingCallback)
 
 
 def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
