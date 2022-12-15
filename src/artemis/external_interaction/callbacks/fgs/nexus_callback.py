@@ -30,12 +30,11 @@ class FGSNexusFileHandlerCallback(CallbackBase):
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(parameters))
 
     def start(self, doc: dict):
-        LOGGER.debug(f"\n\nReceived start document:\n\n {doc}\n")
         LOGGER.info("Creating Nexus files.")
         self.nxs_writer_1.create_nexus_file()
         self.nxs_writer_2.create_nexus_file()
 
     def stop(self, doc: dict):
-        LOGGER.debug("Updating Nexus file timestamps.")
+        LOGGER.info("Updating Nexus file timestamps.")
         self.nxs_writer_1.update_nexus_file_timestamp()
         self.nxs_writer_2.update_nexus_file_timestamp()
