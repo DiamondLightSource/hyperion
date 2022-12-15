@@ -182,9 +182,9 @@ def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
         prefix=f"{parameters.beamline}-EA-EIGER-01:",
     )
 
-    artemis.log.LOGGER.debug("Connecting to EPICS devices...")
+    artemis.log.LOGGER.info("Connecting to EPICS devices...")
     fast_grid_scan_composite.wait_for_connection()
-    artemis.log.LOGGER.debug("Connected.")
+    artemis.log.LOGGER.info("Connected.")
 
     return run_gridscan_and_move(
         fast_grid_scan_composite, eiger, parameters, subscriptions
