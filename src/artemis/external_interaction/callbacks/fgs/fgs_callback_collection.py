@@ -38,18 +38,12 @@ class FGSCallbackCollection(NamedTuple):
         nexus_handler = FGSNexusFileHandlerCallback(parameters)
         ispyb_handler = FGSISPyBHandlerCallback(parameters)
         zocalo_handler = FGSZocaloCallback(parameters, ispyb_handler)
-        if verbose_event_logging:
-            callback_collection = cls(
-                nexus_handler=nexus_handler,
-                ispyb_handler=ispyb_handler,
-                zocalo_handler=zocalo_handler,
-                event_logger=VerbosePlanExecutionLoggingCallback(),
-            )
-        else:
-            callback_collection = cls(
-                nexus_handler=nexus_handler,
-                ispyb_handler=ispyb_handler,
-                zocalo_handler=zocalo_handler,
-                event_logger=None,
-            )
+        callback_collection = cls(
+            nexus_handler=nexus_handler,
+            ispyb_handler=ispyb_handler,
+            zocalo_handler=zocalo_handler,
+            event_logger=VerbosePlanExecutionLoggingCallback()
+            if verbose_event_logging
+            else None,
+        )
         return callback_collection
