@@ -14,8 +14,13 @@ class WrongExperimentParameterSpecification(Exception):
 class RawParameters:
     params: dict
 
-    def __init__(self, params) -> None:
-        self.params = copy.deepcopy(params)
+    def __init__(self, params=None) -> None:
+        if params is None:
+            self.params = self.from_file(
+                "src/artemis/parameters/tests/test_data/good_test_parameters_minimal.json"
+            )
+        else:
+            self.params = copy.deepcopy(params)
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, RawParameters):

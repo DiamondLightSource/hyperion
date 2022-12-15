@@ -1,4 +1,4 @@
-from enum import Enum
+import copy
 
 from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DetectorParams
@@ -13,12 +13,6 @@ from artemis.parameters.constants import (
 )
 from artemis.parameters.external_parameters import RawParameters
 from artemis.utils import Point3D
-
-
-class InternalParameterCompleteness(Enum):
-    MINIMAL = 0  # The minimum necessary externally supplied parameters
-    EXPANDED = 1  #
-    COMPLETE = 2
 
 
 class ArtemisParameters:
@@ -139,12 +133,9 @@ class ArtemisParameters:
 class InternalParameters:
     artemis_params: ArtemisParameters
     experiment_params: EXPERIMENT_TYPES
-    completeness: InternalParameterCompleteness
 
     def __init__(self, external_params: RawParameters = RawParameters()):
-        self.artemis_params = ArtemisParameters(
-            **external_params.artemis_params.to_dict()
-        )
+        self.artemis_params = ArtemisParameters(**external_params["artemis_params"])
         self.artemis_params.detector_params = DetectorParams(
             **self.artemis_params.detector_params
         )
@@ -163,9 +154,22 @@ class InternalParameters:
             *self.artemis_params.ispyb_params.position
         )
         self.experiment_params = EXPERIMENT_DICT[ArtemisParameters.experiment_type](
-            **external_params.experiment_params.to_dict()
+            **external_params["experiment_params"]
         )
-        self.completeness = self.check_completeness()
+
+    @staticmethod
+    def _transform_external_param_dict(external_dict: dict) -> dict:
+        internal_dict = copy.deepcopy(external_dict)
+
+        # Anything accessed here should be marked in the schema as required
+        internal_dict["artemis_params"]["detector_params"][
+            "exposure_time"
+        ] = external_dict["experiment_params"]["exposure_time"]
+        internal_dict["artemis_params"]["detector_params"][
+            "omega_start"
+        ] = external_dict["experiment_params"]["exposure_time"]
+
+        return internal_dict
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, InternalParameters):
@@ -175,9 +179,6 @@ class InternalParameters:
         if self.experiment_params != other.experiment_params:
             return False
         return True
-
-    def check_completeness(self) -> InternalParameterCompleteness:
-        return InternalParameterCompleteness.MINIMAL
 
     def expand(self) -> None:
         pass
