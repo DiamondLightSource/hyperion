@@ -10,9 +10,12 @@ from ophyd.sim import make_fake_device
 from artemis.devices.backlight import Backlight
 from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.oav.oav_calculations import (
+    camera_coordinates_to_xyz,
     check_x_within_bounds,
+    extract_coordinates_from_rotation_data,
     filter_rotation_data,
     find_midpoint,
+    find_widest_point_and_orthogonal_point,
     get_rotation_increment,
 )
 from artemis.devices.oav.oav_detector import OAV
@@ -333,3 +336,54 @@ def test_distance_from_beam_centre_to_motor_coords_returns_the_same_values_as_GD
 
     assert np.array_equal(np.around(results, decimals=5), expected_values)
 """
+
+
+@pytest.mark.parametrize(
+    "h,v,omega,expected_values",
+    [
+        (0.0, 0.0, 0.0, np.array([0.0, 0.0, 0.0])),
+        (10, -5, 90, np.array([-10, 3.062e-16, -5])),
+        (100, -50, 40, np.array([-100, 38.302, -32.139])),
+        (10, 100, -4, np.array([-10, -99.756, -6.976])),
+    ],
+)
+def test_distance_from_beam_centre_to_motor_coords_returns_the_same_values_as_GDA(
+    h, v, omega, expected_values, mock_parameters: OAVParameters
+):
+
+    mock_parameters.zoom = 5.0
+    mock_parameters.load_microns_per_pixel()
+    results = camera_coordinates_to_xyz(
+        h,
+        v,
+        omega,
+        mock_parameters.micronsPerXPixel,
+        mock_parameters.micronsPerYPixel,
+    )
+    expected_values = expected_values * 1e-3
+    expected_values[0] *= mock_parameters.micronsPerXPixel
+    expected_values[1] *= mock_parameters.micronsPerYPixel
+    expected_values[2] *= mock_parameters.micronsPerYPixel
+    expected_values = np.around(expected_values, decimals=3)
+
+    assert np.array_equal(np.around(results, decimals=3), expected_values)
+
+
+def test_find_widest_point_and_orthogonal_point():
+    x_positions = np.array([400, 450, 7, 500, 475, 412])
+    y_positions = np.array([500, 512, 518, 498, 486, 530])
+    widths = np.array([400, 450, 7, 500, 600, 400])
+    omegas = np.array([0, 30, 60, 90, 120, 180])
+    assert find_widest_point_and_orthogonal_point(
+        x_positions, y_positions, widths, omegas
+    ) == (4, 1)
+
+
+def test_extract_coordinates_from_rotation_data():
+    x_positions = np.array([400, 450, 7, 500, 475, 412])
+    y_positions = np.array([500, 512, 518, 498, 486, 530])
+    widths = np.array([400, 450, 7, 500, 600, 400])
+    omegas = np.array([0, 30, 60, 90, 120, 180])
+    assert extract_coordinates_from_rotation_data(
+        x_positions, y_positions, widths, omegas
+    ) == (475, 486, 512, 120, 30)
