@@ -11,9 +11,6 @@ from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
-from artemis.external_interaction.callbacks.fgs.logging_callback import (
-    VerbosePlanExecutionLoggingCallback,
-)
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.parameters import (
@@ -29,12 +26,7 @@ def test_callback_collection_init():
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     assert callbacks.ispyb_handler.params == FullParameters()
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
-    assert len(callbacks.get_list()) == 3
-    callbacks = FGSCallbackCollection.from_params(
-        FullParameters(), verbose_event_logging=True
-    )
-    assert len(callbacks.get_list()) == 4
-    assert isinstance(callbacks.event_logger, VerbosePlanExecutionLoggingCallback)
+    assert len(list(callbacks)) == 3
 
 
 def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
@@ -65,9 +57,9 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
         callbacks.ispyb_handler,
         callbacks.zocalo_handler,
     ]
-    assert callbacklist_right_order == callbacks.get_list()
+    assert callbacklist_right_order == list(callbacks)
 
-    @bpp.subs_decorator(callbacks.get_list())
+    @bpp.subs_decorator(list(callbacks))
     @bpp.run_decorator()
     def fake_plan():
         yield from bps.create(ISPYB_PLAN_NAME)
@@ -88,7 +80,7 @@ def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
         callbacks.zocalo_handler,
         callbacks.ispyb_handler,
     ]
-    assert callbacklist_wrong_order != callbacks.get_list()
+    assert callbacklist_wrong_order != list(callbacks)
     assert callbacks.ispyb_handler.ispyb_ids == (None, None, None)
 
     @bpp.subs_decorator(callbacklist_wrong_order)

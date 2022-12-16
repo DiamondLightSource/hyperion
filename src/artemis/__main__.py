@@ -14,7 +14,10 @@ from flask_restful import Api, Resource
 
 import artemis.log
 from artemis.exceptions import WarningException
-from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.external_interaction.callbacks import (
+    FGSCallbackCollection,
+    VerbosePlanExecutionLoggingCallback,
+)
 from artemis.fast_grid_scan_plan import get_plan
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER
@@ -62,12 +65,12 @@ class BlueskyRunner:
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
+        if VERBOSE_EVENT_LOGGING:
+            RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
     def start(self, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-        self.callbacks = FGSCallbackCollection.from_params(
-            parameters, VERBOSE_EVENT_LOGGING
-        )
+        self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
