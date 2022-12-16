@@ -138,7 +138,7 @@ def run_gridscan_and_move(
 
     # our callbacks should listen to documents only from the actual grid scan
     # so we subscribe to them with our plan
-    @bpp.subs_decorator(subscriptions.get_list())
+    @bpp.subs_decorator(list(subscriptions))
     def gridscan_with_subscriptions(fgs_composite, detector, params):
         yield from run_gridscan(fgs_composite, detector, params)
 
