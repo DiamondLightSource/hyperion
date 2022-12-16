@@ -6,6 +6,7 @@ from bluesky.run_engine import RunEngine
 
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.fast_grid_scan_plan import get_plan, read_hardware_for_ispyb, run_gridscan
 from artemis.parameters import SIM_BEAMLINE, DetectorParams, FullParameters
 
@@ -59,10 +60,12 @@ def fgs_composite():
 
 
 @pytest.mark.s03
+@patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
 def test_run_gridscan(
+    wait_for_fgs_valid: MagicMock,
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
@@ -70,7 +73,7 @@ def test_run_gridscan(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-
+    eiger.unstage = lambda: True
     fgs_composite.wait_for_connection()
     # Would be better to use get_plan instead but eiger doesn't work well in S03
     RE(run_gridscan(fgs_composite, eiger, params))
@@ -99,13 +102,11 @@ def test_read_hardware_for_ispyb(
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
-@patch("artemis.fgs_communicator.FGSCommunicator")
 @patch("artemis.fast_grid_scan_plan.tidy_up_plans")
 @patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
 def test_full_plan_tidies_at_end(
     run_gridscan_and_move: MagicMock,
     tidy_plans: MagicMock,
-    communicator: MagicMock,
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
@@ -113,8 +114,8 @@ def test_full_plan_tidies_at_end(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-
-    RE(get_plan(params, communicator))
+    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    RE(get_plan(params, callbacks))
     tidy_plans.assert_called_once()
 
 
@@ -122,13 +123,11 @@ def test_full_plan_tidies_at_end(
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
-@patch("artemis.fgs_communicator.FGSCommunicator")
 @patch("artemis.fast_grid_scan_plan.tidy_up_plans")
 @patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
 def test_full_plan_tidies_at_end_when_plan_fails(
     run_gridscan_and_move: MagicMock,
     tidy_plans: MagicMock,
-    communicator: MagicMock,
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
@@ -136,7 +135,8 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
+    callbacks = FGSCallbackCollection.from_params(FullParameters())
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
-        RE(get_plan(params, communicator))
+        RE(get_plan(params, callbacks))
     tidy_plans.assert_called_once()
