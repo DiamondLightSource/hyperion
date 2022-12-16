@@ -305,39 +305,6 @@ def test_keep_x_within_bounds(max_tip_distance, tip_x, x, expected_return):
     assert check_x_within_bounds(max_tip_distance, tip_x, x) == expected_return
 
 
-"""
-@pytest.mark.parametrize(
-    "h,v,omega,expected_values",
-    [
-        (0.0, 0.0, 0.0, np.array([0.0, 0.0, 0.0])),
-        (10, -5, 90, np.array([-10, 3.062e-16, -5])),
-        (100, -50, 40, np.array([-100, 38.302, -32.139])),
-        (10, 100, -4, np.array([-10, -99.756, -6.976])),
-    ],
-)
-def test_distance_from_beam_centre_to_motor_coords_returns_the_same_values_as_GDA(
-    h, v, omega, expected_values, mock_parameters: OAVParameters
-):
-
-    mock_parameters.zoom = 5.0
-    mock_parameters.load_microns_per_pixel()
-    results = camera_coordinates_to_xyz(
-        h,
-        v,
-        omega,
-        mock_parameters.micronsPerXPixel,
-        mock_parameters.micronsPerYPixel,
-    )
-    expected_values = expected_values * 1e-3
-    expected_values[0] /= mock_parameters.micronsPerXPixel
-    expected_values[1] /= mock_parameters.micronsPerYPixel
-    expected_values[2] /= mock_parameters.micronsPerYPixel
-    expected_values = np.around(expected_values, decimals=5)
-
-    assert np.array_equal(np.around(results, decimals=5), expected_values)
-"""
-
-
 @pytest.mark.parametrize(
     "h,v,omega,expected_values",
     [
