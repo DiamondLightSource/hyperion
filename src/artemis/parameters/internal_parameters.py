@@ -1,5 +1,3 @@
-import copy
-
 from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
@@ -64,6 +62,7 @@ class ArtemisParameters:
 class InternalParameters:
     artemis_params: ArtemisParameters
     experiment_params: EXPERIMENT_TYPES
+    fully_initialised: bool = False
 
     def __init__(self, external_params: RawParameters = RawParameters()):
         self.artemis_params = ArtemisParameters(**external_params["artemis_params"])
@@ -87,20 +86,22 @@ class InternalParameters:
         self.experiment_params = EXPERIMENT_DICT[ArtemisParameters.experiment_type](
             **external_params["experiment_params"]
         )
+        detector_params_args["num_images"] = self.experiment_params.get_num_images()
 
-    @staticmethod
-    def _transform_external_param_dict(external_dict: dict) -> dict:
-        internal_dict = copy.deepcopy(external_dict)
+        self.artemis_params.detector_params = DetectorParams(**detector_params_args)
+        self.artemis_params.detector_params.detector_size_constants = (
+            constants_from_type(
+                self.artemis_params.detector_params.detector_size_constants
+            )
+        )
 
-        # Anything accessed here should be marked in the schema as required
-        internal_dict["artemis_params"]["detector_params"][
-            "exposure_time"
-        ] = external_dict["experiment_params"]["exposure_time"]
-        internal_dict["artemis_params"]["detector_params"][
-            "omega_start"
-        ] = external_dict["experiment_params"]["exposure_time"]
+    def check_fully_initialised(self) -> bool:
+        self.fully_initialised = (
+            self.artemis_params.detector_params.check_fully_initialised()
+            & self.artemis_params.ispyb_params.check_fully_initialised()
+        )
 
-        return internal_dict
+        return self.fully_initialised
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, InternalParameters):
@@ -110,9 +111,6 @@ class InternalParameters:
         if self.experiment_params != other.experiment_params:
             return False
         return True
-
-    def expand(self) -> None:
-        pass
 
     @classmethod
     def from_external_json(cls, json_data):

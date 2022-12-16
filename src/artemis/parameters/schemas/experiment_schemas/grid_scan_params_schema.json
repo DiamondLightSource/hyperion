@@ -2,13 +2,31 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "type": "object",
     "properties": {
+        "directory": {
+            "type": "string"
+        },
+        "prefix": {
+            "type": "string"
+        },
+        "run_number": {
+            "type": "number"
+        },
+        "transmission": {
+            "type": "number"
+        },
+        "flux": {
+            "type": "number"
+        },
+        "wavelength": {
+            "type": "number"
+        },
         "exposure_time": {
             "type": "number"
         },
         "omega_start": {
             "type": "number"
         },
-        "angle_increment": {
+        "omega_increment": {
             "type": "number"
         },
         "x_steps": {
@@ -48,5 +66,21 @@
             "type": "number"
         }
     },
-    "minProperties": 12
+    "required": [
+        "directory",
+        "prefix",
+        "run_number",
+        "x_steps",
+        "y_steps",
+        "z_steps",
+        "x_step_size",
+        "y_step_size",
+        "z_step_size",
+        "dwell_time",
+        "x_start",
+        "y1_start",
+        "y2_start",
+        "z1_start",
+        "z2_start"
+    ]
 }

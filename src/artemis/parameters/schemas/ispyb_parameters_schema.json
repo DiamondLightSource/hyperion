@@ -5,12 +5,6 @@
         "visit_path": {
             "type": "string"
         },
-        "pixels_per_micron_x": {
-            "type": "number"
-        },
-        "pixels_per_micron_y": {
-            "type": "number"
-        },
         "upper_left": {
             "oneOf": [
                 {
@@ -98,40 +92,23 @@
             "items": {
                 "type": "string"
             }
-        },
-        "transmission": {
-            "type": "number"
-        },
-        "flux": {
-            "type": "number"
-        },
-        "wavelength": {
-            "type": "number"
-        },
-        "beam_size_x": {
-            "type": "number"
-        },
-        "beam_size_y": {
-            "type": "number"
-        },
-        "slit_gap_size_x": {
-            "type": "number"
-        },
-        "slit_gap_size_y": {
-            "type": "number"
-        },
-        "focal_spot_size_x": {
-            "type": "number"
-        },
-        "focal_spot_size_y": {
-            "type": "number"
-        },
-        "comment": {
-            "type": "string"
-        },
-        "resolution": {
-            "type": "number"
         }
     },
-    "minProperties": 19
+    "dependencies": {
+        "xtal_snapshots": [
+            "xtal_snapshots_omega_start",
+            "xtal_snapshots_omega_end"
+        ],
+        "xtal_snapshots_omega_start": [
+            "xtal_snapshots",
+            "xtal_snapshots_omega_end"
+        ],
+        "xtal_snapshots_omega_end": [
+            "xtal_snapshots",
+            "xtal_snapshots_omega_start"
+        ]
+    },
+    "required": [
+        "visit_path"
+    ]
 }
