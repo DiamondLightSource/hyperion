@@ -2,6 +2,7 @@ from ophyd import Component as Cpt
 from ophyd import EpicsMotor, EpicsSignal
 from ophyd.epics_motor import MotorBundle
 
+from artemis.devices.fast_grid_scan import FastGridScan
 from artemis.devices.motors import MotorLimitHelper, XYZLimitBundle
 
 
@@ -23,6 +24,8 @@ class I03Smargon(MotorBundle):
     stub_offset_set: EpicsSignal = Cpt(EpicsSignal, "-MO-SGON-01:SET_STUBS_TO_RL.PROC")
     """Stub offsets are calibration values that are required to move between calibration
     pin position and spine pins. These are set in EPICS and applied via the proc."""
+
+    fast_grid_scan: FastGridScan = Cpt(FastGridScan, "-MO-SGON-01:FGS:")
 
     real_x1: EpicsMotor = Cpt(EpicsMotor, "-MO-SGON-01:MOTOR_3")
     real_x2: EpicsMotor = Cpt(EpicsMotor, "-MO-SGON-01:MOTOR_4")
