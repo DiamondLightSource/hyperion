@@ -32,7 +32,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
         self.descriptors: Dict[str, dict] = {}
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
         if ispyb_config == SIM_ISPYB_CONFIG:
-            LOGGER.warn(
+            LOGGER.warning(
                 "Using dev ISPyB database. If you want to use the real database, please"
                 " set the ISPYB_CONFIG_PATH environment variable."
             )

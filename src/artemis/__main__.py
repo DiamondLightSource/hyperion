@@ -177,16 +177,20 @@ def cli_arg_parse() -> Tuple[Optional[bool], Optional[str]]:
 
 
 if __name__ == "__main__":
-    args = cli_arg_parse()
-    artemis.log.set_up_logging_handlers(*args)
+    artemis_port = 5005
+    logging_level, dev_mode = cli_arg_parse()
+    artemis.log.set_up_logging_handlers(logging_level, dev_mode)
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
-            host="0.0.0.0", port=5005, debug=True, use_reloader=False
+            host="0.0.0.0", port=artemis_port, debug=True, use_reloader=False
         ),
         daemon=True,
     )
     flask_thread.start()
+    artemis.log.LOGGER.info(
+        f"Artemis now listening on {artemis_port} ({'IN DEV' if dev_mode else ''})"
+    )
     runner.wait_on_queue()
     flask_thread.join()
