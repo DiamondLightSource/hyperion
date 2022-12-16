@@ -35,21 +35,36 @@ class IspybParams:
     transmission: float
     flux: float
     wavelength: float
-    beam_size_x: float
-    beam_size_y: float
-    focal_spot_size_x: float
-    focal_spot_size_y: float
-    comment: str
     resolution: float
 
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
 
     # Optional from GDA as populated by Ophyd
+
+    comment: Optional[str] = ""
     undulator_gap: Optional[float] = None
     synchrotron_mode: Optional[str] = None
     slit_gap_size_x: Optional[float] = None
     slit_gap_size_y: Optional[float] = None
+    beam_size_x: Optional[float] = None
+    beam_size_y: Optional[float] = None
+    focal_spot_size_x: Optional[float] = None
+    focal_spot_size_y: Optional[float] = None
+
+    def check_fully_initialised(self) -> bool:
+        self.fully_initialised = (
+            (self.undulator_gap is not None)
+            & (self.synchrotron_mode is not None)
+            & (self.slit_gap_size_x is not None)
+            & (self.slit_gap_size_y is not None)
+            & (self.beam_size_x is not None)
+            & (self.beam_size_y is not None)
+            & (self.focal_spot_size_x is not None)
+            & (self.focal_spot_size_y is not None)
+        )
+
+        return self.fully_initialised
 
 
 class Orientation(Enum):

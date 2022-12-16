@@ -18,7 +18,7 @@ class RawParameters:
         if params is None:
             self.params = self.from_file(
                 "src/artemis/parameters/tests/test_data/good_test_parameters_minimal.json"
-            )
+            ).params
         else:
             self.params = copy.deepcopy(params)
 
@@ -28,6 +28,9 @@ class RawParameters:
         if self.params != other.params:
             return False
         return True
+
+    def __getitem__(self, item):
+        return self.params.get(item)
 
     def to_dict(self) -> dict[str, dict]:
         return self.params

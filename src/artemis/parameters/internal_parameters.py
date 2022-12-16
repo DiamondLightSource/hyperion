@@ -1,5 +1,3 @@
-import copy
-
 from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
@@ -104,6 +102,7 @@ class ArtemisParameters:
             slit_gap_size_x=0.1,
             slit_gap_size_y=0.1,
         ),
+        **kwargs
     ) -> None:
         self.zocalo_environment = zocalo_environment
         self.beamline = beamline
@@ -133,20 +132,33 @@ class ArtemisParameters:
 class InternalParameters:
     artemis_params: ArtemisParameters
     experiment_params: EXPERIMENT_TYPES
+    fully_initialised: bool = False
 
     def __init__(self, external_params: RawParameters = RawParameters()):
-        self.artemis_params = ArtemisParameters(**external_params["artemis_params"])
-        self.artemis_params.detector_params = DetectorParams(
-            **self.artemis_params.detector_params
+        all_params_bucket = {
+            **(external_params["artemis_params"]["ispyb_params"]),
+            **(external_params["artemis_params"]["detector_params"]),
+            **(external_params["experiment_params"]),
+        }
+        detector_field_keys = DetectorParams.__annotations__.keys()
+        ispyb_field_keys = IspybParams.__annotations__.keys()
+
+        detector_params_args = {
+            key: all_params_bucket.get(key)
+            for key in detector_field_keys
+            if all_params_bucket.get(key) is not None
+        }
+        ispyb_params_args = {
+            key: all_params_bucket.get(key)
+            for key in ispyb_field_keys
+            if all_params_bucket.get(key) is not None
+        }
+
+        self.artemis_params = ArtemisParameters(
+            **external_params.params["artemis_params"]
         )
-        self.artemis_params.detector_params.detector_size_constants = (
-            constants_from_type(
-                self.artemis_params.detector_params.detector_size_constants
-            )
-        )
-        self.artemis_params.ispyb_params = IspybParams(
-            **self.artemis_params.ispyb_params
-        )
+
+        self.artemis_params.ispyb_params = IspybParams(**ispyb_params_args)
         self.artemis_params.ispyb_params.upper_left = Point3D(
             *self.artemis_params.ispyb_params.upper_left
         )
@@ -156,20 +168,22 @@ class InternalParameters:
         self.experiment_params = EXPERIMENT_DICT[ArtemisParameters.experiment_type](
             **external_params["experiment_params"]
         )
+        detector_params_args["num_images"] = self.experiment_params.get_num_images()
 
-    @staticmethod
-    def _transform_external_param_dict(external_dict: dict) -> dict:
-        internal_dict = copy.deepcopy(external_dict)
+        self.artemis_params.detector_params = DetectorParams(**detector_params_args)
+        self.artemis_params.detector_params.detector_size_constants = (
+            constants_from_type(
+                self.artemis_params.detector_params.detector_size_constants
+            )
+        )
 
-        # Anything accessed here should be marked in the schema as required
-        internal_dict["artemis_params"]["detector_params"][
-            "exposure_time"
-        ] = external_dict["experiment_params"]["exposure_time"]
-        internal_dict["artemis_params"]["detector_params"][
-            "omega_start"
-        ] = external_dict["experiment_params"]["exposure_time"]
+    def check_fully_initialised(self) -> bool:
+        self.fully_initialised = (
+            self.artemis_params.detector_params.check_fully_initialised()
+            & self.artemis_params.ispyb_params.check_fully_initialised()
+        )
 
-        return internal_dict
+        return self.fully_initialised
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, InternalParameters):
@@ -179,9 +193,6 @@ class InternalParameters:
         if self.experiment_params != other.experiment_params:
             return False
         return True
-
-    def expand(self) -> None:
-        pass
 
     @classmethod
     def from_external_json(cls, json_data):
