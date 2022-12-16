@@ -103,11 +103,11 @@ def test_read_hardware_for_ispyb(
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
-@patch("artemis.fast_grid_scan_plan.tidy_up_plans")
 @patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
+@patch("artemis.fast_grid_scan_plan.set_zebra_shutter_to_manual")
 def test_full_plan_tidies_at_end(
+    set_shutter_to_manual: MagicMock,
     run_gridscan_and_move: MagicMock,
-    tidy_plans: MagicMock,
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
@@ -117,18 +117,18 @@ def test_full_plan_tidies_at_end(
 ):
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     RE(get_plan(params, callbacks))
-    tidy_plans.assert_called_once()
+    set_shutter_to_manual.assert_called_once()
 
 
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
-@patch("artemis.fast_grid_scan_plan.tidy_up_plans")
 @patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
+@patch("artemis.fast_grid_scan_plan.set_zebra_shutter_to_manual")
 def test_full_plan_tidies_at_end_when_plan_fails(
+    set_shutter_to_manual: MagicMock,
     run_gridscan_and_move: MagicMock,
-    tidy_plans: MagicMock,
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
@@ -140,4 +140,5 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))
-    tidy_plans.assert_called_once()
+    set_shutter_to_manual.assert_called_once()
+    # tidy_plans.assert_called_once()
