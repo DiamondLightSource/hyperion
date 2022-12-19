@@ -65,6 +65,15 @@ class TestData:
         "plan_type": "generator",
         "plan_name": "run_gridscan_and_move",
     }
+    test_start_run_gridscan_document: dict = {
+        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+        "scan_id": 1,
+        "plan_type": "generator",
+        "plan_name": "run_gridscan_and_move",
+        "subplan_name": "run_gridscan",
+    }
     test_descriptor_document: dict = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -92,6 +101,15 @@ class TestData:
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
     }
+    test_run_gridscan_stop_document: dict = {
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604300.0310638,
+        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+        "exit_status": "success",
+        "reason": "",
+        "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        "subplan_name": "run_gridscan",
+    }
     test_failed_stop_document: dict = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604300.0310638,
@@ -99,4 +117,13 @@ class TestData:
         "exit_status": "fail",
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
+    }
+    test_run_gridscan_failed_stop_document: dict = {
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604300.0310638,
+        "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
+        "exit_status": "fail",
+        "reason": "could not connect to devices",
+        "num_events": {"fake_ispyb_params": 1, "primary": 1},
+        "subplan_name": "run_gridscan",
     }
