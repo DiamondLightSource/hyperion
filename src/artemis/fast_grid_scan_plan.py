@@ -109,7 +109,9 @@ def run_gridscan(
 
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
+    yield from bps.create(name="scan_valid")
     yield from wait_for_fgs_valid(fgs_motors)
+    yield from bps.save()
 
     @bpp.stage_decorator([zebra, eiger, fgs_motors])
     def do_fgs():
@@ -142,8 +144,12 @@ def run_gridscan_and_move(
     def gridscan_with_subscriptions(fgs_composite, detector, params):
         yield from run_gridscan(fgs_composite, detector, params)
 
-    artemis.log.LOGGER.debug("Starting grid scan")
+    artemis.log.LOGGER.info("Starting grid scan")
     yield from gridscan_with_subscriptions(fgs_composite, eiger, parameters)
+
+    bps.create()
+    yield from wait_for_fgs_valid(fgs_composite.fast_grid_scan)
+    bps.save()
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
