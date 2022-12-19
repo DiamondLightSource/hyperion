@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 from artemis.devices.eiger import DetectorParams, EigerDetector
@@ -16,6 +15,8 @@ def eiger():
         omega_increment=0.1,
         num_images=50,
         use_roi_mode=False,
+        run_number=0,
+        det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
     )
     eiger = EigerDetector(
         detector_params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
@@ -30,20 +31,10 @@ def eiger():
     yield eiger
 
 
+@pytest.mark.skip(reason="Eiger/odin is broken in S03")
 @pytest.mark.s03
 def test_can_stage_and_unstage_eiger(eiger: EigerDetector):
-    times_id_has_changed = 0
-
-    def file_writer_id_monitor(*_, **kwargs):
-        nonlocal times_id_has_changed
-        if not np.array_equal(kwargs["old_value"], kwargs["value"]):
-            times_id_has_changed += 1
-
-    eiger.odin.file_writer.id.subscribe(file_writer_id_monitor)
     eiger.stage()
-    assert (
-        times_id_has_changed == 2
-    )  # Once for initial connection and once for changing the value
     assert eiger.cam.acquire.get() == 1
     # S03 filewriters stay in error
     eiger.odin.check_odin_initialised = lambda: (True, "")

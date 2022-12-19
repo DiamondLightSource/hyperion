@@ -1,0 +1,45 @@
+name: Resuable workflow to get an issue from a PR
+on:
+  workflow_call:
+    inputs:
+      pr_id:
+        required: true
+        type: string     
+    secrets:
+      GHPROJECT_TOKEN:
+        required: true
+    outputs:
+      issue_from_pr:
+        description: "The issue that the PR relates to"
+        value: ${{ jobs.get_issue_from_pr.outputs.job_issue_id }}
+
+jobs:
+  get_issue_from_pr:
+    name: Get issue from PR
+    runs-on: ubuntu-latest
+    # Map the job outputs to step outputs
+    outputs:
+      job_issue_id: ${{ steps.get_issue.outputs.step_issue_id }}
+    steps:
+      - id: get_issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
+          ORGANIZATION: ${{ github.repository_owner }}
+          REPO_ORG_NAME: ${{ github.repository }} # Contains the repo_name in format org/repo_name
+        run: |
+          gh api graphql -f query='
+            query($org: String!, $repo: String!){
+              repository(owner: $org, name: $repo) {
+                pullRequest(number: ${{ inputs.pr_id }}) {
+                  closingIssuesReferences(first: 1) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f org=$ORGANIZATION -F repo=${REPO_ORG_NAME##*/} > project_data.json
+
+          echo 'step_issue_id='$(jq '.data.repository.pullRequest.closingIssuesReferences.edges[0].node.id' project_data.json) >> $GITHUB_OUTPUT

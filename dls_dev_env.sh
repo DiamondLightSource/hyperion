@@ -5,15 +5,16 @@ module unload controls_dev
 
 module load python/3.10
 
-if [[ -d "./.venv" ]]
+if [ -d "./.venv" ]
 then
-    pipenv --rm
+rm -rf .venv
 fi
-
 mkdir .venv
 
-pipenv install --dev
+python -m venv .venv
+# get dlstbx into our env
+ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ .venv/lib/python3.10/site-packages/dlstbx
+source .venv/bin/activate
+pip install -e .[dev]
 
-pipenv run pre-commit install
-
-pipenv run tests
+pytest -m "not s03"

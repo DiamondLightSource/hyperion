@@ -18,13 +18,14 @@ Starting the bluesky runner
 -------------------------
 You can start the bluesky runner by doing the following:
 ```
-pipenv run artemis
+source .venv/bin/activate
+python -m artemis
 ```
 The default behaviour of which is to run artemis with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/artemis.txt on the shared file system. 
 
 To run locally in a dev environment use
 ```
-pipenv run artemis --dev
+python -m artemis --dev
 ```
 This will log to a local graylog instance instead and into a file at `./tmp/dev/artemis.txt`. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
 
@@ -32,10 +33,21 @@ This uses the generic defaults for a local graylog instance. It can be accessed 
 
 The logging level of artemis can be selected with the flag
 ```
-pipenv run artemis --dev --logging-level DEBUG
+python -m artemis --dev --logging-level DEBUG
 ```
 
 **DO NOT** run artemis at DEBUG level on production (without the --dev flag). This will flood graylog with messages and make people very grumpy.
+
+Testing
+--------------
+To be able to run the system tests, or a complete fake scan, we need the simulated S03 beamline. This can be found at: https://gitlab.diamond.ac.uk/controls/python3/s03_utils
+
+To fake interaction and processing with Zocalo, you can run `fake_zocalo/dls_start_fake_zocalo.sh`, and make sure to run `module load dials/latest` before starting artemis (in the same terminal).
+
+Tracing
+--------------
+
+Tracing information (the time taken to complete different steps of experiments) is collected by an [OpenTelemetry](https://opentelemetry.io/) tracer, and currently we export this information to a local Jaeger monitor (if available). To see the tracing output, run the [Jaeger all-in-one container](https://www.jaegertracing.io/docs/1.6/getting-started/), and go to the web interface at http://localhost:16686. 
 
 
 Starting a scan
@@ -43,7 +55,7 @@ Starting a scan
 
 To start a scan you can do the following:
 ```
-curl -X PUT http://127.0.0.1:5000/fast_grid_scan/start --data-binary "@test_parameters.json" -H "Content-Type: application/json"
+curl -X PUT http://127.0.0.1:5005/fast_grid_scan/start --data-binary "@test_parameters.json" -H "Content-Type: application/json"
 ```
 
 Getting the Runner Status
@@ -51,7 +63,7 @@ Getting the Runner Status
 
 To get the status of the runner:
 ```
-curl http://127.0.0.1:5000/fast_grid_scan/status
+curl http://127.0.0.1:5005/fast_grid_scan/status
 ```
 
 Stopping the Scan
@@ -59,11 +71,7 @@ Stopping the Scan
 
 To stop a scan that is currently running:
 ```
-curl -X PUT http://127.0.0.1:5000/fast_grid_scan/stop
+curl -X PUT http://127.0.0.1:5005/fast_grid_scan/stop
 
 ```
 
-
-System tests
-============
-Currently to run against s03 the flask app port needs to be changed as the eiger control uses 5000 and this interferes (it also uses 5001 and 5002).

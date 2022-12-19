@@ -16,8 +16,14 @@
         "--profile",
         "black"
     ],
-    "python.pythonPath": ".venv/bin/python",
-    "[python]": {"editor.rulers": [88]},
-    // Make the terminal more responsive:
+    "python.defaultInterpreterPath": ".venv/bin/python",
+    "[python]": {
+        "editor.rulers": [
+            88
+        ]
+    },
     "terminal.integrated.gpuAcceleration": "off",
+    "window.zoomLevel": 1.25,
+    "editor.fontSize": 12,
+    "terminal.integrated.fontSize": 12,
 }

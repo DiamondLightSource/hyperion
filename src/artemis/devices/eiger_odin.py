@@ -1,6 +1,13 @@
 from typing import List, Tuple
 
-from ophyd import Component, Device, EpicsSignal, EpicsSignalRO, EpicsSignalWithRBV
+from ophyd import (
+    Component,
+    Device,
+    EpicsSignal,
+    EpicsSignalRO,
+    EpicsSignalWithRBV,
+    StatusBase,
+)
 from ophyd.areadetector.plugins import HDF5Plugin_V22
 
 from artemis.devices.status import await_value
@@ -22,12 +29,14 @@ class EigerFan(Device):
 class OdinMetaListener(Device):
     initialised: EpicsSignalRO = Component(EpicsSignalRO, "ProcessConnected_RBV")
     ready: EpicsSignalRO = Component(EpicsSignalRO, "Writing_RBV")
-    file_name: EpicsSignal = Component(EpicsSignal, "FileName")
+    # file_name should not be set. Set the filewriter file_name and this will be updated in EPICS
+    file_name: EpicsSignalRO = Component(EpicsSignalRO, "FileName", string=True)
 
 
 class OdinFileWriter(HDF5Plugin_V22):
-    timeout: EpicsSignal = Component(EpicsSignal, "StartTimeout")
-    id: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "AcquisitionID")
+    start_timeout: EpicsSignal = Component(EpicsSignal, "StartTimeout")
+    # id should not be set. Set the filewriter file_name and this will be updated in EPICS
+    id: EpicsSignalRO = Component(EpicsSignalRO, "AcquisitionID_RBV", string=True)
     image_height: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageHeight")
     image_width: EpicsSignalWithRBV = Component(EpicsSignalWithRBV, "ImageWidth")
 
@@ -40,7 +49,9 @@ class OdinNode(Device):
     fp_initialised: EpicsSignalRO = Component(EpicsSignalRO, "FPProcessConnected_RBV")
     fr_initialised: EpicsSignalRO = Component(EpicsSignalRO, "FRProcessConnected_RBV")
     clear_errors: EpicsSignal = Component(EpicsSignal, "FPClearErrors")
-    error_message: EpicsSignalRO = Component(EpicsSignalRO, "FPErrorMessage_RBV")
+    error_message: EpicsSignalRO = Component(
+        EpicsSignalRO, "FPErrorMessage_RBV", string=True
+    )
 
 
 class OdinNodesStatus(Device):
@@ -52,11 +63,6 @@ class OdinNodesStatus(Device):
     @property
     def nodes(self) -> List[OdinNode]:
         return [self.node_0, self.node_1, self.node_2, self.node_3]
-
-    def wait_for_filewriters_to_finish(self):
-        for node_number, node_pv in enumerate(self.nodes):
-            if node_pv.writing.get():
-                await_value(node_pv.writing, 0).wait(30)
 
     def check_node_frames_from_attr(
         self, node_get_func, error_message_verb: str
@@ -113,6 +119,12 @@ class EigerOdin(Device):
     file_writer: OdinFileWriter = Component(OdinFileWriter, "OD:")
     meta: OdinMetaListener = Component(OdinMetaListener, "OD:META:")
     nodes: OdinNodesStatus = Component(OdinNodesStatus, "")
+
+    def create_finished_status(self) -> StatusBase:
+        writing_finished = await_value(self.meta.ready, 0)
+        for node_pv in self.nodes.nodes:
+            writing_finished &= await_value(node_pv.writing, 0)
+        return writing_finished
 
     def check_odin_state(self) -> bool:
         is_initialised, error_message = self.check_odin_initialised()

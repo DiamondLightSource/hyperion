@@ -90,13 +90,11 @@ class OAVParameters:
         contains a parameter, if it does we return it, if not we return the global value. If a parameter
         is not found at all then the passed in fallback_value is returned. If that isn't found then an
         error is raised.
-
         Args:
             key: the key of the value being extracted
             fallback_value: a value to be returned if the key is not found
             reload_json: reload the json from the file before searching for it, needed because some
                 parameters can change mid operation.
-
         Returns: The extracted value corresponding to the key, or the fallback_value if none is found.
         """
 

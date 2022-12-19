@@ -1,6 +1,8 @@
 import pytest
+from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
-from mockito import mock, unstub, verify, when
+from mockito import mock, verify, when
 from mockito.matchers import ANY, ARGS, KWARGS
 from ophyd.sim import make_fake_device
 
@@ -8,7 +10,6 @@ from artemis.devices.fast_grid_scan import (
     FastGridScan,
     GridScanParams,
     set_fast_grid_scan_params,
-    time,
 )
 from artemis.devices.I03Smargon import I03Smargon
 from artemis.utils import Point3D
@@ -20,33 +21,7 @@ def fast_grid_scan():
     fast_grid_scan: FastGridScan = FakeFastGridScan(name="test")
     fast_grid_scan.scan_invalid.pvname = ""
 
-    # A bit of a hack to assume that if we are waiting on something then we will timeout
-    when(time).sleep(ANY).thenRaise(TimeoutError())
     yield fast_grid_scan
-    # Need to unstub as sleep raising a TimeoutError can cause a segfault on the destruction of FastGridScan
-    unstub()
-
-
-def test_given_invalid_scan_when_kickoff_then_timeout(fast_grid_scan: FastGridScan):
-    when(fast_grid_scan.scan_invalid).get().thenReturn(True)
-    when(fast_grid_scan.position_counter).get().thenReturn(0)
-
-    status = fast_grid_scan.kickoff()
-
-    with pytest.raises(TimeoutError):
-        status.wait()
-
-
-def test_given_image_counter_not_reset_when_kickoff_then_timeout(
-    fast_grid_scan: FastGridScan,
-):
-    when(fast_grid_scan.scan_invalid).get().thenReturn(False)
-    when(fast_grid_scan.position_counter).get().thenReturn(10)
-
-    status = fast_grid_scan.kickoff()
-
-    with pytest.raises(TimeoutError):
-        status.wait()
 
 
 def test_given_settings_valid_when_kickoff_then_run_started(
@@ -345,3 +320,14 @@ def test_given_various_x_y_z_when_get_motor_positions_then_expected_positions_re
     assert motor_positions.x == expected_x
     assert motor_positions.y == expected_y
     assert motor_positions.z == expected_z
+
+
+def test_can_run_fast_grid_scan_in_run_engine(fast_grid_scan):
+    @bpp.run_decorator()
+    def kickoff_and_complete(device):
+        yield from bps.kickoff(device)
+        yield from bps.complete(device)
+
+    RE = RunEngine()
+    RE(kickoff_and_complete(fast_grid_scan))
+    assert RE.state == "idle"
