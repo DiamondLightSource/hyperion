@@ -33,7 +33,6 @@ class FGSNexusFileHandlerCallback(CallbackBase):
         self.run_gridscan_uid: Optional[str] = None
 
     def start(self, doc: dict):
-        LOGGER.info(f"\n\nNEXUS HANDLER RECIEVED START: {doc}\n\n")
         if doc.get("subplan_name") == "run_gridscan":
             self.run_gridscan_uid = doc.get("uid")
             LOGGER.info("Creating Nexus files.")
