@@ -195,7 +195,7 @@ def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
     fast_grid_scan_composite.wait_for_connection()
     artemis.log.LOGGER.debug("Connected.")
 
-    @bpp.finalize_decorator(tidy_up_plans(fast_grid_scan_composite))
+    @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
     def run_gridscan_and_move_and_tidy(fgs_composite, detector, params, comms):
         yield from run_gridscan_and_move(fgs_composite, detector, params, comms)
 
