@@ -97,13 +97,13 @@ class ZocaloInteractor:
             recipe_parameters = rw.recipe_step["parameters"]
             artemis.log.LOGGER.info(f"Recipe step parameters: {recipe_parameters}")
             transport.ack(header)
-            received_group_id = recipe_parameters["dcgid"]
+            received_group_id = str(recipe_parameters["dcgid"])
             if received_group_id == str(data_collection_group_id):
                 result_received.put(Point3D(*reversed(message[0]["centre_of_mass"])))
             else:
                 artemis.log.LOGGER.warning(
-                    f"Warning: results for {received_group_id} received but expected \
-                        {data_collection_group_id}"
+                    f"Warning: results for {received_group_id} received but expected "
+                    f"{data_collection_group_id}"
                 )
 
         workflows.recipe.wrap_subscribe(
