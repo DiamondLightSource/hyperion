@@ -16,7 +16,9 @@ from artemis.utils import Point3D
 
 class FGSZocaloCallback(CallbackBase):
     """Callback class to handle the triggering of Zocalo processing.
-    Listens for 'event' and 'stop' documents.
+    Sends zocalo a run_start signal on recieving a start document for the 'do_fgs'
+    sub-plan, and sends a run_end signal on recieving a stop document for the#
+    'run_gridscan' sub-plan.
 
     Needs to be connected to an ISPyBHandlerCallback subscribed to the same run in order
     to have access to the deposition numbers to pass on to Zocalo.

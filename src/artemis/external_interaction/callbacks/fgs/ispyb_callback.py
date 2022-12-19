@@ -14,7 +14,9 @@ from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
 
 class FGSISPyBHandlerCallback(CallbackBase):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
-    database. Listens for 'event' and 'descriptor' documents.
+    database. Listens for 'event' and 'descriptor' documents. Creates the Nexus files on
+    recieving an 'event' document for the 'ispyb_readings' event, and updates the
+    deposition on recieving a 'stop' document for the 'run_gridscan' sub_plan.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:

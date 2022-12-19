@@ -13,8 +13,9 @@ from artemis.parameters import FullParameters
 
 class FGSNexusFileHandlerCallback(CallbackBase):
     """Callback class to handle the creation of Nexus files based on experiment
-    parameters. Creates the Nexus files on recieving a 'start' document, and updates the
-    timestamps on recieving a 'stop' document.
+    parameters. Creates the Nexus files on recieving a 'start' document for the
+    'run_gridscan' sub plan, and updates the timestamps on recieving a 'stop' document
+    for the same.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
