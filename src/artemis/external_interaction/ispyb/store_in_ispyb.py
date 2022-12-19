@@ -25,7 +25,7 @@ class StoreInIspyb(ABC):
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
     def __init__(self, ispyb_config, parameters=None):
-        self.ISPYB_CONFIG_FILE = ispyb_config
+        self.ISPYB_CONFIG_PATH = ispyb_config
         self.full_params = parameters
         self.ispyb_params = None
         self.detector_params = None
@@ -38,7 +38,7 @@ class StoreInIspyb(ABC):
         self.y_step_size = None
 
         # reading from ispyb
-        url = ispyb.sqlalchemy.url(self.ISPYB_CONFIG_FILE)
+        url = ispyb.sqlalchemy.url(self.ISPYB_CONFIG_PATH)
         engine = create_engine(url, connect_args={"use_pure": True})
         self.Session = sessionmaker(engine)
 
@@ -95,7 +95,7 @@ class StoreInIspyb(ABC):
         self.y_steps = full_params.grid_scan_params.y_steps
         self.y_step_size = full_params.grid_scan_params.y_step_size
 
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
             self.core = self.conn.core
 
@@ -136,7 +136,7 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> int:
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
             params = self.mx_acquisition.get_data_collection_params()
             params["id"] = datacollection_id
