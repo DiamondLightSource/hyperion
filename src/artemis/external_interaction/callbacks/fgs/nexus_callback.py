@@ -43,7 +43,7 @@ class FGSNexusFileHandlerCallback(CallbackBase):
     def stop(self, doc: dict):
         if (
             self.run_gridscan_uid is not None
-            and doc.get("uid") == self.run_gridscan_uid
+            and doc.get("run_start") == self.run_gridscan_uid
         ):
             LOGGER.info("Updating Nexus file timestamps.")
             self.nxs_writer_1.update_nexus_file_timestamp()
