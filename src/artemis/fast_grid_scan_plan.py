@@ -121,7 +121,6 @@ def run_gridscan(
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
     def do_fgs():
-        # maybe this is the best place for zocalo to be triggered
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
