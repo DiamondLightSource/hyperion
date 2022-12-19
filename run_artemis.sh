@@ -146,8 +146,15 @@ if [[ $START == 1 ]]; then
     module load python/3.10
     module load dials
 
+    RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
+    cd ${RELATIVE_SCRIPT_DIR}
+
     source .venv/bin/activate
     python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` >/dev/null 2>&1 &
+
+    echo "Waiting for Artemis to boot"
+
+    curl --head -X GET --retry 5 --retry-connrefused --retry-delay 1 http://localhost:5005/fast_grid_scan/status >/dev/null 2>&1
 
     echo "Artemis started"
 fi
