@@ -116,8 +116,10 @@ class BlueskyRunner:
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except WarningException as exception:
+                    artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
                     self.current_status = StatusAndMessage(Status.WARN, str(exception))
                 except Exception as exception:
+                    artemis.log.LOGGER.error("Exception on running plan", exc_info=True)
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow
                         self.last_run_aborted = False
