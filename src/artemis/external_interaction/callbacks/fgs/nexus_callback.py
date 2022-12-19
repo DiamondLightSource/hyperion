@@ -1,3 +1,5 @@
+from typing import Optional
+
 from bluesky.callbacks import CallbackBase
 
 from artemis.external_interaction.nexus.write_nexus import (
@@ -28,13 +30,21 @@ class FGSNexusFileHandlerCallback(CallbackBase):
     def __init__(self, parameters: FullParameters):
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(parameters))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(parameters))
+        self.run_gridscan_uid: Optional[str] = None
 
     def start(self, doc: dict):
-        LOGGER.info("Creating Nexus files.")
-        self.nxs_writer_1.create_nexus_file()
-        self.nxs_writer_2.create_nexus_file()
+        LOGGER.info(f"\n\nNEXUS HANDLER RECIEVED START: {doc}\n\n")
+        if doc.get("subplan_name") == "run_gridscan":
+            self.run_gridscan_uid = doc.get("uid")
+            LOGGER.info("Creating Nexus files.")
+            self.nxs_writer_1.create_nexus_file()
+            self.nxs_writer_2.create_nexus_file()
 
     def stop(self, doc: dict):
-        LOGGER.info("Updating Nexus file timestamps.")
-        self.nxs_writer_1.update_nexus_file_timestamp()
-        self.nxs_writer_2.update_nexus_file_timestamp()
+        if (
+            self.run_gridscan_uid is not None
+            and doc.get("uid") == self.run_gridscan_uid
+        ):
+            LOGGER.info("Updating Nexus file timestamps.")
+            self.nxs_writer_1.update_nexus_file_timestamp()
+            self.nxs_writer_2.update_nexus_file_timestamp()

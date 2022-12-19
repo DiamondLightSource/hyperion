@@ -62,9 +62,10 @@ class FGSISPyBHandlerCallback(CallbackBase):
             self.ispyb_ids = self.ispyb.begin_deposition()
 
     def stop(self, doc: dict):
-        LOGGER.debug("ISPyB handler received stop document.")
-        exit_status = doc.get("exit_status")
-        reason = doc.get("reason")
-        if self.ispyb_ids == (None, None, None):
-            raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
-        self.ispyb.end_deposition(exit_status, reason)
+        if doc.get("subplan_name") == "run_gridscan":
+            LOGGER.debug("ISPyB handler received stop document.")
+            exit_status = doc.get("exit_status")
+            reason = doc.get("reason")
+            if self.ispyb_ids == (None, None, None):
+                raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
+            self.ispyb.end_deposition(exit_status, reason)
