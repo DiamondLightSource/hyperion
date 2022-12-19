@@ -24,7 +24,7 @@ def read_hardware_for_ispyb(
     synchrotron: Synchrotron,
     slit_gap: SlitGaps,
 ):
-    artemis.log.LOGGER.debug(
+    artemis.log.LOGGER.info(
         "Reading status of beamline parameters for ispyb deposition."
     )
     yield from bps.create(
@@ -37,7 +37,8 @@ def read_hardware_for_ispyb(
     yield from bps.save()
 
 
-@bpp.run_decorator()
+@bpp.set_run_key_decorator("move_xyz")
+@bpp.run_decorator(md={"subplan_name": "move_xyz"})
 def move_xyz(
     sample_motors,
     xray_centre_motor_position,
@@ -64,13 +65,17 @@ def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
     for _ in range(times_to_check):
         scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
         pos_counter = yield from bps.rd(fgs_motors.position_counter)
+        artemis.log.LOGGER.debug(
+            f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
+        )
         if not scan_invalid and pos_counter == 0:
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
     raise WarningException(f"Scan parameters invalid after {timeout} seconds")
 
 
-@bpp.run_decorator()
+@bpp.set_run_key_decorator("read_xyz_before_plan")
+@bpp.run_decorator(md={"subplan_name": "read_xyz_before_plan"})
 def get_xyz(sample_motors):
     return Point3D(
         (yield from bps.rd(sample_motors.x)),
@@ -79,7 +84,8 @@ def get_xyz(sample_motors):
     )
 
 
-@bpp.run_decorator()
+@bpp.set_run_key_decorator("run_gridscan")
+@bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
@@ -109,23 +115,29 @@ def run_gridscan(
 
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
-    yield from bps.create(name="scan_valid")
     yield from wait_for_fgs_valid(fgs_motors)
-    yield from bps.save()
 
-    @bpp.stage_decorator([zebra, eiger, fgs_motors])
+    @bpp.stage_decorator([zebra, fgs_motors])
+    @bpp.set_run_key_decorator("do_fgs")
+    @bpp.run_decorator(md={"subplan_name": "do_fgs"})
     def do_fgs():
+        # maybe this is the best place for zocalo to be triggered
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
     with TRACER.start_span("do_fgs"):
-        yield from do_fgs()
+        try:
+            yield from do_fgs()
+        except Exception as e:
+            artemis.log.LOGGER.info(e, exc_info=True)
 
     with TRACER.start_span("move_to_z_0"):
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
+@bpp.set_run_key_decorator("run_gridscan_and_move")
+@bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
@@ -147,9 +159,9 @@ def run_gridscan_and_move(
     artemis.log.LOGGER.info("Starting grid scan")
     yield from gridscan_with_subscriptions(fgs_composite, eiger, parameters)
 
-    bps.create()
-    yield from wait_for_fgs_valid(fgs_composite.fast_grid_scan)
-    bps.save()
+    # bps.create()
+    # yield from wait_for_fgs_valid(fgs_composite.fast_grid_scan)
+    # bps.save()
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
@@ -189,7 +201,11 @@ def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
     )
 
     artemis.log.LOGGER.info("Connecting to EPICS devices...")
-    fast_grid_scan_composite.wait_for_connection()
+    try:
+        fast_grid_scan_composite.wait_for_connection()
+    except Exception as e:
+        artemis.log.LOGGER.info(e, exc_info=True)
+
     artemis.log.LOGGER.info("Connected.")
 
     return run_gridscan_and_move(
