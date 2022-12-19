@@ -284,16 +284,6 @@ class NexusWriter:
                     start_index=self.start_index,
                 )
 
-                clean_unused_links(
-                    nxsfile,
-                    (
-                        self.full_num_of_images,
-                        self.detector["image_size"][0],
-                        self.detector["image_size"][1],
-                    ),
-                    start_index=self.start_index,
-                )
-
     def update_nexus_file_timestamp(self):
         """
         Write timestamp when finishing run.
@@ -306,5 +296,15 @@ class NexusWriter:
             with h5py.File(temp_filename, "r+") as nxsfile:
                 nxsfile["entry"].create_dataset(
                     "end_time", data=np.string_(self._get_current_time())
+                )
+            with h5py.File(temp_filename, "r+") as nxsfile:
+                clean_unused_links(
+                    nxsfile,
+                    (
+                        self.full_num_of_images,
+                        self.detector["image_size"][0],
+                        self.detector["image_size"][1],
+                    ),
+                    start_index=self.start_index,
                 )
             shutil.move(temp_filename, filename)
