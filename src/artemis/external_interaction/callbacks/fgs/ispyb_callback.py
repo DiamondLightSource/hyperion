@@ -47,7 +47,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
         self.descriptors[doc["uid"]] = doc
 
     def event(self, doc: dict):
-        LOGGER.debug(f"\n\nISPyB handler received event document:\n{doc}\n")
+        LOGGER.debug("ISPyB handler received event document.")
         event_descriptor = self.descriptors[doc["descriptor"]]
 
         if event_descriptor.get("name") == ISPYB_PLAN_NAME:
@@ -62,7 +62,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
             self.ispyb_ids = self.ispyb.begin_deposition()
 
     def stop(self, doc: dict):
-        LOGGER.debug(f"\n\nISPyB handler received stop document:\n\n {doc}\n")
+        LOGGER.debug("ISPyB handler received stop document.")
         exit_status = doc.get("exit_status")
         reason = doc.get("reason")
         if self.ispyb_ids == (None, None, None):

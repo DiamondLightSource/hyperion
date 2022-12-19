@@ -180,8 +180,8 @@ class StoreInIspyb(ABC):
             "Artemis: Xray centring - Diffraction grid scan of "
             f"{self.full_params.grid_scan_params.x_steps} by "
             f"{self.y_steps} images in "
-            f"{self.full_params.grid_scan_params.x_step_size} mm by "
-            f"{self.y_step_size} mm steps. "
+            f"{self.full_params.grid_scan_params.x_step_size*1e3} um by "
+            f"{self.y_step_size*1e3} um steps. "
             f"Top left (px): [{int(self.upper_left.x)},{int(self.upper_left.y)}], "
             f"bottom right (px): [{bottom_right.x},{bottom_right.y}]."
         )
