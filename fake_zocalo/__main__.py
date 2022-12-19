@@ -3,10 +3,14 @@ import os
 import time
 from pathlib import Path
 
+import ispyb.sqlalchemy
 import pika
 import yaml
+from ispyb.sqlalchemy import DataCollection
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import BasicProperties
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 def load_configuration_file(filename):
@@ -14,7 +18,26 @@ def load_configuration_file(filename):
     return conf
 
 
+def get_dcgid(dcid: int, Session) -> int:
+    try:
+        with Session() as session:
+            query = session.query(DataCollection).filter(
+                DataCollection.dataCollectionId == dcid
+            )
+            # print(query)
+            dcgid: int = query.first().dataCollectionGroupId
+    except Exception as e:
+        print("Exception occured when reading comment from ISPyB database:\n")
+        print(e)
+        dcgid = 0
+    return dcgid
+
+
 def main():
+    url = ispyb.sqlalchemy.url(os.environ.get("ISPYB_CONFIG_PATH"))
+    engine = create_engine(url, connect_args={"use_pure": True})
+    Session = sessionmaker(engine)
+
     config = load_configuration_file(
         os.path.expanduser("~/.zocalo/rabbitmq-credentials.yml")
     )
@@ -52,12 +75,20 @@ def main():
             return
         if message.get("parameters").get("event") == "end":
             print('Doing "processing"...')
+
+            dcid = message.get("parameters").get("ispyb_dcid")
+            print(f"getting dcgid for dcid {dcid} from ispyb:")
+            dcgid = get_dcgid(dcid, Session)
+            print(dcgid)
+
             time.sleep(3)
             print('Sending "results"...')
             resultprops = BasicProperties(
                 delivery_mode=2,
                 headers={"workflows-recipe": True, "x-delivery-count": 1},
             )
+            result["recipe"]["1"]["parameters"]["dcid"] = dcid
+            result["recipe"]["1"]["parameters"]["dcgid"] = dcgid
             result_chan = conn.channel()
             result_chan.basic_publish(
                 "results", "xrc.i03", json.dumps(result), resultprops
