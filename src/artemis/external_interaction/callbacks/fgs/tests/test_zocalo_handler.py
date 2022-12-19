@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock, call
 
-import pytest
-
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
@@ -44,12 +42,12 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
 
-    callbacks.ispyb_handler.start(td.test_start_document)
-    callbacks.zocalo_handler.start(td.test_start_document)
+    callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document)
     callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
     callbacks.ispyb_handler.event(td.test_event_document)
     callbacks.zocalo_handler.event(td.test_event_document)
+    callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
     callbacks.ispyb_handler.stop(td.test_stop_document)
     callbacks.zocalo_handler.stop(td.test_stop_document)
 
@@ -66,19 +64,6 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     assert callbacks.zocalo_handler.zocalo_interactor.run_end.call_count == len(dc_ids)
 
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_not_called()
-
-
-def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
-    nexus_writer: MagicMock,
-):
-
-    params = FullParameters()
-    callbacks = FGSCallbackCollection.from_params(params)
-    mock_zocalo_functions(callbacks)
-    callbacks.zocalo_handler.start(td.test_start_document)
-    callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
-    with pytest.raises(AssertionError):
-        callbacks.zocalo_handler.event(td.test_event_document)
 
 
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called():
