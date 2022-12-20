@@ -13,7 +13,7 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.devices.slit_gaps import SlitGaps
+from artemis.devices.s4_slit_gaps import S4SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
@@ -26,7 +26,7 @@ from artemis.utils import Point3D
 def read_hardware_for_ispyb(
     undulator: Undulator,
     synchrotron: Synchrotron,
-    slit_gaps: SlitGaps,
+    s4_slit_gaps: S4SlitGaps,
 ):
     artemis.log.LOGGER.debug(
         "Reading status of beamline parameters for ispyb deposition."
@@ -36,8 +36,8 @@ def read_hardware_for_ispyb(
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
-    yield from bps.read(slit_gaps.xgap)
-    yield from bps.read(slit_gaps.ygap)
+    yield from bps.read(s4_slit_gaps.s4xgap)
+    yield from bps.read(s4_slit_gaps.s4ygap)
     yield from bps.save()
 
 
@@ -109,7 +109,7 @@ def run_gridscan(
         yield from read_hardware_for_ispyb(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
-            fgs_composite.slit_gaps,
+            fgs_composite.s4_slit_gaps,
         )
 
     fgs_motors = fgs_composite.fast_grid_scan
