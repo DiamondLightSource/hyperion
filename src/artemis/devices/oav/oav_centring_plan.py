@@ -6,8 +6,8 @@ from artemis.devices.backlight import Backlight
 from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.oav.oav_calculations import (
     camera_coordinates_to_xyz,
-    check_x_within_bounds,
-    extract_coordinates_from_rotation_data,
+    check_i_within_bounds,
+    extract_pixel_centre_values_from_rotation_data,
     find_midpoint,
     get_rotation_increment,
     keep_inside_bounds,
@@ -23,8 +23,8 @@ from artemis.parameters import SIM_BEAMLINE
 
 # Z and Y bounds are hardcoded into GDA (we don't want to exceed them). We should look
 # at streamlining this
-_Z_LOWER_BOUND = _Y_LOWER_BOUND = -1500
-_Z_UPPER_BOUND = _Y_UPPER_BOUND = 1500
+_Y_LOWER_BOUND = _Z_LOWER_BOUND = -1500
+_Y_UPPER_BOUND = _Z_UPPER_BOUND = 1500
 
 # The smargon can  rotate indefinitely, so the [high/low]_limit_travel is set as 0 to
 # reflect this. Despite this, Neil would like to have omega to oscillate so we will
@@ -133,22 +133,24 @@ def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParame
 
 
 def rotate_pin_and_collect_positional_data(
-    oav: OAV, smargon: I03Smargon, rotations: int, omega_high_limit
+    oav: OAV, smargon: I03Smargon, rotations: int, omega_high_limit: float
 ):
     """
     Calculate relevant spacial values (waveforms, and pixel positions) at each rotation and save them in lists.
 
     Args:
-        points: the number of rotation points
-    Yields:
-        Movement message from each of the rotations
-        Relevant lists for each rotation:
-            x_positions: the x positions of centres
-            y_positions: the y positions of centres
+        oav (OAV): The oav device to rotate and sample MXSC data from.
+        smargon (I03Smargon): The smargon controller device.
+        rotations (int): The number of rotations to sample.
+        omega_high_limit (float): The motor limit that shouldn't be exceeded.
+    Returns:
+        Relevant lists for each rotation, where index n corresponds to data at rotation n:
+            i_positions: the i positions of centres (x in camera coordinates)
+            j_positions: the j positions of centres (y in camera coordinates)
             widths: the widths between the top and bottom waveforms at the centre point
             omega_angles: the angle of the goniometer at which the measurement was taken
-            tip_x_positions: the measured x tip at a given rotation
-            tip_y_positions: the measured y tip at a given rotation
+            tip_i_positions: the measured i tip at a given rotation
+            tip_j_positions: the measured j tip at a given rotation
     """
     smargon.wait_for_connection()
     current_omega = yield from bps.rd(smargon.omega)
@@ -158,20 +160,20 @@ def rotate_pin_and_collect_positional_data(
 
     # Arrays to hold positions data of the pin at each rotation,
     # these need to be np arrays for their use in centring.
-    x_positions = np.array([], dtype=np.int32)
-    y_positions = np.array([], dtype=np.int32)
+    i_positions = np.array([], dtype=np.int32)
+    j_positions = np.array([], dtype=np.int32)
     widths = np.array([], dtype=np.int32)
     omega_angles = np.array([], dtype=np.int32)
-    tip_x_positions = np.array([], dtype=np.int32)
-    tip_y_positions = np.array([], dtype=np.int32)
+    tip_i_positions = np.array([], dtype=np.int32)
+    tip_j_positions = np.array([], dtype=np.int32)
 
-    for i in range(rotations):
+    for n in range(rotations):
         current_omega = yield from bps.rd(smargon.omega)
         top = np.array((yield from bps.rd(oav.mxsc.top)))
 
         bottom = np.array((yield from bps.rd(oav.mxsc.bottom)))
-        tip_x = yield from bps.rd(oav.mxsc.tip_x)
-        tip_y = yield from bps.rd(oav.mxsc.tip_y)
+        tip_i = yield from bps.rd(oav.mxsc.tip_x)
+        tip_j = yield from bps.rd(oav.mxsc.tip_y)
 
         for waveform in (top, bottom):
             if np.all(waveform == 0):
@@ -179,29 +181,28 @@ def rotate_pin_and_collect_positional_data(
                     f"Error at rotation {current_omega}, one of the waveforms is all 0"
                 )
 
-        (x, y, width) = find_midpoint(top, bottom)
-        # Build arrays of edges and width, and store corresponding gonomega
-        x_positions = np.append(x_positions, x)
-        y_positions = np.append(y_positions, y)
+        (i, j, width) = find_midpoint(top, bottom)
+        i_positions = np.append(i_positions, i)
+        j_positions = np.append(j_positions, j)
         widths = np.append(widths, width)
         omega_angles = np.append(omega_angles, current_omega)
-        tip_x_positions = np.append(tip_x_positions, tip_x)
-        tip_y_positions = np.append(tip_y_positions, tip_y)
+        tip_i_positions = np.append(tip_i_positions, tip_i)
+        tip_j_positions = np.append(tip_j_positions, tip_j)
 
         # rotate the pin to take next measurement, unless it's the last measurement
-        if i < rotations - 1:
+        if n < rotations - 1:
             yield from bps.mv(
                 smargon.omega,
                 current_omega + increment,
             )
 
     return (
-        x_positions,
-        y_positions,
+        i_positions,
+        j_positions,
         widths,
         omega_angles,
-        tip_x_positions,
-        tip_y_positions,
+        tip_i_positions,
+        tip_j_positions,
     )
 
 
@@ -210,16 +211,16 @@ def get_waveforms_to_image_scale(oav: OAV):
     Returns the scale of the image. The standard calculation for the image is based
     on a size of (1024, 768) so we require these scaling factors.
     Args:
-        x_size: the x size of the image, in pixels
-        y_size: the y size of the image, in pixels
+        oav (OAV): The OAV device in use.
     Returns:
-        The (x,y) where x, y is the dimensions of the image in microns
+        The (i_dimensions,j_dimensions) where n_dimensions is the scale of the camera image to the
+        waveform values on the n axis.
     """
-    image_size_x = yield from bps.rd(oav.cam.array_size.array_size_x)
-    image_size_y = yield from bps.rd(oav.cam.array_size.array_size_x)
-    waveform_size_x = yield from bps.rd(oav.mxsc.waveform_size_x)
-    waveform_size_y = yield from bps.rd(oav.mxsc.waveform_size_y)
-    return image_size_x / waveform_size_x, image_size_y / waveform_size_y
+    image_size_i = yield from bps.rd(oav.cam.array_size.array_size_x)
+    image_size_j = yield from bps.rd(oav.cam.array_size.array_size_x)
+    waveform_size_i = yield from bps.rd(oav.mxsc.waveform_size_x)
+    waveform_size_j = yield from bps.rd(oav.mxsc.waveform_size_y)
+    return image_size_i / waveform_size_i, image_size_j / waveform_size_j
 
 
 def centring_plan(
@@ -231,9 +232,15 @@ def centring_plan(
     rotation_points=6,
 ):
     """
-    Will attempt to find the OAV centre using rotation points.
+    Attempts to find the centre of the pin on the oav by rotating and sampling elements.
     I03 gets the number of rotation points from gda.mx.loop.centring.omega.steps which defaults to 6.
-    If it is unsuccessful in finding the points it will try centering a default maximum of 3 times.
+
+    Args:
+        oav (OAV): The OAV device in use.
+        parameters (OAVParamaters): Object containing values loaded in from various parameter files in use.
+        backlight (Backlight): Backlight controller.
+        max_run_num (int): Maximum number of times to run.
+        rotation_points (int): Test to see if the pin is widest `rotation_points` number of times on a full 180 degree rotation.
     """
 
     LOGGER.info("Starting loop centring")
@@ -249,8 +256,9 @@ def centring_plan(
 
     # The image resolution may not correspond to the (1024, 768) of the waveform, then we have to scale
     # waveform pixels to get the camera pixels.
-    x_scale, y_scale = yield from get_waveforms_to_image_scale(oav)
+    i_scale, j_scale = yield from get_waveforms_to_image_scale(oav)
 
+    # array for holding the current xyz position of the motor.
     motor_xyz = np.array(
         [
             (yield from bps.rd(smargon.x)),
@@ -261,68 +269,70 @@ def centring_plan(
     )
 
     # We attempt to find the centre `max_run_num` times...
-    run_num = 0
-    while run_num < max_run_num:
+    for run_num in range(max_run_num):
 
         # Spin the goniometer and capture data from the camera at each rotation_point.
         (
-            x_positions,
-            y_positions,
+            i_positions,
+            j_positions,
             widths,
             omega_angles,
-            tip_x_positions,
-            tip_y_positions,
+            tip_i_positions,
+            tip_j_positions,
         ) = yield from rotate_pin_and_collect_positional_data(
             oav, smargon, rotation_points, omega_high_limit
         )
 
-        # Filters the data captured at rotation and formats it in terms of x,y,z and angles.
+        # Filters the data captured at rotation and formats it in terms of i, j, k and angles.
+        # (i_pixels,j_pixels) correspond to the (x,y) midpoint at the widest rotation, in the camera coordinate system,
+        # k_pixels correspond to the distance between the midpoint and the tip of the camera at the angle orthogonal to the
+        # widest rotation.
         (
-            x_pixels,
-            y_pixels,
-            z_pixels,
+            i_pixels,
+            j_pixels,
+            k_pixels,
             best_omega_angle,
             best_omega_angle_orthogonal,
-        ) = extract_coordinates_from_rotation_data(
-            x_positions, y_positions, widths, omega_angles
+        ) = extract_pixel_centre_values_from_rotation_data(
+            i_positions, j_positions, widths, omega_angles
         )
 
         # Adjust waveform values to match the camera pixels.
-        x_pixels *= x_scale
-        y_pixels *= y_scale
-        z_pixels *= y_scale
+        i_pixels *= i_scale
+        j_pixels *= j_scale
+        k_pixels *= j_scale
 
-        # Adjust x_pixels if it is too far away from the pin.
-        tip_x = np.median(tip_x_positions)
-        x_pixels = check_x_within_bounds(
-            parameters.max_tip_distance_pixels, tip_x, x_pixels
+        # Adjust i_pixels if it is too far away from the pin.
+        tip_i = np.median(tip_i_positions)
+        i_pixels = check_i_within_bounds(
+            parameters.max_tip_distance_pixels, tip_i, i_pixels
         )
 
         # Get the beam distance from the centre (in pixels).
         (
-            beam_distance_x_pixels,
-            beam_distance_y_pixels,
-        ) = parameters.calculate_beam_distance(x_pixels, y_pixels)
+            beam_distance_i_pixels,
+            beam_distance_j_pixels,
+        ) = parameters.calculate_beam_distance(i_pixels, j_pixels)
 
         # Add the beam distance to the current motor position (adjusting for the changes in coordinate system
         # and the from the angle).
         motor_xyz += camera_coordinates_to_xyz(
-            beam_distance_x_pixels,
-            beam_distance_y_pixels,
+            beam_distance_i_pixels,
+            beam_distance_j_pixels,
             best_omega_angle,
             parameters.micronsPerXPixel,
             parameters.micronsPerYPixel,
         )
 
         if run_num == max_run_num - 1:
-            # If it's the last run we adjust the z value.
-            beam_distance_z_pixels = parameters.calculate_beam_distance(
-                x_pixels, z_pixels
+            # If it's the last run we adjust the z value of the motors.
+            beam_distance_k_pixels = parameters.calculate_beam_distance(
+                i_pixels, k_pixels
             )[1]
 
             motor_xyz += camera_coordinates_to_xyz(
                 0,
-                beam_distance_z_pixels,
+                beam_distance_k_pixels,
                 best_omega_angle_orthogonal,
                 parameters.micronsPerXPixel,
                 parameters.micronsPerYPixel,

@@ -159,8 +159,8 @@ class OAVParameters:
                     f"Could not extract beam position at zoom level {self.zoom}"
                 )
 
-            self.beam_centre_x = int(crosshair_x_line.split(" = ")[1])
-            self.beam_centre_y = int(crosshair_y_line.split(" = ")[1])
+            self.beam_centre_i = int(crosshair_x_line.split(" = ")[1])
+            self.beam_centre_j = int(crosshair_y_line.split(" = ")[1])
 
     def calculate_beam_distance(
         self, horizontal_pixels: int, vertical_pixels: int
@@ -173,10 +173,10 @@ class OAVParameters:
             vertical_pixels (int): The y (camera coordinates) value in pixels.
         Returns:
             The distance between the beam centre and the (horizontal, vertical) point in pixels as a tuple
-            (x_distance, y_distance).
+            (horizontal_distance, vertical_distance).
         """
 
         return (
-            self.beam_centre_x - horizontal_pixels,
-            self.beam_centre_y - vertical_pixels,
+            self.beam_centre_i - horizontal_pixels,
+            self.beam_centre_j - vertical_pixels,
         )

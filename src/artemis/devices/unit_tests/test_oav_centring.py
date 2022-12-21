@@ -11,15 +11,20 @@ from artemis.devices.backlight import Backlight
 from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.oav.oav_calculations import (
     camera_coordinates_to_xyz,
-    check_x_within_bounds,
-    extract_coordinates_from_rotation_data,
+    check_i_within_bounds,
+    extract_pixel_centre_values_from_rotation_data,
     filter_rotation_data,
     find_midpoint,
     find_widest_point_and_orthogonal_point,
+    get_orthogonal_index,
     get_rotation_increment,
 )
 from artemis.devices.oav.oav_detector import OAV
-from artemis.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
+from artemis.devices.oav.oav_errors import (
+    OAVError_MissingRotations,
+    OAVError_NoRotationsPassValidityTest,
+    OAVError_ZoomLevelNotFound,
+)
 from artemis.devices.oav.oav_parameters import OAVParameters
 
 OAV_CENTRING_JSON = "src/artemis/devices/unit_tests/test_OAVCentring.json"
@@ -159,8 +164,8 @@ def test_extract_beam_position_different_beam_postitions(
 ):
     mock_parameters.zoom = zoom_level
     mock_parameters._extract_beam_position()
-    assert mock_parameters.beam_centre_x == expected_xCentre
-    assert mock_parameters.beam_centre_y == expected_yCentre
+    assert mock_parameters.beam_centre_i == expected_xCentre
+    assert mock_parameters.beam_centre_j == expected_yCentre
 
 
 def test_get_rotation_increment_threshold_within_180():
@@ -217,66 +222,6 @@ def test_calculate_beam_distance(
     ) == (expected_x, expected_y)
 
 
-# Can't run the below test without decent FakeEpicsDevice motors.
-
-"""
-def test_all_zero_waveform(mock_oav: OAV, mock_smargon: I03Smargon):
-
-    x = np.zeros(1024)
-
-    def fake_run(mock_oav: OAV, mock_smargon: I03Smargon):
-        mock_smargon.wait_for_connection = do_nothing
-        yield from bps.abs_set(mock_smargon.omega, 0)
-        yield from bps.abs_set(mock_oav.mxsc.top, x)
-        yield from bps.abs_set(mock_oav.mxsc.bottom, x)
-        yield from bps.abs_set(mock_oav.mxsc.tip_x, 0)
-        yield from bps.abs_set(mock_oav.mxsc.tip_y, 0)
-
-        (
-            x_pos,
-            y_pos,
-            diff_at_x_pos,
-            mid,
-        ) = rotate_pin_and_collect_positional_data(mock_oav, mock_smargon, 6)
-
-    with pytest.raises(OAVError_WaveformAllZero):
-        RE = RunEngine()
-        RE(
-            fake_run(mock_oav, mock_smargon),
-        )
-
-"""
-
-"""
-def test_all_zero_waveform(fake_mv, mock_oav: OAV, mock_smargon: I03Smargon):
-
-    x = np.zeros(1024)
-
-    def fake_run(mock_oav: OAV, mock_smargon: I03Smargon):
-        mock_smargon.wait_for_connection = do_nothing
-        yield from bps.abs_set(mock_smargon.omega, 0)
-        yield from bps.abs_set(mock_oav.mxsc.top, x)
-        yield from bps.abs_set(mock_oav.mxsc.bottom, x)
-        yield from bps.abs_set(mock_oav.mxsc.tip_x, 0)
-        yield from bps.abs_set(mock_oav.mxsc.tip_y, 0)
-
-        (
-            x_pos,
-            y_pos,
-            diff_at_x_pos,
-            mid,
-        ) = rotate_pin_and_collect_values(mock_oav, mock_smargon, 6)
-
-    with pytest.raises(OAVError_WaveformAllZero):
-        RE = RunEngine()
-        RE(
-            fake_run(mock_oav, mock_smargon),
-        )
-
-
-"""
-
-
 def test_filter_rotation_data():
     x_positions = np.array([400, 450, 7, 500])
     y_positions = np.array([400, 450, 7, 500])
@@ -294,6 +239,20 @@ def test_filter_rotation_data():
     assert filtered_omegas[2] == 500
 
 
+def test_filter_rotation_data_throws_error_when_all_fail():
+    x_positions = np.array([1020, 20])
+    y_positions = np.array([10, 450])
+    widths = np.array([400, 450])
+    omegas = np.array([400, 450])
+    with pytest.raises(OAVError_NoRotationsPassValidityTest):
+        (
+            filtered_x,
+            filtered_y,
+            filtered_widths,
+            filtered_omegas,
+        ) = filter_rotation_data(x_positions, y_positions, widths, omegas)
+
+
 @pytest.mark.parametrize(
     "max_tip_distance, tip_x, x, expected_return",
     [
@@ -302,7 +261,7 @@ def test_filter_rotation_data():
     ],
 )
 def test_keep_x_within_bounds(max_tip_distance, tip_x, x, expected_return):
-    assert check_x_within_bounds(max_tip_distance, tip_x, x) == expected_return
+    assert check_i_within_bounds(max_tip_distance, tip_x, x) == expected_return
 
 
 @pytest.mark.parametrize(
@@ -337,20 +296,43 @@ def test_distance_from_beam_centre_to_motor_coords_returns_the_same_values_as_GD
 
 
 def test_find_widest_point_and_orthogonal_point():
+    widths = np.array([400, 450, 7, 500, 600, 400])
+    omegas = np.array([0, 30, 60, 90, 120, 180])
+    assert find_widest_point_and_orthogonal_point(widths, omegas) == (4, 1)
+
+
+def test_find_widest_point_and_orthogonal_point_no_orthogonal_angles():
+    widths = np.array([400, 7, 500, 600, 400])
+    omegas = np.array([0, 60, 90, 120, 180])
+    with pytest.raises(OAVError_MissingRotations):
+        find_widest_point_and_orthogonal_point(widths, omegas)
+
+
+def test_extract_pixel_centre_values_from_rotation_data():
     x_positions = np.array([400, 450, 7, 500, 475, 412])
     y_positions = np.array([500, 512, 518, 498, 486, 530])
     widths = np.array([400, 450, 7, 500, 600, 400])
     omegas = np.array([0, 30, 60, 90, 120, 180])
-    assert find_widest_point_and_orthogonal_point(
-        x_positions, y_positions, widths, omegas
-    ) == (4, 1)
-
-
-def test_extract_coordinates_from_rotation_data():
-    x_positions = np.array([400, 450, 7, 500, 475, 412])
-    y_positions = np.array([500, 512, 518, 498, 486, 530])
-    widths = np.array([400, 450, 7, 500, 600, 400])
-    omegas = np.array([0, 30, 60, 90, 120, 180])
-    assert extract_coordinates_from_rotation_data(
+    assert extract_pixel_centre_values_from_rotation_data(
         x_positions, y_positions, widths, omegas
     ) == (475, 486, 512, 120, 30)
+
+
+@pytest.mark.parametrize(
+    "angle_array,angle,expected_index",
+    [
+        (np.array([0, 30, 60, 90, 140, 180, 210, 240, 250, 255]), 50, 4),
+        (np.array([0, 30, 60, 90, 145, 180, 210, 240, 250, 255]), 50, 4),
+        (np.array([-40, 30, 60, 90, 145, 180, 210, 240, 250, 255]), 50, 0),
+        (np.array([-150, -120, -90, -60, -30, 0, 30]), 30, 3),
+    ],
+)
+def test_get_closest_orthogonal_index(angle_array, angle, expected_index):
+    assert get_orthogonal_index(angle_array, angle) == expected_index
+
+
+def test_get_closest_orthogonal_index_not_orthogonal_enough():
+    with pytest.raises(OAVError_MissingRotations):
+        get_orthogonal_index(
+            np.array([0, 30, 60, 90, 160, 180, 210, 240, 250, 255]), 50
+        )
