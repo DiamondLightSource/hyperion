@@ -15,7 +15,7 @@ from artemis.devices.det_dim_constants import (
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan
 from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.devices.slit_gaps import SlitGaps
+from artemis.devices.s4_slits import S4Slits
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
@@ -62,10 +62,14 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
 
     xgap_test_value = 0.1234
     ygap_test_value = 0.2345
-    FakeSlitGaps = make_fake_device(SlitGaps)
-    slit_gaps: SlitGaps = FakeSlitGaps(name="slit_gaps")
-    slit_gaps.xgap.sim_put(xgap_test_value)
-    slit_gaps.ygap.sim_put(ygap_test_value)
+    x_test_value = 0.3456
+    y_test_value = 0.4567
+    FakeS4Slits = make_fake_device(S4Slits)
+    s4slits: S4Slits = FakeS4Slits(name="s4slits")
+    s4slits.xgap.sim_put(xgap_test_value)
+    s4slits.ygap.sim_put(ygap_test_value)
+    s4slits.x.sim_put(x_test_value)
+    s4slits.y.sim_put(y_test_value)
 
     class TestCB(CallbackBase):
         params = FullParameters()
@@ -87,7 +91,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
         yield from read_hardware_for_ispyb(und, syn, slits)
         yield from bps.close_run()
 
-    RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
+    RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, s4slits))
     params = testcb.params
 
     assert params.ispyb_params.undulator_gap == undulator_test_value

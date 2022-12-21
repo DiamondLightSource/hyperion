@@ -3,10 +3,10 @@ from ophyd import Component, FormattedComponent
 from artemis.devices.fast_grid_scan import FastGridScan
 from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.logging_ophyd_device import InfoLoggingDevice
-from artemis.devices.s4_slit_gaps import S4SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.devices.zebra import Zebra
+from src.artemis.devices.s4_slits import S4Slits
 
 
 class FGSComposite(InfoLoggingDevice):
@@ -19,7 +19,7 @@ class FGSComposite(InfoLoggingDevice):
     undulator = FormattedComponent(Undulator, "{insertion_prefix}-MO-SERVC-01:")
 
     synchrotron = FormattedComponent(Synchrotron)
-    s4_slit_gaps = Component(S4SlitGaps, "-AL-SLITS-04:")
+    s4_slits = Component(S4Slits, "-AL-SLITS-04:")
 
     sample_motors: I03Smargon = Component(I03Smargon, "")
 

@@ -89,14 +89,14 @@ def test_read_hardware_for_ispyb(
 
     undulator = fgs_composite.undulator
     synchrotron = fgs_composite.synchrotron
-    slit_gaps = fgs_composite.slit_gaps
+    s4_slits = fgs_composite.s4_slits
 
     @bpp.run_decorator()
     def read_run(u, s, g):
         yield from read_hardware_for_ispyb(u, s, g)
 
     fgs_composite.wait_for_connection()
-    RE(read_run(undulator, synchrotron, slit_gaps))
+    RE(read_run(undulator, synchrotron, s4_slits))
 
 
 @pytest.mark.s03
