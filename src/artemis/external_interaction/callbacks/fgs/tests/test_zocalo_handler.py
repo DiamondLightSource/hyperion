@@ -1,3 +1,4 @@
+from math import nan
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -108,3 +109,22 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
         callbacks.zocalo_handler.xray_centre_motor_position
         == expected_centre_motor_coords
     )
+
+
+def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used():
+    params = FullParameters()
+    callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
+    callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
+    expected_centre_grid_coords = Point3D(nan, nan, nan)
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        expected_centre_grid_coords
+    )
+
+    fallback_position = Point3D(1, 2, 3)
+
+    callbacks.zocalo_handler.wait_for_results(fallback_position)
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
+        100
+    )
+    assert callbacks.zocalo_handler.xray_centre_motor_position == fallback_position
