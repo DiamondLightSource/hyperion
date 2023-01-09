@@ -40,7 +40,6 @@ class FGSZocaloCallback(CallbackBase):
         ] = parameters.grid_scan_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        self.results = None
         self.xray_centre_motor_position = None
         self.ispyb = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
@@ -71,22 +70,22 @@ class FGSZocaloCallback(CallbackBase):
         datacollection_group_id = self.ispyb.ispyb_ids[2]
         raw_results = self.zocalo_interactor.wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time
-        # _wait_for_result returns the centre of the grid box, but we want the corner
-        self.results = Point3D(
-            raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
-        )
-        self.xray_centre_motor_position = self.grid_position_to_motor_position(
-            self.results
-        )
 
-        # We move back to the centre if results aren't found
-        assert self.xray_centre_motor_position is not None
-        if math.nan in self.xray_centre_motor_position:
+        if any([math.isnan(coord) for coord in raw_results]):
+            # We move back to the centre if results aren't found
             log_msg = (
                 f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
             )
             self.xray_centre_motor_position = fallback_xyz
             LOGGER.warn(log_msg)
+        else:
+            # _wait_for_result returns the centre of the grid box, but we want the corner
+            results = Point3D(
+                raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
+            )
+            self.xray_centre_motor_position = self.grid_position_to_motor_position(
+                results
+            )
 
         LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
