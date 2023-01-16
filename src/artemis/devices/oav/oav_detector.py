@@ -43,7 +43,6 @@ class ZoomController(Device):
     # When a zoom is fed in from GDA this is the level it is refering to.
     level: EpicsSignal = Component(EpicsSignal, "MP:SELECT")
 
-    # allowed_zooms = ["1.0x", "2.5x", "5.0x", "7.5x", "10.0x"]
     zrst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.ZRST")
     onst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.ONST")
     twst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.TWST")
