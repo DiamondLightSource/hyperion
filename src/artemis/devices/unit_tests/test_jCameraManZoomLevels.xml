@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<JCameraManSettings>
+<levels>
+   <zoomLevel>
+      <level>1.0</level>
+      <position>0</position>
+      <micronsPerXPixel>2.87</micronsPerXPixel>
+      <micronsPerYPixel>2.87</micronsPerYPixel>
+   </zoomLevel>
+   <zoomLevel>
+      <level>2.5</level>
+      <position>10</position>
+      <micronsPerXPixel>2.31</micronsPerXPixel>
+      <micronsPerYPixel>2.31</micronsPerYPixel>
+   </zoomLevel>
+   <zoomLevel>
+      <level>5.0</level>
+      <position>25</position>
+      <micronsPerXPixel>1.58</micronsPerXPixel>
+      <micronsPerYPixel>1.58</micronsPerYPixel>
+   </zoomLevel>
+   <zoomLevel>
+      <level>7.5</level>
+      <position>50</position>
+      <micronsPerXPixel>0.806</micronsPerXPixel>
+      <micronsPerYPixel>0.806</micronsPerYPixel>
+   </zoomLevel>
+   <zoomLevel>
+      <level>10.0</level>
+      <position>75</position>
+      <micronsPerXPixel>0.438</micronsPerXPixel>
+      <micronsPerYPixel>0.438</micronsPerYPixel>
+   </zoomLevel>
+   <zoomLevel>
+      <level>15.0</level>
+      <position>90</position>
+      <micronsPerXPixel>0.302</micronsPerXPixel>
+      <micronsPerYPixel>0.302</micronsPerYPixel>
+   </zoomLevel>
+</levels>
+<tolerance>1.0</tolerance>
+</JCameraManSettings>

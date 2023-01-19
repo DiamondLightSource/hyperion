@@ -101,7 +101,7 @@ class ZocaloInteractor:
             if received_group_id == str(data_collection_group_id):
                 result_received.put(Point3D(*reversed(message[0]["centre_of_mass"])))
             else:
-                artemis.log.LOGGER.warn(
+                artemis.log.LOGGER.warning(
                     f"Warning: results for {received_group_id} received but expected \
                         {data_collection_group_id}"
                 )

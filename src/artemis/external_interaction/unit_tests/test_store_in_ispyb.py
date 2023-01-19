@@ -305,7 +305,7 @@ def test_ispyb_deposition_comment_correct(
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
     )
 
 
@@ -328,7 +328,7 @@ def test_ispyb_deposition_rounds_to_int(
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [0,100], bottom right (px): [320,16100]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [320,16100]."
     )
 
 
@@ -347,11 +347,11 @@ def test_ispyb_deposition_comment_for_3D_correct(
     second_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
     assert first_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
     )
     assert second_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]."
     )
 
 
@@ -377,7 +377,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
     assert upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
         "DataCollection Unsuccessful reason: could not connect to devices"
     )
 
@@ -474,11 +474,11 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
 
     assert first_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
     )
     assert second_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]."
     )
 
     dummy_ispyb_3d.get_current_datacollection_comment.side_effect = [
@@ -494,12 +494,12 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
 
     assert third_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
         "DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert fourth_upserted_param_value_list[29] == (
         "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 0.1 mm by 0.1 mm steps. Top left (px): [100,50], bottom right (px): [420,4930]. "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]. "
         "DataCollection Unsuccessful reason: could not connect to devices"
     )
 

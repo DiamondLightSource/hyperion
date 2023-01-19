@@ -53,11 +53,11 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     expected_comments = [
         (
             "Artemis: Xray centring - Diffraction grid scan of 4 by 200 "
-            "images in 0.1 mm by 0.1 mm steps. Top left (px): [0,0], bottom right (px): [0,0]."
+            "images in 100.0 um by 100.0 um steps. Top left (px): [0,0], bottom right (px): [0,0]."
         ),
         (
             "Artemis: Xray centring - Diffraction grid scan of 4 by 61 "
-            "images in 0.1 mm by 0.1 mm steps. Top left (px): [0,0], bottom right (px): [0,0]."
+            "images in 100.0 um by 100.0 um steps. Top left (px): [0,0], bottom right (px): [0,0]."
         ),
     ]
 

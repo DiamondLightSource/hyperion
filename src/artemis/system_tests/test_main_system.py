@@ -176,4 +176,7 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
 def test_cli_args_parse():
     argv[1:] = ["--dev", "--logging-level=DEBUG"]
     test_args = cli_arg_parse()
-    assert test_args == ("DEBUG", True)
+    assert test_args == ("DEBUG", False, True)
+    argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
+    test_args = cli_arg_parse()
+    assert test_args == ("DEBUG", True, True)

@@ -38,6 +38,7 @@ def test_callback_collection_init():
     )
     assert callbacks.ispyb_handler.params == test_parameters
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
+    assert len(list(callbacks)) == 3
 
 
 def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
