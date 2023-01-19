@@ -135,20 +135,22 @@ class StoreInIspyb(ABC):
         reason: str,
         datacollection_id: int,
         datacollection_group_id: int,
-    ) -> int:
+    ) -> None:
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
+
+            if reason is not None and reason != "":
+                self.mx_acquisition.update_data_collection_append_comments(
+                    datacollection_id, f"{run_status} reason: {reason}", " "
+                )
+
             params = self.mx_acquisition.get_data_collection_params()
             params["id"] = datacollection_id
             params["parentid"] = datacollection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
-            if reason is not None and reason != "":
-                current_comment = self.get_current_datacollection_comment(
-                    datacollection_id
-                )
-                params["comments"] = current_comment + f" {run_status} reason: {reason}"
-            return self.mx_acquisition.upsert_data_collection(list(params.values()))
+
+            self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
         params = self.mx_acquisition.get_dc_grid_params()
