@@ -1,6 +1,7 @@
 import threading
 import time
 from dataclasses import dataclass
+from typing import Optional
 
 from bluesky.plan_stubs import mv
 from ophyd import (
@@ -57,6 +58,7 @@ class GridScanParams(BaseExperimentParameters):
     y2_start: float = 0.1
     z1_start: float = 0.1
     z2_start: float = 0.1
+    num_images: Optional[int] = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -73,6 +75,7 @@ class GridScanParams(BaseExperimentParameters):
         self.y_axis = GridAxis(self.y1_start, self.y_step_size, self.y_steps)
         self.z_axis = GridAxis(self.z2_start, self.z_step_size, self.z_steps)
         self.axes = [self.x_axis, self.y_axis, self.z_axis]
+        self.get_num_images()
 
     def is_valid(self, limits: XYZLimitBundle) -> bool:
         """

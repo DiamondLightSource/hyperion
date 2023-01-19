@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Dict, Union
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class DetectorSize:
     width: Union[float, int]
     height: Union[float, int]
@@ -11,7 +11,7 @@ class DetectorSize:
 ALL_DETECTORS: Dict[str, "DetectorSizeConstants"] = {}
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class DetectorSizeConstants:
     det_type_string: str
     det_dimension: DetectorSize
