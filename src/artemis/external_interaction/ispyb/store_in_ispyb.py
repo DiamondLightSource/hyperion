@@ -4,10 +4,7 @@ from abc import ABC, abstractmethod
 
 import ispyb
 import ispyb.sqlalchemy
-from ispyb.sqlalchemy import DataCollection
-from sqlalchemy import create_engine
 from sqlalchemy.connectors import Connector
-from sqlalchemy.orm import sessionmaker
 
 import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
@@ -36,11 +33,6 @@ class StoreInIspyb(ABC):
         self.upper_left = None
         self.y_steps = None
         self.y_step_size = None
-
-        # reading from ispyb
-        url = ispyb.sqlalchemy.url(self.ISPYB_CONFIG_FILE)
-        engine = create_engine(url, connect_args={"use_pure": True})
-        self.Session = sessionmaker(engine)
 
         # writing to ispyb
         self.conn: Connector = None
@@ -105,29 +97,6 @@ class StoreInIspyb(ABC):
     def _store_scan_data(self):
         pass
 
-    @TRACER.start_as_current_span("read_comment_from_ispyb")
-    def get_current_datacollection_comment(self, dcid: int) -> str:
-        """Read the 'comments' field from the given datacollection id's ISPyB entry.
-        Returns an empty string if the comment is not yet initialised.
-        """
-        try:
-            LOGGER.debug("Getting comment from ISPyB")
-            with self.Session() as session:
-                query = session.query(DataCollection).filter(
-                    DataCollection.dataCollectionId == dcid
-                )
-                current_comment: str = query.first().comments
-            if current_comment is None:
-                current_comment = ""
-            LOGGER.debug(f"Current comment: {current_comment}")
-        except Exception as e:
-            LOGGER.warning(
-                "Exception occured when reading comment from ISPyB database:\n"
-            )
-            LOGGER.error(e, exc_info=True)
-            current_comment = ""
-        return current_comment
-
     def update_grid_scan_with_end_time_and_status(
         self,
         end_time: str,
@@ -188,6 +157,7 @@ class StoreInIspyb(ABC):
             f"bottom right (px): [{bottom_right.x},{bottom_right.y}]."
         )
 
+    @TRACER.start_as_current_span("store_ispyb_datacollection_table")
     def _store_data_collection_table(self, data_collection_group_id: int) -> int:
         try:
             session_id = self.core.retrieve_visit_id(self.get_visit_string())
