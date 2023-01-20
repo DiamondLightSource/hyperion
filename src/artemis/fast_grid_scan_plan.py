@@ -6,6 +6,10 @@ from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 
 import artemis.log
+from artemis.device_setup_plans.setup_zebra_for_fgs import (
+    set_zebra_shutter_to_manual,
+    setup_zebra_for_fgs,
+)
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -22,7 +26,7 @@ from artemis.utils import Point3D
 def read_hardware_for_ispyb(
     undulator: Undulator,
     synchrotron: Synchrotron,
-    slit_gap: SlitGaps,
+    slit_gaps: SlitGaps,
 ):
     artemis.log.LOGGER.info(
         "Reading status of beamline parameters for ispyb deposition."
@@ -32,8 +36,8 @@ def read_hardware_for_ispyb(
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
-    yield from bps.read(slit_gap.xgap)
-    yield from bps.read(slit_gap.ygap)
+    yield from bps.read(slit_gaps.xgap)
+    yield from bps.read(slit_gaps.ygap)
     yield from bps.save()
 
 
@@ -84,6 +88,10 @@ def get_xyz(sample_motors):
     )
 
 
+def tidy_up_plans(fgs_composite: FGSComposite):
+    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
+
+
 @bpp.set_run_key_decorator("run_gridscan")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
@@ -111,13 +119,12 @@ def run_gridscan(
         )
 
     fgs_motors = fgs_composite.fast_grid_scan
-    zebra = fgs_composite.zebra
 
     # TODO: Check topup gate
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    @bpp.stage_decorator([zebra, fgs_motors])
+    @bpp.stage_decorator([fgs_motors])
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
     def do_fgs():
@@ -148,6 +155,8 @@ def run_gridscan_and_move(
 
     # We get the initial motor positions so we can return to them on zocalo failure
     initial_xyz = yield from get_xyz(fgs_composite.sample_motors)
+
+    yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
     # our callbacks should listen to documents only from the actual grid scan
     # so we subscribe to them with our plan
@@ -207,7 +216,11 @@ def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
 
     artemis.log.LOGGER.info("Connected.")
 
-    return run_gridscan_and_move(
+    @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
+    def run_gridscan_and_move_and_tidy(fgs_composite, detector, params, comms):
+        yield from run_gridscan_and_move(fgs_composite, detector, params, comms)
+
+    return run_gridscan_and_move_and_tidy(
         fast_grid_scan_composite, eiger, parameters, subscriptions
     )
 

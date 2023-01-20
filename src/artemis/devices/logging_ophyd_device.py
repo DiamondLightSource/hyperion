@@ -11,7 +11,7 @@ class InfoLoggingDevice(Device):
         try:
             super().wait_for_connection(all_signals, timeout)
         except TimeoutError as e:
-            ophyd_logger.error("{class_name} failed to connect.", exc_info=True)
+            ophyd_logger.error(f"{class_name} failed to connect.", exc_info=True)
             raise e
         else:
-            ophyd_logger.info("{class_name} connected.", exc_info=True)
+            ophyd_logger.info(f"{class_name} connected.")
