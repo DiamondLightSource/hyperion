@@ -1,3 +1,6 @@
+from functools import partial
+from typing import Callable
+
 import ispyb.sqlalchemy
 import pytest
 from ispyb.sqlalchemy import DataCollection
@@ -14,13 +17,8 @@ from artemis.utils import Point3D
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
-# reading from ispyb
-url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
-engine = create_engine(url, connect_args={"use_pure": True})
-Session = sessionmaker(engine)
 
-
-def get_current_datacollection_comment(dcid: int) -> str:
+def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
     """Read the 'comments' field from the given datacollection id's ISPyB entry.
     Returns an empty string if the comment is not yet initialised.
     """
@@ -33,6 +31,14 @@ def get_current_datacollection_comment(dcid: int) -> str:
     except Exception:
         current_comment = ""
     return current_comment
+
+
+@pytest.fixture
+def fetch_comment() -> Callable:
+    url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
+    engine = create_engine(url, connect_args={"use_pure": True})
+    Session = sessionmaker(engine)
+    return partial(get_current_datacollection_comment, Session)
 
 
 @pytest.fixture
@@ -56,44 +62,44 @@ def dummy_ispyb_3d(dummy_params):
 
 
 @pytest.mark.s03
-def test_ispyb_get_comment_from_collection_correctly():
+def test_ispyb_get_comment_from_collection_correctly(fetch_comment):
     expected_comment_contents = (
         "Xray centring - "
         "Diffraction grid scan of 1 by 41 images, "
         "Top left [454,-4], Bottom right [455,772]"
     )
 
-    assert get_current_datacollection_comment(8292317) == expected_comment_contents
+    assert fetch_comment(8292317) == expected_comment_contents
 
-    assert get_current_datacollection_comment(2) == ""
+    assert fetch_comment(2) == ""
 
 
 @pytest.mark.s03
 def test_ispyb_deposition_comment_correct_on_failure(
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: StoreInIspyb2D, fetch_comment
 ):
     dcid = dummy_ispyb.begin_deposition()
     dummy_ispyb.end_deposition("fail", "could not connect to devices")
     assert (
-        get_current_datacollection_comment(dcid[0][0])
+        fetch_comment(dcid[0][0])
         == "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
 @pytest.mark.s03
 def test_ispyb_deposition_comment_correct_for_3D_on_failure(
-    dummy_ispyb_3d: StoreInIspyb3D,
+    dummy_ispyb_3d: StoreInIspyb3D, fetch_comment
 ):
     dcid = dummy_ispyb_3d.begin_deposition()
     dcid1 = dcid[0][0]
     dcid2 = dcid[0][1]
     dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
     assert (
-        get_current_datacollection_comment(dcid1)
+        fetch_comment(dcid1)
         == "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert (
-        get_current_datacollection_comment(dcid2)
+        fetch_comment(dcid2)
         == "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
@@ -109,7 +115,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     ],
 )
 def test_can_store_2D_ispyb_data_correctly_when_in_error(
-    StoreClass, exp_num_of_grids, success
+    StoreClass, exp_num_of_grids, success, fetch_comment
 ):
     test_params = FullParameters()
     test_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
@@ -141,4 +147,4 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
         ispyb.end_deposition("success", "")
 
     for grid_no, dc_id in enumerate(dc_ids):
-        assert get_current_datacollection_comment(dc_id) == expected_comments[grid_no]
+        assert fetch_comment(dc_id) == expected_comments[grid_no]
