@@ -68,6 +68,7 @@ def test_ispyb_get_comment_from_collection_correctly():
     assert get_current_datacollection_comment(2) == ""
 
 
+@pytest.mark.s03
 def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: StoreInIspyb2D,
 ):
@@ -79,6 +80,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     )
 
 
+@pytest.mark.s03
 def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d: StoreInIspyb3D,
 ):
