@@ -1,6 +1,7 @@
 from ophyd import Component, FormattedComponent
 
 from artemis.devices.fast_grid_scan import FastGridScan
+from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.logging_ophyd_device import InfoLoggingDevice
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron

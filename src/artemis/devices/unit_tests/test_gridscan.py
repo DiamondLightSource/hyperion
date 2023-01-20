@@ -11,7 +11,7 @@ from artemis.devices.fast_grid_scan import (
     GridScanParams,
     set_fast_grid_scan_params,
 )
-from artemis.devices.TESTING_I03Smargon import I03Smargon
+from artemis.devices.I03Smargon import I03Smargon
 from artemis.utils import Point3D
 
 
