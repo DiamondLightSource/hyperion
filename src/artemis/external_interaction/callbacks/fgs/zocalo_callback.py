@@ -89,4 +89,5 @@ class FGSZocaloCallback(CallbackBase):
             LOGGER.warn(log_msg)
 
         LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
+        self.ispyb.append_to_comment(f"Zocalo processing took {self.processing_time}s")
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
