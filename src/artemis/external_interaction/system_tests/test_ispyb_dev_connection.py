@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock, patch
-
 import ispyb.sqlalchemy
 import pytest
 from ispyb.sqlalchemy import DataCollection
