@@ -23,7 +23,4 @@
         ]
     },
     "terminal.integrated.gpuAcceleration": "off",
-    "window.zoomLevel": 1.25,
-    "editor.fontSize": 12,
-    "terminal.integrated.fontSize": 12,
 }

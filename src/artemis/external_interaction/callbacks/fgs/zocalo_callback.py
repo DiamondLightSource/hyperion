@@ -46,7 +46,7 @@ class FGSZocaloCallback(CallbackBase):
         self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
 
     def event(self, doc: dict):
-        LOGGER.debug(f"\n\nZocalo handler received event document:\n\n {doc}\n")
+        LOGGER.debug("Zocalo handler received event document.")
         descriptor = self.ispyb.descriptors.get(doc["descriptor"])
         assert descriptor is not None
         event_name = descriptor.get("name")
@@ -59,7 +59,7 @@ class FGSZocaloCallback(CallbackBase):
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
     def stop(self, doc: dict):
-        LOGGER.debug(f"\n\nZocalo handler received stop document:\n\n {doc}\n")
+        LOGGER.debug("Zocalo handler received stop document.")
         if self.ispyb.ispyb_ids == (None, None, None):
             raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
         datacollection_ids = self.ispyb.ispyb_ids[0]

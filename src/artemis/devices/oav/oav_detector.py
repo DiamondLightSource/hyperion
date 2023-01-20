@@ -13,9 +13,7 @@ from ophyd import (
     ROIPlugin,
 )
 
-from artemis.devices.backlight import Backlight
 from artemis.devices.oav.grid_overlay import SnapshotWithGrid
-from artemis.devices.TESTING_I03Smargon import I03Smargon
 
 
 class ColorMode(IntEnum):
@@ -39,7 +37,12 @@ class ZoomController(Device):
     from CAM.
     """
 
-    zoom: EpicsSignal = Component(EpicsSignal, "ZOOMPOSCMD")
+    percentage: EpicsSignal = Component(EpicsSignal, "ZOOMPOSCMD")
+
+    # Level is the arbitrary level  that corresponds to a zoom percentage.
+    # When a zoom is fed in from GDA this is the level it is refering to.
+    level: EpicsSignal = Component(EpicsSignal, "MP:SELECT")
+    allowed_zooms = ["1.0x", "2.5x", "5.0x", "7.5x", "10.0x"]
 
 
 class EdgeOutputArrayImageType(IntEnum):
@@ -86,7 +89,7 @@ class MXSC(Device):
 
 
 class OAV(AreaDetector):
-    cam: CamBase = ADC(CamBase, "-EA-OAV-01:CAM:")
+    cam: CamBase = ADC(CamBase, "-DI-OAV-01:CAM:")
     roi: ADC = ADC(ROIPlugin, "-DI-OAV-01:ROI:")
     proc: ADC = ADC(ProcessPlugin, "-DI-OAV-01:PROC:")
     over: ADC = ADC(OverlayPlugin, "-DI-OAV-01:OVER:")
@@ -94,13 +97,4 @@ class OAV(AreaDetector):
     hdf5: ADC = ADC(HDF5Plugin, "-DI-OAV-01:HDF5:")
     snapshot: SnapshotWithGrid = Component(SnapshotWithGrid, "-DI-OAV-01:MJPG:")
     mxsc: MXSC = ADC(MXSC, "-DI-OAV-01:MXSC:")
-    zoom_controller: ZoomController = ADC(ZoomController, "-EA-OAV-01-FZOOM:")
-
-
-if __name__ == "__main__":
-
-    beamline = "S03SIM"
-    smargon: I03Smargon = Component(I03Smargon, "-MO-SGON-01:")
-    backlight: Backlight = Component(Backlight, "-EA-BL-01:")
-    oav = OAV(name="oav", prefix=beamline)
-    oav.wait_for_connection()
+    zoom_controller: ZoomController = ADC(ZoomController, "-EA-OAV-01:FZOOM:")

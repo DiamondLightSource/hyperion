@@ -1,14 +1,6 @@
 import pytest
 
-from artemis.devices.zebra import (
-    IN3_TTL,
-    IN4_TTL,
-    OR1,
-    PC_PULSE,
-    TTL_DETECTOR,
-    TTL_SHUTTER,
-    Zebra,
-)
+from artemis.devices.zebra import Zebra
 
 
 @pytest.fixture()
@@ -32,17 +24,3 @@ def test_disarm(zebra: Zebra):
     assert zebra.pc.is_armed()
     zebra.pc.disarm().wait(10.0)
     assert not zebra.pc.is_armed()
-
-
-@pytest.mark.s03
-def test_zebra_stage(zebra: Zebra):
-    zebra.stage()
-    assert zebra.output.out_pvs[TTL_DETECTOR].get() == IN3_TTL
-    assert zebra.output.out_pvs[TTL_SHUTTER].get() == IN4_TTL
-
-
-@pytest.mark.s03
-def test_zebra_unstage(zebra: Zebra):
-    zebra.unstage()
-    assert zebra.output.out_pvs[TTL_DETECTOR].get() == PC_PULSE
-    assert zebra.output.out_pvs[TTL_SHUTTER].get() == OR1

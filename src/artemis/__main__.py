@@ -15,9 +15,14 @@ from flask_restful import Api, Resource
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
-from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.external_interaction.callbacks import (
+    FGSCallbackCollection,
+    VerbosePlanExecutionLoggingCallback,
+)
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER
+
+VERBOSE_EVENT_LOGGING: Optional[bool] = None
 
 
 class Actions(Enum):
@@ -54,15 +59,15 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    callbacks: FGSCallbackCollection = FGSCallbackCollection.from_params(
-        FullParameters()
-    )
+    callbacks: FGSCallbackCollection
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
     def __init__(self, RE: RunEngine) -> None:
         self.RE = RE
+        if VERBOSE_EVENT_LOGGING:
+            RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
     def start(self, experiment: str, parameters: FullParameters) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started {experiment} with parameters: {parameters}")
@@ -117,8 +122,10 @@ class BlueskyRunner:
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except WarningException as exception:
+                    artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
                     self.current_status = StatusAndMessage(Status.WARN, str(exception))
                 except Exception as exception:
+                    artemis.log.LOGGER.error("Exception on running plan", exc_info=True)
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow
                         self.last_run_aborted = False
@@ -182,12 +189,17 @@ def create_app(
     return app, runner
 
 
-def cli_arg_parse() -> Tuple[Optional[bool], Optional[str]]:
+def cli_arg_parse() -> Tuple[Optional[str], Optional[bool], Optional[bool]]:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dev",
         action="store_true",
         help="Use dev options, such as local graylog instances and S03",
+    )
+    parser.add_argument(
+        "--verbose-event-logging",
+        action="store_true",
+        help="Log all bluesky event documents to graylog",
     )
     parser.add_argument(
         "--logging-level",
@@ -196,20 +208,25 @@ def cli_arg_parse() -> Tuple[Optional[bool], Optional[str]]:
         help="Choose overall logging level, defaults to INFO",
     )
     args = parser.parse_args()
-    return args.logging_level, args.dev
+    return args.logging_level, args.verbose_event_logging, args.dev
 
 
 if __name__ == "__main__":
-    args = cli_arg_parse()
-    artemis.log.set_up_logging_handlers(*args)
+    artemis_port = 5005
+    logging_level, VERBOSE_EVENT_LOGGING, dev_mode = cli_arg_parse()
+
+    artemis.log.set_up_logging_handlers(logging_level, dev_mode)
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
-            host="0.0.0.0", port=5005, debug=True, use_reloader=False
+            host="0.0.0.0", port=artemis_port, debug=True, use_reloader=False
         ),
         daemon=True,
     )
     flask_thread.start()
+    artemis.log.LOGGER.info(
+        f"Artemis now listening on {artemis_port} ({'IN DEV' if dev_mode else ''})"
+    )
     runner.wait_on_queue()
     flask_thread.join()

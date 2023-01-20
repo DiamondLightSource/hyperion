@@ -76,31 +76,27 @@ for option in "$@"; do
     esac
 done
 
-if [[ -z "${BEAMLINE}" ]]; then
-    echo "BEAMLINE parameter not set. Use the option -b, --beamline=BEAMLNE to set it manually"
-    exit 1
+if [ -z "${BEAMLINE}" ]; then
+    echo "BEAMLINE parameter not set, assuming running on a dev machine."
+    echo "If you would like to run not in dev use the option -b, --beamline=BEAMLNE to set it manually"
+    IN_DEV=true
+else
+    IN_DEV=false
 fi
-
-SSH_KEY_FILE_LOC="/dls_sw/${BEAMLINE}/software/gda_versions/var/.ssh/${BEAMLINE}-ssh.key"
 
 if [[ $STOP == 1 ]]; then
-    if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" ]]; then
-        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} ${BEAMLINE}-control.diamond.ac.uk
+    if [ $IN_DEV == false ]; then
+        if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
+            echo "Must be run from beamline control machine as gda2"
+            echo "Current host is $HOSTNAME and user is $USER"
+            exit 1
+        fi
     fi
-    pkill -f artemis
+    pkill -f "python -m artemis"
+
+    echo "Artemis stopped"
     exit 0
 fi
-
-ARTEMIS_PATH="/dls_sw/${BEAMLINE}/software/artemis"
-
-if [[ -d "${ARTEMIS_PATH}" ]]; then
-    cd ${ARTEMIS_PATH}
-else
-    echo "Couldn't find artemis installation at ${ARTEMIS_PATH} terminating script"
-    exit 1
-fi
-
-
 
 if [[ $DEPLOY == 1 ]]; then
     git fetch --all --tags --prune
@@ -120,29 +116,47 @@ if [[ $DEPLOY == 1 ]]; then
     module unload controls_dev
     module load python/3.10
 
-    pipenv install --python 3.10
+    if [ -d "./.venv" ]
+    then
+    rm -rf .venv
+    fi
+    mkdir .venv
+
+    python -m venv .venv
+
+    pip install -e .
 fi
 
 if [[ $START == 1 ]]; then
-    if [[ $HOSTNAME != "${BEAMLINE}-control@diamond.ac.uk" || $USERNAME != "gda2" ]]; then
-        ssh -T -o BatchMode=yes -i ${SSH_KEY_FILE_LOC} gda2@${BEAMLINE}-control.diamond.ac.uk
+    if [ $IN_DEV == false ]; then
+        if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
+            echo "Must be run from beamline control machine as gda2"
+            echo "Current host is $HOSTNAME and user is $USER"
+            exit 1
+        fi
+
+        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
+        export ISPYB_CONFIG_PATH
+
     fi
 
-    if [[ -z $(pgrep -f artemis) ]]; then
-        pkill -f artemis
-    fi
-
-    cd ${ARTEMIS_PATH}
+    pkill -f "python -m artemis"
 
     module unload controls_dev
     module load python/3.10
     module load dials
 
-    ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
+    RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
+    cd ${RELATIVE_SCRIPT_DIR}
 
-    export ISPYB_CONFIG_PATH
+    source .venv/bin/activate
+    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` >/dev/null 2>&1 &
 
-    pipenv run artemis &
+    echo "Waiting for Artemis to boot"
+
+    curl --head -X GET --retry 5 --retry-connrefused --retry-delay 1 http://localhost:5005/fast_grid_scan/status >/dev/null 2>&1
+
+    echo "Artemis started"
 fi
 
 sleep 1
