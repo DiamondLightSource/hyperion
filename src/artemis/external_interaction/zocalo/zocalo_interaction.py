@@ -99,7 +99,7 @@ class ZocaloInteractor:
             transport.ack(header)
             received_group_id = recipe_parameters["dcgid"]
             if received_group_id == str(data_collection_group_id):
-                result_received.put(Point3D(*reversed(message[0]["centre_of_mass"])))
+                result_received.put(Point3D(*message[0]["centre_of_mass"]))
             else:
                 artemis.log.LOGGER.warning(
                     f"Warning: results for {received_group_id} received but expected \
