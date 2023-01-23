@@ -44,11 +44,9 @@ class FGSISPyBHandlerCallback(CallbackBase):
         self.ispyb_ids: tuple = (None, None, None)
 
     def append_to_comment(self, comment: str):
-        self.ispyb.append_to_comment(
-            self.ispyb_ids[0][0], f"Zocalo processing took {self.processing_time}s"
-        )
+        self.ispyb.append_to_comment(self.ispyb_ids[0][0], comment)
 
-    def descriptor(self, doc):
+    def descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
 
     def event(self, doc: dict):
