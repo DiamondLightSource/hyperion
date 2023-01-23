@@ -7,3 +7,11 @@ these various interactions based on the documents emitted by the RunEngine durin
 execution of the experimental plan. It's not recommended to use the interaction classes
 here directly in plans except through the use of such callbacks.
 """
+from artemis.external_interaction.ispyb.store_in_ispyb import (
+    StoreInIspyb2D,
+    StoreInIspyb3D,
+)
+from artemis.external_interaction.nexus.write_nexus import NexusWriter
+from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
+
+__all__ = ["ZocaloInteractor", "NexusWriter", "StoreInIspyb2D", "StoreInIspyb3D"]
