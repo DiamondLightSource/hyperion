@@ -45,7 +45,8 @@ class FGSISPyBHandlerCallback(CallbackBase):
 
     def append_to_comment(self, comment: str):
         try:
-            self.ispyb.append_to_comment(self.ispyb_ids[0][0], comment)
+            for id in self.ispyb_ids[0]:
+                self.ispyb.append_to_comment(id, comment)
         except TypeError:
             LOGGER.warning("ISPyB deposition not initialised, can't update comment.")
 
