@@ -9,6 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
+            "preLaunchTask": "load_dials_env",
             "console": "integratedTerminal",
         },
         {
@@ -24,6 +25,6 @@
             "env": {
                 "PYTEST_ADDOPTS": "--no-cov"
             },
-        },
+        }
     ]
 }
