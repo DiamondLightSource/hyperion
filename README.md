@@ -59,7 +59,7 @@ Getting the Runner Status
 
 To get the status of the runner:
 ```
-curl http://127.0.0.1:5005/fast_grid_scan/status
+curl http://127.0.0.1:5005/status
 ```
 
 Stopping the Scan
@@ -67,7 +67,7 @@ Stopping the Scan
 
 To stop a scan that is currently running:
 ```
-curl -X PUT http://127.0.0.1:5005/fast_grid_scan/stop
+curl -X PUT http://127.0.0.1:5005/stop
 
 ```
 
