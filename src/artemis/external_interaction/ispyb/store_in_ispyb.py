@@ -100,7 +100,7 @@ class StoreInIspyb(ABC):
     def append_to_comment(
         self, datacollection_id: int, comment: str, delimiter: str = " "
     ) -> None:
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
             self.mx_acquisition.update_data_collection_append_comments(
                 datacollection_id, comment, delimiter
@@ -118,7 +118,7 @@ class StoreInIspyb(ABC):
         if reason is not None and reason != "":
             self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
 
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
 
             params = self.mx_acquisition.get_data_collection_params()
