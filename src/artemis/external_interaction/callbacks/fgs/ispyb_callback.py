@@ -45,7 +45,14 @@ class FGSISPyBHandlerCallback(CallbackBase):
         )
         self.ispyb_ids: tuple = (None, None, None)
 
-    def descriptor(self, doc):
+    def append_to_comment(self, comment: str):
+        try:
+            for id in self.ispyb_ids[0]:
+                self.ispyb.append_to_comment(id, comment)
+        except TypeError:
+            LOGGER.warning("ISPyB deposition not initialised, can't update comment.")
+
+    def descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
 
     def event(self, doc: dict):

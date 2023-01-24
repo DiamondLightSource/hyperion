@@ -1,4 +1,5 @@
 import argparse
+from typing import Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -154,7 +155,11 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = yield from get_xyz(fgs_composite.sample_motors)
+    initial_xyz = Point3D(
+        (yield from bps.rd(fgs_composite.sample_motors.x)),
+        (yield from bps.rd(fgs_composite.sample_motors.y)),
+        (yield from bps.rd(fgs_composite.sample_motors.z)),
+    )
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
@@ -174,18 +179,20 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    subscriptions.zocalo_handler.wait_for_results(initial_xyz)
+    xray_centre = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
         yield from move_xyz(
             fgs_composite.sample_motors,
-            subscriptions.zocalo_handler.xray_centre_motor_position,
+            xray_centre,
         )
 
 
-def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
+def get_plan(
+    parameters: FullParameters, subscriptions: FGSCallbackCollection
+) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
