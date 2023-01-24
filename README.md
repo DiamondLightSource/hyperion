@@ -16,18 +16,11 @@ Controlling the Gridscan Externally (e.g. from GDA)
 
 Starting the bluesky runner
 -------------------------
-You can start the bluesky runner by doing the following:
-```
-source .venv/bin/activate
-python -m artemis
-```
-The default behaviour of which is to run artemis with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/artemis.txt on the shared file system. 
+You can start the bluesky runner by running `run_artemis.sh`
 
-To run locally in a dev environment use
-```
-python -m artemis --dev
-```
-This will log to a local graylog instance instead and into a file at `./tmp/dev/artemis.txt`. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
+This script will determine whether you are on a beamline or a production machine based on the `BEAMLINE` environment variable.  If on a beamline Artemis will run with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/artemis.txt on the shared file system.
+
+If in a dev environment Artemis will log to a local graylog instance instead and into a file at `./tmp/dev/artemis.txt`. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
 
 This uses the generic defaults for a local graylog instance. It can be accessed on `localhost:9000` where the username and password for the graylog portal are both admin.
 
@@ -36,7 +29,10 @@ The logging level of artemis can be selected with the flag
 python -m artemis --dev --logging-level DEBUG
 ```
 
-**DO NOT** run artemis at DEBUG level on production (without the --dev flag). This will flood graylog with messages and make people very grumpy.
+Additionally, `INFO` level logging of the Bluesky event documents can be enabled with the flag
+```
+python -m artemis --dev --verbose-event-logging
+```
 
 Testing
 --------------
@@ -63,7 +59,7 @@ Getting the Runner Status
 
 To get the status of the runner:
 ```
-curl http://127.0.0.1:5005/fast_grid_scan/status
+curl http://127.0.0.1:5005/status
 ```
 
 Stopping the Scan
@@ -71,7 +67,7 @@ Stopping the Scan
 
 To stop a scan that is currently running:
 ```
-curl -X PUT http://127.0.0.1:5005/fast_grid_scan/stop
+curl -X PUT http://127.0.0.1:5005/stop
 
 ```
 

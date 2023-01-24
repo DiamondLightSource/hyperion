@@ -220,7 +220,9 @@ def test_bad_odin_state_results_in_unstage_returning_bad_status(
     mock_check_odin_state, fake_eiger: EigerDetector
 ):
     mock_check_odin_state.return_value = False
-    fake_eiger.filewriters_finished = Status(done=True, success=True)
+    happy_status = Status()
+    happy_status.set_finished()
+    fake_eiger.filewriters_finished = happy_status
     returned_status = fake_eiger.unstage()
     assert returned_status is False
 

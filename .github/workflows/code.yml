@@ -54,11 +54,11 @@ jobs:
 
 
       - name: Run tests
-        run: pytest -m "not (s03 or dlstbx)"
+        run: pytest --random-order -m "not (dlstbx or s03)"
 
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          name: ubuntu-latest
+          name: ${{ matrix.python }}/${{ matrix.os }}
           files: cov.xml

@@ -1,14 +1,15 @@
-from ophyd import Component, Device, FormattedComponent
+from ophyd import Component, FormattedComponent
 
 from artemis.devices.fast_grid_scan import FastGridScan
 from artemis.devices.I03Smargon import I03Smargon
+from artemis.devices.logging_ophyd_device import InfoLoggingDevice
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.devices.zebra import Zebra
 
 
-class FGSComposite(Device):
+class FGSComposite(InfoLoggingDevice):
     """A device consisting of all the Devices required for a fast gridscan."""
 
     fast_grid_scan = Component(FastGridScan, "-MO-SGON-01:FGS:")

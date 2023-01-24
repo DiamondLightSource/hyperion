@@ -23,6 +23,7 @@ class Actions(Enum):
     START = "start"
     STOP = "stop"
     SHUTDOWN = "shutdown"
+    STATUS = "status"
 
 
 class Status(Enum):
