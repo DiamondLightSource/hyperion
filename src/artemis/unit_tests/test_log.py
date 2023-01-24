@@ -10,6 +10,7 @@ from artemis import log
 def mock_logger():
     with patch("artemis.log.LOGGER") as mock_LOGGER:
         yield mock_LOGGER
+        log.beamline = None
 
 
 @patch("artemis.log.GELFTCPHandler")
