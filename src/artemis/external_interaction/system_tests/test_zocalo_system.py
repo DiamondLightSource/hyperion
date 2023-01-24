@@ -30,7 +30,6 @@ def test_zocalo_callback_calls_append_comment():
     dcids = [1, 2]
     for dcid in dcids:
         zc.zocalo_interactor.run_start(dcid)
-    for dcid in dcids:
-        zc.zocalo_interactor.run_end(dcid)
+    zc.stop({})
     zc.wait_for_results(fallback_xyz=Point3D(0, 0, 0))
     assert zc.ispyb.append_to_comment.call_count == 1
