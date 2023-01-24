@@ -106,3 +106,10 @@ def test_setting_debug_in_prod_gives_warning(
     )
     log.set_up_logging_handlers("DEBUG", False)
     mock_logger.warning.assert_any_call(warning_string)
+
+
+def test_beamline_filter_adds_dev_if_no_beamline():
+    filter = log.BeamlineFilter()
+    record = MagicMock()
+    assert filter.filter(record)
+    assert record.beamline == "dev"
