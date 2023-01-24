@@ -9,10 +9,18 @@ from graypy import GELFTCPHandler
 from ophyd.log import config_ophyd_logging
 from ophyd.log import logger as ophyd_logger
 
+beamline: Union[str, None] = environ.get("BEAMLINE")
+
 LOGGER = logging.getLogger("Artemis")
 LOGGER.setLevel(logging.DEBUG)  # default logger to log everything
 ophyd_logger.parent = LOGGER
 bluesky_logger.parent = LOGGER
+
+
+class BeamlineFilter(logging.Filter):
+    def filter(self, record):
+        record.beamline = beamline if beamline else "dev"
+        return True
 
 
 def set_up_logging_handlers(
@@ -37,6 +45,8 @@ def set_up_logging_handlers(
         handler.setFormatter(formatter)
         handler.setLevel(logging_level)
         LOGGER.addHandler(handler)
+
+    LOGGER.addFilter(BeamlineFilter())
 
     # for assistance in debugging
     if dev_mode:
@@ -80,7 +90,6 @@ def _get_logging_file_path() -> Path:
     Returns:
         logging_path (Path): Path to the log file for the file handler to write to.
     """
-    beamline: Union[str, None] = environ.get("BEAMLINE")
     logging_path: Path
 
     if beamline:
