@@ -53,7 +53,8 @@ def test_env():
     runner_thread.start()
     with app.test_client() as client:
         with patch.dict(
-            "artemis.__main__.PLAN_REGISTRY", {"fast_grid_scan": MagicMock()}
+            "artemis.__main__.PLAN_REGISTRY",
+            {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
         ):
             yield ClientAndRunEngine(client, mock_run_engine)
 
