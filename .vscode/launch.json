@@ -9,6 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
+            "preLaunchTask": "load_dials_env",
             "console": "integratedTerminal",
         },
         {
@@ -18,12 +19,13 @@
             "justMyCode": false,
             "program": "${file}",
             "console": "integratedTerminal",
+            "preLaunchTask": "load_dials_env",
             "purpose": [
                 "debug-test"
             ],
             "env": {
                 "PYTEST_ADDOPTS": "--no-cov"
             },
-        },
+        }
     ]
 }
