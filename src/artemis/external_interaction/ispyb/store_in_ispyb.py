@@ -97,11 +97,13 @@ class StoreInIspyb(ABC):
     def _store_scan_data(self):
         pass
 
-    def append_to_comment(self, datacollection_id: int, comment: str) -> None:
+    def append_to_comment(
+        self, datacollection_id: int, comment: str, delimiter: str = " "
+    ) -> None:
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
             self.mx_acquisition.update_data_collection_append_comments(
-                datacollection_id, comment, " "
+                datacollection_id, comment, delimiter
             )
 
     def update_grid_scan_with_end_time_and_status(
