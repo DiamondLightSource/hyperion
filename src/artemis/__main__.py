@@ -174,7 +174,6 @@ class StopOrStatus(Resource):
         return status_and_message.to_dict()
 
     def get(self, **kwargs):
-        print(kwargs)
         action = kwargs.get("action")
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STATUS.value:
