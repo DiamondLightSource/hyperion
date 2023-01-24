@@ -2,7 +2,6 @@ import argparse
 import atexit
 import threading
 from dataclasses import dataclass
-from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
 from typing import Callable, Optional, Tuple
