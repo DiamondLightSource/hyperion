@@ -143,7 +143,7 @@ def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
     test_env.mock_run_engine.error = error_message
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.FAILED.value
-    assert response_json["message"] == error_message
+    assert response_json["message"] == 'Exception("D\'Oh")'
 
 
 def test_given_started_and_return_status_interrupted_when_RE_aborted_then_error_reported(
@@ -158,7 +158,7 @@ def test_given_started_and_return_status_interrupted_when_RE_aborted_then_error_
         test_env.client, lambda status: status != Status.ABORTING.value
     )
     assert response_json["status"] == Status.FAILED.value
-    assert response_json["message"] == error_message
+    assert response_json["message"] == 'Exception("D\'Oh")'
 
 
 def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
