@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
@@ -44,7 +44,7 @@ class Status(Enum):
 @dataclass
 class Command:
     action: Actions
-    experiment: Optional[str] = None
+    experiment: Optional[Callable] = None
     parameters: Optional[FullParameters] = None
 
 
@@ -70,7 +70,9 @@ class BlueskyRunner:
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-    def start(self, experiment: str, parameters: FullParameters) -> StatusAndMessage:
+    def start(
+        self, experiment: Callable, parameters: FullParameters
+    ) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started {experiment} with parameters: {parameters}")
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
@@ -88,7 +90,7 @@ class BlueskyRunner:
             self.RE.abort()
             self.current_status = StatusAndMessage(Status.IDLE)
         except Exception as e:
-            self.current_status = StatusAndMessage(Status.FAILED, str(e))
+            self.current_status = StatusAndMessage(Status.FAILED, repr(e))
 
     def stop(self) -> StatusAndMessage:
         if self.current_status.status == Status.IDLE.value:
@@ -115,16 +117,13 @@ class BlueskyRunner:
                 return
             elif command.action == Actions.START:
                 try:
-                    plan = PLAN_REGISTRY.get(command.experiment)
-                    if plan is None:
-                        raise PlanNotFound("Experiment plan not found.")
                     with TRACER.start_span("do_run"):
-                        self.RE(plan(command.parameters, self.callbacks))
+                        self.RE(command.experiment(command.parameters, self.callbacks))
                     self.current_status = StatusAndMessage(Status.IDLE)
                     self.last_run_aborted = False
                 except WarningException as exception:
                     artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
-                    self.current_status = StatusAndMessage(Status.WARN, str(exception))
+                    self.current_status = StatusAndMessage(Status.WARN, repr(exception))
                 except Exception as exception:
                     artemis.log.LOGGER.error("Exception on running plan", exc_info=True)
                     if self.last_run_aborted:
@@ -141,20 +140,26 @@ class RunExperiment(Resource):
         super().__init__()
         self.runner = runner
 
-    def put(self, experiment, action):
+    def put(self, experiment: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
+                plan = PLAN_REGISTRY.get(experiment)
+                if plan is None:
+                    raise PlanNotFound(
+                        f"Experiment plan '{experiment}' not found in registry."
+                    )
                 parameters = FullParameters.from_json(request.data)
-                status_and_message = self.runner.start(experiment, parameters)
-            except JSONDecodeError as exception:
-                status_and_message = StatusAndMessage(Status.FAILED, str(exception))
+                status_and_message = self.runner.start(plan, parameters)
+            except JSONDecodeError as e:
+                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+            except PlanNotFound as e:
+                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
-        return status_and_message.to_dict()
-
-    # def get(self, **kwargs):
-    #    return self.runner.current_status.to_dict()
+        # no idea why mypy gives an attribute error here but nowhere else for this
+        # exactsame situation...
+        return status_and_message.to_dict()  # type: ignore
 
 
 class StopOrStatus(Resource):
