@@ -37,5 +37,4 @@ def test_grid_overlay():
 def test_get_zoom_levels():
     my_zoom_controller = ZoomController("BL03I-EA-OAV-01:FZOOM:", name="test_zoom")
     my_zoom_controller.wait_for_connection()
-    # raise Exception(my_zoom_controller.allowed_zoom_levels)
     assert my_zoom_controller.allowed_zoom_levels[0] == "1.0x"
