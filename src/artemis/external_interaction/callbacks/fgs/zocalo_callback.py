@@ -95,5 +95,8 @@ class FGSZocaloCallback(CallbackBase):
             xray_centre = self.grid_position_to_motor_position(results)
 
         LOGGER.info(f"Results recieved from zocalo: {xray_centre}")
+        self.ispyb.append_to_comment(
+            f"Zocalo processing took {self.processing_time:.2f} s"
+        )
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
         return xray_centre

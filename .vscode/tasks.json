@@ -1,0 +1,13 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "load_dials_env",
+            "command": "module",
+            "args": [
+                "load dials/latest"
+            ],
+            "type": "shell"
+        }
+    ]
+}
