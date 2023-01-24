@@ -102,6 +102,16 @@ def test_getting_status_after_start_sent_returns_busy(
     check_status_in_response(response, Status.BUSY)
 
 
+def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
+    response = test_env.client.put("/bad_plan/start", data=TEST_PARAMS).json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "PlanNotFound(\"Experiment plan 'bad_plan' not found in registry.\")"
+    )
+
+
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
