@@ -28,14 +28,10 @@ class EigerDetector(Device):
 
     filewriters_finished: StatusBase
 
-    def __init__(
-        self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
-    ):
-        super().__init__(name=name, *args, **kwargs)
-        self.detector_params = detector_params
-        self.check_detector_variables_set()
+    detector_params = None
 
-    def check_detector_variables_set(self):
+    def set_detector_parameters(self, detector_params: DetectorParams):
+        self.detector_params = detector_params
         if self.detector_params is None:
             raise Exception("Parameters for scan must be specified")
 

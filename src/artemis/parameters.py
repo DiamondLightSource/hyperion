@@ -1,5 +1,6 @@
 import copy
 from dataclasses import dataclass, field
+from os import environ
 
 from dataclasses_json import dataclass_json
 
@@ -17,6 +18,20 @@ SIM_ISPYB_CONFIG = "src/artemis/external_interaction/unit_tests/test_config.cfg"
 
 def default_field(obj):
     return field(default_factory=lambda: copy.deepcopy(obj))
+
+
+@dataclass
+class BeamlinePrefixes:
+    beamline_prefix: str
+    insertion_prefix: str
+
+
+def get_beamline_prefixes():
+    beamline = environ.get("BEAMLINE")
+    if beamline is None:
+        return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
+    if beamline == "i03":
+        return BeamlinePrefixes("BL03I", "SR03I")
 
 
 @dataclass_json
