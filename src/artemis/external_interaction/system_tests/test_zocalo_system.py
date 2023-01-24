@@ -1,3 +1,4 @@
+import os
 from unittest.mock import MagicMock
 
 import pytest
@@ -9,8 +10,13 @@ from artemis.external_interaction.callbacks.fgs.zocalo_callback import FGSZocalo
 from artemis.parameters import FullParameters, Point3D
 
 
+@pytest.fixture
+def zocalo_env():
+    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
+
+
 @pytest.mark.s03
-def test_when_running_start_stop_then_get_expected_returned_results():
+def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
     params = FullParameters()
     zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
     dcids = [1, 2]
@@ -22,7 +28,7 @@ def test_when_running_start_stop_then_get_expected_returned_results():
 
 
 @pytest.mark.s03
-def test_zocalo_callback_calls_append_comment():
+def test_zocalo_callback_calls_append_comment(zocalo_env):
     params = FullParameters()
     zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
     zc.ispyb.append_to_comment = MagicMock()
