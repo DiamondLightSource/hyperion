@@ -110,7 +110,7 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    @bpp.stage_decorator([eiger, fgs_motors])
+    @bpp.stage_decorator([eiger])
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
