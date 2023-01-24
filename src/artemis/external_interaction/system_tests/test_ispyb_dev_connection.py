@@ -43,7 +43,7 @@ def fetch_comment() -> Callable:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = FullParameters()
+    dummy_params = InternalParameters()
     dummy_params.ispyb_params.upper_left = Point3D(100, 100, 50)
     dummy_params.ispyb_params.pixels_per_micron_x = 0.8
     dummy_params.ispyb_params.pixels_per_micron_y = 0.8

@@ -4,7 +4,7 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
-from artemis.devices.eiger import EigerDetector
+from artemis.devices.eiger import DetectorParams, EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.experiment_plans.fast_grid_scan_plan import (
     get_plan,
@@ -12,7 +12,8 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     run_gridscan,
 )
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.parameters import SIM_BEAMLINE, DetectorParams, FullParameters
+from artemis.parameters import InternalParameters
+from artemis.parameters.constants import SIM_BEAMLINE
 
 
 @pytest.fixture()
@@ -44,7 +45,7 @@ def eiger() -> EigerDetector:
     yield eiger
 
 
-params = FullParameters()
+params = InternalParameters()
 params.beamline = SIM_BEAMLINE
 
 
@@ -119,7 +120,7 @@ def test_full_plan_tidies_at_end(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    callbacks = FGSCallbackCollection.from_params(InternalParameters())
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
@@ -140,7 +141,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    callbacks = FGSCallbackCollection.from_params(InternalParameters())
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))
