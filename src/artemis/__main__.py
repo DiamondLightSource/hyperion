@@ -116,7 +116,7 @@ class BlueskyRunner:
                 try:
                     plan = PLAN_REGISTRY.get(command.experiment)
                     if plan is None:
-                        raise PlanNotFound
+                        raise PlanNotFound("Experiment plan not found.")
                     with TRACER.start_span("do_run"):
                         self.RE(plan(command.parameters, self.callbacks))
                     self.current_status = StatusAndMessage(Status.IDLE)
@@ -131,7 +131,7 @@ class BlueskyRunner:
                         self.last_run_aborted = False
                     else:
                         self.current_status = StatusAndMessage(
-                            Status.FAILED, str(exception)
+                            Status.FAILED, repr(exception)
                         )
 
 
