@@ -29,6 +29,7 @@ class Actions(Enum):
     START = "start"
     STOP = "stop"
     SHUTDOWN = "shutdown"
+    STATUS = "status"
 
 
 class Status(Enum):
@@ -152,6 +153,9 @@ class RunExperiment(Resource):
             status_and_message = self.runner.stop()
         return status_and_message.to_dict()
 
+    # def get(self, **kwargs):
+    #    return self.runner.current_status.to_dict()
+
 
 class StopOrStatus(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
@@ -164,8 +168,13 @@ class StopOrStatus(Resource):
             status_and_message = self.runner.stop()
         return status_and_message.to_dict()
 
-    def get(self, action):
-        return self.runner.current_status.to_dict()
+    def get(self, **kwargs):
+        print(kwargs)
+        action = kwargs.get("action")
+        status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
+        if action == Actions.STATUS.value:
+            status_and_message = self.runner.current_status
+        return status_and_message.to_dict()
 
 
 def create_app(
