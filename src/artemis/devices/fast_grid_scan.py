@@ -15,8 +15,10 @@ from ophyd import (
 from ophyd.status import DeviceStatus, StatusBase
 
 from artemis.devices.motors import XYZLimitBundle
+from artemis.devices.parameters.base_experiment_device_parameters import (
+    BaseExperimentDeviceParameters,
+)
 from artemis.devices.status import await_value
-from artemis.parameters.base_experiment_parameters import BaseExperimentParameters
 from artemis.utils import Point3D
 
 
@@ -37,7 +39,7 @@ class GridAxis:
         return 0 <= steps <= self.full_steps
 
 
-class GridScanParams(BaseExperimentParameters):
+class GridScanParams(BaseExperimentDeviceParameters):
     """
     Holder class for the parameters of a grid scan in a similar
     layout to EPICS.
@@ -59,16 +61,6 @@ class GridScanParams(BaseExperimentParameters):
     z1_start: float = 0.1
     z2_start: float = 0.1
     num_images: Optional[int] = None
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    def get_num_images(self):
-        if self.num_images is not None:
-            return self.num_images
-        else:
-            self.num_images = self.x_steps * self.y_steps + self.x_steps * self.z_steps
-            return self.num_images
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)

@@ -7,7 +7,7 @@ from artemis.external_interaction.callbacks.fgs.nexus_callback import (
     FGSNexusFileHandlerCallback,
 )
 from artemis.external_interaction.callbacks.fgs.zocalo_callback import FGSZocaloCallback
-from artemis.parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 class FGSCallbackCollection(NamedTuple):

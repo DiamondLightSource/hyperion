@@ -7,7 +7,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
-from artemis.parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 EXPECTED_DCID = 100

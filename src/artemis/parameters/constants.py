@@ -9,7 +9,7 @@ SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_PLAN_NAME = "ispyb_readings"
 SIM_ZOCALO_ENV = "devrmq"
 DEFAULT_EXPERIMENT_TYPE = "grid_scan"
-
+DEFAULT_DETECTOR = "EIGER2_X_16M"
 PARAMETER_VERSION = 0.1
 
 EXPERIMENT_NAMES = ["grid_scan", "rotation_scan"]

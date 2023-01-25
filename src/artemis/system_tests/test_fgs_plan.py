@@ -12,8 +12,8 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     run_gridscan,
 )
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.parameters import InternalParameters
 from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 @pytest.fixture()

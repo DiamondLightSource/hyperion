@@ -1,10 +1,12 @@
 from typing import Optional
 
 from artemis.devices.motors import XYZLimitBundle
-from artemis.parameters.base_experiment_parameters import BaseExperimentParameters
+from artemis.devices.parameters.base_experiment_device_parameters import (
+    BaseExperimentDeviceParameters,
+)
 
 
-class RotationScanParams(BaseExperimentParameters):
+class RotationScanParams(BaseExperimentDeviceParameters):
     """
     Holder class for the parameters of a rotation data collection.
     """

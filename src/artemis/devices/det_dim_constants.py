@@ -11,7 +11,7 @@ class DetectorSize:
 ALL_DETECTORS: Dict[str, "DetectorSizeConstants"] = {}
 
 
-@dataclass(eq=True, frozen=True)
+@dataclass()
 class DetectorSizeConstants:
     det_type_string: str
     det_dimension: DetectorSize

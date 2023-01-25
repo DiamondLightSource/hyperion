@@ -96,6 +96,10 @@ class DetectorParams:
 
         return x_beam_pixels - offset_x, y_beam_pixels - offset_y
 
+    def check_fully_initialised(self) -> bool:
+        # TODO
+        return True
+
     @property
     def omega_end(self):
         return self.omega_start + self.num_images * self.omega_increment

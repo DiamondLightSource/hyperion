@@ -19,9 +19,9 @@ from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.parameters import InternalParameters
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.parameters.external_parameters import get_beamline_prefixes
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
 

@@ -1,10 +1,11 @@
-from artemis.devices.det_dim_constants import constants_from_type
+from artemis.devices.det_dim_constants import ALL_DETECTORS
 from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
     ISPYB_PARAM_DEFAULTS,
     IspybParams,
 )
 from artemis.parameters.constants import (
+    DEFAULT_DETECTOR,
     EXPERIMENT_DICT,
     EXPERIMENT_NAMES,
     EXPERIMENT_TYPES,
@@ -21,8 +22,9 @@ class ArtemisParameters:
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
     experiment_type: str = EXPERIMENT_NAMES[0]
-    detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
+    detector: str = DEFAULT_DETECTOR
 
+    detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
     ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS)
 
     def __init__(
@@ -31,6 +33,7 @@ class ArtemisParameters:
         beamline: str = SIM_BEAMLINE,
         insertion_prefix: str = SIM_INSERTION_PREFIX,
         experiment_type: str = EXPERIMENT_NAMES[0],
+        detector: str = "EIGER2_X_16M",
         detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS),
         ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS),
     ) -> None:
@@ -101,11 +104,9 @@ class InternalParameters:
         detector_params_args["num_images"] = self.experiment_params.get_num_images()
 
         self.artemis_params.detector_params = DetectorParams(**detector_params_args)
-        self.artemis_params.detector_params.detector_size_constants = (
-            constants_from_type(
-                self.artemis_params.detector_params.detector_size_constants
-            )
-        )
+        self.artemis_params.detector_params.detector_size_constants = ALL_DETECTORS[
+            self.artemis_params.detector
+        ]
 
     def check_fully_initialised(self) -> bool:
         self.fully_initialised = (
