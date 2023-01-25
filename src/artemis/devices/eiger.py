@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 from ophyd import Component, Device, EpicsSignalRO, StatusBase
 from ophyd.areadetector.cam import EigerDetectorCam
@@ -28,7 +29,7 @@ class EigerDetector(Device):
 
     filewriters_finished: StatusBase
 
-    detector_params = None
+    detector_params: Optional[DetectorParams] = None
 
     def set_detector_parameters(self, detector_params: DetectorParams):
         self.detector_params = detector_params
@@ -84,6 +85,7 @@ class EigerDetector(Device):
         self.change_roi_mode(False)
 
     def change_roi_mode(self, enable: bool):
+        assert self.detector_params is not None
         detector_dimensions = (
             self.detector_params.detector_size_constants.roi_size_pixels
             if enable
@@ -102,6 +104,7 @@ class EigerDetector(Device):
             self.log.error("Failed to switch to ROI mode")
 
     def set_cam_pvs(self) -> Status:
+        assert self.detector_params is not None
         status = self.cam.acquire_time.set(self.detector_params.exposure_time)
         status &= self.cam.acquire_period.set(self.detector_params.exposure_time)
         status &= self.cam.num_exposures.set(1)
@@ -125,6 +128,7 @@ class EigerDetector(Device):
         return odin_status
 
     def set_mx_settings_pvs(self) -> Status:
+        assert self.detector_params is not None
         beam_x_pixels, beam_y_pixels = self.detector_params.get_beam_position_pixels(
             self.detector_params.detector_distance
         )
@@ -155,6 +159,7 @@ class EigerDetector(Device):
             return status
 
     def set_num_triggers_and_captures(self) -> Status:
+        assert self.detector_params is not None
         status = self.cam.num_images.set(1)
         status &= self.cam.num_triggers.set(self.detector_params.num_images)
         status &= self.odin.file_writer.num_capture.set(self.detector_params.num_images)
