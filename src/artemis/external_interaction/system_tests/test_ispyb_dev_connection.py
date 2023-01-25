@@ -44,10 +44,12 @@ def fetch_comment() -> Callable:
 @pytest.fixture
 def dummy_params():
     dummy_params = InternalParameters()
-    dummy_params.ispyb_params.upper_left = Point3D(100, 100, 50)
-    dummy_params.ispyb_params.pixels_per_micron_x = 0.8
-    dummy_params.ispyb_params.pixels_per_micron_y = 0.8
-    dummy_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    dummy_params.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 50)
+    dummy_params.artemis_params.ispyb_params.pixels_per_micron_x = 0.8
+    dummy_params.artemis_params.ispyb_params.pixels_per_micron_y = 0.8
+    dummy_params.artemis_params.ispyb_params.visit_path = (
+        "/dls/i03/data/2022/cm31105-5/"
+    )
     return dummy_params
 
 

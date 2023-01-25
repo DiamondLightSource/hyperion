@@ -31,7 +31,7 @@ class ArtemisParameters:
     experiment_type: str = EXPERIMENT_NAMES[0]
     detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
 
-    ispyb_params: IspybParams = IspybParams()
+    ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS)
 
     def __init__(
         self,

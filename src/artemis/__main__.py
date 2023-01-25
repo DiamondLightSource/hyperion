@@ -140,7 +140,7 @@ class RunExperiment(Resource):
                     raise PlanNotFound(
                         f"Experiment plan '{experiment}' has no \"run\" method."
                     )
-                parameters = InternalParameters.from_json(request.data)
+                parameters = InternalParameters.from_external_json(request.data)
                 status_and_message = self.runner.start(plan, parameters)
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))

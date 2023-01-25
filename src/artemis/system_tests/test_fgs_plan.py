@@ -31,8 +31,8 @@ def eiger() -> EigerDetector:
         run_number=0,
         det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
     )
-    eiger = EigerDetector(
-        detector_params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
+    eiger = EigerDetector.with_params(
+        params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
     )
 
     # Otherwise odin moves too fast to be tested
@@ -105,11 +105,13 @@ def test_read_hardware_for_ispyb(
 
 
 @pytest.mark.s03
+@patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.eiger")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
-@patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
-@patch("artemis.fast_grid_scan_plan.set_zebra_shutter_to_manual")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual")
 def test_full_plan_tidies_at_end(
     set_shutter_to_manual: MagicMock,
     run_gridscan_and_move: MagicMock,
@@ -117,20 +119,22 @@ def test_full_plan_tidies_at_end(
     kickoff: MagicMock,
     wait: MagicMock,
     eiger: EigerDetector,
-    RE: RunEngine,
     fgs_composite: FGSComposite,
+    RE: RunEngine,
 ):
     callbacks = FGSCallbackCollection.from_params(InternalParameters())
-    RE(get_plan(fgs_composite, eiger, params, callbacks))
+    RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
 
 @pytest.mark.s03
+@patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.eiger")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
-@patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
-@patch("artemis.fast_grid_scan_plan.set_zebra_shutter_to_manual")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual")
 def test_full_plan_tidies_at_end_when_plan_fails(
     set_shutter_to_manual: MagicMock,
     run_gridscan_and_move: MagicMock,
@@ -138,12 +142,12 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     kickoff: MagicMock,
     wait: MagicMock,
     eiger: EigerDetector,
-    RE: RunEngine,
     fgs_composite: FGSComposite,
+    RE: RunEngine,
 ):
     callbacks = FGSCallbackCollection.from_params(InternalParameters())
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
-        RE(get_plan(fgs_composite, eiger, params, callbacks))
+        RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
     # tidy_plans.assert_called_once()
