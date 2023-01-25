@@ -69,6 +69,8 @@ class BlueskyRunner:
         self.RE = RE
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
+        for plan in PLAN_REGISTRY:
+            PLAN_REGISTRY[plan]["setup"]()
 
     def start(
         self, experiment: Callable, parameters: FullParameters
@@ -144,10 +146,15 @@ class RunExperiment(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                plan = PLAN_REGISTRY.get(experiment)
-                if plan is None:
+                experiment_type = PLAN_REGISTRY.get(experiment)
+                if experiment_type is None:
                     raise PlanNotFound(
                         f"Experiment plan '{experiment}' not found in registry."
+                    )
+                plan = experiment_type.get("run")
+                if plan is None:
+                    raise PlanNotFound(
+                        f"Experiment plan '{experiment}' has no \"run\" method."
                     )
                 parameters = FullParameters.from_json(request.data)
                 status_and_message = self.runner.start(plan, parameters)
