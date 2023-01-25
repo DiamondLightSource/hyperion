@@ -1,7 +1,6 @@
 import threading
 import time
 from dataclasses import dataclass
-from typing import List
 
 from bluesky.plan_stubs import mv
 from dataclasses_json import DataClassJsonMixin
@@ -14,7 +13,6 @@ from ophyd import (
     Signal,
 )
 from ophyd.status import DeviceStatus, StatusBase
-from ophyd.utils.epics_pvs import set_and_wait
 
 from artemis.devices.motors import XYZLimitBundle
 from artemis.devices.status import await_value
@@ -243,10 +241,6 @@ class FastGridScan(Device):
         threading.Thread(target=scan, daemon=True).start()
         return st
 
-    def stage(self) -> List[object]:
-        set_and_wait(self.position_counter, 0)
-        return super().stage()
-
     def complete(self) -> DeviceStatus:
         return GridScanCompleteStatus(self)
 
@@ -283,4 +277,6 @@ def set_fast_grid_scan_params(scan: FastGridScan, params: GridScanParams):
         params.z1_start,
         scan.z2_start,
         params.z2_start,
+        scan.position_counter,
+        0,
     )

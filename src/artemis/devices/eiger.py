@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 from ophyd import Component, Device, EpicsSignalRO, StatusBase
 from ophyd.areadetector.cam import EigerDetectorCam
@@ -8,6 +9,20 @@ from artemis.devices.detector import DetectorParams
 from artemis.devices.eiger_odin import EigerOdin
 from artemis.devices.status import await_value
 from artemis.log import LOGGER
+
+DETECTOR_PARAM_DEFAULTS = {
+    "current_energy": 100,
+    "exposure_time": 0.1,
+    "directory": "/tmp",
+    "prefix": "file_name",
+    "run_number": 0,
+    "detector_distance": 100.0,
+    "omega_start": 0.0,
+    "omega_increment": 0.0,
+    "num_images": 2000,
+    "use_roi_mode": False,
+    "det_dist_to_beam_converter_path": "src/artemis/devices/unit_tests/test_lookup_table.txt",
+}
 
 
 class EigerTriggerMode(Enum):
@@ -28,14 +43,22 @@ class EigerDetector(Device):
 
     filewriters_finished: StatusBase
 
-    def __init__(
-        self, detector_params: DetectorParams, name="Eiger Detector", *args, **kwargs
-    ):
-        super().__init__(name=name, *args, **kwargs)
-        self.detector_params = detector_params
-        self.check_detector_variables_set()
+    detector_params: Optional[DetectorParams] = None
 
-    def check_detector_variables_set(self):
+    @classmethod
+    def with_params(
+        cls,
+        params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS),
+        name: str = "EigerDetector",
+        *args,
+        **kwargs,
+    ):
+        det = cls(name=name, *args, **kwargs)
+        det.set_detector_parameters(params)
+        return det
+
+    def set_detector_parameters(self, detector_params: DetectorParams):
+        self.detector_params = detector_params
         if self.detector_params is None:
             raise Exception("Parameters for scan must be specified")
 
@@ -88,6 +111,7 @@ class EigerDetector(Device):
         self.change_roi_mode(False)
 
     def change_roi_mode(self, enable: bool):
+        assert self.detector_params is not None
         detector_dimensions = (
             self.detector_params.detector_size_constants.roi_size_pixels
             if enable
@@ -106,6 +130,7 @@ class EigerDetector(Device):
             self.log.error("Failed to switch to ROI mode")
 
     def set_cam_pvs(self) -> Status:
+        assert self.detector_params is not None
         status = self.cam.acquire_time.set(self.detector_params.exposure_time)
         status &= self.cam.acquire_period.set(self.detector_params.exposure_time)
         status &= self.cam.num_exposures.set(1)
@@ -129,6 +154,7 @@ class EigerDetector(Device):
         return odin_status
 
     def set_mx_settings_pvs(self) -> Status:
+        assert self.detector_params is not None
         beam_x_pixels, beam_y_pixels = self.detector_params.get_beam_position_pixels(
             self.detector_params.detector_distance
         )
@@ -159,6 +185,7 @@ class EigerDetector(Device):
             return status
 
     def set_num_triggers_and_captures(self) -> Status:
+        assert self.detector_params is not None
         status = self.cam.num_images.set(1)
         status &= self.cam.num_triggers.set(self.detector_params.num_images)
         status &= self.odin.file_writer.num_capture.set(self.detector_params.num_images)

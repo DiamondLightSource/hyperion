@@ -1,7 +1,7 @@
 from enum import Enum
 
 from artemis.devices.det_dim_constants import constants_from_type
-from artemis.devices.eiger import DetectorParams
+from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.parameters.constants import (
     EXPERIMENT_DICT,
@@ -26,19 +26,7 @@ class ArtemisParameters:
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
     experiment_type: str = EXPERIMENT_NAMES[0]
-    detector_params: DetectorParams = DetectorParams(
-        current_energy=100,
-        exposure_time=0.1,
-        directory="/tmp",
-        prefix="file_name",
-        run_number=0,
-        detector_distance=100.0,
-        omega_start=0.0,
-        omega_increment=0.0,
-        num_images=2000,
-        use_roi_mode=False,
-        det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
-    )
+    detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
 
     ispyb_params: IspybParams = IspybParams(
         sample_id=None,

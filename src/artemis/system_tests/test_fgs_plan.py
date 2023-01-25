@@ -13,7 +13,7 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
 )
 from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.parameters import InternalParameters
-from artemis.parameters.constants import SIM_BEAMLINE
+from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
 
 
 @pytest.fixture()
@@ -46,7 +46,7 @@ def eiger() -> EigerDetector:
 
 
 params = InternalParameters()
-params.beamline = SIM_BEAMLINE
+params.artemis_params.beamline = SIM_BEAMLINE
 
 
 @pytest.fixture
@@ -57,9 +57,9 @@ def RE():
 @pytest.fixture
 def fgs_composite():
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=params.insertion_prefix,
+        insertion_prefix=SIM_INSERTION_PREFIX,
         name="fgs",
-        prefix=params.beamline,
+        prefix=SIM_BEAMLINE,
     )
     return fast_grid_scan_composite
 
@@ -121,7 +121,7 @@ def test_full_plan_tidies_at_end(
     fgs_composite: FGSComposite,
 ):
     callbacks = FGSCallbackCollection.from_params(InternalParameters())
-    RE(get_plan(params, callbacks))
+    RE(get_plan(fgs_composite, eiger, params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -144,6 +144,6 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     callbacks = FGSCallbackCollection.from_params(InternalParameters())
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
-        RE(get_plan(params, callbacks))
+        RE(get_plan(fgs_composite, eiger, params, callbacks))
     set_shutter_to_manual.assert_called_once()
     # tidy_plans.assert_called_once()

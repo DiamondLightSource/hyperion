@@ -49,7 +49,11 @@ class ClientAndRunEngine:
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
-    app, runner = create_app({"TESTING": True}, mock_run_engine)
+    with patch.dict(
+        "artemis.__main__.PLAN_REGISTRY",
+        {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+    ):
+        app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
     with app.test_client() as client:

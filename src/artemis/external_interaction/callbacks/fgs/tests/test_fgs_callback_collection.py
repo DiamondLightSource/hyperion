@@ -13,7 +13,11 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
+from artemis.parameters.constants import (
+    ISPYB_PLAN_NAME,
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+)
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
@@ -162,9 +166,7 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
 
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=params.artemis_parameters.insertion_prefix,
-        name="fgs",
-        prefix=params.artemis_parameters.beamline,
+        insertion_prefix=SIM_INSERTION_PREFIX, name="fgs", prefix=SIM_BEAMLINE
     )
     # this is where it's currently getting stuck:
     # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
