@@ -1,25 +1,11 @@
 import copy
 import json
-from dataclasses import dataclass, field
 from os import environ
 from pathlib import Path
 
 import jsonschema
 
-from artemis.parameters.constants import (
-    EXPERIMENT_DICT,
-    EXPERIMENT_NAMES,
-    EXPERIMENT_TYPES,
-    PARAMETER_VERSION,
-    SIM_BEAMLINE,
-    SIM_INSERTION_PREFIX,
-    SIM_ZOCALO_ENV,
-)
-from artemis.utils import Point3D
-
-
-def default_field(obj):
-    return field(default_factory=lambda: copy.deepcopy(obj))
+from artemis.parameters.constants import EXPERIMENT_DICT, EXPERIMENT_TYPES
 
 
 class WrongExperimentParameterSpecification(Exception):

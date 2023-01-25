@@ -70,6 +70,16 @@ class GridScanParams(BaseExperimentParameters):
             self.num_images = self.x_steps * self.y_steps + self.x_steps * self.z_steps
             return self.num_images
 
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+    def get_num_images(self):
+        if self.num_images is not None:
+            return self.num_images
+        else:
+            self.num_images = self.x_steps * self.y_steps + self.x_steps * self.z_steps
+            return self.num_images
+
     def __post_init__(self):
         self.x_axis = GridAxis(self.x_start, self.x_step_size, self.x_steps)
         self.y_axis = GridAxis(self.y1_start, self.y_step_size, self.y_steps)

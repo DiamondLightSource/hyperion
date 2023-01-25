@@ -65,18 +65,30 @@ class InternalParameters:
     fully_initialised: bool = False
 
     def __init__(self, external_params: RawParameters = RawParameters()):
-        self.artemis_params = ArtemisParameters(**external_params["artemis_params"])
-        self.artemis_params.detector_params = DetectorParams(
-            **self.artemis_params.detector_params
+        all_params_bucket = {
+            **(external_params["artemis_params"]["ispyb_params"]),
+            **(external_params["artemis_params"]["detector_params"]),
+            **(external_params["experiment_params"]),
+        }
+        detector_field_keys = DetectorParams.__annotations__.keys()
+        ispyb_field_keys = IspybParams.__annotations__.keys()
+
+        detector_params_args = {
+            key: all_params_bucket.get(key)
+            for key in detector_field_keys
+            if all_params_bucket.get(key) is not None
+        }
+        ispyb_params_args = {
+            key: all_params_bucket.get(key)
+            for key in ispyb_field_keys
+            if all_params_bucket.get(key) is not None
+        }
+
+        self.artemis_params = ArtemisParameters(
+            **external_params.params["artemis_params"]
         )
-        self.artemis_params.detector_params.detector_size_constants = (
-            constants_from_type(
-                self.artemis_params.detector_params.detector_size_constants
-            )
-        )
-        self.artemis_params.ispyb_params = IspybParams(
-            **self.artemis_params.ispyb_params
-        )
+
+        self.artemis_params.ispyb_params = IspybParams(**ispyb_params_args)
         self.artemis_params.ispyb_params.upper_left = Point3D(
             *self.artemis_params.ispyb_params.upper_left
         )
