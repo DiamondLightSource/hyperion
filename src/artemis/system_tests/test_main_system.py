@@ -84,16 +84,19 @@ def check_status_in_response(response_object, expected_result: Status):
     assert response_json["status"] == expected_result.value
 
 
+@pytest.mark.s03
 def test_start_gives_success(test_env: ClientAndRunEngine):
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.SUCCESS)
 
 
+@pytest.mark.s03
 def test_getting_status_return_idle(test_env: ClientAndRunEngine):
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.IDLE)
 
 
+@pytest.mark.s03
 def test_getting_status_after_start_sent_returns_busy(
     test_env: ClientAndRunEngine,
 ):
@@ -102,6 +105,7 @@ def test_getting_status_after_start_sent_returns_busy(
     check_status_in_response(response, Status.BUSY)
 
 
+@pytest.mark.s03
 def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     response = test_env.client.put("/bad_plan/start", data=TEST_PARAMS).json
     assert isinstance(response, dict)
@@ -112,12 +116,14 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     )
 
 
+@pytest.mark.s03
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.FAILED)
 
 
+@pytest.mark.s03
 def test_given_started_when_stopped_then_success_and_idle_status(
     test_env: ClientAndRunEngine,
 ):
@@ -134,6 +140,7 @@ def test_given_started_when_stopped_then_success_and_idle_status(
     check_status_in_response(response, Status.ABORTING)
 
 
+@pytest.mark.s03
 def test_given_started_when_stopped_and_started_again_then_runs(
     test_env: ClientAndRunEngine,
 ):
@@ -145,6 +152,7 @@ def test_given_started_when_stopped_and_started_again_then_runs(
     check_status_in_response(response, Status.BUSY)
 
 
+@pytest.mark.s03
 def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
     test_env: ClientAndRunEngine,
 ):
