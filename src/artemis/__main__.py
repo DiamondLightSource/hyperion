@@ -146,10 +146,15 @@ class RunExperiment(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                plan = PLAN_REGISTRY.get(experiment).get("run")
-                if plan is None:
+                experiment_type = PLAN_REGISTRY.get(experiment)
+                if experiment_type is None:
                     raise PlanNotFound(
                         f"Experiment plan '{experiment}' not found in registry."
+                    )
+                plan = experiment_type.get("run")
+                if plan is None:
+                    raise PlanNotFound(
+                        f"Experiment plan '{experiment}' has no \"run\" method."
                     )
                 parameters = FullParameters.from_json(request.data)
                 status_and_message = self.runner.start(plan, parameters)
