@@ -100,21 +100,19 @@ def test_check_detector_variables(
     beam_xy_converter,
     expected_error_number,
 ):
-    fake_eiger.set_detector_parameters(detector_params)
-
     if detector_params is not None:
-        fake_eiger.detector_params.beam_xy_converter = beam_xy_converter
-        fake_eiger.detector_params.detector_size_constants = detector_size_constants
+        detector_params.beam_xy_converter = beam_xy_converter
+        detector_params.detector_size_constants = detector_size_constants
 
     if expected_error_number != 0:
         with pytest.raises(Exception) as e:
-            fake_eiger.set_detector_parameters()
+            fake_eiger.set_detector_parameters(detector_params)
         number_of_errors = str(e.value).count("\n") + 1
 
         assert number_of_errors == expected_error_number
     else:
         try:
-            fake_eiger.set_detector_parameters()
+            fake_eiger.set_detector_parameters(detector_params)
         except Exception as e:
             assert False, f"exception was raised {e}"
 
