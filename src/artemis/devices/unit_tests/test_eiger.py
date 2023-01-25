@@ -44,9 +44,9 @@ TEST_DETECTOR_PARAMS = DetectorParams(
 
 @pytest.fixture
 def fake_eiger():
-    FakeEigerDetector = make_fake_device(EigerDetector)
-    fake_eiger: EigerDetector = FakeEigerDetector(
-        detector_params=TEST_DETECTOR_PARAMS, name="test"
+    FakeEigerDetector: EigerDetector = make_fake_device(EigerDetector)
+    fake_eiger: EigerDetector = FakeEigerDetector.with_params(
+        params=TEST_DETECTOR_PARAMS, name="test"
     )
     return fake_eiger
 
@@ -94,13 +94,13 @@ def test_detector_threshold(
     ],
 )
 def test_check_detector_variables(
-    fake_eiger,
-    detector_params,
+    fake_eiger: EigerDetector,
+    detector_params: DetectorParams,
     detector_size_constants,
     beam_xy_converter,
     expected_error_number,
 ):
-    fake_eiger.detector_params = detector_params
+    fake_eiger.set_detector_parameters(detector_params)
 
     if detector_params is not None:
         fake_eiger.detector_params.beam_xy_converter = beam_xy_converter
@@ -108,13 +108,13 @@ def test_check_detector_variables(
 
     if expected_error_number != 0:
         with pytest.raises(Exception) as e:
-            fake_eiger.check_detector_variables_set()
+            fake_eiger.set_detector_parameters()
         number_of_errors = str(e.value).count("\n") + 1
 
         assert number_of_errors == expected_error_number
     else:
         try:
-            fake_eiger.check_detector_variables_set()
+            fake_eiger.set_detector_parameters()
         except Exception as e:
             assert False, f"exception was raised {e}"
 

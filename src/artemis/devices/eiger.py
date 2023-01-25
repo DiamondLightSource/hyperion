@@ -10,6 +10,20 @@ from artemis.devices.eiger_odin import EigerOdin
 from artemis.devices.status import await_value
 from artemis.log import LOGGER
 
+DETECTOR_PARAM_DEFAULTS = {
+    "current_energy": 100,
+    "exposure_time": 0.1,
+    "directory": "/tmp",
+    "prefix": "file_name",
+    "run_number": 0,
+    "detector_distance": 100.0,
+    "omega_start": 0.0,
+    "omega_increment": 0.0,
+    "num_images": 2000,
+    "use_roi_mode": False,
+    "det_dist_to_beam_converter_path": "src/artemis/devices/unit_tests/test_lookup_table.txt",
+}
+
 
 class EigerTriggerMode(Enum):
     INTERNAL_SERIES = 0
@@ -30,6 +44,18 @@ class EigerDetector(Device):
     filewriters_finished: StatusBase
 
     detector_params: Optional[DetectorParams] = None
+
+    @classmethod
+    def with_params(
+        cls,
+        params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS),
+        name: str = "EigerDetector",
+        *args,
+        **kwargs,
+    ):
+        det = cls(name=name, *args, **kwargs)
+        det.set_detector_parameters(params)
+        return det
 
     def set_detector_parameters(self, detector_params: DetectorParams):
         self.detector_params = detector_params
