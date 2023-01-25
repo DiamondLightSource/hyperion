@@ -134,4 +134,4 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
         return_value = future.result()
 
     assert type(return_value) == Point3D
-    assert return_value == Point3D(*reversed(centre_of_mass_coords))
+    assert return_value == Point3D(*centre_of_mass_coords)
