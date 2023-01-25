@@ -1,11 +1,17 @@
 import copy
 import json
+from dataclasses import dataclass, field
 from os import environ
 from pathlib import Path
 
 import jsonschema
 
-from artemis.parameters.constants import EXPERIMENT_DICT, EXPERIMENT_TYPES
+from artemis.parameters.constants import (
+    EXPERIMENT_DICT,
+    EXPERIMENT_TYPES,
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+)
 
 
 class WrongExperimentParameterSpecification(Exception):
@@ -28,10 +34,6 @@ def get_beamline_prefixes():
 
 def default_field(obj):
     return field(default_factory=lambda: copy.deepcopy(obj))
-
-
-class WrongExperimentParameterSpecification(Exception):
-    pass
 
 
 class RawParameters:
