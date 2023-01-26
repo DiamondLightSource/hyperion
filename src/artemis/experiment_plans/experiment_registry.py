@@ -5,7 +5,7 @@ from artemis.parameters.constants import EXPERIMENT_NAMES
 
 
 def not_implemented():
-    raise NotImplementedError
+    pass
 
 
 PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
