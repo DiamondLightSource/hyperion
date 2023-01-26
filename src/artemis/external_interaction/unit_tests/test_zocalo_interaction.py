@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 from pytest import mark, raises
 from zocalo.configuration import Configuration
 
+from artemis.exceptions import WarningException
 from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from artemis.parameters import SIM_ZOCALO_ENV
 from artemis.utils import Point3D
@@ -135,3 +136,10 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
 
     assert type(return_value) == Point3D
     assert return_value == Point3D(*centre_of_mass_coords)
+
+
+def test_exception_when_no_results_on_timeout():
+    zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
+    zc._get_zocalo_connection = MagicMock()
+    with raises(WarningException):
+        zc.wait_for_result(data_collection_group_id=100, timeout=5)
