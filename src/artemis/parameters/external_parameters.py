@@ -109,6 +109,8 @@ class ExternalGridScanParameters(DataClassJsonMixin):
 
 @dataclass
 class ExternalRotationScanParameters(DataClassJsonMixin):
+    # TODO in next part of parameter refactor, make these
+    # more realistic
     x_steps: int = 4
     y_steps: int = 200
     z_steps: int = 61
