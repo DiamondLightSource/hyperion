@@ -15,6 +15,7 @@ def fast_grid_scan():
     yield fast_grid_scan
 
 
+@pytest.mark.s03
 def test_when_program_data_set_and_staged_then_expected_images_correct(
     fast_grid_scan: FastGridScan,
 ):
