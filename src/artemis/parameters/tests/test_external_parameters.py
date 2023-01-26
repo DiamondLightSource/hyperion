@@ -33,9 +33,9 @@ def test_parameters_load_from_file():
     ).params
     expt_params: GridScanParams = GridScanParams(**params["experiment_params"])
     assert isinstance(expt_params, GridScanParams)
-    assert expt_params.x_steps == 5
-    assert expt_params.y_steps == 10
-    assert expt_params.z_steps == 2
+    assert expt_params.x_steps == 4
+    assert expt_params.y_steps == 200
+    assert expt_params.z_steps == 61
     assert expt_params.x_step_size == 0.1
     assert expt_params.y_step_size == 0.1
     assert expt_params.z_step_size == 0.1
