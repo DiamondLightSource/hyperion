@@ -48,7 +48,7 @@ def run_test_on_complete_watcher(
     RE = RunEngine()
     RE(
         set_fast_grid_scan_params(
-            fast_grid_scan, GridScanParams(num_pos_1d, num_pos_1d)
+            fast_grid_scan, GridScanParams(x_steps=num_pos_1d, y_steps=num_pos_1d)
         )
     )
 
@@ -109,7 +109,7 @@ def test_running_finished_with_all_images_done_then_complete_status_finishes_not
     RE = RunEngine()
     RE(
         set_fast_grid_scan_params(
-            fast_grid_scan, GridScanParams(num_pos_1d, num_pos_1d)
+            fast_grid_scan, GridScanParams(x_steps=num_pos_1d, y_steps=num_pos_1d)
         )
     )
 
@@ -266,12 +266,12 @@ def test_scan_within_limits_3d(
 @pytest.fixture
 def grid_scan_params():
     yield GridScanParams(
-        10,
-        15,
-        20,
-        0.3,
-        0.2,
-        0.1,
+        x_steps=10,
+        y_steps=15,
+        z_steps=20,
+        x_step_size=0.3,
+        y_step_size=0.2,
+        z_step_size=0.1,
         x_start=0,
         y1_start=1,
         y2_start=2,

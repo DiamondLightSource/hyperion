@@ -85,9 +85,10 @@ def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called():
     params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
+    callbacks.ispyb_handler.ispyb = MagicMock()
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
-    expected_centre_grid_coords = Point3D(1, 2, 3)
+    expected_centre_grid_coords = Point3D(0.6, 0.7, 0.8)
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         expected_centre_grid_coords
     )

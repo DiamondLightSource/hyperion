@@ -25,7 +25,9 @@ with open(
     "r",
 ) as f:
     rotation_scan_schema = json.load(f)
-with open("src/artemis/parameters/tests/test_data/good_test_parameters.json", "r") as f:
+with open(
+    "src/artemis/parameters/tests/test_data/good_test_parameters_minimal.json", "r"
+) as f:
     params = json.load(f)
 
 path = Path("src/artemis/parameters/schemas/").absolute()
@@ -80,14 +82,3 @@ def test_bad_params_wrong_version_raises_exception():
         params = json.load(f)
     with pytest.raises(ValidationError):
         jsonschema.validate(params, full_schema, resolver=resolver)
-
-
-#
-# jsonschema.validate(params, full_schema, resolver=resolver)
-# jsonschema.validate(params["artemis_params"], artemis_schema, resolver=resolver)
-# jsonschema.validate(
-#     params["artemis_params"]["ispyb_params"], ispyb_schema, resolver=resolver
-# )
-# jsonschema.validate(
-#     params["artemis_params"]["detector_params"], detector_schema, resolver=resolver
-# )

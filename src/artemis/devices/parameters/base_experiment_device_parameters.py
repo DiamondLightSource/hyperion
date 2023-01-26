@@ -14,3 +14,9 @@ class BaseExperimentDeviceParameters:
     @abstractmethod
     def get_num_images(self):
         raise NotImplementedError
+
+    def __eq__(self, other):
+        for att, val in self.__dict__.items():
+            if getattr(other, att) != val:
+                return False
+        return True

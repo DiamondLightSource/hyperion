@@ -64,6 +64,11 @@ class GridScanParams(BaseExperimentDeviceParameters):
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+        self.x_axis = GridAxis(self.x_start, self.x_step_size, self.x_steps)
+        self.y_axis = GridAxis(self.y1_start, self.y_step_size, self.y_steps)
+        self.z_axis = GridAxis(self.z2_start, self.z_step_size, self.z_steps)
+        self.axes = [self.x_axis, self.y_axis, self.z_axis]
+        self.get_num_images()
 
     def get_num_images(self):
         if self.num_images is not None:
@@ -71,13 +76,6 @@ class GridScanParams(BaseExperimentDeviceParameters):
         else:
             self.num_images = self.x_steps * self.y_steps + self.x_steps * self.z_steps
             return self.num_images
-
-    def __post_init__(self):
-        self.x_axis = GridAxis(self.x_start, self.x_step_size, self.x_steps)
-        self.y_axis = GridAxis(self.y1_start, self.y_step_size, self.y_steps)
-        self.z_axis = GridAxis(self.z2_start, self.z_step_size, self.z_steps)
-        self.axes = [self.x_axis, self.y_axis, self.z_axis]
-        self.get_num_images()
 
     def is_valid(self, limits: XYZLimitBundle) -> bool:
         """

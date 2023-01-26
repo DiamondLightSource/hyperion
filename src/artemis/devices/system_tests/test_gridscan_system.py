@@ -15,12 +15,11 @@ def fast_grid_scan():
     yield fast_grid_scan
 
 
-@pytest.mark.s03
 def test_when_program_data_set_and_staged_then_expected_images_correct(
     fast_grid_scan: FastGridScan,
 ):
     RE = RunEngine()
-    RE(set_fast_grid_scan_params(fast_grid_scan, GridScanParams(2, 2)))
+    RE(set_fast_grid_scan_params(fast_grid_scan, GridScanParams(x_steps=2, y_steps=2)))
     assert fast_grid_scan.expected_images.get() == 2 * 2
     fast_grid_scan.stage()
     assert fast_grid_scan.position_counter.get() == 0
@@ -31,7 +30,9 @@ def test_given_valid_params_when_kickoff_then_completion_status_increases_and_fi
     fast_grid_scan: FastGridScan,
 ):
     def set_and_wait_plan(fast_grid_scan: FastGridScan):
-        yield from set_fast_grid_scan_params(fast_grid_scan, GridScanParams(3, 3))
+        yield from set_fast_grid_scan_params(
+            fast_grid_scan, GridScanParams(x_steps=3, y_steps=3)
+        )
         yield from wait_for_fgs_valid(fast_grid_scan)
 
     prev_current, prev_fraction = None, None
