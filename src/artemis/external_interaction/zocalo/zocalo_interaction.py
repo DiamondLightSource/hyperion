@@ -1,6 +1,7 @@
 import getpass
 import queue
 import socket
+from queue import Empty
 
 import workflows.recipe
 import workflows.transport
@@ -8,6 +9,7 @@ import zocalo.configuration
 from workflows.transport import lookup
 
 import artemis.log
+from artemis.exceptions import WarningException
 from artemis.utils import Point3D
 
 TIMEOUT = 90
@@ -116,5 +118,9 @@ class ZocaloInteractor:
 
         try:
             return result_received.get(timeout=timeout)
+        except Empty:
+            raise WarningException(
+                f"No results returned by Zocalo within timeout of {timeout}"
+            )
         finally:
             transport.disconnect()
