@@ -43,6 +43,7 @@ class ArtemisParameters:
         self.experiment_type = experiment_type
         self.detector_params = detector_params
         self.ispyb_params = ispyb_params
+        self.detector = detector
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, ArtemisParameters):
@@ -73,8 +74,10 @@ class InternalParameters:
             **(external_params["artemis_params"]["detector_params"]),
             **(external_params["experiment_params"]),
         }
-        detector_field_keys = DetectorParams.__annotations__.keys()
-        ispyb_field_keys = IspybParams.__annotations__.keys()
+        detector_field_keys = list(DetectorParams.__annotations__.keys())
+        # not an annotation but specified as field encoder in DetectorParams:
+        detector_field_keys.append("detector")
+        ispyb_field_keys = list(IspybParams.__annotations__.keys())
 
         detector_params_args = {
             key: all_params_bucket.get(key)

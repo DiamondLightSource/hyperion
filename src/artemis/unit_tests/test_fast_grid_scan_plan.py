@@ -38,11 +38,9 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
         == EIGER_TYPE_EIGER2_X_16M
     )
     raw_params_dict = RawParameters().to_dict()
-    raw_params_dict["artemis_params"]["detector_params"][
-        "detector_size_constants"
-    ] = EIGER_TYPE_EIGER2_X_4M
+    raw_params_dict["artemis_params"]["detector"] = EIGER_TYPE_EIGER2_X_4M
     raw_params = RawParameters.from_dict(raw_params_dict)
-    params: InternalParameters = InternalParameters(raw_params)
+    params = InternalParameters(raw_params)
     det_dimension = (
         params.artemis_params.detector_params.detector_size_constants.det_dimension
     )
