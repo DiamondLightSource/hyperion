@@ -304,8 +304,8 @@ def test_ispyb_deposition_comment_correct(
 
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 5 by 10 images in 100.0 um"
-        " by 100.0 um steps. Top left (px): [100,100], bottom right (px): [500,900]."
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
     )
 
 
@@ -327,8 +327,8 @@ def test_ispyb_deposition_rounds_to_int(
 
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 5 by 10 images in 100.0 um"
-        " by 100.0 um steps. Top left (px): [0,100], bottom right (px): [400,900]."
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [320,16100]."
     )
 
 
@@ -346,12 +346,12 @@ def test_ispyb_deposition_comment_for_3D_correct(
     first_upserted_param_value_list = mock_upsert_dc.call_args_list[0][0][0]
     second_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
     assert first_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 5 by 10 images in 100.0 um"
-        " by 100.0 um steps. Top left (px): [100,100], bottom right (px): [500,900]."
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
     )
     assert second_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 5 by 2 images in 100.0 um"
-        " by 100.0 um steps. Top left (px): [100,50], bottom right (px): [500,210]."
+        "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]."
     )
 
 

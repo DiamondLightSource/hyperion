@@ -123,7 +123,11 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert written_nexus_file["/entry/instrument/beam/total_flux"][()] == 9.0
             assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
             assert "data_000002" not in data_path
-            assert np.all(data_path["omega"][:] == 0.0)
+
+            omeg_vals = data_path["omega"][:]
+            omeg_truths = omeg_vals == 0.0
+            omeg_valid = np.all(omeg_truths)
+            assert omeg_valid
 
             assert np.all(
                 written_nexus_file["/entry/data/omega"].attrs.get("vector")
