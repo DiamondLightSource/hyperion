@@ -10,9 +10,14 @@ import zocalo.configuration
 from workflows.transport import lookup
 
 import artemis.log
+from artemis.exceptions import WarningException
 from artemis.utils import Point3D
 
 TIMEOUT = 90
+
+
+class NoDiffractionFound(WarningException):
+    pass
 
 
 class ZocaloInteractor:
@@ -103,6 +108,8 @@ class ZocaloInteractor:
                 transport.ack(header)
                 received_group_id = recipe_parameters["dcgid"]
                 if received_group_id == str(data_collection_group_id):
+                    if len(message) == 0:
+                        raise NoDiffractionFound()
                     result_received.put(Point3D(*message[0]["centre_of_mass"]))
                 else:
                     artemis.log.LOGGER.warning(
