@@ -132,6 +132,6 @@ class ZocaloInteractor:
                         sleep(1)
                 else:
                     return result_received.get_nowait()
-            raise TimeoutError("Timed out waiting for zocalo results")
+            raise TimeoutError(f"No results returned by Zocalo for dcgid {data_collection_group_id} within timeout of {timeout}")
         finally:
             transport.disconnect()
