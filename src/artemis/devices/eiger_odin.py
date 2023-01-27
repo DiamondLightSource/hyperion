@@ -1,14 +1,8 @@
 from typing import List, Tuple
 
-from ophyd import (
-    Component,
-    Device,
-    EpicsSignal,
-    EpicsSignalRO,
-    EpicsSignalWithRBV,
-    StatusBase,
-)
+from ophyd import Component, Device, EpicsSignal, EpicsSignalRO, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import HDF5Plugin_V22
+from ophyd.status import SubscriptionStatus
 
 from artemis.devices.status import await_value
 
@@ -120,7 +114,7 @@ class EigerOdin(Device):
     meta: OdinMetaListener = Component(OdinMetaListener, "OD:META:")
     nodes: OdinNodesStatus = Component(OdinNodesStatus, "")
 
-    def create_finished_status(self) -> StatusBase:
+    def create_finished_status(self) -> SubscriptionStatus:
         writing_finished = await_value(self.meta.ready, 0)
         for node_pv in self.nodes.nodes:
             writing_finished &= await_value(node_pv.writing, 0)
