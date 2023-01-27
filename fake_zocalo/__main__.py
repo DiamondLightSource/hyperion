@@ -87,8 +87,8 @@ def main():
                 delivery_mode=2,
                 headers={"workflows-recipe": True, "x-delivery-count": 1},
             )
-            result["recipe"]["1"]["parameters"]["dcid"] = dcid
-            result["recipe"]["1"]["parameters"]["dcgid"] = dcgid
+            result["recipe"]["1"]["parameters"]["dcid"] = str(dcid)
+            result["recipe"]["1"]["parameters"]["dcgid"] = str(dcgid)
             result_chan = conn.channel()
             result_chan.basic_publish(
                 "results", "xrc.i03", json.dumps(result), resultprops
