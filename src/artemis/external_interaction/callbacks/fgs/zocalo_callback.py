@@ -77,7 +77,7 @@ class FGSZocaloCallback(CallbackBase):
             Point3D: The xray centre position to move to
         """
         datacollection_group_id = self.ispyb.ispyb_ids[2]
-        self.processing_time = time.time() - self.processing_start_time
+
         try:
             raw_results = self.zocalo_interactor.wait_for_result(
                 datacollection_group_id
@@ -99,6 +99,7 @@ class FGSZocaloCallback(CallbackBase):
             xray_centre = fallback_xyz
             LOGGER.warn(log_msg)
 
+        self.processing_time = time.time() - self.processing_start_time
         self.ispyb.append_to_comment(
             f"Zocalo processing took {self.processing_time:.2f} s"
         )
