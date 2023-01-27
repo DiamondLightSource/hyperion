@@ -1,6 +1,8 @@
 import getpass
 import queue
 import socket
+from time import sleep
+from typing import Optional
 
 import workflows.recipe
 import workflows.transport
@@ -89,22 +91,28 @@ class ZocaloInteractor:
         """
         transport = self._get_zocalo_connection()
         result_received: queue.Queue = queue.Queue()
+        exception: Optional[Exception] = None
 
         def receive_result(
             rw: workflows.recipe.RecipeWrapper, header: dict, message: dict
         ) -> None:
-            artemis.log.LOGGER.info(f"Received {message}")
-            recipe_parameters = rw.recipe_step["parameters"]
-            artemis.log.LOGGER.info(f"Recipe step parameters: {recipe_parameters}")
-            transport.ack(header)
-            received_group_id = recipe_parameters["dcgid"]
-            if received_group_id == str(data_collection_group_id):
-                result_received.put(Point3D(*message[0]["centre_of_mass"]))
-            else:
-                artemis.log.LOGGER.warning(
-                    f"Warning: results for {received_group_id} received but expected \
-                        {data_collection_group_id}"
-                )
+            try:
+                artemis.log.LOGGER.info(f"Received {message}")
+                recipe_parameters = rw.recipe_step["parameters"]
+                artemis.log.LOGGER.info(f"Recipe step parameters: {recipe_parameters}")
+                transport.ack(header)
+                received_group_id = recipe_parameters["dcgid"]
+                if received_group_id == str(data_collection_group_id):
+                    result_received.put(Point3D(*message[0]["centre_of_mass"]))
+                else:
+                    artemis.log.LOGGER.warning(
+                        f"Warning: results for {received_group_id} received but expected \
+                            {data_collection_group_id}"
+                    )
+            except Exception as e:
+                nonlocal exception
+                exception = e
+                raise e
 
         workflows.recipe.wrap_subscribe(
             transport,
@@ -115,6 +123,15 @@ class ZocaloInteractor:
         )
 
         try:
-            return result_received.get(timeout=timeout)
+            time_waited = 0
+            while time_waited < timeout:
+                if result_received.empty():
+                    if exception is not None:
+                        raise exception
+                    else:
+                        sleep(1)
+                else:
+                    return result_received.get_nowait()
+            raise TimeoutError(f"No results returned by Zocalo for dcgid {data_collection_group_id} within timeout of {timeout}")
         finally:
             transport.disconnect()
