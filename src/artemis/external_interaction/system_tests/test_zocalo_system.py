@@ -57,3 +57,24 @@ def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_to_fall
     fallback = Point3D(1, 2, 3)
     centre = zc.wait_for_results(fallback_xyz=fallback)
     assert centre == fallback
+
+
+@pytest.mark.s03
+def test_zocalo_adds_nonzero_comment_time(zocalo_env, dummy_ispyb_3d, fetch_comment):
+    params = FullParameters()
+    zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
+    zc.ispyb.ispyb = dummy_ispyb_3d
+    zc.ispyb.ispyb_ids = zc.ispyb.ispyb.begin_deposition()
+    ispyb_numbers = zc.ispyb.ispyb_ids
+    assert ispyb_numbers[0] is not None
+    dcids = ispyb_numbers[0]
+    for dcid in dcids:
+        zc.zocalo_interactor.run_start(dcid)
+    zc.stop({})
+    zc.wait_for_results(fallback_xyz=Point3D(0, 0, 0))
+    zc.ispyb.ispyb.end_deposition("success", "")
+
+    comment = fetch_comment(ispyb_numbers[0][0])
+    assert comment[-29:-6] == "Zocalo processing took "
+    assert float(comment[-6:-2]) > 0
+    assert float(comment[-6:-2]) < 90
