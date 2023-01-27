@@ -136,7 +136,7 @@ class ZocaloInteractor:
                     if exception is not None:
                         raise exception
                     else:
-                        sleep(1)
+                        sleep(0.1)
                 else:
                     return result_received.get_nowait()
             raise TimeoutError("Timed out waiting for zocalo results")
