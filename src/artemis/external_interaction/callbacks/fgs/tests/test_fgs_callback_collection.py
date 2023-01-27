@@ -16,6 +16,7 @@ from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.parameters import (
     ISPYB_PLAN_NAME,
     SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
     DetectorParams,
     FullParameters,
 )
@@ -150,9 +151,7 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
 
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=params.insertion_prefix,
-        name="fgs",
-        prefix=params.beamline,
+        insertion_prefix=SIM_INSERTION_PREFIX, name="fgs", prefix=SIM_BEAMLINE
     )
     # this is where it's currently getting stuck:
     # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
