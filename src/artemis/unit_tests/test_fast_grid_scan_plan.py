@@ -121,12 +121,12 @@ def test_results_adjusted_and_passed_to_move_xyz(
     motor_position = params.grid_scan_params.grid_position_to_motor_position(
         Point3D(0.5, 1.5, 2.5)
     )
-    FakeComposite = make_fake_device(FGSComposite)
-    FakeEiger = make_fake_device(EigerDetector)
+    FakeComposite: FGSComposite = make_fake_device(FGSComposite)
+    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
     RE(
         run_gridscan_and_move(
             FakeComposite("test", name="fgs"),
-            FakeEiger(params.detector_params),
+            FakeEiger.with_params(params=params.detector_params, name="test"),
             params,
             subscriptions,
         )
@@ -213,9 +213,9 @@ def test_logging_within_plan(
     )
 
     FakeComposite = make_fake_device(FGSComposite)
-    FakeEiger = make_fake_device(EigerDetector)
+    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
     fake_composite = FakeComposite("test", name="fakecomposite")
-    fake_eiger = FakeEiger(params.detector_params)
+    fake_eiger = FakeEiger.with_params(params=params.detector_params, name="test")
 
     RE(
         run_gridscan_and_move(

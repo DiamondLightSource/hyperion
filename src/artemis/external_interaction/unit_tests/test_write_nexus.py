@@ -291,6 +291,7 @@ def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
     check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
 
 
+@pytest.mark.skip("Needs fixing in Nexgen")
 def test_GIVEN_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):

@@ -1,10 +1,10 @@
-from math import nan
 from unittest.mock import MagicMock, call
 
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
+from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
@@ -98,9 +98,8 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
-    expected_centre_grid_coords = Point3D(nan, nan, nan)
-    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        expected_centre_grid_coords
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
+        NoDiffractionFound()
     )
 
     fallback_position = Point3D(1, 2, 3)

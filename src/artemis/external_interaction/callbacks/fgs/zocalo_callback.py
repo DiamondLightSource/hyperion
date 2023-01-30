@@ -1,4 +1,3 @@
-import math
 import time
 from typing import Callable, Optional
 
@@ -8,7 +7,10 @@ from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
 )
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
+from artemis.external_interaction.zocalo.zocalo_interaction import (
+    NoDiffractionFound,
+    ZocaloInteractor,
+)
 from artemis.log import LOGGER
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
@@ -86,24 +88,28 @@ class FGSZocaloCallback(CallbackBase):
             Point3D: The xray centre position to move to
         """
         datacollection_group_id = self.ispyb.ispyb_ids[2]
-        raw_results = self.zocalo_interactor.wait_for_result(datacollection_group_id)
         self.processing_time = time.time() - self.processing_start_time
-
-        if any([math.isnan(coord) for coord in raw_results]):
-            # We move back to the centre if results aren't found
-            log_msg = (
-                f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
+        try:
+            raw_results = self.zocalo_interactor.wait_for_result(
+                datacollection_group_id
             )
-            xray_centre = fallback_xyz
-            LOGGER.warn(log_msg)
-        else:
+
             # _wait_for_result returns the centre of the grid box, but we want the corner
             results = Point3D(
                 raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
             )
             xray_centre = self.grid_position_to_motor_position(results)
 
-        LOGGER.info(f"Results recieved from zocalo: {xray_centre}")
+            LOGGER.info(f"Results recieved from zocalo: {xray_centre}")
+
+        except NoDiffractionFound:
+            # We move back to the centre if results aren't found
+            log_msg = (
+                f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
+            )
+            xray_centre = fallback_xyz
+            LOGGER.warn(log_msg)
+
         self.ispyb.append_to_comment(
             f"Zocalo processing took {self.processing_time:.2f} s"
         )

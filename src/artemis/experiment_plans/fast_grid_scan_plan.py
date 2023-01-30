@@ -19,9 +19,17 @@ from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
+from artemis.parameters import (
+    ISPYB_PLAN_NAME,
+    SIM_BEAMLINE,
+    FullParameters,
+    get_beamline_prefixes,
+)
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
+
+fast_grid_scan_composite: FGSComposite = None
+eiger: EigerDetector = None
 
 
 def read_hardware_for_ispyb(
@@ -125,7 +133,7 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    @bpp.stage_decorator([fgs_motors])
+    @bpp.stage_decorator([eiger, fgs_motors])
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
     def do_fgs():
@@ -190,29 +198,23 @@ def run_gridscan_and_move(
         )
 
 
-def get_plan(
-    parameters: FullParameters, subscriptions: FGSCallbackCollection
-) -> Callable:
-    """Create the plan to run the grid scan based on provided parameters.
-
-    Args:
-        parameters (FullParameters): The parameters to run the scan.
-
-    Returns:
-        Generator: The plan for the gridscan
-    """
-    artemis.log.LOGGER.info("Fetching composite plan")
+def create_devices():
+    """Creates the devices required for the plan and connect to them"""
+    global fast_grid_scan_composite, eiger
+    prefixes = get_beamline_prefixes()
+    artemis.log.LOGGER.info(
+        f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
+    )
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=parameters.insertion_prefix,
+        insertion_prefix=prefixes.insertion_prefix,
         name="fgs",
-        prefix=parameters.beamline,
+        prefix=prefixes.beamline_prefix,
     )
 
     # Note, eiger cannot be currently waited on, see #166
     eiger = EigerDetector(
-        parameters.detector_params,
         name="eiger",
-        prefix=f"{parameters.beamline}-EA-EIGER-01:",
+        prefix=f"{prefixes.beamline_prefix}-EA-EIGER-01:",
     )
 
     artemis.log.LOGGER.info("Connecting to EPICS devices...")
@@ -222,6 +224,21 @@ def get_plan(
         artemis.log.LOGGER.info(e, exc_info=True)
 
     artemis.log.LOGGER.info("Connected.")
+
+
+def get_plan(
+    parameters: FullParameters,
+    subscriptions: FGSCallbackCollection,
+) -> Callable:
+    """Create the plan to run the grid scan based on provided parameters.
+
+    Args:
+        parameters (FullParameters): The parameters to run the scan.
+
+    Returns:
+        Generator: The plan for the gridscan
+    """
+    eiger.set_detector_parameters(parameters.detector_params)
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
     def run_gridscan_and_move_and_tidy(fgs_composite, detector, params, comms):
@@ -246,5 +263,7 @@ if __name__ == "__main__":
 
     parameters = FullParameters(beamline=args.beamline)
     subscriptions = FGSCallbackCollection.from_params(parameters)
+
+    create_devices()
 
     RE(get_plan(parameters, subscriptions))

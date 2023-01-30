@@ -6,6 +6,7 @@ from artemis.devices.fast_grid_scan import (
     GridScanParams,
     set_fast_grid_scan_params,
 )
+from artemis.experiment_plans.fast_grid_scan_plan import wait_for_fgs_valid
 
 
 @pytest.fixture()
@@ -29,6 +30,10 @@ def test_when_program_data_set_and_staged_then_expected_images_correct(
 def test_given_valid_params_when_kickoff_then_completion_status_increases_and_finishes(
     fast_grid_scan: FastGridScan,
 ):
+    def set_and_wait_plan(fast_grid_scan: FastGridScan):
+        yield from set_fast_grid_scan_params(fast_grid_scan, GridScanParams(3, 3))
+        yield from wait_for_fgs_valid(fast_grid_scan)
+
     prev_current, prev_fraction = None, None
 
     def progress_watcher(*args, **kwargs):
@@ -44,8 +49,7 @@ def test_given_valid_params_when_kickoff_then_completion_status_increases_and_fi
                 assert 0 < prev_fraction < 1
 
     RE = RunEngine()
-    RE(set_fast_grid_scan_params(fast_grid_scan, GridScanParams(3, 3)))
-    fast_grid_scan.stage()
+    RE(set_and_wait_plan(fast_grid_scan))
     assert fast_grid_scan.position_counter.get() == 0
 
     # S03 currently is giving 2* the number of expected images (see #13)
