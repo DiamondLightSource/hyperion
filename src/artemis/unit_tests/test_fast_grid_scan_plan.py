@@ -173,11 +173,10 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         Point3D(1, 2, 3)
     )
 
-    FakeComposite = make_fake_device(FGSComposite)
-    FakeEiger = make_fake_device(EigerDetector)
+    FakeComposite: FGSComposite = make_fake_device(FGSComposite)
+    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
     fake_composite = FakeComposite("test", name="fakecomposite")
-    fake_eiger = FakeEiger(params.detector_params)
-
+    fake_eiger = (FakeEiger.with_params(params=params.detector_params, name="test"),)
     RE(
         run_gridscan_and_move(
             fake_composite,
