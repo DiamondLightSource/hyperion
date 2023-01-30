@@ -84,7 +84,7 @@ def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
         if not scan_invalid and pos_counter == 0:
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
-    raise WarningException(f"Scan parameters invalid after {timeout} seconds")
+    raise WarningException("Scan invalid - pin too long/short/bent and out of range")
 
 
 @bpp.set_run_key_decorator("read_xyz_before_plan")
