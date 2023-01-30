@@ -7,8 +7,8 @@ from bluesky.run_engine import RunEngine
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.experiment_plans.fast_grid_scan_plan import create_devices
-from artemis.experiment_plans.fast_grid_scan_plan import eiger as fgs_plan_eiger
-from artemis.experiment_plans.fast_grid_scan_plan import (
+from artemis.experiment_plans.fast_grid_scan_plan import eiger as fgs_plan_eiger  # noqa
+from artemis.experiment_plans.fast_grid_scan_plan import (  # noqa
     fast_grid_scan_composite as fgs_plan_fgs_composite,
 )
 from artemis.experiment_plans.fast_grid_scan_plan import (
