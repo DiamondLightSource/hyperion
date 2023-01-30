@@ -21,6 +21,8 @@ def load_configuration_file(filename):
 
 
 def get_dcgid(dcid: int, Session) -> int:
+    if dcid == NO_DIFFRACTION_ID:
+        return NO_DIFFRACTION_ID
     try:
         with Session() as session:
             query = session.query(DataCollection).filter(
@@ -31,7 +33,7 @@ def get_dcgid(dcid: int, Session) -> int:
     except Exception as e:
         print("Exception occured when reading comment from ISPyB database:\n")
         print(e)
-        dcgid = 0
+        dcgid = 4
     return dcgid
 
 
