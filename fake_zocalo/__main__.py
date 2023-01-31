@@ -28,7 +28,6 @@ def get_dcgid(dcid: int, Session) -> int:
             query = session.query(DataCollection).filter(
                 DataCollection.dataCollectionId == dcid
             )
-            # print(query)
             dcgid: int = query.first().dataCollectionGroupId
     except Exception as e:
         print("Exception occured when reading comment from ISPyB database:\n")

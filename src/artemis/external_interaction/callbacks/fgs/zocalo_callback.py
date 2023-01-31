@@ -44,10 +44,8 @@ class FGSZocaloCallback(CallbackBase):
         ] = parameters.grid_scan_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        self.results = None
         self.started_run: bool = False
         self.run_gridscan_uid: Optional[str] = None
-        self.xray_centre_motor_position = None
         self.ispyb = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
 

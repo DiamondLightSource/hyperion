@@ -14,7 +14,7 @@ import h5py
 import numpy as np
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
-from nexgen.tools.VDS_tools import image_vds_writer, clean_unused_links
+from nexgen.tools.VDS_tools import clean_unused_links, image_vds_writer
 
 from artemis.devices.detector import DetectorParams
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
@@ -297,7 +297,6 @@ class NexusWriter:
                 nxsfile["entry"].create_dataset(
                     "end_time", data=np.string_(self._get_current_time())
                 )
-            with h5py.File(temp_filename, "r+") as nxsfile:
                 clean_unused_links(
                     nxsfile,
                     (

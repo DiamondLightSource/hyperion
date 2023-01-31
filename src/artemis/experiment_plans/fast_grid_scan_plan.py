@@ -87,16 +87,6 @@ def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
     raise WarningException("Scan invalid - pin too long/short/bent and out of range")
 
 
-@bpp.set_run_key_decorator("read_xyz_before_plan")
-@bpp.run_decorator(md={"subplan_name": "read_xyz_before_plan"})
-def get_xyz(sample_motors):
-    return Point3D(
-        (yield from bps.rd(sample_motors.x)),
-        (yield from bps.rd(sample_motors.y)),
-        (yield from bps.rd(sample_motors.z)),
-    )
-
-
 def tidy_up_plans(fgs_composite: FGSComposite):
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
@@ -133,7 +123,6 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    @bpp.stage_decorator([eiger, fgs_motors])
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
     def do_fgs():
@@ -179,10 +168,6 @@ def run_gridscan_and_move(
 
     artemis.log.LOGGER.info("Starting grid scan")
     yield from gridscan_with_subscriptions(fgs_composite, eiger, parameters)
-
-    # bps.create()
-    # yield from wait_for_fgs_valid(fgs_composite.fast_grid_scan)
-    # bps.save()
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
