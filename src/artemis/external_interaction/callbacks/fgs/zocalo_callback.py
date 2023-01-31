@@ -1,4 +1,3 @@
-import math
 import time
 from typing import Callable
 
@@ -8,7 +7,10 @@ from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
 )
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
+from artemis.external_interaction.zocalo.zocalo_interaction import (
+    NoDiffractionFound,
+    ZocaloInteractor,
+)
 from artemis.log import LOGGER
 from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
 from artemis.utils import Point3D
@@ -40,8 +42,6 @@ class FGSZocaloCallback(CallbackBase):
         ] = parameters.grid_scan_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        self.results = None
-        self.xray_centre_motor_position = None
         self.ispyb = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
 
@@ -67,26 +67,40 @@ class FGSZocaloCallback(CallbackBase):
             self.zocalo_interactor.run_end(id)
         self.processing_start_time = time.time()
 
-    def wait_for_results(self, fallback_xyz: Point3D):
-        datacollection_group_id = self.ispyb.ispyb_ids[2]
-        raw_results = self.zocalo_interactor.wait_for_result(datacollection_group_id)
-        self.processing_time = time.time() - self.processing_start_time
-        # _wait_for_result returns the centre of the grid box, but we want the corner
-        self.results = Point3D(
-            raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
-        )
-        self.xray_centre_motor_position = self.grid_position_to_motor_position(
-            self.results
-        )
+    def wait_for_results(self, fallback_xyz: Point3D) -> Point3D:
+        """Blocks until a centre has been received from Zocalo
 
-        # We move back to the centre if results aren't found
-        assert self.xray_centre_motor_position is not None
-        if math.nan in self.xray_centre_motor_position:
+        Args:
+            fallback_xyz (Point3D): The position to fallback to if no centre is found
+
+        Returns:
+            Point3D: The xray centre position to move to
+        """
+        datacollection_group_id = self.ispyb.ispyb_ids[2]
+        self.processing_time = time.time() - self.processing_start_time
+        try:
+            raw_results = self.zocalo_interactor.wait_for_result(
+                datacollection_group_id
+            )
+
+            # _wait_for_result returns the centre of the grid box, but we want the corner
+            results = Point3D(
+                raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
+            )
+            xray_centre = self.grid_position_to_motor_position(results)
+
+            LOGGER.info(f"Results recieved from zocalo: {xray_centre}")
+
+        except NoDiffractionFound:
+            # We move back to the centre if results aren't found
             log_msg = (
                 f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
             )
-            self.xray_centre_motor_position = fallback_xyz
+            xray_centre = fallback_xyz
             LOGGER.warn(log_msg)
 
-        LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
+        self.ispyb.append_to_comment(
+            f"Zocalo processing took {self.processing_time:.2f} s"
+        )
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
+        return xray_centre

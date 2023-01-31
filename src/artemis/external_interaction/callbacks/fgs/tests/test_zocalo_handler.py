@@ -6,6 +6,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
+from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
@@ -91,7 +92,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
         expected_centre_grid_coords
     )
 
-    callbacks.zocalo_handler.wait_for_results(Point3D(0, 0, 0))
+    found_centre = callbacks.zocalo_handler.wait_for_results(Point3D(0, 0, 0))
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
         100
     )
@@ -104,7 +105,22 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
             )
         )
     )
-    assert (
-        callbacks.zocalo_handler.xray_centre_motor_position
-        == expected_centre_motor_coords
+    assert found_centre == expected_centre_motor_coords
+
+
+def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used():
+    params = FullParameters()
+    callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
+    callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
+        NoDiffractionFound()
     )
+
+    fallback_position = Point3D(1, 2, 3)
+
+    found_centre = callbacks.zocalo_handler.wait_for_results(fallback_position)
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
+        100
+    )
+    assert found_centre == fallback_position

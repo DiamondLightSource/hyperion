@@ -4,10 +4,7 @@ from abc import ABC, abstractmethod
 
 import ispyb
 import ispyb.sqlalchemy
-from ispyb.sqlalchemy import DataCollection
-from sqlalchemy import create_engine
 from sqlalchemy.connectors import Connector
-from sqlalchemy.orm import sessionmaker
 
 import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
@@ -36,11 +33,6 @@ class StoreInIspyb(ABC):
         self.upper_left = None
         self.y_steps = None
         self.y_step_size = None
-
-        # reading from ispyb
-        url = ispyb.sqlalchemy.url(self.ISPYB_CONFIG_FILE)
-        engine = create_engine(url, connect_args={"use_pure": True})
-        self.Session = sessionmaker(engine)
 
         # writing to ispyb
         self.conn: Connector = None
@@ -105,28 +97,14 @@ class StoreInIspyb(ABC):
     def _store_scan_data(self):
         pass
 
-    @TRACER.start_as_current_span("read_comment_from_ispyb")
-    def get_current_datacollection_comment(self, dcid: int) -> str:
-        """Read the 'comments' field from the given datacollection id's ISPyB entry.
-        Returns an empty string if the comment is not yet initialised.
-        """
-        try:
-            LOGGER.debug("Getting comment from ISPyB")
-            with self.Session() as session:
-                query = session.query(DataCollection).filter(
-                    DataCollection.dataCollectionId == dcid
-                )
-                current_comment: str = query.first().comments
-            if current_comment is None:
-                current_comment = ""
-            LOGGER.debug(f"Current comment: {current_comment}")
-        except Exception as e:
-            LOGGER.warning(
-                "Exception occured when reading comment from ISPyB database:\n"
+    def append_to_comment(
+        self, datacollection_id: int, comment: str, delimiter: str = " "
+    ) -> None:
+        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+            self.mx_acquisition = self.conn.mx_acquisition
+            self.mx_acquisition.update_data_collection_append_comments(
+                datacollection_id, comment, delimiter
             )
-            LOGGER.error(e, exc_info=True)
-            current_comment = ""
-        return current_comment
 
     def update_grid_scan_with_end_time_and_status(
         self,
@@ -135,20 +113,21 @@ class StoreInIspyb(ABC):
         reason: str,
         datacollection_id: int,
         datacollection_group_id: int,
-    ) -> int:
+    ) -> None:
+
+        if reason is not None and reason != "":
+            self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
+
         with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
+
             params = self.mx_acquisition.get_data_collection_params()
             params["id"] = datacollection_id
             params["parentid"] = datacollection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
-            if reason is not None and reason != "":
-                current_comment = self.get_current_datacollection_comment(
-                    datacollection_id
-                )
-                params["comments"] = current_comment + f" {run_status} reason: {reason}"
-            return self.mx_acquisition.upsert_data_collection(list(params.values()))
+
+            self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
         params = self.mx_acquisition.get_dc_grid_params()
@@ -186,6 +165,7 @@ class StoreInIspyb(ABC):
             f"bottom right (px): [{bottom_right.x},{bottom_right.y}]."
         )
 
+    @TRACER.start_as_current_span("store_ispyb_datacollection_table")
     def _store_data_collection_table(self, data_collection_group_id: int) -> int:
         try:
             session_id = self.core.retrieve_visit_id(self.get_visit_string())

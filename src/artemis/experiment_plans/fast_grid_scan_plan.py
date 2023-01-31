@@ -1,4 +1,5 @@
 import argparse
+from typing import Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -18,9 +19,17 @@ from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.parameters import ISPYB_PLAN_NAME, SIM_BEAMLINE, FullParameters
+from artemis.parameters import (
+    ISPYB_PLAN_NAME,
+    SIM_BEAMLINE,
+    FullParameters,
+    get_beamline_prefixes,
+)
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
+
+fast_grid_scan_composite: FGSComposite = None
+eiger: EigerDetector = None
 
 
 def read_hardware_for_ispyb(
@@ -74,15 +83,6 @@ def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
     raise WarningException(f"Scan parameters invalid after {timeout} seconds")
 
 
-@bpp.run_decorator()
-def get_xyz(sample_motors):
-    return Point3D(
-        (yield from bps.rd(sample_motors.x)),
-        (yield from bps.rd(sample_motors.y)),
-        (yield from bps.rd(sample_motors.z)),
-    )
-
-
 def tidy_up_plans(fgs_composite: FGSComposite):
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
@@ -118,7 +118,7 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    @bpp.stage_decorator([eiger, fgs_motors])
+    @bpp.stage_decorator([eiger])
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
@@ -141,7 +141,11 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = yield from get_xyz(fgs_composite.sample_motors)
+    initial_xyz = Point3D(
+        (yield from bps.rd(fgs_composite.sample_motors.x)),
+        (yield from bps.rd(fgs_composite.sample_motors.y)),
+        (yield from bps.rd(fgs_composite.sample_motors.z)),
+    )
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
@@ -157,18 +161,45 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    subscriptions.zocalo_handler.wait_for_results(initial_xyz)
+    xray_centre = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
         yield from move_xyz(
             fgs_composite.sample_motors,
-            subscriptions.zocalo_handler.xray_centre_motor_position,
+            xray_centre,
         )
 
 
-def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
+def create_devices():
+    """Creates the devices required for the plan and connect to them"""
+    global fast_grid_scan_composite, eiger
+    prefixes = get_beamline_prefixes()
+    artemis.log.LOGGER.info(
+        f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
+    )
+    fast_grid_scan_composite = FGSComposite(
+        insertion_prefix=prefixes.insertion_prefix,
+        name="fgs",
+        prefix=prefixes.beamline_prefix,
+    )
+
+    # Note, eiger cannot be currently waited on, see #166
+    eiger = EigerDetector(
+        name="eiger",
+        prefix=f"{prefixes.beamline_prefix}-EA-EIGER-01:",
+    )
+
+    artemis.log.LOGGER.info("Connecting to EPICS devices...")
+    fast_grid_scan_composite.wait_for_connection()
+    artemis.log.LOGGER.info("Connected.")
+
+
+def get_plan(
+    parameters: FullParameters,
+    subscriptions: FGSCallbackCollection,
+) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
@@ -177,23 +208,7 @@ def get_plan(parameters: FullParameters, subscriptions: FGSCallbackCollection):
     Returns:
         Generator: The plan for the gridscan
     """
-    artemis.log.LOGGER.info("Fetching composite plan")
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=parameters.insertion_prefix,
-        name="fgs",
-        prefix=parameters.beamline,
-    )
-
-    # Note, eiger cannot be currently waited on, see #166
-    eiger = EigerDetector(
-        parameters.detector_params,
-        name="eiger",
-        prefix=f"{parameters.beamline}-EA-EIGER-01:",
-    )
-
-    artemis.log.LOGGER.info("Connecting to EPICS devices...")
-    fast_grid_scan_composite.wait_for_connection()
-    artemis.log.LOGGER.info("Connected.")
+    eiger.set_detector_parameters(parameters.detector_params)
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
     def run_gridscan_and_move_and_tidy(fgs_composite, detector, params, comms):
@@ -218,5 +233,7 @@ if __name__ == "__main__":
 
     parameters = FullParameters(beamline=args.beamline)
     subscriptions = FGSCallbackCollection.from_params(parameters)
+
+    create_devices()
 
     RE(get_plan(parameters, subscriptions))
