@@ -62,19 +62,16 @@ class FGSZocaloCallback(CallbackBase):
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
     def stop(self, doc: dict):
-        if self.started_run:
-            if doc.get("run_start") == self.run_gridscan_uid:
-                LOGGER.info(
-                    f"Zocalo handler received stop document, for run {doc.get('run_start')}, and started run = {self.started_run}."
-                )
-                if self.ispyb.ispyb_ids == (None, None, None):
-                    raise ISPyBDepositionNotMade(
-                        "ISPyB deposition was not initialised!"
-                    )
-                datacollection_ids = self.ispyb.ispyb_ids[0]
-                for id in datacollection_ids:
-                    self.zocalo_interactor.run_end(id)
-                self.processing_start_time = time.time()
+        if doc.get("run_start") == self.run_gridscan_uid:
+            LOGGER.info(
+                f"Zocalo handler received stop document, for run {doc.get('run_start')}, and started run = {self.started_run}."
+            )
+            if self.ispyb.ispyb_ids == (None, None, None):
+                raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
+            datacollection_ids = self.ispyb.ispyb_ids[0]
+            for id in datacollection_ids:
+                self.zocalo_interactor.run_end(id)
+            self.processing_start_time = time.time()
 
     def wait_for_results(self, fallback_xyz: Point3D) -> Point3D:
         """Blocks until a centre has been received from Zocalo
