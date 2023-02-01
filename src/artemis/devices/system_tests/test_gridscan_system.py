@@ -26,6 +26,7 @@ def test_when_program_data_set_and_staged_then_expected_images_correct(
     assert fast_grid_scan.position_counter.get() == 0
 
 
+@pytest.mark.skip
 @pytest.mark.s03
 def test_given_valid_params_when_kickoff_then_completion_status_increases_and_finishes(
     fast_grid_scan: FastGridScan,

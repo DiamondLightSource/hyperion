@@ -65,7 +65,7 @@ class FGSZocaloCallback(CallbackBase):
         if self.started_run:
             if doc.get("run_start") == self.run_gridscan_uid:
                 LOGGER.info(
-                    f"Zocalo handler received stop document, for run {doc.get('run_start')}, and started run = {self.started_run}, uid : {self.run_gridscan_uid}"
+                    f"Zocalo handler received stop document, for run {doc.get('run_start')}, and started run = {self.started_run}."
                 )
                 if self.ispyb.ispyb_ids == (None, None, None):
                     raise ISPyBDepositionNotMade(
