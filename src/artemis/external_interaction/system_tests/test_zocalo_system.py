@@ -57,3 +57,22 @@ def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_to_fall
     fallback = Point3D(1, 2, 3)
     centre = zc.wait_for_results(fallback_xyz=fallback)
     assert centre == fallback
+
+
+@pytest.mark.skip(reason="waiting for changes in 435_... , conftest")
+@pytest.mark.s03
+def test_given_a_result_with_no_diffraction_ispyb_comment_updated(
+    zocalo_env, fetch_comment
+):
+    params = FullParameters()
+    NO_DIFFFRACTION_ID = 1
+    zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
+    dcids = [NO_DIFFFRACTION_ID, NO_DIFFFRACTION_ID]
+    zc.ispyb.ispyb_ids = (dcids, 0, NO_DIFFFRACTION_ID)
+    for dcid in dcids:
+        zc.zocalo_interactor.run_start(dcid)
+    zc.stop({})
+    fallback = Point3D(0, 0, 0)
+    zc.wait_for_results(fallback_xyz=fallback)
+    comment = fetch_comment()
+    assert "Found no diffraction." in comment
