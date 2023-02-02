@@ -190,7 +190,7 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    xray_centre = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
+    xray_centre, bbox_size = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")

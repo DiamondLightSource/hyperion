@@ -1,6 +1,7 @@
 import time
 from typing import Callable
 
+import numpy as np
 from bluesky.callbacks import CallbackBase
 
 from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
@@ -105,6 +106,10 @@ class FGSZocaloCallback(CallbackBase):
             )
             xray_centre = self.grid_position_to_motor_position(results)
 
+            bbox_size = np.array(raw_results[0]["bounding_box"][1]) - np.array(
+                raw_results[0]["bounding_box"][0]
+            )
+
             LOGGER.info(f"Results recieved from zocalo: {xray_centre}")
 
         except NoDiffractionFound:
@@ -119,4 +124,4 @@ class FGSZocaloCallback(CallbackBase):
             f"Zocalo processing took {self.processing_time:.2f} s"
         )
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
-        return xray_centre
+        return xray_centre, bbox_size
