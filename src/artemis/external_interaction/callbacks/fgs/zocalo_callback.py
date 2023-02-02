@@ -83,9 +83,25 @@ class FGSZocaloCallback(CallbackBase):
                 datacollection_group_id
             )
 
+            # Example result with two crystals:
+            # [{'centre_of_mass': [4.873520150579626, 4.593913738380465, 5.533162113509362],
+            #   'max_voxel': [2, 4, 5],
+            #   'max_count': 105062,
+            #   'n_voxels': 35,
+            #   'total_count': 2387574,
+            #   'bounding_box': [[2, 2, 2], [8, 8, 7]]},
+            #  {'centre_of_mass': [3.5, 6.5, 5.5],
+            #   'max_voxel': [3, 6, 5],
+            #   'max_count': 53950,
+            #   'n_voxels': 1,
+            #   'total_count': 53950,
+            #   'bounding_box': [[3, 6, 5], [4, 7, 6]]}]
+
+            raw_centre = Point3D(*raw_results[0]["centre_of_mass"])
+
             # _wait_for_result returns the centre of the grid box, but we want the corner
             results = Point3D(
-                raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
+                raw_centre.x - 0.5, raw_centre.y - 0.5, raw_centre.z - 0.5
             )
             xray_centre = self.grid_position_to_motor_position(results)
 
