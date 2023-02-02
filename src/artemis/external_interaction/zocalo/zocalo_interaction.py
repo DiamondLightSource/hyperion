@@ -98,6 +98,20 @@ class ZocaloInteractor:
         result_received: queue.Queue = queue.Queue()
         exception: Optional[Exception] = None
 
+        # Example result with two crystals:
+        # [{'centre_of_mass': [4.873520150579626, 4.593913738380465, 5.533162113509362],
+        #   'max_voxel': [2, 4, 5],
+        #   'max_count': 105062,
+        #   'n_voxels': 35,
+        #   'total_count': 2387574,
+        #   'bounding_box': [[2, 2, 2], [8, 8, 7]]},
+        #  {'centre_of_mass': [3.5, 6.5, 5.5],
+        #   'max_voxel': [3, 6, 5],
+        #   'max_count': 53950,
+        #   'n_voxels': 1,
+        #   'total_count': 53950,
+        #   'bounding_box': [[3, 6, 5], [4, 7, 6]]}]
+
         def receive_result(
             rw: workflows.recipe.RecipeWrapper, header: dict, message: dict
         ) -> None:
@@ -139,6 +153,8 @@ class ZocaloInteractor:
                         sleep(1)
                 else:
                     return result_received.get_nowait()
-            raise TimeoutError(f"No results returned by Zocalo for dcgid {data_collection_group_id} within timeout of {timeout}")
+            raise TimeoutError(
+                f"No results returned by Zocalo for dcgid {data_collection_group_id} within timeout of {timeout}"
+            )
         finally:
             transport.disconnect()
