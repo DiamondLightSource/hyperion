@@ -11,6 +11,7 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
+from artemis.devices.aperture import Aperture
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -30,6 +31,34 @@ from artemis.utils import Point3D
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
+
+
+def create_devices():
+    """Creates the devices required for the plan and connect to them"""
+    global fast_grid_scan_composite, eiger, aperture
+    prefixes = get_beamline_prefixes()
+    artemis.log.LOGGER.info(
+        f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
+    )
+    fast_grid_scan_composite = FGSComposite(
+        insertion_prefix=prefixes.insertion_prefix,
+        name="fgs",
+        prefix=prefixes.beamline_prefix,
+    )
+
+    # Note, eiger cannot be currently waited on, see #166
+    eiger = EigerDetector(
+        name="eiger",
+        prefix=f"{prefixes.beamline_prefix}-EA-EIGER-01:",
+    )
+
+    aperture = Aperture(
+        name="mini_aperture", prefix=f"{prefixes.beamline_prefix}-MO-MAPT-01:"
+    )
+
+    artemis.log.LOGGER.info("Connecting to EPICS devices...")
+    fast_grid_scan_composite.wait_for_connection()
+    artemis.log.LOGGER.info("Connected.")
 
 
 def read_hardware_for_ispyb(
@@ -170,30 +199,6 @@ def run_gridscan_and_move(
             fgs_composite.sample_motors,
             xray_centre,
         )
-
-
-def create_devices():
-    """Creates the devices required for the plan and connect to them"""
-    global fast_grid_scan_composite, eiger
-    prefixes = get_beamline_prefixes()
-    artemis.log.LOGGER.info(
-        f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
-    )
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=prefixes.insertion_prefix,
-        name="fgs",
-        prefix=prefixes.beamline_prefix,
-    )
-
-    # Note, eiger cannot be currently waited on, see #166
-    eiger = EigerDetector(
-        name="eiger",
-        prefix=f"{prefixes.beamline_prefix}-EA-EIGER-01:",
-    )
-
-    artemis.log.LOGGER.info("Connecting to EPICS devices...")
-    fast_grid_scan_composite.wait_for_connection()
-    artemis.log.LOGGER.info("Connected.")
 
 
 def get_plan(
