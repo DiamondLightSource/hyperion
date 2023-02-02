@@ -11,7 +11,7 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
-from artemis.devices.aperture import Aperture
+from artemis.devices.aperture import Aperture, ApertureSize
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -52,13 +52,22 @@ def create_devices():
         prefix=f"{prefixes.beamline_prefix}-EA-EIGER-01:",
     )
 
-    aperture = Aperture(
-        name="mini_aperture", prefix=f"{prefixes.beamline_prefix}-MO-MAPT-01:"
-    )
-
     artemis.log.LOGGER.info("Connecting to EPICS devices...")
     fast_grid_scan_composite.wait_for_connection()
     artemis.log.LOGGER.info("Connected.")
+
+
+def set_aperture_for_bbox_size(app: Aperture, bbox_size: list[int]):
+    if bbox_size[0] <= 1:
+        aperture_size = ApertureSize.SMALL
+    if 1 < bbox_size[0] < 3:
+        aperture_size = ApertureSize.MEDIUM
+    if bbox_size[0] >= 3:
+        aperture_size = ApertureSize.LARGE
+    artemis.log.LOGGER.info(
+        f"Setting aperture to {aperture_size}, y={aperture_size.value}"
+    )
+    app.set_size(aperture_size)
 
 
 def read_hardware_for_ispyb(
@@ -161,6 +170,7 @@ def run_gridscan(
 
 
 def run_gridscan_and_move(
+    apperture: Aperture,
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
     parameters: FullParameters,
@@ -191,6 +201,9 @@ def run_gridscan_and_move(
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
     xray_centre, bbox_size = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
+
+    with TRACER.start_span("change_aperture"):
+        set_aperture_for_bbox_size(fgs_composite.aperture, bbox_size)
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
