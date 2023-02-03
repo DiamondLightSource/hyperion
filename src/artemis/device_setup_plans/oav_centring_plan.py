@@ -114,7 +114,7 @@ if __name__ == "__main__":
     beamline = SIM_BEAMLINE
     oav = OAV(name="oav", prefix=beamline)
 
-    smargon: I03Smargon = I03Smargon(name="smargon", prefix=beamline)
+    smargon: Smargon = Smargon(name="smargon", prefix=beamline)
     backlight: Backlight = Backlight(name="backlight", prefix=beamline)
     parameters = OAVParameters(
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
