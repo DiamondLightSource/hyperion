@@ -161,9 +161,8 @@ def run_gridscan_and_move(
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
-    # our callbacks should listen to documents only from the actual grid scan
-    # so we subscribe to them with our plan
-    @bpp.subs_decorator(list(subscriptions))
+    # While the gridscan is happening we want to write out nexus files and trigger zocalo
+    @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
     def gridscan_with_subscriptions(fgs_composite, detector, params):
         yield from run_gridscan(fgs_composite, detector, params)
 
@@ -219,6 +218,9 @@ def get_plan(
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
+    The ispyb handler should be added to the whole gridscan as we want to capture errors
+    at any point in it.
+
     Args:
         parameters (FullParameters): The parameters to run the scan.
 
@@ -228,6 +230,7 @@ def get_plan(
     eiger.set_detector_parameters(parameters.detector_params)
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
+    @bpp.subs_decorator(subscriptions.ispyb_handler)
     def run_gridscan_and_move_and_tidy(fgs_composite, detector, params, comms):
         yield from run_gridscan_and_move(fgs_composite, detector, params, comms)
 
