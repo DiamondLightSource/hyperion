@@ -1,9 +1,12 @@
 from unittest.mock import MagicMock, call
 
+import pytest
+
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
+from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
@@ -109,3 +112,12 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
         100
     )
     assert found_centre == fallback_position
+
+
+def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception():
+    params = FullParameters()
+    callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
+
+    with pytest.raises(ISPyBDepositionNotMade):
+        callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
