@@ -132,11 +132,7 @@ def run_gridscan(
         yield from bps.complete(fgs_motors, wait=True)
 
     with TRACER.start_span("do_fgs"):
-        try:
-            yield from do_fgs()
-        except Exception as e:
-            artemis.log.LOGGER.error(e, exc_info=True)
-            raise
+        yield from do_fgs()
 
     with TRACER.start_span("move_to_z_0"):
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
@@ -204,11 +200,7 @@ def create_devices():
     )
 
     artemis.log.LOGGER.info("Connecting to EPICS devices...")
-    try:
-        fast_grid_scan_composite.wait_for_connection()
-    except Exception as e:
-        artemis.log.LOGGER.error(e, exc_info=True)
-        raise
+    fast_grid_scan_composite.wait_for_connection()
 
     artemis.log.LOGGER.info("Connected.")
 
