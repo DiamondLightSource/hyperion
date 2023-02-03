@@ -52,6 +52,10 @@ class FGSISPyBHandlerCallback(CallbackBase):
         except TypeError:
             LOGGER.warning("ISPyB deposition not initialised, can't update comment.")
 
+    def start(self, doc: dict):
+        # TODO SAVE UID FOR RUN GRIDSCAN MOVE CLEAN UP ...
+        pass
+
     def descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
 
@@ -71,7 +75,9 @@ class FGSISPyBHandlerCallback(CallbackBase):
             self.ispyb_ids = self.ispyb.begin_deposition()
 
     def stop(self, doc: dict):
-        if doc.get("subplan_name") == "run_gridscan":
+        if (
+            doc.get("subplan_name") == "run_gridscan"
+        ):  # SHOULD BE IF RUN START IS THE ONE SAVED IN START
             LOGGER.debug("ISPyB handler received stop document.")
             exit_status = doc.get("exit_status")
             reason = doc.get("reason")
