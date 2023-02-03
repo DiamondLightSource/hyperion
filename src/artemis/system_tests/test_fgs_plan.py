@@ -166,13 +166,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 
 
 @pytest.mark.s03
-@patch("bluesky.plan_stubs.wait")
-@patch("bluesky.plan_stubs.kickoff")
-@patch("bluesky.plan_stubs.complete")
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
-    complete: MagicMock,
-    kickoff: MagicMock,
-    wait: MagicMock,
     eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
