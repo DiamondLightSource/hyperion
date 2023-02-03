@@ -63,7 +63,7 @@ class GDABeamlineParameters:
 
 
 @dataclass
-class ApertureSize:
+class ApertureSizePositions:
     """Holds the tuple (miniap_x, miniap_y, miniap_z, scatterguard_x, scatterguard_y)
     representing the motor positions needed to select a particular aperture size.
     """

@@ -1,6 +1,6 @@
 from ophyd import Component, FormattedComponent
 
-from artemis.devices.aperture import Aperture
+from artemis.devices.aperturescatterguard import ApertureScatterguard
 from artemis.devices.fast_grid_scan import FastGridScan
 from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.logging_ophyd_device import InfoLoggingDevice
@@ -24,7 +24,7 @@ class FGSComposite(InfoLoggingDevice):
 
     sample_motors: I03Smargon = Component(I03Smargon, "")
 
-    aperture: Aperture = Component(Aperture, "-MO-MAPT-01:")
+    aperture: ApertureScatterguard = Component(ApertureScatterguard, "")
 
     def __init__(self, insertion_prefix: str, *args, **kwargs):
         self.insertion_prefix = insertion_prefix

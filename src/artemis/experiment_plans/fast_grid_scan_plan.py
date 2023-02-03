@@ -11,7 +11,7 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
-from artemis.devices.aperturescatterguard import ApertureScatterguard, ApertureSize
+from artemis.devices.aperturescatterguard import ApertureScatterguard
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -21,9 +21,12 @@ from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.parameters import (
+    I03_BEAMLINE_PARAMETER_PATH,
     ISPYB_PLAN_NAME,
     SIM_BEAMLINE,
+    ApertureSizePositions,
     FullParameters,
+    GDABeamlineParameters,
     get_beamline_prefixes,
 )
 from artemis.tracing import TRACER
@@ -31,11 +34,12 @@ from artemis.utils import Point3D
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
+gda_beamline_parameters = GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 
 
 def create_devices():
     """Creates the devices required for the plan and connect to them"""
-    global fast_grid_scan_composite, eiger, aperture
+    global fast_grid_scan_composite, eiger
     prefixes = get_beamline_prefixes()
     artemis.log.LOGGER.info(
         f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
@@ -57,17 +61,21 @@ def create_devices():
     artemis.log.LOGGER.info("Connected.")
 
 
-def set_aperture_for_bbox_size(ap: ApertureScatterguard, bbox_size: list[int]):
-    if bbox_size[0] <= 1:
-        aperture_size = ApertureSize.SMALL
-    if 1 < bbox_size[0] < 3:
-        aperture_size = ApertureSize.MEDIUM
-    if bbox_size[0] >= 3:
-        aperture_size = ApertureSize.LARGE
-    artemis.log.LOGGER.info(
-        f"Setting aperture to {aperture_size}, y={aperture_size.value}"
+def set_aperture_for_bbox_size(
+    aperture_device: ApertureScatterguard,
+    bbox_size: list[int],
+):
+    aperture_positions = ApertureSizePositions.from_gda_beamline_params(
+        gda_beamline_parameters
     )
-    ap.set_size(aperture_size)
+    if bbox_size[0] <= 1:
+        aperture_size_positions = aperture_positions.SMALL
+    if 1 < bbox_size[0] < 3:
+        aperture_size_positions = aperture_positions.MEDIUM
+    if bbox_size[0] >= 3:
+        aperture_size_positions = aperture_positions.LARGE
+    artemis.log.LOGGER.info(f"Setting aperture to {aperture_size_positions}.")
+    aperture_device.set_all_positions(aperture_size_positions)
 
 
 def read_hardware_for_ispyb(
