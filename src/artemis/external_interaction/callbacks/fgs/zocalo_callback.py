@@ -106,10 +106,12 @@ class FGSZocaloCallback(CallbackBase):
             )
             xray_centre = self.grid_position_to_motor_position(results)
 
-            bbox_size = map(
-                operator.sub,
-                raw_results[0]["bounding_box"][1],
-                raw_results[0]["bounding_box"][0],
+            bbox_size: list[int] | None = list(
+                map(
+                    operator.sub,
+                    raw_results[0]["bounding_box"][1],
+                    raw_results[0]["bounding_box"][0],
+                )
             )
 
             LOGGER.info(f"Results recieved from zocalo: {xray_centre}")
@@ -120,6 +122,7 @@ class FGSZocaloCallback(CallbackBase):
                 f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
             )
             xray_centre = fallback_xyz
+            bbox_size = None
             LOGGER.warn(log_msg)
 
         self.ispyb.append_to_comment(

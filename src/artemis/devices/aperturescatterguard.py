@@ -16,7 +16,7 @@ class ApertureScatterguard(Device):
         aperture_z: float,
         scatterguard_x: float,
         scatterguard_y: float,
-    ):
+    ) -> None:
         self.aperture.x.set(aperture_x)
         self.aperture.y.set(aperture_y)
         self.aperture.z.set(aperture_z)

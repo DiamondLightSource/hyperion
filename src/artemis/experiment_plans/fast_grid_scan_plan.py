@@ -68,14 +68,15 @@ def set_aperture_for_bbox_size(
     aperture_positions = ApertureSizePositions.from_gda_beamline_params(
         gda_beamline_parameters
     )
+    # bbox_size is [x,y,z]
     if bbox_size[0] <= 1:
         aperture_size_positions = aperture_positions.SMALL
-    if 1 < bbox_size[0] < 3:
+    elif 1 < bbox_size[0] < 3:
         aperture_size_positions = aperture_positions.MEDIUM
-    if bbox_size[0] >= 3:
+    else:
         aperture_size_positions = aperture_positions.LARGE
     artemis.log.LOGGER.info(f"Setting aperture to {aperture_size_positions}.")
-    aperture_device.set_all_positions(aperture_size_positions)
+    aperture_device.set_all_positions(*aperture_size_positions)
 
 
 def read_hardware_for_ispyb(
@@ -209,8 +210,9 @@ def run_gridscan_and_move(
     # it might not be ideal to block for this, see #327
     xray_centre, bbox_size = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
 
-    with TRACER.start_span("change_aperture"):
-        set_aperture_for_bbox_size(fgs_composite.aperture, bbox_size)
+    if bbox_size is not None:
+        with TRACER.start_span("change_aperture"):
+            set_aperture_for_bbox_size(fgs_composite.aperture, bbox_size)
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
