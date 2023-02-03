@@ -239,11 +239,10 @@ def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: NexusWriter):
     single_dummy_file.create_nexus_file()
 
     with patch("h5py.File") as mock_h5py_file:
-        with patch("artemis.external_interaction.nexus.write_nexus.clean_unused_links"):
-            single_dummy_file.update_nexus_file_timestamp()
-            actual_mock_calls = mock_h5py_file.mock_calls
-            assert all(call in actual_mock_calls for call in calls_with_temp)
-            assert all(call not in actual_mock_calls for call in calls_without_temp)
+        single_dummy_file.update_nexus_file_timestamp()
+        actual_mock_calls = mock_h5py_file.mock_calls
+        assert all(call in actual_mock_calls for call in calls_with_temp)
+        assert all(call not in actual_mock_calls for call in calls_without_temp)
 
 
 def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
