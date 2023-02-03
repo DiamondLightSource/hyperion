@@ -24,7 +24,7 @@ class FGSComposite(InfoLoggingDevice):
 
     sample_motors: I03Smargon = Component(I03Smargon, "")
 
-    aperture: ApertureScatterguard = Component(ApertureScatterguard, "")
+    aperture_scatterguard: ApertureScatterguard = Component(ApertureScatterguard, "")
 
     def __init__(self, insertion_prefix: str, *args, **kwargs):
         self.insertion_prefix = insertion_prefix

@@ -212,7 +212,7 @@ def run_gridscan_and_move(
 
     if bbox_size is not None:
         with TRACER.start_span("change_aperture"):
-            set_aperture_for_bbox_size(fgs_composite.aperture, bbox_size)
+            set_aperture_for_bbox_size(fgs_composite.aperture_scatterguard, bbox_size)
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
