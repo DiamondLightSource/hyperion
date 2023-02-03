@@ -5,19 +5,19 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
-from ophyd.sim import make_fake_device
-
-from artemis.devices.det_dim_constants import (
+from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan import FastGridScan
-from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.devices.slit_gaps import SlitGaps
-from artemis.devices.synchrotron import Synchrotron
-from artemis.devices.undulator import Undulator
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan_composite import FGSComposite
+from dodal.devices.slit_gaps import SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
+from ophyd.sim import make_fake_device
+
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,

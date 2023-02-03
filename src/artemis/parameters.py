@@ -3,9 +3,9 @@ from dataclasses import dataclass, field
 from os import environ
 
 from dataclasses_json import dataclass_json
+from dodal.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
+from dodal.devices.fast_grid_scan import GridScanParams
 
-from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
-from artemis.devices.fast_grid_scan import GridScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.utils import Point3D
 

@@ -1,10 +1,10 @@
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky import RunEngine
+from dodal.devices.slit_gaps import SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 
-from artemis.devices.slit_gaps import SlitGaps
-from artemis.devices.synchrotron import Synchrotron
-from artemis.devices.undulator import Undulator
 from artemis.experiment_plans.fast_grid_scan_plan import read_hardware_for_ispyb
 from artemis.parameters import SIM_BEAMLINE, SIM_INSERTION_PREFIX
 

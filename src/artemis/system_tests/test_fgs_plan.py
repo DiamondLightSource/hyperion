@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, patch
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan_composite import FGSComposite
 
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.experiment_plans.fast_grid_scan_plan import (
     get_plan,
     read_hardware_for_ispyb,

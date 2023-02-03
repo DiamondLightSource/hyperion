@@ -1,12 +1,12 @@
 import bluesky.plan_stubs as bps
 from bluesky import RunEngine
 from bluesky.run_engine import RunEngine
+from dodal.devices.backlight import Backlight
+from dodal.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
+from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
+from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.smargon import Smargon
 
-from artemis.devices.backlight import Backlight
-from artemis.devices.I03Smargon import I03Smargon
-from artemis.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
-from artemis.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
-from artemis.devices.oav.oav_parameters import OAVParameters
 from artemis.parameters import SIM_BEAMLINE
 
 

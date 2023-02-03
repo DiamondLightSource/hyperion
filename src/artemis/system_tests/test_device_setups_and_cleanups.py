@@ -1,11 +1,6 @@
 import pytest
 from bluesky.run_engine import RunEngine
-
-from artemis.device_setup_plans.setup_zebra_for_fgs import (
-    set_zebra_shutter_to_manual,
-    setup_zebra_for_fgs,
-)
-from artemis.devices.zebra import (
+from dodal.devices.zebra import (
     IN3_TTL,
     IN4_TTL,
     OR1,
@@ -13,6 +8,11 @@ from artemis.devices.zebra import (
     TTL_DETECTOR,
     TTL_SHUTTER,
     Zebra,
+)
+
+from artemis.device_setup_plans.setup_zebra_for_fgs import (
+    set_zebra_shutter_to_manual,
+    setup_zebra_for_fgs,
 )
 
 
