@@ -1,6 +1,8 @@
+import configparser
 import copy
 from dataclasses import dataclass, field
 from os import environ
+from typing import Any
 
 from dataclasses_json import dataclass_json
 
@@ -18,6 +20,51 @@ SIM_ISPYB_CONFIG = "src/artemis/external_interaction/unit_tests/test_config.cfg"
 
 def default_field(obj):
     return field(default_factory=lambda: copy.deepcopy(obj))
+
+
+@dataclass
+class ApertureSize:
+    LARGE: tuple[float, float, float, float, float]
+    MEDIUM: tuple[float, float, float, float, float]
+    SMALL: tuple[float, float, float, float, float]
+
+
+class GDABeamlineParameters:
+    params: dict[str, Any]
+
+    @classmethod
+    def from_file(cls, path: str):
+        ob = cls()
+        parser = configparser.ConfigParser()
+        parser.read_file(path)
+        paramdict = {s: dict(parser.items(s)) for s in parser.sections()}
+        ob.params = paramdict
+
+
+# class ApertureSize(Enum):
+#    # TODO load MAPT:Y positions from file
+#
+#    #    # 100 micron ap
+#    #    miniap_x_LARGE_APERTURE = 2.385
+#    #    miniap_y_LARGE_APERTURE = 40.984
+#    #    miniap_z_LARGE_APERTURE = 15.8
+#    #    sg_x_LARGE_APERTURE = 5.25
+#    #    sg_y_LARGE_APERTURE = 4.43# 50 micron ap
+#    #    miniap_x_MEDIUM_APERTURE = 2.379
+#    #    miniap_y_MEDIUM_APERTURE = 44.971
+#    #    miniap_z_MEDIUM_APERTURE = 15.8
+#    #    sg_x_MEDIUM_APERTURE = 5.285
+#    #    sg_y_MEDIUM_APERTURE = 0.46# 20 micron ap
+#    #    miniap_x_SMALL_APERTURE = 2.426
+#    #    miniap_y_SMALL_APERTURE = 48.977
+#    #    miniap_z_SMALL_APERTURE = 15.8
+#    #    sg_x_SMALL_APERTURE = 5.3375
+#    #    sg_y_SMALL_APERTURE = -3.55
+#
+#    # (x, y, z, sg_x, sg_y)
+#    SMALL = (1, 1, 1, 1, 1)
+#    MEDIUM = (2, 2, 2, 2, 2)
+#    LARGE = (3, 3, 3, 3, 3)
 
 
 @dataclass

@@ -11,7 +11,7 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
-from artemis.devices.aperture import Aperture, ApertureSize
+from artemis.devices.aperturescatterguard import ApertureScatterguard, ApertureSize
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -57,7 +57,7 @@ def create_devices():
     artemis.log.LOGGER.info("Connected.")
 
 
-def set_aperture_for_bbox_size(app: Aperture, bbox_size: list[int]):
+def set_aperture_for_bbox_size(ap: ApertureScatterguard, bbox_size: list[int]):
     if bbox_size[0] <= 1:
         aperture_size = ApertureSize.SMALL
     if 1 < bbox_size[0] < 3:
@@ -67,7 +67,7 @@ def set_aperture_for_bbox_size(app: Aperture, bbox_size: list[int]):
     artemis.log.LOGGER.info(
         f"Setting aperture to {aperture_size}, y={aperture_size.value}"
     )
-    app.set_size(aperture_size)
+    ap.set_size(aperture_size)
 
 
 def read_hardware_for_ispyb(
@@ -91,7 +91,7 @@ def read_hardware_for_ispyb(
 @bpp.run_decorator()
 def move_xyz(
     sample_motors,
-    xray_centre_motor_position,
+    xray_centre_motor_position: Point3D,
     md={
         "plan_name": "move_xyz",
     },
@@ -170,7 +170,6 @@ def run_gridscan(
 
 
 def run_gridscan_and_move(
-    apperture: Aperture,
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
     parameters: FullParameters,
