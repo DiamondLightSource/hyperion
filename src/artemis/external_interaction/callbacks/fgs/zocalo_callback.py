@@ -62,7 +62,7 @@ class FGSZocaloCallback(CallbackBase):
     def stop(self, doc: dict):
         if doc.get("run_start") == self.run_gridscan_uid:
             LOGGER.info(
-                f"Zocalo handler received stop document, for run {doc.get('run_start')}, and started run = {self.started_run}."
+                f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
             if self.ispyb.ispyb_ids == (None, None, None):
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
