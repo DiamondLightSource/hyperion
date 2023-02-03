@@ -8,14 +8,10 @@ from bluesky.run_engine import RunEngine
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.exceptions import WarningException
-from artemis.experiment_plans.fast_grid_scan_plan import create_devices
-from artemis.experiment_plans.fast_grid_scan_plan import eiger as fgs_plan_eiger  # noqa
-from artemis.experiment_plans.fast_grid_scan_plan import (  # noqa
-    fast_grid_scan_composite as fgs_plan_fgs_composite,
-)
 from artemis.experiment_plans.fast_grid_scan_plan import (
     get_plan,
     read_hardware_for_ispyb,
@@ -35,7 +31,7 @@ from artemis.parameters import (
 
 
 @pytest.fixture()
-def test_eiger() -> EigerDetector:
+def eiger() -> EigerDetector:
     detector_params: DetectorParams = DetectorParams(
         current_energy=100,
         exposure_time=0.1,
@@ -54,11 +50,13 @@ def test_eiger() -> EigerDetector:
     )
 
     # Otherwise odin moves too fast to be tested
-    # eiger.cam.manual_trigger.put("Yes")
+    eiger.cam.manual_trigger.put("Yes")
 
     # S03 currently does not have StaleParameters_RBV
     eiger.wait_for_stale_parameters = lambda: None
     eiger.odin.check_odin_initialised = lambda: (True, "")
+
+    fgs_plan.eiger = eiger
 
     yield eiger
 
@@ -78,6 +76,7 @@ def fgs_composite():
         name="fgs",
         prefix=SIM_BEAMLINE,
     )
+    fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     return fast_grid_scan_composite
 
 
@@ -92,19 +91,19 @@ def test_run_gridscan(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    test_eiger: EigerDetector,
+    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-    test_eiger.unstage = lambda: True
+    eiger.unstage = lambda: True
     fgs_composite.wait_for_connection()
     # Would be better to use get_plan instead but eiger doesn't work well in S03
-    RE(run_gridscan(fgs_composite, test_eiger, params))
+    RE(run_gridscan(fgs_composite, eiger, params))
 
 
 @pytest.mark.s03
 def test_read_hardware_for_ispyb(
-    test_eiger: EigerDetector,
+    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
@@ -133,13 +132,10 @@ def test_full_plan_tidies_at_end(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    test_eiger: EigerDetector,
+    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-    create_devices()
-    fgs_plan_eiger = MagicMock()  # noqa
-    fgs_plan_fgs_composite = MagicMock()  # noqa
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
@@ -157,13 +153,10 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    test_eiger: EigerDetector,
+    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-    create_devices()
-    fgs_plan_eiger = MagicMock()  # noqa
-    fgs_plan_fgs_composite = MagicMock()  # noqa
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
@@ -180,11 +173,10 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    test_eiger: EigerDetector,
+    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-    create_devices()
     parameters = FullParameters()
     parameters.detector_params.directory = "./tmp"
     parameters.detector_params.prefix = str(uuid.uuid1())
