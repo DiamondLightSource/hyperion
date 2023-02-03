@@ -25,18 +25,14 @@ def default_field(obj):
     return field(default_factory=lambda: copy.deepcopy(obj))
 
 
-@dataclass
-class ApertureSize:
-    LARGE: tuple[float, float, float, float, float]
-    MEDIUM: tuple[float, float, float, float, float]
-    SMALL: tuple[float, float, float, float, float]
-
-
 class GDABeamlineParameters:
     params: dict[str, Any]
 
     def __repr__(self) -> str:
         return repr(self.params)
+
+    def __getitem__(self, item: str):
+        return self.params[item]
 
     @classmethod
     def from_file(cls, path: str):
@@ -64,6 +60,43 @@ class GDABeamlineParameters:
                 config_pairs[i] = (config_pairs[i][0], float(config_pairs[i][1]))
         ob.params = dict(config_pairs)
         return ob
+
+
+@dataclass
+class ApertureSize:
+    """Holds the tuple (miniap_x, miniap_y, miniap_z, scatterguard_x, scatterguard_y)
+    representing the motor positions needed to select a particular aperture size.
+    """
+
+    LARGE: tuple[float, float, float, float, float]
+    MEDIUM: tuple[float, float, float, float, float]
+    SMALL: tuple[float, float, float, float, float]
+
+    @classmethod
+    def from_gda_beamline_params(cls, params: GDABeamlineParameters):
+        return cls(
+            LARGE=(
+                params["miniap_x_LARGE_APERTURE"],
+                params["miniap_y_LARGE_APERTURE"],
+                params["miniap_z_LARGE_APERTURE"],
+                params["sg_x_LARGE_APERTURE"],
+                params["sg_y_LARGE_APERTURE"],
+            ),
+            MEDIUM=(
+                params["miniap_x_MEDIUM_APERTURE"],
+                params["miniap_y_MEDIUM_APERTURE"],
+                params["miniap_z_MEDIUM_APERTURE"],
+                params["sg_x_MEDIUM_APERTURE"],
+                params["sg_y_MEDIUM_APERTURE"],
+            ),
+            SMALL=(
+                params["miniap_x_SMALL_APERTURE"],
+                params["miniap_y_SMALL_APERTURE"],
+                params["miniap_z_SMALL_APERTURE"],
+                params["sg_x_SMALL_APERTURE"],
+                params["sg_y_SMALL_APERTURE"],
+            ),
+        )
 
 
 # class ApertureSize(Enum):
