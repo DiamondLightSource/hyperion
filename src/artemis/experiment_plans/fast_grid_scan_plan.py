@@ -123,6 +123,7 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
+    @bpp.stage_decorator([eiger])
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
     def do_fgs():
