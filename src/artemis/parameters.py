@@ -1,8 +1,7 @@
-import configparser
 import copy
 from dataclasses import dataclass, field
 from os import environ
-from typing import Any
+from typing import Any, Tuple, cast
 
 from dataclasses_json import dataclass_json
 
@@ -16,6 +15,10 @@ SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_PLAN_NAME = "ispyb_readings"
 SIM_ZOCALO_ENV = "devrmq"
 SIM_ISPYB_CONFIG = "src/artemis/external_interaction/unit_tests/test_config.cfg"
+I03_BEAMLINE_PARAMETER_PATH = (
+    "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters"
+)
+BEAMLINE_PARAMETER_KEYWORDS = ["FB", "FULL", "deadtime"]
 
 
 def default_field(obj):
@@ -32,13 +35,35 @@ class ApertureSize:
 class GDABeamlineParameters:
     params: dict[str, Any]
 
+    def __repr__(self) -> str:
+        return repr(self.params)
+
     @classmethod
     def from_file(cls, path: str):
         ob = cls()
-        parser = configparser.ConfigParser()
-        parser.read_file(path)
-        paramdict = {s: dict(parser.items(s)) for s in parser.sections()}
-        ob.params = paramdict
+        with open(path) as f:
+            config_lines = f.readlines()
+        config_lines_nocomments = [line.split("#", 1)[0] for line in config_lines]
+        config_lines_sep_key_and_value = [
+            line.translate(str.maketrans("", "", " \n\t\r")).split("=")
+            for line in config_lines_nocomments
+        ]
+        config_pairs: list[tuple[str, Any]] = [
+            cast(Tuple[str, Any], param)
+            for param in config_lines_sep_key_and_value
+            if len(param) == 2
+        ]
+        for i, (param, value) in enumerate(config_pairs):
+            if value == "Yes":
+                config_pairs[i] = (config_pairs[i][0], True)
+            elif value == "No":
+                config_pairs[i] = (config_pairs[i][0], False)
+            elif value in BEAMLINE_PARAMETER_KEYWORDS:
+                pass
+            else:
+                config_pairs[i] = (config_pairs[i][0], float(config_pairs[i][1]))
+        ob.params = dict(config_pairs)
+        return ob
 
 
 # class ApertureSize(Enum):
