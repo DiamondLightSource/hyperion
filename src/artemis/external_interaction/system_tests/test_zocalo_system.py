@@ -25,7 +25,7 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
         zc.zocalo_interactor.run_start(dcid)
     for dcid in dcids:
         zc.zocalo_interactor.run_end(dcid)
-    assert zc.zocalo_interactor.wait_for_result(4) == Point3D(x=1.2, y=2.3, z=3.4)
+    assert zc.zocalo_interactor.wait_for_result(4) == Point3D(x=1.2, y=2.3, z=1.4)
 
 
 @pytest.mark.s03

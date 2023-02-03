@@ -1,3 +1,4 @@
+import os
 import uuid
 from unittest.mock import MagicMock, patch
 
@@ -28,6 +29,11 @@ from artemis.parameters import (
     DetectorParams,
     FullParameters,
 )
+
+
+@pytest.fixture
+def zocalo_env():
+    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
 
 
 @pytest.fixture()
@@ -76,6 +82,7 @@ def fgs_composite():
         name="fgs",
         prefix=SIM_BEAMLINE,
     )
+    fast_grid_scan_composite.wait_for_connection()
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     return fast_grid_scan_composite
 
@@ -176,6 +183,9 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     parameters.detector_params.prefix = str(uuid.uuid1())
     parameters.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
+    # Currently s03 calls anything with z_steps > 1 invalid
+    parameters.grid_scan_params.z_steps = 100
+
     callbacks = FGSCallbackCollection.from_params(parameters)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
     mock_start_zocalo = MagicMock()
@@ -194,3 +204,39 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 
     assert "too long/short/bent" in comment
     mock_start_zocalo.assert_not_called()
+
+
+@pytest.mark.s03
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
+    complete: MagicMock,
+    kickoff: MagicMock,
+    eiger: EigerDetector,
+    RE: RunEngine,
+    fgs_composite: FGSComposite,
+    zocalo_env: None,
+):
+    """This test currently avoids hardware interaction and is mostly confirming
+    interaction with dev_ispyb and dev_zocalo"""
+
+    parameters = FullParameters()
+    parameters.detector_params.directory = "./tmp"
+    parameters.detector_params.prefix = str(uuid.uuid1())
+    parameters.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+
+    # Currently s03 calls anything with z_steps > 1 invalid
+    parameters.grid_scan_params.z_steps = 1
+
+    eiger.stage = MagicMock()
+    eiger.unstage = MagicMock()
+
+    callbacks = FGSCallbackCollection.from_params(parameters)
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
+
+    RE(get_plan(parameters, callbacks))
+
+    # The following numbers are derived from the centre returned in fake_zocalo
+    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.07)
+    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.18)
+    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.09)

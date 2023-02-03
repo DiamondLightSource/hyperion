@@ -14,6 +14,8 @@ from sqlalchemy.orm import sessionmaker
 
 NO_DIFFRACTION_ID = 1
 
+DEV_ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
+
 
 def load_configuration_file(filename):
     conf = yaml.safe_load(Path(filename).read_text())
@@ -30,14 +32,14 @@ def get_dcgid(dcid: int, Session) -> int:
             )
             dcgid: int = query.first().dataCollectionGroupId
     except Exception as e:
-        print("Exception occured when reading comment from ISPyB database:\n")
+        print("Exception occured when reading from ISPyB database:\n")
         print(e)
         dcgid = 4
     return dcgid
 
 
 def main():
-    url = ispyb.sqlalchemy.url(os.environ.get("ISPYB_CONFIG_PATH"))
+    url = ispyb.sqlalchemy.url(DEV_ISPYB_CONFIG)
     engine = create_engine(url, connect_args={"use_pure": True})
     Session = sessionmaker(engine)
 
@@ -51,10 +53,10 @@ def main():
 
     single_crystal_result = {
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
-        "payload": [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 3.4]}],
+        "payload": [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 1.4]}],
         "recipe": {
             "start": [
-                [1, [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 3.4]}]]
+                [1, [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 1.4]}]]
             ],
             "1": {
                 "service": "Send XRC results to GDA",
