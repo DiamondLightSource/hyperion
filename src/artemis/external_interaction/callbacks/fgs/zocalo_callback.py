@@ -44,7 +44,6 @@ class FGSZocaloCallback(CallbackBase):
         ] = parameters.grid_scan_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        self.started_run: bool = False
         self.run_gridscan_uid: Optional[str] = None
         self.ispyb = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
@@ -57,7 +56,6 @@ class FGSZocaloCallback(CallbackBase):
                 datacollection_ids = self.ispyb.ispyb_ids[0]
                 for id in datacollection_ids:
                     self.zocalo_interactor.run_start(id)
-                self.started_run = True
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 

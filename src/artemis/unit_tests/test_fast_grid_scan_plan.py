@@ -224,7 +224,6 @@ def test_logging_within_plan(
             subscriptions,
         )
     )
-    # RE(bps.close_run())
 
     run_gridscan.assert_called_once_with(fake_composite, fake_eiger, params)
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
