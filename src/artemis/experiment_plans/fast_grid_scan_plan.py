@@ -134,7 +134,8 @@ def run_gridscan(
         try:
             yield from do_fgs()
         except Exception as e:
-            artemis.log.LOGGER.info(e, exc_info=True)
+            artemis.log.LOGGER.error(e, exc_info=True)
+            raise
 
     with TRACER.start_span("move_to_z_0"):
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
@@ -206,7 +207,8 @@ def create_devices():
     try:
         fast_grid_scan_composite.wait_for_connection()
     except Exception as e:
-        artemis.log.LOGGER.info(e, exc_info=True)
+        artemis.log.LOGGER.error(e, exc_info=True)
+        raise
 
     artemis.log.LOGGER.info("Connected.")
 
