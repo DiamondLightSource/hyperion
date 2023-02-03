@@ -4,11 +4,21 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
+import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.experiment_plans.fast_grid_scan_plan import (
+    get_plan,
+    read_hardware_for_ispyb,
+    run_gridscan,
+)
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.fast_grid_scan_plan import get_plan, read_hardware_for_ispyb, run_gridscan
-from artemis.parameters import SIM_BEAMLINE, DetectorParams, FullParameters
+from artemis.parameters import (
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+    DetectorParams,
+    FullParameters,
+)
 
 
 @pytest.fixture()
@@ -26,8 +36,8 @@ def eiger() -> EigerDetector:
         run_number=0,
         det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
     )
-    eiger = EigerDetector(
-        detector_params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
+    eiger = EigerDetector.with_params(
+        params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
     )
 
     # Otherwise odin moves too fast to be tested
@@ -41,7 +51,6 @@ def eiger() -> EigerDetector:
 
 
 params = FullParameters()
-params.beamline = SIM_BEAMLINE
 
 
 @pytest.fixture
@@ -52,9 +61,9 @@ def RE():
 @pytest.fixture
 def fgs_composite():
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=params.insertion_prefix,
+        insertion_prefix=SIM_INSERTION_PREFIX,
         name="fgs",
-        prefix=params.beamline,
+        prefix=SIM_BEAMLINE,
     )
     return fast_grid_scan_composite
 
@@ -103,8 +112,8 @@ def test_read_hardware_for_ispyb(
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
-@patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
-@patch("artemis.fast_grid_scan_plan.set_zebra_shutter_to_manual")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual")
 def test_full_plan_tidies_at_end(
     set_shutter_to_manual: MagicMock,
     run_gridscan_and_move: MagicMock,
@@ -116,6 +125,8 @@ def test_full_plan_tidies_at_end(
     fgs_composite: FGSComposite,
 ):
     callbacks = FGSCallbackCollection.from_params(FullParameters())
+    fgs_plan.eiger = eiger
+    fgs_plan.fast_grid_scan_composite = fgs_composite
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
@@ -124,8 +135,8 @@ def test_full_plan_tidies_at_end(
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
-@patch("artemis.fast_grid_scan_plan.run_gridscan_and_move")
-@patch("artemis.fast_grid_scan_plan.set_zebra_shutter_to_manual")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual")
 def test_full_plan_tidies_at_end_when_plan_fails(
     set_shutter_to_manual: MagicMock,
     run_gridscan_and_move: MagicMock,
@@ -137,6 +148,8 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     fgs_composite: FGSComposite,
 ):
     callbacks = FGSCallbackCollection.from_params(FullParameters())
+    fgs_plan.eiger = eiger
+    fgs_plan.fast_grid_scan_composite = fgs_composite
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))

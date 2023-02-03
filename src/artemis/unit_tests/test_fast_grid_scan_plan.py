@@ -19,13 +19,13 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
-from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.fast_grid_scan_plan import (
+from artemis.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_fgs_valid,
 )
+from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
@@ -96,8 +96,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     assert params.ispyb_params.slit_gap_size_y == ygap_test_value
 
 
-@patch("artemis.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.fast_grid_scan_plan.move_xyz")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
 def test_results_adjusted_and_passed_to_move_xyz(
     move_xyz: MagicMock, run_gridscan: MagicMock
 ):
@@ -115,12 +115,12 @@ def test_results_adjusted_and_passed_to_move_xyz(
     motor_position = params.grid_scan_params.grid_position_to_motor_position(
         Point3D(0.5, 1.5, 2.5)
     )
-    FakeComposite = make_fake_device(FGSComposite)
-    FakeEiger = make_fake_device(EigerDetector)
+    FakeComposite: FGSComposite = make_fake_device(FGSComposite)
+    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
     RE(
         run_gridscan_and_move(
             FakeComposite("test", name="fgs"),
-            FakeEiger(params.detector_params),
+            FakeEiger.with_params(params=params.detector_params, name="test"),
             params,
             subscriptions,
         )
@@ -130,7 +130,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(bps_mv: MagicMock):
-    from artemis.fast_grid_scan_plan import move_xyz
+    from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
     RE = RunEngine({})
     params = FullParameters()
@@ -144,9 +144,9 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
     )
 
 
-@patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
-@patch("artemis.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.fast_grid_scan_plan.move_xyz")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
@@ -164,9 +164,9 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     )
 
     FakeComposite = make_fake_device(FGSComposite)
-    FakeEiger = make_fake_device(EigerDetector)
+    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
     fake_composite = FakeComposite("test", name="fakecomposite")
-    fake_eiger = FakeEiger(params.detector_params)
+    fake_eiger = FakeEiger.with_params(params=params.detector_params, name="test")
 
     RE(
         run_gridscan_and_move(
@@ -181,7 +181,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
 
 
-@patch("artemis.fast_grid_scan_plan.bps.sleep")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     patch_sleep: MagicMock,
 ):
@@ -197,7 +197,7 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     patch_sleep.assert_not_called()
 
 
-@patch("artemis.fast_grid_scan_plan.bps.sleep")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
     patch_sleep: MagicMock,
 ):
