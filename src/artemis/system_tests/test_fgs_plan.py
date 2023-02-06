@@ -17,6 +17,7 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     run_gridscan,
 )
 from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.external_interaction.system_tests.conftest import fetch_comment  # noqa
 from artemis.external_interaction.system_tests.test_ispyb_dev_connection import (
     ISPYB_CONFIG,
 )
