@@ -136,9 +136,11 @@ class ZocaloInteractor:
                     if exception is not None:
                         raise exception
                     else:
-                        sleep(1)
+                        sleep(0.1)
                 else:
                     return result_received.get_nowait()
-            raise TimeoutError(f"No results returned by Zocalo for dcgid {data_collection_group_id} within timeout of {timeout}")
+            raise TimeoutError(
+                f"No results returned by Zocalo for dcgid {data_collection_group_id} within timeout of {timeout}"
+            )
         finally:
             transport.disconnect()

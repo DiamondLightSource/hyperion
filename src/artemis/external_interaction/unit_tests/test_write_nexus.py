@@ -298,6 +298,8 @@ def test_GIVEN_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_fi
 
     nexus_writer_1.create_nexus_file()
     nexus_writer_2.create_nexus_file()
+    nexus_writer_1.update_nexus_file_timestamp()
+    nexus_writer_2.update_nexus_file_timestamp()
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
