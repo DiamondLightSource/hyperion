@@ -1,24 +1,39 @@
+import os
+import uuid
 from unittest.mock import MagicMock, patch
 
 import bluesky.preprocessors as bpp
+import ispyb.sqlalchemy
 import pytest
 from bluesky.run_engine import RunEngine
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     get_plan,
     read_hardware_for_ispyb,
     run_gridscan,
 )
 from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.external_interaction.system_tests.test_ispyb_dev_connection import (
+    ISPYB_CONFIG,
+    get_current_datacollection_comment,
+)
 from artemis.parameters import (
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
     DetectorParams,
     FullParameters,
 )
+
+
+@pytest.fixture
+def zocalo_env():
+    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
 
 
 @pytest.fixture()
@@ -47,6 +62,8 @@ def eiger() -> EigerDetector:
     eiger.wait_for_stale_parameters = lambda: None
     eiger.odin.check_odin_initialised = lambda: (True, "")
 
+    fgs_plan.eiger = eiger
+
     yield eiger
 
 
@@ -65,6 +82,8 @@ def fgs_composite():
         name="fgs",
         prefix=SIM_BEAMLINE,
     )
+    fast_grid_scan_composite.wait_for_connection()
+    fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     return fast_grid_scan_composite
 
 
@@ -125,8 +144,6 @@ def test_full_plan_tidies_at_end(
     fgs_composite: FGSComposite,
 ):
     callbacks = FGSCallbackCollection.from_params(FullParameters())
-    fgs_plan.eiger = eiger
-    fgs_plan.fast_grid_scan_composite = fgs_composite
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
@@ -148,10 +165,78 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     fgs_composite: FGSComposite,
 ):
     callbacks = FGSCallbackCollection.from_params(FullParameters())
-    fgs_plan.eiger = eiger
-    fgs_plan.fast_grid_scan_composite = fgs_composite
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
     # tidy_plans.assert_called_once()
+
+
+@pytest.mark.s03
+def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
+    eiger: EigerDetector,
+    RE: RunEngine,
+    fgs_composite: FGSComposite,
+):
+    parameters = FullParameters()
+    parameters.detector_params.directory = "./tmp"
+    parameters.detector_params.prefix = str(uuid.uuid1())
+    parameters.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+
+    # Currently s03 calls anything with z_steps > 1 invalid
+    parameters.grid_scan_params.z_steps = 100
+
+    callbacks = FGSCallbackCollection.from_params(parameters)
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
+    mock_start_zocalo = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
+
+    with pytest.raises(WarningException):
+        RE(get_plan(parameters, callbacks))
+
+    url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
+    engine = create_engine(url, connect_args={"use_pure": True})
+    Session = sessionmaker(engine)
+
+    dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
+
+    comment = get_current_datacollection_comment(Session, dcid_used)
+
+    assert "too long/short/bent" in comment
+    mock_start_zocalo.assert_not_called()
+
+
+@pytest.mark.s03
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
+    complete: MagicMock,
+    kickoff: MagicMock,
+    eiger: EigerDetector,
+    RE: RunEngine,
+    fgs_composite: FGSComposite,
+    zocalo_env: None,
+):
+    """This test currently avoids hardware interaction and is mostly confirming
+    interaction with dev_ispyb and dev_zocalo"""
+
+    parameters = FullParameters()
+    parameters.detector_params.directory = "./tmp"
+    parameters.detector_params.prefix = str(uuid.uuid1())
+    parameters.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+
+    # Currently s03 calls anything with z_steps > 1 invalid
+    parameters.grid_scan_params.z_steps = 1
+
+    eiger.stage = MagicMock()
+    eiger.unstage = MagicMock()
+
+    callbacks = FGSCallbackCollection.from_params(parameters)
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
+
+    RE(get_plan(parameters, callbacks))
+
+    # The following numbers are derived from the centre returned in fake_zocalo
+    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.07)
+    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.18)
+    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.09)

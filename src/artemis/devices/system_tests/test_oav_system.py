@@ -2,7 +2,7 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky import RunEngine
 
-from artemis.devices.oav.oav_detector import OAV
+from artemis.devices.oav.oav_detector import OAV, ZoomController
 
 TEST_GRID_TOP_LEFT_X = 100
 TEST_GRID_TOP_LEFT_Y = 100
@@ -31,3 +31,10 @@ def test_grid_overlay():
     snapshot_directory = "."
     RE = RunEngine()
     RE(take_snapshot_with_grid(oav, snapshot_filename, snapshot_directory))
+
+
+@pytest.mark.s03
+def test_get_zoom_levels():
+    my_zoom_controller = ZoomController("BL03I-EA-OAV-01:FZOOM:", name="test_zoom")
+    my_zoom_controller.wait_for_connection()
+    assert my_zoom_controller.allowed_zoom_levels[0] == "1.0x"

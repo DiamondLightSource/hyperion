@@ -31,7 +31,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb.end_deposition("fail", "could not connect to devices")
     assert (
         fetch_comment(dcid[0][0])
-        == "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -45,11 +45,11 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
     assert (
         fetch_comment(dcid1)
-        == "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert (
         fetch_comment(dcid2)
-        == "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "Artemis: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -77,11 +77,11 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 
     expected_comments = [
         (
-            "Artemis: Xray centring - Diffraction grid scan of 4 by 200 "
+            "Artemis: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [0,0], bottom right (px): [0,0]."
         ),
         (
-            "Artemis: Xray centring - Diffraction grid scan of 4 by 61 "
+            "Artemis: Xray centring - Diffraction grid scan of 40 by 10 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [0,0], bottom right (px): [0,0]."
         ),
     ]

@@ -288,8 +288,8 @@ def test_ispyb_deposition_comment_correct(
 
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
+        "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
     )
 
 
@@ -309,8 +309,8 @@ def test_ispyb_deposition_rounds_to_int(
 
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [320,16100]."
+        "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [3200,1700]."
     )
 
 
@@ -328,12 +328,12 @@ def test_ispyb_deposition_comment_for_3D_correct(
     first_upserted_param_value_list = mock_upsert_dc.call_args_list[0][0][0]
     second_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
     assert first_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
+        "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
     )
     assert second_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]."
+        "Artemis: Xray centring - Diffraction grid scan of 40 by 10 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
     )
 
 
