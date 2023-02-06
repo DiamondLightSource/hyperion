@@ -5,8 +5,8 @@ from unittest.mock import call, patch
 import h5py
 import numpy as np
 import pytest
+from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 
-from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.nexus.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
@@ -246,7 +246,7 @@ def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: NexusWriter):
 
 
 def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
-    from artemis.devices.det_dim_constants import (
+    from dodal.devices.det_dim_constants import (
         PIXELS_X_EIGER2_X_4M,
         PIXELS_Y_EIGER2_X_4M,
     )

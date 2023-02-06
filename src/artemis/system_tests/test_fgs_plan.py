@@ -10,8 +10,6 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan_composite import FGSComposite
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     get_plan,
@@ -49,7 +47,7 @@ def eiger() -> EigerDetector:
         num_images=50,
         use_roi_mode=False,
         run_number=0,
-        det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
+        det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
     )
     eiger = EigerDetector.with_params(
         params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
