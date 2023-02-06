@@ -1,13 +1,11 @@
 import os
 import uuid
+from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import bluesky.preprocessors as bpp
-import ispyb.sqlalchemy
 import pytest
 from bluesky.run_engine import RunEngine
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.devices.eiger import EigerDetector
@@ -21,7 +19,6 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
 from artemis.external_interaction.callbacks import FGSCallbackCollection
 from artemis.external_interaction.system_tests.test_ispyb_dev_connection import (
     ISPYB_CONFIG,
-    get_current_datacollection_comment,
 )
 from artemis.parameters import (
     SIM_BEAMLINE,
@@ -177,6 +174,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
+    fetch_comment: Callable,
 ):
     parameters = FullParameters()
     parameters.detector_params.directory = "./tmp"
@@ -194,13 +192,9 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     with pytest.raises(WarningException):
         RE(get_plan(parameters, callbacks))
 
-    url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
-    engine = create_engine(url, connect_args={"use_pure": True})
-    Session = sessionmaker(engine)
-
     dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
 
-    comment = get_current_datacollection_comment(Session, dcid_used)
+    comment = fetch_comment(dcid_used)
 
     assert "too long/short/bent" in comment
     mock_start_zocalo.assert_not_called()
