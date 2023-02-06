@@ -32,6 +32,8 @@ def get_beamline_prefixes():
         return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
     if beamline == "i03":
         return BeamlinePrefixes("BL03I", "SR03I")
+    else:
+        raise Exception(f"Beamline {beamline} is not currently supported by Artemis")
 
 
 @dataclass_json
