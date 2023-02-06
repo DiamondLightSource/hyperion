@@ -1,9 +1,9 @@
 from enum import Enum
 from typing import Optional
 
-from ophyd import Component, Device, EpicsSignalRO, StatusBase
+from ophyd import Component, Device, EpicsSignalRO
 from ophyd.areadetector.cam import EigerDetectorCam
-from ophyd.status import Status
+from ophyd.status import AndStatus, Status, SubscriptionStatus
 
 from artemis.devices.detector import DetectorParams
 from artemis.devices.eiger_odin import EigerOdin
@@ -41,7 +41,7 @@ class EigerDetector(Device):
 
     STALE_PARAMS_TIMEOUT = 60
 
-    filewriters_finished: StatusBase
+    filewriters_finished: SubscriptionStatus
 
     detector_params: Optional[DetectorParams] = None
 
@@ -129,7 +129,7 @@ class EigerDetector(Device):
         if not status.success:
             self.log.error("Failed to switch to ROI mode")
 
-    def set_cam_pvs(self) -> Status:
+    def set_cam_pvs(self) -> AndStatus:
         assert self.detector_params is not None
         status = self.cam.acquire_time.set(self.detector_params.exposure_time)
         status &= self.cam.acquire_period.set(self.detector_params.exposure_time)
