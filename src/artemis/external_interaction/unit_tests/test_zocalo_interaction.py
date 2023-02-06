@@ -181,43 +181,6 @@ def test_when_exception_caused_by_zocalo_message_then_exception_propagated(
 @patch("workflows.recipe.wrap_subscribe")
 @patch("zocalo.configuration.from_file")
 @patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
-def test_when_exception_caused_by_zocalo_message_then_exception_propagated(
-    mock_transport_lookup, mock_from_file, mock_wrap_subscribe
-):
-    zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
-
-    mock_zc: Configuration = MagicMock()
-    mock_from_file.return_value = mock_zc
-    mock_transport = MagicMock()
-    mock_transport_lookup.return_value = MagicMock()
-    mock_transport_lookup.return_value.return_value = mock_transport
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(zc.wait_for_result, 0)
-
-        for _ in range(10):
-            sleep(0.1)
-            if mock_wrap_subscribe.call_args:
-                break
-
-        result_func = mock_wrap_subscribe.call_args[0][2]
-
-        failure_exception = Exception("Bad function!")
-
-        mock_recipe_wrapper = MagicMock()
-        mock_transport.ack.side_effect = failure_exception
-        with pytest.raises(Exception) as actual_exception:
-            result_func(mock_recipe_wrapper, {}, [])
-        assert str(actual_exception.value) == str(failure_exception)
-
-        with pytest.raises(Exception) as actual_exception:
-            future.result()
-        assert str(actual_exception.value) == str(failure_exception)
-
-
-@patch("workflows.recipe.wrap_subscribe")
-@patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
 def test_when_no_results_returned_then_no_diffraction_exception_raised(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
