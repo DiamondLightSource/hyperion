@@ -24,7 +24,7 @@ from artemis.parameters import (
     I03_BEAMLINE_PARAMETER_PATH,
     ISPYB_PLAN_NAME,
     SIM_BEAMLINE,
-    ApertureSizePositions,
+    AperturePositions,
     FullParameters,
     GDABeamlineParameters,
     get_beamline_prefixes,
@@ -44,10 +44,14 @@ def create_devices():
     artemis.log.LOGGER.info(
         f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
     )
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        gda_beamline_parameters
+    )
     fast_grid_scan_composite = FGSComposite(
         insertion_prefix=prefixes.insertion_prefix,
         name="fgs",
         prefix=prefixes.beamline_prefix,
+        aperture_positions=aperture_positions,
     )
 
     # Note, eiger cannot be currently waited on, see #166
@@ -65,18 +69,15 @@ def set_aperture_for_bbox_size(
     aperture_device: ApertureScatterguard,
     bbox_size: list[int],
 ):
-    aperture_positions = ApertureSizePositions.from_gda_beamline_params(
-        gda_beamline_parameters
-    )
     # bbox_size is [x,y,z]
     if bbox_size[0] <= 1:
-        aperture_size_positions = aperture_positions.SMALL
+        aperture_size_positions = aperture_device.aperture_positions.SMALL
     elif 1 < bbox_size[0] < 3:
-        aperture_size_positions = aperture_positions.MEDIUM
+        aperture_size_positions = aperture_device.aperture_positions.MEDIUM
     else:
-        aperture_size_positions = aperture_positions.LARGE
+        aperture_size_positions = aperture_device.aperture_positions.LARGE
     artemis.log.LOGGER.info(f"Setting aperture to {aperture_size_positions}.")
-    aperture_device.set_all_positions(*aperture_size_positions)
+    aperture_device.safe_move_within_datacollection_range(*aperture_size_positions)
 
 
 def read_hardware_for_ispyb(

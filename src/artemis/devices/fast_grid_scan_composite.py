@@ -8,6 +8,7 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.devices.zebra import Zebra
+from artemis.parameters import AperturePositions
 
 
 class FGSComposite(InfoLoggingDevice):
@@ -24,8 +25,17 @@ class FGSComposite(InfoLoggingDevice):
 
     sample_motors: I03Smargon = Component(I03Smargon, "")
 
-    aperture_scatterguard: ApertureScatterguard = Component(ApertureScatterguard, "")
+    aperture_scatterguard: ApertureScatterguard
 
-    def __init__(self, insertion_prefix: str, *args, **kwargs):
+    def __init__(
+        self,
+        insertion_prefix: str,
+        aperture_positions: AperturePositions,
+        *args,
+        **kwargs
+    ):
         self.insertion_prefix = insertion_prefix
+        self.aperture_scatterguard = Component(
+            ApertureScatterguard, "", positions=aperture_positions
+        )
         super().__init__(*args, **kwargs)
