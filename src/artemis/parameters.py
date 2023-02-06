@@ -42,9 +42,9 @@ class FullParameters:
     insertion_prefix: str = SIM_INSERTION_PREFIX
     grid_scan_params: GridScanParams = default_field(
         GridScanParams(
-            x_steps=4,
-            y_steps=200,
-            z_steps=61,
+            x_steps=40,
+            y_steps=20,
+            z_steps=10,
             x_step_size=0.1,
             y_step_size=0.1,
             z_step_size=0.1,
