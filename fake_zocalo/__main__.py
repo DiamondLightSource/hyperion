@@ -3,12 +3,18 @@ import os
 import time
 from pathlib import Path
 
+import ispyb.sqlalchemy
 import pika
 import yaml
+from ispyb.sqlalchemy import DataCollection
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import BasicProperties
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 NO_DIFFRACTION_ID = 1
+
+DEV_ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
 
 def load_configuration_file(filename):
@@ -16,7 +22,27 @@ def load_configuration_file(filename):
     return conf
 
 
+def get_dcgid(dcid: int, Session) -> int:
+    if dcid == NO_DIFFRACTION_ID:
+        return NO_DIFFRACTION_ID
+    try:
+        with Session() as session:
+            query = session.query(DataCollection).filter(
+                DataCollection.dataCollectionId == dcid
+            )
+            dcgid: int = query.first().dataCollectionGroupId
+    except Exception as e:
+        print("Exception occured when reading from ISPyB database:\n")
+        print(e)
+        dcgid = 4
+    return dcgid
+
+
 def main():
+    url = ispyb.sqlalchemy.url(DEV_ISPYB_CONFIG)
+    engine = create_engine(url, connect_args={"use_pure": True})
+    Session = sessionmaker(engine)
+
     config = load_configuration_file(
         os.path.expanduser("~/.zocalo/rabbitmq-credentials.yml")
     )
@@ -27,10 +53,10 @@ def main():
 
     single_crystal_result = {
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
-        "payload": [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 3.4]}],
+        "payload": [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 1.4]}],
         "recipe": {
             "start": [
-                [1, [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 3.4]}]]
+                [1, [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 1.4]}]]
             ],
             "1": {
                 "service": "Send XRC results to GDA",
@@ -75,6 +101,12 @@ def main():
             return
         if message.get("parameters").get("event") == "end":
             print('Doing "processing"...')
+
+            dcid = message.get("parameters").get("ispyb_dcid")
+            print(f"getting dcgid for dcid {dcid} from ispyb:")
+            dcgid = get_dcgid(dcid, Session)
+            print(dcgid)
+
             time.sleep(3)
             print('Sending "results"...')
             resultprops = BasicProperties(
@@ -86,8 +118,11 @@ def main():
                 result = no_diffraction_result
             else:
                 result = single_crystal_result
+            result["recipe"]["1"]["parameters"]["dcid"] = str(dcid)
+            result["recipe"]["1"]["parameters"]["dcgid"] = str(dcgid)
 
             print(f"Sending results {result}")
+
             result_chan = conn.channel()
             result_chan.basic_publish(
                 "results", "xrc.i03", json.dumps(result), resultprops

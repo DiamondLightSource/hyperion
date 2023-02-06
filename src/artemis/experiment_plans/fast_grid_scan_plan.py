@@ -84,7 +84,7 @@ def read_hardware_for_ispyb(
     synchrotron: Synchrotron,
     slit_gaps: SlitGaps,
 ):
-    artemis.log.LOGGER.debug(
+    artemis.log.LOGGER.info(
         "Reading status of beamline parameters for ispyb deposition."
     )
     yield from bps.create(
@@ -97,7 +97,8 @@ def read_hardware_for_ispyb(
     yield from bps.save()
 
 
-@bpp.run_decorator()
+@bpp.set_run_key_decorator("move_xyz")
+@bpp.run_decorator(md={"subplan_name": "move_xyz"})
 def move_xyz(
     sample_motors,
     xray_centre_motor_position: Point3D,
@@ -124,17 +125,21 @@ def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
     for _ in range(times_to_check):
         scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
         pos_counter = yield from bps.rd(fgs_motors.position_counter)
+        artemis.log.LOGGER.debug(
+            f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
+        )
         if not scan_invalid and pos_counter == 0:
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
-    raise WarningException(f"Scan parameters invalid after {timeout} seconds")
+    raise WarningException("Scan invalid - pin too long/short/bent and out of range")
 
 
 def tidy_up_plans(fgs_composite: FGSComposite):
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
 
-@bpp.run_decorator()
+@bpp.set_run_key_decorator("run_gridscan")
+@bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
@@ -166,6 +171,8 @@ def run_gridscan(
     yield from wait_for_fgs_valid(fgs_motors)
 
     @bpp.stage_decorator([eiger])
+    @bpp.set_run_key_decorator("do_fgs")
+    @bpp.run_decorator(md={"subplan_name": "do_fgs"})
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
@@ -178,6 +185,8 @@ def run_gridscan(
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
+@bpp.set_run_key_decorator("run_gridscan_and_move")
+@bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
@@ -196,13 +205,12 @@ def run_gridscan_and_move(
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
-    # our callbacks should listen to documents only from the actual grid scan
-    # so we subscribe to them with our plan
-    @bpp.subs_decorator(list(subscriptions))
+    # While the gridscan is happening we want to write out nexus files and trigger zocalo
+    @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
     def gridscan_with_subscriptions(fgs_composite, detector, params):
         yield from run_gridscan(fgs_composite, detector, params)
 
-    artemis.log.LOGGER.debug("Starting grid scan")
+    artemis.log.LOGGER.info("Starting grid scan")
     yield from gridscan_with_subscriptions(fgs_composite, eiger, parameters)
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
@@ -229,6 +237,9 @@ def get_plan(
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
+    The ispyb handler should be added to the whole gridscan as we want to capture errors
+    at any point in it.
+
     Args:
         parameters (FullParameters): The parameters to run the scan.
 
@@ -238,6 +249,7 @@ def get_plan(
     eiger.set_detector_parameters(parameters.detector_params)
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
+    @bpp.subs_decorator(subscriptions.ispyb_handler)
     def run_gridscan_and_move_and_tidy(fgs_composite, detector, params, comms):
         yield from run_gridscan_and_move(fgs_composite, detector, params, comms)
 
