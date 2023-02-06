@@ -1,6 +1,6 @@
 from ophyd import Component, FormattedComponent
 
-from artemis.devices.aperturescatterguard import ApertureScatterguard
+from artemis.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from artemis.devices.fast_grid_scan import FastGridScan
 from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.logging_ophyd_device import InfoLoggingDevice
@@ -8,7 +8,6 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.devices.zebra import Zebra
-from artemis.parameters import AperturePositions
 
 
 class FGSComposite(InfoLoggingDevice):
@@ -30,7 +29,7 @@ class FGSComposite(InfoLoggingDevice):
     def __init__(
         self,
         insertion_prefix: str,
-        aperture_positions: AperturePositions,
+        aperture_positions: AperturePositions = None,
         *args,
         **kwargs
     ):

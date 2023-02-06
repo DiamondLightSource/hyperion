@@ -11,7 +11,7 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
-from artemis.devices.aperturescatterguard import ApertureScatterguard
+from artemis.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -24,7 +24,6 @@ from artemis.parameters import (
     I03_BEAMLINE_PARAMETER_PATH,
     ISPYB_PLAN_NAME,
     SIM_BEAMLINE,
-    AperturePositions,
     FullParameters,
     GDABeamlineParameters,
     get_beamline_prefixes,

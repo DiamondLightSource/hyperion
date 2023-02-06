@@ -63,51 +63,6 @@ class GDABeamlineParameters:
 
 
 @dataclass
-class AperturePositions:
-    """Holds the tuple (miniap_x, miniap_y, miniap_z, scatterguard_x, scatterguard_y)
-    representing the motor positions needed to select a particular aperture size.
-    """
-
-    LARGE: tuple[float, float, float, float, float]
-    MEDIUM: tuple[float, float, float, float, float]
-    SMALL: tuple[float, float, float, float, float]
-    ROBOT_LOAD: tuple[float, float, float, float, float]
-
-    @classmethod
-    def from_gda_beamline_params(cls, params: GDABeamlineParameters):
-        return cls(
-            LARGE=(
-                params["miniap_x_LARGE_APERTURE"],
-                params["miniap_y_LARGE_APERTURE"],
-                params["miniap_z_LARGE_APERTURE"],
-                params["sg_x_LARGE_APERTURE"],
-                params["sg_y_LARGE_APERTURE"],
-            ),
-            MEDIUM=(
-                params["miniap_x_MEDIUM_APERTURE"],
-                params["miniap_y_MEDIUM_APERTURE"],
-                params["miniap_z_MEDIUM_APERTURE"],
-                params["sg_x_MEDIUM_APERTURE"],
-                params["sg_y_MEDIUM_APERTURE"],
-            ),
-            SMALL=(
-                params["miniap_x_SMALL_APERTURE"],
-                params["miniap_y_SMALL_APERTURE"],
-                params["miniap_z_SMALL_APERTURE"],
-                params["sg_x_SMALL_APERTURE"],
-                params["sg_y_SMALL_APERTURE"],
-            ),
-            ROBOT_LOAD=(
-                params["miniap_x_ROBOT_LOAD"],
-                params["miniap_y_ROBOT_LOAD"],
-                params["miniap_z_ROBOT_LOAD"],
-                params["sg_x_ROBOT_LOAD"],
-                params["sg_y_ROBOT_LOAD"],
-            ),
-        )
-
-
-@dataclass
 class BeamlinePrefixes:
     beamline_prefix: str
     insertion_prefix: str

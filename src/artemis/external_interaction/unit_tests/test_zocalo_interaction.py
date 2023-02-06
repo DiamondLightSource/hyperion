@@ -137,8 +137,9 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
 
         return_value = future.result()
 
-    assert type(return_value) == Point3D
-    assert return_value == Point3D(*centre_of_mass_coords)
+    assert type(return_value) == list
+    returned_com = Point3D(*return_value[0]["centre_of_mass"])
+    assert returned_com == Point3D(*centre_of_mass_coords)
 
 
 @patch("workflows.recipe.wrap_subscribe")
