@@ -46,6 +46,8 @@ def get_beamline_prefixes():
         return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
     if beamline == "i03":
         return BeamlinePrefixes("BL03I", "SR03I")
+    else:
+        raise Exception(f"Beamline {beamline} is not currently supported by Artemis")
 
 
 @dataclass_json
@@ -56,9 +58,9 @@ class FullParameters:
     insertion_prefix: str = SIM_INSERTION_PREFIX
     grid_scan_params: GridScanParams = default_field(
         GridScanParams(
-            x_steps=4,
-            y_steps=200,
-            z_steps=61,
+            x_steps=40,
+            y_steps=20,
+            z_steps=10,
             x_step_size=0.1,
             y_step_size=0.1,
             z_step_size=0.1,

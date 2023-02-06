@@ -1,4 +1,3 @@
-from os import environ
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -11,6 +10,7 @@ from artemis import log
 def mock_logger():
     with patch("artemis.log.LOGGER") as mock_LOGGER:
         yield mock_LOGGER
+        log.beamline = None
 
 
 @patch("artemis.log.GELFTCPHandler")
@@ -79,13 +79,13 @@ def test_dev_mode_sets_correct_file_handler(
 @patch("artemis.log.Path.mkdir")
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
-@patch.dict(environ, {"BEAMLINE": "s03"})
 def test_prod_mode_sets_correct_file_handler(
     mock_logging,
     mock_GELFTCPHandler,
     mock_dir,
     mock_logger: MagicMock,
 ):
+    log.beamline = "s03"
     log.set_up_logging_handlers(None, False)
     mock_logging.FileHandler.assert_called_once_with(
         filename=Path("/dls_sw/s03/logs/bluesky/artemis.txt")
@@ -106,3 +106,10 @@ def test_setting_debug_in_prod_gives_warning(
     )
     log.set_up_logging_handlers("DEBUG", False)
     mock_logger.warning.assert_any_call(warning_string)
+
+
+def test_beamline_filter_adds_dev_if_no_beamline():
+    filter = log.BeamlineFilter()
+    record = MagicMock()
+    assert filter.filter(record)
+    assert record.beamline == "dev"
