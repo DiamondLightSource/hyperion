@@ -117,9 +117,9 @@ if __name__ == "__main__":
     smargon: Smargon = Smargon(name="smargon", prefix=beamline)
     backlight: Backlight = Backlight(name="backlight", prefix=beamline)
     parameters = OAVParameters(
-        "src/artemis/devices/unit_tests/test_OAVCentring.json",
-        "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
-        "src/artemis/devices/unit_tests/test_display.configuration",
+        "src/artemis/unit_tests/test_OAVCentring.json",
+        "src/artemis/unit_tests/test_jCameraManZoomLevels.xml",
+        "src/artemis/unit_tests/test_display.configuration",
     )
     oav.wait_for_connection()
     smargon.wait_for_connection()
