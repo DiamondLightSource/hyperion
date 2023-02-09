@@ -100,6 +100,7 @@ class FGSZocaloCallback(CallbackBase):
             log_msg = (
                 f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
             )
+            self.ispyb.append_to_comment("Found no diffraction.")
             xray_centre = fallback_xyz
             LOGGER.warn(log_msg)
 

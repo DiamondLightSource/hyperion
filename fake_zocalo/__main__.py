@@ -2,6 +2,7 @@ import json
 import os
 import time
 from pathlib import Path
+from typing import Tuple
 
 import ispyb.sqlalchemy
 import pika
@@ -12,7 +13,7 @@ from pika.spec import BasicProperties
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-NO_DIFFRACTION_ID = 1
+NO_DIFFRACTION_PREFIX = "NO_DIFF"
 
 DEV_ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
@@ -22,20 +23,22 @@ def load_configuration_file(filename):
     return conf
 
 
-def get_dcgid(dcid: int, Session) -> int:
-    if dcid == NO_DIFFRACTION_ID:
-        return NO_DIFFRACTION_ID
+def get_dcgid_and_prefix(dcid: int, Session) -> Tuple[int, str]:
     try:
         with Session() as session:
-            query = session.query(DataCollection).filter(
-                DataCollection.dataCollectionId == dcid
+            query = (
+                session.query(DataCollection)
+                .filter(DataCollection.dataCollectionId == dcid)
+                .first()
             )
-            dcgid: int = query.first().dataCollectionGroupId
+            dcgid: int = query.dataCollectionGroupId
+            prefix: str = query.imagePrefix
     except Exception as e:
         print("Exception occured when reading from ISPyB database:\n")
         print(e)
         dcgid = 4
-    return dcgid
+        prefix = ""
+    return dcgid, prefix
 
 
 def main():
@@ -81,8 +84,7 @@ def main():
                 "queue": "xrc.i03",
                 "exchange": "results",
                 "parameters": {
-                    "dcid": str(NO_DIFFRACTION_ID),
-                    "dcgid": str(NO_DIFFRACTION_ID),
+                    "parameters": {"dcid": "2", "dcgid": "4"},
                 },
             },
         },
@@ -103,18 +105,18 @@ def main():
             print('Doing "processing"...')
 
             dcid = message.get("parameters").get("ispyb_dcid")
-            print(f"getting dcgid for dcid {dcid} from ispyb:")
-            dcgid = get_dcgid(dcid, Session)
-            print(dcgid)
+            print(f"Getting info for dcid {dcid} from ispyb:")
+            dcgid, prefix = get_dcgid_and_prefix(dcid, Session)
+            print(f"Dcgid {dcgid} and prefix {prefix}")
 
-            time.sleep(3)
+            time.sleep(1)
             print('Sending "results"...')
             resultprops = BasicProperties(
                 delivery_mode=2,
                 headers={"workflows-recipe": True, "x-delivery-count": 1},
             )
 
-            if message.get("parameters").get("ispyb_dcid") == NO_DIFFRACTION_ID:
+            if prefix == NO_DIFFRACTION_PREFIX:
                 result = no_diffraction_result
             else:
                 result = single_crystal_result

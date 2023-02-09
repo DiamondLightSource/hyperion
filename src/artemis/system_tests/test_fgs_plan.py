@@ -85,7 +85,7 @@ def fgs_composite():
     return fast_grid_scan_composite
 
 
-@pytest.mark.skip("Broken due to eiger issues in s03")
+@pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
 @patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid")
 @patch("bluesky.plan_stubs.wait")
