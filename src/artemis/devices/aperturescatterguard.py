@@ -57,7 +57,7 @@ class AperturePositions:
 class ApertureScatterguard(Device):
     aperture: Aperture = Cpt(Aperture, "")
     scatterguard: Scatterguard = Cpt(Scatterguard, "")
-    aperture_positions = Optional[AperturePositions]
+    aperture_positions: Optional[AperturePositions] = None
 
     def __init__(self, positions: Optional[AperturePositions] = None, *args, **kwargs):
         self.aperture_positions = positions
