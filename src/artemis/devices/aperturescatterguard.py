@@ -55,13 +55,12 @@ class AperturePositions:
 
 
 class ApertureScatterguard(Device):
-    aperture: Aperture = Cpt(Aperture, "")
-    scatterguard: Scatterguard = Cpt(Scatterguard, "")
+    aperture: Aperture = Cpt(Aperture, "-MO-MAPT-01:")
+    scatterguard: Scatterguard = Cpt(Scatterguard, "-MO-SCAT-01:")
     aperture_positions: Optional[AperturePositions] = None
 
-    def __init__(self, positions: Optional[AperturePositions] = None, *args, **kwargs):
+    def load_aperture_positions(self, positions: AperturePositions):
         self.aperture_positions = positions
-        super.__init__(*args, **kwargs)
 
     def safe_move_within_datacollection_range(
         self,

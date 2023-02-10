@@ -34,5 +34,6 @@ class FGSComposite(InfoLoggingDevice):
         **kwargs
     ):
         self.insertion_prefix = insertion_prefix
-        self.aperture_scatterguard.aperture_positions = aperture_positions
         super().__init__(*args, **kwargs)
+        if aperture_positions is not None:
+            self.aperture_scatterguard.load_aperture_positions(aperture_positions)

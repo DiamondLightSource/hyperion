@@ -7,6 +7,7 @@ from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
 
+from artemis.devices.aperturescatterguard import AperturePositions
 from artemis.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -30,7 +31,11 @@ from artemis.external_interaction.callbacks import (
     VerbosePlanExecutionLoggingCallback,
 )
 from artemis.log import set_up_logging_handlers
-from artemis.parameters import FullParameters
+from artemis.parameters import (
+    I03_BEAMLINE_PARAMETER_PATH,
+    FullParameters,
+    GDABeamlineParameters,
+)
 from artemis.utils import Point3D
 
 TEST_RESULT = [
@@ -43,6 +48,7 @@ TEST_RESULT = [
         "bounding_box": [[2, 2, 2], [8, 8, 7]],
     }
 ]
+gda_beamline_parameters = GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 
 
 @pytest.fixture
@@ -58,6 +64,10 @@ def fake_fgs_composite():
     fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
         False
     )
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        gda_beamline_parameters
+    )
+    fake_composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
     return fake_composite
 
 
