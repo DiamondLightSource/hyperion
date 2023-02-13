@@ -48,6 +48,16 @@ TEST_RESULT_LARGE = [
         "bounding_box": [[2, 2, 2], [8, 8, 7]],
     }
 ]
+TEST_RESULT_MEDIUM = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [2, 4, 5],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+    }
+]
 TEST_RESULT_SMALL = [
     {
         "centre_of_mass": [1, 2, 3],
@@ -232,7 +242,17 @@ def test_results_passed_to_move_aperture(
             mock_subscriptions,
         )
     )
-
+    mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        TEST_RESULT_MEDIUM
+    )
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
+        )
+    )
     mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_SMALL
     )
@@ -248,11 +268,16 @@ def test_results_passed_to_move_aperture(
     call_large = call(
         *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
     )
+    call_medium = call(
+        *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
+    )
     call_small = call(
         *(fake_fgs_composite.aperture_scatterguard.aperture_positions.SMALL)
     )
 
-    move_aperture.assert_has_calls([call_large, call_small], any_order=False)
+    move_aperture.assert_has_calls(
+        [call_large, call_medium, call_small], any_order=False
+    )
 
 
 @patch("bluesky.plan_stubs.mv")
