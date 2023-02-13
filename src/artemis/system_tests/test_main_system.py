@@ -4,19 +4,20 @@ from dataclasses import dataclass
 from sys import argv
 from time import sleep
 from typing import Any, Callable, Optional
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, Status, cli_arg_parse, create_app
+from artemis.experiment_plans import PLAN_REGISTRY
 from artemis.parameters import FullParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
-STOP_ENDPOINT = FGS_ENDPOINT + Actions.STOP.value
-STATUS_ENDPOINT = FGS_ENDPOINT + "status"
-SHUTDOWN_ENDPOINT = FGS_ENDPOINT + Actions.SHUTDOWN.value
+STOP_ENDPOINT = Actions.STOP.value
+STATUS_ENDPOINT = "status"
+SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_PARAMS = FullParameters().to_json()
 
 
@@ -48,11 +49,18 @@ class ClientAndRunEngine:
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
-    app, runner = create_app({"TESTING": True}, mock_run_engine)
+    with patch.dict(
+        "artemis.__main__.PLAN_REGISTRY",
+        {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+    ):
+        app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
     with app.test_client() as client:
-        with patch("artemis.__main__.get_plan") as _:
+        with patch.dict(
+            "artemis.__main__.PLAN_REGISTRY",
+            {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+        ):
             yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()
@@ -98,6 +106,16 @@ def test_getting_status_after_start_sent_returns_busy(
     check_status_in_response(response, Status.BUSY)
 
 
+def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
+    response = test_env.client.put("/bad_plan/start", data=TEST_PARAMS).json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "PlanNotFound(\"Experiment plan 'bad_plan' not found in registry.\")"
+    )
+
+
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
@@ -139,7 +157,7 @@ def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
     test_env.mock_run_engine.error = error_message
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.FAILED.value
-    assert response_json["message"] == error_message
+    assert response_json["message"] == 'Exception("D\'Oh")'
 
 
 def test_given_started_and_return_status_interrupted_when_RE_aborted_then_error_reported(
@@ -154,7 +172,7 @@ def test_given_started_and_return_status_interrupted_when_RE_aborted_then_error_
         test_env.client, lambda status: status != Status.ABORTING.value
     )
     assert response_json["status"] == Status.FAILED.value
-    assert response_json["message"] == error_message
+    assert response_json["message"] == 'Exception("D\'Oh")'
 
 
 def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
@@ -176,4 +194,7 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
 def test_cli_args_parse():
     argv[1:] = ["--dev", "--logging-level=DEBUG"]
     test_args = cli_arg_parse()
-    assert test_args == ("DEBUG", True)
+    assert test_args == ("DEBUG", False, True)
+    argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
+    test_args = cli_arg_parse()
+    assert test_args == ("DEBUG", True, True)

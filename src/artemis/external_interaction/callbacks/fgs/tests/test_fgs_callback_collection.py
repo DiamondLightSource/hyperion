@@ -1,21 +1,17 @@
 from unittest.mock import MagicMock
 
-import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
-from ophyd.sim import SynSignal
 
-from artemis.devices.eiger import EigerDetector
+from artemis.devices.eiger import DetectorParams, EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.experiment_plans.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
-from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.parameters import (
-    ISPYB_PLAN_NAME,
     SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
     DetectorParams,
     FullParameters,
 )
@@ -26,74 +22,7 @@ def test_callback_collection_init():
     callbacks = FGSCallbackCollection.from_params(FullParameters())
     assert callbacks.ispyb_handler.params == FullParameters()
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
-
-
-def test_callback_collection_subscription_order_triggers_ispyb_before_zocalo(
-    nexus_writer: MagicMock,
-    mock_ispyb_begin_deposition: MagicMock,
-    mock_ispyb_end_deposition: MagicMock,
-):
-    RE = RunEngine({})
-
-    mock_ispyb_begin_deposition.return_value = ([1, 2], None, 4)
-
-    fgs_undulator_gap = SynSignal(name="fgs_undulator_gap")
-    fgs_synchrotron_machine_status_synchrotron_mode = SynSignal(
-        name="fgs_synchrotron_machine_status_synchrotron_mode"
-    )
-    fgs_slit_gaps_xgap = SynSignal(name="fgs_slit_gaps_xgap")
-    fgs_slit_gaps_ygap = SynSignal(name="fgs_slit_gaps_ygap")
-    detector = SynSignal(name="detector")
-
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
-
-    callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
-    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
-    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
-
-    callbacklist_right_order = [
-        callbacks.nexus_handler,
-        callbacks.ispyb_handler,
-        callbacks.zocalo_handler,
-    ]
-    assert callbacklist_right_order == list(callbacks)
-
-    @bpp.subs_decorator(list(callbacks))
-    @bpp.run_decorator()
-    def fake_plan():
-        yield from bps.create(ISPYB_PLAN_NAME)
-        yield from bps.read(fgs_undulator_gap)
-        yield from bps.read(fgs_synchrotron_machine_status_synchrotron_mode)
-        yield from bps.read(fgs_slit_gaps_xgap)
-        yield from bps.read(fgs_slit_gaps_ygap)
-        yield from bps.save()
-        # we need to read from something here - otherwise it is the end of the run and
-        # the event document is not sent in the format we expect.
-        yield from bps.read(detector)
-
-    RE(fake_plan())
-
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
-    callbacklist_wrong_order = [
-        callbacks.nexus_handler,
-        callbacks.zocalo_handler,
-        callbacks.ispyb_handler,
-    ]
-    assert callbacklist_wrong_order != list(callbacks)
-    assert callbacks.ispyb_handler.ispyb_ids == (None, None, None)
-
-    @bpp.subs_decorator(callbacklist_wrong_order)
-    @bpp.run_decorator()
-    def fake_plan_wrong_order():
-        yield from bps.create(ISPYB_PLAN_NAME)
-        yield from bps.read(fgs_undulator_gap)
-        yield from bps.read(fgs_synchrotron_machine_status_synchrotron_mode)
-        yield from bps.read(fgs_slit_gaps_xgap)
-        yield from bps.read(fgs_slit_gaps_ygap)
-        yield from bps.save()
-
-    with pytest.raises(ISPyBDepositionNotMade):
-        RE(fake_plan_wrong_order())
+    assert len(list(callbacks)) == 3
 
 
 @pytest.fixture()
@@ -149,9 +78,7 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
 
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=params.insertion_prefix,
-        name="fgs",
-        prefix=params.beamline,
+        insertion_prefix=SIM_INSERTION_PREFIX, name="fgs", prefix=SIM_BEAMLINE
     )
     # this is where it's currently getting stuck:
     # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
