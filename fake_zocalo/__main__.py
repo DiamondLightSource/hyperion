@@ -16,6 +16,24 @@ NO_DIFFRACTION_ID = 1
 
 DEV_ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
+TEST_RESULT_LARGE = {
+    "centre_of_mass": [1, 2, 3],
+    "max_voxel": [1, 2, 3],
+    "max_count": 105062,
+    "n_voxels": 35,
+    "total_count": 2387574,
+    "bounding_box": [[2, 2, 2], [8, 8, 7]],
+}
+
+TEST_RESULT_SMALL = {
+    "centre_of_mass": [1, 2, 3],
+    "max_voxel": [1, 2, 3],
+    "max_count": 105062,
+    "n_voxels": 35,
+    "total_count": 2387574,
+    "bounding_box": [[2, 2, 2], [3, 3, 3]],
+}
+
 
 def load_configuration_file(filename):
     conf = yaml.safe_load(Path(filename).read_text())
@@ -53,11 +71,9 @@ def main():
 
     single_crystal_result = {
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
-        "payload": [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 1.4]}],
+        "payload": [TEST_RESULT_LARGE],
         "recipe": {
-            "start": [
-                [1, [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 1.4]}]]
-            ],
+            "start": [[1, [TEST_RESULT_LARGE]]],
             "1": {
                 "service": "Send XRC results to GDA",
                 "queue": "xrc.i03",
@@ -73,9 +89,7 @@ def main():
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
         "payload": [],
         "recipe": {
-            "start": [
-                [1, [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 3.4]}]]
-            ],
+            "start": [[1, [TEST_RESULT_LARGE]]],
             "1": {
                 "service": "Send XRC results to GDA",
                 "queue": "xrc.i03",
