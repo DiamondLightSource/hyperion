@@ -12,7 +12,6 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.log import LOGGER
-from artemis.parameters.constants import ISPYB_PLAN_NAME
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 

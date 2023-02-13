@@ -93,9 +93,9 @@ class ExternalISPyBParameters(DataClassJsonMixin):
 
 @dataclass
 class ExternalGridScanParameters(DataClassJsonMixin):
-    x_steps: int = 4
-    y_steps: int = 200
-    z_steps: int = 61
+    x_steps: int = 40
+    y_steps: int = 20
+    z_steps: int = 10
     x_step_size: float = 0.1
     y_step_size: float = 0.1
     z_step_size: float = 0.1

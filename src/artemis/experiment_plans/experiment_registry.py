@@ -28,8 +28,8 @@ def validate_registry_against_parameter_model() -> bool:
 
 
 def validate_parameter_model_against_registry() -> bool:
-    for expt in EXPERIMENT_NAMES.keys():
-        if expt not in PLAN_REGISTRY:
+    for expt in EXPERIMENT_NAMES:
+        if expt not in PLAN_REGISTRY.keys():
             return False
     return True
 
