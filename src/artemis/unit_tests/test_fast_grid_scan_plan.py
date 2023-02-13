@@ -1,5 +1,5 @@
 import types
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
@@ -38,7 +38,7 @@ from artemis.parameters import (
 )
 from artemis.utils import Point3D
 
-TEST_RESULT = [
+TEST_RESULT_LARGE = [
     {
         "centre_of_mass": [1, 2, 3],
         "max_voxel": [2, 4, 5],
@@ -48,6 +48,17 @@ TEST_RESULT = [
         "bounding_box": [[2, 2, 2], [8, 8, 7]],
     }
 ]
+TEST_RESULT_SMALL = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [2, 4, 5],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[1, 2, 3], [2, 4, 4]],
+    }
+]
+
 gda_beamline_parameters = GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 
 
@@ -69,11 +80,8 @@ def fake_fgs_composite():
     fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
         False
     )
-    aperture_positions = AperturePositions(
-        LARGE=(0, 0, 0, 0, 0),
-        MEDIUM=(0, 0, 0, 0, 0),
-        SMALL=(0, 0, 0, 0, 0),
-        ROBOT_LOAD=(0, 0, 0, 0, 0),
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        gda_beamline_parameters
     )
     fake_composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
     return fake_composite
@@ -86,7 +94,7 @@ def mock_subscriptions(test_params):
     subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
     subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        TEST_RESULT
+        TEST_RESULT_LARGE
     )
     return subscriptions
 
@@ -197,6 +205,54 @@ def test_results_adjusted_and_passed_to_move_xyz(
         )
     )
     move_xyz.assert_called_once_with(ANY, motor_position)
+
+
+@patch(
+    "artemis.devices.aperturescatterguard.ApertureScatterguard.safe_move_within_datacollection_range"
+)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
+def test_results_passed_to_move_aperture(
+    move_xyz: MagicMock,
+    run_gridscan: MagicMock,
+    move_aperture: MagicMock,
+    fake_fgs_composite: FGSComposite,
+    mock_subscriptions: FGSCallbackCollection,
+    fake_eiger: EigerDetector,
+    test_params: FullParameters,
+):
+    RE = RunEngine({})
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
+        )
+    )
+
+    mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        TEST_RESULT_SMALL
+    )
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
+        )
+    )
+
+    call_large = call(
+        *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
+    )
+    call_small = call(
+        *(fake_fgs_composite.aperture_scatterguard.aperture_positions.SMALL)
+    )
+
+    move_aperture.assert_has_calls([call_large, call_small], any_order=False)
 
 
 @patch("bluesky.plan_stubs.mv")
