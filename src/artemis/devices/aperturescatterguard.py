@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 from ophyd import Component as Cpt
-from ophyd import Device
 from ophyd.status import AndStatus
 
 from artemis.devices.aperture import Aperture
+from artemis.devices.logging_ophyd_device import InfoLoggingDevice
 from artemis.devices.scatterguard import Scatterguard
 
 
@@ -54,7 +54,7 @@ class AperturePositions:
         )
 
 
-class ApertureScatterguard(Device):
+class ApertureScatterguard(InfoLoggingDevice):
     aperture: Aperture = Cpt(Aperture, "-MO-MAPT-01:")
     scatterguard: Scatterguard = Cpt(Scatterguard, "-MO-SCAT-01:")
     aperture_positions: Optional[AperturePositions] = None

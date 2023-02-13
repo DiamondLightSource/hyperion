@@ -75,7 +75,9 @@ def set_aperture_for_bbox_size(
         aperture_size_positions = aperture_device.aperture_positions.MEDIUM
     else:
         aperture_size_positions = aperture_device.aperture_positions.LARGE
-    artemis.log.LOGGER.info(f"Setting aperture to {aperture_size_positions}.")
+    artemis.log.LOGGER.info(
+        f"Setting aperture to {aperture_size_positions} based on bounding box size {bbox_size}."
+    )
     aperture_device.safe_move_within_datacollection_range(*aperture_size_positions)
 
 
