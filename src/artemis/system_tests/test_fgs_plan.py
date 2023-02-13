@@ -21,7 +21,7 @@ from artemis.external_interaction.system_tests.conftest import fetch_comment  # 
 from artemis.external_interaction.system_tests.test_ispyb_dev_connection import (
     ISPYB_CONFIG,
 )
-from artemis.parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
 
 

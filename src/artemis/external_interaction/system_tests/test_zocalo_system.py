@@ -6,7 +6,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.zocalo_callback import FGSZocaloCallback
-from artemis.parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 

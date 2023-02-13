@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from enum import Enum
+from os import environ
 
 from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
@@ -22,6 +24,22 @@ class InternalParameterCompleteness(Enum):
     MINIMAL = 0  # The minimum necessary externally supplied parameters
     EXPANDED = 1  #
     COMPLETE = 2
+
+
+@dataclass
+class BeamlinePrefixes:
+    beamline_prefix: str
+    insertion_prefix: str
+
+
+def get_beamline_prefixes():
+    beamline = environ.get("BEAMLINE")
+    if beamline is None:
+        return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
+    if beamline == "i03":
+        return BeamlinePrefixes("BL03I", "SR03I")
+    else:
+        raise Exception(f"Beamline {beamline} is not currently supported by Artemis")
 
 
 class ArtemisParameters:

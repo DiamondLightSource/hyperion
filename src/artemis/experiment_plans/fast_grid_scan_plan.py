@@ -19,7 +19,7 @@ from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.parameters.external_parameters import get_beamline_prefixes
 from artemis.tracing import TRACER
@@ -212,7 +212,7 @@ def get_plan(
     at any point in it.
 
     Args:
-        parameters (FullParameters): The parameters to run the scan.
+        parameters (InternalParameters): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan

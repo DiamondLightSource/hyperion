@@ -7,7 +7,7 @@ from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
 from artemis.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from artemis.devices.oav.oav_parameters import OAVParameters
-from artemis.parameters import SIM_BEAMLINE
+from artemis.parameters.constants import SIM_BEAMLINE
 
 
 def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):

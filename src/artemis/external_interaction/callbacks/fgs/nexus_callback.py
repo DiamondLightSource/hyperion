@@ -8,7 +8,7 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.log import LOGGER
-from artemis.parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 class FGSNexusFileHandlerCallback(CallbackBase):

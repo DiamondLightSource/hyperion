@@ -8,7 +8,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
-from artemis.parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 EXPECTED_DCID = 100
@@ -70,19 +70,6 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_not_called()
 
 
-def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
-    nexus_writer: MagicMock,
-):
-
-    params = InternalParameters()
-    callbacks = FGSCallbackCollection.from_params(params)
-    mock_zocalo_functions(callbacks)
-    callbacks.zocalo_handler.start(td.test_start_document)
-    callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
-    with pytest.raises(AssertionError):
-        callbacks.zocalo_handler.event(td.test_event_document)
-
-
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called():
     params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
@@ -128,7 +115,7 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
 
 
 def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception():
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
 
