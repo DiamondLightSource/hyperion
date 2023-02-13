@@ -36,14 +36,8 @@ from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from artemis.log import set_up_logging_handlers
-from artemis.parameters import (
-    I03_BEAMLINE_PARAMETER_PATH,
-    FullParameters,
-    GDABeamlineParameters,
-)
+from artemis.parameters import FullParameters
 from artemis.utils import Point3D
-
-gda_beamline_parameters = GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 
 
 @pytest.fixture
@@ -64,10 +58,14 @@ def fake_fgs_composite():
     fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
         False
     )
-    aperture_positions = AperturePositions.from_gda_beamline_params(
-        gda_beamline_parameters
+    fake_composite.aperture_scatterguard.load_aperture_positions(
+        AperturePositions(
+            LARGE=(1, 2, 3, 4, 5),
+            MEDIUM=(2, 3, 3, 5, 6),
+            SMALL=(3, 4, 3, 6, 7),
+            ROBOT_LOAD=(0, 0, 3, 0, 0),
+        )
     )
-    fake_composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
     return fake_composite
 
 
@@ -80,6 +78,7 @@ def mock_subscriptions(test_params):
     subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_LARGE
     )
+
     return subscriptions
 
 
@@ -219,6 +218,7 @@ def test_results_passed_to_move_aperture(
     mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_MEDIUM
     )
+
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
@@ -230,6 +230,7 @@ def test_results_passed_to_move_aperture(
     mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_SMALL
     )
+
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,

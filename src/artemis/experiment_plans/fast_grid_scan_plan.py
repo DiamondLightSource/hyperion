@@ -33,7 +33,10 @@ from artemis.utils import Point3D
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
-gda_beamline_parameters = GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
+
+
+def get_beamline_parameters():
+    return GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 
 
 def create_devices():
@@ -44,7 +47,7 @@ def create_devices():
         f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
     )
     aperture_positions = AperturePositions.from_gda_beamline_params(
-        gda_beamline_parameters
+        get_beamline_parameters()
     )
     fast_grid_scan_composite = FGSComposite(
         insertion_prefix=prefixes.insertion_prefix,

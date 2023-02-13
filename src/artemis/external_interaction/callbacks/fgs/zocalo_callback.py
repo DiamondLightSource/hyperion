@@ -102,7 +102,7 @@ class FGSZocaloCallback(CallbackBase):
             #   'total_count': 53950,
             #   'bounding_box': [[3, 6, 5], [4, 7, 6]]}]
 
-            raw_centre = Point3D(*raw_results[0]["centre_of_mass"])
+            raw_centre = Point3D(*(raw_results[0]["centre_of_mass"]))
 
             # _wait_for_result returns the centre of the grid box, but we want the corner
             results = Point3D(

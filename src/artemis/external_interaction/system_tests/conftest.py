@@ -16,14 +16,16 @@ from artemis.utils import Point3D
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
-TEST_RESULT_LARGE = {
-    "centre_of_mass": [1, 2, 3],
-    "max_voxel": [1, 2, 3],
-    "max_count": 105062,
-    "n_voxels": 35,
-    "total_count": 2387574,
-    "bounding_box": [[2, 2, 2], [8, 8, 7]],
-}
+TEST_RESULT_LARGE = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[2, 2, 2], [8, 8, 7]],
+    }
+]
 TEST_RESULT_MEDIUM = [
     {
         "centre_of_mass": [1, 2, 3],
@@ -34,14 +36,16 @@ TEST_RESULT_MEDIUM = [
         "bounding_box": [[1, 2, 3], [3, 4, 4]],
     }
 ]
-TEST_RESULT_SMALL = {
-    "centre_of_mass": [1, 2, 3],
-    "max_voxel": [1, 2, 3],
-    "max_count": 105062,
-    "n_voxels": 35,
-    "total_count": 2387574,
-    "bounding_box": [[2, 2, 2], [3, 3, 3]],
-}
+TEST_RESULT_SMALL = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[2, 2, 2], [3, 3, 3]],
+    }
+]
 
 
 def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
