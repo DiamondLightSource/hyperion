@@ -71,10 +71,10 @@ class ApertureScatterguard(Device):
         scatterguard_y: float,
     ) -> None:
         """
-        Move the aperture and scatterguard combo safely to a new position -
+        Move the aperture and scatterguard combo safely to a new position
         """
         assert isinstance(self.aperture_positions, AperturePositions)
-        current_ap_z = self.aperture.x.user_readback.get()
+        current_ap_z = self.aperture.z.user_readback.get()
         if aperture_z != current_ap_z != self.aperture_positions.SMALL[2]:
             raise Exception(
                 "ApertureScatterguard safe move is not yet defined for positions "

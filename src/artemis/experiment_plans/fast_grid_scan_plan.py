@@ -68,7 +68,7 @@ def set_aperture_for_bbox_size(
     aperture_device: ApertureScatterguard,
     bbox_size: list[int],
 ):
-    # bbox_size is [x,y,z]
+    # bbox_size is [x,y,z], for i03 we only care about x
     if bbox_size[0] <= 1:
         aperture_size_positions = aperture_device.aperture_positions.SMALL
     elif 1 < bbox_size[0] < 3:

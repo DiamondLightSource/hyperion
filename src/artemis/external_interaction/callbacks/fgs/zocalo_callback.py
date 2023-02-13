@@ -118,7 +118,9 @@ class FGSZocaloCallback(CallbackBase):
                 )
             )
 
-            LOGGER.info(f"Results recieved from zocalo: {xray_centre}")
+            LOGGER.info(
+                f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"
+            )
 
         except NoDiffractionFound:
             # We move back to the centre if results aren't found
