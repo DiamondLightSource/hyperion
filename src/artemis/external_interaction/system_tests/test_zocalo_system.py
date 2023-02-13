@@ -7,6 +7,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.zocalo_callback import FGSZocaloCallback
+from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from artemis.parameters import FullParameters, Point3D
 
 
@@ -25,7 +26,7 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
         zc.zocalo_interactor.run_start(dcid)
     for dcid in dcids:
         zc.zocalo_interactor.run_end(dcid)
-    assert zc.zocalo_interactor.wait_for_result(4) == Point3D(x=1.2, y=2.3, z=1.4)
+    assert zc.zocalo_interactor.wait_for_result(4)[0] == TEST_RESULT_LARGE
 
 
 @pytest.mark.s03
@@ -59,7 +60,7 @@ def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_to_fall
         zc.zocalo_interactor.run_end(dcid)
     fallback = Point3D(1, 2, 3)
     centre = zc.wait_for_results(fallback_xyz=fallback)
-    assert centre == fallback
+    assert centre == (fallback, None)
 
 
 @pytest.mark.s03

@@ -30,6 +30,11 @@ from artemis.external_interaction.callbacks import (
     FGSCallbackCollection,
     VerbosePlanExecutionLoggingCallback,
 )
+from artemis.external_interaction.system_tests.conftest import (
+    TEST_RESULT_LARGE,
+    TEST_RESULT_MEDIUM,
+    TEST_RESULT_SMALL,
+)
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import (
     I03_BEAMLINE_PARAMETER_PATH,
@@ -37,37 +42,6 @@ from artemis.parameters import (
     GDABeamlineParameters,
 )
 from artemis.utils import Point3D
-
-TEST_RESULT_LARGE = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [2, 4, 5],
-        "max_count": 105062,
-        "n_voxels": 35,
-        "total_count": 2387574,
-        "bounding_box": [[2, 2, 2], [8, 8, 7]],
-    }
-]
-TEST_RESULT_MEDIUM = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [2, 4, 5],
-        "max_count": 105062,
-        "n_voxels": 35,
-        "total_count": 2387574,
-        "bounding_box": [[1, 2, 3], [3, 4, 4]],
-    }
-]
-TEST_RESULT_SMALL = [
-    {
-        "centre_of_mass": [1, 2, 3],
-        "max_voxel": [2, 4, 5],
-        "max_count": 105062,
-        "n_voxels": 35,
-        "total_count": 2387574,
-        "bounding_box": [[1, 2, 3], [2, 4, 4]],
-    }
-]
 
 gda_beamline_parameters = GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 

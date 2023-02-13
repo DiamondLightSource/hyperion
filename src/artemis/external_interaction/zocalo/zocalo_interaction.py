@@ -91,8 +91,22 @@ class ZocaloInteractor:
 
             timeout (float): The time in seconds to wait for the result to be received.
         Returns:
-            Returns the centre of the grid box with the strongest diffraction, i.e.,
-            which contains the centre of the crystal and which we want to move to.
+            Returns the message from zocalo, as a list of dicts describing each crystal
+            which zocalo found:
+            [
+                {
+                    "centre_of_mass": [1, 2, 3],
+                    "max_voxel": [2, 4, 5],
+                    "max_count": 105062,
+                    "n_voxels": 35,
+                    "total_count": 2387574,
+                    "bounding_box": [[1, 2, 3], [3, 4, 4]],
+                },
+                {
+                    result 2
+                },
+                ...
+            ]
         """
         transport = self._get_zocalo_connection()
         result_received: queue.Queue = queue.Queue()
