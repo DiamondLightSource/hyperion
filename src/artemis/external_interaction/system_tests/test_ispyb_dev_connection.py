@@ -1,11 +1,4 @@
-from functools import partial
-from typing import Callable
-
-import ispyb.sqlalchemy
 import pytest
-from ispyb.sqlalchemy import DataCollection
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb,
@@ -13,54 +6,8 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb3D,
 )
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
-
-
-def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
-    """Read the 'comments' field from the given datacollection id's ISPyB entry.
-    Returns an empty string if the comment is not yet initialised.
-    """
-    try:
-        with Session() as session:
-            query = session.query(DataCollection).filter(
-                DataCollection.dataCollectionId == dcid
-            )
-            current_comment: str = query.first().comments
-    except Exception:
-        current_comment = ""
-    return current_comment
-
-
-@pytest.fixture
-def fetch_comment() -> Callable:
-    url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
-    engine = create_engine(url, connect_args={"use_pure": True})
-    Session = sessionmaker(engine)
-    return partial(get_current_datacollection_comment, Session)
-
-
-@pytest.fixture
-def dummy_params():
-    dummy_params = InternalParameters()
-    dummy_params.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 50)
-    dummy_params.artemis_params.ispyb_params.pixels_per_micron_x = 0.8
-    dummy_params.artemis_params.ispyb_params.pixels_per_micron_y = 0.8
-    dummy_params.artemis_params.ispyb_params.visit_path = (
-        "/dls/i03/data/2022/cm31105-5/"
-    )
-    return dummy_params
-
-
-@pytest.fixture
-def dummy_ispyb(dummy_params):
-    return StoreInIspyb2D(ISPYB_CONFIG, dummy_params)
-
-
-@pytest.fixture
-def dummy_ispyb_3d(dummy_params):
-    return StoreInIspyb3D(ISPYB_CONFIG, dummy_params)
 
 
 @pytest.mark.s03
@@ -84,7 +31,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb.end_deposition("fail", "could not connect to devices")
     assert (
         fetch_comment(dcid[0][0])
-        == "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -98,11 +45,11 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
     assert (
         fetch_comment(dcid1)
-        == "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
     assert (
         fetch_comment(dcid2)
-        == "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "Artemis: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -130,11 +77,11 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 
     expected_comments = [
         (
-            "Artemis: Xray centring - Diffraction grid scan of 4 by 200 "
+            "Artemis: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [0,0], bottom right (px): [0,0]."
         ),
         (
-            "Artemis: Xray centring - Diffraction grid scan of 4 by 61 "
+            "Artemis: Xray centring - Diffraction grid scan of 40 by 10 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [0,0], bottom right (px): [0,0]."
         ),
     ]

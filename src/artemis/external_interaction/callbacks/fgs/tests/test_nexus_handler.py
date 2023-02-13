@@ -1,3 +1,4 @@
+import copy
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -74,7 +75,7 @@ def test_writers_dont_create_on_init(
     nexus_handler.nxs_writer_2.create_nexus_file.assert_not_called()
 
 
-def test_writers_do_create_one_file_each_on_start_doc(
+def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
     nexus_writer: MagicMock,
 ):
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
@@ -83,5 +84,13 @@ def test_writers_do_create_one_file_each_on_start_doc(
     nexus_handler = FGSNexusFileHandlerCallback(params)
     nexus_handler.start(test_start_document)
 
-    assert nexus_handler.nxs_writer_1.create_nexus_file.call_count == 1
-    assert nexus_handler.nxs_writer_2.create_nexus_file.call_count == 1
+    nexus_handler.nxs_writer_1.create_nexus_file.assert_not_called()
+    nexus_handler.nxs_writer_2.create_nexus_file.assert_not_called()
+
+    gridscan_start_doc = copy.deepcopy(test_start_document)
+    gridscan_start_doc["subplan_name"] = "run_gridscan"
+
+    nexus_handler.start(gridscan_start_doc)
+
+    nexus_handler.nxs_writer_1.create_nexus_file.assert_called_once()
+    nexus_handler.nxs_writer_2.create_nexus_file.assert_called_once()

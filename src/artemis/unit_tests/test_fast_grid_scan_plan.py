@@ -25,7 +25,11 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     run_gridscan_and_move,
     wait_for_fgs_valid,
 )
-from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.external_interaction.callbacks import (
+    FGSCallbackCollection,
+    VerbosePlanExecutionLoggingCallback,
+)
+from artemis.log import set_up_logging_handlers
 from artemis.parameters.external_parameters import RawParameters
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
@@ -116,6 +120,8 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_xyz: MagicMock, run_gridscan: MagicMock
 ):
     RE = RunEngine({})
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
     params = InternalParameters()
     subscriptions = FGSCallbackCollection.from_params(params)
 
@@ -149,6 +155,8 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
     from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
     RE = RunEngine({})
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
     params = InternalParameters()
     motor_position = params.experiment_params.grid_position_to_motor_position(
         Point3D(1, 2, 3)
@@ -169,6 +177,46 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     do_fgs: MagicMock,
 ):
     RE = RunEngine({})
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
+    params = InternalParameters()
+
+    subscriptions = FGSCallbackCollection.from_params(params)
+    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        Point3D(1, 2, 3)
+    )
+
+    FakeComposite: FGSComposite = make_fake_device(FGSComposite)
+    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
+    fake_composite = FakeComposite("test", name="fakecomposite")
+    fake_eiger = (FakeEiger.with_params(params=params.detector_params, name="test"),)
+    RE(
+        run_gridscan_and_move(
+            fake_composite,
+            fake_eiger,
+            params,
+            subscriptions,
+        )
+    )
+
+    run_gridscan.assert_called_once_with(fake_composite, fake_eiger, params)
+    move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
+def test_logging_within_plan(
+    move_xyz: MagicMock,
+    run_gridscan: MagicMock,
+    do_fgs: MagicMock,
+):
+    RE = RunEngine({})
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
     params = InternalParameters()
 
     subscriptions = FGSCallbackCollection.from_params(params)

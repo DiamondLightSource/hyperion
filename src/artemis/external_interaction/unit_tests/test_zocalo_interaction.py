@@ -6,10 +6,14 @@ from time import sleep
 from typing import Callable, Dict
 from unittest.mock import MagicMock, patch
 
+import pytest
 from pytest import mark, raises
 from zocalo.configuration import Configuration
 
-from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
+from artemis.external_interaction.zocalo.zocalo_interaction import (
+    NoDiffractionFound,
+    ZocaloInteractor,
+)
 from artemis.parameters.constants import SIM_ZOCALO_ENV
 from artemis.utils import Point3D
 
@@ -18,7 +22,6 @@ EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
 EXPECTED_RUN_END_MESSAGE = {
     "event": "end",
     "ispyb_dcid": EXPECTED_DCID,
-    "ispyb_wait_for_runstatus": "1",
 }
 
 
@@ -135,3 +138,78 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
 
     assert type(return_value) == Point3D
     assert return_value == Point3D(*centre_of_mass_coords)
+
+
+@patch("workflows.recipe.wrap_subscribe")
+@patch("zocalo.configuration.from_file")
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
+def test_when_exception_caused_by_zocalo_message_then_exception_propagated(
+    mock_transport_lookup, mock_from_file, mock_wrap_subscribe
+):
+    zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
+
+    mock_zc: Configuration = MagicMock()
+    mock_from_file.return_value = mock_zc
+    mock_transport = MagicMock()
+    mock_transport_lookup.return_value = MagicMock()
+    mock_transport_lookup.return_value.return_value = mock_transport
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(zc.wait_for_result, 0)
+
+        for _ in range(10):
+            sleep(0.1)
+            if mock_wrap_subscribe.call_args:
+                break
+
+        result_func = mock_wrap_subscribe.call_args[0][2]
+
+        failure_exception = Exception("Bad function!")
+
+        mock_recipe_wrapper = MagicMock()
+        mock_transport.ack.side_effect = failure_exception
+        with pytest.raises(Exception) as actual_exception:
+            result_func(mock_recipe_wrapper, {}, [])
+        assert str(actual_exception.value) == str(failure_exception)
+
+        with pytest.raises(Exception) as actual_exception:
+            future.result()
+        assert str(actual_exception.value) == str(failure_exception)
+
+
+@patch("workflows.recipe.wrap_subscribe")
+@patch("zocalo.configuration.from_file")
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
+def test_when_no_results_returned_then_no_diffraction_exception_raised(
+    mock_transport_lookup, mock_from_file, mock_wrap_subscribe
+):
+    zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
+
+    message = []
+    datacollection_grid_id = 7263143
+    step_params = {"dcid": "8183741", "dcgid": str(datacollection_grid_id)}
+
+    mock_zc: Configuration = MagicMock()
+    mock_from_file.return_value = mock_zc
+    mock_transport = MagicMock()
+    mock_transport_lookup.return_value = MagicMock()
+    mock_transport_lookup.return_value.return_value = mock_transport
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(zc.wait_for_result, datacollection_grid_id)
+
+        for _ in range(10):
+            sleep(0.1)
+            if mock_wrap_subscribe.call_args:
+                break
+
+        result_func = mock_wrap_subscribe.call_args[0][2]
+
+        mock_recipe_wrapper = MagicMock()
+        mock_recipe_wrapper.recipe_step.__getitem__.return_value = step_params
+
+        with pytest.raises(NoDiffractionFound):
+            result_func(mock_recipe_wrapper, {}, message)
+
+        with pytest.raises(NoDiffractionFound):
+            future.result()

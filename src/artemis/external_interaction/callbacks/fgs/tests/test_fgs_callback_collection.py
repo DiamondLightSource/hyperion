@@ -156,7 +156,7 @@ def test_communicator_in_composite_run(
     RE = RunEngine({})
 
     params = InternalParameters()
-    params.artemis_parameters.beamline = SIM_BEAMLINE
+    params.artemis_params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
     callbacks = FGSCallbackCollection.from_params(params)

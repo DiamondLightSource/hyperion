@@ -1,4 +1,3 @@
-from math import nan
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -7,6 +6,8 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
+from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
+from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from artemis.parameters import InternalParameters
 from artemis.utils import Point3D
 
@@ -45,12 +46,12 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
 
-    callbacks.ispyb_handler.start(td.test_start_document)
-    callbacks.zocalo_handler.start(td.test_start_document)
+    callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document)
     callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
     callbacks.ispyb_handler.event(td.test_event_document)
     callbacks.zocalo_handler.event(td.test_event_document)
+    callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
     callbacks.ispyb_handler.stop(td.test_stop_document)
     callbacks.zocalo_handler.stop(td.test_stop_document)
 
@@ -113,9 +114,8 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
-    expected_centre_grid_coords = Point3D(nan, nan, nan)
-    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        expected_centre_grid_coords
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
+        NoDiffractionFound()
     )
 
     fallback_position = Point3D(1, 2, 3)
@@ -125,3 +125,12 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
         100
     )
     assert found_centre == fallback_position
+
+
+def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception():
+    params = FullParameters()
+    callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
+
+    with pytest.raises(ISPyBDepositionNotMade):
+        callbacks.zocalo_handler.start(td.test_do_fgs_start_document)

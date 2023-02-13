@@ -22,7 +22,7 @@ class StoreInIspyb(ABC):
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
     def __init__(self, ispyb_config, parameters=None):
-        self.ISPYB_CONFIG_FILE = ispyb_config
+        self.ISPYB_CONFIG_PATH = ispyb_config
         self.full_params = parameters
         self.ispyb_params = None
         self.detector_params = None
@@ -88,7 +88,7 @@ class StoreInIspyb(ABC):
         self.y_steps = full_params.experiment_params.y_steps
         self.y_step_size = full_params.experiment_params.y_step_size
 
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
             self.core = self.conn.core
 
@@ -101,7 +101,7 @@ class StoreInIspyb(ABC):
     def append_to_comment(
         self, datacollection_id: int, comment: str, delimiter: str = " "
     ) -> None:
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
             self.mx_acquisition.update_data_collection_append_comments(
                 datacollection_id, comment, delimiter
@@ -119,7 +119,7 @@ class StoreInIspyb(ABC):
         if reason is not None and reason != "":
             self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
 
-        with ispyb.open(self.ISPYB_CONFIG_FILE) as self.conn:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
 
             params = self.mx_acquisition.get_data_collection_params()

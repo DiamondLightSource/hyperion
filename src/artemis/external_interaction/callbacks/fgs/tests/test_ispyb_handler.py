@@ -27,7 +27,7 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document)
     ispyb_handler.event(td.test_event_document)
-    ispyb_handler.stop(td.test_failed_stop_document)
+    ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
     mock_ispyb_update_time_and_status.assert_has_calls(
         [
             call(
@@ -59,7 +59,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document)
     ispyb_handler.event(td.test_event_document)
-    ispyb_handler.stop(td.test_stop_document)
+    ispyb_handler.stop(td.test_run_gridscan_stop_document)
 
     mock_ispyb_update_time_and_status.assert_has_calls(
         [
