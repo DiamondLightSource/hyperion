@@ -1,10 +1,7 @@
 from unittest.mock import MagicMock
 
-import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
-from ophyd.sim import SynSignal
 
 from artemis.devices.eiger import DetectorParams, EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
@@ -12,11 +9,7 @@ from artemis.experiment_plans.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
-from artemis.parameters.constants import (
-    ISPYB_PLAN_NAME,
-    SIM_BEAMLINE,
-    SIM_INSERTION_PREFIX,
-)
+from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
