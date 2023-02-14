@@ -12,7 +12,10 @@ DEFAULT_EXPERIMENT_TYPE = "grid_scan"
 
 PARAMETER_VERSION = 0.1
 
-EXPERIMENT_DICT = {"grid_scan": GridScanParams, "rotation_scan": RotationScanParams}
+EXPERIMENT_DICT = {
+    "fast_grid_scan": GridScanParams,
+    "rotation_scan": RotationScanParams,
+}
 EXPERIMENT_NAMES = list(EXPERIMENT_DICT.keys())
 EXPERIMENT_TYPE_LIST = list(EXPERIMENT_DICT.values())
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]

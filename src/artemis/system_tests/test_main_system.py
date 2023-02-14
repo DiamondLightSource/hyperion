@@ -94,9 +94,9 @@ def check_status_in_response(response_object, expected_result: Status):
 
 
 def test_experiment_registry_and_parameter_model():
-    assert validate_parameter_model_against_registry
-    assert validate_registry_against_parameter_model
-    assert parameter_model_and_plan_registry_consistent
+    assert validate_parameter_model_against_registry()
+    assert validate_registry_against_parameter_model()
+    assert parameter_model_and_plan_registry_consistent()
 
 
 def test_start_gives_success(test_env: ClientAndRunEngine):

@@ -42,12 +42,13 @@ class FGSZocaloCallback(CallbackBase):
         self.grid_position_to_motor_position: Callable[
             [Point3D], Point3D
         ] = parameters.experiment_params.grid_position_to_motor_position
-        self.zocalo_env = parameters.artemis_params.zocalo_environment
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.run_gridscan_uid: Optional[str] = None
-        self.ispyb = ispyb_handler
-        self.zocalo_interactor = ZocaloInteractor(self.zocalo_env)
+        self.ispyb: FGSISPyBHandlerCallback = ispyb_handler
+        self.zocalo_interactor = ZocaloInteractor(
+            parameters.artemis_params.zocalo_environment
+        )
 
     def start(self, doc: dict):
         LOGGER.info("Zocalo handler received start document.")
