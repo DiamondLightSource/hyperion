@@ -4,7 +4,7 @@
         "beamline": "BL03S",
         "detector": "EIGER2_X_16M",
         "zocalo_environment": "devrmq",
-        "experiment_type": "grid_scan",
+        "experiment_type": "fast_grid_scan",
         "detector_params": {
             "current_energy": 100,
             "exposure_time": 0.1,
