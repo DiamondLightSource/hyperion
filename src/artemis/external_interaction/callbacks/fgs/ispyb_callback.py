@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Dict
+from typing import Dict
 
 from bluesky.callbacks import CallbackBase
 
@@ -12,9 +12,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
 )
 from artemis.log import LOGGER
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
-
-if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 class FGSISPyBHandlerCallback(CallbackBase):

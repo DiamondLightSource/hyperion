@@ -10,7 +10,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Tuple
+from typing import Dict, Tuple
 
 import h5py
 import numpy as np
@@ -21,9 +21,7 @@ from nexgen.tools.VDS_tools import image_vds_writer
 from artemis.devices.detector import DetectorParams
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
-
-if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 source = {
     "name": "Diamond Light Source",

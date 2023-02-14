@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from bluesky.callbacks import CallbackBase
 
@@ -10,9 +10,7 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.log import LOGGER
-
-if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 class FGSNexusFileHandlerCallback(CallbackBase):
