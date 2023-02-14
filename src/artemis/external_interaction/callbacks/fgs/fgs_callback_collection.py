@@ -1,4 +1,6 @@
-from typing import NamedTuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, NamedTuple
 
 from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
@@ -7,7 +9,9 @@ from artemis.external_interaction.callbacks.fgs.nexus_callback import (
     FGSNexusFileHandlerCallback,
 )
 from artemis.external_interaction.callbacks.fgs.zocalo_callback import FGSZocaloCallback
-from artemis.parameters.internal_parameters import InternalParameters
+
+if TYPE_CHECKING:
+    from artemis.parameters.internal_parameters import InternalParameters
 
 
 class FGSCallbackCollection(NamedTuple):

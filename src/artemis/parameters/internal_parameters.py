@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from os import environ
 
+import artemis.experiment_plans.experiment_registry as registry
 from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
@@ -8,9 +9,6 @@ from artemis.external_interaction.ispyb.ispyb_dataclass import (
     IspybParams,
 )
 from artemis.parameters.constants import (
-    EXPERIMENT_DICT,
-    EXPERIMENT_NAMES,
-    EXPERIMENT_TYPES,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,
@@ -39,7 +37,7 @@ class ArtemisParameters:
     zocalo_environment: str = SIM_ZOCALO_ENV
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
-    experiment_type: str = EXPERIMENT_NAMES[0]
+    experiment_type: str = registry.EXPERIMENT_NAMES[0]
     detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
 
     ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS)
@@ -49,7 +47,7 @@ class ArtemisParameters:
         zocalo_environment: str = SIM_ZOCALO_ENV,
         beamline: str = SIM_BEAMLINE,
         insertion_prefix: str = SIM_INSERTION_PREFIX,
-        experiment_type: str = EXPERIMENT_NAMES[0],
+        experiment_type: str = registry.EXPERIMENT_NAMES[0],
         detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS),
         ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS),
     ) -> None:
@@ -80,7 +78,7 @@ class ArtemisParameters:
 
 class InternalParameters:
     artemis_params: ArtemisParameters
-    experiment_params: EXPERIMENT_TYPES
+    experiment_params: registry.EXPERIMENT_TYPES
 
     def __init__(self, external_params: RawParameters = RawParameters()):
         self.artemis_params = ArtemisParameters(
@@ -103,9 +101,9 @@ class InternalParameters:
         self.artemis_params.ispyb_params.position = Point3D(
             *self.artemis_params.ispyb_params.position
         )
-        self.experiment_params = EXPERIMENT_DICT[ArtemisParameters.experiment_type](
-            **external_params.experiment_params.to_dict()
-        )
+        self.experiment_params = registry.EXPERIMENT_TYPE_DICT[
+            ArtemisParameters.experiment_type
+        ](**external_params.experiment_params.to_dict())
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, InternalParameters):

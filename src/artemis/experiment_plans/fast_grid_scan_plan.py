@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import argparse
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -13,17 +15,19 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
 )
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
-from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
-from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.beamline_prefixes import get_beamline_prefixes
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
-from artemis.parameters.external_parameters import get_beamline_prefixes
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
+
+if TYPE_CHECKING:
+    from artemis.devices.fast_grid_scan_composite import FGSComposite
+    from artemis.external_interaction.callbacks import FGSCallbackCollection
+    from artemis.parameters.internal_parameters import InternalParameters
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None

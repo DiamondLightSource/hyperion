@@ -2,13 +2,15 @@
 Define beamline parameters for I03, Eiger detector and give an example of writing a
 gridscan.
 """
+from __future__ import annotations
+
 import math
 import shutil
 import time
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import TYPE_CHECKING, Dict, Tuple
 
 import h5py
 import numpy as np
@@ -19,7 +21,9 @@ from nexgen.tools.VDS_tools import image_vds_writer
 from artemis.devices.detector import DetectorParams
 from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
-from artemis.parameters.internal_parameters import InternalParameters
+
+if TYPE_CHECKING:
+    from artemis.parameters.internal_parameters import InternalParameters
 
 source = {
     "name": "Diamond Light Source",

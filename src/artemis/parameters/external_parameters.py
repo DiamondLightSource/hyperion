@@ -1,37 +1,20 @@
 import copy
 import json
 from dataclasses import dataclass, field
-from os import environ
 from pathlib import Path
 from typing import NamedTuple, Optional, Union
 
 import jsonschema
 from dataclasses_json import DataClassJsonMixin
 
+import artemis.experiment_plans.experiment_registry as registry
 from artemis.parameters.constants import (
-    EXPERIMENT_DICT,
-    EXPERIMENT_NAMES,
-    EXPERIMENT_TYPES,
     PARAMETER_VERSION,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,
 )
 from artemis.utils import Point3D
-
-
-@dataclass
-class BeamlinePrefixes:
-    beamline_prefix: str
-    insertion_prefix: str
-
-
-def get_beamline_prefixes():
-    beamline = environ.get("BEAMLINE")
-    if beamline is None:
-        return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
-    if beamline == "i03":
-        return BeamlinePrefixes("BL03I", "SR03I")
 
 
 def default_field(obj):
@@ -130,7 +113,7 @@ class ExternalArtemisParameters(DataClassJsonMixin):
     zocalo_environment: str = SIM_ZOCALO_ENV
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
-    experiment_type: str = EXPERIMENT_NAMES[0]
+    experiment_type: str = registry.EXPERIMENT_NAMES[0]
     detector_params: ExternalDetectorParameters = default_field(
         ExternalDetectorParameters()
     )
@@ -187,7 +170,7 @@ class RawParameters:
         )
         # TODO improve failed validation error messages
         jsonschema.validate(dict_params, full_schema, resolver=resolver)
-        experiment_type: EXPERIMENT_TYPES = EXPERIMENT_DICT.get(
+        experiment_type: registry.EXPERIMENT_TYPES = registry.EXPERIMENT_TYPE_DICT.get(
             dict_params["artemis_params"]["experiment_type"]
         )
         try:

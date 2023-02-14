@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import datetime
 import re
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import ispyb
 import ispyb.sqlalchemy
@@ -9,9 +12,11 @@ from sqlalchemy.connectors import Connector
 import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
-from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point2D
+
+if TYPE_CHECKING:
+    from artemis.parameters.internal_parameters import InternalParameters
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"

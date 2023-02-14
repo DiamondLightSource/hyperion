@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import time
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 from bluesky.callbacks import CallbackBase
 
@@ -12,8 +14,10 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.log import LOGGER
-from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
+
+if TYPE_CHECKING:
+    from artemis.parameters.internal_parameters import InternalParameters
 
 
 class FGSZocaloCallback(CallbackBase):

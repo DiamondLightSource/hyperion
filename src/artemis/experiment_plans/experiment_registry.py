@@ -1,44 +1,30 @@
-from typing import Callable, Dict
+from typing import Callable, Dict, Union
 
+from artemis.devices.fast_grid_scan import GridScanParams
+from artemis.devices.rotation_scan import RotationScanParams
 from artemis.experiment_plans import fast_grid_scan_plan
-from artemis.parameters.constants import EXPERIMENT_NAMES
 
 
 def not_implemented():
     raise NotImplementedError
 
 
+EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
 PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
         "run": fast_grid_scan_plan.get_plan,
+        "param_type": GridScanParams,
     },
     "rotation_scan": {
         "setup": not_implemented,
         "run": not_implemented,
+        "param_type": RotationScanParams,
     },
 }
-
-
-def validate_registry_against_parameter_model() -> bool:
-    for expt in PLAN_REGISTRY.keys():
-        if expt not in EXPERIMENT_NAMES:
-            return False
-    return True
-
-
-def validate_parameter_model_against_registry() -> bool:
-    for expt in EXPERIMENT_NAMES:
-        if expt not in PLAN_REGISTRY.keys():
-            return False
-    return True
-
-
-def parameter_model_and_plan_registry_consistent() -> bool:
-    return (
-        validate_parameter_model_against_registry()
-        & validate_registry_against_parameter_model()
-    )
+EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())
+EXPERIMENT_TYPE_LIST = [p["param_type"] for p in PLAN_REGISTRY.values()]
+EXPERIMENT_TYPE_DICT = dict(zip(EXPERIMENT_NAMES, EXPERIMENT_TYPE_LIST))
 
 
 class PlanNotFound(Exception):

@@ -10,12 +10,7 @@ import pytest
 from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, Status, cli_arg_parse, create_app
-from artemis.experiment_plans.experiment_registry import (
-    PLAN_REGISTRY,
-    parameter_model_and_plan_registry_consistent,
-    validate_parameter_model_against_registry,
-    validate_registry_against_parameter_model,
-)
+from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.parameters.external_parameters import RawParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
@@ -91,12 +86,6 @@ def wait_for_run_engine_status(
 def check_status_in_response(response_object, expected_result: Status):
     response_json = json.loads(response_object.data)
     assert response_json["status"] == expected_result.value
-
-
-def test_experiment_registry_and_parameter_model():
-    assert validate_parameter_model_against_registry()
-    assert validate_registry_against_parameter_model()
-    assert parameter_model_and_plan_registry_consistent()
 
 
 def test_start_gives_success(test_env: ClientAndRunEngine):
