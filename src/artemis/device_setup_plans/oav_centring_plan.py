@@ -18,7 +18,7 @@ from artemis.devices.oav.oav_errors import (
     OAVError_ZoomLevelNotFound,
 )
 from artemis.devices.oav.oav_parameters import OAVParameters
-from artemis.log import LOGGER
+from artemis.log import LOGGER, set_up_logging_handlers
 from artemis.parameters import SIM_BEAMLINE
 
 # Z and Y bounds are hardcoded into GDA (we don't want to exceed them). We should look
@@ -54,8 +54,11 @@ def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
     yield from bps.abs_set(oav.mxsc.blocking_callbacks_pv, 0)
 
     # Set the python file to use for calculating the edge waveforms
-    yield from bps.abs_set(oav.mxsc.py_filename, filename)
-    yield from bps.abs_set(oav.mxsc.read_file, 1)
+    current_filename = yield from bps.rd(oav.mxsc.py_filename)
+    if current_filename != filename:
+        LOGGER.info(f"Current python file is {current_filename}, setting to {filename}")
+        yield from bps.abs_set(oav.mxsc.py_filename, filename)
+        yield from bps.abs_set(oav.mxsc.read_file, 1)
 
     # Image annotations
     yield from bps.abs_set(oav.mxsc.draw_tip, True)
@@ -124,7 +127,7 @@ def pre_centring_setup_oav(oav: OAV, backlight: Backlight, parameters: OAVParame
         wait=True,
     )
 
-    yield from bps.abs_set(backlight.pos, 1)
+    # yield from bps.abs_set(backlight.pos, 1)
     yield from bps.wait()
 
     """
@@ -217,7 +220,7 @@ def get_waveforms_to_image_scale(oav: OAV):
         waveform values on the n axis.
     """
     image_size_i = yield from bps.rd(oav.cam.array_size.array_size_x)
-    image_size_j = yield from bps.rd(oav.cam.array_size.array_size_x)
+    image_size_j = yield from bps.rd(oav.cam.array_size.array_size_y)
     waveform_size_i = yield from bps.rd(oav.mxsc.waveform_size_x)
     waveform_size_j = yield from bps.rd(oav.mxsc.waveform_size_y)
     return image_size_i / waveform_size_i, image_size_j / waveform_size_j
@@ -246,8 +249,12 @@ def centring_plan(
     LOGGER.info("Starting loop centring")
     yield from bps.wait()
 
+    LOGGER.info("Finished waiting")
+
     # Set relevant PVs to whatever the config dictates.
     yield from pre_centring_setup_oav(oav, backlight, parameters)
+
+    LOGGER.info("Camera set up")
 
     # If omega  can rotate indefinitely (indicated by high_limit_travel=0), we set the hard coded limit.
     omega_high_limit = yield from bps.rd(smargon.omega.high_limit_travel)
@@ -268,9 +275,10 @@ def centring_plan(
         dtype=np.float64,
     )
 
+    LOGGER.info(f"Current xyz, {motor_xyz}")
+
     # We attempt to find the centre `max_run_num` times...
     for run_num in range(max_run_num):
-
         # Spin the goniometer and capture data from the camera at each rotation_point.
         (
             i_positions,
@@ -282,6 +290,12 @@ def centring_plan(
         ) = yield from rotate_pin_and_collect_positional_data(
             oav, smargon, rotation_points, omega_high_limit
         )
+
+        LOGGER.info("Found positions!")
+        LOGGER.info(f"Positions: {(i_positions, j_positions)}")
+        LOGGER.info(f"Widths: {widths}")
+        LOGGER.info(f"Angles {omega_angles}")
+        LOGGER.info(f"Tips: {(tip_i_positions, tip_j_positions)}")
 
         # Filters the data captured at rotation and formats it in terms of i, j, k and angles.
         # (i_pixels,j_pixels) correspond to the (x,y) midpoint at the widest rotation, in the camera coordinate system,
@@ -297,22 +311,32 @@ def centring_plan(
             i_positions, j_positions, widths, omega_angles
         )
 
+        LOGGER.info("Calculating centres")
+        LOGGER.info(f"Centre in pixels {(i_pixels, j_pixels, k_pixels)}")
+        LOGGER.info(f"Best angles {(best_omega_angle, best_omega_angle_orthogonal)}")
+
         # Adjust waveform values to match the camera pixels.
+
         i_pixels *= i_scale
         j_pixels *= j_scale
         k_pixels *= j_scale
+        LOGGER.info(f"Centre in pixels after scaling {(i_pixels, j_pixels, k_pixels)}")
 
         # Adjust i_pixels if it is too far away from the pin.
         tip_i = np.median(tip_i_positions)
+
         i_pixels = check_i_within_bounds(
             parameters.max_tip_distance_pixels, tip_i, i_pixels
         )
+        LOGGER.info(f"i_pixels after bounding: {i_pixels}")
 
         # Get the beam distance from the centre (in pixels).
         (
             beam_distance_i_pixels,
             beam_distance_j_pixels,
         ) = parameters.calculate_beam_distance(i_pixels, j_pixels)
+
+        LOGGER.info(f"Beam distance {(beam_distance_i_pixels, beam_distance_j_pixels)}")
 
         # Add the beam distance to the current motor position (adjusting for the changes in coordinate system
         # and the from the angle).
@@ -323,6 +347,8 @@ def centring_plan(
             parameters.micronsPerXPixel,
             parameters.micronsPerYPixel,
         )
+
+        LOGGER.info(f"Move for x, y {motor_xyz}")
 
         if run_num == max_run_num - 1:
             # If it's the last run we adjust the z value of the motors.
@@ -343,7 +369,7 @@ def centring_plan(
         motor_xyz[2] = keep_inside_bounds(motor_xyz[2], _Z_LOWER_BOUND, _Z_UPPER_BOUND)
 
         run_num += 1
-        print("motor_xyz", run_num, motor_xyz)
+        LOGGER.info(f"motor_xyz: {run_num} {motor_xyz}")
 
         yield from bps.mv(
             smargon.x, motor_xyz[0], smargon.y, motor_xyz[1], smargon.z, motor_xyz[2]
@@ -351,11 +377,14 @@ def centring_plan(
 
     # We've moved to the best x,y,z already. Now rotate to the widest pin angle.
     yield from bps.mv(smargon.omega, best_omega_angle)
+
+    yield from bps.sleep(1)
     LOGGER.info("Finished loop centring")
 
 
 if __name__ == "__main__":
-    beamline = SIM_BEAMLINE
+    beamline = "BL03I"
+    set_up_logging_handlers("INFO")
     oav = OAV(name="oav", prefix=beamline)
 
     smargon: I03Smargon = I03Smargon(name="smargon", prefix=beamline)

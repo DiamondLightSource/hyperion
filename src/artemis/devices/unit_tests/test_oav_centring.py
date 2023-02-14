@@ -1,5 +1,3 @@
-# from unittest.mock import patch
-
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
@@ -87,7 +85,6 @@ def test_can_make_fake_testing_devices_and_use_run_engine(
 def test_oav_parameters_load_parameters_from_json(
     parameter_name, expected_value, mock_parameters: OAVParameters
 ):
-
     mock_parameters.load_parameters_from_json()
 
     assert mock_parameters.__dict__[parameter_name] == expected_value
@@ -276,7 +273,6 @@ def test_keep_x_within_bounds(max_tip_distance, tip_x, x, expected_return):
 def test_distance_from_beam_centre_to_motor_coords_returns_the_same_values_as_GDA(
     h, v, omega, expected_values, mock_parameters: OAVParameters
 ):
-
     mock_parameters.zoom = 5.0
     mock_parameters.load_microns_per_pixel()
     results = camera_coordinates_to_xyz(
@@ -325,6 +321,13 @@ def test_extract_pixel_centre_values_from_rotation_data():
         (np.array([0, 30, 60, 90, 145, 180, 210, 240, 250, 255]), 50, 4),
         (np.array([-40, 30, 60, 90, 145, 180, 210, 240, 250, 255]), 50, 0),
         (np.array([-150, -120, -90, -60, -30, 0, 30]), 30, 3),
+        (
+            np.array(
+                [6.0013e01, 3.0010e01, 7.0000e-03, -3.0002e01, -6.0009e01, -9.0016e01]
+            ),
+            -90.016,
+            2,
+        ),
     ],
 )
 def test_get_closest_orthogonal_index(angle_array, angle, expected_index):
