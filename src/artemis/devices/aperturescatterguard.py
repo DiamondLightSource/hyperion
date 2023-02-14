@@ -75,13 +75,18 @@ class ApertureScatterguard(InfoLoggingDevice):
         """
         assert isinstance(self.aperture_positions, AperturePositions)
         current_ap_z = self.aperture.z.user_readback.get()
-        if aperture_z != current_ap_z != self.aperture_positions.SMALL[2]:
+        # TODO get an appropriate error from motor resolution
+        if (
+            abs(aperture_z - current_ap_z) > 0.0002
+            or abs(self.aperture_positions.SMALL[2] - current_ap_z) > 0.0002
+            or abs(self.aperture_positions.SMALL[2] - aperture_z) > 0.0002
+        ):
             raise Exception(
                 "ApertureScatterguard safe move is not yet defined for positions "
                 "outside of LARGE, MEDIUM, SMALL, ROBOT_LOAD."
             )
 
-        current_ap_y = self.aperture.x.user_readback.get()
+        current_ap_y = self.aperture.y.user_readback.get()
         if aperture_y > current_ap_y:
             sg_status: AndStatus = self.scatterguard.x.set(
                 scatterguard_x
