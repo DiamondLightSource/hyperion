@@ -22,7 +22,6 @@ EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
 EXPECTED_RUN_END_MESSAGE = {
     "event": "end",
     "ispyb_dcid": EXPECTED_DCID,
-    "ispyb_wait_for_runstatus": "1",
 }
 
 

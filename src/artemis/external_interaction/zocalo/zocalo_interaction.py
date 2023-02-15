@@ -76,7 +76,6 @@ class ZocaloInteractor:
         self._send_to_zocalo(
             {
                 "event": "end",
-                "ispyb_wait_for_runstatus": "1",
                 "ispyb_dcid": data_collection_id,
             }
         )
