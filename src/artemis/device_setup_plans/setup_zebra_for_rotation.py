@@ -12,6 +12,7 @@ from artemis.devices.zebra import (
     Zebra,
 )
 
+# TODO do this properly - get it from Eiger or something
 MINIMUM_EXPOSURE_TIME = 0.005
 
 
