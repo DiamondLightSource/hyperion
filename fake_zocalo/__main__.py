@@ -13,6 +13,8 @@ from pika.spec import BasicProperties
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
+
 NO_DIFFRACTION_PREFIX = "NO_DIFF"
 
 DEV_ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
@@ -56,11 +58,9 @@ def main():
 
     single_crystal_result = {
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
-        "payload": [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 1.4]}],
+        "payload": TEST_RESULT_LARGE,
         "recipe": {
-            "start": [
-                [1, [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 1.4]}]]
-            ],
+            "start": [[1, [TEST_RESULT_LARGE]]],
             "1": {
                 "service": "Send XRC results to GDA",
                 "queue": "xrc.i03",
@@ -76,9 +76,7 @@ def main():
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
         "payload": [],
         "recipe": {
-            "start": [
-                [1, [{"max_voxel": [1, 2, 3], "centre_of_mass": [1.2, 2.3, 3.4]}]]
-            ],
+            "start": [[1, [TEST_RESULT_LARGE]]],
             "1": {
                 "service": "Send XRC results to GDA",
                 "queue": "xrc.i03",

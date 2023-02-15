@@ -90,8 +90,22 @@ class ZocaloInteractor:
 
             timeout (float): The time in seconds to wait for the result to be received.
         Returns:
-            Returns the centre of the grid box with the strongest diffraction, i.e.,
-            which contains the centre of the crystal and which we want to move to.
+            Returns the message from zocalo, as a list of dicts describing each crystal
+            which zocalo found:
+            [
+                {
+                    "centre_of_mass": [1, 2, 3],
+                    "max_voxel": [2, 4, 5],
+                    "max_count": 105062,
+                    "n_voxels": 35,
+                    "total_count": 2387574,
+                    "bounding_box": [[1, 2, 3], [3, 4, 4]],
+                },
+                {
+                    result 2
+                },
+                ...
+            ]
         """
         transport = self._get_zocalo_connection()
         result_received: queue.Queue = queue.Queue()
@@ -109,7 +123,7 @@ class ZocaloInteractor:
                 if received_group_id == str(data_collection_group_id):
                     if len(message) == 0:
                         raise NoDiffractionFound()
-                    result_received.put(Point3D(*message[0]["centre_of_mass"]))
+                    result_received.put(message)
                 else:
                     artemis.log.LOGGER.warning(
                         f"Warning: results for {received_group_id} received but expected \
