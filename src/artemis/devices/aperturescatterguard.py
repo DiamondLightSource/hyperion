@@ -74,13 +74,13 @@ class ApertureScatterguard(InfoLoggingDevice):
         Move the aperture and scatterguard combo safely to a new position
         """
         assert isinstance(self.aperture_positions, AperturePositions)
-        current_ap_z = self.aperture.z.user_readback.get()
-        # TODO get an appropriate error from motor resolution
-        if (
-            abs(aperture_z - current_ap_z) > 0.0002
-            or abs(self.aperture_positions.SMALL[2] - current_ap_z) > 0.0002
-            or abs(self.aperture_positions.SMALL[2] - aperture_z) > 0.0002
-        ):
+
+        ap_z_in_position = self.aperture.z.motor_done_move.get()
+        if not ap_z_in_position:
+            return
+
+        current_ap_z = self.aperture.z.user_setpoint.get()
+        if current_ap_z != aperture_z:
             raise Exception(
                 "ApertureScatterguard safe move is not yet defined for positions "
                 "outside of LARGE, MEDIUM, SMALL, ROBOT_LOAD."
