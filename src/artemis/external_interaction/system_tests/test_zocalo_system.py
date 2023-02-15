@@ -25,7 +25,8 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
         zc.zocalo_interactor.run_start(dcid)
     for dcid in dcids:
         zc.zocalo_interactor.run_end(dcid)
-    assert zc.zocalo_interactor.wait_for_result(4)[0] == TEST_RESULT_LARGE
+    result = zc.zocalo_interactor.wait_for_result(4)
+    assert result[0] == TEST_RESULT_LARGE[0]
 
 
 @pytest.fixture
