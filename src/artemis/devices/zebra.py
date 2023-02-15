@@ -41,13 +41,25 @@ TTL_SHUTTER = 2
 TTL_XSPRESS3 = 3
 
 
+class I03_axes(Enum):
+    SMARGON_X1 = "Enc1"
+    SMARGON_Y = "Enc2"
+    SMARGON_Z = "Enc3"
+    OMEGA = "Enc4"
+
+
 class PositionCompare(Device):
     num_gates: EpicsSignal = epics_signal_put_wait("PC_GATE_NGATE")
+    gate_trigger: EpicsSignal = epics_signal_put_wait("PC_ENC")
     gate_source: EpicsSignal = epics_signal_put_wait("PC_GATE_SEL")
     gate_input: EpicsSignal = epics_signal_put_wait("PC_GATE_INP")
+    gate_width: EpicsSignal = epics_signal_put_wait("PC_GATE_WID")
+    gate_start: EpicsSignal = epics_signal_put_wait("PC_GATE_START")
 
     pulse_source: EpicsSignal = epics_signal_put_wait("PC_PULSE_SEL")
     pulse_input: EpicsSignal = epics_signal_put_wait("PC_PULSE_INP")
+    pulse_width: EpicsSignal = epics_signal_put_wait("PC_PULSE_WID")
+    pulse_step: EpicsSignal = epics_signal_put_wait("PC_PULSE_STEP")
 
     dir: EpicsSignal = Component(EpicsSignal, "PC_DIR")
     arm_source: EpicsSignal = epics_signal_put_wait("PC_ARM_SEL")
@@ -68,7 +80,7 @@ class PositionCompare(Device):
     def is_armed(self) -> bool:
         return self.armed.get() == 1
 
-    def arm_status(self, armed: int) -> StatusBase:
+    def arm_status(self, armed: int) -> SubscriptionStatus:
         return SubscriptionStatus(self.armed, lambda value, **_: value == armed)
 
 
