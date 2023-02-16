@@ -9,6 +9,10 @@ from artemis.devices.logging_ophyd_device import InfoLoggingDevice
 from artemis.devices.scatterguard import Scatterguard
 
 
+class InvalidApertureMove(Exception):
+    pass
+
+
 @dataclass
 class AperturePositions:
     """Holds tuples (miniap_x, miniap_y, miniap_z, scatterguard_x, scatterguard_y)
@@ -71,8 +75,11 @@ class ApertureScatterguard(InfoLoggingDevice):
         self.aperture_positions = positions
 
     def set(self, pos: tuple[float, float, float, float, float]) -> AndStatus:
-        assert isinstance(self.aperture_positions, AperturePositions)
-        assert self.aperture_positions.position_valid(pos)
+        try:
+            assert isinstance(self.aperture_positions, AperturePositions)
+            assert self.aperture_positions.position_valid(pos)
+        except AssertionError as e:
+            raise InvalidApertureMove(repr(e))
         return self._safe_move_within_datacollection_range(*pos)
 
     def _safe_move_within_datacollection_range(
@@ -94,7 +101,7 @@ class ApertureScatterguard(InfoLoggingDevice):
             return
         current_ap_z = self.aperture.z.user_setpoint.get()
         if current_ap_z != aperture_z:
-            raise Exception(
+            raise InvalidApertureMove(
                 "ApertureScatterguard safe move is not yet defined for positions "
                 "outside of LARGE, MEDIUM, SMALL, ROBOT_LOAD."
             )
