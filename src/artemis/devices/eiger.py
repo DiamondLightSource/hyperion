@@ -138,7 +138,7 @@ class EigerDetector(Device):
         status &= self.cam.trigger_mode.set(EigerTriggerMode.EXTERNAL_SERIES.value)
         return status
 
-    def set_odin_pvs(self):
+    def set_odin_pvs(self) -> AndStatus:
         self.odin.file_writer.num_frames_chunks.set(1).wait(10)
 
         file_prefix = self.detector_params.full_filename
@@ -153,7 +153,7 @@ class EigerDetector(Device):
 
         return odin_status
 
-    def set_mx_settings_pvs(self) -> Status:
+    def set_mx_settings_pvs(self) -> AndStatus:
         assert self.detector_params is not None
         beam_x_pixels, beam_y_pixels = self.detector_params.get_beam_position_pixels(
             self.detector_params.detector_distance
