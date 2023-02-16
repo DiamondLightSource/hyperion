@@ -1,5 +1,4 @@
 import bluesky.plan_stubs as bps
-from ophyd.status import SubscriptionStatus
 
 from artemis.devices.zebra import (
     DISCONNECT,

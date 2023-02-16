@@ -139,6 +139,7 @@ class EigerDetector(Device):
         return status
 
     def set_odin_pvs(self) -> AndStatus:
+        assert self.detector_params is not None
         self.odin.file_writer.num_frames_chunks.set(1).wait(10)
 
         file_prefix = self.detector_params.full_filename
