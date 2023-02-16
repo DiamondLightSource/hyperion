@@ -70,10 +70,10 @@ class ApertureScatterguard(InfoLoggingDevice):
     def load_aperture_positions(self, positions: AperturePositions):
         self.aperture_positions = positions
 
-    def set(self, pos: tuple[float, float, float, float, float]):
+    def set(self, pos: tuple[float, float, float, float, float]) -> AndStatus:
         assert isinstance(self.aperture_positions, AperturePositions)
         assert self.aperture_positions.position_valid(pos)
-        self._safe_move_within_datacollection_range(*pos)
+        return self._safe_move_within_datacollection_range(*pos)
 
     def _safe_move_within_datacollection_range(
         self,
@@ -82,7 +82,7 @@ class ApertureScatterguard(InfoLoggingDevice):
         aperture_z: float,
         scatterguard_x: float,
         scatterguard_y: float,
-    ) -> None:
+    ) -> AndStatus:
         """
         Move the aperture and scatterguard combo safely to a new position
         """
@@ -105,9 +105,13 @@ class ApertureScatterguard(InfoLoggingDevice):
                 scatterguard_x
             ) & self.scatterguard.y.set(scatterguard_y)
             sg_status.wait()
-            self.aperture.x.set(aperture_x)
-            self.aperture.y.set(aperture_y)
-            self.aperture.z.set(aperture_z)
+            final_status = (
+                sg_status
+                & self.aperture.x.set(aperture_x)
+                & self.aperture.y.set(aperture_y)
+                & self.aperture.z.set(aperture_z)
+            )
+            return final_status
 
         else:
             ap_status: AndStatus = (
@@ -116,5 +120,9 @@ class ApertureScatterguard(InfoLoggingDevice):
                 & self.aperture.z.set(aperture_z)
             )
             ap_status.wait()
-            self.scatterguard.x.set(scatterguard_x)
-            self.scatterguard.y.set(scatterguard_y)
+            final_status = (
+                ap_status
+                & self.scatterguard.x.set(scatterguard_x)
+                & self.scatterguard.y.set(scatterguard_y)
+            )
+            return final_status
