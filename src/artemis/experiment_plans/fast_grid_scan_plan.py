@@ -81,7 +81,7 @@ def set_aperture_for_bbox_size(
     artemis.log.LOGGER.info(
         f"Setting aperture to {aperture_size_positions} based on bounding box size {bbox_size}."
     )
-    aperture_device.safe_move_within_datacollection_range(*aperture_size_positions)
+    yield from bps.abs_set(aperture_device(aperture_size_positions))
 
 
 def read_hardware_for_ispyb(
