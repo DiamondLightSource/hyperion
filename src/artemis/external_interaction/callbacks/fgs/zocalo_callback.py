@@ -88,6 +88,24 @@ class FGSZocaloCallback(CallbackBase):
                 datacollection_group_id
             )
 
+            if len(raw_results) > 1:
+                LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
+                multi_crystal_msg = f"{len(raw_results)} crystals found "
+                for n, res in enumerate(raw_results):
+                    size = list(
+                        map(
+                            operator.sub, res["bounding_box"][1], res["bounding_box"][0]
+                        )
+                    )
+                    multi_crystal_msg += (
+                        f"Crystal {n} "
+                        f"Strength {res['tot_count']} "
+                        f"Position (x,y,z) {res['centre_of_mass']} "
+                        f"Size (x,y,z) {size} "
+                    )
+
+                self.ispyb.append_to_comment(multi_crystal_msg)
+
             raw_centre = Point3D(*(raw_results[0]["centre_of_mass"]))
 
             # _wait_for_result returns the centre of the grid box, but we want the corner
