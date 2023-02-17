@@ -99,7 +99,7 @@ class FGSZocaloCallback(CallbackBase):
                     )
                     multi_crystal_msg += (
                         f"Crystal {n} "
-                        f"Strength {res['tot_count']} "
+                        f"Strength {res['total_count']} "
                         f"Position (x,y,z) {res['centre_of_mass']} "
                         f"Size (x,y,z) {size} "
                     )
