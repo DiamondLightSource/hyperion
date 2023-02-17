@@ -76,11 +76,18 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
     expected_centre_grid_coords = Point3D(1, 2, 3)
+    single_crystal_result = [
+        {
+            "max_voxel": [1, 2, 3],
+            "centre_of_mass": expected_centre_grid_coords,
+            "bounding_box": [[1, 1, 1], [2, 2, 2]],
+        }
+    ]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        expected_centre_grid_coords
+        single_crystal_result
     )
 
-    found_centre = callbacks.zocalo_handler.wait_for_results(Point3D(0, 0, 0))
+    found_centre = callbacks.zocalo_handler.wait_for_results(Point3D(0, 0, 0))[0]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
         100
     )
@@ -107,7 +114,7 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
 
     fallback_position = Point3D(1, 2, 3)
 
-    found_centre = callbacks.zocalo_handler.wait_for_results(fallback_position)
+    found_centre = callbacks.zocalo_handler.wait_for_results(fallback_position)[0]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
         100
     )

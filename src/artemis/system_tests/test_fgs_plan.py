@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan_composite import FGSComposite
 
@@ -22,10 +23,12 @@ from artemis.external_interaction.system_tests.test_ispyb_dev_connection import 
     ISPYB_CONFIG,
 )
 from artemis.parameters import (
+    I03_BEAMLINE_PARAMETER_PATH,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
     DetectorParams,
     FullParameters,
+    GDABeamlineParameters,
 )
 
 
@@ -82,10 +85,23 @@ def fgs_composite():
     )
     fast_grid_scan_composite.wait_for_connection()
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
+    gda_beamline_parameters = GDABeamlineParameters.from_file(
+        I03_BEAMLINE_PARAMETER_PATH
+    )
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        gda_beamline_parameters
+    )
+    fast_grid_scan_composite.aperture_scatterguard.load_aperture_positions(
+        aperture_positions
+    )
+    fast_grid_scan_composite.aperture_scatterguard.aperture.z.move(
+        aperture_positions.LARGE[2], wait=True
+    )
+    fast_grid_scan_composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
     return fast_grid_scan_composite
 
 
-@pytest.mark.skip("Broken due to eiger issues in s03")
+@pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
 @patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid")
 @patch("bluesky.plan_stubs.wait")
@@ -112,7 +128,6 @@ def test_read_hardware_for_ispyb(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-
     undulator = fgs_composite.undulator
     synchrotron = fgs_composite.synchrotron
     slit_gaps = fgs_composite.slit_gaps
@@ -232,6 +247,6 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     RE(get_plan(parameters, callbacks))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.07)
-    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.18)
-    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.09)
+    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.05)
+    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.15)
+    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.25)
