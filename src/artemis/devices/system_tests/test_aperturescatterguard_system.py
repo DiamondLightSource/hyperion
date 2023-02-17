@@ -67,6 +67,7 @@ def test_aperturescatterguard_move_in_plan(
     RE(move_to_robotload)
 
 
+@pytest.mark.s03
 def test_move_fails_when_not_in_good_starting_pos(
     ap_sg: ApertureScatterguard, move_to_large
 ):
@@ -95,6 +96,7 @@ class MonitorCallback(CallbackBase):
             self.t_sg_y = doc["timestamps"].get("ap_sg_scatterguard_y_motor_done_move")
 
 
+@pytest.mark.s03
 @pytest.mark.parametrize(
     "pos1,pos2,sg_first",
     [
