@@ -89,6 +89,11 @@ class FGSZocaloCallback(CallbackBase):
             )
 
             if len(raw_results) > 1:
+                # For now just sort from strongest to weakest
+                # TODO actual sorting function where order can be changed
+                raw_results = sorted(
+                    raw_results, key=lambda d: d["total_count"], reverse=True
+                )
                 LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
                 multi_crystal_msg = f"{len(raw_results)} crystals found "
                 for n, res in enumerate(raw_results):
