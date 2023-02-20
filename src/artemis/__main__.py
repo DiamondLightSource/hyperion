@@ -121,7 +121,13 @@ class BlueskyRunner:
                 try:
                     with TRACER.start_span("do_run"):
                         self.RE(command.experiment(command.parameters, self.callbacks))
-                    self.current_status = StatusAndMessage(Status.IDLE)
+                    from artemis.experiment_plans.fast_grid_scan_plan import (
+                        selected_aperture,
+                    )
+
+                    self.current_status = StatusAndMessage(
+                        Status.IDLE, selected_aperture
+                    )
                     self.last_run_aborted = False
                 except WarningException as exception:
                     artemis.log.LOGGER.warning("Warning Exception", exc_info=True)

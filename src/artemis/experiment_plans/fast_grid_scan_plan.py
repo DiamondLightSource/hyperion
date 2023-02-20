@@ -33,6 +33,7 @@ from artemis.utils import Point3D
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
+selected_aperture = None
 
 
 def get_beamline_parameters():
@@ -72,14 +73,15 @@ def set_aperture_for_bbox_size(
     bbox_size: list[int],
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
-    if bbox_size[0] <= 1:
-        aperture_size_positions = aperture_device.aperture_positions.SMALL
-    elif 1 < bbox_size[0] < 3:
+    global selected_aperture
+    if bbox_size[0] < 2:
         aperture_size_positions = aperture_device.aperture_positions.MEDIUM
+        selected_aperture = "MEDIUM_APERTURE"
     else:
         aperture_size_positions = aperture_device.aperture_positions.LARGE
+        selected_aperture = "LARGE_APERTURE"
     artemis.log.LOGGER.info(
-        f"Setting aperture to {aperture_size_positions} based on bounding box size {bbox_size}."
+        f"Setting aperture to {selected_aperture} ({aperture_size_positions}) based on bounding box size {bbox_size}."
     )
     yield from bps.abs_set(aperture_device, aperture_size_positions)
 
