@@ -14,7 +14,9 @@ from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
 
 class FGSISPyBHandlerCallback(CallbackBase):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
-    database. Listens for 'event' and 'descriptor' documents.
+    database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
+    recieving an 'event' document for the 'ispyb_readings' event, and updates the
+    deposition on recieving it's final 'stop' document.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
@@ -42,9 +44,21 @@ class FGSISPyBHandlerCallback(CallbackBase):
             else StoreInIspyb2D(ispyb_config, self.params)
         )
         self.ispyb_ids: tuple = (None, None, None)
+        self.uid_to_finalize_on = None
 
-    def descriptor(self, doc):
+    def append_to_comment(self, comment: str):
+        try:
+            for id in self.ispyb_ids[0]:
+                self.ispyb.append_to_comment(id, comment)
+        except TypeError:
+            LOGGER.warning("ISPyB deposition not initialised, can't update comment.")
+
+    def descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
+
+    def start(self, doc: dict):
+        if self.uid_to_finalize_on is None:
+            self.uid_to_finalize_on = doc.get("uid")
 
     def event(self, doc: dict):
         LOGGER.debug("ISPyB handler received event document.")
@@ -62,9 +76,10 @@ class FGSISPyBHandlerCallback(CallbackBase):
             self.ispyb_ids = self.ispyb.begin_deposition()
 
     def stop(self, doc: dict):
-        LOGGER.debug("ISPyB handler received stop document.")
-        exit_status = doc.get("exit_status")
-        reason = doc.get("reason")
-        if self.ispyb_ids == (None, None, None):
-            raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
-        self.ispyb.end_deposition(exit_status, reason)
+        if doc.get("run_start") == self.uid_to_finalize_on:
+            LOGGER.debug("ISPyB handler received stop document.")
+            exit_status = doc.get("exit_status")
+            reason = doc.get("reason")
+            if self.ispyb_ids == (None, None, None):
+                raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
+            self.ispyb.end_deposition(exit_status, reason)

@@ -1,5 +1,5 @@
 import types
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
@@ -7,6 +7,7 @@ from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
 
+from artemis.devices.aperturescatterguard import AperturePositions
 from artemis.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -19,15 +20,75 @@ from artemis.devices.slit_gaps import SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
-from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.fast_grid_scan_plan import (
+from artemis.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_fgs_valid,
 )
+from artemis.external_interaction.callbacks import (
+    FGSCallbackCollection,
+    VerbosePlanExecutionLoggingCallback,
+)
+from artemis.external_interaction.system_tests.conftest import (
+    TEST_RESULT_LARGE,
+    TEST_RESULT_MEDIUM,
+    TEST_RESULT_SMALL,
+)
+from artemis.log import set_up_logging_handlers
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
+
+
+@pytest.fixture
+def test_params():
+    return FullParameters()
+
+
+@pytest.fixture
+def fake_fgs_composite():
+    FakeComposite = make_fake_device(FGSComposite)
+    fake_composite: FGSComposite = FakeComposite("test", name="fgs")
+    fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
+    fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
+    fake_composite.aperture_scatterguard.aperture.z.user_setpoint._use_limits = False
+    fake_composite.aperture_scatterguard.scatterguard.x.user_setpoint._use_limits = (
+        False
+    )
+    fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
+        False
+    )
+    fake_composite.aperture_scatterguard.load_aperture_positions(
+        AperturePositions(
+            LARGE=(1, 2, 3, 4, 5),
+            MEDIUM=(2, 3, 3, 5, 6),
+            SMALL=(3, 4, 3, 6, 7),
+            ROBOT_LOAD=(0, 0, 3, 0, 0),
+        )
+    )
+    return fake_composite
+
+
+@pytest.fixture
+def mock_subscriptions(test_params):
+    subscriptions = FGSCallbackCollection.from_params(test_params)
+    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
+    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        TEST_RESULT_LARGE
+    )
+
+    return subscriptions
+
+
+@pytest.fixture
+def fake_eiger(test_params: FullParameters):
+    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
+    fake_eiger = (
+        FakeEiger.with_params(params=test_params.detector_params, name="test"),
+    )
+    return fake_eiger
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
@@ -96,45 +157,113 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     assert params.ispyb_params.slit_gap_size_y == ygap_test_value
 
 
-@patch("artemis.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.fast_grid_scan_plan.move_xyz")
+@patch(
+    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
 def test_results_adjusted_and_passed_to_move_xyz(
-    move_xyz: MagicMock, run_gridscan: MagicMock
+    move_xyz: MagicMock,
+    run_gridscan: MagicMock,
+    move_aperture: MagicMock,
+    fake_fgs_composite: FGSComposite,
+    mock_subscriptions: FGSCallbackCollection,
+    fake_eiger: EigerDetector,
+    test_params: FullParameters,
 ):
     RE = RunEngine({})
-    params = FullParameters()
-    subscriptions = FGSCallbackCollection.from_params(params)
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        Point3D(1, 2, 3)
-    )
-
-    motor_position = params.grid_scan_params.grid_position_to_motor_position(
+    motor_position = test_params.grid_scan_params.grid_position_to_motor_position(
         Point3D(0.5, 1.5, 2.5)
     )
-    FakeComposite = make_fake_device(FGSComposite)
-    FakeEiger = make_fake_device(EigerDetector)
+
     RE(
         run_gridscan_and_move(
-            FakeComposite("test", name="fgs"),
-            FakeEiger(params.detector_params),
-            params,
-            subscriptions,
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
         )
     )
     move_xyz.assert_called_once_with(ANY, motor_position)
 
 
+@patch(
+    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
+def test_results_passed_to_move_aperture(
+    move_xyz: MagicMock,
+    run_gridscan: MagicMock,
+    move_aperture: MagicMock,
+    fake_fgs_composite: FGSComposite,
+    mock_subscriptions: FGSCallbackCollection,
+    fake_eiger: EigerDetector,
+    test_params: FullParameters,
+):
+    RE = RunEngine({})
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
+        )
+    )
+    mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        TEST_RESULT_MEDIUM
+    )
+
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
+        )
+    )
+    mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        TEST_RESULT_SMALL
+    )
+
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
+        )
+    )
+
+    call_large = call(
+        *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
+    )
+    call_medium = call(
+        *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
+    )
+    call_small = call(
+        *(fake_fgs_composite.aperture_scatterguard.aperture_positions.SMALL)
+    )
+
+    move_aperture.assert_has_calls(
+        [call_large, call_medium, call_small], any_order=True
+    )
+
+
 @patch("bluesky.plan_stubs.mv")
-def test_results_passed_to_move_motors(bps_mv: MagicMock):
-    from artemis.fast_grid_scan_plan import move_xyz
+def test_results_passed_to_move_motors(bps_mv: MagicMock, test_params: FullParameters):
+    from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
     RE = RunEngine({})
-    params = FullParameters()
-    motor_position = params.grid_scan_params.grid_position_to_motor_position(
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
+
+    motor_position = test_params.grid_scan_params.grid_position_to_motor_position(
         Point3D(1, 2, 3)
     )
     FakeComposite = make_fake_device(FGSComposite)
@@ -144,44 +273,74 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock):
     )
 
 
-@patch("artemis.fast_grid_scan_plan.run_gridscan.do_fgs")
-@patch("artemis.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.fast_grid_scan_plan.move_xyz")
+@patch(
+    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     do_fgs: MagicMock,
+    move_aperture: MagicMock,
+    mock_subscriptions: FGSCallbackCollection,
+    fake_fgs_composite: FGSComposite,
+    fake_eiger: EigerDetector,
+    test_params: FullParameters,
 ):
     RE = RunEngine({})
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
     params = FullParameters()
-
-    subscriptions = FGSCallbackCollection.from_params(params)
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        Point3D(1, 2, 3)
-    )
-
-    FakeComposite = make_fake_device(FGSComposite)
-    FakeEiger = make_fake_device(EigerDetector)
-    fake_composite = FakeComposite("test", name="fakecomposite")
-    fake_eiger = FakeEiger(params.detector_params)
 
     RE(
         run_gridscan_and_move(
-            fake_composite,
+            fake_fgs_composite,
             fake_eiger,
-            params,
-            subscriptions,
+            test_params,
+            mock_subscriptions,
         )
     )
 
-    run_gridscan.assert_called_once_with(fake_composite, fake_eiger, params)
+    run_gridscan.assert_called_once_with(fake_fgs_composite, fake_eiger, params)
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
 
 
-@patch("artemis.fast_grid_scan_plan.bps.sleep")
+@patch(
+    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
+def test_logging_within_plan(
+    move_xyz: MagicMock,
+    run_gridscan: MagicMock,
+    do_fgs: MagicMock,
+    move_aperture: MagicMock,
+    mock_subscriptions: FGSCallbackCollection,
+    fake_fgs_composite: FGSComposite,
+    fake_eiger: EigerDetector,
+    test_params: FullParameters,
+):
+    RE = RunEngine({})
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
+
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
+        )
+    )
+
+    run_gridscan.assert_called_once_with(fake_fgs_composite, fake_eiger, test_params)
+    move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     patch_sleep: MagicMock,
 ):
@@ -197,7 +356,7 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     patch_sleep.assert_not_called()
 
 
-@patch("artemis.fast_grid_scan_plan.bps.sleep")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
     patch_sleep: MagicMock,
 ):

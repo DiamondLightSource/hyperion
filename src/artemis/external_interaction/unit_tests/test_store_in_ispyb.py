@@ -288,8 +288,8 @@ def test_ispyb_deposition_comment_correct(
 
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
+        "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
     )
 
 
@@ -309,8 +309,8 @@ def test_ispyb_deposition_rounds_to_int(
 
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [320,16100]."
+        "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [3200,1700]."
     )
 
 
@@ -328,161 +328,12 @@ def test_ispyb_deposition_comment_for_3D_correct(
     first_upserted_param_value_list = mock_upsert_dc.call_args_list[0][0][0]
     second_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
     assert first_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
+        "Artemis: Xray centring - Diffraction grid scan of 40 by 20 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
     )
     assert second_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]."
-    )
-
-
-@patch("ispyb.open")
-def test_ispyb_deposition_comment_correct_on_failure(
-    mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
-):
-    setup_mock_return_values(mock_ispyb_conn)
-    mock_mx_aquisition = (
-        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-    )
-    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    dummy_ispyb.begin_deposition()
-    dummy_ispyb.get_current_datacollection_comment.return_value = (
-        dummy_ispyb._construct_comment()
-    )
-    dummy_ispyb.end_deposition("fail", "could not connect to devices")
-    mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
-    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
-        0
-    ]
-    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
-    assert upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
-        "DataCollection Unsuccessful reason: could not connect to devices"
-    )
-
-
-@patch("ispyb.open")
-@patch("artemis.external_interaction.ispyb.store_in_ispyb.sessionmaker")
-def test_ispyb_comment_fetching_on_fail(
-    sessionmaker: MagicMock,
-    mock_ispyb_conn: MagicMock,
-    dummy_params,
-):
-    # don't use fixture with mocked fetch comment for this one
-    dummy_ispyb = StoreInIspyb2D(SIM_ISPYB_CONFIG, dummy_params)
-    setup_mock_return_values(mock_ispyb_conn)
-    mock_mx_aquisition = (
-        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-    )
-    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    dummy_ispyb.begin_deposition()
-
-    dummy_ispyb.end_deposition("fail", "could not connect to devices")
-    mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
-    upserted_param_value_list = mock_upsert_dc_calls[1][0][0]
-    assert sessionmaker.call_count == 1
-    assert (
-        upserted_param_value_list[29]._extract_mock_name()
-        == "sessionmaker()().__enter__().query().filter().first().comments.__add__()"
-    )
-
-
-@patch("ispyb.open")
-@patch("artemis.external_interaction.ispyb.store_in_ispyb.sessionmaker")
-def test_ispyb_no_comment_fetching_on_success(
-    sessionmaker: MagicMock,
-    mock_ispyb_conn: MagicMock,
-    dummy_params,
-):
-    # don't use fixture with mocked fetch comment for this one
-    dummy_ispyb = StoreInIspyb2D(SIM_ISPYB_CONFIG, dummy_params)
-    setup_mock_return_values(mock_ispyb_conn)
-
-    dummy_ispyb.begin_deposition()
-    dummy_ispyb.end_deposition("success", "")
-
-    sessionmaker.assert_called_once()
-    sessionmaker.return_value.assert_not_called()
-
-
-@patch("ispyb.open")
-@patch("artemis.external_interaction.ispyb.store_in_ispyb.sessionmaker")
-def test_ispyb_comment_fetching_returns_empty_string_on_exception(
-    sessionmaker: MagicMock,
-    mock_ispyb_conn: MagicMock,
-    dummy_params,
-):
-    # don't use fixture with mocked fetch comment for this one
-    dummy_ispyb = StoreInIspyb2D(SIM_ISPYB_CONFIG, dummy_params)
-    setup_mock_return_values(mock_ispyb_conn)
-    mock_mx_aquisition = (
-        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-    )
-    sessionmaker.return_value.side_effect = Exception("Couldn't read from ISPyB")
-    dummy_ispyb.begin_deposition()
-    dummy_ispyb.end_deposition("fail", "bad stuff happened")
-
-    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-
-    mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
-    second_upserted_param_value_list = mock_upsert_dc_calls[1][0][0]
-    # Not easily possible to access what get_current_datacollection_comment() returns
-    # but we know that " DataCollection Unsuccessful reason: {reason}" must be appended
-    # to the result of it
-    assert (
-        second_upserted_param_value_list[29]
-        == " DataCollection Unsuccessful reason: bad stuff happened"
-    )
-
-
-@patch("ispyb.open")
-def test_ispyb_deposition_comment_correct_for_3D_on_failure(
-    mock_ispyb_conn: MagicMock,
-    dummy_ispyb_3d: StoreInIspyb3D,
-):
-    setup_mock_return_values(mock_ispyb_conn)
-    mock_mx_aquisition = (
-        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
-    )
-    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    dummy_ispyb_3d.begin_deposition()
-
-    mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
-    first_upserted_param_value_list = mock_upsert_dc_calls[0][0][0]
-    second_upserted_param_value_list = mock_upsert_dc_calls[1][0][0]
-
-    assert first_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]."
-    )
-    assert second_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]."
-    )
-
-    dummy_ispyb_3d.get_current_datacollection_comment.side_effect = [
-        first_upserted_param_value_list[29],
-        second_upserted_param_value_list[29],
-    ]
-
-    dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
-
-    mock_upsert_dc_calls = mock_upsert_data_collection.call_args_list
-    third_upserted_param_value_list = mock_upsert_dc_calls[2][0][0]
-    fourth_upserted_param_value_list = mock_upsert_dc_calls[3][0][0]
-
-    assert third_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 200 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [420,16100]. "
-        "DataCollection Unsuccessful reason: could not connect to devices"
-    )
-    assert fourth_upserted_param_value_list[29] == (
-        "Artemis: Xray centring - Diffraction grid scan of 4 by 61 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [420,4930]. "
-        "DataCollection Unsuccessful reason: could not connect to devices"
+        "Artemis: Xray centring - Diffraction grid scan of 40 by 10 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
     )
 
 

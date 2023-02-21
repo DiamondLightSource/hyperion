@@ -1,6 +1,6 @@
-import math
+import operator
 import time
-from typing import Callable
+from typing import Callable, Optional
 
 from bluesky.callbacks import CallbackBase
 
@@ -8,15 +8,20 @@ from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
 )
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
+from artemis.external_interaction.zocalo.zocalo_interaction import (
+    NoDiffractionFound,
+    ZocaloInteractor,
+)
 from artemis.log import LOGGER
-from artemis.parameters import ISPYB_PLAN_NAME, FullParameters
+from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
 
 class FGSZocaloCallback(CallbackBase):
     """Callback class to handle the triggering of Zocalo processing.
-    Listens for 'event' and 'stop' documents.
+    Sends zocalo a run_start signal on recieving a start document for the 'do_fgs'
+    sub-plan, and sends a run_end signal on recieving a stop document for the#
+    'run_gridscan' sub-plan.
 
     Needs to be connected to an ISPyBHandlerCallback subscribed to the same run in order
     to have access to the deposition numbers to pass on to Zocalo.
@@ -40,17 +45,14 @@ class FGSZocaloCallback(CallbackBase):
         ] = parameters.grid_scan_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        self.results = None
-        self.xray_centre_motor_position = None
+        self.run_gridscan_uid: Optional[str] = None
         self.ispyb = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
 
-    def event(self, doc: dict):
-        LOGGER.debug("Zocalo handler received event document.")
-        descriptor = self.ispyb.descriptors.get(doc["descriptor"])
-        assert descriptor is not None
-        event_name = descriptor.get("name")
-        if event_name == ISPYB_PLAN_NAME:
+    def start(self, doc: dict):
+        LOGGER.info("Zocalo handler received start document.")
+        if doc.get("subplan_name") == "do_fgs":
+            self.run_gridscan_uid = doc.get("uid")
             if self.ispyb.ispyb_ids[0] is not None:
                 datacollection_ids = self.ispyb.ispyb_ids[0]
                 for id in datacollection_ids:
@@ -59,34 +61,66 @@ class FGSZocaloCallback(CallbackBase):
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
     def stop(self, doc: dict):
-        LOGGER.debug("Zocalo handler received stop document.")
-        if self.ispyb.ispyb_ids == (None, None, None):
-            raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
-        datacollection_ids = self.ispyb.ispyb_ids[0]
-        for id in datacollection_ids:
-            self.zocalo_interactor.run_end(id)
-        self.processing_start_time = time.time()
+        if doc.get("run_start") == self.run_gridscan_uid:
+            LOGGER.info(
+                f"Zocalo handler received stop document, for run {doc.get('run_start')}."
+            )
+            if self.ispyb.ispyb_ids == (None, None, None):
+                raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
+            datacollection_ids = self.ispyb.ispyb_ids[0]
+            for id in datacollection_ids:
+                self.zocalo_interactor.run_end(id)
+            self.processing_start_time = time.time()
 
-    def wait_for_results(self, fallback_xyz: Point3D):
+    def wait_for_results(self, fallback_xyz: Point3D) -> Point3D:
+        """Blocks until a centre has been received from Zocalo
+
+        Args:
+            fallback_xyz (Point3D): The position to fallback to if no centre is found
+
+        Returns:
+            Point3D: The xray centre position to move to
+        """
         datacollection_group_id = self.ispyb.ispyb_ids[2]
-        raw_results = self.zocalo_interactor.wait_for_result(datacollection_group_id)
-        self.processing_time = time.time() - self.processing_start_time
-        # _wait_for_result returns the centre of the grid box, but we want the corner
-        self.results = Point3D(
-            raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
-        )
-        self.xray_centre_motor_position = self.grid_position_to_motor_position(
-            self.results
-        )
 
-        # We move back to the centre if results aren't found
-        assert self.xray_centre_motor_position is not None
-        if math.nan in self.xray_centre_motor_position:
+        try:
+            raw_results = self.zocalo_interactor.wait_for_result(
+                datacollection_group_id
+            )
+
+            raw_centre = Point3D(*(raw_results[0]["centre_of_mass"]))
+
+            # _wait_for_result returns the centre of the grid box, but we want the corner
+            results = Point3D(
+                raw_centre.x - 0.5, raw_centre.y - 0.5, raw_centre.z - 0.5
+            )
+            xray_centre = self.grid_position_to_motor_position(results)
+
+            bbox_size: list[int] | None = list(
+                map(
+                    operator.sub,
+                    raw_results[0]["bounding_box"][1],
+                    raw_results[0]["bounding_box"][0],
+                )
+            )
+
+            LOGGER.info(
+                f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"
+            )
+
+        except NoDiffractionFound:
+            # We move back to the centre if results aren't found
             log_msg = (
                 f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
             )
-            self.xray_centre_motor_position = fallback_xyz
+            self.ispyb.append_to_comment("Found no diffraction.")
+            xray_centre = fallback_xyz
+            bbox_size = None
             LOGGER.warn(log_msg)
 
-        LOGGER.info(f"Results recieved from zocalo: {self.xray_centre_motor_position}")
+        self.processing_time = time.time() - self.processing_start_time
+        self.ispyb.append_to_comment(
+            f"Zocalo processing took {self.processing_time:.2f} s"
+        )
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
+        return xray_centre, bbox_size

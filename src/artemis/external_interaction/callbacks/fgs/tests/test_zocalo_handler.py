@@ -6,6 +6,8 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
+from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
+from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from artemis.parameters import FullParameters
 from artemis.utils import Point3D
 
@@ -44,12 +46,12 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
 
-    callbacks.ispyb_handler.start(td.test_start_document)
-    callbacks.zocalo_handler.start(td.test_start_document)
+    callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document)
     callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
     callbacks.ispyb_handler.event(td.test_event_document)
     callbacks.zocalo_handler.event(td.test_event_document)
+    callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
     callbacks.ispyb_handler.stop(td.test_stop_document)
     callbacks.zocalo_handler.stop(td.test_stop_document)
 
@@ -68,30 +70,24 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_not_called()
 
 
-def test_zocalo_handler_raises_assertionerror_when_ispyb_has_no_descriptor(
-    nexus_writer: MagicMock,
-):
-
-    params = FullParameters()
-    callbacks = FGSCallbackCollection.from_params(params)
-    mock_zocalo_functions(callbacks)
-    callbacks.zocalo_handler.start(td.test_start_document)
-    callbacks.zocalo_handler.descriptor(td.test_descriptor_document)
-    with pytest.raises(AssertionError):
-        callbacks.zocalo_handler.event(td.test_event_document)
-
-
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called():
     params = FullParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
     expected_centre_grid_coords = Point3D(1, 2, 3)
+    single_crystal_result = [
+        {
+            "max_voxel": [1, 2, 3],
+            "centre_of_mass": expected_centre_grid_coords,
+            "bounding_box": [[1, 1, 1], [2, 2, 2]],
+        }
+    ]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        expected_centre_grid_coords
+        single_crystal_result
     )
 
-    callbacks.zocalo_handler.wait_for_results(Point3D(0, 0, 0))
+    found_centre = callbacks.zocalo_handler.wait_for_results(Point3D(0, 0, 0))[0]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
         100
     )
@@ -104,7 +100,31 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
             )
         )
     )
-    assert (
-        callbacks.zocalo_handler.xray_centre_motor_position
-        == expected_centre_motor_coords
+    assert found_centre == expected_centre_motor_coords
+
+
+def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used():
+    params = FullParameters()
+    callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
+    callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
+        NoDiffractionFound()
     )
+
+    fallback_position = Point3D(1, 2, 3)
+
+    found_centre = callbacks.zocalo_handler.wait_for_results(fallback_position)[0]
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
+        100
+    )
+    assert found_centre == fallback_position
+
+
+def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception():
+    params = FullParameters()
+    callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
+
+    with pytest.raises(ISPyBDepositionNotMade):
+        callbacks.zocalo_handler.start(td.test_do_fgs_start_document)

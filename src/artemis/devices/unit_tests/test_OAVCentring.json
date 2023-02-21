@@ -22,7 +22,6 @@
 		"filename": "/dls_sw/prod/R3.14.12.7/support/adPython/2-1-11/adPythonApp/scripts/adPythonMxSampleDetect.py"
 	},
 	"loopCentring": {
-		"direction": 1,
 		"zoom": 5.0,
 		"preprocess": 8,
 		"preProcessKSize": 21,
@@ -38,6 +37,7 @@
 		"preProcessKSize": 31,
 		"CannyEdgeUpperThreshold": 30.0,
 		"CannyEdgeLowerThreshold": 5.0,
+		"close_ksize": 3,
 		"filename": "/dls_sw/prod/R3.14.12.7/support/adPython/2-1-11/adPythonApp/scripts/adPythonMxSampleDetect.py",
 		"brightness": 80
 	},
@@ -59,11 +59,11 @@
 		"brightness": 80
 	},
 	"SmargonOffsets2": {
-		"zoom": 10.0,
+		"zoom": 5.0,
 		"preprocess": 8,
 		"preProcessKSize": 11,
 		"CannyEdgeUpperThreshold": 50.0,
 		"CannyEdgeLowerThreshold": 5.0,
-		"brightness": 100
+		"brightness": 90
 	}
 }

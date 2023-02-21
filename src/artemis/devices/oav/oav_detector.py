@@ -42,7 +42,24 @@ class ZoomController(Device):
     # Level is the arbitrary level  that corresponds to a zoom percentage.
     # When a zoom is fed in from GDA this is the level it is refering to.
     level: EpicsSignal = Component(EpicsSignal, "MP:SELECT")
-    allowed_zooms = ["1.0x", "2.5x", "5.0x", "7.5x", "10.0x"]
+
+    zrst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.ZRST")
+    onst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.ONST")
+    twst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.TWST")
+    thst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.THST")
+    frst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.FRST")
+    fvst: EpicsSignal = Component(EpicsSignal, "MP:SELECT.FVST")
+
+    @property
+    def allowed_zoom_levels(self):
+        return [
+            self.zrst.get(),
+            self.onst.get(),
+            self.twst.get(),
+            self.thst.get(),
+            self.frst.get(),
+            self.fvst.get(),
+        ]
 
 
 class EdgeOutputArrayImageType(IntEnum):
@@ -86,6 +103,8 @@ class MXSC(Device):
     output_array: EpicsSignal = Component(EpicsSignal, "OutputArray")
     draw_tip: EpicsSignal = Component(EpicsSignal, "DrawTip")
     draw_edges: EpicsSignal = Component(EpicsSignal, "DrawEdges")
+    waveform_size_x: EpicsSignal = Component(EpicsSignal, "ArraySize1_RBV")
+    waveform_size_y: EpicsSignal = Component(EpicsSignal, "ArraySize2_RBV")
 
 
 class OAV(AreaDetector):
