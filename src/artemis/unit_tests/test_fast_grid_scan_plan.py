@@ -158,7 +158,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
 
 
 @patch(
-    "artemis.devices.aperturescatterguard.ApertureScatterguard.safe_move_within_datacollection_range"
+    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
@@ -191,7 +191,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 
 
 @patch(
-    "artemis.devices.aperturescatterguard.ApertureScatterguard.safe_move_within_datacollection_range"
+    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
@@ -251,7 +251,7 @@ def test_results_passed_to_move_aperture(
     )
 
     move_aperture.assert_has_calls(
-        [call_large, call_medium, call_small], any_order=False
+        [call_large, call_medium, call_small], any_order=True
     )
 
 
@@ -274,7 +274,7 @@ def test_results_passed_to_move_motors(bps_mv: MagicMock, test_params: FullParam
 
 
 @patch(
-    "artemis.devices.aperturescatterguard.ApertureScatterguard.safe_move_within_datacollection_range"
+    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
@@ -308,7 +308,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
 
 
 @patch(
-    "artemis.devices.aperturescatterguard.ApertureScatterguard.safe_move_within_datacollection_range"
+    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")

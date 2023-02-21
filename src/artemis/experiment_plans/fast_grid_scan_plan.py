@@ -81,7 +81,7 @@ def set_aperture_for_bbox_size(
     artemis.log.LOGGER.info(
         f"Setting aperture to {aperture_size_positions} based on bounding box size {bbox_size}."
     )
-    aperture_device.safe_move_within_datacollection_range(*aperture_size_positions)
+    yield from bps.abs_set(aperture_device, aperture_size_positions)
 
 
 def read_hardware_for_ispyb(
@@ -175,9 +175,9 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    @bpp.stage_decorator([eiger])
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
+    @bpp.stage_decorator([eiger])
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
@@ -225,7 +225,9 @@ def run_gridscan_and_move(
 
     if bbox_size is not None:
         with TRACER.start_span("change_aperture"):
-            set_aperture_for_bbox_size(fgs_composite.aperture_scatterguard, bbox_size)
+            yield from set_aperture_for_bbox_size(
+                fgs_composite.aperture_scatterguard, bbox_size
+            )
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
