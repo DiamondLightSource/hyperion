@@ -283,14 +283,14 @@ def keep_inside_bounds(value: float, lower_bound: float, upper_bound: float) -> 
 def find_widest_point_and_orthogonal_point(
     widths: np.ndarray,
     omega_angles: np.ndarray,
-) -> Tuple[int, np.ndarray]:
+) -> Tuple[int, int]:
     """
     Find the index of the rotation where the pin was widest in the camera, and the indices of rotations orthogonal to it.
 
     Args: Lists of values taken, the i-th value of the list is the i-th point sampled:
             widths (numpy.ndarray): Array where the i-th element corresponds to the pin width (in pixels) of the midpoint at rotation i.
             omega_angles (numpy.ndarray): Array where the i-th element corresponds to the omega angle at rotation i.
-    Returns: The index of the sample which had the widest pin as an int, and the indices orthogonal to that as a numpy array.
+    Returns: The index of the sample which had the widest pin as an int, and the index orthogonal to that
     """
 
     # Find omega for face-on position: where bulge was widest.
@@ -306,32 +306,34 @@ def find_widest_point_and_orthogonal_point(
 
 
 def get_orthogonal_index(
-    angle_array: np.ndarray, angle: int, lower_error_bound=85, upper_error_bound=95
-):
+    angle_array: np.ndarray, angle: float, error_bounds: float = 5
+) -> int:
     """
-    Takes a numpy array of angles, and an angle and returns the index of the
-    element most orthogonal to that angle.
+    Takes a numpy array of angles that encompasses 180 deg, and an angle from within
+    that 180 deg and returns the index of the element most orthogonal to that angle.
 
     Args:
         angle_array (np.ndarray): Numpy array of angles.
-        angle (int): The angle we want to find the index of angle_array corresponding to the
-            angle orthogonal to.
-        lower_error_bound (int): If the orthogonal angle found is below this bound then it
-            is deemed to inaccurate and an error is thrown.
-        upper_error_bound (int): If the orthogonal angle found is above this bound then it
-            is deemed to inaccurate and an error is thrown.
+        angle (float): The angle we want to be orthogonal to
+        error_bounds (float): The absolute error allowed on the angle
+
+    Returns:
+        The index of the orthogonal angle
     """
+    smallest_angle = angle_array.min()
 
-    orthogonal_angle = (angle + 90) % 180
-    angle_array_mod = angle_array % 180
-    angle_distance_to_orthogonal = abs(angle_array_mod - orthogonal_angle)
-    arg = angle_distance_to_orthogonal.argmin()
+    # Normalise values to be positive
+    normalised_array = angle_array - smallest_angle
+    normalised_angle = angle - smallest_angle
 
-    if not (
-        lower_error_bound <= abs((angle_array[arg] - angle) % 180) <= upper_error_bound
-    ):
+    orthogonal_angle = (normalised_angle + 90) % 180
+
+    angle_distance_to_orthogonal: np.ndarray = abs(normalised_array - orthogonal_angle)
+    index_of_orthogonal = int(angle_distance_to_orthogonal.argmin())
+
+    if not (abs((angle_distance_to_orthogonal[index_of_orthogonal])) <= error_bounds):
         raise OAVError_MissingRotations(
-            f"Orthogonal angle found {angle_array[arg]} not sufficiently orthogonal to angle {angle}"
+            f"Orthogonal angle found {angle_array[index_of_orthogonal]} not sufficiently orthogonal to angle {angle}"
         )
 
-    return arg
+    return index_of_orthogonal

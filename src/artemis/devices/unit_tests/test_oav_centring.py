@@ -5,6 +5,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
 
+from artemis.device_setup_plans.oav_centring_plan import keep_inside_bounds
 from artemis.devices.backlight import Backlight
 from artemis.devices.I03Smargon import I03Smargon
 from artemis.devices.oav.oav_calculations import (
@@ -80,7 +81,7 @@ def test_can_make_fake_testing_devices_and_use_run_engine(
 
 @pytest.mark.parametrize(
     "parameter_name,expected_value",
-    [("canny_edge_lower_threshold", 5.0), ("close_ksize", 11), ("direction", 1)],
+    [("canny_edge_lower_threshold", 5.0), ("close_ksize", 11), ("direction", 0)],
 )
 def test_oav_parameters_load_parameters_from_json(
     parameter_name, expected_value, mock_parameters: OAVParameters
@@ -150,7 +151,7 @@ def test_find_midpoint_non_symmetric_pin():
 
 @pytest.mark.parametrize(
     "zoom_level,expected_xCentre,expected_yCentre",
-    [(1.0, 368, 365), (5.0, 383, 353), (10.0, 381, 335)],
+    [(1.0, 477, 359), (5.0, 517, 350), (10.0, 613, 344)],
 )
 def test_extract_beam_position_different_beam_postitions(
     zoom_level,
@@ -197,17 +198,15 @@ def test_load_microns_per_pixel_entry_not_found(mock_parameters: OAVParameters):
     [(0.5, -10, 10, 0.5), (-100, -10, 10, -10), (10000, -213, 50, 50)],
 )
 def test_keep_inside_bounds(value, lower_bound, upper_bound, expected_value):
-    from artemis.devices.oav.oav_centring_plan import keep_inside_bounds
-
     assert keep_inside_bounds(value, lower_bound, upper_bound) == expected_value
 
 
 @pytest.mark.parametrize(
     "h, v, expected_x, expected_y",
     [
-        (54, 100, 383 - 54, 353 - 100),
-        (0, 0, 383, 353),
-        (500, 500, 383 - 500, 353 - 500),
+        (54, 100, 517 - 54, 350 - 100),
+        (0, 0, 517, 350),
+        (500, 500, 517 - 500, 350 - 500),
     ],
 )
 def test_calculate_beam_distance(
@@ -317,10 +316,10 @@ def test_extract_pixel_centre_values_from_rotation_data():
 @pytest.mark.parametrize(
     "angle_array,angle,expected_index",
     [
-        (np.array([0, 30, 60, 90, 140, 180, 210, 240, 250, 255]), 50, 4),
-        (np.array([0, 30, 60, 90, 145, 180, 210, 240, 250, 255]), 50, 4),
-        (np.array([-40, 30, 60, 90, 145, 180, 210, 240, 250, 255]), 50, 0),
-        (np.array([-150, -120, -90, -60, -30, 0, 30]), 30, 3),
+        (np.array([0, 30, 60, 75, 110, 140, 160, 179]), 50, 5),
+        (np.array([0, 15, 10, 65, 89, 135, 174]), 0, 4),
+        (np.array([-40, -80, -52, 10, -3, -5, 60]), 85, 5),
+        (np.array([-150, -120, -90, -60, -30, 0]), 30, 3),
         (
             np.array(
                 [6.0013e01, 3.0010e01, 7.0000e-03, -3.0002e01, -6.0009e01, -9.0016e01]
