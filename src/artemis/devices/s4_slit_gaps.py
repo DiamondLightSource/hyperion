@@ -1,7 +1,8 @@
-from ophyd import Component, Device, EpicsSignal
+from ophyd import Component, Device, EpicsMotor
 
 
 class S4SlitGaps(Device):
+    """Note that the S$ slits have a different PV fromat to other beamline slits"""
 
-    s4xgap: EpicsSignal = Component(EpicsSignal, "S4XGAP")
-    s4ygap: EpicsSignal = Component(EpicsSignal, "S4YGAP")
+    xgap: EpicsMotor = Component(EpicsMotor, "XGAP")
+    ygap: EpicsMotor = Component(EpicsMotor, "YGAP")

@@ -97,8 +97,8 @@ def read_hardware_for_ispyb(
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
-    yield from bps.read(s4_slit_gaps.s4xgap)
-    yield from bps.read(s4_slit_gaps.s4ygap)
+    yield from bps.read(s4_slit_gaps.xgap)
+    yield from bps.read(s4_slit_gaps.ygap)
     yield from bps.save()
 
 
