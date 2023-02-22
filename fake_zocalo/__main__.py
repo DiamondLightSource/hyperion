@@ -13,9 +13,14 @@ from pika.spec import BasicProperties
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
+from artemis.external_interaction.system_tests.conftest import (
+    TEST_RESULT_LARGE,
+    TEST_RESULT_SMALL,
+)
 
 NO_DIFFRACTION_PREFIX = "NO_DIFF"
+
+MULTIPLE_CRYSTAL_PREFIX = "MULTI_X"
 
 DEV_ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
@@ -59,6 +64,22 @@ def main():
     single_crystal_result = {
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
         "payload": TEST_RESULT_LARGE,
+        "recipe": {
+            "start": [[1, [TEST_RESULT_LARGE]]],
+            "1": {
+                "service": "Send XRC results to GDA",
+                "queue": "xrc.i03",
+                "exchange": "results",
+                "parameters": {"dcid": "2", "dcgid": "4"},
+            },
+        },
+        "recipe-path": [],
+        "recipe-pointer": 1,
+    }
+
+    multi_crystal_result = {
+        "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
+        "payload": [TEST_RESULT_LARGE, TEST_RESULT_SMALL],
         "recipe": {
             "start": [[1, [TEST_RESULT_LARGE]]],
             "1": {
@@ -116,6 +137,8 @@ def main():
 
             if prefix == NO_DIFFRACTION_PREFIX:
                 result = no_diffraction_result
+            elif prefix == MULTIPLE_CRYSTAL_PREFIX:
+                result = multi_crystal_result
             else:
                 result = single_crystal_result
             result["recipe"]["1"]["parameters"]["dcid"] = str(dcid)
