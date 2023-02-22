@@ -1,3 +1,4 @@
+# See https://confluence.diamond.ac.uk/x/tJqQC for instructions if this needs a new token
 name: Add new issues to project
 on:
   issues:
@@ -5,7 +6,7 @@ on:
       - opened
 jobs:
   move_to_backlog:
-    uses: ./.github/workflows/get_project_data.yml
+    uses: ./.github/workflows/get_project_data_and_move_column.yml
     with:
       column_name: Backlog
       issue_id: ${{ github.event.issue.node_id }}
