@@ -95,7 +95,7 @@ class FGSZocaloCallback(CallbackBase):
                     raw_results, key=lambda d: d["total_count"], reverse=True
                 )
                 LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
-                multi_crystal_msg = f"{len(raw_results)} crystals found "
+                multi_crystal_msg = f"Found multiple crystals: {len(raw_results)}."
                 for n, res in enumerate(raw_results):
                     size = list(
                         map(

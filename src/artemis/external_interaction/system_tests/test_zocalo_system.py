@@ -76,3 +76,13 @@ def test_zocalo_adds_nonzero_comment_time(
     assert comment[-29:-6] == "Zocalo processing took "
     assert float(comment[-6:-2]) > 0
     assert float(comment[-6:-2]) < 90
+
+
+@pytest.mark.s03
+def test_given_a_result_with_multiple_crystals_ispyb_comment_updated(
+    run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
+):
+    zc, _ = run_zocalo_with_dev_ispyb("MULTI_X")
+
+    comment = fetch_comment(zc.ispyb.ispyb_ids[0][0])
+    assert "Found multiple crystals" in comment
