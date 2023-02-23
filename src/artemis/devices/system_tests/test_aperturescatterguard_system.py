@@ -130,8 +130,6 @@ def test_aperturescatterguard_moves_in_correct_order(
     RE.subscribe(cb)
 
     ap_sg.wait_for_connection()
-    ap_sg.aperture.y.set(0, wait=True)
-    ap_sg.scatterguard.y.set(0, wait=True)
     ap_sg.aperture.z.set(pos1[2], wait=True)
 
     def monitor_and_moves():
@@ -139,9 +137,7 @@ def test_aperturescatterguard_moves_in_correct_order(
         yield from bps.monitor(ap_sg.aperture.y.motor_done_move, name="ap_y")
         yield from bps.monitor(ap_sg.scatterguard.y.motor_done_move, name="sg_y")
         yield from bps.mv(ap_sg, pos1)
-        yield from bps.sleep(0.05)
         yield from bps.mv(ap_sg, pos2)
-        yield from bps.sleep(0.05)
         yield from bps.close_run()
 
     RE(monitor_and_moves())
