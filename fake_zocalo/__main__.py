@@ -79,7 +79,7 @@ def main():
 
     multi_crystal_result = {
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
-        "payload": [TEST_RESULT_LARGE, TEST_RESULT_SMALL],
+        "payload": [*TEST_RESULT_LARGE, *TEST_RESULT_SMALL],
         "recipe": {
             "start": [[1, [TEST_RESULT_LARGE]]],
             "1": {
