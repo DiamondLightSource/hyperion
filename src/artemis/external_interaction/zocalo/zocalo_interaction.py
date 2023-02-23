@@ -1,6 +1,7 @@
 import getpass
 import queue
 import socket
+from datetime import datetime, timedelta
 from time import sleep
 from typing import Optional
 
@@ -32,7 +33,6 @@ class ZocaloInteractor:
 
         transport = lookup("PikaTransport")()
         transport.connect()
-
         return transport
 
     def _send_to_zocalo(self, parameters: dict):
@@ -81,7 +81,7 @@ class ZocaloInteractor:
         )
 
     def wait_for_result(
-        self, data_collection_group_id: int, timeout: int = TIMEOUT
+        self, data_collection_group_id: int, timeout: int = None
     ) -> Point3D:
         """Block until a result is received from Zocalo.
         Args:
@@ -107,6 +107,9 @@ class ZocaloInteractor:
                 ...
             ]
         """
+        # Set timeout default like this so that we can modify TIMEOUT during tests
+        if timeout is None:
+            timeout = TIMEOUT
         transport = self._get_zocalo_connection()
         result_received: queue.Queue = queue.Queue()
         exception: Optional[Exception] = None
@@ -143,8 +146,8 @@ class ZocaloInteractor:
         )
 
         try:
-            time_waited = 0
-            while time_waited < timeout:
+            start_time = datetime.now()
+            while datetime.now() - start_time < timedelta(seconds=timeout):
                 if result_received.empty():
                     if exception is not None:
                         raise exception

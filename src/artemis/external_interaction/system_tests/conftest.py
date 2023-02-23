@@ -1,3 +1,4 @@
+import os
 from functools import partial
 from typing import Callable
 
@@ -7,6 +8,7 @@ from ispyb.sqlalchemy import DataCollection
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import artemis.external_interaction.zocalo.zocalo_interaction
 from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
@@ -89,3 +91,9 @@ def dummy_ispyb(dummy_params) -> StoreInIspyb2D:
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> StoreInIspyb3D:
     return StoreInIspyb3D(ISPYB_CONFIG, dummy_params)
+
+
+@pytest.fixture
+def zocalo_env():
+    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
+    artemis.external_interaction.zocalo.zocalo_interaction.TIMEOUT = 5
