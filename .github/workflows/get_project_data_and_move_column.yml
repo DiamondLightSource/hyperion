@@ -1,3 +1,4 @@
+# See https://confluence.diamond.ac.uk/x/tJqQC for instructions if this needs a new token
 name: Reusable workflow for moving issues on project boards
 on:
   workflow_call:
