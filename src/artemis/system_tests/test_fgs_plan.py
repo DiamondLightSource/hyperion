@@ -1,4 +1,3 @@
-import os
 import uuid
 from typing import Callable
 from unittest.mock import MagicMock, patch
@@ -18,7 +17,10 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     run_gridscan,
 )
 from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.external_interaction.system_tests.conftest import fetch_comment  # noqa
+from artemis.external_interaction.system_tests.conftest import (  # noqa
+    fetch_comment,
+    zocalo_env,
+)
 from artemis.external_interaction.system_tests.test_ispyb_dev_connection import (
     ISPYB_CONFIG,
 )
@@ -30,11 +32,6 @@ from artemis.parameters import (
     FullParameters,
     GDABeamlineParameters,
 )
-
-
-@pytest.fixture
-def zocalo_env():
-    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
 
 
 @pytest.fixture()
@@ -128,7 +125,6 @@ def test_read_hardware_for_ispyb(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-
     undulator = fgs_composite.undulator
     synchrotron = fgs_composite.synchrotron
     slit_gaps = fgs_composite.slit_gaps
