@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
@@ -11,11 +9,6 @@ from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from artemis.parameters import FullParameters, Point3D
-
-
-@pytest.fixture
-def zocalo_env():
-    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
 
 
 @pytest.mark.s03

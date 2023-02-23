@@ -1,3 +1,4 @@
+# See https://confluence.diamond.ac.uk/x/tJqQC for instructions if this needs a new token
 name: Add issues with open PRs to Review
 on:
   pull_request:
@@ -11,7 +12,7 @@ jobs:
   move_to_review_if_not_in_draft:
     needs: get_associated_issue
     if: github.event.pull_request.draft == false
-    uses: ./.github/workflows/get_project_data.yml
+    uses: ./.github/workflows/get_project_data_and_move_column.yml
     with:
       column_name: Review
       issue_id: ${{ needs.get_associated_issue.outputs.issue_from_pr }}
