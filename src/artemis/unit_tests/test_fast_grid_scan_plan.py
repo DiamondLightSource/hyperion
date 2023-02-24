@@ -3,7 +3,6 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
-from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
 
@@ -16,9 +15,6 @@ from artemis.devices.det_dim_constants import (
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan
 from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.devices.slit_gaps import SlitGaps
-from artemis.devices.synchrotron import Synchrotron
-from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
@@ -28,6 +24,7 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
 )
 from artemis.external_interaction.callbacks import (
     FGSCallbackCollection,
+    FGSISPyBHandlerCallback,
     VerbosePlanExecutionLoggingCallback,
 )
 from artemis.external_interaction.system_tests.conftest import (
@@ -112,44 +109,38 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices():
     params = FullParameters()
 
     undulator_test_value = 1.234
-    FakeUndulator = make_fake_device(Undulator)
-    undulator: Undulator = FakeUndulator(name="undulator")
-    undulator.gap.user_readback.sim_put(undulator_test_value)
+    FakeFGSComposite = make_fake_device(FGSComposite)
+
+    fgs_composite: FGSComposite = FakeFGSComposite("", name="fgs")
+    fgs_composite.undulator.gap.user_readback.sim_put(undulator_test_value)
 
     synchrotron_test_value = "test"
-    FakeSynchrotron = make_fake_device(Synchrotron)
-    synchrotron: Synchrotron = FakeSynchrotron(name="synchrotron")
-    synchrotron.machine_status.synchrotron_mode.sim_put(synchrotron_test_value)
+    fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(
+        synchrotron_test_value
+    )
 
     xgap_test_value = 0.1234
     ygap_test_value = 0.2345
-    FakeSlitGaps = make_fake_device(SlitGaps)
-    slit_gaps: SlitGaps = FakeSlitGaps(name="slit_gaps")
-    slit_gaps.xgap.sim_put(xgap_test_value)
-    slit_gaps.ygap.sim_put(ygap_test_value)
+    fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
+    fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)
 
-    class TestCB(CallbackBase):
-        params = FullParameters()
-
-        def event(self, doc: dict):
-            params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
-            params.ispyb_params.synchrotron_mode = doc["data"][
-                "synchrotron_machine_status_synchrotron_mode"
-            ]
-            params.ispyb_params.slit_gap_size_x = doc["data"]["slit_gaps_xgap"]
-            params.ispyb_params.slit_gap_size_y = doc["data"]["slit_gaps_ygap"]
-
-    testcb = TestCB()
-    testcb.params = params
-    RE.subscribe(testcb)
+    test_ispyb_callback = FGSISPyBHandlerCallback(params)
+    test_ispyb_callback.ispyb = MagicMock()
+    RE.subscribe(test_ispyb_callback)
 
     def standalone_read_hardware_for_ispyb(und, syn, slits):
         yield from bps.open_run()
         yield from read_hardware_for_ispyb(und, syn, slits)
         yield from bps.close_run()
 
-    RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
-    params = testcb.params
+    RE(
+        standalone_read_hardware_for_ispyb(
+            fgs_composite.undulator,
+            fgs_composite.synchrotron,
+            fgs_composite.s4_slit_gaps,
+        )
+    )
+    params = test_ispyb_callback.params
 
     assert params.ispyb_params.undulator_gap == undulator_test_value
     assert params.ispyb_params.synchrotron_mode == synchrotron_test_value

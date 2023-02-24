@@ -127,7 +127,7 @@ def test_read_hardware_for_ispyb(
 ):
     undulator = fgs_composite.undulator
     synchrotron = fgs_composite.synchrotron
-    slit_gaps = fgs_composite.slit_gaps
+    slit_gaps = fgs_composite.s4_slit_gaps
 
     @bpp.run_decorator()
     def read_run(u, s, g):

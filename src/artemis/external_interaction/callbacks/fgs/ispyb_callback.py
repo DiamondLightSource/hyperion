@@ -69,8 +69,12 @@ class FGSISPyBHandlerCallback(CallbackBase):
             self.params.ispyb_params.synchrotron_mode = doc["data"][
                 "fgs_synchrotron_machine_status_synchrotron_mode"
             ]
-            self.params.ispyb_params.slit_gap_size_x = doc["data"]["fgs_slit_gaps_xgap"]
-            self.params.ispyb_params.slit_gap_size_y = doc["data"]["fgs_slit_gaps_ygap"]
+            self.params.ispyb_params.slit_gap_size_x = doc["data"][
+                "fgs_s4_slit_gaps_xgap"
+            ]
+            self.params.ispyb_params.slit_gap_size_y = doc["data"][
+                "fgs_s4_slit_gaps_ygap"
+            ]
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
