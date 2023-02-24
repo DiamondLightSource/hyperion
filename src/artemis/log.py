@@ -36,6 +36,8 @@ dc_group_id_filter = DCGIDFilter()
 
 
 def set_dcgid_tag(dcgid):
+    """Set the datacollection group id as a tag on all subsequent log messages.
+    Setting to None will remove the tag."""
     dc_group_id_filter.dc_group_id = dcgid
 
 

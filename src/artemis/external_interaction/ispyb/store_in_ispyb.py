@@ -8,7 +8,7 @@ from sqlalchemy.connectors import Connector
 
 import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
-from artemis.log import LOGGER, set_dcgid_tag
+from artemis.log import LOGGER
 from artemis.parameters import FullParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point2D
@@ -18,7 +18,6 @@ EIGER_FILE_SUFFIX = "h5"
 
 
 class StoreInIspyb(ABC):
-
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
     def __init__(self, ispyb_config, parameters=None):
@@ -49,7 +48,6 @@ class StoreInIspyb(ABC):
             self.grid_ids,
             self.datacollection_group_id,
         ) = self.store_grid_scan(self.full_params)
-        set_dcgid_tag(self.datacollection_group_id)
         return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
 
     def end_deposition(self, success: str, reason: str):
@@ -62,7 +60,6 @@ class StoreInIspyb(ABC):
         LOGGER.info(
             f"End ispyb deposition with status '{success}' and reason '{reason}'."
         )
-        set_dcgid_tag(None)
         if success == "fail":
             run_status = "DataCollection Unsuccessful"
         elif success == "abort":
@@ -76,7 +73,6 @@ class StoreInIspyb(ABC):
             )
 
     def store_grid_scan(self, full_params: FullParameters):
-
         self.full_params = full_params
         self.ispyb_params = full_params.ispyb_params
         self.detector_params = full_params.detector_params
@@ -116,7 +112,6 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> None:
-
         if reason is not None and reason != "":
             self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
 
