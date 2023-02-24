@@ -8,8 +8,7 @@ https://nsls-ii.github.io/bluesky/
 Development Installation
 =================
 
-1. Clone this project 
-1. Run `dls_dev_env.sh` (This assumes you're on a DLS machine, if you are not you sould be able to just run a subset of this script)
+Run `dls_dev_env.sh` (This assumes you're on a DLS machine, if you are not you sould be able to just run a subset of this script)
 
 Controlling the Gridscan Externally (e.g. from GDA)
 =====================
