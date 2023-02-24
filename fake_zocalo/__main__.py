@@ -81,7 +81,7 @@ def main():
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
         "payload": [*TEST_RESULT_LARGE, *TEST_RESULT_SMALL],
         "recipe": {
-            "start": [[1, [TEST_RESULT_LARGE]]],
+            "start": [[1, [*TEST_RESULT_LARGE, *TEST_RESULT_SMALL]]],
             "1": {
                 "service": "Send XRC results to GDA",
                 "queue": "xrc.i03",
