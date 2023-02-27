@@ -44,7 +44,7 @@ TEST_RESULT_SMALL = [
         "max_voxel": [1, 2, 3],
         "max_count": 105062,
         "n_voxels": 35,
-        "total_count": 2387574,
+        "total_count": 1387574,
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
     }
 ]

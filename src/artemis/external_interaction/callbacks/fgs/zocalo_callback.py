@@ -92,6 +92,30 @@ class FGSZocaloCallback(CallbackBase):
                 datacollection_group_id
             )
 
+            # Sort from strongest to weakest in case of multiple crystals
+            raw_results = sorted(
+                raw_results, key=lambda d: d["total_count"], reverse=True
+            )
+            LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
+            crystal_summary = ""
+
+            bboxes = []
+            for n, res in enumerate(raw_results):
+                bboxes.append(
+                    list(
+                        map(
+                            operator.sub, res["bounding_box"][1], res["bounding_box"][0]
+                        )
+                    )
+                )
+                crystal_summary += (
+                    f"Crystal {n+1}: "
+                    f"Strength {res['total_count']} ;"
+                    f"Position (x,y,z) {res['centre_of_mass']} ;"
+                    f"Size (x,y,z) {bboxes[n]} ; \r"
+                )
+            self.ispyb.append_to_comment(crystal_summary)
+
             raw_centre = Point3D(*(raw_results[0]["centre_of_mass"]))
 
             # _wait_for_result returns the centre of the grid box, but we want the corner
@@ -100,13 +124,7 @@ class FGSZocaloCallback(CallbackBase):
             )
             xray_centre = self.grid_position_to_motor_position(results)
 
-            bbox_size: list[int] | None = list(
-                map(
-                    operator.sub,
-                    raw_results[0]["bounding_box"][1],
-                    raw_results[0]["bounding_box"][0],
-                )
-            )
+            bbox_size: list[int] | None = bboxes[0]
 
             LOGGER.info(
                 f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"
