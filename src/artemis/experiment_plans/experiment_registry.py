@@ -19,7 +19,7 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
         "param_type": GridScanParams,
     },
     "rotation_scan": {
-        "setup": not_implemented,
+        "setup": lambda: None,
         "run": not_implemented,
         "param_type": RotationScanParams,
     },
