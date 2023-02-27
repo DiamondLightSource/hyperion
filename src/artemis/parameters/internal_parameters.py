@@ -97,9 +97,9 @@ class InternalParameters:
         ](**external_params.experiment_params.to_dict())
 
     def __repr__(self):
-        r = "Artemis internal parameters:\n"
+        r = "[Artemis internal parameters]\n"
         r += repr(self.artemis_params)
-        r += repr(f"experiment_params: {self.experiment_params}")
+        r += f"experiment_params: {self.experiment_params}"
         return r
 
     def __eq__(self, other) -> bool:
