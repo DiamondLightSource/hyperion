@@ -163,7 +163,7 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
         100
     )
     expected_centre_motor_coords = (
-        params.grid_scan_params.grid_position_to_motor_position(
+        params.experiment_params.grid_position_to_motor_position(
             Point3D(
                 expected_centre_grid_coords.x - 0.5,
                 expected_centre_grid_coords.y - 0.5,
