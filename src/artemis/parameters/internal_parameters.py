@@ -5,6 +5,7 @@ from artemis.external_interaction.ispyb.ispyb_dataclass import (
     ISPYB_PARAM_DEFAULTS,
     IspybParams,
 )
+from artemis.log import LOGGER
 from artemis.parameters.constants import (
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
@@ -76,11 +77,13 @@ class InternalParameters:
         self.artemis_params.ispyb_params = IspybParams(
             **self.artemis_params.ispyb_params
         )
+        LOGGER.info(f"Upper left before {self.artemis_params.ispyb_params.upper_left} ")
         self.artemis_params.ispyb_params.upper_left = Point3D(
-            *self.artemis_params.ispyb_params.upper_left
+            **self.artemis_params.ispyb_params.upper_left
         )
+        LOGGER.info(f"Upper left after {self.artemis_params.ispyb_params.upper_left}")
         self.artemis_params.ispyb_params.position = Point3D(
-            *self.artemis_params.ispyb_params.position
+            **self.artemis_params.ispyb_params.position
         )
         self.experiment_params = registry.EXPERIMENT_TYPE_DICT[
             ArtemisParameters.experiment_type
