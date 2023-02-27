@@ -132,7 +132,7 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
 
 
 def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_bbox_from_first():
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
