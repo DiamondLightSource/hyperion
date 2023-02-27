@@ -17,7 +17,9 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
 )
-from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.external_interaction.system_tests.conftest import (  # noqa
     fetch_comment,
     zocalo_env,
@@ -25,12 +27,12 @@ from artemis.external_interaction.system_tests.conftest import (  # noqa
 from artemis.external_interaction.system_tests.test_ispyb_dev_connection import (
     ISPYB_CONFIG,
 )
+from artemis.parameters.beamline_parameters import GDABeamlineParameters
 from artemis.parameters.constants import (
     I03_BEAMLINE_PARAMETER_PATH,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
 )
-from artemis.parameters.external_parameters import GDABeamlineParameters
 from artemis.parameters.internal_parameters import InternalParameters
 
 

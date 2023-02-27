@@ -21,23 +21,23 @@ from artemis.devices.s4_slit_gaps import S4SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
-from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.parameters.beamline_parameters import (
+    GDABeamlineParameters,
+    get_beamline_prefixes,
+)
 from artemis.parameters.constants import (
     I03_BEAMLINE_PARAMETER_PATH,
     ISPYB_PLAN_NAME,
     SIM_BEAMLINE,
 )
-from artemis.parameters.external_parameters import (
-    GDABeamlineParameters,
-    get_beamline_prefixes,
-)
-from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
 
 if TYPE_CHECKING:
     from artemis.devices.fast_grid_scan_composite import FGSComposite
-    from artemis.external_interaction.callbacks import FGSCallbackCollection
+    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+        FGSCallbackCollection,
+    )
     from artemis.parameters.internal_parameters import InternalParameters
 
 fast_grid_scan_composite: FGSComposite = None
