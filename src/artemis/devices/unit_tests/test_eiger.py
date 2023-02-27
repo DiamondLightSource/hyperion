@@ -120,8 +120,13 @@ def test_check_detector_variables(
 def test_when_set_odin_pvs_called_then_full_filename_written(fake_eiger: EigerDetector):
     expected_full_filename = f"{TEST_PREFIX}_{TEST_RUN_NUMBER}"
 
-    fake_eiger.set_odin_pvs()
+    status = fake_eiger.set_odin_pvs()
 
+    # Logic for propagating filename is not in fake eiger
+    fake_eiger.odin.meta.file_name.sim_put(expected_full_filename)
+    fake_eiger.odin.file_writer.id.sim_put(expected_full_filename)
+
+    status.wait()
     assert fake_eiger.odin.file_writer.file_name.get() == expected_full_filename
 
 

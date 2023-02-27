@@ -1,6 +1,7 @@
 import getpass
 import queue
 import socket
+from datetime import datetime, timedelta
 from time import sleep
 from typing import Optional
 
@@ -32,7 +33,6 @@ class ZocaloInteractor:
 
         transport = lookup("PikaTransport")()
         transport.connect()
-
         return transport
 
     def _send_to_zocalo(self, parameters: dict):
@@ -81,7 +81,7 @@ class ZocaloInteractor:
         )
 
     def wait_for_result(
-        self, data_collection_group_id: int, timeout: int = TIMEOUT
+        self, data_collection_group_id: int, timeout: int = None
     ) -> Point3D:
         """Block until a result is received from Zocalo.
         Args:
@@ -90,9 +90,26 @@ class ZocaloInteractor:
 
             timeout (float): The time in seconds to wait for the result to be received.
         Returns:
-            Returns the centre of the grid box with the strongest diffraction, i.e.,
-            which contains the centre of the crystal and which we want to move to.
+            Returns the message from zocalo, as a list of dicts describing each crystal
+            which zocalo found:
+            [
+                {
+                    "centre_of_mass": [1, 2, 3],
+                    "max_voxel": [2, 4, 5],
+                    "max_count": 105062,
+                    "n_voxels": 35,
+                    "total_count": 2387574,
+                    "bounding_box": [[1, 2, 3], [3, 4, 4]],
+                },
+                {
+                    result 2
+                },
+                ...
+            ]
         """
+        # Set timeout default like this so that we can modify TIMEOUT during tests
+        if timeout is None:
+            timeout = TIMEOUT
         transport = self._get_zocalo_connection()
         result_received: queue.Queue = queue.Queue()
         exception: Optional[Exception] = None
@@ -109,7 +126,7 @@ class ZocaloInteractor:
                 if received_group_id == str(data_collection_group_id):
                     if len(message) == 0:
                         raise NoDiffractionFound()
-                    result_received.put(Point3D(*message[0]["centre_of_mass"]))
+                    result_received.put(message)
                 else:
                     artemis.log.LOGGER.warning(
                         f"Warning: results for {received_group_id} received but expected \
@@ -129,8 +146,8 @@ class ZocaloInteractor:
         )
 
         try:
-            time_waited = 0
-            while time_waited < timeout:
+            start_time = datetime.now()
+            while datetime.now() - start_time < timedelta(seconds=timeout):
                 if result_received.empty():
                     if exception is not None:
                         raise exception

@@ -7,10 +7,11 @@ from bluesky.callbacks import CallbackBase
 
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.ispyb.store_in_ispyb import (
+    StoreInIspyb,
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
-from artemis.log import LOGGER
+from artemis.log import LOGGER, set_dcgid_tag
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
 from artemis.parameters.internal_parameters import InternalParameters
 
@@ -41,7 +42,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
                 "Using dev ISPyB database. If you want to use the real database, please"
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
-        self.ispyb = (
+        self.ispyb: StoreInIspyb = (
             StoreInIspyb3D(ispyb_config, self.params)
             if self.params.experiment_params.is_3d_grid_scan
             else StoreInIspyb2D(ispyb_config, self.params)
@@ -75,14 +76,15 @@ class FGSISPyBHandlerCallback(CallbackBase):
                 "fgs_synchrotron_machine_status_synchrotron_mode"
             ]
             self.params.artemis_params.ispyb_params.slit_gap_size_x = doc["data"][
-                "fgs_slit_gaps_xgap"
+                "fgs_s4_slit_gaps_xgap"
             ]
             self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
-                "fgs_slit_gaps_ygap"
+                "fgs_s4_slit_gaps_ygap"
             ]
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
+            set_dcgid_tag(self.ispyb_ids[2])
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
@@ -92,3 +94,4 @@ class FGSISPyBHandlerCallback(CallbackBase):
             if self.ispyb_ids == (None, None, None):
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             self.ispyb.end_deposition(exit_status, reason)
+            set_dcgid_tag(None)

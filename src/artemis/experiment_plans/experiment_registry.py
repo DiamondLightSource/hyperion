@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Callable, Dict, Union
 
 from artemis.devices.fast_grid_scan import GridScanParams

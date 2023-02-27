@@ -3,5 +3,5 @@ from ophyd import Device, EpicsMotor
 
 
 class Scatterguard(Device):
-    x: EpicsMotor = Cpt(EpicsMotor, "-MO-SCAT-01:X")
-    y: EpicsMotor = Cpt(EpicsMotor, "-MO-SCAT-01:Y")
+    x: EpicsMotor = Cpt(EpicsMotor, "X")
+    y: EpicsMotor = Cpt(EpicsMotor, "Y")

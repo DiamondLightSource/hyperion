@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import operator
 import time
 from typing import Callable, Optional
 
@@ -91,13 +92,25 @@ class FGSZocaloCallback(CallbackBase):
                 datacollection_group_id
             )
 
+            raw_centre = Point3D(*(raw_results[0]["centre_of_mass"]))
+
             # _wait_for_result returns the centre of the grid box, but we want the corner
             results = Point3D(
-                raw_results.x - 0.5, raw_results.y - 0.5, raw_results.z - 0.5
+                raw_centre.x - 0.5, raw_centre.y - 0.5, raw_centre.z - 0.5
             )
             xray_centre = self.grid_position_to_motor_position(results)
 
-            LOGGER.info(f"Results recieved from zocalo: {xray_centre}")
+            bbox_size: list[int] | None = list(
+                map(
+                    operator.sub,
+                    raw_results[0]["bounding_box"][1],
+                    raw_results[0]["bounding_box"][0],
+                )
+            )
+
+            LOGGER.info(
+                f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"
+            )
 
         except NoDiffractionFound:
             # We move back to the centre if results aren't found
@@ -106,6 +119,7 @@ class FGSZocaloCallback(CallbackBase):
             )
             self.ispyb.append_to_comment("Found no diffraction.")
             xray_centre = fallback_xyz
+            bbox_size = None
             LOGGER.warn(log_msg)
 
         self.processing_time = time.time() - self.processing_start_time
@@ -113,4 +127,4 @@ class FGSZocaloCallback(CallbackBase):
             f"Zocalo processing took {self.processing_time:.2f} s"
         )
         LOGGER.info(f"Zocalo processing took {self.processing_time}s")
-        return xray_centre
+        return xray_centre, bbox_size

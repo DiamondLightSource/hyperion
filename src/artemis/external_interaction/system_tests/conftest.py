@@ -1,3 +1,4 @@
+import os
 from functools import partial
 from typing import Callable
 
@@ -8,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import artemis.parameters.internal_parameters as ip
+import artemis.external_interaction.zocalo.zocalo_interaction
 from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
@@ -15,6 +17,37 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
 from artemis.utils import Point3D
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
+
+TEST_RESULT_LARGE = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[2, 2, 2], [8, 8, 7]],
+    }
+]
+TEST_RESULT_MEDIUM = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [2, 4, 5],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+    }
+]
+TEST_RESULT_SMALL = [
+    {
+        "centre_of_mass": [1, 2, 3],
+        "max_voxel": [1, 2, 3],
+        "max_count": 105062,
+        "n_voxels": 35,
+        "total_count": 2387574,
+        "bounding_box": [[2, 2, 2], [3, 3, 3]],
+    }
+]
 
 
 def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
@@ -60,3 +93,9 @@ def dummy_ispyb(dummy_params) -> StoreInIspyb2D:
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> StoreInIspyb3D:
     return StoreInIspyb3D(ISPYB_CONFIG, dummy_params)
+
+
+@pytest.fixture
+def zocalo_env():
+    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
+    artemis.external_interaction.zocalo.zocalo_interaction.TIMEOUT = 5

@@ -13,14 +13,25 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
+from artemis.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from artemis.devices.eiger import EigerDetector
 from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
-from artemis.devices.slit_gaps import SlitGaps
+from artemis.devices.fast_grid_scan_composite import FGSComposite
+from artemis.devices.s4_slit_gaps import S4SlitGaps
 from artemis.devices.synchrotron import Synchrotron
 from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
-from artemis.parameters.beamline_prefixes import get_beamline_prefixes
-from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
+from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.parameters.constants import (
+    I03_BEAMLINE_PARAMETER_PATH,
+    ISPYB_PLAN_NAME,
+    SIM_BEAMLINE,
+)
+from artemis.parameters.external_parameters import (
+    GDABeamlineParameters,
+    get_beamline_prefixes,
+)
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
 
@@ -33,10 +44,59 @@ fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
 
 
+def get_beamline_parameters():
+    return GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
+
+
+def create_devices():
+    """Creates the devices required for the plan and connect to them"""
+    global fast_grid_scan_composite, eiger
+    prefixes = get_beamline_prefixes()
+    artemis.log.LOGGER.info(
+        f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
+    )
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        get_beamline_parameters()
+    )
+    fast_grid_scan_composite = FGSComposite(
+        insertion_prefix=prefixes.insertion_prefix,
+        name="fgs",
+        prefix=prefixes.beamline_prefix,
+        aperture_positions=aperture_positions,
+    )
+
+    # Note, eiger cannot be currently waited on, see #166
+    eiger = EigerDetector(
+        name="eiger",
+        prefix=f"{prefixes.beamline_prefix}-EA-EIGER-01:",
+    )
+
+    artemis.log.LOGGER.info("Connecting to EPICS devices...")
+    fast_grid_scan_composite.wait_for_connection()
+    artemis.log.LOGGER.info("Connected.")
+
+
+def set_aperture_for_bbox_size(
+    aperture_device: ApertureScatterguard,
+    bbox_size: list[int],
+):
+    # bbox_size is [x,y,z], for i03 we only care about x
+    if bbox_size[0] <= 1:
+        aperture_size_positions = aperture_device.aperture_positions.SMALL
+    elif 1 < bbox_size[0] < 3:
+        aperture_size_positions = aperture_device.aperture_positions.MEDIUM
+    else:
+        aperture_size_positions = aperture_device.aperture_positions.LARGE
+    artemis.log.LOGGER.info(
+        f"Setting aperture to {aperture_size_positions} based on bounding box size {bbox_size}."
+    )
+    yield from bps.abs_set(aperture_device, aperture_size_positions)
+
+
 def read_hardware_for_ispyb(
     undulator: Undulator,
     synchrotron: Synchrotron,
-    slit_gaps: SlitGaps,
+    s4_slit_gaps: S4SlitGaps,
 ):
     artemis.log.LOGGER.info(
         "Reading status of beamline parameters for ispyb deposition."
@@ -46,8 +106,8 @@ def read_hardware_for_ispyb(
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
-    yield from bps.read(slit_gaps.xgap)
-    yield from bps.read(slit_gaps.ygap)
+    yield from bps.read(s4_slit_gaps.xgap)
+    yield from bps.read(s4_slit_gaps.ygap)
     yield from bps.save()
 
 
@@ -55,7 +115,7 @@ def read_hardware_for_ispyb(
 @bpp.run_decorator(md={"subplan_name": "move_xyz"})
 def move_xyz(
     sample_motors,
-    xray_centre_motor_position,
+    xray_centre_motor_position: Point3D,
     md={
         "plan_name": "move_xyz",
     },
@@ -115,7 +175,7 @@ def run_gridscan(
         yield from read_hardware_for_ispyb(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
-            fgs_composite.slit_gaps,
+            fgs_composite.s4_slit_gaps,
         )
 
     fgs_motors = fgs_composite.fast_grid_scan
@@ -124,9 +184,9 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.experiment_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    @bpp.stage_decorator([eiger])
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
+    @bpp.stage_decorator([eiger])
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
@@ -170,7 +230,13 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    xray_centre = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
+    xray_centre, bbox_size = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
+
+    if bbox_size is not None:
+        with TRACER.start_span("change_aperture"):
+            yield from set_aperture_for_bbox_size(
+                fgs_composite.aperture_scatterguard, bbox_size
+            )
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
@@ -179,31 +245,6 @@ def run_gridscan_and_move(
             fgs_composite.sample_motors,
             xray_centre,
         )
-
-
-def create_devices():
-    """Creates the devices required for the plan and connect to them"""
-    global fast_grid_scan_composite, eiger
-    prefixes = get_beamline_prefixes()
-    artemis.log.LOGGER.info(
-        f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
-    )
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=prefixes.insertion_prefix,
-        name="fgs",
-        prefix=prefixes.beamline_prefix,
-    )
-
-    # Note, eiger cannot be currently waited on, see #166
-    eiger = EigerDetector(
-        name="eiger",
-        prefix=f"{prefixes.beamline_prefix}-EA-EIGER-01:",
-    )
-
-    artemis.log.LOGGER.info("Connecting to EPICS devices...")
-    fast_grid_scan_composite.wait_for_connection()
-
-    artemis.log.LOGGER.info("Connected.")
 
 
 def get_plan(

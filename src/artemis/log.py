@@ -1,7 +1,7 @@
 import logging
 from os import environ
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from bluesky.log import config_bluesky_logging
 from bluesky.log import logger as bluesky_logger
@@ -21,6 +21,24 @@ class BeamlineFilter(logging.Filter):
     def filter(self, record):
         record.beamline = beamline if beamline else "dev"
         return True
+
+
+class DCGIDFilter(logging.Filter):
+    dc_group_id: Optional[str] = None
+
+    def filter(self, record):
+        if self.dc_group_id:
+            record.dc_group_id = self.dc_group_id
+        return True
+
+
+dc_group_id_filter = DCGIDFilter()
+
+
+def set_dcgid_tag(dcgid):
+    """Set the datacollection group id as a tag on all subsequent log messages.
+    Setting to None will remove the tag."""
+    dc_group_id_filter.dc_group_id = dcgid
 
 
 def set_up_logging_handlers(
@@ -47,6 +65,7 @@ def set_up_logging_handlers(
         LOGGER.addHandler(handler)
 
     LOGGER.addFilter(BeamlineFilter())
+    LOGGER.addFilter(dc_group_id_filter)
 
     # for assistance in debugging
     if dev_mode:
