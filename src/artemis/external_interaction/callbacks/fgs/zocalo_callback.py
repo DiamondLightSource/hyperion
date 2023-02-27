@@ -97,7 +97,7 @@ class FGSZocaloCallback(CallbackBase):
                 raw_results, key=lambda d: d["total_count"], reverse=True
             )
             LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
-            crystal_summary = ""
+            crystal_summary = "\r\n\n"
 
             bboxes = []
             for n, res in enumerate(raw_results):
@@ -108,11 +108,14 @@ class FGSZocaloCallback(CallbackBase):
                         )
                     )
                 )
+                nicely_formatted_com = [
+                    float(f"{com:.2f}") for com in res["centre_of_mass"]
+                ]
                 crystal_summary += (
                     f"Crystal {n+1}: "
-                    f"Strength {res['total_count']} ;"
-                    f"Position (x,y,z) {res['centre_of_mass']} ;"
-                    f"Size (x,y,z) {bboxes[n]} ; \r"
+                    f"Strength {res['total_count']}; "
+                    f"Position (grid boxes) {nicely_formatted_com}; "
+                    f"Size (grid boxes) {bboxes[n]};\r\n\n"
                 )
             self.ispyb.append_to_comment(crystal_summary)
 
