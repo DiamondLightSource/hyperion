@@ -39,6 +39,16 @@ class ArtemisParameters:
         self.detector_params = detector_params
         self.ispyb_params = ispyb_params
 
+    def __repr__(self):
+        r = "artemis_params:\n"
+        r += f"    zocalo_environment: {self.zocalo_environment}\n"
+        r += f"    beamline: {self.beamline}\n"
+        r += f"    insertion_prefix: {self.insertion_prefix}\n"
+        r += f"    experiment_type: {self.experiment_type}\n"
+        r += f"    detector_params: {self.detector_params}\n"
+        r += f"    ispyb_params: {self.ispyb_params}\n"
+        return r
+
     def __eq__(self, other) -> bool:
         if not isinstance(other, ArtemisParameters):
             return NotImplemented
@@ -85,6 +95,12 @@ class InternalParameters:
         self.experiment_params = registry.EXPERIMENT_TYPE_DICT[
             ArtemisParameters.experiment_type
         ](**external_params.experiment_params.to_dict())
+
+    def __repr__(self):
+        r = "Artemis internal parameters:\n"
+        r += repr(self.artemis_params)
+        r += repr(f"experiment_params: {self.experiment_params}")
+        return r
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, InternalParameters):
