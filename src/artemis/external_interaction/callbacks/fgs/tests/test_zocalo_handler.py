@@ -1,3 +1,4 @@
+import operator
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -34,7 +35,6 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_store_grid_scan: MagicMock,
     nexus_writer: MagicMock,
 ):
-
     dc_ids = [1, 2]
     dcg_id = 4
 
@@ -81,6 +81,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
             "max_voxel": [1, 2, 3],
             "centre_of_mass": expected_centre_grid_coords,
             "bounding_box": [[1, 1, 1], [2, 2, 2]],
+            "total_count": 192512.0,
         }
     ]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
@@ -128,3 +129,49 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
 
     with pytest.raises(ISPyBDepositionNotMade):
         callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
+
+
+def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_bbox_from_first():
+    params = FullParameters()
+    callbacks = FGSCallbackCollection.from_params(params)
+    mock_zocalo_functions(callbacks)
+    callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
+    expected_centre_grid_coords = Point3D(4, 6, 2)
+    multi_crystal_result = [
+        {
+            "max_voxel": [1, 2, 3],
+            "centre_of_mass": Point3D(3, 11, 11),
+            "bounding_box": [[1, 1, 1], [3, 3, 3]],
+            "n_voxels": 2,
+            "total_count": 192512.0,
+        },
+        {
+            "max_voxel": [1, 2, 3],
+            "centre_of_mass": expected_centre_grid_coords,
+            "bounding_box": [[2, 2, 2], [8, 8, 7]],
+            "n_voxels": 65,
+            "total_count": 6671044.0,
+        },
+    ]
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        multi_crystal_result
+    )
+    found_centre, found_bbox = callbacks.zocalo_handler.wait_for_results(
+        Point3D(0, 0, 0)
+    )
+    callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
+        100
+    )
+    expected_centre_motor_coords = (
+        params.grid_scan_params.grid_position_to_motor_position(
+            Point3D(
+                expected_centre_grid_coords.x - 0.5,
+                expected_centre_grid_coords.y - 0.5,
+                expected_centre_grid_coords.z - 0.5,
+            )
+        )
+    )
+    assert found_centre == expected_centre_motor_coords
+
+    expected_bbox_size = list(map(operator.sub, [8, 8, 7], [2, 2, 2]))
+    assert found_bbox == expected_bbox_size

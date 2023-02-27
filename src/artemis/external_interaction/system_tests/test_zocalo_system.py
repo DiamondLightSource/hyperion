@@ -4,7 +4,10 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.zocalo_callback import FGSZocaloCallback
-from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
+from artemis.external_interaction.system_tests.conftest import (
+    TEST_RESULT_LARGE,
+    TEST_RESULT_SMALL,
+)
 from artemis.parameters import FullParameters, Point3D
 
 
@@ -69,3 +72,35 @@ def test_zocalo_adds_nonzero_comment_time(
     assert comment[-29:-6] == "Zocalo processing took "
     assert float(comment[-6:-2]) > 0
     assert float(comment[-6:-2]) < 90
+
+
+@pytest.mark.s03
+def test_given_a_single_crystal_result_ispyb_comment_updated(
+    run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
+):
+    zc, _ = run_zocalo_with_dev_ispyb()
+    comment = fetch_comment(zc.ispyb.ispyb_ids[0][0])
+    assert "Crystal 1" in comment
+    assert "Strength" in comment
+    assert "Size (x,y,z)" in comment
+
+
+@pytest.mark.s03
+def test_given_a_result_with_multiple_crystals_ispyb_comment_updated(
+    run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
+):
+    zc, _ = run_zocalo_with_dev_ispyb("MULTI_X")
+
+    comment = fetch_comment(zc.ispyb.ispyb_ids[0][0])
+    assert "Crystal 1" and "Crystal 2" in comment
+    assert "Strength" in comment
+    assert "Position (x,y,z)" in comment
+
+
+@pytest.mark.s03
+def test_zocalo_returns_multiple_crystals(run_zocalo_with_dev_ispyb, zocalo_env):
+    zc, _ = run_zocalo_with_dev_ispyb("MULTI_X")
+    results = zc.zocalo_interactor.wait_for_result(zc.ispyb.ispyb_ids[2])
+    assert len(results) > 1
+    assert results[0] == TEST_RESULT_LARGE[0]
+    assert results[1] == TEST_RESULT_SMALL[0]

@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from collections import defaultdict
 from pathlib import Path
 from typing import Tuple
 
@@ -13,9 +14,14 @@ from pika.spec import BasicProperties
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
+from artemis.external_interaction.system_tests.conftest import (
+    TEST_RESULT_LARGE,
+    TEST_RESULT_SMALL,
+)
 
 NO_DIFFRACTION_PREFIX = "NO_DIFF"
+
+MULTIPLE_CRYSTAL_PREFIX = "MULTI_X"
 
 DEV_ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
@@ -43,6 +49,25 @@ def get_dcgid_and_prefix(dcid: int, Session) -> Tuple[int, str]:
     return dcgid, prefix
 
 
+def make_result(payload):
+    res = {
+        "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
+        "payload": payload,
+        "recipe": {
+            "start": [[1, payload]],
+            "1": {
+                "service": "Send XRC results to GDA",
+                "queue": "xrc.i03",
+                "exchange": "results",
+                "parameters": {"dcid": "2", "dcgid": "4"},
+            },
+        },
+        "recipe-path": [],
+        "recipe-pointer": 1,
+    }
+    return res
+
+
 def main():
     url = ispyb.sqlalchemy.url(DEV_ISPYB_CONFIG)
     engine = create_engine(url, connect_args={"use_pure": True})
@@ -56,39 +81,11 @@ def main():
         config["host"], config["port"], config["vhost"], creds
     )
 
-    single_crystal_result = {
-        "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
-        "payload": TEST_RESULT_LARGE,
-        "recipe": {
-            "start": [[1, [TEST_RESULT_LARGE]]],
-            "1": {
-                "service": "Send XRC results to GDA",
-                "queue": "xrc.i03",
-                "exchange": "results",
-                "parameters": {"dcid": "2", "dcgid": "4"},
-            },
-        },
-        "recipe-path": [],
-        "recipe-pointer": 1,
-    }
-
-    no_diffraction_result = {
-        "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
-        "payload": [],
-        "recipe": {
-            "start": [[1, [TEST_RESULT_LARGE]]],
-            "1": {
-                "service": "Send XRC results to GDA",
-                "queue": "xrc.i03",
-                "exchange": "results",
-                "parameters": {
-                    "parameters": {"dcid": "2", "dcgid": "4"},
-                },
-            },
-        },
-        "recipe-path": [],
-        "recipe-pointer": 1,
-    }
+    results = defaultdict(lambda: make_result(TEST_RESULT_LARGE))
+    results[NO_DIFFRACTION_PREFIX] = make_result([])
+    results[MULTIPLE_CRYSTAL_PREFIX] = make_result(
+        [*TEST_RESULT_LARGE, *TEST_RESULT_SMALL]
+    )
 
     def on_request(ch: BlockingChannel, method, props, body):
         print(
@@ -114,10 +111,7 @@ def main():
                 headers={"workflows-recipe": True, "x-delivery-count": 1},
             )
 
-            if prefix == NO_DIFFRACTION_PREFIX:
-                result = no_diffraction_result
-            else:
-                result = single_crystal_result
+            result = results[prefix]
             result["recipe"]["1"]["parameters"]["dcid"] = str(dcid)
             result["recipe"]["1"]["parameters"]["dcgid"] = str(dcgid)
 
