@@ -83,7 +83,6 @@ def test_given_a_single_crystal_result_ispyb_comment_updated(
     assert "Crystal 1" in comment
     assert "Strength" in comment
     assert "Size (x,y,z)" in comment
-    # assert "Found multiple crystals" not in comment
 
 
 @pytest.mark.s03

@@ -94,11 +94,6 @@ class FGSZocaloCallback(CallbackBase):
             )
             LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
             crystal_summary = ""
-            # multi_crystal_msg = (
-            #    f"Found multiple crystals: {len(raw_results)}."
-            #    if len(raw_results) > 1
-            #    else ""
-            # )
 
             bboxes = []
             for n, res in enumerate(raw_results):
