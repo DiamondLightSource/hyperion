@@ -110,9 +110,9 @@ class FGSZocaloCallback(CallbackBase):
                 )
                 multi_crystal_msg += (
                     f"Crystal {n+1}: "
-                    f"Strength {res['total_count']} "
-                    f"Position (x,y,z) {res['centre_of_mass']} "
-                    f"Size (x,y,z) {bboxes[n]} "
+                    f"Strength {res['total_count']} ;"
+                    f"Position (x,y,z) {res['centre_of_mass']} ;"
+                    f"Size (x,y,z) {bboxes[n]} ; \r"
                 )
             self.ispyb.append_to_comment(multi_crystal_msg)
 
