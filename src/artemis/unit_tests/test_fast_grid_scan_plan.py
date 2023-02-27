@@ -88,7 +88,9 @@ def mock_subscriptions(test_params):
 def fake_eiger(test_params: InternalParameters):
     FakeEiger: EigerDetector = make_fake_device(EigerDetector)
     fake_eiger = (
-        FakeEiger.with_params(params=test_params.detector_params, name="test"),
+        FakeEiger.with_params(
+            params=test_params.artemis_params.detector_params, name="test"
+        ),
     )
     return fake_eiger
 
@@ -177,8 +179,10 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
-    subscriptions = FGSCallbackCollection.from_params(test_params)
 
+    mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        TEST_RESULT_LARGE
+    )
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
@@ -190,13 +194,23 @@ def test_results_adjusted_and_passed_to_move_xyz(
     mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_MEDIUM
     )
-
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
             fake_eiger,
             test_params,
-            subscriptions,
+            mock_subscriptions,
+        )
+    )
+    mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
+        TEST_RESULT_SMALL
+    )
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
         )
     )
 
