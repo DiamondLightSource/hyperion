@@ -1,0 +1,40 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "current_energy": {
+            "type": "number"
+        },
+        "exposure_time": {
+            "type": "number"
+        },
+        "directory": {
+            "type": "string"
+        },
+        "prefix": {
+            "type": "string"
+        },
+        "run_number": {
+            "type": "number"
+        },
+        "detector_distance": {
+            "type": "number"
+        },
+        "omega_start": {
+            "type": "number"
+        },
+        "omega_increment": {
+            "type": "number"
+        },
+        "num_images": {
+            "type": "number"
+        },
+        "use_roi_mode": {
+            "type": "boolean"
+        },
+        "det_dist_to_beam_converter_path": {
+            "type": "string"
+        }
+    },
+    "minProperties": 11
+}

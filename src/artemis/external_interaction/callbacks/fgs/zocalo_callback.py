@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import operator
 import time
 from typing import Callable, Optional
@@ -13,7 +15,7 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.log import LOGGER
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 
@@ -38,16 +40,18 @@ class FGSZocaloCallback(CallbackBase):
     """
 
     def __init__(
-        self, parameters: FullParameters, ispyb_handler: FGSISPyBHandlerCallback
+        self, parameters: "InternalParameters", ispyb_handler: FGSISPyBHandlerCallback
     ):
         self.grid_position_to_motor_position: Callable[
             [Point3D], Point3D
-        ] = parameters.grid_scan_params.grid_position_to_motor_position
+        ] = parameters.experiment_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.run_gridscan_uid: Optional[str] = None
-        self.ispyb = ispyb_handler
-        self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
+        self.ispyb: FGSISPyBHandlerCallback = ispyb_handler
+        self.zocalo_interactor = ZocaloInteractor(
+            parameters.artemis_params.zocalo_environment
+        )
 
     def start(self, doc: dict):
         LOGGER.info("Zocalo handler received start document.")

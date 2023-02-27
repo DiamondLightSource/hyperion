@@ -8,7 +8,8 @@ from artemis.devices.aperturescatterguard import (
     ApertureScatterguard,
     InvalidApertureMove,
 )
-from artemis.parameters import I03_BEAMLINE_PARAMETER_PATH, GDABeamlineParameters
+from artemis.parameters.beamline_parameters import GDABeamlineParameters
+from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH
 
 
 @pytest.fixture

@@ -8,7 +8,8 @@ from bluesky.run_engine import RunEngine
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.devices.aperturescatterguard import AperturePositions
-from artemis.devices.eiger import EigerDetector
+from artemis.devices.detector import DetectorParams
+from artemis.devices.eiger import DetectorParams, EigerDetector
 from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
@@ -16,7 +17,9 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
 )
-from artemis.external_interaction.callbacks import FGSCallbackCollection
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.external_interaction.system_tests.conftest import (  # noqa
     fetch_comment,
     zocalo_env,
@@ -24,14 +27,13 @@ from artemis.external_interaction.system_tests.conftest import (  # noqa
 from artemis.external_interaction.system_tests.test_ispyb_dev_connection import (
     ISPYB_CONFIG,
 )
-from artemis.parameters import (
+from artemis.parameters.beamline_parameters import GDABeamlineParameters
+from artemis.parameters.constants import (
     I03_BEAMLINE_PARAMETER_PATH,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
-    DetectorParams,
-    FullParameters,
-    GDABeamlineParameters,
 )
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 @pytest.fixture()
@@ -65,7 +67,8 @@ def eiger() -> EigerDetector:
     yield eiger
 
 
-params = FullParameters()
+params = InternalParameters()
+params.artemis_params.beamline = SIM_BEAMLINE
 
 
 @pytest.fixture
@@ -138,6 +141,8 @@ def test_read_hardware_for_ispyb(
 
 
 @pytest.mark.s03
+@patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.eiger")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
@@ -150,15 +155,17 @@ def test_full_plan_tidies_at_end(
     kickoff: MagicMock,
     wait: MagicMock,
     eiger: EigerDetector,
-    RE: RunEngine,
     fgs_composite: FGSComposite,
+    RE: RunEngine,
 ):
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    callbacks = FGSCallbackCollection.from_params(InternalParameters())
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
 
 @pytest.mark.s03
+@patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.eiger")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
@@ -171,10 +178,10 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     kickoff: MagicMock,
     wait: MagicMock,
     eiger: EigerDetector,
-    RE: RunEngine,
     fgs_composite: FGSComposite,
+    RE: RunEngine,
 ):
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
+    callbacks = FGSCallbackCollection.from_params(InternalParameters())
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))
@@ -189,13 +196,13 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     fgs_composite: FGSComposite,
     fetch_comment: Callable,
 ):
-    parameters = FullParameters()
-    parameters.detector_params.directory = "./tmp"
-    parameters.detector_params.prefix = str(uuid.uuid1())
-    parameters.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    parameters = InternalParameters()
+    parameters.artemis_params.detector_params.directory = "./tmp"
+    parameters.artemis_params.detector_params.prefix = str(uuid.uuid1())
+    parameters.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    parameters.grid_scan_params.z_steps = 100
+    parameters.experiment_params.z_steps = 100
 
     callbacks = FGSCallbackCollection.from_params(parameters)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
@@ -227,13 +234,13 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     """This test currently avoids hardware interaction and is mostly confirming
     interaction with dev_ispyb and dev_zocalo"""
 
-    parameters = FullParameters()
-    parameters.detector_params.directory = "./tmp"
-    parameters.detector_params.prefix = str(uuid.uuid1())
-    parameters.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    parameters = InternalParameters()
+    parameters.artemis_params.detector_params.directory = "./tmp"
+    parameters.artemis_params.detector_params.prefix = str(uuid.uuid1())
+    parameters.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    parameters.grid_scan_params.z_steps = 1
+    parameters.experiment_params.z_steps = 1
 
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()

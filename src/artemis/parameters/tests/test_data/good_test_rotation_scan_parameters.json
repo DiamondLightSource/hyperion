@@ -4,7 +4,7 @@
         "beamline": "BL03S",
         "detector": "EIGER2_X_16M",
         "zocalo_environment": "devrmq",
-        "experiment_type": "fast_grid_scan",
+        "experiment_type": "rotation_scan",
         "detector_params": {
             "current_energy": 100,
             "exposure_time": 0.1,
@@ -61,17 +61,13 @@
         }
     },
     "experiment_params": {
-        "x_steps": 5,
-        "y_steps": 10,
-        "z_steps": 2,
-        "x_step_size": 0.1,
-        "y_step_size": 0.1,
-        "z_step_size": 0.1,
-        "dwell_time": 0.2,
-        "x_start": 0.0,
-        "y1_start": 0.0,
-        "y2_start": 0.0,
-        "z1_start": 0.0,
-        "z2_start": 0.0
+        "rotation_axis": "omega",
+        "rotation_angle": 180.0,
+        "omega_start": 0.0,
+        "phi_start": 0.0,
+        "chi_start": 0,
+        "x": 1.0,
+        "y": 2.0,
+        "z": 3.0
     }
 }

@@ -1,7 +1,7 @@
 import pytest
 
+from artemis.parameters.constants import SIM_INSERTION_PREFIX
 from src.artemis.devices.undulator import Undulator
-from src.artemis.parameters import SIM_INSERTION_PREFIX
 
 
 @pytest.fixture

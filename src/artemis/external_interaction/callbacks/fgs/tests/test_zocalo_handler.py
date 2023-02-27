@@ -9,7 +9,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 EXPECTED_DCID = 100
@@ -42,7 +42,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
 
@@ -71,7 +71,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
 
 
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called():
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
@@ -93,7 +93,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
         100
     )
     expected_centre_motor_coords = (
-        params.grid_scan_params.grid_position_to_motor_position(
+        params.experiment_params.grid_position_to_motor_position(
             Point3D(
                 expected_centre_grid_coords.x - 0.5,
                 expected_centre_grid_coords.y - 0.5,
@@ -105,7 +105,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
 
 
 def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used():
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
@@ -123,7 +123,7 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
 
 
 def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception():
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
 
@@ -132,7 +132,7 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
 
 
 def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_bbox_from_first():
-    params = FullParameters()
+    params = InternalParameters()
     callbacks = FGSCallbackCollection.from_params(params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
@@ -163,7 +163,7 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
         100
     )
     expected_centre_motor_coords = (
-        params.grid_scan_params.grid_position_to_motor_position(
+        params.experiment_params.grid_position_to_motor_position(
             Point3D(
                 expected_centre_grid_coords.x - 0.5,
                 expected_centre_grid_coords.y - 0.5,

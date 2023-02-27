@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 
 from bluesky.plan_stubs import mv
-from dataclasses_json import dataclass_json
+from dataclasses_json import DataClassJsonMixin
 from ophyd import (
     Component,
     Device,
@@ -36,9 +36,8 @@ class GridAxis:
         return 0 <= steps <= self.full_steps
 
 
-@dataclass_json
 @dataclass
-class GridScanParams:
+class GridScanParams(DataClassJsonMixin):
     """
     Holder class for the parameters of a grid scan in a similar
     layout to EPICS.

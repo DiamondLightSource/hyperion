@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from typing import Dict
 
@@ -5,11 +7,13 @@ from bluesky.callbacks import CallbackBase
 
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.ispyb.store_in_ispyb import (
+    StoreInIspyb,
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
 from artemis.log import LOGGER, set_dcgid_tag
-from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
+from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
+from artemis.parameters.internal_parameters import InternalParameters
 
 
 class FGSISPyBHandlerCallback(CallbackBase):
@@ -29,7 +33,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self, parameters: FullParameters):
+    def __init__(self, parameters: InternalParameters):
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
@@ -38,9 +42,9 @@ class FGSISPyBHandlerCallback(CallbackBase):
                 "Using dev ISPyB database. If you want to use the real database, please"
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
-        self.ispyb = (
+        self.ispyb: StoreInIspyb = (
             StoreInIspyb3D(ispyb_config, self.params)
-            if self.params.grid_scan_params.is_3d_grid_scan
+            if self.params.experiment_params.is_3d_grid_scan
             else StoreInIspyb2D(ispyb_config, self.params)
         )
         self.ispyb_ids: tuple = (None, None, None)
@@ -65,14 +69,16 @@ class FGSISPyBHandlerCallback(CallbackBase):
         event_descriptor = self.descriptors[doc["descriptor"]]
 
         if event_descriptor.get("name") == ISPYB_PLAN_NAME:
-            self.params.ispyb_params.undulator_gap = doc["data"]["fgs_undulator_gap"]
-            self.params.ispyb_params.synchrotron_mode = doc["data"][
+            self.params.artemis_params.ispyb_params.undulator_gap = doc["data"][
+                "fgs_undulator_gap"
+            ]
+            self.params.artemis_params.ispyb_params.synchrotron_mode = doc["data"][
                 "fgs_synchrotron_machine_status_synchrotron_mode"
             ]
-            self.params.ispyb_params.slit_gap_size_x = doc["data"][
+            self.params.artemis_params.ispyb_params.slit_gap_size_x = doc["data"][
                 "fgs_s4_slit_gaps_xgap"
             ]
-            self.params.ispyb_params.slit_gap_size_y = doc["data"][
+            self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
                 "fgs_s4_slit_gaps_ygap"
             ]
 
