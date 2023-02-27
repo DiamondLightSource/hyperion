@@ -93,11 +93,12 @@ class FGSZocaloCallback(CallbackBase):
                 raw_results, key=lambda d: d["total_count"], reverse=True
             )
             LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
-            multi_crystal_msg = (
-                f"Found multiple crystals: {len(raw_results)}."
-                if len(raw_results) > 1
-                else ""
-            )
+            crystal_summary = ""
+            # multi_crystal_msg = (
+            #    f"Found multiple crystals: {len(raw_results)}."
+            #    if len(raw_results) > 1
+            #    else ""
+            # )
 
             bboxes = []
             for n, res in enumerate(raw_results):
@@ -108,13 +109,13 @@ class FGSZocaloCallback(CallbackBase):
                         )
                     )
                 )
-                multi_crystal_msg += (
+                crystal_summary += (
                     f"Crystal {n+1}: "
                     f"Strength {res['total_count']} ;"
                     f"Position (x,y,z) {res['centre_of_mass']} ;"
                     f"Size (x,y,z) {bboxes[n]} ; \r"
                 )
-            self.ispyb.append_to_comment(multi_crystal_msg)
+            self.ispyb.append_to_comment(crystal_summary)
 
             raw_centre = Point3D(*(raw_results[0]["centre_of_mass"]))
 
