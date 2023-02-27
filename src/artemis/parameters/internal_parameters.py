@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import artemis.experiment_plans.experiment_registry as registry
 from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams

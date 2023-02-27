@@ -23,9 +23,9 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
 
 
 @pytest.fixture
-def run_zocalo_with_dev_ispyb(dummy_params, dummy_ispyb_3d):
+def run_zocalo_with_dev_ispyb(dummy_params: InternalParameters, dummy_ispyb_3d):
     def inner(sample_name="", fallback=Point3D(0, 0, 0)):
-        dummy_params.detector_params.prefix = sample_name
+        dummy_params.artemis_params.detector_params.prefix = sample_name
         zc: FGSZocaloCallback = FGSCallbackCollection.from_params(
             dummy_params
         ).zocalo_handler
