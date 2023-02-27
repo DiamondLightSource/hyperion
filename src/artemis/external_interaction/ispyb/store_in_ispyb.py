@@ -18,7 +18,6 @@ EIGER_FILE_SUFFIX = "h5"
 
 
 class StoreInIspyb(ABC):
-
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
     def __init__(self, ispyb_config, parameters=None):
@@ -74,7 +73,6 @@ class StoreInIspyb(ABC):
             )
 
     def store_grid_scan(self, full_params: FullParameters):
-
         self.full_params = full_params
         self.ispyb_params = full_params.ispyb_params
         self.detector_params = full_params.detector_params
@@ -114,7 +112,6 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> None:
-
         if reason is not None and reason != "":
             self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
 

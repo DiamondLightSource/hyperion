@@ -8,7 +8,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
-from artemis.log import LOGGER
+from artemis.log import LOGGER, set_dcgid_tag
 from artemis.parameters import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG, FullParameters
 
 
@@ -78,6 +78,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
+            set_dcgid_tag(self.ispyb_ids[2])
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
@@ -87,3 +88,4 @@ class FGSISPyBHandlerCallback(CallbackBase):
             if self.ispyb_ids == (None, None, None):
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             self.ispyb.end_deposition(exit_status, reason)
+            set_dcgid_tag(None)
