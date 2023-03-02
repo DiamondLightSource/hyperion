@@ -11,6 +11,10 @@ def not_implemented():
     raise NotImplementedError
 
 
+def do_nothing():
+    pass
+
+
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
 PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     "fast_grid_scan": {
@@ -19,7 +23,7 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
         "param_type": GridScanParams,
     },
     "rotation_scan": {
-        "setup": lambda: None,
+        "setup": do_nothing,
         "run": not_implemented,
         "param_type": RotationScanParams,
     },

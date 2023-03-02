@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from flask.testing import FlaskClient
 
-from artemis.__main__ import Actions, Status, cli_arg_parse, create_app
+from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.parameters.external_parameters import RawParameters
 
@@ -198,3 +198,13 @@ def test_cli_args_parse():
     argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
     test_args = cli_arg_parse()
     assert test_args == ("DEBUG", True, True)
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
+def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
+    mock_fgs, mock_eiger
+):
+    BlueskyRunner(MagicMock())
+
+    mock_fgs.return_value.wait_for_connection.assert_called_once()
