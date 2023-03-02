@@ -3,7 +3,7 @@ from enum import Enum
 SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_PLAN_NAME = "ispyb_readings"
-SIM_ZOCALO_ENV = "devrmq"
+SIM_ZOCALO_ENV = "dev_artemis"
 DEFAULT_EXPERIMENT_TYPE = "grid_scan"
 I03_BEAMLINE_PARAMETER_PATH = (
     "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters"
