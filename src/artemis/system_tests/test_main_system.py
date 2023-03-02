@@ -202,8 +202,9 @@ def test_cli_args_parse():
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
-    mock_fgs, mock_eiger
+    mock_get_beamline_params, mock_fgs, mock_eiger
 ):
     BlueskyRunner(MagicMock())
 
