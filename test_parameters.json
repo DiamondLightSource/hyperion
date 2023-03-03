@@ -3,7 +3,7 @@
     "artemis_params": {
         "beamline": "BL03S",
         "detector": "EIGER2_X_16M",
-        "zocalo_environment": "devrmq",
+        "zocalo_environment": "dev_artemis",
         "experiment_type": "fast_grid_scan",
         "detector_params": {
             "current_energy": 100,
