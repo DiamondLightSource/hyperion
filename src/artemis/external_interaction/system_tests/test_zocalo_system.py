@@ -83,7 +83,7 @@ def test_given_a_single_crystal_result_ispyb_comment_updated(
     comment = fetch_comment(zc.ispyb.ispyb_ids[0][0])
     assert "Crystal 1" in comment
     assert "Strength" in comment
-    assert "Size (x,y,z)" in comment
+    assert "Size (grid boxes)" in comment
 
 
 @pytest.mark.s03
@@ -95,7 +95,7 @@ def test_given_a_result_with_multiple_crystals_ispyb_comment_updated(
     comment = fetch_comment(zc.ispyb.ispyb_ids[0][0])
     assert "Crystal 1" and "Crystal 2" in comment
     assert "Strength" in comment
-    assert "Position (x,y,z)" in comment
+    assert "Position (grid boxes)" in comment
 
 
 @pytest.mark.s03
