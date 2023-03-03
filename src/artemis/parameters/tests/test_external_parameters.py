@@ -1,9 +1,9 @@
 import json
 
+from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.rotation_scan import RotationScanParams
 from pytest import raises
 
-from artemis.devices.fast_grid_scan import GridScanParams
-from artemis.devices.rotation_scan import RotationScanParams
 from artemis.parameters.external_parameters import (
     RawParameters,
     WrongExperimentParameterSpecification,

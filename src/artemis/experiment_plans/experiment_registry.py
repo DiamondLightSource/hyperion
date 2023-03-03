@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Callable, Dict, Union
 
-from artemis.devices.fast_grid_scan import GridScanParams
-from artemis.devices.rotation_scan import RotationScanParams
+from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.rotation_scan import RotationScanParams
+
 from artemis.experiment_plans import fast_grid_scan_plan
 
 

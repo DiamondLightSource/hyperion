@@ -1,6 +1,7 @@
+from dodal.devices.det_dim_constants import constants_from_type
+from dodal.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
+
 import artemis.experiment_plans.experiment_registry as registry
-from artemis.devices.det_dim_constants import constants_from_type
-from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
     ISPYB_PARAM_DEFAULTS,
     IspybParams,

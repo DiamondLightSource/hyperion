@@ -34,7 +34,8 @@ from artemis.tracing import TRACER
 from artemis.utils import Point3D
 
 if TYPE_CHECKING:
-    from artemis.devices.fast_grid_scan_composite import FGSComposite
+    from dodal.devices.fast_grid_scan_composite import FGSComposite
+
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )

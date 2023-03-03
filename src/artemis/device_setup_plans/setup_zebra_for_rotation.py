@@ -1,6 +1,5 @@
 import bluesky.plan_stubs as bps
-
-from artemis.devices.zebra import (
+from dodal.devices.zebra import (
     DISCONNECT,
     OR1,
     PC_PULSE,
