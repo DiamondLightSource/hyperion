@@ -6,8 +6,8 @@ from artemis.external_interaction.ispyb.ispyb_dataclass import (
     ISPYB_PARAM_DEFAULTS,
     IspybParams,
 )
-from artemis.parameters import DETECTOR_PARAM_DEFAULTS
 from artemis.parameters.constants import (
+    DETECTOR_PARAM_DEFAULTS,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,
