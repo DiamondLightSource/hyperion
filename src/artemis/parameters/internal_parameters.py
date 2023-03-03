@@ -1,11 +1,12 @@
 from dodal.devices.det_dim_constants import constants_from_type
-from dodal.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
+from dodal.devices.eiger import DetectorParams
 
 import artemis.experiment_plans.experiment_registry as registry
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
     ISPYB_PARAM_DEFAULTS,
     IspybParams,
 )
+from artemis.parameters import DETECTOR_PARAM_DEFAULTS
 from artemis.parameters.constants import (
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
