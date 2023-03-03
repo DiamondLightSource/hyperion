@@ -5,6 +5,7 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from ophyd.sim import make_fake_device
+from ophyd.status import Status
 
 from artemis.devices.aperturescatterguard import AperturePositions
 from artemis.devices.det_dim_constants import (
@@ -68,6 +69,9 @@ def fake_fgs_composite():
             ROBOT_LOAD=(0, 0, 3, 0, 0),
         )
     )
+
+    fake_composite.fast_grid_scan.scan_invalid.sim_put(False)
+    fake_composite.fast_grid_scan.position_counter.sim_put(0)
     return fake_composite
 
 
@@ -81,16 +85,20 @@ def mock_subscriptions(test_params):
         TEST_RESULT_LARGE
     )
 
+    subscriptions.nexus_handler.nxs_writer_1 = MagicMock()
+    subscriptions.nexus_handler.nxs_writer_2 = MagicMock()
+
+    subscriptions.ispyb_handler.ispyb = MagicMock()
+    subscriptions.ispyb_handler.ispyb_ids = [[0, 0], 0, 0]
+
     return subscriptions
 
 
 @pytest.fixture
 def fake_eiger(test_params: InternalParameters):
     FakeEiger: EigerDetector = make_fake_device(EigerDetector)
-    fake_eiger = (
-        FakeEiger.with_params(
-            params=test_params.artemis_params.detector_params, name="test"
-        ),
+    fake_eiger = FakeEiger.with_params(
+        params=test_params.artemis_params.detector_params, name="test"
     )
     return fake_eiger
 
@@ -302,14 +310,6 @@ def test_logging_within_plan(
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-    subscriptions = FGSCallbackCollection.from_params(test_params)
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        Point3D(1, 2, 3)
-    )
-
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
@@ -353,3 +353,43 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
         RE(wait_for_fgs_valid(test_fgs))
 
     patch_sleep.assert_called()
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.abs_set")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
+def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
+    mock_mv,
+    mock_complete,
+    mock_kickoff,
+    mock_abs_set,
+    fake_fgs_composite: FGSComposite,
+    fake_eiger: EigerDetector,
+    test_params: InternalParameters,
+    mock_subscriptions: FGSCallbackCollection,
+):
+    RE = RunEngine({})
+
+    # Put both mocks in a parent to easily capture order
+    mock_parent = MagicMock()
+
+    fake_eiger.disarm_detector = mock_parent.disarm
+
+    fake_eiger.filewriters_finished = Status()
+    fake_eiger.filewriters_finished.set_finished()
+    fake_eiger.odin.check_odin_state = MagicMock(return_value=True)
+    fake_eiger.stage = MagicMock()
+
+    mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
+
+    RE(
+        run_gridscan_and_move(
+            fake_fgs_composite,
+            fake_eiger,
+            test_params,
+            mock_subscriptions,
+        )
+    )
+
+    mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
