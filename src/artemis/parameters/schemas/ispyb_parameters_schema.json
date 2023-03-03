@@ -1,0 +1,137 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "visit_path": {
+            "type": "string"
+        },
+        "pixels_per_micron_x": {
+            "type": "number"
+        },
+        "pixels_per_micron_y": {
+            "type": "number"
+        },
+        "upper_left": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "x": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "y": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "z": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                }
+            ]
+        },
+        "position": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "x": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "y": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "z": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                }
+            ]
+        },
+        "xtal_snapshots_omega_start": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "xtal_snapshots_omega_end": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "xtal_snapshots": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "transmission": {
+            "type": "number"
+        },
+        "flux": {
+            "type": "number"
+        },
+        "wavelength": {
+            "type": "number"
+        },
+        "beam_size_x": {
+            "type": "number"
+        },
+        "beam_size_y": {
+            "type": "number"
+        },
+        "slit_gap_size_x": {
+            "type": "number"
+        },
+        "slit_gap_size_y": {
+            "type": "number"
+        },
+        "focal_spot_size_x": {
+            "type": "number"
+        },
+        "focal_spot_size_y": {
+            "type": "number"
+        },
+        "comment": {
+            "type": "string"
+        },
+        "resolution": {
+            "type": "number"
+        }
+    },
+    "minProperties": 19
+}

@@ -14,7 +14,7 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     NoDiffractionFound,
     ZocaloInteractor,
 )
-from artemis.parameters import SIM_ZOCALO_ENV
+from artemis.parameters.constants import SIM_ZOCALO_ENV
 from artemis.utils import Point3D
 
 EXPECTED_DCID = 100

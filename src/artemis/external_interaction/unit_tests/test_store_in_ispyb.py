@@ -9,7 +9,8 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
-from artemis.parameters import SIM_ISPYB_CONFIG, FullParameters
+from artemis.parameters.constants import SIM_ISPYB_CONFIG
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
@@ -18,16 +19,15 @@ TEST_GRID_INFO_ID = 56
 TEST_POSITION_ID = 78
 TEST_SESSION_ID = 90
 
-
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = FullParameters()
-    dummy_params.ispyb_params.upper_left = Point3D(100, 100, 50)
-    dummy_params.ispyb_params.pixels_per_micron_x = 0.8
-    dummy_params.ispyb_params.pixels_per_micron_y = 0.8
+    dummy_params = InternalParameters()
+    dummy_params.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 50)
+    dummy_params.artemis_params.ispyb_params.pixels_per_micron_x = 0.8
+    dummy_params.artemis_params.ispyb_params.pixels_per_micron_y = 0.8
     return dummy_params
 
 
@@ -95,7 +95,9 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
 
 
 @patch("ispyb.open", new_callable=mock_open)
-def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d, dummy_params):
+def test_store_3d_grid_scan(
+    ispyb_conn, dummy_ispyb_3d: StoreInIspyb3D, dummy_params: InternalParameters
+):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
@@ -123,8 +125,9 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d, dummy_params):
     x = 0
     y = 1
     z = 2
-    dummy_params.ispyb_params.upper_left = Point3D(x, y, z)
-    dummy_params.grid_scan_params.z_step_size = 0.2
+
+    dummy_params.artemis_params.ispyb_params.upper_left = Point3D(x, y, z)
+    dummy_params.experiment_params.z_step_size = 0.2
 
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
 
@@ -134,14 +137,21 @@ def test_store_3d_grid_scan(ispyb_conn, dummy_ispyb_3d, dummy_params):
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    assert dummy_ispyb_3d.omega_start == dummy_params.detector_params.omega_start + 90
-    assert dummy_ispyb_3d.run_number == dummy_params.detector_params.run_number + 1
+    assert (
+        dummy_ispyb_3d.omega_start
+        == dummy_params.artemis_params.detector_params.omega_start + 90
+    )
+    assert (
+        dummy_ispyb_3d.run_number
+        == dummy_params.artemis_params.detector_params.run_number + 1
+    )
     assert (
         dummy_ispyb_3d.xtal_snapshots
-        == dummy_params.ispyb_params.xtal_snapshots_omega_end
+        == dummy_params.artemis_params.ispyb_params.xtal_snapshots_omega_end
     )
-    assert dummy_ispyb_3d.y_step_size == dummy_params.grid_scan_params.z_step_size
-    assert dummy_ispyb_3d.y_steps == dummy_params.grid_scan_params.z_steps
+    assert dummy_ispyb_3d.y_step_size == dummy_params.experiment_params.z_step_size
+    assert dummy_ispyb_3d.y_steps == dummy_params.experiment_params.z_steps
+
     assert dummy_ispyb_3d.upper_left.x == x
     assert dummy_ispyb_3d.upper_left.y == z
 
@@ -215,10 +225,10 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
 
 @patch("ispyb.open")
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
-    ispyb_conn, dummy_ispyb, dummy_params
+    ispyb_conn, dummy_ispyb: StoreInIspyb2D, dummy_params: InternalParameters
 ):
     expected_sample_id = "0001"
-    dummy_params.ispyb_params.sample_id = expected_sample_id
+    dummy_params.artemis_params.ispyb_params.sample_id = expected_sample_id
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")
@@ -303,7 +313,9 @@ def test_ispyb_deposition_rounds_to_int(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    dummy_ispyb.full_params.ispyb_params.upper_left = Point3D(0.01, 100, 50)
+    dummy_ispyb.full_params.artemis_params.ispyb_params.upper_left = Point3D(
+        0.01, 100, 50
+    )
     dummy_ispyb.begin_deposition()
     mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
 
@@ -339,11 +351,11 @@ def test_ispyb_deposition_comment_for_3D_correct(
 
 @patch("ispyb.open")
 def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
-    ispyb_conn, dummy_ispyb, dummy_params
+    ispyb_conn, dummy_ispyb: StoreInIspyb2D, dummy_params: InternalParameters
 ):
     expected_number_of_steps = 200 * 3
-    dummy_params.grid_scan_params.x_steps = 200
-    dummy_params.grid_scan_params.y_steps = 3
+    dummy_params.experiment_params.x_steps = 200
+    dummy_params.experiment_params.y_steps = 3
 
     def test_number_of_steps(default_params, actual):
         # Note that internally the ispyb API removes underscores so this is the same as n_images

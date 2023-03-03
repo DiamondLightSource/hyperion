@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import re
 from abc import ABC, abstractmethod
@@ -9,7 +11,7 @@ from sqlalchemy.connectors import Connector
 
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
 from artemis.utils import Point2D
 
@@ -18,7 +20,6 @@ EIGER_FILE_SUFFIX = "h5"
 
 
 class StoreInIspyb(ABC):
-
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
     def __init__(self, ispyb_config, parameters=None):
@@ -73,19 +74,19 @@ class StoreInIspyb(ABC):
                 current_time, run_status, reason, id, self.datacollection_group_id
             )
 
-    def store_grid_scan(self, full_params: FullParameters):
-
+    def store_grid_scan(self, full_params: InternalParameters):
         self.full_params = full_params
-        self.ispyb_params = full_params.ispyb_params
-        self.detector_params = full_params.detector_params
+        self.ispyb_params = full_params.artemis_params.ispyb_params
+        self.detector_params = full_params.artemis_params.detector_params
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
         self.upper_left = Point2D(
-            self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.y
+            self.ispyb_params.upper_left.x,
+            self.ispyb_params.upper_left.y,
         )
-        self.y_steps = full_params.grid_scan_params.y_steps
-        self.y_step_size = full_params.grid_scan_params.y_step_size
+        self.y_steps = full_params.experiment_params.y_steps
+        self.y_step_size = full_params.experiment_params.y_step_size
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
             self.mx_acquisition = self.conn.mx_acquisition
@@ -114,7 +115,6 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> None:
-
         if reason is not None and reason != "":
             self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
 
@@ -133,9 +133,9 @@ class StoreInIspyb(ABC):
         params = self.mx_acquisition.get_dc_grid_params()
 
         params["parentid"] = ispyb_data_collection_id
-        params["dxInMm"] = self.full_params.grid_scan_params.x_step_size
+        params["dxInMm"] = self.full_params.experiment_params.x_step_size
         params["dyInMm"] = self.y_step_size
-        params["stepsX"] = self.full_params.grid_scan_params.x_steps
+        params["stepsX"] = self.full_params.experiment_params.x_steps
         params["stepsY"] = self.y_steps
         params["pixelsPerMicronX"] = self.ispyb_params.pixels_per_micron_x
         params["pixelsPerMicronY"] = self.ispyb_params.pixels_per_micron_y
@@ -148,18 +148,18 @@ class StoreInIspyb(ABC):
     def _construct_comment(self) -> str:
         bottom_right = oav_utils.bottom_right_from_top_left(
             self.upper_left,
-            self.full_params.grid_scan_params.x_steps,
+            self.full_params.experiment_params.x_steps,
             self.y_steps,
-            self.full_params.grid_scan_params.x_step_size,
+            self.full_params.experiment_params.x_step_size,
             self.y_step_size,
             self.ispyb_params.pixels_per_micron_x,
             self.ispyb_params.pixels_per_micron_y,
         )
         return (
             "Artemis: Xray centring - Diffraction grid scan of "
-            f"{self.full_params.grid_scan_params.x_steps} by "
+            f"{self.full_params.experiment_params.x_steps} by "
             f"{self.y_steps} images in "
-            f"{self.full_params.grid_scan_params.x_step_size*1e3} um by "
+            f"{self.full_params.experiment_params.x_step_size*1e3} um by "
             f"{self.y_step_size*1e3} um steps. "
             f"Top left (px): [{int(self.upper_left.x)},{int(self.upper_left.y)}], "
             f"bottom right (px): [{bottom_right.x},{bottom_right.y}]."
@@ -196,7 +196,7 @@ class StoreInIspyb(ABC):
         params["imgdir"] = self.detector_params.directory
         params["imgprefix"] = self.detector_params.prefix
         params["imgsuffix"] = EIGER_FILE_SUFFIX
-        params["n_images"] = self.full_params.grid_scan_params.x_steps * self.y_steps
+        params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
 
         # Both overlap and n_passes included for backwards compatibility,
         # planned to be removed later
@@ -310,10 +310,11 @@ class StoreInIspyb3D(StoreInIspyb):
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
         self.upper_left = Point2D(
-            self.ispyb_params.upper_left.x, self.ispyb_params.upper_left.z
+            self.ispyb_params.upper_left.x,
+            self.ispyb_params.upper_left.z,
         )
-        self.y_steps = self.full_params.grid_scan_params.z_steps
-        self.y_step_size = self.full_params.grid_scan_params.z_step_size
+        self.y_steps = self.full_params.experiment_params.z_steps
+        self.y_step_size = self.full_params.experiment_params.z_step_size
 
 
 class StoreInIspyb2D(StoreInIspyb):

@@ -1,3 +1,4 @@
+# See https://confluence.diamond.ac.uk/x/tJqQC for instructions if this needs a new token
 name: Resuable workflow to get an issue from a PR
 on:
   workflow_call:
