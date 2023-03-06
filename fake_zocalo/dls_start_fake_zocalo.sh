@@ -2,8 +2,8 @@
 function cleanup()
 {
     pkill -f rabbitmq
-    sleep 3
-    rm -rf /dls/tmp/ffv81422/dev-rabbitmq/*
+    rm -rf /home/$USER/.zocalo/*
+    echo "May take some seconds for zocalo to die, do not immediately try and restart"
 }
 
 trap cleanup EXIT
