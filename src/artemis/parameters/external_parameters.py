@@ -4,7 +4,7 @@ import copy
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import NamedTuple, Optional, Union
+from typing import Dict, Optional, Union
 
 import jsonschema
 from dataclasses_json import DataClassJsonMixin
@@ -16,7 +16,6 @@ from artemis.parameters.constants import (
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,
 )
-from artemis.utils import Point3D
 
 
 def default_field(obj):
@@ -53,8 +52,8 @@ class ExternalISPyBParameters(DataClassJsonMixin):
     pixels_per_micron_x: float = 0.0
     pixels_per_micron_y: float = 0.0
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    upper_left: NamedTuple = Point3D(x=0, y=0, z=0)
-    position: NamedTuple = Point3D(x=0, y=0, z=0)
+    upper_left: Dict = default_field({"x": 0, "y": 0, "z": 0})
+    position: Dict = default_field({"x": 0, "y": 0, "z": 0})
     xtal_snapshots_omega_start: list[str] = default_field(
         ["test_1_y", "test_2_y", "test_3_y"]
     )
