@@ -1,4 +1,12 @@
 #!/bin/bash
+function cleanup()
+{
+    pkill -f rabbitmq
+    sleep 3
+    rm -rf /dls/tmp/ffv81422/dev-rabbitmq/*
+}
+
+trap cleanup EXIT
 
 # kills the gda dummy activemq, that takes the port for rabbitmq
 module load dasctools
