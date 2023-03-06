@@ -1,5 +1,6 @@
-from artemis.devices.det_dim_constants import EIGER2_X_16M_SIZE
-from artemis.devices.fast_grid_scan import GridScanParams
+from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
+from dodal.devices.fast_grid_scan import GridScanParams
+
 from artemis.parameters.external_parameters import RawParameters
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D

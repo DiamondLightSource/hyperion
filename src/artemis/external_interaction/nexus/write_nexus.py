@@ -14,12 +14,12 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
+from dodal.devices.detector import DetectorParams
+from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 
-from artemis.devices.detector import DetectorParams
-from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.parameters.internal_parameters import InternalParameters
 

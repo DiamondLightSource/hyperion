@@ -1,12 +1,14 @@
 from typing import Any, Dict
 
+from dodal.devices.eiger import DetectorParams
+
 import artemis.experiment_plans.experiment_registry as registry
-from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
     ISPYB_PARAM_DEFAULTS,
     IspybParams,
 )
 from artemis.parameters.constants import (
+    DETECTOR_PARAM_DEFAULTS,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,

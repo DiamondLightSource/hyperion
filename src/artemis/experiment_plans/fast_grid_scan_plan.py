@@ -7,19 +7,19 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
+from dodal.devices.fast_grid_scan_composite import FGSComposite
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 
 import artemis.log
 from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
-from artemis.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
-from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.devices.s4_slit_gaps import S4SlitGaps
-from artemis.devices.synchrotron import Synchrotron
-from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
 from artemis.parameters.beamline_parameters import (
     GDABeamlineParameters,
@@ -34,7 +34,8 @@ from artemis.tracing import TRACER
 from artemis.utils import Point3D
 
 if TYPE_CHECKING:
-    from artemis.devices.fast_grid_scan_composite import FGSComposite
+    from dodal.devices.fast_grid_scan_composite import FGSComposite
+
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )

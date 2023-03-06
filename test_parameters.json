@@ -16,7 +16,7 @@
             "omega_increment": 0.1,
             "num_images": 50,
             "use_roi_mode": false,
-            "det_dist_to_beam_converter_path": "src/artemis/devices/unit_tests/test_lookup_table.txt"
+            "det_dist_to_beam_converter_path": "src/artemis/unit_tests/test_lookup_table.txt"
         },
         "ispyb_params": {
             "visit_path": "/tmp/cm31105-4/",
@@ -73,5 +73,59 @@
         "y2_start": 0.0,
         "z1_start": 0.0,
         "z2_start": 0.0
+    },
+    "detector_params": {
+        "current_energy": 100,
+        "exposure_time": 0.1,
+        "directory": "/tmp",
+        "prefix": "file_name",
+        "run_number": 0,
+        "detector_distance": 100.0,
+        "omega_start": 0.0,
+        "omega_increment": 0.1,
+        "num_images": 50,
+        "use_roi_mode": false,
+        "det_dist_to_beam_converter_path": "src/artemis/unit_tests/test_lookup_table.txt"
+    },
+    "ispyb_params": {
+        "visit_path": "/tmp/cm31105-4/",
+        "pixels_per_micron_x": 1.0,
+        "pixels_per_micron_y": 1.0,
+        "upper_left": {
+            "x": 10.0,
+            "y": 20.0,
+            "z": 30.0
+        },
+        "position": {
+            "x": 10.0,
+            "y": 20.0,
+            "z": 30.0
+        },
+        "xtal_snapshots_omega_start": [
+            "test_1_y",
+            "test_2_y",
+            "test_3_y"
+        ],
+        "xtal_snapshots_omega_end": [
+            "test_1_z",
+            "test_2_z",
+            "test_3_z"
+        ],
+        "xtal_snapshots": [
+            "test_1",
+            "test_2",
+            "test_3"
+        ],
+        "transmission": 1.0,
+        "flux": 10.0,
+        "wavelength": 0.01,
+        "beam_size_x": 1.0,
+        "beam_size_y": 1.0,
+        "slit_gap_size_x": 1.0,
+        "slit_gap_size_y": 1.0,
+        "focal_spot_size_x": 1.0,
+        "focal_spot_size_y": 1.0,
+        "comment": "test",
+        "resolution": 1.0
     }
 }

@@ -4,18 +4,18 @@ from unittest.mock import ANY, MagicMock, call, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
-from ophyd.sim import make_fake_device
-from ophyd.status import Status
-
-from artemis.devices.aperturescatterguard import AperturePositions
-from artemis.devices.det_dim_constants import (
+from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan import FastGridScan
-from artemis.devices.fast_grid_scan_composite import FGSComposite
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan_composite import FGSComposite
+from ophyd.sim import make_fake_device
+from ophyd.status import Status
+
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
@@ -171,7 +171,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
 
 
 @patch(
-    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+    "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
@@ -257,7 +257,7 @@ def test_results_passed_to_move_motors(
 
 
 @patch(
-    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+    "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
@@ -291,7 +291,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
 
 
 @patch(
-    "artemis.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+    "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")

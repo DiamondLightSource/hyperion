@@ -39,7 +39,7 @@ class ExternalDetectorParameters(DataClassJsonMixin):
     num_images: int = 2000
     use_roi_mode: bool = False
     det_dist_to_beam_converter_path: str = (
-        "src/artemis/devices/unit_tests/test_lookup_table.txt"
+        "src/artemis/unit_tests/test_lookup_table.txt"
     )
     detector_size_constants: Optional[str] = "EIGER2_X_16M"
 

@@ -2,12 +2,12 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
-
-from artemis.devices.aperturescatterguard import (
+from dodal.devices.aperturescatterguard import (
     AperturePositions,
     ApertureScatterguard,
     InvalidApertureMove,
 )
+
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
 from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH
 

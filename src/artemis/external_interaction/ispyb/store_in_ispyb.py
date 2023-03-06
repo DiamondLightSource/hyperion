@@ -4,11 +4,11 @@ import datetime
 import re
 from abc import ABC, abstractmethod
 
+import dodal.devices.oav.utils as oav_utils
 import ispyb
 import ispyb.sqlalchemy
 from sqlalchemy.connectors import Connector
 
-import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
 from artemis.parameters.internal_parameters import InternalParameters
