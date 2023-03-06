@@ -1,4 +1,5 @@
 # python-artemis
+![Tests](https://github.com/DiamondLightSource/python-artemis/actions/workflows/code.yml/badge.svg) [![codecov](https://codecov.io/gh/DiamondLightSource/python-artemis/branch/main/graph/badge.svg?token=00Ww81MHe8)](https://codecov.io/gh/DiamondLightSource/python-artemis)
 
 Repository for the Artemis project to implement "3D grid scans" using the BlueSky / Ophyd framework from BNL. 
 
