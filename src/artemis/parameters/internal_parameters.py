@@ -1,5 +1,6 @@
+from typing import Any, Dict
+
 import artemis.experiment_plans.experiment_registry as registry
-from artemis.devices.det_dim_constants import constants_from_type
 from artemis.devices.eiger import DETECTOR_PARAM_DEFAULTS, DetectorParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
     ISPYB_PARAM_DEFAULTS,
@@ -11,7 +12,6 @@ from artemis.parameters.constants import (
     SIM_ZOCALO_ENV,
 )
 from artemis.parameters.external_parameters import RawParameters
-from artemis.utils import Point3D
 
 
 class ArtemisParameters:
@@ -19,9 +19,9 @@ class ArtemisParameters:
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
     experiment_type: str = registry.EXPERIMENT_NAMES[0]
-    detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
+    detector_params: Dict[str, Any] = DETECTOR_PARAM_DEFAULTS
 
-    ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS)
+    ispyb_params: Dict[str, Any] = ISPYB_PARAM_DEFAULTS
 
     def __init__(
         self,
@@ -29,15 +29,15 @@ class ArtemisParameters:
         beamline: str = SIM_BEAMLINE,
         insertion_prefix: str = SIM_INSERTION_PREFIX,
         experiment_type: str = registry.EXPERIMENT_NAMES[0],
-        detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS),
-        ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS),
+        detector_params: Dict[str, Any] = DETECTOR_PARAM_DEFAULTS,
+        ispyb_params: Dict[str, Any] = ISPYB_PARAM_DEFAULTS,
     ) -> None:
         self.zocalo_environment = zocalo_environment
         self.beamline = beamline
         self.insertion_prefix = insertion_prefix
         self.experiment_type = experiment_type
-        self.detector_params = detector_params
-        self.ispyb_params = ispyb_params
+        self.detector_params = DetectorParams.from_dict(detector_params)
+        self.ispyb_params = IspybParams.from_dict(ispyb_params)
 
     def __repr__(self):
         r = "artemis_params:\n"
@@ -74,23 +74,6 @@ class InternalParameters:
     def __init__(self, external_params: RawParameters = RawParameters()):
         self.artemis_params = ArtemisParameters(
             **external_params.artemis_params.to_dict()
-        )
-        self.artemis_params.detector_params = DetectorParams(
-            **self.artemis_params.detector_params
-        )
-        self.artemis_params.detector_params.detector_size_constants = (
-            constants_from_type(
-                self.artemis_params.detector_params.detector_size_constants
-            )
-        )
-        self.artemis_params.ispyb_params = IspybParams(
-            **self.artemis_params.ispyb_params
-        )
-        self.artemis_params.ispyb_params.upper_left = Point3D(
-            *self.artemis_params.ispyb_params.upper_left
-        )
-        self.artemis_params.ispyb_params.position = Point3D(
-            *self.artemis_params.ispyb_params.position
         )
         self.experiment_params = registry.EXPERIMENT_TYPE_DICT[
             ArtemisParameters.experiment_type
