@@ -5,14 +5,14 @@ from unittest.mock import call, patch
 import h5py
 import numpy as np
 import pytest
+from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 
-from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.nexus.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
@@ -27,21 +27,21 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 @pytest.fixture(params=[1044])
 def minimal_params(request):
-    params = FullParameters()
-    params.ispyb_params.wavelength = 1.0
-    params.ispyb_params.flux = 9.0
-    params.ispyb_params.transmission = 0.5
-    params.detector_params.use_roi_mode = True
-    params.detector_params.num_images = request.param
-    params.detector_params.directory = (
+    params = InternalParameters()
+    params.artemis_params.ispyb_params.wavelength = 1.0
+    params.artemis_params.ispyb_params.flux = 9.0
+    params.artemis_params.ispyb_params.transmission = 0.5
+    params.artemis_params.detector_params.use_roi_mode = True
+    params.artemis_params.detector_params.num_images = request.param
+    params.artemis_params.detector_params.directory = (
         os.path.dirname(os.path.realpath(__file__)) + "/test_data"
     )
-    params.detector_params.prefix = "dummy"
+    params.artemis_params.detector_params.prefix = "dummy"
     yield params
 
 
 @pytest.fixture
-def dummy_nexus_writers(minimal_params: FullParameters):
+def dummy_nexus_writers(minimal_params: InternalParameters):
     first_file_params = create_parameters_for_first_file(minimal_params)
     nexus_writer_1 = NexusWriter(first_file_params)
 
@@ -56,12 +56,12 @@ def dummy_nexus_writers(minimal_params: FullParameters):
 
 
 @pytest.fixture
-def dummy_nexus_writers_with_more_images(minimal_params: FullParameters):
+def dummy_nexus_writers_with_more_images(minimal_params: InternalParameters):
     x, y, z = 45, 35, 25
-    minimal_params.grid_scan_params.x_steps = x
-    minimal_params.grid_scan_params.y_steps = y
-    minimal_params.grid_scan_params.z_steps = z
-    minimal_params.detector_params.num_images = x * y + x * z
+    minimal_params.experiment_params.x_steps = x
+    minimal_params.experiment_params.y_steps = y
+    minimal_params.experiment_params.z_steps = z
+    minimal_params.artemis_params.detector_params.num_images = x * y + x * z
     first_file_params = create_parameters_for_first_file(minimal_params)
     nexus_writer_1 = NexusWriter(first_file_params)
 
@@ -90,7 +90,7 @@ def single_dummy_file(minimal_params):
     indirect=["minimal_params"],
 )
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
-    minimal_params, expected_num_of_files, single_dummy_file
+    minimal_params: InternalParameters, expected_num_of_files, single_dummy_file
 ):
     first_writer = single_dummy_file
     assert len(first_writer.get_image_datafiles()) == expected_num_of_files
@@ -103,10 +103,11 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
-    minimal_params, dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
+    minimal_params: InternalParameters,
+    dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
-    grid_scan_params: GridScanParams = minimal_params.grid_scan_params
+    grid_scan_params: GridScanParams = minimal_params.experiment_params
     nexus_writer_1.create_nexus_file()
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
@@ -220,11 +221,13 @@ def assert_contains_external_link(data_path, entry_name, file_name):
 
 
 def test_nexus_writer_files_are_formatted_as_expected(
-    minimal_params: FullParameters, single_dummy_file: NexusWriter
+    minimal_params: InternalParameters, single_dummy_file: NexusWriter
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
-        expected_file_name_prefix = minimal_params.detector_params.prefix + "_0"
+        expected_file_name_prefix = (
+            minimal_params.artemis_params.detector_params.prefix + "_0"
+        )
         assert file_name.startswith(expected_file_name_prefix)
 
 
@@ -246,7 +249,7 @@ def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: NexusWriter):
 
 
 def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
-    from artemis.devices.det_dim_constants import (
+    from dodal.devices.det_dim_constants import (
         PIXELS_X_EIGER2_X_4M,
         PIXELS_Y_EIGER2_X_4M,
     )
@@ -291,7 +294,7 @@ def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
 
 
 @pytest.mark.skip(reason="Needs fixing in Nexgen")
-def test_GIVEN_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
+def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images

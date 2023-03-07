@@ -2,7 +2,6 @@ import argparse
 import atexit
 import threading
 from dataclasses import dataclass
-from enum import Enum
 from json import JSONDecodeError
 from queue import Queue
 from typing import Callable, Optional, Tuple
@@ -15,37 +14,24 @@ from flask_restful import Api, Resource
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
-from artemis.external_interaction.callbacks import (
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
+)
+from artemis.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from artemis.parameters import FullParameters
+from artemis.parameters.constants import Actions, Status
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
 
 VERBOSE_EVENT_LOGGING: Optional[bool] = None
-
-
-class Actions(Enum):
-    START = "start"
-    STOP = "stop"
-    SHUTDOWN = "shutdown"
-    STATUS = "status"
-
-
-class Status(Enum):
-    WARN = "Warn"
-    FAILED = "Failed"
-    SUCCESS = "Success"
-    BUSY = "Busy"
-    ABORTING = "Aborting"
-    IDLE = "Idle"
 
 
 @dataclass
 class Command:
     action: Actions
     experiment: Optional[Callable] = None
-    parameters: Optional[FullParameters] = None
+    parameters: Optional[InternalParameters] = None
 
 
 @dataclass_json
@@ -73,9 +59,9 @@ class BlueskyRunner:
             PLAN_REGISTRY[plan]["setup"]()
 
     def start(
-        self, experiment: Callable, parameters: FullParameters
+        self, experiment: Callable, parameters: InternalParameters
     ) -> StatusAndMessage:
-        artemis.log.LOGGER.info(f"Started {experiment} with parameters: {parameters}")
+        artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
@@ -162,7 +148,7 @@ class RunExperiment(Resource):
                     raise PlanNotFound(
                         f"Experiment plan '{experiment}' has no \"run\" method."
                     )
-                parameters = FullParameters.from_json(request.data)
+                parameters = InternalParameters.from_external_json(request.data)
                 status_and_message = self.runner.start(plan, parameters)
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))

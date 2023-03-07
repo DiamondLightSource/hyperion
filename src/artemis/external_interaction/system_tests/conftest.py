@@ -1,3 +1,4 @@
+import os
 from functools import partial
 from typing import Callable
 
@@ -7,11 +8,12 @@ from ispyb.sqlalchemy import DataCollection
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import artemis.external_interaction.zocalo.zocalo_interaction
 from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
@@ -42,7 +44,7 @@ TEST_RESULT_SMALL = [
         "max_voxel": [1, 2, 3],
         "max_count": 105062,
         "n_voxels": 35,
-        "total_count": 2387574,
+        "total_count": 1387574,
         "bounding_box": [[2, 2, 2], [3, 3, 3]],
     }
 ]
@@ -73,11 +75,13 @@ def fetch_comment() -> Callable:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = FullParameters()
-    dummy_params.ispyb_params.upper_left = Point3D(100, 100, 50)
-    dummy_params.ispyb_params.pixels_per_micron_x = 0.8
-    dummy_params.ispyb_params.pixels_per_micron_y = 0.8
-    dummy_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    dummy_params = InternalParameters()
+    dummy_params.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 50)
+    dummy_params.artemis_params.ispyb_params.pixels_per_micron_x = 0.8
+    dummy_params.artemis_params.ispyb_params.pixels_per_micron_y = 0.8
+    dummy_params.artemis_params.ispyb_params.visit_path = (
+        "/dls/i03/data/2022/cm31105-5/"
+    )
     return dummy_params
 
 
@@ -89,3 +93,9 @@ def dummy_ispyb(dummy_params) -> StoreInIspyb2D:
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> StoreInIspyb3D:
     return StoreInIspyb3D(ISPYB_CONFIG, dummy_params)
+
+
+@pytest.fixture
+def zocalo_env():
+    os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
+    artemis.external_interaction.zocalo.zocalo_interaction.TIMEOUT = 5

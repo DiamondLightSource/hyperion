@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import operator
 import time
 from typing import Callable, Optional
@@ -13,7 +15,7 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.log import LOGGER
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 
@@ -38,16 +40,18 @@ class FGSZocaloCallback(CallbackBase):
     """
 
     def __init__(
-        self, parameters: FullParameters, ispyb_handler: FGSISPyBHandlerCallback
+        self, parameters: "InternalParameters", ispyb_handler: FGSISPyBHandlerCallback
     ):
         self.grid_position_to_motor_position: Callable[
             [Point3D], Point3D
-        ] = parameters.grid_scan_params.grid_position_to_motor_position
+        ] = parameters.experiment_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.run_gridscan_uid: Optional[str] = None
-        self.ispyb = ispyb_handler
-        self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
+        self.ispyb: FGSISPyBHandlerCallback = ispyb_handler
+        self.zocalo_interactor = ZocaloInteractor(
+            parameters.artemis_params.zocalo_environment
+        )
 
     def start(self, doc: dict):
         LOGGER.info("Zocalo handler received start document.")
@@ -88,6 +92,31 @@ class FGSZocaloCallback(CallbackBase):
                 datacollection_group_id
             )
 
+            # Sort from strongest to weakest in case of multiple crystals
+            raw_results = sorted(
+                raw_results, key=lambda d: d["total_count"], reverse=True
+            )
+            LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
+            crystal_summary = ""
+
+            bboxes = []
+            for n, res in enumerate(raw_results):
+                bboxes.append(
+                    list(
+                        map(
+                            operator.sub, res["bounding_box"][1], res["bounding_box"][0]
+                        )
+                    )
+                )
+                nicely_formatted_com = [f"{com:.2f}" for com in res["centre_of_mass"]]
+                crystal_summary += (
+                    f"Crystal {n+1}: "
+                    f"Strength {res['total_count']}; "
+                    f"Position (grid boxes) {nicely_formatted_com}; "
+                    f"Size (grid boxes) {bboxes[n]};"
+                )
+            self.ispyb.append_to_comment(crystal_summary)
+
             raw_centre = Point3D(*(raw_results[0]["centre_of_mass"]))
 
             # _wait_for_result returns the centre of the grid box, but we want the corner
@@ -96,13 +125,7 @@ class FGSZocaloCallback(CallbackBase):
             )
             xray_centre = self.grid_position_to_motor_position(results)
 
-            bbox_size: list[int] | None = list(
-                map(
-                    operator.sub,
-                    raw_results[0]["bounding_box"][1],
-                    raw_results[0]["bounding_box"][0],
-                )
-            )
+            bbox_size: list[int] | None = bboxes[0]
 
             LOGGER.info(
                 f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"

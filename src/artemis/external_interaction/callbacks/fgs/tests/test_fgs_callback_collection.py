@@ -2,25 +2,37 @@ from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.eiger import DetectorParams, EigerDetector
+from dodal.devices.fast_grid_scan_composite import FGSComposite
 
-from artemis.devices.eiger import DetectorParams, EigerDetector
-from artemis.devices.fast_grid_scan_composite import FGSComposite
 from artemis.experiment_plans.fast_grid_scan_plan import run_gridscan_and_move
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
-from artemis.parameters import (
-    SIM_BEAMLINE,
-    SIM_INSERTION_PREFIX,
-    DetectorParams,
-    FullParameters,
-)
+from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
+from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 
 def test_callback_collection_init():
-    callbacks = FGSCallbackCollection.from_params(FullParameters())
-    assert callbacks.ispyb_handler.params == FullParameters()
+    callbacks = FGSCallbackCollection.from_params(InternalParameters())
+    test_parameters = InternalParameters()
+    assert (
+        callbacks.ispyb_handler.params.experiment_params
+        == test_parameters.experiment_params
+    )
+    assert (
+        callbacks.ispyb_handler.params.artemis_params.detector_params
+        == test_parameters.artemis_params.detector_params
+    )
+    assert (
+        callbacks.ispyb_handler.params.artemis_params.ispyb_params
+        == test_parameters.artemis_params.ispyb_params
+    )
+    assert (
+        callbacks.ispyb_handler.params.artemis_params == test_parameters.artemis_params
+    )
+    assert callbacks.ispyb_handler.params == test_parameters
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
     assert len(list(callbacks)) == 3
 
@@ -38,7 +50,7 @@ def eiger():
         num_images=50,
         use_roi_mode=False,
         run_number=0,
-        det_dist_to_beam_converter_path="src/artemis/devices/unit_tests/test_lookup_table.txt",
+        det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
     )
     eiger = EigerDetector(
         detector_params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
@@ -67,8 +79,8 @@ def test_communicator_in_composite_run(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
 
-    params = FullParameters()
-    params.beamline = SIM_BEAMLINE
+    params = InternalParameters()
+    params.artemis_params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
     callbacks = FGSCallbackCollection.from_params(params)

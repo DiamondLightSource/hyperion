@@ -2,6 +2,8 @@
 Define beamline parameters for I03, Eiger detector and give an example of writing a
 gridscan.
 """
+from __future__ import annotations
+
 import math
 import shutil
 import time
@@ -12,14 +14,14 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
+from dodal.devices.detector import DetectorParams
+from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 
-from artemis.devices.detector import DetectorParams
-from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
-from artemis.parameters import FullParameters
+from artemis.parameters.internal_parameters import InternalParameters
 
 source = {
     "name": "Diamond Light Source",
@@ -49,31 +51,31 @@ module = {
 }
 
 
-def create_parameters_for_first_file(parameters: FullParameters):
+def create_parameters_for_first_file(parameters: InternalParameters):
     new_params = deepcopy(parameters)
-    new_params.grid_scan_params.z_axis = GridAxis(
-        parameters.grid_scan_params.z1_start, 0, 0
+    new_params.experiment_params.z_axis = GridAxis(
+        parameters.experiment_params.z1_start, 0, 0
     )
-    new_params.detector_params.num_images = (
-        parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
+    new_params.artemis_params.detector_params.num_images = (
+        parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
     )
-    new_params.detector_params.nexus_file_run_number = (
-        parameters.detector_params.run_number
+    new_params.artemis_params.detector_params.nexus_file_run_number = (
+        parameters.artemis_params.detector_params.run_number
     )
     return new_params
 
 
-def create_parameters_for_second_file(parameters: FullParameters):
+def create_parameters_for_second_file(parameters: InternalParameters):
     new_params = deepcopy(parameters)
-    new_params.grid_scan_params.y_axis = GridAxis(
-        parameters.grid_scan_params.y2_start, 0, 0
+    new_params.experiment_params.y_axis = GridAxis(
+        parameters.experiment_params.y2_start, 0, 0
     )
-    new_params.detector_params.omega_start += 90
-    new_params.detector_params.nexus_file_run_number = (
-        parameters.detector_params.run_number + 1
+    new_params.artemis_params.detector_params.omega_start += 90
+    new_params.artemis_params.detector_params.nexus_file_run_number = (
+        parameters.artemis_params.detector_params.run_number + 1
     )
-    new_params.detector_params.start_index = (
-        parameters.grid_scan_params.x_steps * parameters.grid_scan_params.y_steps
+    new_params.artemis_params.detector_params.start_index = (
+        parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
     )
     return new_params
 
@@ -204,28 +206,32 @@ def create_beam_and_attenuator_parameters(
 class NexusWriter:
     def __init__(
         self,
-        parameters: FullParameters,
+        parameters: InternalParameters,
     ) -> None:
-        self.detector = create_detector_parameters(parameters.detector_params)
+        self.detector = create_detector_parameters(
+            parameters.artemis_params.detector_params
+        )
         self.beam, self.attenuator = create_beam_and_attenuator_parameters(
-            parameters.ispyb_params
+            parameters.artemis_params.ispyb_params
         )
 
         self.goniometer = create_goniometer_axes(
-            parameters.detector_params, parameters.grid_scan_params
+            parameters.artemis_params.detector_params, parameters.experiment_params
         )
-        self.directory = Path(parameters.detector_params.directory)
-        self.filename = parameters.detector_params.full_filename
+        self.directory = Path(parameters.artemis_params.detector_params.directory)
+        self.filename = parameters.artemis_params.detector_params.full_filename
 
-        self.start_index = parameters.detector_params.start_index
+        self.start_index = parameters.artemis_params.detector_params.start_index
 
-        self.full_num_of_images = parameters.detector_params.num_images
+        self.full_num_of_images = parameters.artemis_params.detector_params.num_images
 
         self.nexus_file = (
-            self.directory / f"{parameters.detector_params.nexus_filename}.nxs"
+            self.directory
+            / f"{parameters.artemis_params.detector_params.nexus_filename}.nxs"
         )
         self.master_file = (
-            self.directory / f"{parameters.detector_params.nexus_filename}_master.h5"
+            self.directory
+            / f"{parameters.artemis_params.detector_params.nexus_filename}_master.h5"
         )
 
     def _get_current_time(self):

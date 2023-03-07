@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from artemis.parameters import ISPYB_PLAN_NAME
+from artemis.parameters.constants import ISPYB_PLAN_NAME
 
 
 @pytest.fixture
@@ -92,8 +92,8 @@ class TestData:
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.828203,
         "data": {
-            "fgs_slit_gaps_xgap": 0.1234,
-            "fgs_slit_gaps_ygap": 0.2345,
+            "fgs_s4_slit_gaps_xgap": 0.1234,
+            "fgs_s4_slit_gaps_ygap": 0.2345,
             "fgs_synchrotron_machine_status_synchrotron_mode": "test",
             "fgs_undulator_gap": 1.234,
         },

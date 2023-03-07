@@ -1,35 +1,45 @@
+from __future__ import annotations
+
 import argparse
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
+from dodal.devices.fast_grid_scan_composite import FGSComposite
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 
 import artemis.log
 from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
-from artemis.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
-from artemis.devices.eiger import EigerDetector
-from artemis.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
-from artemis.devices.fast_grid_scan_composite import FGSComposite
-from artemis.devices.slit_gaps import SlitGaps
-from artemis.devices.synchrotron import Synchrotron
-from artemis.devices.undulator import Undulator
 from artemis.exceptions import WarningException
-from artemis.external_interaction.callbacks import FGSCallbackCollection
-from artemis.parameters import (
-    I03_BEAMLINE_PARAMETER_PATH,
-    ISPYB_PLAN_NAME,
-    SIM_BEAMLINE,
-    FullParameters,
+from artemis.parameters.beamline_parameters import (
     GDABeamlineParameters,
     get_beamline_prefixes,
 )
+from artemis.parameters.constants import (
+    I03_BEAMLINE_PARAMETER_PATH,
+    ISPYB_PLAN_NAME,
+    SIM_BEAMLINE,
+)
 from artemis.tracing import TRACER
 from artemis.utils import Point3D
+
+if TYPE_CHECKING:
+    from dodal.devices.fast_grid_scan_composite import FGSComposite
+
+    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+        FGSCallbackCollection,
+    )
+    from artemis.parameters.internal_parameters import InternalParameters
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
@@ -89,7 +99,7 @@ def set_aperture_for_bbox_size(
 def read_hardware_for_ispyb(
     undulator: Undulator,
     synchrotron: Synchrotron,
-    slit_gaps: SlitGaps,
+    s4_slit_gaps: S4SlitGaps,
 ):
     artemis.log.LOGGER.info(
         "Reading status of beamline parameters for ispyb deposition."
@@ -99,8 +109,8 @@ def read_hardware_for_ispyb(
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
-    yield from bps.read(slit_gaps.xgap)
-    yield from bps.read(slit_gaps.ygap)
+    yield from bps.read(s4_slit_gaps.xgap)
+    yield from bps.read(s4_slit_gaps.ygap)
     yield from bps.save()
 
 
@@ -150,7 +160,7 @@ def tidy_up_plans(fgs_composite: FGSComposite):
 def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
-    parameters: FullParameters,
+    parameters: InternalParameters,
     md={
         "plan_name": "run_gridscan",
     },
@@ -168,13 +178,13 @@ def run_gridscan(
         yield from read_hardware_for_ispyb(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
-            fgs_composite.slit_gaps,
+            fgs_composite.s4_slit_gaps,
         )
 
     fgs_motors = fgs_composite.fast_grid_scan
 
     # TODO: Check topup gate
-    yield from set_fast_grid_scan_params(fgs_motors, parameters.grid_scan_params)
+    yield from set_fast_grid_scan_params(fgs_motors, parameters.experiment_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
     @bpp.set_run_key_decorator("do_fgs")
@@ -197,7 +207,7 @@ def run_gridscan(
 def run_gridscan_and_move(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
-    parameters: FullParameters,
+    parameters: InternalParameters,
     subscriptions: FGSCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
@@ -241,7 +251,7 @@ def run_gridscan_and_move(
 
 
 def get_plan(
-    parameters: FullParameters,
+    parameters: InternalParameters,
     subscriptions: FGSCallbackCollection,
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
@@ -250,12 +260,12 @@ def get_plan(
     at any point in it.
 
     Args:
-        parameters (FullParameters): The parameters to run the scan.
+        parameters (InternalParameters): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
     """
-    eiger.set_detector_parameters(parameters.detector_params)
+    eiger.set_detector_parameters(parameters.artemis_params.detector_params)
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
     @bpp.subs_decorator(subscriptions.ispyb_handler)
@@ -279,7 +289,7 @@ if __name__ == "__main__":
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
 
-    parameters = FullParameters(beamline=args.beamline)
+    parameters = InternalParameters(beamline=args.artemis_parameters.beamline)
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     create_devices()

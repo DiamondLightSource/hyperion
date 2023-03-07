@@ -1,0 +1,98 @@
+# See https://confluence.diamond.ac.uk/x/tJqQC for instructions if this needs a new token
+name: Reusable workflow for moving issues on project boards
+on:
+  workflow_call:
+    inputs:
+      column_name: # The column to move the issue to
+        required: true
+        type: string
+      issue_id: # The issue to move
+        required: true
+        type: string
+    secrets:
+      GHPROJECT_TOKEN:
+        required: true
+jobs:
+  move_issue_to_project_column:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get project data
+        # This will get information about the project in general and add it to the environment.
+        # * PROJECT_ID - The ID for the project itself
+        # * STATUS_FIELD_ID - The ID for the field that contains the column name
+        # * NEW_OPTION_ID - The ID for the column name we are moving into
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
+          ORGANIZATION: ${{ github.repository_owner }}
+          PROJECT_NUMBER: 6
+        run: |
+          gh api graphql -f query='
+            query($org: String!, $number: Int!) {
+              organization(login: $org){
+                projectV2(number: $number) {
+                  id
+                  fields(first:20) {
+                    nodes {
+                      ... on ProjectV2Field {
+                        id
+                        name
+                      }
+                      ... on ProjectV2SingleSelectField {
+                        id
+                        name
+                        options {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
+
+          echo 'PROJECT_ID='$(jq '.data.organization.projectV2.id' project_data.json) >> $GITHUB_ENV
+          echo 'STATUS_FIELD_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Status") | .id' project_data.json) >> $GITHUB_ENV
+          echo 'NEW_OPTION_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Status") | .options[] | select(.name=="${{ inputs.column_name }}") |.id' project_data.json) >> $GITHUB_ENV
+      - name: Add issue to project
+        # If the issue has not been added to the project this will add it
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
+          ISSUE_ID: ${{ inputs.issue_id }}
+        run: |
+          item_id="$( gh api graphql -f query='
+            mutation($project:ID!, $pr:ID!) {
+              addProjectV2ItemById(input: {projectId: $project, contentId: $pr}) {
+                item {
+                  id
+                }
+              }
+            }' -f project=$PROJECT_ID -f pr=$ISSUE_ID --jq '.data.addProjectV2ItemById.item.id')"
+
+            echo 'ITEM_ID='$item_id >> $GITHUB_ENV
+
+      - name: Set column
+        # Puts the issue in the new column
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
+        run: |
+          gh api graphql -f query='
+            mutation (
+              $project: ID!
+              $item: ID!
+              $status_field: ID!
+              $status_value: String!
+            ) {
+              set_status: updateProjectV2ItemFieldValue(input: {
+                projectId: $project
+                itemId: $item
+                fieldId: $status_field
+                value: { 
+                  singleSelectOptionId: $status_value
+                  }
+              }) {
+                projectV2Item {
+                  id
+                  }
+              }
+            }' -f project=$PROJECT_ID -f item=$ITEM_ID -f status_field=$STATUS_FIELD_ID -f status_value=${{ env.NEW_OPTION_ID }} --silent

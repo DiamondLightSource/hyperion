@@ -1,4 +1,5 @@
 # python-artemis
+![Tests](https://github.com/DiamondLightSource/python-artemis/actions/workflows/code.yml/badge.svg) [![codecov](https://codecov.io/gh/DiamondLightSource/python-artemis/branch/main/graph/badge.svg?token=00Ww81MHe8)](https://codecov.io/gh/DiamondLightSource/python-artemis)
 
 Repository for the Artemis project to implement "3D grid scans" using the BlueSky / Ophyd framework from BNL. 
 
@@ -8,8 +9,7 @@ https://nsls-ii.github.io/bluesky/
 Development Installation
 =================
 
-1. Clone this project 
-1. Run `dls_dev_env.sh` (This assumes you're on a DLS machine, if you are not you sould be able to just run a subset of this script)
+Run `dls_dev_env.sh` (This assumes you're on a DLS machine, if you are not you sould be able to just run a subset of this script)
 
 Controlling the Gridscan Externally (e.g. from GDA)
 =====================

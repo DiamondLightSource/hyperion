@@ -7,7 +7,7 @@ activemq-for-dummy stop
 # starts the rabbitmq server and generates some credentials in ~/.fake_zocalo
 module load rabbitmq/dev
 
-# allows the `devrmq` zocalo environment to be used
+# allows the `dev_artemis` zocalo environment to be used
 module load dials/latest
 
 source .venv/bin/activate

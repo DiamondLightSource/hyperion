@@ -1,0 +1,43 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "x_steps": {
+            "type": "number"
+        },
+        "y_steps": {
+            "type": "number"
+        },
+        "z_steps": {
+            "type": "number"
+        },
+        "x_step_size": {
+            "type": "number"
+        },
+        "y_step_size": {
+            "type": "number"
+        },
+        "z_step_size": {
+            "type": "number"
+        },
+        "dwell_time": {
+            "type": "number"
+        },
+        "x_start": {
+            "type": "number"
+        },
+        "y1_start": {
+            "type": "number"
+        },
+        "y2_start": {
+            "type": "number"
+        },
+        "z1_start": {
+            "type": "number"
+        },
+        "z2_start": {
+            "type": "number"
+        }
+    },
+    "minProperties": 12
+}

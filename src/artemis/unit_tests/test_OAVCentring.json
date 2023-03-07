@@ -1,0 +1,69 @@
+{
+	"exposure": 0.075,
+	"acqPeriod": 0.05,
+	"gain": 1.0,
+	"minheight": 70,
+	"oav": "OAV",
+	"mxsc_input": "CAM",
+	"min_callback_time": 0.080,
+	"close_ksize": 11,
+	"direction": 0,
+	"pinTipCentring": {
+		"zoom": 1.0,
+		"preprocess": 8,
+		"preProcessKSize": 21,
+		"CannyEdgeUpperThreshold": 20.0,
+		"CannyEdgeLowerThreshold": 5.0,
+		"brightness": 20,
+		"max_tip_distance": 300,
+		"mxsc_input": "proc",
+		"minheight": 10,
+		"min_callback_time": 0.15,
+		"filename": "/dls_sw/prod/R3.14.12.7/support/adPython/2-1-11/adPythonApp/scripts/adPythonMxSampleDetect.py"
+	},
+	"loopCentring": {
+		"zoom": 5.0,
+		"preprocess": 8,
+		"preProcessKSize": 21,
+		"CannyEdgeUpperThreshold": 20.0,
+		"CannyEdgeLowerThreshold": 5.0,
+		"brightness": 20,
+		"filename": "/dls_sw/prod/R3.14.12.7/support/adPython/2-1-11/adPythonApp/scripts/adPythonMxSampleDetect.py",
+		"max_tip_distance": 300
+	},
+	"xrayCentring": {
+		"zoom": 7.5,
+		"preprocess": 8,
+		"preProcessKSize": 31,
+		"CannyEdgeUpperThreshold": 30.0,
+		"CannyEdgeLowerThreshold": 5.0,
+		"close_ksize": 3,
+		"filename": "/dls_sw/prod/R3.14.12.7/support/adPython/2-1-11/adPythonApp/scripts/adPythonMxSampleDetect.py",
+		"brightness": 80
+	},
+	"rotationAxisAlign": {
+		"zoom": 10.0,
+		"preprocess": 8,
+		"preProcessKSize": 21,
+		"CannyEdgeUpperThreshold": 20.0,
+		"CannyEdgeLowerThreshold": 5.0,
+		"filename": "/dls_sw/prod/R3.14.12.7/support/adPython/2-1-11/adPythonApp/scripts/adPythonMxSampleDetect.py",
+		"brightness": 100
+	},
+	"SmargonOffsets1": {
+		"zoom": 1.0,
+		"preprocess": 8,
+		"preProcessKSize": 21,
+		"CannyEdgeUpperThreshold": 50.0,
+		"CannyEdgeLowerThreshold": 5.0,
+		"brightness": 80
+	},
+	"SmargonOffsets2": {
+		"zoom": 5.0,
+		"preprocess": 8,
+		"preProcessKSize": 11,
+		"CannyEdgeUpperThreshold": 50.0,
+		"CannyEdgeLowerThreshold": 5.0,
+		"brightness": 90
+	}
+}
