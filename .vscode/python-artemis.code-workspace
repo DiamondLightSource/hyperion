@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../dodal"
+		}
+	],
+	"settings": {
+		"python.languageServer": "Pylance",
+		"terminal.integrated.gpuAcceleration": "off"
+	}
+}

@@ -13,6 +13,12 @@ mkdir .venv
 
 python -m venv .venv
 source .venv/bin/activate
+
+if [ ! -d "../dodal" ]; then
+  git clone git@github.com:DiamondLightSource/dodal.git ../dodal
+fi
+
+pip install -e ../dodal[dev]
 pip install -e .[dev]
 
 # get dlstbx into our env
