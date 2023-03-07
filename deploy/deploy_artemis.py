@@ -11,11 +11,10 @@ recognised_beamlines = ["dev", "i03"]
 def get_release_dir_from_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--beamline",
+        "beamline",
         type=str,
         choices=recognised_beamlines,
         help="The beamline to deploy artemis to",
-        required=True,
     )
     args = parser.parse_args()
     if args.beamline == "dev":
@@ -31,7 +30,7 @@ if __name__ == "__main__":
     print(f"Putting releases into {release_area}")
     print("Gathering version tags from this repo")
 
-    this_repo = Repo(os.path.join(os.path.dirname(__file__), ".git"))
+    this_repo = Repo(os.path.join(os.path.dirname(__file__), "../.git"))
 
     this_origin = this_repo.remotes.origin
     this_origin.fetch()
@@ -45,6 +44,9 @@ if __name__ == "__main__":
 
     deploy_location = os.path.join(release_area, f"artemis_{latest_version_str}")
 
+    if os.path.isdir(deploy_location):
+        raise Exception(f"{deploy_location} already exists, stopping deployment")
+
     print(f"Cloning latest version {latest_version_str} into {deploy_location}")
 
     deploy_repo = Repo.init(deploy_location)
@@ -52,6 +54,14 @@ if __name__ == "__main__":
     deploy_origin.fetch()
 
     deploy_repo.git.checkout(latest_version_str)
+
+    print("Setting permissions")
+    groups_to_give_permission = ["i03_staff", "gda2", "dls_dasc"]
+    setfacl_params = ",".join([f"g:{group}:rwx" for group in groups_to_give_permission])
+
+    # Set permissions and defaults
+    os.system(f"setfacl -R -m {setfacl_params} {deploy_location}")
+    os.system(f"setfacl -dR -m {setfacl_params} {deploy_location}")
 
     print(f"Setting up environment in {deploy_location}")
     os.chdir(deploy_location)
