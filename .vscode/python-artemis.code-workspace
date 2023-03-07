@@ -9,6 +9,7 @@
 	],
 	"settings": {
 		"python.languageServer": "Pylance",
-		"terminal.integrated.gpuAcceleration": "off"
+		"terminal.integrated.gpuAcceleration": "off",
+		"esbonio.sphinx.confDir": ""
 	}
 }
