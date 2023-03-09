@@ -1,12 +1,11 @@
 import pytest
 
 from artemis.devices.synchrotron import Synchrotron
-from artemis.parameters.constants import SIM_BEAMLINE
 
 
 @pytest.fixture
 def synchrotron():
-    synchrotron = Synchrotron(f"{SIM_BEAMLINE}-", name="synchrotron")
+    synchrotron = Synchrotron("", name="synchrotron")
     return synchrotron
 
 
