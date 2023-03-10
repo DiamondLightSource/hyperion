@@ -1,4 +1,12 @@
 #!/bin/bash
+function cleanup()
+{
+    pkill -f rabbitmq
+    rm -rf /home/$USER/.zocalo/*
+    echo "May take some seconds for zocalo to die, do not immediately try and restart"
+}
+
+trap cleanup EXIT
 
 # kills the gda dummy activemq, that takes the port for rabbitmq
 module load dasctools
