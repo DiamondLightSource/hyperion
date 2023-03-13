@@ -149,14 +149,35 @@ if [[ $START == 1 ]]; then
     RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
     cd ${RELATIVE_SCRIPT_DIR}
 
+    if [ $IN_DEV == true ]; then
+        log_path=$RELATIVE_SCRIPT_DIR/start_log.txt
+    else
+        log_path=/dls_sw/i03/logs/bluesky/start_log.txt
+    fi
+
     source .venv/bin/activate
-    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` >/dev/null 2>&1 &
+
+    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` >$log_path 2>&1 &
 
     echo "Waiting for Artemis to boot"
 
-    curl --head -X GET --retry 5 --retry-connrefused --retry-delay 1 http://localhost:5005/fast_grid_scan/status >/dev/null 2>&1
+    for i in {1..10}
+    do
+        curl --head -X GET http://localhost:5005/fast_grid_scan/status >/dev/null
+        ret_value=$?
+        if [ $ret_value -ne 0 ]; then
+            sleep 1
+        else
+            break
+        fi
+    done
 
-    echo "Artemis started"
+    if [ $ret_value -ne 0 ]; then
+        echo "Artemis Failed to start!!!!"
+        exit 1
+    else
+        echo "Artemis started"
+    fi
 fi
 
 sleep 1
