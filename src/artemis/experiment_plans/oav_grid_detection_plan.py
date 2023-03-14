@@ -112,11 +112,11 @@ def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParam
 
         upper_left = (tip_i - left_margin, min_y - top_margin)
 
-        yield from bps.abs_set(oav.snapshot.top_left_x_signal, upper_left[0])
-        yield from bps.abs_set(oav.snapshot.top_left_y_signal, upper_left[1])
-        yield from bps.abs_set(oav.snapshot.box_width_signal, box_size_x_pixels)
-        yield from bps.abs_set(oav.snapshot.num_boxes_x_signal, boxes[0])
-        yield from bps.abs_set(oav.snapshot.num_boxes_y_signal, boxes[1])
+        yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
+        yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])
+        yield from bps.abs_set(oav.snapshot.box_width, box_size_x_pixels)
+        yield from bps.abs_set(oav.snapshot.num_boxes_x, boxes[0])
+        yield from bps.abs_set(oav.snapshot.num_boxes_y, boxes[1])
 
         LOGGER.info("Triggering snapshot")
 

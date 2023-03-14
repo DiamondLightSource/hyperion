@@ -1,7 +1,8 @@
 import bluesky.plan_stubs as bps
-from dodal.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.utils import ColorMode, EdgeOutputArrayImageType
 
 from artemis.log import LOGGER
 
