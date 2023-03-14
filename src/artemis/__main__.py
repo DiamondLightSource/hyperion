@@ -8,6 +8,7 @@ from typing import Callable, Optional, Tuple
 
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
+from dodal.log import set_up_logging_handlers as dodal_logging_setup
 from flask import Flask, request
 from flask_restful import Api, Resource
 
@@ -222,6 +223,7 @@ if __name__ == "__main__":
     logging_level, VERBOSE_EVENT_LOGGING, dev_mode = cli_arg_parse()
 
     artemis.log.set_up_logging_handlers(logging_level, dev_mode)
+    dodal_logging_setup(logging_level, dev_mode)
     app, runner = create_app()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(

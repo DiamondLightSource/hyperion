@@ -5,7 +5,7 @@ from typing import Callable, Dict, Union
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.rotation_scan import RotationScanParams
 
-from artemis.experiment_plans import fast_grid_scan_plan
+from artemis.experiment_plans import fast_grid_scan_plan, full_grid_scan
 
 
 def not_implemented():
@@ -18,6 +18,11 @@ def do_nothing():
 
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
 PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
+    "full_grid_scan": {
+        "setup": full_grid_scan.create_devices,
+        "run": full_grid_scan.get_plan,
+        "param_type": GridScanParams,
+    },
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
         "run": fast_grid_scan_plan.get_plan,

@@ -1,15 +1,34 @@
 import math
+from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.run_engine import RunEngine
+from dodal.devices.backlight import Backlight
+from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
+from dodal.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
+from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
+from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.smargon import Smargon
 
-from artemis.devices.backlight import Backlight
-from artemis.devices.I03Smargon import I03Smargon
-from artemis.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
-from artemis.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
-from artemis.devices.oav.oav_parameters import OAVParameters
 from artemis.log import LOGGER, set_up_logging_handlers
+from artemis.parameters.beamline_parameters import get_beamline_prefixes
+
+oav: OAV = None
+smargon: Smargon = None
+backlight: Backlight = None
+
+
+def create_devices():
+    global oav, smargon, backlight
+    prefixes = get_beamline_prefixes()
+    oav = OAV(name="oav", prefix=prefixes.beamline_prefix)
+    smargon = Smargon(name="smargon", prefix=prefixes.beamline_prefix)
+    backlight = Backlight(name="backlight", prefix="BL03I-EA-BL-01:")
+    oav.wait_for_connection()
+    smargon.wait_for_connection()
+    backlight.wait_for_connection()
 
 
 # Turn on edge detect
@@ -89,7 +108,7 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
     # Connect CAM output to MXSC input
     yield from start_mxsc(
         oav,
-        parameters.input_plugin + "." + "proc",
+        parameters.input_plugin + "." + "CAM",
         parameters.min_callback_time,
         parameters.filename,
     )
@@ -127,11 +146,7 @@ def get_waveforms_to_image_scale(oav: OAV):
     return image_size_i / waveform_size_i, image_size_j / waveform_size_j
 
 
-def grid_detection_plan(
-    oav: OAV,
-    smargon: I03Smargon,
-    parameters: OAVParameters,
-):
+def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParams):
     """
     Attempts to find the centre of the pin on the oav by rotating and sampling elements.
     I03 gets the number of rotation points from gda.mx.loop.centring.omega.steps which defaults to 6.
@@ -144,6 +159,13 @@ def grid_detection_plan(
     """
 
     LOGGER.info("OAV Centring: Starting loop centring")
+
+    # parameters = OAVParameters(
+    #     parameters.experiment_params.centring_params_file,
+    #     parameters.experiment_params.camera_zoom_levels_file,
+    #     parameters.experiment_params.display_configuration_file,
+    # )
+
     yield from bps.wait()
 
     # Set relevant PVs to whatever the config dictates.
@@ -155,11 +177,17 @@ def grid_detection_plan(
     # waveform pixels to get the camera pixels.
     i_scale, j_scale = yield from get_waveforms_to_image_scale(oav)
 
-    upper_lefts = []
+    start_positions = []
     box_numbers = []
+
+    width = 600
+    box_size_microns = 20
+    box_size_x_pixels = box_size_microns / parameters.micronsPerXPixel
+    box_size_y_pixels = box_size_microns / parameters.micronsPerYPixel
 
     for angle in [0, 90]:
         yield from bps.mv(smargon.omega, angle)
+        yield from bps.sleep(0.5)
 
         top = np.array((yield from bps.rd(oav.mxsc.top)))
         bottom = np.array((yield from bps.rd(oav.mxsc.bottom)))
@@ -172,9 +200,6 @@ def grid_detection_plan(
         left_margin = 0
         top_margin = 0
 
-        width = 600
-        box_size = 20
-
         top = top[tip_i : tip_i + width]
         bottom = bottom[tip_i : tip_i + width]
 
@@ -182,10 +207,13 @@ def grid_detection_plan(
 
         LOGGER.info(f"Bottom: {bottom}")
 
-        test_snapshot_dir = "/dls_sw/i03/software/artemis/test_snaps"
+        min_y = np.min(top[top != 0])
 
-        min_y = np.min(top)
-        max_y = np.max(bottom)
+        full_oav_image_height = yield from bps.rd(oav.cam.array_size.array_size_y)
+
+        max_y = np.max(bottom[bottom != full_oav_image_height])
+
+        # if top and bottom empty after filter use the whole image (ask neil)
 
         LOGGER.info(f"Min/max {min_y, max_y}")
 
@@ -193,39 +221,98 @@ def grid_detection_plan(
 
         LOGGER.info(f"Drawing snapshot {width} by {height}")
 
-        boxes = (math.ceil(width / box_size), math.ceil(height / box_size))
+        boxes = (
+            math.ceil(width / box_size_x_pixels),
+            math.ceil(height / box_size_y_pixels),
+        )
         box_numbers.append(boxes)
 
         upper_left = (tip_i - left_margin, min_y - top_margin)
-        upper_lefts.append(upper_left)
 
         yield from bps.abs_set(oav.snapshot.top_left_x_signal, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y_signal, upper_left[1])
-        yield from bps.abs_set(oav.snapshot.box_width_signal, box_size)
+        yield from bps.abs_set(oav.snapshot.box_width_signal, box_size_x_pixels)
         yield from bps.abs_set(oav.snapshot.num_boxes_x_signal, boxes[0])
         yield from bps.abs_set(oav.snapshot.num_boxes_y_signal, boxes[1])
 
         LOGGER.info("Triggering snapshot")
 
-        snapshot_filename = f"test_grid_{angle}"
+        if angle == 0:
+            snapshot_filename = parameters.snapshot_1_filename
+        else:
+            snapshot_filename = parameters.snapshot_2_filename
+
+        test_snapshot_dir = "/dls_sw/i03/software/artemis/test_snaps"
 
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
         yield from bps.abs_set(oav.snapshot.directory, test_snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
 
+        # Get the beam distance from the centre (in pixels).
+        (
+            beam_distance_i_pixels,
+            beam_distance_j_pixels,
+        ) = parameters.calculate_beam_distance(upper_left[0], upper_left[1])
+
+        current_motor_xyz = np.array(
+            [
+                (yield from bps.rd(smargon.x)),
+                (yield from bps.rd(smargon.y)),
+                (yield from bps.rd(smargon.z)),
+            ],
+            dtype=np.float64,
+        )
+
+        # Add the beam distance to the current motor position (adjusting for the changes in coordinate system
+        # and the from the angle).
+        start_position = current_motor_xyz + camera_coordinates_to_xyz(
+            beam_distance_i_pixels,
+            beam_distance_j_pixels,
+            angle,
+            parameters.micronsPerXPixel,
+            parameters.micronsPerYPixel,
+        )
+        start_positions.append(start_position)
+
+    LOGGER.info(
+        f"x_start: GDA: {out_parameters.x_start}, Artemis {start_positions[0][0]}"
+    )
+
+    LOGGER.info(
+        f"y1_start: GDA: {out_parameters.y1_start}, Artemis {start_positions[0][1]}"
+    )
+
+    LOGGER.info(
+        f"z1_start: GDA: {out_parameters.z1_start}, Artemis {start_positions[1][1]}"
+    )
+
+    LOGGER.info(
+        f"x_step_size: GDA: {out_parameters.x_step_size}, Artemis {box_size_microns}"
+    )
+    LOGGER.info(
+        f"y_step_size: GDA: {out_parameters.y_step_size}, Artemis {box_size_microns}"
+    )
+    LOGGER.info(
+        f"z_step_size: GDA: {out_parameters.z_step_size}, Artemis {box_size_microns}"
+    )
+
+    LOGGER.info(f"x_steps: GDA: {out_parameters.x_steps}, Artemis {box_numbers[0][0]}")
+    LOGGER.info(f"y_steps: GDA: {out_parameters.y_steps}, Artemis {box_numbers[0][1]}")
+    LOGGER.info(f"z_steps: GDA: {out_parameters.z_steps}, Artemis {box_numbers[1][1]}")
+
+    yield from bps.abs_set(oav.snapshot.input_pv, parameters.input_plugin + ".CAM")
+    yield from bps.abs_set(oav.mxsc.enable_callbacks_pv, 0)
+
 
 if __name__ == "__main__":
     beamline = "BL03I"
     set_up_logging_handlers("INFO")
-    oav = OAV(name="oav", prefix=beamline)
-    smargon = I03Smargon(name="smargon", prefix=beamline)
-    backlight: Backlight = Backlight(name="backlight", prefix=beamline)
-    parameters = OAVParameters(
+    create_devices()
+    params = InternalParameters()
+    params.experiment_params = OAVParametersExternal(
         "src/artemis/devices/unit_tests/test_OAVCentring.json",
         "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
         "src/artemis/devices/unit_tests/test_display.configuration",
     )
-    oav.wait_for_connection()
-    smargon.wait_for_connection()
     RE = RunEngine()
-    RE(grid_detection_plan(oav, smargon, parameters))
+    RE(grid_detection_plan(params, None))

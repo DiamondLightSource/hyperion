@@ -23,7 +23,7 @@ class ArtemisParameters:
     experiment_type: str = registry.EXPERIMENT_NAMES[0]
     detector_params: Dict[str, Any] = DETECTOR_PARAM_DEFAULTS
 
-    ispyb_params: Dict[str, Any] = ISPYB_PARAM_DEFAULTS
+    ispyb_params: IspybParams = IspybParams.from_dict(ISPYB_PARAM_DEFAULTS)
 
     def __init__(
         self,
