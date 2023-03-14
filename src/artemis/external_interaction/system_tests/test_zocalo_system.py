@@ -9,7 +9,7 @@ from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 @pytest.mark.s03

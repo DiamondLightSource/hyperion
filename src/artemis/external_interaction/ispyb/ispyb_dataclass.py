@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from dataclasses_json import config, dataclass_json
 
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,

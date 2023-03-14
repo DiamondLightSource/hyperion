@@ -13,7 +13,7 @@ from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
-from artemis.utils import Point2D
+from artemis.utils.utils import Point2D
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"

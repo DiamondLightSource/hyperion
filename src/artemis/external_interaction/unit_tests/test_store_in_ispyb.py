@@ -11,7 +11,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
 )
 from artemis.parameters.constants import SIM_ISPYB_CONFIG
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -157,7 +157,6 @@ def test_store_3d_grid_scan(
 
 
 def setup_mock_return_values(ispyb_conn):
-
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
     mx_acquisition.get_data_collection_group_params = (

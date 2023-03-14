@@ -31,7 +31,7 @@ from artemis.parameters.constants import (
     SIM_BEAMLINE,
 )
 from artemis.tracing import TRACER
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
     from dodal.devices.fast_grid_scan_composite import FGSComposite

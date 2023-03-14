@@ -1,19 +1,17 @@
 import math
-from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import numpy as np
-from bluesky.run_engine import RunEngine
 from dodal.devices.backlight import Backlight
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
-from dodal.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
-from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
-from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
-from artemis.log import LOGGER, set_up_logging_handlers
+from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
+from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_prefixes
+from artemis.utils.oav_utils import get_waveforms_to_image_scale
 
 oav: OAV = None
 smargon: Smargon = None
@@ -29,121 +27,6 @@ def create_devices():
     oav.wait_for_connection()
     smargon.wait_for_connection()
     backlight.wait_for_connection()
-
-
-# Turn on edge detect
-def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
-    """
-    Sets PVs relevant to edge detection plugin.
-
-    Args:
-        input_plugin: link to the camera stream
-        min_callback_time: the value to set the minimum callback time to
-        filename: filename of the python script to detect edge waveforms from camera stream.
-    Returns: None
-    """
-    yield from bps.abs_set(oav.mxsc.input_plugin_pv, input_plugin)
-
-    # Turns the area detector plugin on
-    yield from bps.abs_set(oav.mxsc.enable_callbacks_pv, 1)
-
-    # Set the minimum time between updates of the plugin
-    yield from bps.abs_set(oav.mxsc.min_callback_time_pv, min_callback_time)
-
-    # Stop the plugin from blocking the IOC and hogging all the CPU
-    yield from bps.abs_set(oav.mxsc.blocking_callbacks_pv, 0)
-
-    # Set the python file to use for calculating the edge waveforms
-    current_filename = yield from bps.rd(oav.mxsc.py_filename)
-    if current_filename != filename:
-        LOGGER.info(f"Current python file is {current_filename}, setting to {filename}")
-        yield from bps.abs_set(oav.mxsc.py_filename, filename)
-        yield from bps.abs_set(oav.mxsc.read_file, 1)
-
-    # Image annotations
-    yield from bps.abs_set(oav.mxsc.draw_tip, True)
-    yield from bps.abs_set(oav.mxsc.draw_edges, True)
-
-    # Use the original image type for the edge output array
-    yield from bps.abs_set(oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL)
-
-
-def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
-    """Setup OAV PVs with required values."""
-
-    parameters.load_parameters_from_json()
-
-    yield from bps.abs_set(oav.cam.color_mode, ColorMode.RGB1)
-    yield from bps.abs_set(oav.cam.acquire_period, parameters.acquire_period)
-    yield from bps.abs_set(oav.cam.acquire_time, parameters.exposure)
-    yield from bps.abs_set(oav.cam.gain, parameters.gain)
-
-    # select which blur to apply to image
-    yield from bps.abs_set(oav.mxsc.preprocess_operation, parameters.preprocess)
-
-    # sets length scale for blurring
-    yield from bps.abs_set(oav.mxsc.preprocess_ksize, parameters.preprocess_K_size)
-
-    # Canny edge detect
-    yield from bps.abs_set(
-        oav.mxsc.canny_lower_threshold,
-        parameters.canny_edge_lower_threshold,
-    )
-    yield from bps.abs_set(
-        oav.mxsc.canny_upper_threshold,
-        parameters.canny_edge_upper_threshold,
-    )
-    # "Close" morphological operation
-    yield from bps.abs_set(oav.mxsc.close_ksize, parameters.close_ksize)
-
-    # Sample detection
-    yield from bps.abs_set(
-        oav.mxsc.sample_detection_scan_direction, parameters.direction
-    )
-    yield from bps.abs_set(
-        oav.mxsc.sample_detection_min_tip_height,
-        parameters.minimum_height,
-    )
-
-    # Connect CAM output to MXSC input
-    yield from start_mxsc(
-        oav,
-        parameters.input_plugin + "." + "CAM",
-        parameters.min_callback_time,
-        parameters.filename,
-    )
-
-    yield from bps.abs_set(oav.snapshot.input_pv, parameters.input_plugin + ".MXSC")
-
-    zoom_level_str = f"{float(parameters.zoom)}x"
-    if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
-        raise OAVError_ZoomLevelNotFound(
-            f"Found {zoom_level_str} as a zoom level but expected one of {oav.zoom_controller.allowed_zoom_levels}"
-        )
-
-    # yield from bps.abs_set(
-    #     oav.zoom_controller.level,
-    #     zoom_level_str,
-    #     wait=True,
-    # )
-    # yield from bps.wait()
-
-
-def get_waveforms_to_image_scale(oav: OAV):
-    """
-    Returns the scale of the image. The standard calculation for the image is based
-    on a size of (1024, 768) so we require these scaling factors.
-    Args:
-        oav (OAV): The OAV device in use.
-    Returns:
-        The (i_dimensions,j_dimensions) where n_dimensions is the scale of the camera image to the
-        waveform values on the n axis.
-    """
-    image_size_i = yield from bps.rd(oav.cam.array_size.array_size_x)
-    image_size_j = yield from bps.rd(oav.cam.array_size.array_size_y)
-    waveform_size_i = yield from bps.rd(oav.mxsc.waveform_size_x)
-    waveform_size_j = yield from bps.rd(oav.mxsc.waveform_size_y)
-    return image_size_i / waveform_size_i, image_size_j / waveform_size_j
 
 
 def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParams):
@@ -302,17 +185,3 @@ def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParam
 
     yield from bps.abs_set(oav.snapshot.input_pv, parameters.input_plugin + ".CAM")
     yield from bps.abs_set(oav.mxsc.enable_callbacks_pv, 0)
-
-
-if __name__ == "__main__":
-    beamline = "BL03I"
-    set_up_logging_handlers("INFO")
-    create_devices()
-    params = InternalParameters()
-    params.experiment_params = OAVParametersExternal(
-        "src/artemis/devices/unit_tests/test_OAVCentring.json",
-        "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
-        "src/artemis/devices/unit_tests/test_display.configuration",
-    )
-    RE = RunEngine()
-    RE(grid_detection_plan(params, None))

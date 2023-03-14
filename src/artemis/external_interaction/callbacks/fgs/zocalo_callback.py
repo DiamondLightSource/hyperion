@@ -16,7 +16,7 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
 )
 from artemis.log import LOGGER
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 class FGSZocaloCallback(CallbackBase):

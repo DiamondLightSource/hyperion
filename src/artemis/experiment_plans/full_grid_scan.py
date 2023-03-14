@@ -63,14 +63,16 @@ def get_plan(
     parameters: InternalParameters,
     subscriptions: FGSCallbackCollection,
 ) -> Callable:
-    snap_1_from_gda = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start[
-        0
-    ]
-    snap_2_from_gda = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end[0]
+    """
+    A plan which combines the collection of snapshots from the OAV and the determination
+    of the grid dimensions to use for the following grid scan.
+    """
+    gda_snap_1 = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start[0]
+    gda_snap_2 = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end[0]
 
-    snapshot_dir = os.path.dirname(os.path.abspath(snap_1_from_gda))
-    snap_1_filename = os.path.basename(os.path.abspath(snap_1_from_gda))
-    snap_2_filename = os.path.basename(os.path.abspath(snap_2_from_gda))
+    snapshot_dir = os.path.dirname(os.path.abspath(gda_snap_1))
+    snap_1_filename = os.path.basename(os.path.abspath(gda_snap_1))
+    snap_2_filename = os.path.basename(os.path.abspath(gda_snap_2))
 
     zoom_params_file = "/dls_sw/i03/software/gda_versions/gda_9_27/workspace_git/gda-mx.git/configurations/i03-config/xml/jCameraManZoomLevels.xml"
     oav_json = "/dls_sw/i03/software/gda_versions/gda_9_27/workspace_git/gda-mx.git/configurations/i03-config/etc/OAVCentring.json"

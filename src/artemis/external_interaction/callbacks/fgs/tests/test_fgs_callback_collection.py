@@ -11,7 +11,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 )
 from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 def test_callback_collection_init():

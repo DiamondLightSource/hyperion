@@ -14,7 +14,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb3D,
 )
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
