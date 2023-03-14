@@ -14,12 +14,15 @@ mkdir .venv
 python -m venv .venv
 source .venv/bin/activate
 
+pip install -e .[dev]
+
+# Ensure we use a local version of dodal
 if [ ! -d "../dodal" ]; then
   git clone git@github.com:DiamondLightSource/dodal.git ../dodal
 fi
 
+pip uninstall -y dodal
 pip install -e ../dodal[dev]
-pip install -e .[dev]
 
 # get dlstbx into our env
 ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ .venv/lib/python3.10/site-packages/dlstbx
