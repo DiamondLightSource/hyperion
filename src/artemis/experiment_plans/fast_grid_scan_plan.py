@@ -7,10 +7,10 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
+from dodal import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
-from dodal.devices.fast_grid_scan_composite import FGSComposite
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
@@ -59,18 +59,12 @@ def create_devices():
     aperture_positions = AperturePositions.from_gda_beamline_params(
         get_beamline_parameters()
     )
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=prefixes.insertion_prefix,
-        name="fgs",
-        prefix=prefixes.beamline_prefix,
+    fast_grid_scan_composite = i03.FGS(
         aperture_positions=aperture_positions,
     )
 
     # Note, eiger cannot be currently waited on, see #166
-    eiger = EigerDetector(
-        name="eiger",
-        prefix=f"{prefixes.beamline_prefix}-EA-EIGER-01:",
-    )
+    eiger = i03.eiger()
 
     artemis.log.LOGGER.info("Connecting to EPICS devices...")
     fast_grid_scan_composite.wait_for_connection()
