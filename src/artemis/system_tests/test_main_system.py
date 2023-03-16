@@ -201,11 +201,26 @@ def test_cli_args_parse():
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
+@patch("artemis.experiment_plans.oav_grid_detection_plan.OAV")
+@patch("artemis.experiment_plans.oav_grid_detection_plan.Backlight")
+@patch("artemis.experiment_plans.oav_grid_detection_plan.Smargon")
+@patch("artemis.experiment_plans.full_grid_scan.Det")
+@patch("artemis.experiment_plans.full_grid_scan.Backlight")
+@patch("artemis.experiment_plans.full_grid_scan.ApertureScatterguard")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
-    mock_get_beamline_params, mock_fgs, mock_eiger
+    mock_get_beamline_params,
+    mock_fgs,
+    mock_full_scan_ap_sc,
+    mock_full_scan_backlight,
+    mock_detector_motion,
+    mock_smargon,
+    mock_backlight,
+    mock_oav,
+    mock_eiger,
 ):
     BlueskyRunner(MagicMock())
 
-    mock_fgs.return_value.wait_for_connection.assert_called_once()
+    mock_fgs.return_value.wait_for_connection.assert_called()
+    mock_oav.return_value.wait_for_connection.assert_called_once()
