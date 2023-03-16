@@ -38,8 +38,8 @@ class ArtemisParameters:
         self.beamline = beamline
         self.insertion_prefix = insertion_prefix
         self.experiment_type = experiment_type
-        self.detector_params: DetectorParams = detector_params
-        self.ispyb_params: IspybParams = ispyb_params
+        self.detector_params: DetectorParams = DetectorParams.from_dict(detector_params)
+        self.ispyb_params: IspybParams = IspybParams.from_dict(ispyb_params)
 
     def __repr__(self):
         r = "artemis_params:\n"
@@ -81,7 +81,7 @@ class InternalParameters:
             ArtemisParameters.experiment_type
         ](**external_params.experiment_params.to_dict())
         self.artemis_params.detector_params.num_images = (
-            self.experiment_params.num_images
+            self.experiment_params.get_num_images()
         )
 
     def __repr__(self):
