@@ -80,6 +80,9 @@ class InternalParameters:
         self.experiment_params = registry.EXPERIMENT_TYPE_DICT[
             ArtemisParameters.experiment_type
         ](**external_params.experiment_params.to_dict())
+        self.artemis_params.detector_params.num_images = (
+            self.experiment_params.num_images
+        )
 
     def __repr__(self):
         r = "[Artemis internal parameters]\n"
