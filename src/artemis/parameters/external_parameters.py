@@ -49,8 +49,8 @@ class ExternalISPyBParameters(DataClassJsonMixin):
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
     visit_path: str = ""
-    pixels_per_micron_x: float = 0.0
-    pixels_per_micron_y: float = 0.0
+    microns_per_pixel_x: float = 0.0
+    microns_per_pixel_y: float = 0.0
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     upper_left: Dict = default_field({"x": 0, "y": 0, "z": 0})
     position: Dict = default_field({"x": 0, "y": 0, "z": 0})

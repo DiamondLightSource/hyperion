@@ -20,8 +20,8 @@
         },
         "ispyb_params": {
             "visit_path": "/tmp/cm31105-4/",
-            "pixels_per_micron_x": 1.0,
-            "pixels_per_micron_y": 1.0,
+            "microns_per_pixel_x": 1.0,
+            "microns_per_pixel_y": 1.0,
             "upper_left": {
                 "x": 10.0,
                 "y": 20.0,
