@@ -56,7 +56,7 @@ def create_parameters_for_first_file(parameters: InternalParameters):
     new_params.experiment_params.z_axis = GridAxis(
         parameters.experiment_params.z1_start, 0, 0
     )
-    new_params.artemis_params.detector_params.num_images = (
+    new_params.artemis_params.detector_params.num_images_per_trigger = (
         parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
     )
     new_params.artemis_params.detector_params.nexus_file_run_number = (
@@ -223,7 +223,9 @@ class NexusWriter:
 
         self.start_index = parameters.artemis_params.detector_params.start_index
 
-        self.full_num_of_images = parameters.artemis_params.detector_params.num_images
+        self.full_num_of_images = (
+            parameters.artemis_params.detector_params.num_images_per_trigger
+        )
 
         self.nexus_file = (
             self.directory

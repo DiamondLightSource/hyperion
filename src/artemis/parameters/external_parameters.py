@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Dict, Optional, Union
 
@@ -26,17 +27,18 @@ class WrongExperimentParameterSpecification(Exception):
     pass
 
 
+class EigerTriggerModes(str, Enum):
+    MANY_TRIGGERS = "many_triggers"
+    ONE_TRIGGER = "one_trigger"
+
+
 @dataclass
 class ExternalDetectorParameters(DataClassJsonMixin):
     current_energy: int = 100
-    exposure_time: float = 0.1
     directory: str = "/tmp"
     prefix: str = "file_name"
     run_number: int = 0
-    detector_distance: float = 100.0
-    omega_start: float = 0.0
-    omega_increment: float = 0.0
-    num_images: int = 2000
+    trigger_mode: str = EigerTriggerModes.MANY_TRIGGERS
     use_roi_mode: bool = False
     det_dist_to_beam_converter_path: str = (
         "src/artemis/unit_tests/test_lookup_table.txt"
@@ -89,24 +91,25 @@ class ExternalGridScanParameters(DataClassJsonMixin):
     y2_start: float = 0.0
     z1_start: float = 0.0
     z2_start: float = 0.0
+    exposure_time: float = 0.1
+    detector_distance: float = 100.0
+    omega_start: float = 0.0
+    omega_increment: float = 0.0
 
 
 @dataclass
 class ExternalRotationScanParameters(DataClassJsonMixin):
-    # TODO in next part of parameter refactor, make these
-    # more realistic
-    x_steps: int = 4
-    y_steps: int = 200
-    z_steps: int = 61
-    x_step_size: float = 0.1
-    y_step_size: float = 0.1
-    z_step_size: float = 0.1
-    dwell_time: float = 0.2
+    rotation_axis: str = "omega"
     x_start: float = 0.0
-    y1_start: float = 0.0
-    y2_start: float = 0.0
-    z1_start: float = 0.0
-    z2_start: float = 0.0
+    y_start: float = 0.0
+    z_start: float = 0.0
+    omega_start: float = 0.0
+    phi_start: float = 0.0
+    chi_start: float = 0.0
+    kappa_start: float = 0.0
+    exposure_time: float = 0.1
+    detector_distance: float = 100.0
+    rotation_increment: float = 0.0
 
 
 @dataclass
@@ -124,6 +127,10 @@ class ExternalArtemisParameters(DataClassJsonMixin):
 EXTERNAL_EXPERIMENT_PARAM_TYPES = Union[
     ExternalGridScanParameters, ExternalRotationScanParameters
 ]
+EXTERNAL_EXPERIMENT_PARAM_DICT = {
+    "fast_grid_scan": ExternalGridScanParameters,
+    "rotation_scan": ExternalRotationScanParameters,
+}
 
 
 class RawParameters:
@@ -171,9 +178,9 @@ class RawParameters:
         )
         # TODO improve failed validation error messages
         jsonschema.validate(dict_params, full_schema, resolver=resolver)
-        experiment_type: registry.EXPERIMENT_TYPES = registry.EXPERIMENT_TYPE_DICT.get(
+        experiment_type = EXTERNAL_EXPERIMENT_PARAM_DICT[
             dict_params["artemis_params"]["experiment_type"]
-        )
+        ]
         try:
             assert experiment_type is not None
             experiment_params = experiment_type.from_dict(

@@ -1,5 +1,5 @@
 {
-    "params_version": 0.1,
+    "params_version": 0.2,
     "artemis_params": {
         "beamline": "BL03S",
         "detector": "EIGER2_X_16M",
@@ -7,14 +7,10 @@
         "experiment_type": "rotation_scan",
         "detector_params": {
             "current_energy": 100,
-            "exposure_time": 0.1,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,
-            "detector_distance": 100.0,
-            "omega_start": 0.0,
-            "omega_increment": 0.1,
-            "num_images": 50,
+            "trigger_mode": "one_trigger",
             "use_roi_mode": false,
             "det_dist_to_beam_converter_path": "src/artemis/unit_tests/test_lookup_table.txt"
         },
@@ -68,6 +64,9 @@
         "chi_start": 0,
         "x": 1.0,
         "y": 2.0,
-        "z": 3.0
+        "z": 3.0,
+        "exposure_time": 0.1,
+        "detector_distance": 100.0,
+        "rotation_increment": 0.1
     }
 }

@@ -78,7 +78,9 @@ def test_parameter_eq():
 
 
 def test_parameter_init_with_bad_type_raises_exception():
-    with open("test_parameters.json") as f:
+    with open(
+        "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+    ) as f:
         param_dict = json.load(f)
     param_dict["artemis_params"]["experiment_type"] = "nonsense_scan"
     with raises(WrongExperimentParameterSpecification):

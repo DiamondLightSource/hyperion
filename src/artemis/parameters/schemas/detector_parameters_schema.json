@@ -5,9 +5,6 @@
         "current_energy": {
             "type": "number"
         },
-        "exposure_time": {
-            "type": "number"
-        },
         "directory": {
             "type": "string"
         },
@@ -17,17 +14,11 @@
         "run_number": {
             "type": "number"
         },
-        "detector_distance": {
-            "type": "number"
-        },
-        "omega_start": {
-            "type": "number"
-        },
-        "omega_increment": {
-            "type": "number"
-        },
-        "num_images": {
-            "type": "number"
+        "trigger_mode": {
+            "enum": [
+                "one_trigger",
+                "many_triggers"
+            ]
         },
         "use_roi_mode": {
             "type": "boolean"
@@ -36,5 +27,5 @@
             "type": "string"
         }
     },
-    "minProperties": 11
+    "minProperties": 7
 }

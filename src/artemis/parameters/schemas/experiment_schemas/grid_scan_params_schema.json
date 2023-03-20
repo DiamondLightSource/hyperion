@@ -37,6 +37,15 @@
         },
         "z2_start": {
             "type": "number"
+        },
+        "detector_distance": {
+            "type": "number"
+        },
+        "omega_start": {
+            "type": "number"
+        },
+        "omega_increment": {
+            "type": "number"
         }
     },
     "minProperties": 12
