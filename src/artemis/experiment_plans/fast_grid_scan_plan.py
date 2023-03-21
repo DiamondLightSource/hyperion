@@ -14,6 +14,8 @@ from dodal.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
+from dodal.devices.smargon import Smargon
+from dodal.devices.zebra import Zebra
 
 import artemis.log
 from artemis.device_setup_plans.setup_zebra_for_fgs import (
@@ -40,6 +42,25 @@ if TYPE_CHECKING:
         FGSCallbackCollection,
     )
     from artemis.parameters.internal_parameters import InternalParameters
+
+
+class FGSComposite:
+    """A device consisting of all the Devices required for a fast gridscan."""
+
+    zebra: Zebra  # = Component(Zebra, "-EA-ZEBRA-01:")
+    undulator: Undulator  # = FormattedComponent(Undulator, "{insertion_prefix}-MO-SERVC-01:")
+    synchrotron: Synchrotron  # = FormattedComponent(Synchrotron)
+    s4_slit_gaps: S4SlitGaps  # = Component(S4SlitGaps, "-AL-SLITS-04:")
+    sample_motors: Smargon
+    aperture_scatterguard: ApertureScatterguard
+
+    def __init__(
+        self,
+        aperture_positions: AperturePositions | None = None,
+    ):
+        if aperture_positions is not None:
+            self.aperture_scatterguard.load_aperture_positions(aperture_positions)
+
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
