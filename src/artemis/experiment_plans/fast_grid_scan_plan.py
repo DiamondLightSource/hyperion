@@ -8,14 +8,22 @@ import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal import i03
-from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
-from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
-from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
-from dodal.devices.smargon import Smargon
-from dodal.devices.zebra import Zebra
+from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.eiger import DetectorParams
+from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
+from dodal.i03 import (
+    DCM,
+    OAV,
+    ApertureScatterguard,
+    Backlight,
+    EigerDetector,
+    FastGridScan,
+    S4SlitGaps,
+    Smargon,
+    Synchrotron,
+    Undulator,
+    Zebra,
+)
 
 import artemis.log
 from artemis.device_setup_plans.setup_zebra_for_fgs import (
@@ -36,8 +44,6 @@ from artemis.tracing import TRACER
 from artemis.utils import Point3D
 
 if TYPE_CHECKING:
-    from dodal.devices.fast_grid_scan_composite import FGSComposite
-
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
@@ -47,23 +53,37 @@ if TYPE_CHECKING:
 class FGSComposite:
     """A device consisting of all the Devices required for a fast gridscan."""
 
-    zebra: Zebra  # = Component(Zebra, "-EA-ZEBRA-01:")
-    undulator: Undulator  # = FormattedComponent(Undulator, "{insertion_prefix}-MO-SERVC-01:")
-    synchrotron: Synchrotron  # = FormattedComponent(Synchrotron)
-    s4_slit_gaps: S4SlitGaps  # = Component(S4SlitGaps, "-AL-SLITS-04:")
-    sample_motors: Smargon
+    dcm: DCM
+    oav: OAV
     aperture_scatterguard: ApertureScatterguard
+    backlight: Backlight
+    eiger: EigerDetector
+    fast_grid_scan: FastGridScan
+    s4_slit_gaps: S4SlitGaps
+    sample_motors: Smargon
+    synchrotron: Synchrotron
+    undulator: Undulator
+    zebra: Zebra
 
     def __init__(
         self,
-        aperture_positions: AperturePositions | None = None,
+        aperture_positions: AperturePositions = None,
+        detector_params: DetectorParams = None,
     ):
-        if aperture_positions is not None:
-            self.aperture_scatterguard.load_aperture_positions(aperture_positions)
+        self.dcm = i03.dcm()
+        self.oav = i03.oav()
+        self.aperture_scatterguard = i03.aperture_scatterguard(aperture_positions)
+        self.backlight = i03.backlight()
+        self.eiger = i03.eiger(detector_params)
+        self.fast_grid_scan = i03.fast_grid_scan()
+        self.s4_slit_gaps = i03.s4_slip_gaps()
+        self.sample_motors = i03.smargon()
+        self.undulator = i03.undulator()
+        self.synchrotron = i03.synchrotron()
+        self.zebra = i03.zebra()
 
 
-fast_grid_scan_composite: FGSComposite = None
-eiger: EigerDetector = None
+fast_grid_scan_composite: FGSComposite | None = None
 
 
 def get_beamline_parameters():
@@ -72,7 +92,7 @@ def get_beamline_parameters():
 
 def create_devices():
     """Creates the devices required for the plan and connect to them"""
-    global fast_grid_scan_composite, eiger
+    global fast_grid_scan_composite
     prefixes = get_beamline_prefixes()
     artemis.log.LOGGER.info(
         f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
@@ -80,15 +100,8 @@ def create_devices():
     aperture_positions = AperturePositions.from_gda_beamline_params(
         get_beamline_parameters()
     )
-    fast_grid_scan_composite = i03.FGS(
-        aperture_positions=aperture_positions,
-    )
-
-    # Note, eiger cannot be currently waited on, see #166
-    eiger = i03.eiger()
-
     artemis.log.LOGGER.info("Connecting to EPICS devices...")
-    fast_grid_scan_composite.wait_for_connection()
+    fast_grid_scan_composite = FGSComposite(aperture_positions=aperture_positions)
     artemis.log.LOGGER.info("Connected.")
 
 
@@ -172,7 +185,6 @@ def tidy_up_plans(fgs_composite: FGSComposite):
 @bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
     fgs_composite: FGSComposite,
-    eiger: EigerDetector,
     parameters: InternalParameters,
     md={
         "plan_name": "run_gridscan",
@@ -202,7 +214,7 @@ def run_gridscan(
 
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
-    @bpp.stage_decorator([eiger])
+    @bpp.stage_decorator([fgs_composite.eiger])
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
@@ -219,7 +231,6 @@ def run_gridscan(
 @bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
     fgs_composite: FGSComposite,
-    eiger: EigerDetector,
     parameters: InternalParameters,
     subscriptions: FGSCallbackCollection,
 ):
@@ -237,11 +248,11 @@ def run_gridscan_and_move(
 
     # While the gridscan is happening we want to write out nexus files and trigger zocalo
     @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
-    def gridscan_with_subscriptions(fgs_composite, detector, params):
-        yield from run_gridscan(fgs_composite, detector, params)
+    def gridscan_with_subscriptions(fgs_composite, params):
+        yield from run_gridscan(fgs_composite, params)
 
     artemis.log.LOGGER.info("Starting grid scan")
-    yield from gridscan_with_subscriptions(fgs_composite, eiger, parameters)
+    yield from gridscan_with_subscriptions(fgs_composite, parameters)
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
@@ -278,7 +289,10 @@ def get_plan(
     Returns:
         Generator: The plan for the gridscan
     """
-    eiger.set_detector_parameters(parameters.artemis_params.detector_params)
+    assert fast_grid_scan_composite is not None
+    fast_grid_scan_composite.eiger.set_detector_parameters(
+        parameters.artemis_params.detector_params
+    )
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
     @bpp.subs_decorator(subscriptions.ispyb_handler)
@@ -286,7 +300,7 @@ def get_plan(
         yield from run_gridscan_and_move(fgs_composite, detector, params, comms)
 
     return run_gridscan_and_move_and_tidy(
-        fast_grid_scan_composite, eiger, parameters, subscriptions
+        fast_grid_scan_composite, parameters, subscriptions
     )
 
 
