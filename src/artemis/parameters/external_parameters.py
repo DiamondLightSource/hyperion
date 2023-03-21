@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Type, Union
 
 import jsonschema
 from dataclasses_json import DataClassJsonMixin
@@ -100,9 +100,10 @@ class ExternalGridScanParameters(DataClassJsonMixin):
 @dataclass
 class ExternalRotationScanParameters(DataClassJsonMixin):
     rotation_axis: str = "omega"
-    x_start: float = 0.0
-    y_start: float = 0.0
-    z_start: float = 0.0
+    rotation_angle: float = 180.0
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
     omega_start: float = 0.0
     phi_start: float = 0.0
     chi_start: float = 0.0
@@ -127,7 +128,7 @@ class ExternalArtemisParameters(DataClassJsonMixin):
 EXTERNAL_EXPERIMENT_PARAM_TYPES = Union[
     ExternalGridScanParameters, ExternalRotationScanParameters
 ]
-EXTERNAL_EXPERIMENT_PARAM_DICT = {
+EXTERNAL_EXPERIMENT_PARAM_DICT: dict[str, Type] = {
     "fast_grid_scan": ExternalGridScanParameters,
     "rotation_scan": ExternalRotationScanParameters,
 }
@@ -178,9 +179,9 @@ class RawParameters:
         )
         # TODO improve failed validation error messages
         jsonschema.validate(dict_params, full_schema, resolver=resolver)
-        experiment_type = EXTERNAL_EXPERIMENT_PARAM_DICT[
+        experiment_type = EXTERNAL_EXPERIMENT_PARAM_DICT.get(
             dict_params["artemis_params"]["experiment_type"]
-        ]
+        )
         try:
             assert experiment_type is not None
             experiment_params = experiment_type.from_dict(

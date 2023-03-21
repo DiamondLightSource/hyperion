@@ -1,10 +1,10 @@
 import json
 
-from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.rotation_scan import RotationScanParams
 from pytest import raises
 
 from artemis.parameters.external_parameters import (
+    ExternalGridScanParameters,
+    ExternalRotationScanParameters,
     RawParameters,
     WrongExperimentParameterSpecification,
 )
@@ -30,8 +30,8 @@ def test_parameters_load_from_file():
     params = RawParameters.from_file(
         "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
-    expt_params: GridScanParams = params.experiment_params
-    assert isinstance(expt_params, GridScanParams)
+    expt_params: ExternalGridScanParameters = params.experiment_params
+    assert isinstance(expt_params, ExternalGridScanParameters)
     assert expt_params.x_steps == 5
     assert expt_params.y_steps == 10
     assert expt_params.z_steps == 2
@@ -48,8 +48,8 @@ def test_parameters_load_from_file():
     params = RawParameters.from_file(
         "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
     )
-    expt_params: RotationScanParams = params.experiment_params
-    assert isinstance(params.experiment_params, RotationScanParams)
+    expt_params: ExternalRotationScanParameters = params.experiment_params
+    assert isinstance(params.experiment_params, ExternalRotationScanParameters)
     assert expt_params.rotation_axis == "omega"
     assert expt_params.rotation_angle == 180.0
     assert expt_params.omega_start == 0.0

@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from dodal.devices.eiger import DetectorParams
+from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 import artemis.experiment_plans.experiment_registry as registry
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
@@ -101,11 +102,13 @@ class InternalParameters:
         ]
         del ext_expt_param_dict["exposure_time"]
 
-        self.experiment_params = registry.EXPERIMENT_TYPE_DICT[
-            ext_art_param_dict["experiment_type"]
-        ](**ext_expt_param_dict)
+        self.experiment_params: AbstractExperimentParameterBase = (
+            registry.EXPERIMENT_TYPE_DICT[ext_art_param_dict["experiment_type"]](
+                **ext_expt_param_dict
+            )
+        )
 
-        n_images = 2000  # self.experiment_params.get_num_images()
+        n_images = self.experiment_params.get_num_images()
         if (
             ext_art_param_dict["detector_params"]["trigger_mode"]
             == EigerTriggerModes.MANY_TRIGGERS
