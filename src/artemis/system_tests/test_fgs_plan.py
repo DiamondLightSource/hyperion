@@ -76,8 +76,8 @@ def RE():
 def fgs_composite():
     with patch("dodal.i03.dcm"):
         with patch("dodal.i03.oav"):
-            with patch("dodal.i03.undulator"):
-                fast_grid_scan_composite = FGSComposite()
+            # with patch("dodal.i03.undulator"):
+            fast_grid_scan_composite = FGSComposite()
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         I03_BEAMLINE_PARAMETER_PATH
@@ -130,7 +130,6 @@ def test_read_hardware_for_ispyb(
     def read_run(u, s, g):
         yield from read_hardware_for_ispyb(u, s, g)
 
-    fgs_composite.wait_for_connection()
     RE(read_run(undulator, synchrotron, slit_gaps))
 
 
