@@ -12,12 +12,12 @@ from dodal.devices.det_dim_constants import (
 )
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
-from dodal.devices.fast_grid_scan_composite import FGSComposite
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
+    FGSComposite,
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,

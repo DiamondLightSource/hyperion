@@ -76,7 +76,7 @@ class FGSComposite:
         self.backlight = i03.backlight()
         self.eiger = i03.eiger(detector_params)
         self.fast_grid_scan = i03.fast_grid_scan()
-        self.s4_slit_gaps = i03.s4_slip_gaps()
+        self.s4_slit_gaps = i03.s4_slit_gaps()
         self.sample_motors = i03.smargon()
         self.undulator = i03.undulator()
         self.synchrotron = i03.synchrotron()
@@ -296,8 +296,8 @@ def get_plan(
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
     @bpp.subs_decorator(subscriptions.ispyb_handler)
-    def run_gridscan_and_move_and_tidy(fgs_composite, detector, params, comms):
-        yield from run_gridscan_and_move(fgs_composite, detector, params, comms)
+    def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
+        yield from run_gridscan_and_move(fgs_composite, params, comms)
 
     return run_gridscan_and_move_and_tidy(
         fast_grid_scan_composite, parameters, subscriptions

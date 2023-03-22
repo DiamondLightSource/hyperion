@@ -8,11 +8,11 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.detector import DetectorParams
 from dodal.devices.eiger import DetectorParams, EigerDetector
-from dodal.devices.fast_grid_scan_composite import FGSComposite
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
+    FGSComposite,
     get_plan,
     read_hardware_for_ispyb,
     run_gridscan,
@@ -28,11 +28,7 @@ from artemis.external_interaction.system_tests.test_ispyb_dev_connection import 
     ISPYB_CONFIG,
 )
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
-from artemis.parameters.constants import (
-    I03_BEAMLINE_PARAMETER_PATH,
-    SIM_BEAMLINE,
-    SIM_INSERTION_PREFIX,
-)
+from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH, SIM_BEAMLINE
 from artemis.parameters.internal_parameters import InternalParameters
 
 
@@ -78,12 +74,10 @@ def RE():
 
 @pytest.fixture
 def fgs_composite():
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=SIM_INSERTION_PREFIX,
-        name="fgs",
-        prefix=SIM_BEAMLINE,
-    )
-    fast_grid_scan_composite.wait_for_connection()
+    with patch("dodal.i03.dcm"):
+        with patch("dodal.i03.oav"):
+            with patch("dodal.i03.undulator"):
+                fast_grid_scan_composite = FGSComposite()
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         I03_BEAMLINE_PARAMETER_PATH
