@@ -201,7 +201,6 @@ def test_cli_args_parse():
 
 
 @patch("dodal.i03.eiger")
-@patch("dodal.i03.FGS")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
     mock_get_beamline_params, mock_fgs, mock_eiger

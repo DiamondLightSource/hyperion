@@ -10,7 +10,6 @@ from dodal.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
@@ -49,9 +48,17 @@ def test_params():
 
 
 @pytest.fixture
-def fake_fgs_composite():
-    FakeComposite = make_fake_device(FGSComposite)
-    fake_composite: FGSComposite = FakeComposite("test", name="fgs")
+def fake_fgs_composite(test_params: InternalParameters):
+    fake_composite = FGSComposite(
+        aperture_positions=AperturePositions(
+            LARGE=(1, 2, 3, 4, 5),
+            MEDIUM=(2, 3, 3, 5, 6),
+            SMALL=(3, 4, 3, 6, 7),
+            ROBOT_LOAD=(0, 0, 3, 0, 0),
+        ),
+        detector_params=test_params.artemis_params.detector_params,
+        fake=True,
+    )
     fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.z.user_setpoint._use_limits = False
@@ -60,14 +67,6 @@ def fake_fgs_composite():
     )
     fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
         False
-    )
-    fake_composite.aperture_scatterguard.load_aperture_positions(
-        AperturePositions(
-            LARGE=(1, 2, 3, 4, 5),
-            MEDIUM=(2, 3, 3, 5, 6),
-            SMALL=(3, 4, 3, 6, 7),
-            ROBOT_LOAD=(0, 0, 3, 0, 0),
-        )
     )
 
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)
@@ -92,15 +91,6 @@ def mock_subscriptions(test_params):
     subscriptions.ispyb_handler.ispyb_ids = [[0, 0], 0, 0]
 
     return subscriptions
-
-
-@pytest.fixture
-def fake_eiger(test_params: InternalParameters):
-    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
-    fake_eiger = FakeEiger.with_params(
-        params=test_params.artemis_params.detector_params, name="test"
-    )
-    return fake_eiger
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
@@ -181,7 +171,6 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
     mock_subscriptions: FGSCallbackCollection,
-    fake_eiger: EigerDetector,
     test_params: InternalParameters,
 ):
     RE = RunEngine({})
@@ -194,7 +183,6 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            fake_eiger,
             test_params,
             mock_subscriptions,
         )
@@ -205,7 +193,6 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            fake_eiger,
             test_params,
             mock_subscriptions,
         )
@@ -216,7 +203,6 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            fake_eiger,
             test_params,
             mock_subscriptions,
         )
@@ -239,7 +225,9 @@ def test_results_adjusted_and_passed_to_move_xyz(
 
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(
-    bps_mv: MagicMock, test_params: InternalParameters
+    bps_mv: MagicMock,
+    test_params: InternalParameters,
+    fake_fgs_composite: FGSComposite,
 ):
     from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
@@ -249,8 +237,7 @@ def test_results_passed_to_move_motors(
     motor_position = test_params.experiment_params.grid_position_to_motor_position(
         Point3D(1, 2, 3)
     )
-    FakeComposite: FGSComposite = make_fake_device(FGSComposite)
-    RE(move_xyz(FakeComposite("test", name="fgs").sample_motors, motor_position))
+    RE(move_xyz(fake_fgs_composite.sample_motors, motor_position))
     bps_mv.assert_called_once_with(
         ANY, motor_position.x, ANY, motor_position.y, ANY, motor_position.z
     )
@@ -269,7 +256,6 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    fake_eiger: EigerDetector,
     test_params: FGSComposite,
 ):
     RE = RunEngine({})
@@ -280,13 +266,12 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            fake_eiger,
             test_params,
             mock_subscriptions,
         )
     )
 
-    run_gridscan.assert_called_once_with(fake_fgs_composite, fake_eiger, params)
+    run_gridscan.assert_called_once_with(fake_fgs_composite, params)
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
 
 
@@ -303,7 +288,6 @@ def test_logging_within_plan(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    fake_eiger: EigerDetector,
     test_params: InternalParameters,
 ):
     RE = RunEngine({})
@@ -313,13 +297,12 @@ def test_logging_within_plan(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            fake_eiger,
             test_params,
             mock_subscriptions,
         )
     )
 
-    run_gridscan.assert_called_once_with(fake_fgs_composite, fake_eiger, test_params)
+    run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
 
 
@@ -365,7 +348,6 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_kickoff,
     mock_abs_set,
     fake_fgs_composite: FGSComposite,
-    fake_eiger: EigerDetector,
     test_params: InternalParameters,
     mock_subscriptions: FGSCallbackCollection,
 ):
@@ -374,19 +356,18 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     # Put both mocks in a parent to easily capture order
     mock_parent = MagicMock()
 
-    fake_eiger.disarm_detector = mock_parent.disarm
+    fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
-    fake_eiger.filewriters_finished = Status()
-    fake_eiger.filewriters_finished.set_finished()
-    fake_eiger.odin.check_odin_state = MagicMock(return_value=True)
-    fake_eiger.stage = MagicMock()
+    fake_fgs_composite.eiger.filewriters_finished = Status()
+    fake_fgs_composite.eiger.filewriters_finished.set_finished()
+    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+    fake_fgs_composite.eiger.stage = MagicMock()
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
 
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            fake_eiger,
             test_params,
             mock_subscriptions,
         )
