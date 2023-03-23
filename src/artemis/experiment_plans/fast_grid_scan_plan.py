@@ -69,18 +69,21 @@ class FGSComposite:
         self,
         aperture_positions: AperturePositions = None,
         detector_params: DetectorParams = None,
+        fake: bool = False,
     ):
-        self.dcm = i03.dcm()
-        self.oav = i03.oav()
-        self.aperture_scatterguard = i03.aperture_scatterguard(aperture_positions)
-        self.backlight = i03.backlight()
-        self.eiger = i03.eiger(detector_params)
-        self.fast_grid_scan = i03.fast_grid_scan()
-        self.s4_slit_gaps = i03.s4_slit_gaps()
-        self.sample_motors = i03.smargon()
-        self.undulator = i03.undulator()
-        self.synchrotron = i03.synchrotron()
-        self.zebra = i03.zebra()
+        self.dcm = i03.dcm(fake_with_ophyd_sim=fake)
+        self.oav = i03.oav(fake_with_ophyd_sim=fake)
+        self.aperture_scatterguard = i03.aperture_scatterguard(
+            fake_with_ophyd_sim=fake, aperture_positions=aperture_positions
+        )
+        self.backlight = i03.backlight(fake_with_ophyd_sim=fake)
+        self.eiger = i03.eiger(fake_with_ophyd_sim=fake, params=detector_params)
+        self.fast_grid_scan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
+        self.s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
+        self.sample_motors = i03.smargon(fake_with_ophyd_sim=fake)
+        self.undulator = i03.undulator(fake_with_ophyd_sim=fake)
+        self.synchrotron = i03.synchrotron(fake_with_ophyd_sim=fake)
+        self.zebra = i03.zebra(fake_with_ophyd_sim=fake)
 
 
 fast_grid_scan_composite: FGSComposite | None = None
