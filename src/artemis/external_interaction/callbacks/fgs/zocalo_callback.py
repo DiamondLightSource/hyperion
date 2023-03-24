@@ -139,7 +139,7 @@ class FGSZocaloCallback(CallbackBase):
             self.ispyb.append_to_comment("Found no diffraction.")
             xray_centre = fallback_xyz
             bbox_size = None
-            LOGGER.warn(log_msg)
+            LOGGER.warning(log_msg)
 
         self.processing_time = time.time() - self.processing_start_time
         self.ispyb.append_to_comment(
