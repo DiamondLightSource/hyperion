@@ -3,7 +3,6 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
-from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.det_dim_constants import (
