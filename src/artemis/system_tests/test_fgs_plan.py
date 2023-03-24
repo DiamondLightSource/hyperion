@@ -44,22 +44,21 @@ def RE():
 def fgs_composite():
     with patch("dodal.i03.dcm"):
         with patch("dodal.i03.oav"):
-            with patch("dodal.i03.fast_grid_scan"):
-                fast_grid_scan_composite = FGSComposite(
-                    detector_params=DetectorParams(
-                        current_energy=100,
-                        exposure_time=0.1,
-                        directory="/tmp",
-                        prefix="file_name",
-                        detector_distance=100.0,
-                        omega_start=0.0,
-                        omega_increment=0.1,
-                        num_images=50,
-                        use_roi_mode=False,
-                        run_number=0,
-                        det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
-                    )
+            fast_grid_scan_composite = FGSComposite(
+                detector_params=DetectorParams(
+                    current_energy=100,
+                    exposure_time=0.1,
+                    directory="/tmp",
+                    prefix="file_name",
+                    detector_distance=100.0,
+                    omega_start=0.0,
+                    omega_increment=0.1,
+                    num_images=50,
+                    use_roi_mode=False,
+                    run_number=0,
+                    det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
                 )
+            )
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         I03_BEAMLINE_PARAMETER_PATH
@@ -120,7 +119,6 @@ def test_read_hardware_for_ispyb(
 
 @pytest.mark.s03
 @patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.eiger")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
@@ -142,7 +140,6 @@ def test_full_plan_tidies_at_end(
 
 @pytest.mark.s03
 @patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.eiger")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
@@ -162,7 +159,6 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
-    # tidy_plans.assert_called_once()
 
 
 @pytest.mark.s03

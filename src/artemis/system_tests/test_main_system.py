@@ -200,10 +200,41 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True)
 
 
-@patch("dodal.i03.eiger")
+@patch("dodal.i03.ApertureScatterguard")
+@patch("dodal.i03.Backlight")
+@patch("dodal.i03.DCM")
+@patch("dodal.i03.EigerDetector")
+@patch("dodal.i03.FastGridScan")
+@patch("dodal.i03.OAV")
+@patch("dodal.i03.S4SlitGaps")
+@patch("dodal.i03.Smargon")
+@patch("dodal.i03.Synchrotron")
+@patch("dodal.i03.Undulator")
+@patch("dodal.i03.Zebra")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
-    mock_get_beamline_params, mock_fgs, mock_eiger
+    mock_get_beamline_params,
+    zebra,
+    undulator,
+    synchrotron,
+    smargon,
+    s4_slits,
+    oav,
+    fast_grid_scan,
+    eiger,
+    dcm,
+    backlight,
+    aperture_scatterguard,
 ):
     BlueskyRunner(MagicMock())
-    mock_fgs.return_value.wait_for_connection.assert_called_once()
+    zebra.return_value.wait_for_connection.assert_called_once()
+    undulator.return_value.wait_for_connection.assert_called_once()
+    synchrotron.return_value.wait_for_connection.assert_called_once()
+    smargon.return_value.wait_for_connection.assert_called_once()
+    s4_slits.return_value.wait_for_connection.assert_called_once()
+    oav.return_value.wait_for_connection.assert_called_once()
+    fast_grid_scan.return_value.wait_for_connection.assert_called_once()
+    eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
+    dcm.return_value.wait_for_connection.assert_called_once()
+    backlight.return_value.wait_for_connection.assert_called_once()
+    aperture_scatterguard.return_value.wait_for_connection.assert_called_once()

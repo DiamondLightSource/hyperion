@@ -156,6 +156,7 @@ def move_xyz(
 ):
     """Move 'sample motors' to a specific motor position (e.g. a position obtained
     from gridscan processing results)"""
+    artemis.log.LOGGER.info(f"Moving Smargon x, y, z to: {xray_centre_motor_position}")
     yield from bps.mv(
         sample_motors.x,
         xray_centre_motor_position.x,
@@ -183,6 +184,7 @@ def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
 
 
 def tidy_up_plans(fgs_composite: FGSComposite):
+    artemis.log.LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
 
@@ -254,9 +256,9 @@ def run_gridscan_and_move(
     # While the gridscan is happening we want to write out nexus files and trigger zocalo
     @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
     def gridscan_with_subscriptions(fgs_composite, params):
+        artemis.log.LOGGER.info("Starting grid scan")
         yield from run_gridscan(fgs_composite, params)
 
-    artemis.log.LOGGER.info("Starting grid scan")
     yield from gridscan_with_subscriptions(fgs_composite, parameters)
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
