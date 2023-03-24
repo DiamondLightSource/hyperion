@@ -167,7 +167,9 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
+@patch("bluesky.plan_stubs.rd")
 def test_results_adjusted_and_passed_to_move_xyz(
+    rd: MagicMock,
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
@@ -175,6 +177,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     mock_subscriptions: FGSCallbackCollection,
     test_params: InternalParameters,
 ):
+    rd.side_effect = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
     RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
