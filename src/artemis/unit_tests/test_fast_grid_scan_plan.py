@@ -71,6 +71,7 @@ def fake_fgs_composite(test_params: InternalParameters):
 
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)
     fake_composite.fast_grid_scan.position_counter.sim_put(0)
+
     return fake_composite
 
 
@@ -116,9 +117,7 @@ def test_when_run_gridscan_called_then_generator_returned():
     assert isinstance(plan, types.GeneratorType)
 
 
-@patch("bluesky.plan_stubs.rd")
 def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
-    rd,
     fake_fgs_composite: FGSComposite,
 ):
     RE = RunEngine({})
@@ -167,9 +166,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
-@patch("bluesky.plan_stubs.rd")
 def test_results_adjusted_and_passed_to_move_xyz(
-    rd: MagicMock,
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
@@ -350,11 +347,9 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.rd")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
 def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     wait_for_valid,
-    mock_rd,
     mock_mv,
     mock_complete,
     mock_kickoff,

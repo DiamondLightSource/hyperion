@@ -7,6 +7,7 @@ from typing import Any, Callable, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
+from dodal import i03
 from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
@@ -238,3 +239,4 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     dcm.return_value.wait_for_connection.assert_called_once()
     backlight.return_value.wait_for_connection.assert_called_once()
     aperture_scatterguard.return_value.wait_for_connection.assert_called_once()
+    i03.clear_devices()
