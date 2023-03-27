@@ -4,8 +4,7 @@ from dodal.devices.oav.oav_detector import OAV
 
 def get_waveforms_to_image_scale(oav: OAV):
     """
-    Returns the scale of the image. The standard calculation for the image is based
-    on a size of (1024, 768) so we require these scaling factors.
+    Returns the scale of the image.
     Args:
         oav (OAV): The OAV device in use.
     Returns:

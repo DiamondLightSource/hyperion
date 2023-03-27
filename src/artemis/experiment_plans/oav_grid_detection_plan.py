@@ -1,4 +1,5 @@
 import math
+from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -11,7 +12,9 @@ from dodal.devices.smargon import Smargon
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_prefixes
-from artemis.utils.oav_utils import get_waveforms_to_image_scale
+
+if TYPE_CHECKING:
+    from dodal.devices.oav.oav_parameters import OAVParameters
 
 oav: OAV = None
 smargon: Smargon = None
@@ -29,7 +32,28 @@ def create_devices():
     backlight.wait_for_connection()
 
 
-def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParams):
+def grid_detection_plan(
+    parameters: OAVParameters,
+    subscriptions,
+    out_parameters: GridScanParams,
+    width=600,
+    box_size_microns=20,
+):
+    try:
+        yield from grid_detection_main_plan(
+            parameters, subscriptions, out_parameters, width, box_size_microns
+        )
+    finally:
+        yield from reset_oav(parameters)
+
+
+def grid_detection_main_plan(
+    parameters: OAVParameters,
+    subscriptions,
+    out_parameters: GridScanParams,
+    width: int,
+    box_size_microns: int,
+):
     """
     Attempts to find the centre of the pin on the oav by rotating and sampling elements.
     I03 gets the number of rotation points from gda.mx.loop.centring.omega.steps which defaults to 6.
@@ -43,12 +67,6 @@ def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParam
 
     LOGGER.info("OAV Centring: Starting loop centring")
 
-    # parameters = OAVParameters(
-    #     parameters.experiment_params.centring_params_file,
-    #     parameters.experiment_params.camera_zoom_levels_file,
-    #     parameters.experiment_params.display_configuration_file,
-    # )
-
     yield from bps.wait()
 
     # Set relevant PVs to whatever the config dictates.
@@ -56,15 +74,9 @@ def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParam
 
     LOGGER.info("OAV Centring: Camera set up")
 
-    # The image resolution may not correspond to the (1024, 768) of the waveform, then we have to scale
-    # waveform pixels to get the camera pixels.
-    i_scale, j_scale = yield from get_waveforms_to_image_scale(oav)
-
     start_positions = []
     box_numbers = []
 
-    width = 600
-    box_size_microns = 20
     box_size_x_pixels = box_size_microns / parameters.micronsPerXPixel
     box_size_y_pixels = box_size_microns / parameters.micronsPerYPixel
 
@@ -120,10 +132,11 @@ def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParam
 
         LOGGER.info("Triggering snapshot")
 
-        if angle == 0:
-            snapshot_filename = parameters.snapshot_1_filename
-        else:
-            snapshot_filename = parameters.snapshot_2_filename
+        snapshot_filename = (
+            parameters.snapshot_1_filename
+            if angle == 0
+            else parameters.snapshot_2_filename
+        )
 
         test_snapshot_dir = "/dls_sw/i03/software/artemis/test_snaps"
 
@@ -183,5 +196,7 @@ def grid_detection_plan(parameters, subscriptions, out_parameters: GridScanParam
     LOGGER.info(f"y_steps: GDA: {out_parameters.y_steps}, Artemis {box_numbers[0][1]}")
     LOGGER.info(f"z_steps: GDA: {out_parameters.z_steps}, Artemis {box_numbers[1][1]}")
 
-    yield from bps.abs_set(oav.snapshot.input_pv, parameters.input_plugin + ".CAM")
-    yield from bps.abs_set(oav.mxsc.enable_callbacks_pv, 0)
+
+def reset_oav(parameters: OAVParameters):
+    yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")
+    yield from bps.abs_set(oav.mxsc.enable_callbacks, 0)

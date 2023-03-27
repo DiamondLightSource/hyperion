@@ -17,22 +17,22 @@ def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
         filename: filename of the python script to detect edge waveforms from camera stream.
     Returns: None
     """
-    yield from bps.abs_set(oav.mxsc.input_plugin_pv, input_plugin)
+    yield from bps.abs_set(oav.mxsc.input_plugin, input_plugin)
 
     # Turns the area detector plugin on
-    yield from bps.abs_set(oav.mxsc.enable_callbacks_pv, 1)
+    yield from bps.abs_set(oav.mxsc.enable_callbacks, 1)
 
     # Set the minimum time between updates of the plugin
-    yield from bps.abs_set(oav.mxsc.min_callback_time_pv, min_callback_time)
+    yield from bps.abs_set(oav.mxsc.min_callback_time, min_callback_time)
 
     # Stop the plugin from blocking the IOC and hogging all the CPU
     yield from bps.abs_set(oav.mxsc.blocking_callbacks_pv, 0)
 
     # Set the python file to use for calculating the edge waveforms
-    current_filename = yield from bps.rd(oav.mxsc.py_filename)
+    current_filename = yield from bps.rd(oav.mxsc.filename)
     if current_filename != filename:
         LOGGER.info(f"Current python file is {current_filename}, setting to {filename}")
-        yield from bps.abs_set(oav.mxsc.py_filename, filename)
+        yield from bps.abs_set(oav.mxsc.filename, filename)
         yield from bps.abs_set(oav.mxsc.read_file, 1)
 
     # Image annotations
@@ -88,7 +88,7 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         parameters.filename,
     )
 
-    yield from bps.abs_set(oav.snapshot.input_pv, parameters.input_plugin + ".CAM")
+    yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")
 
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:

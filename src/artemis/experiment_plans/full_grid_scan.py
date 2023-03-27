@@ -74,13 +74,7 @@ def get_plan(
     snap_1_filename = os.path.basename(os.path.abspath(gda_snap_1))
     snap_2_filename = os.path.basename(os.path.abspath(gda_snap_2))
 
-    zoom_params_file = "/dls_sw/i03/software/gda_versions/gda_9_27/workspace_git/gda-mx.git/configurations/i03-config/xml/jCameraManZoomLevels.xml"
-    oav_json = "/dls_sw/i03/software/gda_versions/gda_9_27/workspace_git/gda-mx.git/configurations/i03-config/etc/OAVCentring.json"
-    display_config = "/dls_sw/i03/software/gda_versions/var/display.configuration"
     oav_params = OAVParameters(
-        oav_json,
-        zoom_params_file,
-        display_config,
         snapshot_dir,
         snap_1_filename,
         snap_2_filename,
