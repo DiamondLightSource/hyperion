@@ -150,9 +150,9 @@ if [[ $START == 1 ]]; then
     cd ${RELATIVE_SCRIPT_DIR}
 
     if [ $IN_DEV == true ]; then
-        log_path=$RELATIVE_SCRIPT_DIR/start_log.txt
+        log_path=$RELATIVE_SCRIPT_DIR/tmp/dev/start_log.txt
     else
-        log_path=/dls_sw/i03/logs/bluesky/start_log.txt
+        log_path=/dls_sw/$BEAMLINE/logs/bluesky/start_log.txt
     fi
 
     source .venv/bin/activate
