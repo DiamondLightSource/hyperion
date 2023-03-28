@@ -149,21 +149,25 @@ if [[ $START == 1 ]]; then
     RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
     cd ${RELATIVE_SCRIPT_DIR}
 
-    if [ $IN_DEV == true ]; then
-        log_path=$RELATIVE_SCRIPT_DIR/tmp/dev/start_log.txt
-    else
-        log_path=/dls_sw/$BEAMLINE/logs/bluesky/start_log.txt
+    if [ -n "$ARTEMIS_LOG_DIR" ]; then
+        if [ $IN_DEV == true ]; then
+            ARTEMIS_LOG_DIR=$RELATIVE_SCRIPT_DIR/tmp/dev
+        else
+            ARTEMIS_LOG_DIR=/dls_sw/$BEAMLINE/logs/bluesky
+        fi
     fi
+    mkdir -p $ARTEMIS_LOG_DIR
+    start_log_path=$ARTEMIS_LOG_DIR/start_log.txt
 
     source .venv/bin/activate
 
-    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` >$log_path 2>&1 &
+    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` >$start_log_path 2>&1 &
 
     echo "Waiting for Artemis to boot"
 
     for i in {1..10}
     do
-        curl --head -X GET http://localhost:5005/fast_grid_scan/status >/dev/null
+        curl --head -X GET http://localhost:5005/status >/dev/null
         ret_value=$?
         if [ $ret_value -ne 0 ]; then
             sleep 1
