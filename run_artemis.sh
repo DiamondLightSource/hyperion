@@ -149,13 +149,15 @@ if [[ $START == 1 ]]; then
     RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
     cd ${RELATIVE_SCRIPT_DIR}
 
-    if [ -n "$ARTEMIS_LOG_DIR" ]; then
+    if [ -z "$ARTEMIS_LOG_DIR" ]; then
         if [ $IN_DEV == true ]; then
             ARTEMIS_LOG_DIR=$RELATIVE_SCRIPT_DIR/tmp/dev
         else
             ARTEMIS_LOG_DIR=/dls_sw/$BEAMLINE/logs/bluesky
         fi
     fi
+    echo "Logging to $ARTEMIS_LOG_DIR"
+
     mkdir -p $ARTEMIS_LOG_DIR
     start_log_path=$ARTEMIS_LOG_DIR/start_log.txt
 
