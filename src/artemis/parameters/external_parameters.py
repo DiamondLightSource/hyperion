@@ -87,7 +87,6 @@ class ExternalGridScanParameters(DataClassJsonMixin):
     exposure_time: float = 0.1
     detector_distance: float = 100.0
     omega_start: float = 0.0
-    omega_increment: float = 0.0
 
 
 @dataclass

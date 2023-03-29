@@ -71,7 +71,6 @@
         "z2_start": 0.0,
         "exposure_time": 0.1,
         "detector_distance": 100.0,
-        "omega_start": 0.0,
-        "omega_increment": 0.1
+        "omega_start": 0.0
     }
 }
