@@ -34,24 +34,27 @@ OFFSET = 1
 SHUTTER_OPENING_TIME = 0.5
 
 
+def move_to_start_w_buffer(motors: Smargon, start_angle):
+    yield from bps.abs_set(motors.omega.velocity, 100, wait=True)
+    yield from bps.abs_set(motors.omega.velocity, 100, group="move_to_start")
+    yield from bps.abs_set(
+        motors.omega, start_angle - (OFFSET * DIRECTION), group="move_to_start"
+    )
+
+
+def move_to_end_w_buffer(motors: Smargon, scan_width):
+    yield from bps.rel_set(
+        motors.omega, (scan_width + 0.1 + OFFSET) * DIRECTION, group="move_to_end"
+    )
+
+
+def set_speed(motors: Smargon, image_width, exposure_time):
+    yield from bps.abs_set(
+        motors.omega.velocity, image_width / exposure_time, group="set_speed"
+    )
+
+
 def rotation_scan_plan(params: InternalParameters):
-    def move_to_start_w_buffer(motors: Smargon, start_angle):
-        yield from bps.abs_set(motors.omega.velocity, 100, wait=True)
-        yield from bps.abs_set(motors.omega.velocity, 100, group="move_to_start")
-        yield from bps.abs_set(
-            motors.omega, start_angle - (OFFSET * DIRECTION), group="move_to_start"
-        )
-
-    def move_to_end_w_buffer(motors: Smargon, scan_width):
-        yield from bps.rel_set(
-            motors.omega, (scan_width + 0.1 + OFFSET) * DIRECTION, group="move_to_end"
-        )
-
-    def set_speed(motors: Smargon, image_width, exposure_time):
-        yield from bps.abs_set(
-            motors.omega.velocity, image_width / exposure_time, group="set_speed"
-        )
-
     detector_params: DetectorParams = params.artemis_params.detector_params
     expt_params: RotationScanParams = params.experiment_params
 
@@ -96,6 +99,8 @@ def cleanup_plan():
 
 
 def get_plan(params: InternalParameters):
+    # TODO subscriptions
+
     def rotation_scan_plan_with_stage_and_cleanup(params):
         @stage_decorator(eiger)
         def with_cleanup(params):
