@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 import json
 from dataclasses import dataclass, field
-from enum import Enum
 from pathlib import Path
 from typing import Dict, Optional, Type, Union
 
@@ -27,18 +26,12 @@ class WrongExperimentParameterSpecification(Exception):
     pass
 
 
-class EigerTriggerModes(str, Enum):
-    MANY_TRIGGERS = "many_triggers"
-    ONE_TRIGGER = "one_trigger"
-
-
 @dataclass
 class ExternalDetectorParameters(DataClassJsonMixin):
     current_energy: int = 100
     directory: str = "/tmp"
     prefix: str = "file_name"
     run_number: int = 0
-    trigger_mode: str = EigerTriggerModes.MANY_TRIGGERS
     use_roi_mode: bool = False
     det_dist_to_beam_converter_path: str = (
         "src/artemis/unit_tests/test_lookup_table.txt"
