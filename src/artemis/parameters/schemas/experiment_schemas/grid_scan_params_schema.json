@@ -37,7 +37,17 @@
         },
         "z2_start": {
             "type": "number"
+        },
+        "exposure_time": {
+            "type": "number"
+        },
+        "detector_distance": {
+            "type": "number"
+        },
+        "omega_start": {
+            "type": "number"
         }
     },
-    "minProperties": 12
+    "minProperties": 15,
+    "additionalProperties": false
 }
