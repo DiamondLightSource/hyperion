@@ -1,18 +1,19 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import finalize_wrapper, stage_decorator
 from dodal import i03
+from dodal.devices.eiger import DetectorParams, EigerDetector
+from dodal.devices.rotation_scan import RotationScanParams
+from dodal.devices.smargon import Smargon
+from dodal.devices.zebra import Zebra
 
 from artemis.device_setup_plans.setup_zebra_for_rotation import setup_zebra_for_rotation
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
-    from dodal.devices.eiger import DetectorParams, EigerDetector
-    from dodal.devices.rotation_scan import RotationScanParams
-    from dodal.devices.smargon import Smargon
-    from dodal.devices.zebra import Zebra
-
     from artemis.parameters.internal_parameters import InternalParameters
 
 
