@@ -5,8 +5,8 @@ from unittest.mock import call, patch
 import h5py
 import numpy as np
 import pytest
+from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 
-from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.nexus.write_nexus import (
     NexusWriter,
     create_parameters_for_first_file,
@@ -32,7 +32,7 @@ def minimal_params(request):
     params.artemis_params.ispyb_params.flux = 9.0
     params.artemis_params.ispyb_params.transmission = 0.5
     params.artemis_params.detector_params.use_roi_mode = True
-    params.artemis_params.detector_params.num_images = request.param
+    params.artemis_params.detector_params.num_triggers = request.param
     params.artemis_params.detector_params.directory = (
         os.path.dirname(os.path.realpath(__file__)) + "/test_data"
     )
@@ -61,7 +61,7 @@ def dummy_nexus_writers_with_more_images(minimal_params: InternalParameters):
     minimal_params.experiment_params.x_steps = x
     minimal_params.experiment_params.y_steps = y
     minimal_params.experiment_params.z_steps = z
-    minimal_params.artemis_params.detector_params.num_images = x * y + x * z
+    minimal_params.artemis_params.detector_params.num_images_per_trigger = x * y + x * z
     first_file_params = create_parameters_for_first_file(minimal_params)
     nexus_writer_1 = NexusWriter(first_file_params)
 
@@ -249,7 +249,7 @@ def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: NexusWriter):
 
 
 def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
-    from artemis.devices.det_dim_constants import (
+    from dodal.devices.det_dim_constants import (
         PIXELS_X_EIGER2_X_4M,
         PIXELS_Y_EIGER2_X_4M,
     )

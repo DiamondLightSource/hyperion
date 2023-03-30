@@ -128,7 +128,11 @@ def main():
     channel = conn.channel()
     channel.basic_consume(queue="processing_recipe", on_message_callback=on_request)
     print("Listening for zocalo requests")
-    channel.start_consuming()
+    try:
+        channel.start_consuming()
+    except KeyboardInterrupt:
+        print("Shutting down gracefully")
+        channel.close()
 
 
 if __name__ == "__main__":

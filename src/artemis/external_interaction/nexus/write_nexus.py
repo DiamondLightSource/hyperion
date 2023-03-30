@@ -14,12 +14,12 @@ from typing import Dict, Tuple
 
 import h5py
 import numpy as np
+from dodal.devices.detector import DetectorParams
+from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 
-from artemis.devices.detector import DetectorParams
-from artemis.devices.fast_grid_scan import GridAxis, GridScanParams
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.parameters.internal_parameters import InternalParameters
 
@@ -56,7 +56,7 @@ def create_parameters_for_first_file(parameters: InternalParameters):
     new_params.experiment_params.z_axis = GridAxis(
         parameters.experiment_params.z1_start, 0, 0
     )
-    new_params.artemis_params.detector_params.num_images = (
+    new_params.artemis_params.detector_params.num_triggers = (
         parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
     )
     new_params.artemis_params.detector_params.nexus_file_run_number = (
@@ -223,7 +223,10 @@ class NexusWriter:
 
         self.start_index = parameters.artemis_params.detector_params.start_index
 
-        self.full_num_of_images = parameters.artemis_params.detector_params.num_images
+        self.full_num_of_images = (
+            parameters.artemis_params.detector_params.num_triggers
+            * parameters.artemis_params.detector_params.num_images_per_trigger
+        )
 
         self.nexus_file = (
             self.directory

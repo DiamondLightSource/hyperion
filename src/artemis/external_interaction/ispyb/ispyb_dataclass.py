@@ -10,8 +10,8 @@ ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
     "sample_barcode": None,
     "visit_path": "",
-    "pixels_per_micron_x": 0.0,
-    "pixels_per_micron_y": 0.0,
+    "microns_per_pixel_x": 0.0,
+    "microns_per_pixel_y": 0.0,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     "upper_left": Point3D(x=0, y=0, z=0),
     "position": Point3D(x=0, y=0, z=0),
@@ -37,8 +37,8 @@ ISPYB_PARAM_DEFAULTS = {
 @dataclass
 class IspybParams:
     visit_path: str
-    pixels_per_micron_x: float
-    pixels_per_micron_y: float
+    microns_per_pixel_x: float
+    microns_per_pixel_y: float
 
     upper_left: Point3D = field(
         # in px on the image

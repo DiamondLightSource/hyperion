@@ -5,10 +5,10 @@
         "visit_path": {
             "type": "string"
         },
-        "pixels_per_micron_x": {
+        "microns_per_pixel_x": {
             "type": "number"
         },
-        "pixels_per_micron_y": {
+        "microns_per_pixel_y": {
             "type": "number"
         },
         "upper_left": {

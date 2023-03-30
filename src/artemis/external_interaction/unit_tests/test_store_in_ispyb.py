@@ -26,8 +26,8 @@ TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 def dummy_params():
     dummy_params = InternalParameters()
     dummy_params.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 50)
-    dummy_params.artemis_params.ispyb_params.pixels_per_micron_x = 0.8
-    dummy_params.artemis_params.ispyb_params.pixels_per_micron_y = 0.8
+    dummy_params.artemis_params.ispyb_params.microns_per_pixel_x = 0.8
+    dummy_params.artemis_params.ispyb_params.microns_per_pixel_y = 0.8
     return dummy_params
 
 
@@ -157,7 +157,6 @@ def test_store_3d_grid_scan(
 
 
 def setup_mock_return_values(ispyb_conn):
-
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
     mx_acquisition.get_data_collection_group_params = (

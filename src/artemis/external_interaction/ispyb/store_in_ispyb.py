@@ -4,11 +4,11 @@ import datetime
 import re
 from abc import ABC, abstractmethod
 
+import dodal.devices.oav.utils as oav_utils
 import ispyb
 import ispyb.sqlalchemy
 from sqlalchemy.connectors import Connector
 
-import artemis.devices.oav.utils as oav_utils
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
 from artemis.parameters.internal_parameters import InternalParameters
@@ -137,8 +137,10 @@ class StoreInIspyb(ABC):
         params["dyInMm"] = self.y_step_size
         params["stepsX"] = self.full_params.experiment_params.x_steps
         params["stepsY"] = self.y_steps
-        params["pixelsPerMicronX"] = self.ispyb_params.pixels_per_micron_x
-        params["pixelsPerMicronY"] = self.ispyb_params.pixels_per_micron_y
+        # Although the stored values is microns per pixel the columns in ISPyB are named
+        # pixels per micron. See LIMS-564, which is tasked with fixing this inconsistency
+        params["pixelsPerMicronX"] = self.ispyb_params.microns_per_pixel_x
+        params["pixelsPerMicronY"] = self.ispyb_params.microns_per_pixel_y
         params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = self.upper_left
         params["orientation"] = Orientation.HORIZONTAL.value
         params["snaked"] = True
@@ -152,8 +154,8 @@ class StoreInIspyb(ABC):
             self.y_steps,
             self.full_params.experiment_params.x_step_size,
             self.y_step_size,
-            self.ispyb_params.pixels_per_micron_x,
-            self.ispyb_params.pixels_per_micron_y,
+            self.ispyb_params.microns_per_pixel_x,
+            self.ispyb_params.microns_per_pixel_y,
         )
         return (
             "Artemis: Xray centring - Diffraction grid scan of "

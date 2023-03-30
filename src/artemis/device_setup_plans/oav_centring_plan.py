@@ -1,10 +1,8 @@
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.run_engine import RunEngine
-
-from artemis.devices.backlight import Backlight
-from artemis.devices.I03Smargon import I03Smargon
-from artemis.devices.oav.oav_calculations import (
+from dodal.devices.backlight import Backlight
+from dodal.devices.oav.oav_calculations import (
     camera_coordinates_to_xyz,
     check_i_within_bounds,
     extract_pixel_centre_values_from_rotation_data,
@@ -12,12 +10,14 @@ from artemis.devices.oav.oav_calculations import (
     get_rotation_increment,
     keep_inside_bounds,
 )
-from artemis.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
-from artemis.devices.oav.oav_errors import (
+from dodal.devices.oav.oav_detector import OAV, ColorMode, EdgeOutputArrayImageType
+from dodal.devices.oav.oav_errors import (
     OAVError_WaveformAllZero,
     OAVError_ZoomLevelNotFound,
 )
-from artemis.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.smargon import Smargon
+
 from artemis.log import LOGGER, set_up_logging_handlers
 
 # Z and Y bounds are hardcoded into GDA (we don't want to exceed them). We should look
@@ -133,14 +133,14 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
 
 
 def rotate_pin_and_collect_positional_data(
-    oav: OAV, smargon: I03Smargon, rotations: int, omega_high_limit: float
+    oav: OAV, smargon: Smargon, rotations: int, omega_high_limit: float
 ):
     """
     Calculate relevant spacial values (waveforms, and pixel positions) at each rotation and save them in lists.
 
     Args:
         oav (OAV): The oav device to rotate and sample MXSC data from.
-        smargon (I03Smargon): The smargon controller device.
+        smargon (Smargon): The smargon controller device.
         rotations (int): The number of rotations to sample.
         omega_high_limit (float): The motor limit that shouldn't be exceeded.
     Returns:
@@ -226,7 +226,7 @@ def get_waveforms_to_image_scale(oav: OAV):
 def centring_plan(
     oav: OAV,
     parameters: OAVParameters,
-    smargon: I03Smargon,
+    smargon: Smargon,
     max_run_num=3,
     rotation_points=6,
 ):
@@ -377,12 +377,12 @@ if __name__ == "__main__":
     set_up_logging_handlers("INFO")
     oav = OAV(name="oav", prefix=beamline)
 
-    smargon: I03Smargon = I03Smargon(name="smargon", prefix=beamline)
+    smargon: Smargon = Smargon(name="smargon", prefix=beamline)
     backlight: Backlight = Backlight(name="backlight", prefix=beamline)
     parameters = OAVParameters(
-        "src/artemis/devices/unit_tests/test_OAVCentring.json",
-        "src/artemis/devices/unit_tests/test_jCameraManZoomLevels.xml",
-        "src/artemis/devices/unit_tests/test_display.configuration",
+        "src/artemis/unit_tests/test_OAVCentring.json",
+        "src/artemis/unit_tests/test_jCameraManZoomLevels.xml",
+        "src/artemis/unit_tests/test_display.configuration",
     )
     oav.wait_for_connection()
     smargon.wait_for_connection()
