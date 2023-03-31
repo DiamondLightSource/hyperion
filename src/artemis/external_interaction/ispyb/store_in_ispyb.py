@@ -17,7 +17,6 @@ from artemis.utils import Point2D
 
 if TYPE_CHECKING:
     from artemis.parameters.internal_parameters import InternalParameters
-
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
 

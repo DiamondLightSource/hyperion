@@ -10,7 +10,9 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb3D,
 )
 from artemis.parameters.constants import SIM_ISPYB_CONFIG
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_parameters import (
+    FGSInternalParameters,
+)
 from artemis.utils import Point3D
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
@@ -24,7 +26,7 @@ TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = InternalParameters()
+    dummy_params = FGSInternalParameters()
     dummy_params.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 50)
     dummy_params.artemis_params.ispyb_params.microns_per_pixel_x = 0.8
     dummy_params.artemis_params.ispyb_params.microns_per_pixel_y = 0.8

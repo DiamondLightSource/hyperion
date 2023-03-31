@@ -5,7 +5,9 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_parameters import (
+    FGSInternalParameters,
+)
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
@@ -66,7 +68,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
 def test_can_store_2D_ispyb_data_correctly_when_in_error(
     StoreClass, exp_num_of_grids, success, fetch_comment
 ):
-    test_params = InternalParameters()
+    test_params = FGSInternalParameters()
     test_params.artemis_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
     ispyb: StoreInIspyb = StoreClass(ISPYB_CONFIG, test_params)
     dc_ids, grid_ids, dcg_id = ispyb.begin_deposition()

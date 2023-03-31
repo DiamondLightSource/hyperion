@@ -10,13 +10,15 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 from artemis.utils import Point3D
 
 
 def test_callback_collection_init():
-    callbacks = FGSCallbackCollection.from_params(InternalParameters())
-    test_parameters = InternalParameters()
+    test_parameters = FGSInternalParameters()
+    callbacks = FGSCallbackCollection.from_params(test_parameters)
     assert (
         callbacks.ispyb_handler.params.experiment_params
         == test_parameters.experiment_params
@@ -79,7 +81,7 @@ def test_communicator_in_composite_run(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
 
-    params = InternalParameters()
+    params = FGSInternalParameters()
     params.artemis_params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
