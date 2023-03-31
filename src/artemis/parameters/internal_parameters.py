@@ -4,13 +4,13 @@ from typing import Any, Dict
 from dodal.devices.eiger import DetectorParams
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
-import artemis.experiment_plans.experiment_registry as registry
 import artemis.parameters.external_parameters as raw_parameters
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
     ISPYB_PARAM_DEFAULTS,
     IspybParams,
 )
 from artemis.parameters.constants import (
+    DEFAULT_EXPERIMENT_TYPE,
     DETECTOR_PARAM_DEFAULTS,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
@@ -23,7 +23,7 @@ class ArtemisParameters:
     zocalo_environment: str = SIM_ZOCALO_ENV
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
-    experiment_type: str = registry.EXPERIMENT_NAMES[0]
+    experiment_type: str = DEFAULT_EXPERIMENT_TYPE
 
     detector_params: DetectorParams = DetectorParams.from_dict(DETECTOR_PARAM_DEFAULTS)
     ispyb_params: IspybParams = IspybParams.from_dict(ISPYB_PARAM_DEFAULTS)
@@ -33,7 +33,7 @@ class ArtemisParameters:
         zocalo_environment: str = SIM_ZOCALO_ENV,
         beamline: str = SIM_BEAMLINE,
         insertion_prefix: str = SIM_INSERTION_PREFIX,
-        experiment_type: str = registry.EXPERIMENT_NAMES[0],
+        experiment_type: str = DEFAULT_EXPERIMENT_TYPE,
         detector_params: Dict[str, Any] = DETECTOR_PARAM_DEFAULTS,
         ispyb_params: Dict[str, Any] = ISPYB_PARAM_DEFAULTS,
     ) -> None:

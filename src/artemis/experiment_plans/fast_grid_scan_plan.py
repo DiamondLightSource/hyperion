@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -9,18 +9,13 @@ from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import (
-    FastGridScan,
-    GridScanParams,
-    set_fast_grid_scan_params,
-)
+from dodal.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
 from dodal.devices.fast_grid_scan_composite import FGSComposite
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
 import artemis.log
-import artemis.parameters.internal_parameters as aip
 from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
@@ -42,36 +37,11 @@ if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
+    from artemis.parameters.plan_specific import FGSInternalParameters
 
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
-
-
-# TODO Move this stuff to fast grid scan plan
-# def __init__(self, external_params: RawParameters = RawParameters()):
-#     ext_expt_param_dict = external_params.experiment_params.to_dict()
-#     ext_art_param_dict = external_params.artemis_params.to_dict()
-#
-#     n_images = self.experiment_params.get_num_images()
-#     if self.experiment_params.trigger_number == EigerTriggerNumber.MANY_TRIGGERS:
-#         ext_art_param_dict["detector_params"]["num_triggers"] = n_images
-#         ext_art_param_dict["detector_params"]["num_images_per_trigger"] = 1
-#     else:
-#         ext_art_param_dict["detector_params"]["num_triggers"] = 1
-#         ext_art_param_dict["detector_params"]["num_images_per_trigger"] = n_images
-#
-#     self.artemis_params = ArtemisParameters(**ext_art_param_dict)
-
-
-class FGSInternalParameters(aip.InternalParameters):
-    experiment_params_type = GridScanParams
-
-    def pre_sorting_translation(self, param_dict: dict[str, Any]):
-        super().pre_sorting_translation(param_dict)
-        param_dict["omega_increment"] = 0
-        param_dict["num_triggers"] = param_dict["num_images"]
-        param_dict["num_images_per_trigger"] = 1
 
 
 def get_beamline_parameters():
