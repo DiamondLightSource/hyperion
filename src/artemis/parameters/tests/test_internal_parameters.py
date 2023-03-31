@@ -1,13 +1,13 @@
 from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.fast_grid_scan import GridScanParams
 
-from artemis.parameters.external_parameters import RawParameters
+from artemis.parameters import external_parameters
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
 
 def test_parameters_load_from_file():
-    params = RawParameters.from_file(
+    params = external_parameters.from_file(
         "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
     internal_parameters = InternalParameters(params)

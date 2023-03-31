@@ -37,7 +37,9 @@ if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
-    from artemis.parameters.plan_specific import FGSInternalParameters
+    from artemis.parameters.internal_parameters.plan_specific import (
+        FGSInternalParameters,
+    )
 
 
 fast_grid_scan_composite: FGSComposite = None

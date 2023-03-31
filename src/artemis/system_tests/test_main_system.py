@@ -11,14 +11,14 @@ from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
-from artemis.parameters.external_parameters import RawParameters
+from artemis.parameters import external_parameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
-TEST_PARAMS = RawParameters().to_json()
+TEST_PARAMS = external_parameters.from_file("test_parameters.json").to_json()
 
 
 class MockRunEngine:

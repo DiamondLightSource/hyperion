@@ -33,7 +33,7 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())
-EXPERIMENT_TYPE_LIST = [p["param_type"] for p in PLAN_REGISTRY.values()]
+EXPERIMENT_TYPE_LIST = [p["experiment_param_type"] for p in PLAN_REGISTRY.values()]
 EXPERIMENT_TYPE_DICT = dict(zip(EXPERIMENT_NAMES, EXPERIMENT_TYPE_LIST))
 
 
