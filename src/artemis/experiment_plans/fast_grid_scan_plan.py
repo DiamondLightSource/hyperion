@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -9,13 +9,18 @@ from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScan, set_fast_grid_scan_params
+from dodal.devices.fast_grid_scan import (
+    FastGridScan,
+    GridScanParams,
+    set_fast_grid_scan_params,
+)
 from dodal.devices.fast_grid_scan_composite import FGSComposite
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
 import artemis.log
+import artemis.parameters.internal_parameters as aip
 from artemis.device_setup_plans.setup_zebra_for_fgs import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
@@ -34,15 +39,39 @@ from artemis.tracing import TRACER
 from artemis.utils import Point3D
 
 if TYPE_CHECKING:
-    from dodal.devices.fast_grid_scan_composite import FGSComposite
-
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
-    from artemis.parameters.internal_parameters import InternalParameters
+
 
 fast_grid_scan_composite: FGSComposite = None
 eiger: EigerDetector = None
+
+
+# TODO Move this stuff to fast grid scan plan
+# def __init__(self, external_params: RawParameters = RawParameters()):
+#     ext_expt_param_dict = external_params.experiment_params.to_dict()
+#     ext_art_param_dict = external_params.artemis_params.to_dict()
+#
+#     n_images = self.experiment_params.get_num_images()
+#     if self.experiment_params.trigger_number == EigerTriggerNumber.MANY_TRIGGERS:
+#         ext_art_param_dict["detector_params"]["num_triggers"] = n_images
+#         ext_art_param_dict["detector_params"]["num_images_per_trigger"] = 1
+#     else:
+#         ext_art_param_dict["detector_params"]["num_triggers"] = 1
+#         ext_art_param_dict["detector_params"]["num_images_per_trigger"] = n_images
+#
+#     self.artemis_params = ArtemisParameters(**ext_art_param_dict)
+
+
+class FGSInternalParameters(aip.InternalParameters):
+    experiment_params_type = GridScanParams
+
+    def pre_sorting_translation(self, param_dict: dict[str, Any]):
+        super().pre_sorting_translation(param_dict)
+        param_dict["omega_increment"] = 0
+        param_dict["num_triggers"] = param_dict["num_images"]
+        param_dict["num_images_per_trigger"] = 1
 
 
 def get_beamline_parameters():
@@ -158,7 +187,7 @@ def tidy_up_plans(fgs_composite: FGSComposite):
 def run_gridscan(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
-    parameters: InternalParameters,
+    parameters: FGSInternalParameters,
     md={
         "plan_name": "run_gridscan",
     },
@@ -205,7 +234,7 @@ def run_gridscan(
 def run_gridscan_and_move(
     fgs_composite: FGSComposite,
     eiger: EigerDetector,
-    parameters: InternalParameters,
+    parameters: FGSInternalParameters,
     subscriptions: FGSCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
@@ -249,7 +278,7 @@ def run_gridscan_and_move(
 
 
 def get_plan(
-    parameters: InternalParameters,
+    parameters: FGSInternalParameters,
     subscriptions: FGSCallbackCollection,
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
@@ -258,7 +287,7 @@ def get_plan(
     at any point in it.
 
     Args:
-        parameters (InternalParameters): The parameters to run the scan.
+        parameters (FGSInternalParameters): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -287,7 +316,7 @@ if __name__ == "__main__":
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
 
-    parameters = InternalParameters(beamline=args.artemis_parameters.beamline)
+    parameters = FGSInternalParameters(beamline=args.artemis_parameters.beamline)
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     create_devices()

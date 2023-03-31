@@ -21,12 +21,14 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
         "run": fast_grid_scan_plan.get_plan,
-        "param_type": GridScanParams,
+        "internal_param_type": fast_grid_scan_plan.FGSInternalParameters,
+        "experiment_param_type": GridScanParams,
     },
     "rotation_scan": {
         "setup": do_nothing,
         "run": not_implemented,
-        "param_type": RotationScanParams,
+        "internal_param_type": NotImplemented,
+        "experiment_param_type": RotationScanParams,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())

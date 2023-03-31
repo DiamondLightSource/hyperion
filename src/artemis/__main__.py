@@ -133,16 +133,25 @@ class RunExperiment(Resource):
         if action == Actions.START.value:
             try:
                 experiment_type = PLAN_REGISTRY.get(experiment)
+                experiment_internal_param_type: InternalParameters = PLAN_REGISTRY.get(
+                    "internal_param_type"
+                )
+                plan = experiment_type.get("run")
+                if experiment_internal_param_type is None:
+                    raise PlanNotFound(
+                        f"Corresponing param type for '{experiment}' not found in registry."
+                    )
                 if experiment_type is None:
                     raise PlanNotFound(
                         f"Experiment plan '{experiment}' not found in registry."
                     )
-                plan = experiment_type.get("run")
                 if plan is None:
                     raise PlanNotFound(
                         f"Experiment plan '{experiment}' has no \"run\" method."
                     )
-                parameters = InternalParameters.from_external_json(request.data)
+                parameters = experiment_internal_param_type.from_external_json(
+                    request.data
+                )
                 status_and_message = self.runner.start(plan, parameters)
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
@@ -151,7 +160,7 @@ class RunExperiment(Resource):
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
         # no idea why mypy gives an attribute error here but nowhere else for this
-        # exactsame situation...
+        # exact same situation...
         return status_and_message.to_dict()  # type: ignore
 
 
