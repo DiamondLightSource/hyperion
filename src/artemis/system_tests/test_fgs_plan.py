@@ -33,7 +33,9 @@ from artemis.parameters.constants import (
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
 )
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 
 @pytest.fixture()
@@ -68,7 +70,7 @@ def eiger() -> EigerDetector:
     yield eiger
 
 
-params = InternalParameters()
+params = FGSInternalParameters()
 params.artemis_params.beamline = SIM_BEAMLINE
 
 
@@ -159,7 +161,7 @@ def test_full_plan_tidies_at_end(
     fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
-    callbacks = FGSCallbackCollection.from_params(InternalParameters())
+    callbacks = FGSCallbackCollection.from_params(FGSInternalParameters())
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
@@ -182,7 +184,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
-    callbacks = FGSCallbackCollection.from_params(InternalParameters())
+    callbacks = FGSCallbackCollection.from_params(FGSInternalParameters())
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))
@@ -197,7 +199,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     fgs_composite: FGSComposite,
     fetch_comment: Callable,
 ):
-    parameters = InternalParameters()
+    parameters = FGSInternalParameters()
     parameters.artemis_params.detector_params.directory = "./tmp"
     parameters.artemis_params.detector_params.prefix = str(uuid.uuid1())
     parameters.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
@@ -235,7 +237,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     """This test currently avoids hardware interaction and is mostly confirming
     interaction with dev_ispyb and dev_zocalo"""
 
-    parameters = InternalParameters()
+    parameters = FGSInternalParameters()
     parameters.artemis_params.detector_params.directory = "./tmp"
     parameters.artemis_params.detector_params.prefix = str(uuid.uuid1())
     parameters.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"

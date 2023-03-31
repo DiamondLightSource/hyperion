@@ -99,7 +99,7 @@ class InternalParameters(ABC):
 
     artemis_params: ArtemisParameters
 
-    def __init__(self, external_params: dict):
+    def __init__(self, external_params: dict = raw_parameters.from_file()):
         all_params_bucket = flatten_dict(external_params)
         experiment_field_keys = list(self.experiment_params_type.__annotations__.keys())
         experiment_field_args: dict[str, Any] = {

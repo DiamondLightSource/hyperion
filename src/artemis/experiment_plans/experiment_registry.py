@@ -6,7 +6,12 @@ from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.rotation_scan import RotationScanParams
 
 from artemis.experiment_plans import fast_grid_scan_plan
-from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
+from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 
 def not_implemented():
@@ -28,7 +33,7 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     "rotation_scan": {
         "setup": do_nothing,
         "run": not_implemented,
-        "internal_param_type": NotImplemented,
+        "internal_param_type": RotationInternalParameters,
         "experiment_param_type": RotationScanParams,
     },
 }
