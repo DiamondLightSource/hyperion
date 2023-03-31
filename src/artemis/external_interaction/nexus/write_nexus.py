@@ -19,6 +19,8 @@ from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
+from scanspec.core import Path as ScanPath
+from scanspec.specs import Line
 
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.parameters.internal_parameters import InternalParameters
@@ -62,7 +64,21 @@ def create_parameters_for_first_file(parameters: InternalParameters):
     new_params.artemis_params.detector_params.nexus_file_run_number = (
         parameters.artemis_params.detector_params.run_number
     )
-    return new_params
+
+    spec = Line(
+        "sam_y",
+        new_params.experiment_params.y_axis.start,
+        new_params.experiment_params.y_axis.end,
+        new_params.experiment_params.y_steps,
+    ) * ~Line(
+        "sam_x",
+        new_params.experiment_params.x_axis.start,
+        new_params.experiment_params.x_axis.end,
+        new_params.experiment_params.x_steps,
+    )
+    scan_path = ScanPath(spec.calculate())
+
+    return new_params, scan_path.consume().midpoints
 
 
 def create_parameters_for_second_file(parameters: InternalParameters):
@@ -77,7 +93,21 @@ def create_parameters_for_second_file(parameters: InternalParameters):
     new_params.artemis_params.detector_params.start_index = (
         parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
     )
-    return new_params
+
+    spec = Line(
+        "sam_z",
+        new_params.experiment_params.z_axis.start,
+        new_params.experiment_params.z_axis.end,
+        new_params.experiment_params.z_steps,
+    ) * ~Line(
+        "sam_x",
+        new_params.experiment_params.x_axis.start,
+        new_params.experiment_params.x_axis.end,
+        new_params.experiment_params.x_steps,
+    )
+    scan_path = ScanPath(spec.calculate())
+
+    return new_params, scan_path.consume().midpoints
 
 
 def create_goniometer_axes(
