@@ -70,8 +70,10 @@ def eiger() -> EigerDetector:
     yield eiger
 
 
-params = FGSInternalParameters()
-params.artemis_params.beamline = SIM_BEAMLINE
+@pytest.fixture
+def params():
+    params = FGSInternalParameters()
+    params.artemis_params.beamline = SIM_BEAMLINE
 
 
 @pytest.fixture
@@ -106,15 +108,16 @@ def fgs_composite():
 
 @pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
-@patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
+@patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid")
 def test_run_gridscan(
     wait_for_fgs_valid: MagicMock,
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
+    params: FGSInternalParameters,
     eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
@@ -159,6 +162,7 @@ def test_full_plan_tidies_at_end(
     wait: MagicMock,
     eiger: EigerDetector,
     fgs_composite: FGSComposite,
+    params: FGSInternalParameters,
     RE: RunEngine,
 ):
     callbacks = FGSCallbackCollection.from_params(FGSInternalParameters())
@@ -182,6 +186,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     wait: MagicMock,
     eiger: EigerDetector,
     fgs_composite: FGSComposite,
+    params: FGSInternalParameters,
     RE: RunEngine,
 ):
     callbacks = FGSCallbackCollection.from_params(FGSInternalParameters())

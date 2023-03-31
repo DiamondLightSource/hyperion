@@ -18,7 +18,7 @@ START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
-TEST_PARAMS = external_parameters.from_file("test_parameters.json").to_json()
+TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameters.json"))
 
 
 class MockRunEngine:

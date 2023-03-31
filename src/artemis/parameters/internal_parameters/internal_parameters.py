@@ -108,7 +108,7 @@ class InternalParameters(ABC):
             if all_params_bucket.get(key) is not None
         }
         self.experiment_params: AbstractExperimentParameterBase = (
-            self.experiment_params_type(experiment_field_args)
+            self.experiment_params_type(**experiment_field_args)
         )
 
         self.pre_sorting_translation(all_params_bucket)
@@ -171,8 +171,8 @@ class InternalParameters(ABC):
         """
 
         param_dict["num_images"] = self.experiment_params.get_num_images()
-        param_dict["upper_left"] = Point3D(param_dict["upper_left"])
-        param_dict["position"] = Point3D(param_dict["position"])
+        param_dict["upper_left"] = Point3D(*param_dict["upper_left"])
+        param_dict["position"] = Point3D(*param_dict["position"])
 
     def __repr__(self):
         r = "[Artemis internal parameters]\n"
