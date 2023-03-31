@@ -74,6 +74,7 @@ def eiger() -> EigerDetector:
 def params():
     params = FGSInternalParameters()
     params.artemis_params.beamline = SIM_BEAMLINE
+    return params
 
 
 @pytest.fixture

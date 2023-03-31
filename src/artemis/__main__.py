@@ -132,18 +132,19 @@ class RunExperiment(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                experiment_type = PLAN_REGISTRY.get(experiment)
-                experiment_internal_param_type: InternalParameters = PLAN_REGISTRY.get(
-                    "internal_param_type"
+                experiment_registry_entry = PLAN_REGISTRY.get(experiment)
+                if experiment_registry_entry is None:
+                    raise PlanNotFound(
+                        f"Experiment '{experiment}' not found in registry."
+                    )
+
+                experiment_internal_param_type: InternalParameters = (
+                    experiment_registry_entry.get("internal_param_type")
                 )
-                plan = experiment_type.get("run")
+                plan = experiment_registry_entry.get("run")
                 if experiment_internal_param_type is None:
                     raise PlanNotFound(
-                        f"Corresponing param type for '{experiment}' not found in registry."
-                    )
-                if experiment_type is None:
-                    raise PlanNotFound(
-                        f"Experiment plan '{experiment}' not found in registry."
+                        f"Corresponing internal param type for '{experiment}' not found in registry."
                     )
                 if plan is None:
                     raise PlanNotFound(

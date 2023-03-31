@@ -15,7 +15,7 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.log import LOGGER
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_parameters import (
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
 from artemis.utils import Point3D
