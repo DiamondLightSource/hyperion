@@ -31,8 +31,8 @@ class FGSNexusFileHandlerCallback(CallbackBase):
     """
 
     def __init__(self, parameters: InternalParameters):
-        self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(parameters))
-        self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(parameters))
+        self.nxs_writer_1 = NexusWriter(*create_parameters_for_first_file(parameters))
+        self.nxs_writer_2 = NexusWriter(*create_parameters_for_second_file(parameters))
         self.run_gridscan_uid: Optional[str] = None
 
     def start(self, doc: dict):
