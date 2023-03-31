@@ -1,5 +1,5 @@
 {
-    "params_version": 0.2,
+    "params_version": 0.3,
     "artemis_params": {
         "beamline": "BL03S",
         "detector": "EIGER2_X_16M",

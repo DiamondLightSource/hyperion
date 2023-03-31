@@ -28,6 +28,6 @@ def from_json(json_params: str):
     return validate_raw_parameters_from_dict(dict_params)
 
 
-def from_file(json_filename: str = "test_parameters.json"):
+def from_file(json_filename: str = "test_parameter_defaults.json"):
     with open(json_filename) as f:
         return from_json(f.read())
