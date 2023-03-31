@@ -1,4 +1,5 @@
 {
+    "params_version": 0.3,
     "artemis_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",
@@ -32,9 +33,9 @@
                 "test_3_y"
             ],
             "xtal_snapshots_omega_end": [
-                "test_1_y",
-                "test_2_y",
-                "test_3_y"
+                "test_1_z",
+                "test_2_z",
+                "test_3_z"
             ],
             "transmission": 1.0,
             "flux": 10.0,
@@ -45,26 +46,29 @@
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
             "resolution": 1,
+            "sample_id": null,
+            "sample_barcode": null,
+            "undulator_gap": 1.0,
+            "synchrotron_mode": null,
             "slit_gap_size_x": 0.1,
             "slit_gap_size_y": 0.1
-        },
-        "experiment_params": {
-            "x_steps": 40,
-            "y_steps": 20,
-            "z_steps": 10,
-            "x_step_size": 0.1,
-            "y_step_size": 0.1,
-            "z_step_size": 0.1,
-            "dwell_time": 0.2,
-            "x_start": 0.0,
-            "y1_start": 0.0,
-            "y2_start": 0.0,
-            "z1_start": 0.0,
-            "z2_start": 0.0,
-            "detector_distance": 100.0,
-            "omega_start": 0.0,
-            "omega_increment": 0,
-            "exposure_time": 0.1
         }
+    },
+    "experiment_params": {
+        "x_steps": 40,
+        "y_steps": 20,
+        "z_steps": 10,
+        "x_step_size": 0.1,
+        "y_step_size": 0.1,
+        "z_step_size": 0.1,
+        "dwell_time": 0.2,
+        "x_start": 0.0,
+        "y1_start": 0.0,
+        "y2_start": 0.0,
+        "z1_start": 0.0,
+        "z2_start": 0.0,
+        "detector_distance": 100.0,
+        "omega_start": 0.0,
+        "exposure_time": 0.1
     }
 }
