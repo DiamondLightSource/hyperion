@@ -21,9 +21,7 @@ from nexgen.nxs_write.NXclassWriters import write_NXentry
 from nexgen.tools.VDS_tools import image_vds_writer
 
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.internal_parameters import InternalParameters
 
 source = {
     "name": "Diamond Light Source",

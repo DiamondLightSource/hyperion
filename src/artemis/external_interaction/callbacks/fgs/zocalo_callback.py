@@ -42,7 +42,7 @@ class FGSZocaloCallback(CallbackBase):
     """
 
     def __init__(
-        self, parameters: "InternalParameters", ispyb_handler: FGSISPyBHandlerCallback
+        self, parameters: FGSInternalParameters, ispyb_handler: FGSISPyBHandlerCallback
     ):
         self.grid_position_to_motor_position: Callable[
             [Point3D], Point3D
