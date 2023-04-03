@@ -138,3 +138,6 @@ def test_flatten():
     flat_test_dict = flatten_dict(TEST_PARAM_DICT)
     for k in ["a", "b", "c", "h", "k", "l", "x", "y", "z"]:
         assert k in flat_test_dict
+
+    with pytest.raises(Exception):
+        flatten_dict({"x": 6, "y": {"x": 7}})

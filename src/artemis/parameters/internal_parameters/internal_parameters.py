@@ -72,14 +72,16 @@ class ArtemisParameters:
         return True
 
 
-def flatten_dict(d: dict) -> dict:
+def flatten_dict(d: dict, parent_items: dict = {}) -> dict:
     """Flatten a dictionary assuming all keys are unique."""
-    items = {}
+    items: dict = {}
     for k, v in d.items():
         if isinstance(v, dict):
-            flattened_subdict = flatten_dict(v)
+            flattened_subdict = flatten_dict(v, items)
             items.update(flattened_subdict)
         else:
+            if k in items or k in parent_items:
+                raise Exception(f"Duplicate keys '{k}' in input parameters!")
             items[k] = v
     return items
 
