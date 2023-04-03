@@ -34,6 +34,12 @@ def test_rotation_scan_param_validity():
     assert test_params.xyz_are_valid(lims)
     zlim.is_within.return_value = False
     assert not test_params.xyz_are_valid(lims)
+    zlim.is_within.return_value = True
+    ylim.is_within.return_value = False
+    assert not test_params.xyz_are_valid(lims)
+    ylim.is_within.return_value = True
+    xlim.is_within.return_value = False
+    assert not test_params.xyz_are_valid(lims)
 
 
 def test_rotation_parameters_load_from_file():
