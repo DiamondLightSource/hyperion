@@ -1,5 +1,5 @@
 {
-    "params_version": 0.1,
+    "params_version": 0.2,
     "artemis_params": {
         "beamline": "BL03S",
         "detector": "EIGER2_X_16M",
@@ -7,14 +7,9 @@
         "experiment_type": "fast_grid_scan",
         "detector_params": {
             "current_energy": 100,
-            "exposure_time": 0.1,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,
-            "detector_distance": 100.0,
-            "omega_start": 0.0,
-            "omega_increment": 0.1,
-            "num_images": 50,
             "use_roi_mode": false,
             "det_dist_to_beam_converter_path": "src/artemis/unit_tests/test_lookup_table.txt"
         },
@@ -72,6 +67,9 @@
         "y1_start": 0.0,
         "y2_start": 0.0,
         "z1_start": 0.0,
-        "z2_start": 0.0
+        "z2_start": 0.0,
+        "exposure_time": 0.1,
+        "detector_distance": 100.0,
+        "omega_start": 0.0
     }
 }

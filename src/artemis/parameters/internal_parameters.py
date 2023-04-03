@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
-from dodal.devices.eiger import DetectorParams
+from dodal.devices.eiger import DetectorParams, EigerTriggerNumber
+from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 import artemis.experiment_plans.experiment_registry as registry
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
@@ -74,15 +75,44 @@ class InternalParameters:
     experiment_params: registry.EXPERIMENT_TYPES
 
     def __init__(self, external_params: RawParameters = RawParameters()):
-        self.artemis_params = ArtemisParameters(
-            **external_params.artemis_params.to_dict()
+        ext_expt_param_dict = external_params.experiment_params.to_dict()
+        ext_art_param_dict = external_params.artemis_params.to_dict()
+
+        rotation_inc = ext_expt_param_dict.get("rotation_increment")
+        if rotation_inc is None:
+            ext_art_param_dict["detector_params"]["omega_increment"] = 0
+        else:
+            ext_art_param_dict["detector_params"][
+                "omega_increment"
+            ] = ext_expt_param_dict["rotation_increment"]
+
+        ext_art_param_dict["detector_params"]["omega_start"] = ext_expt_param_dict.pop(
+            "omega_start"
         )
-        self.experiment_params = registry.EXPERIMENT_TYPE_DICT[
-            ArtemisParameters.experiment_type
-        ](**external_params.experiment_params.to_dict())
-        self.artemis_params.detector_params.num_images = (
-            self.experiment_params.get_num_images()
+
+        ext_art_param_dict["detector_params"][
+            "detector_distance"
+        ] = ext_expt_param_dict.pop("detector_distance")
+
+        ext_art_param_dict["detector_params"][
+            "exposure_time"
+        ] = ext_expt_param_dict.pop("exposure_time")
+
+        self.experiment_params: AbstractExperimentParameterBase = (
+            registry.EXPERIMENT_TYPE_DICT[ext_art_param_dict["experiment_type"]](
+                **ext_expt_param_dict
+            )
         )
+
+        n_images = self.experiment_params.get_num_images()
+        if self.experiment_params.trigger_number == EigerTriggerNumber.MANY_TRIGGERS:
+            ext_art_param_dict["detector_params"]["num_triggers"] = n_images
+            ext_art_param_dict["detector_params"]["num_images_per_trigger"] = 1
+        else:
+            ext_art_param_dict["detector_params"]["num_triggers"] = 1
+            ext_art_param_dict["detector_params"]["num_images_per_trigger"] = n_images
+
+        self.artemis_params = ArtemisParameters(**ext_art_param_dict)
 
     def __repr__(self):
         r = "[Artemis internal parameters]\n"

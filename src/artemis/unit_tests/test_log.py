@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -65,7 +66,7 @@ def test_prod_mode_sets_correct_graypy_handler(
 
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
-def test_dev_mode_sets_correct_file_handler(
+def test_no_env_variable_sets_correct_file_handler(
     mock_logging,
     mock_GELFTCPHandler,
     mock_logger: MagicMock,
@@ -79,13 +80,13 @@ def test_dev_mode_sets_correct_file_handler(
 @patch("artemis.log.Path.mkdir")
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
-def test_prod_mode_sets_correct_file_handler(
+@patch.dict(os.environ, {"ARTEMIS_LOG_DIR": "/dls_sw/s03/logs/bluesky"})
+def test_set_env_variable_sets_correct_file_handler(
     mock_logging,
     mock_GELFTCPHandler,
     mock_dir,
     mock_logger: MagicMock,
 ):
-    log.beamline = "s03"
     log.set_up_logging_handlers(None, False)
     mock_logging.FileHandler.assert_called_once_with(
         filename=Path("/dls_sw/s03/logs/bluesky/artemis.txt")

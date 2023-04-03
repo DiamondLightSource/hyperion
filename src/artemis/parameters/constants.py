@@ -8,7 +8,7 @@ DEFAULT_EXPERIMENT_TYPE = "grid_scan"
 I03_BEAMLINE_PARAMETER_PATH = (
     "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters"
 )
-PARAMETER_VERSION = 0.1
+PARAMETER_VERSION = 0.2
 
 SIM_ISPYB_CONFIG = "src/artemis/external_interaction/unit_tests/test_config.cfg"
 
@@ -21,7 +21,8 @@ DETECTOR_PARAM_DEFAULTS = {
     "detector_distance": 100.0,
     "omega_start": 0.0,
     "omega_increment": 0.0,
-    "num_images": 2000,
+    "num_images_per_trigger": 1,
+    "num_triggers": 2000,
     "use_roi_mode": False,
     "det_dist_to_beam_converter_path": "src/artemis/unit_tests/test_lookup_table.txt",
 }
