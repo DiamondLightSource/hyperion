@@ -29,6 +29,14 @@ TEST_TRANSFORMED_PARAM_DICT: dict[str, Any] = {
     "ispyb_params": {"h": "test_value", "k": 47, "l": 11},
 }
 
+TEST_TRANSFORMED_PARAM_DICT_2: dict[str, Any] = {
+    "a": 23,
+    "b": 5,
+    "c": 6,
+    "detector_params": {"x": 56, "y": 7, "z": "test_value_2"},
+    "ispyb_params": {"h": "test_value", "k": 47, "q": 11},
+}
+
 
 class TestParamType(AbstractExperimentParameterBase):
     trigger_number = "many_triggers"
@@ -45,6 +53,19 @@ class TestInternalParameters(InternalParameters):
         artemis_params = ["a", "b", "c"]
         detector_params = ["x", "y", "z"]
         ispyb_params = ["h", "k", "l"]
+        return artemis_params, detector_params, ispyb_params
+
+    experiment_params_type = TestParamType
+
+
+class TestInternalParameters2(InternalParameters):
+    def pre_sorting_translation(self, param_dict: dict[str, Any]):
+        param_dict["q"] = param_dict["l"]
+
+    def key_definitions(self):
+        artemis_params = ["a", "b", "c"]
+        detector_params = ["x", "y", "z"]
+        ispyb_params = ["h", "k", "q"]
         return artemis_params, detector_params, ispyb_params
 
     experiment_params_type = TestParamType
@@ -84,6 +105,25 @@ def test_initialise_and_verify_transformation(
     )
     test_params.artemis_params.ispyb_params == (
         TEST_TRANSFORMED_PARAM_DICT["ispyb_params"]
+    )
+
+
+@patch(
+    "artemis.parameters.internal_parameters.internal_parameters.ArtemisParameters",
+    TestArtemisParams,
+)
+@patch("artemis.parameters.internal_parameters.internal_parameters.DetectorParams")
+@patch("artemis.parameters.internal_parameters.internal_parameters.IspybParams")
+def test_pre_sorting_transformation(ispybparams: MagicMock, detectorparams: MagicMock):
+    test_params = TestInternalParameters2(TEST_PARAM_DICT)
+    assert test_params.artemis_params.a == TEST_TRANSFORMED_PARAM_DICT_2["a"]
+    assert test_params.artemis_params.b == TEST_TRANSFORMED_PARAM_DICT_2["b"]
+    assert test_params.artemis_params.c == TEST_TRANSFORMED_PARAM_DICT_2["c"]
+    test_params.artemis_params.detector_params == (
+        TEST_TRANSFORMED_PARAM_DICT_2["detector_params"]
+    )
+    test_params.artemis_params.ispyb_params == (
+        TEST_TRANSFORMED_PARAM_DICT_2["ispyb_params"]
     )
 
 
