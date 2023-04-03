@@ -211,11 +211,18 @@ def test_cli_args_parse():
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected_except_when_skip_connection_flag_is_true(
+def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
     mock_get_beamline_params, mock_fgs, mock_eiger
 ):
     BlueskyRunner(MagicMock(), skip_startup_connection=False)
     mock_fgs.return_value.wait_for_connection.assert_called_once()
 
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
+def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_plans_are_setup_and_devices_are_not_connected(
+    mock_get_beamline_params, mock_fgs, mock_eiger
+):
     BlueskyRunner(MagicMock(), skip_startup_connection=True)
-    mock_fgs.return_value.wait_for_connection.assert_called_once()
+    mock_fgs.return_value.wait_for_connection.assert_not_called()
