@@ -54,7 +54,7 @@ class RotationInternalParameters(InternalParameters):
 
     def pre_sorting_translation(self, param_dict: dict[str, Any]):
         super().pre_sorting_translation(param_dict)
-        if param_dict["rotation_angle"] == "omega":
+        if param_dict["rotation_axis"] == "omega":
             param_dict["omega_increment"] = param_dict["rotation_increment"]
         else:
             param_dict["omega_increment"] = 0

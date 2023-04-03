@@ -156,6 +156,7 @@ def test_internal_params_eq():
 
     assert internal_params == internal_params_2
     assert internal_params_2 != 3
+    assert internal_params_2.artemis_params != 3
 
     internal_params_2.experiment_params.x_steps = 11111
     assert internal_params != internal_params_2
@@ -178,4 +179,8 @@ def test_internal_params_eq():
 
     internal_params_2 = copy.deepcopy(internal_params)
     internal_params_2.artemis_params.insertion_prefix = "not_real_prefix"
+    assert internal_params != internal_params_2
+
+    internal_params_2 = copy.deepcopy(internal_params)
+    internal_params_2.artemis_params.experiment_type = "not_real_experiment"
     assert internal_params != internal_params_2
