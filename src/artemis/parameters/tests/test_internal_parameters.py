@@ -42,14 +42,14 @@ TEST_TRANSFORMED_PARAM_DICT_2: dict[str, Any] = {
 }
 
 
-class TestParamType(AbstractExperimentParameterBase):
+class ParamTypeForTesting(AbstractExperimentParameterBase):
     trigger_number = "many_triggers"
 
     def get_num_images(self):
         return 15
 
 
-class TestInternalParameters(InternalParameters):
+class InternalParametersSubclassForTesting(InternalParameters):
     def pre_sorting_translation(self, param_dict: dict[str, Any]):
         pass
 
@@ -59,10 +59,10 @@ class TestInternalParameters(InternalParameters):
         ispyb_params = ["h", "k", "l"]
         return artemis_params, detector_params, ispyb_params
 
-    experiment_params_type = TestParamType
+    experiment_params_type = ParamTypeForTesting
 
 
-class TestInternalParameters2(InternalParameters):
+class InternalParametersSubclass2(InternalParameters):
     def pre_sorting_translation(self, param_dict: dict[str, Any]):
         param_dict["q"] = param_dict["l"]
 
@@ -72,11 +72,11 @@ class TestInternalParameters2(InternalParameters):
         ispyb_params = ["h", "k", "q"]
         return artemis_params, detector_params, ispyb_params
 
-    experiment_params_type = TestParamType
+    experiment_params_type = ParamTypeForTesting
 
 
 @dataclass
-class TestArtemisParams:
+class FakeArtemisParams:
     a: int
     b: int
     c: int
@@ -93,14 +93,14 @@ def test_cant_initialise_abstract_internalparams():
 
 @patch(
     "artemis.parameters.internal_parameters.internal_parameters.ArtemisParameters",
-    TestArtemisParams,
+    FakeArtemisParams,
 )
 @patch("artemis.parameters.internal_parameters.internal_parameters.DetectorParams")
 @patch("artemis.parameters.internal_parameters.internal_parameters.IspybParams")
 def test_initialise_and_verify_transformation(
     ispybparams: MagicMock, detectorparams: MagicMock
 ):
-    test_params = TestInternalParameters(TEST_PARAM_DICT)
+    test_params = InternalParametersSubclassForTesting(TEST_PARAM_DICT)
     assert test_params.artemis_params.a == TEST_TRANSFORMED_PARAM_DICT["a"]
     assert test_params.artemis_params.b == TEST_TRANSFORMED_PARAM_DICT["b"]
     assert test_params.artemis_params.c == TEST_TRANSFORMED_PARAM_DICT["c"]
@@ -114,12 +114,12 @@ def test_initialise_and_verify_transformation(
 
 @patch(
     "artemis.parameters.internal_parameters.internal_parameters.ArtemisParameters",
-    TestArtemisParams,
+    FakeArtemisParams,
 )
 @patch("artemis.parameters.internal_parameters.internal_parameters.DetectorParams")
 @patch("artemis.parameters.internal_parameters.internal_parameters.IspybParams")
 def test_pre_sorting_transformation(ispybparams: MagicMock, detectorparams: MagicMock):
-    test_params = TestInternalParameters2(TEST_PARAM_DICT)
+    test_params = InternalParametersSubclass2(TEST_PARAM_DICT)
     assert test_params.artemis_params.a == TEST_TRANSFORMED_PARAM_DICT_2["a"]
     assert test_params.artemis_params.b == TEST_TRANSFORMED_PARAM_DICT_2["b"]
     assert test_params.artemis_params.c == TEST_TRANSFORMED_PARAM_DICT_2["c"]

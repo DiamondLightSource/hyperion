@@ -1,4 +1,5 @@
 from artemis.parameters import external_parameters
+from artemis.parameters.beamline_parameters import GDABeamlineParameters
 
 
 def test_new_parameters_is_a_new_object():
@@ -29,3 +30,14 @@ def test_parameters_load_from_file():
     assert expt_params["y2_start"] == 0.0
     assert expt_params["z1_start"] == 0.0
     assert expt_params["z2_start"] == 0.0
+
+
+def test_beamline_parameters():
+    params = GDABeamlineParameters.from_file(
+        "src/artemis/parameters/tests/test_data/test_beamline_parameters.txt"
+    )
+    assert params["sg_x_MEDIUM_APERTURE"] == 5.285
+    assert params["col_parked_downstream_x"] == 0
+    assert params["beamLineEnergy__pitchStep"] == 0.002
+    assert params["DataCollection_TurboMode"] is True
+    assert params["beamLineEnergy__adjustSlits"] is False
