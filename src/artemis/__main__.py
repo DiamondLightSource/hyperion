@@ -55,13 +55,20 @@ class BlueskyRunner:
         self.RE = RE
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        for plan in PLAN_REGISTRY:
-            PLAN_REGISTRY[plan]["setup"]()
+
+        if not skip_startup_connection:
+            for plan in PLAN_REGISTRY:
+                PLAN_REGISTRY[plan]["setup"]()
 
     def start(
         self, experiment: Callable, parameters: InternalParameters
     ) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
+
+        if skip_startup_connection:
+            for plan in PLAN_REGISTRY:
+                PLAN_REGISTRY[plan]["setup"]()
+
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
@@ -195,7 +202,9 @@ def create_app(
     return app, runner
 
 
-def cli_arg_parse() -> Tuple[Optional[str], Optional[bool], Optional[bool]]:
+def cli_arg_parse() -> (
+    Tuple[Optional[str], Optional[bool], Optional[bool], Optional[bool]]
+):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dev",
@@ -213,13 +222,30 @@ def cli_arg_parse() -> Tuple[Optional[str], Optional[bool], Optional[bool]]:
         choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
         help="Choose overall logging level, defaults to INFO",
     )
+    parser.add_argument(
+        "--skip_startup_connection",
+        action="store_true",
+        help="Skip connecting to EPICS PVs on startup",
+    )
     args = parser.parse_args()
-    return args.logging_level, args.verbose_event_logging, args.dev
+    return (
+        args.logging_level,
+        args.verbose_event_logging,
+        args.dev,
+        args.skip_startup_connection,
+    )
 
 
 if __name__ == "__main__":
     artemis_port = 5005
-    logging_level, VERBOSE_EVENT_LOGGING, dev_mode = cli_arg_parse()
+    (
+        logging_level,
+        VERBOSE_EVENT_LOGGING,
+        dev_mode,
+        skip_startup_connection,
+    ) = cli_arg_parse()
+
+    artemis.log.LOGGER.info("SKIP CONNECTION IS TRUE")
 
     artemis.log.set_up_logging_handlers(logging_level, dev_mode)
     app, runner = create_app()
