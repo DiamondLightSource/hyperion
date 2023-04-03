@@ -148,7 +148,7 @@ class RunExperiment(Resource):
                     )
                 if plan is None:
                     raise PlanNotFound(
-                        f"Experiment plan '{experiment}' has no \"run\" method."
+                        f"Experiment plan '{experiment}' has no 'run' method."
                     )
                 parameters = experiment_internal_param_type.from_external_json(
                     request.data
