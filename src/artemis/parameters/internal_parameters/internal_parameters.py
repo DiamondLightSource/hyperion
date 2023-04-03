@@ -45,14 +45,15 @@ class ArtemisParameters:
         self.ispyb_params: IspybParams = IspybParams.from_dict(ispyb_params)
 
     def __repr__(self):
-        r = "artemis_params:\n"
-        r += f"    zocalo_environment: {self.zocalo_environment}\n"
-        r += f"    beamline: {self.beamline}\n"
-        r += f"    insertion_prefix: {self.insertion_prefix}\n"
-        r += f"    experiment_type: {self.experiment_type}\n"
-        r += f"    detector_params: {self.detector_params}\n"
-        r += f"    ispyb_params: {self.ispyb_params}\n"
-        return r
+        return (
+            "artemis_params:\n"
+            f"    zocalo_environment: {self.zocalo_environment}\n"
+            f"    beamline: {self.beamline}\n"
+            f"    insertion_prefix: {self.insertion_prefix}\n"
+            f"    experiment_type: {self.experiment_type}\n"
+            f"    detector_params: {self.detector_params}\n"
+            f"    ispyb_params: {self.ispyb_params}\n"
+        )
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, ArtemisParameters):
@@ -177,10 +178,11 @@ class InternalParameters(ABC):
         param_dict["position"] = Point3D(*param_dict["position"])
 
     def __repr__(self):
-        r = "[Artemis internal parameters]\n"
-        r += repr(self.artemis_params)
-        r += f"experiment_params: {self.experiment_params}"
-        return r
+        return (
+            "[Artemis internal parameters]\n"
+            f"{self.artemis_params}"
+            f"experiment_params: {self.experiment_params}"
+        )
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, InternalParameters):

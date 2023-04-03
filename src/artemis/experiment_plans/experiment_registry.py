@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Callable, Dict, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.rotation_scan import RotationScanParams
 
 from artemis.experiment_plans import fast_grid_scan_plan
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
@@ -11,6 +10,7 @@ from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params im
 )
 from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
+    RotationScanParams,
 )
 
 

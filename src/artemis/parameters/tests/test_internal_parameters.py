@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -9,6 +10,9 @@ from artemis.parameters import external_parameters
 from artemis.parameters.internal_parameters.internal_parameters import (
     InternalParameters,
     flatten_dict,
+)
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
 )
 
 TEST_PARAM_DICT = {
@@ -71,13 +75,6 @@ class TestInternalParameters2(InternalParameters):
     experiment_params_type = TestParamType
 
 
-def test_cant_initialise_abstract_internalparams():
-    with pytest.raises(TypeError):
-        internal_parameters = InternalParameters(  # noqa
-            external_parameters.from_file()
-        )
-
-
 @dataclass
 class TestArtemisParams:
     a: int
@@ -85,6 +82,13 @@ class TestArtemisParams:
     c: int
     detector_params: MagicMock
     ispyb_params: MagicMock
+
+
+def test_cant_initialise_abstract_internalparams():
+    with pytest.raises(TypeError):
+        internal_parameters = InternalParameters(  # noqa
+            external_parameters.from_file()
+        )
 
 
 @patch(
@@ -141,3 +145,37 @@ def test_flatten():
 
     with pytest.raises(Exception):
         flatten_dict({"x": 6, "y": {"x": 7}})
+
+
+def test_internal_params_eq():
+    params = external_parameters.from_file(
+        "src/artemis/parameters/tests/test_data/good_test_parameters.json"
+    )
+    internal_params = FGSInternalParameters(params)
+    internal_params_2 = copy.deepcopy(internal_params)
+
+    assert internal_params == internal_params_2
+    assert internal_params_2 != 3
+
+    internal_params_2.experiment_params.x_steps = 11111
+    assert internal_params != internal_params_2
+
+    internal_params_2 = copy.deepcopy(internal_params)
+    internal_params_2.artemis_params.ispyb_params.beam_size_x = 123456
+    assert internal_params != internal_params_2
+
+    internal_params_2 = copy.deepcopy(internal_params)
+    internal_params_2.artemis_params.detector_params.exposure_time = 99999
+    assert internal_params != internal_params_2
+
+    internal_params_2 = copy.deepcopy(internal_params)
+    internal_params_2.artemis_params.zocalo_environment = "not_real_env"
+    assert internal_params != internal_params_2
+
+    internal_params_2 = copy.deepcopy(internal_params)
+    internal_params_2.artemis_params.beamline = "not_real_beamline"
+    assert internal_params != internal_params_2
+
+    internal_params_2 = copy.deepcopy(internal_params)
+    internal_params_2.artemis_params.insertion_prefix = "not_real_prefix"
+    assert internal_params != internal_params_2
