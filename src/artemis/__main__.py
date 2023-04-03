@@ -51,12 +51,13 @@ class BlueskyRunner:
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
-    def __init__(self, RE: RunEngine) -> None:
+    def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
         self.RE = RE
+        self.skip_startup_connection = skip_startup_connection
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-        if not skip_startup_connection:
+        if not self.skip_startup_connection:
             for plan in PLAN_REGISTRY:
                 PLAN_REGISTRY[plan]["setup"]()
 
@@ -65,7 +66,7 @@ class BlueskyRunner:
     ) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
 
-        if skip_startup_connection:
+        if self.skip_startup_connection:
             for plan in PLAN_REGISTRY:
                 PLAN_REGISTRY[plan]["setup"]()
 
@@ -182,9 +183,9 @@ class StopOrStatus(Resource):
 
 
 def create_app(
-    test_config=None, RE: RunEngine = RunEngine({})
+    test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
 ) -> Tuple[Flask, BlueskyRunner]:
-    runner = BlueskyRunner(RE)
+    runner = BlueskyRunner(RE, skip_startup_connection=skip_startup_connection)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
@@ -245,10 +246,8 @@ if __name__ == "__main__":
         skip_startup_connection,
     ) = cli_arg_parse()
 
-    artemis.log.LOGGER.info("SKIP CONNECTION IS TRUE")
-
     artemis.log.set_up_logging_handlers(logging_level, dev_mode)
-    app, runner = create_app()
+    app, runner = create_app(skip_startup_connection=skip_startup_connection)
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(

@@ -194,18 +194,28 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
 def test_cli_args_parse():
     argv[1:] = ["--dev", "--logging-level=DEBUG"]
     test_args = cli_arg_parse()
-    assert test_args == ("DEBUG", False, True)
+    assert test_args == ("DEBUG", False, True, False)
     argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
     test_args = cli_arg_parse()
-    assert test_args == ("DEBUG", True, True)
+    assert test_args == ("DEBUG", True, True, False)
+    argv[1:] = [
+        "--dev",
+        "--logging-level=DEBUG",
+        "--verbose-event-logging",
+        "--skip_startup_connection",
+    ]
+    test_args = cli_arg_parse()
+    assert test_args == ("DEBUG", True, True, True)
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
+def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected_except_when_skip_connection_flag_is_true(
     mock_get_beamline_params, mock_fgs, mock_eiger
 ):
-    BlueskyRunner(MagicMock())
+    BlueskyRunner(MagicMock(), skip_startup_connection=False)
+    mock_fgs.return_value.wait_for_connection.assert_called_once()
 
+    BlueskyRunner(MagicMock(), skip_startup_connection=True)
     mock_fgs.return_value.wait_for_connection.assert_called_once()
