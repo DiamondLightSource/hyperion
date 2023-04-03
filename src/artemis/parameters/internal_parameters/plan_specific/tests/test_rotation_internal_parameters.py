@@ -1,4 +1,7 @@
+from unittest.mock import MagicMock
+
 from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
+from dodal.devices.motors import XYZLimitBundle
 
 from artemis.parameters import external_parameters
 from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
@@ -6,6 +9,31 @@ from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal
     RotationScanParams,
 )
 from artemis.utils import Point3D
+
+
+def test_rotation_scan_param_validity():
+    test_params = RotationScanParams(
+        rotation_axis="omega",
+        rotation_angle=360,
+        image_width=0.1,
+        omega_start=0,
+        phi_start=0,
+        chi_start=0,
+        kappa_start=0,
+        x=0,
+        y=0,
+        z=0,
+        trigger_number="many_triggers",
+    )
+
+    xlim = MagicMock()
+    ylim = MagicMock()
+    zlim = MagicMock()
+    lims = XYZLimitBundle(xlim, ylim, zlim)
+
+    assert test_params.xyz_are_valid(lims)
+    zlim.is_within.return_value = False
+    assert not test_params.xyz_are_valid(lims)
 
 
 def test_rotation_parameters_load_from_file():
