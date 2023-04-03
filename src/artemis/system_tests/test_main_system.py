@@ -46,12 +46,26 @@ class ClientAndRunEngine:
     mock_run_engine: MockRunEngine
 
 
+def mock_dict_values(d: dict):
+    return {k: MagicMock() for k, _ in d.items()}
+
+
+TEST_EXPT = {
+    "test_experiment": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "internal_param_type": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    }
+}
+
+
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
     with patch.dict(
         "artemis.__main__.PLAN_REGISTRY",
-        {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+        dict({k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPT),
     ):
         app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
@@ -59,7 +73,9 @@ def test_env():
     with app.test_client() as client:
         with patch.dict(
             "artemis.__main__.PLAN_REGISTRY",
-            {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+            dict(
+                {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPT
+            ),
         ):
             yield ClientAndRunEngine(client, mock_run_engine)
 
