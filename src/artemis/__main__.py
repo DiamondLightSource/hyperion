@@ -58,7 +58,8 @@ class BlueskyRunner:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         if not self.skip_startup_connection:
-            self.setup_all_plans()
+            for plan in PLAN_REGISTRY:
+                PLAN_REGISTRY[plan]["setup"]()
 
     def start(
         self, experiment: Callable, parameters: InternalParameters
@@ -66,7 +67,7 @@ class BlueskyRunner:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
 
         if self.skip_startup_connection:
-            self.setup_all_plans()
+            PLAN_REGISTRY[experiment]["setup"]()
 
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
@@ -103,10 +104,6 @@ class BlueskyRunner:
         print("Shutting down: Stopping the run engine gracefully")
         self.stop()
         self.command_queue.put(Command(Actions.SHUTDOWN))
-
-    def setup_all_plans(self) -> None:
-        for plan in PLAN_REGISTRY:
-            PLAN_REGISTRY[plan]["setup"]()
 
     def wait_on_queue(self):
         while True:
