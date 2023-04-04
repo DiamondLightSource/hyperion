@@ -232,9 +232,10 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     synchrotron.return_value.wait_for_connection.assert_called_once()
     smargon.return_value.wait_for_connection.assert_called_once()
     s4_slits.return_value.wait_for_connection.assert_called_once()
-    oav.return_value.wait_for_connection.assert_called_once()
     fast_grid_scan.return_value.wait_for_connection.assert_called_once()
     eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
-    dcm.return_value.wait_for_connection.assert_called_once()
     backlight.return_value.wait_for_connection.assert_called_once()
     aperture_scatterguard.return_value.wait_for_connection.assert_called_once()
+
+    oav.return_value.wait_for_connection.assert_not_called()  # not used in fgs
+    dcm.return_value.wait_for_connection.assert_not_called()

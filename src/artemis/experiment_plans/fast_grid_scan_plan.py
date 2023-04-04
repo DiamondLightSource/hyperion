@@ -12,8 +12,6 @@ from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import DetectorParams
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
 from dodal.i03 import (
-    DCM,
-    OAV,
     ApertureScatterguard,
     Backlight,
     EigerDetector,
@@ -53,8 +51,6 @@ if TYPE_CHECKING:
 class FGSComposite:
     """A device consisting of all the Devices required for a fast gridscan."""
 
-    dcm: DCM
-    oav: OAV
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
     eiger: EigerDetector
@@ -71,8 +67,6 @@ class FGSComposite:
         detector_params: DetectorParams = None,
         fake: bool = False,
     ):
-        self.dcm = i03.dcm(fake_with_ophyd_sim=fake)
-        self.oav = i03.oav(fake_with_ophyd_sim=fake)
         self.aperture_scatterguard = i03.aperture_scatterguard(
             fake_with_ophyd_sim=fake, aperture_positions=aperture_positions
         )

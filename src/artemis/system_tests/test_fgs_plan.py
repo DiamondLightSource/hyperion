@@ -42,24 +42,22 @@ def RE():
 
 @pytest.fixture
 def fgs_composite():
-    with patch("dodal.i03.dcm"):
-        with patch("dodal.i03.oav"):
-            fast_grid_scan_composite = FGSComposite(
-                detector_params=DetectorParams(
-                    current_energy=100,
-                    exposure_time=0.1,
-                    directory="/tmp",
-                    prefix="file_name",
-                    detector_distance=100.0,
-                    omega_start=0.0,
-                    omega_increment=0.1,
-                    num_images_per_trigger=1,
-                    num_triggers=50,
-                    use_roi_mode=False,
-                    run_number=0,
-                    det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
-                )
-            )
+    fast_grid_scan_composite = FGSComposite(
+        detector_params=DetectorParams(
+            current_energy=100,
+            exposure_time=0.1,
+            directory="/tmp",
+            prefix="file_name",
+            detector_distance=100.0,
+            omega_start=0.0,
+            omega_increment=0.1,
+            num_images_per_trigger=1,
+            num_triggers=50,
+            use_roi_mode=False,
+            run_number=0,
+            det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
+        )
+    )
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         I03_BEAMLINE_PARAMETER_PATH
