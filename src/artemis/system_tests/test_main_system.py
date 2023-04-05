@@ -46,12 +46,16 @@ class ClientAndRunEngine:
     mock_run_engine: MockRunEngine
 
 
+def mock_dict_values(d: dict):
+    return {k: MagicMock() for k, _ in d.items()}
+
+
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
     with patch.dict(
         "artemis.__main__.PLAN_REGISTRY",
-        {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()},
     ):
         app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
@@ -59,7 +63,7 @@ def test_env():
     with app.test_client() as client:
         with patch.dict(
             "artemis.__main__.PLAN_REGISTRY",
-            {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+            {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()},
         ):
             yield ClientAndRunEngine(client, mock_run_engine)
 
@@ -210,10 +214,8 @@ def test_cli_args_parse():
 
 @patch("dodal.i03.ApertureScatterguard")
 @patch("dodal.i03.Backlight")
-@patch("dodal.i03.DCM")
 @patch("dodal.i03.EigerDetector")
 @patch("dodal.i03.FastGridScan")
-@patch("dodal.i03.OAV")
 @patch("dodal.i03.S4SlitGaps")
 @patch("dodal.i03.Smargon")
 @patch("dodal.i03.Synchrotron")
@@ -227,15 +229,21 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     synchrotron,
     smargon,
     s4_slits,
-    oav,
     fast_grid_scan,
     eiger,
-    dcm,
     backlight,
     aperture_scatterguard,
 ):
     BlueskyRunner(MagicMock(), skip_startup_connection=False)
-    mock_fgs.return_value.wait_for_connection.assert_called_once()
+    zebra.return_value.wait_for_connection.assert_called_once()
+    undulator.return_value.wait_for_connection.assert_called_once()
+    synchrotron.return_value.wait_for_connection.assert_called_once()
+    smargon.return_value.wait_for_connection.assert_called_once()
+    s4_slits.return_value.wait_for_connection.assert_called_once()
+    fast_grid_scan.return_value.wait_for_connection.assert_called_once()
+    eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
+    backlight.return_value.wait_for_connection.assert_called_once()
+    aperture_scatterguard.return_value.wait_for_connection.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
@@ -253,32 +261,43 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_plans_are_setup_
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_get_beamline_params, mock_fgs, mock_eiger, mock_setup
+    mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
 ):
-    runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
-    mock_setup.assert_not_called()
-    runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
-    mock_setup.assert_called_once()
-    zebra.return_value.wait_for_connection.assert_called_once()
-    undulator.return_value.wait_for_connection.assert_called_once()
-    synchrotron.return_value.wait_for_connection.assert_called_once()
-    smargon.return_value.wait_for_connection.assert_called_once()
-    s4_slits.return_value.wait_for_connection.assert_called_once()
-    fast_grid_scan.return_value.wait_for_connection.assert_called_once()
-    eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
-    backlight.return_value.wait_for_connection.assert_called_once()
-    aperture_scatterguard.return_value.wait_for_connection.assert_called_once()
+    mock_setup = MagicMock()
+    with patch.dict(
+        "artemis.__main__.PLAN_REGISTRY",
+        {
+            "fast_grid_scan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+            },
+        },
+    ):
+        runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
+        mock_setup.assert_not_called()
+        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
+        mock_setup.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
 def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
     mock_get_beamline_params,
     mock_fgs,
     mock_eiger,
-    mock_setup,
 ):
-    BlueskyRunner(MagicMock(), skip_startup_connection=False)
-    mock_setup.assert_called()
+    mock_setup = MagicMock()
+    with patch.dict(
+        "artemis.__main__.PLAN_REGISTRY",
+        {
+            "fast_grid_scan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+            },
+        },
+    ):
+        BlueskyRunner(MagicMock(), skip_startup_connection=False)
+        mock_setup.assert_called()
