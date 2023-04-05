@@ -138,7 +138,7 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     assert response.get("status") == Status.FAILED.value
     assert (
         response.get("message")
-        == "PlanNotFound(\"Experiment 'bad_plan' not found in registry.\")"
+        == "PlanNotFound(\"Experiment plan 'bad_plan' not found in registry.\")"
     )
 
 
