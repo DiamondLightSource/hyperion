@@ -102,17 +102,18 @@ def _get_graylog_configuration(dev_mode: bool) -> Tuple[str, int]:
 def _get_logging_file_path() -> Path:
     """Get the path to write the artemis log files to.
 
-    If on a beamline, this will be written to the according area depending on the
-    BEAMLINE envrionment variable. If no envrionment variable is found it will default
-    it to the tmp/dev directory.
+    If the ARTEMIS_LOG_DIR environment variable exists then logs will be put in here.
+
+    If no envrionment variable is found it will default it to the tmp/dev directory.
 
     Returns:
         logging_path (Path): Path to the log file for the file handler to write to.
     """
     logging_path: Path
 
-    if beamline:
-        logging_path = Path("/dls_sw/" + beamline + "/logs/bluesky/")
+    artemis_log_dir = environ.get("ARTEMIS_LOG_DIR")
+    if artemis_log_dir:
+        logging_path = Path(artemis_log_dir)
     else:
         logging_path = Path("./tmp/dev/")
 
