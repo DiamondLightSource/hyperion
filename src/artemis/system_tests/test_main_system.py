@@ -244,10 +244,18 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
 def test_cli_args_parse():
     argv[1:] = ["--dev", "--logging-level=DEBUG"]
     test_args = cli_arg_parse()
-    assert test_args == ("DEBUG", False, True)
+    assert test_args == ("DEBUG", False, True, False)
     argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
     test_args = cli_arg_parse()
-    assert test_args == ("DEBUG", True, True)
+    assert test_args == ("DEBUG", True, True, False)
+    argv[1:] = [
+        "--dev",
+        "--logging-level=DEBUG",
+        "--verbose-event-logging",
+        "--skip_startup_connection",
+    ]
+    test_args = cli_arg_parse()
+    assert test_args == ("DEBUG", True, True, True)
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
@@ -256,6 +264,42 @@ def test_cli_args_parse():
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
     mock_get_beamline_params, mock_fgs, mock_eiger
 ):
-    BlueskyRunner(MagicMock())
-
+    BlueskyRunner(MagicMock(), skip_startup_connection=False)
     mock_fgs.return_value.wait_for_connection.assert_called_once()
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
+def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_plans_are_setup_and_devices_are_not_connected(
+    mock_get_beamline_params, mock_fgs, mock_eiger
+):
+    BlueskyRunner(MagicMock(), skip_startup_connection=True)
+    mock_fgs.return_value.wait_for_connection.assert_not_called()
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
+def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
+    mock_get_beamline_params, mock_fgs, mock_eiger, mock_setup
+):
+    runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
+    mock_setup.assert_not_called()
+    runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
+    mock_setup.assert_called_once()
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
+def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
+    mock_get_beamline_params,
+    mock_fgs,
+    mock_eiger,
+    mock_setup,
+):
+    BlueskyRunner(MagicMock(), skip_startup_connection=False)
+    mock_setup.assert_called()

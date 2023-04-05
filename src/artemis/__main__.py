@@ -51,17 +51,24 @@ class BlueskyRunner:
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
 
-    def __init__(self, RE: RunEngine) -> None:
+    def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
         self.RE = RE
+        self.skip_startup_connection = skip_startup_connection
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        for plan in PLAN_REGISTRY:
-            PLAN_REGISTRY[plan]["setup"]()
+
+        if not self.skip_startup_connection:
+            for plan in PLAN_REGISTRY:
+                PLAN_REGISTRY[plan]["setup"]()
 
     def start(
-        self, experiment: Callable, parameters: InternalParameters
+        self, experiment: Callable, parameters: InternalParameters, plan: str
     ) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
+
+        if self.skip_startup_connection:
+            PLAN_REGISTRY[plan]["setup"]()
+
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
@@ -128,32 +135,30 @@ class RunExperiment(Resource):
         super().__init__()
         self.runner = runner
 
-    def put(self, experiment: str, action: Actions):
+    def put(self, plan: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                experiment_registry_entry = PLAN_REGISTRY.get(experiment)
+                experiment_registry_entry = PLAN_REGISTRY.get(plan)
                 if experiment_registry_entry is None:
                     raise PlanNotFound(
-                        f"Experiment '{experiment}' not found in registry."
+                        f"Experiment plan '{plan}' not found in registry."
                     )
 
                 experiment_internal_param_type: InternalParameters = (
                     experiment_registry_entry.get("internal_param_type")
                 )
-                plan = experiment_registry_entry.get("run")
+                experiment = experiment_registry_entry.get("run")
                 if experiment_internal_param_type is None:
                     raise PlanNotFound(
                         f"Corresponing internal param type for '{experiment}' not found in registry."
                     )
-                if plan is None:
-                    raise PlanNotFound(
-                        f"Experiment plan '{experiment}' has no 'run' method."
-                    )
+                if experiment is None:
+                    raise PlanNotFound(f"Experiment plan '{plan}' has no 'run' method.")
                 parameters = experiment_internal_param_type.from_external_json(
                     request.data
                 )
-                status_and_message = self.runner.start(plan, parameters)
+                status_and_message = self.runner.start(experiment, parameters, plan)
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
             except PlanNotFound as e:
@@ -185,16 +190,16 @@ class StopOrStatus(Resource):
 
 
 def create_app(
-    test_config=None, RE: RunEngine = RunEngine({})
+    test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
 ) -> Tuple[Flask, BlueskyRunner]:
-    runner = BlueskyRunner(RE)
+    runner = BlueskyRunner(RE, skip_startup_connection=skip_startup_connection)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
     api = Api(app)
     api.add_resource(
         RunExperiment,
-        "/<string:experiment>/<string:action>",
+        "/<string:plan>/<string:action>",
         resource_class_args=[runner],
     )
     api.add_resource(
@@ -205,7 +210,9 @@ def create_app(
     return app, runner
 
 
-def cli_arg_parse() -> Tuple[Optional[str], Optional[bool], Optional[bool]]:
+def cli_arg_parse() -> (
+    Tuple[Optional[str], Optional[bool], Optional[bool], Optional[bool]]
+):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dev",
@@ -223,16 +230,31 @@ def cli_arg_parse() -> Tuple[Optional[str], Optional[bool], Optional[bool]]:
         choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
         help="Choose overall logging level, defaults to INFO",
     )
+    parser.add_argument(
+        "--skip_startup_connection",
+        action="store_true",
+        help="Skip connecting to EPICS PVs on startup",
+    )
     args = parser.parse_args()
-    return args.logging_level, args.verbose_event_logging, args.dev
+    return (
+        args.logging_level,
+        args.verbose_event_logging,
+        args.dev,
+        args.skip_startup_connection,
+    )
 
 
 if __name__ == "__main__":
     artemis_port = 5005
-    logging_level, VERBOSE_EVENT_LOGGING, dev_mode = cli_arg_parse()
+    (
+        logging_level,
+        VERBOSE_EVENT_LOGGING,
+        dev_mode,
+        skip_startup_connection,
+    ) = cli_arg_parse()
 
     artemis.log.set_up_logging_handlers(logging_level, dev_mode)
-    app, runner = create_app()
+    app, runner = create_app(skip_startup_connection=skip_startup_connection)
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
