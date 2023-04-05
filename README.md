@@ -36,6 +36,11 @@ Additionally, `INFO` level logging of the Bluesky event documents can be enabled
 python -m artemis --dev --verbose-event-logging
 ```
 
+Lastly, you can choose to skip running the hardware connection scripts on startup with the flag
+```
+python -m artemis --skip_startup_connection
+```
+
 Testing
 --------------
 To be able to run the system tests, or a complete fake scan, we need the simulated S03 beamline. This can be found at: https://gitlab.diamond.ac.uk/controls/python3/s03_utils
