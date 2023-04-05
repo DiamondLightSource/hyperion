@@ -58,16 +58,16 @@ class BlueskyRunner:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         if not self.skip_startup_connection:
-            for plan in PLAN_REGISTRY:
-                PLAN_REGISTRY[plan]["setup"]()
+            for plan_name in PLAN_REGISTRY:
+                PLAN_REGISTRY[plan_name]["setup"]()
 
     def start(
-        self, experiment: Callable, parameters: InternalParameters, plan: str
+        self, experiment: Callable, parameters: InternalParameters, plan_name: str
     ) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
 
         if self.skip_startup_connection:
-            PLAN_REGISTRY[plan]["setup"]()
+            PLAN_REGISTRY[plan_name]["setup"]()
 
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
@@ -135,14 +135,14 @@ class RunExperiment(Resource):
         super().__init__()
         self.runner = runner
 
-    def put(self, plan: str, action: Actions):
+    def put(self, plan_name: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                experiment_registry_entry = PLAN_REGISTRY.get(plan)
+                experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
                 if experiment_registry_entry is None:
                     raise PlanNotFound(
-                        f"Experiment plan '{plan}' not found in registry."
+                        f"Experiment plan '{plan_name}' not found in registry."
                     )
 
                 experiment_internal_param_type: InternalParameters = (
@@ -154,11 +154,15 @@ class RunExperiment(Resource):
                         f"Corresponing internal param type for '{experiment}' not found in registry."
                     )
                 if experiment is None:
-                    raise PlanNotFound(f"Experiment plan '{plan}' has no 'run' method.")
+                    raise PlanNotFound(
+                        f"Experiment plan '{plan_name}' has no 'run' method."
+                    )
                 parameters = experiment_internal_param_type.from_external_json(
                     request.data
                 )
-                status_and_message = self.runner.start(experiment, parameters, plan)
+                status_and_message = self.runner.start(
+                    experiment, parameters, plan_name
+                )
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
             except PlanNotFound as e:
@@ -199,7 +203,7 @@ def create_app(
     api = Api(app)
     api.add_resource(
         RunExperiment,
-        "/<string:plan>/<string:action>",
+        "/<string:plan_name>/<string:action>",
         resource_class_args=[runner],
     )
     api.add_resource(
