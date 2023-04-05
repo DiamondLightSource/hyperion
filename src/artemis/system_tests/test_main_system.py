@@ -297,7 +297,17 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
                 "run": MagicMock(),
                 "param_type": MagicMock(),
             },
+            "other_plan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+            },
+            "yet_another_plan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+            },
         },
     ):
         BlueskyRunner(MagicMock(), skip_startup_connection=False)
-        mock_setup.assert_called()
+        assert mock_setup.call_count == 3
