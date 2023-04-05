@@ -238,7 +238,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
     mock_setup.assert_not_called()
     runner.start("fast_grid_scan", MagicMock())
-    mock_setup.assert_called()
+    mock_setup.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
