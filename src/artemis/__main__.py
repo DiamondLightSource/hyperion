@@ -135,22 +135,24 @@ class RunExperiment(Resource):
         super().__init__()
         self.runner = runner
 
-    def put(self, experiment: str, action: Actions):
+    def put(self, plan: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                experiment_type = PLAN_REGISTRY.get(experiment)
+                experiment_type = PLAN_REGISTRY.get(plan)
                 if experiment_type is None:
                     raise PlanNotFound(
-                        f"Experiment plan '{experiment}' not found in registry."
+                        f"Experiment plan '{plan}' not found in registry."
                     )
-                plan = experiment_type.get("run")
-                if plan is None:
+                experiment = experiment_type.get("run")
+                if experiment is None:
                     raise PlanNotFound(
-                        f"Experiment plan '{experiment}' has no \"run\" method."
+                        f"Experiment plan '{plan}' has no \"run\" method."
                     )
                 parameters = InternalParameters.from_external_json(request.data)
-                status_and_message = self.runner.start(plan, parameters, experiment)
+                status_and_message = self.runner.start(
+                    experiment, parameters, experiment_type
+                )
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
             except PlanNotFound as e:
@@ -191,7 +193,7 @@ def create_app(
     api = Api(app)
     api.add_resource(
         RunExperiment,
-        "/<string:experiment>/<string:action>",
+        "/<string:plan>/<string:action>",
         resource_class_args=[runner],
     )
     api.add_resource(
