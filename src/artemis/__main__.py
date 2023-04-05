@@ -62,12 +62,12 @@ class BlueskyRunner:
                 PLAN_REGISTRY[plan]["setup"]()
 
     def start(
-        self, experiment: Callable, parameters: InternalParameters
+        self, experiment: Callable, parameters: InternalParameters, plan: str
     ) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
 
         if self.skip_startup_connection:
-            PLAN_REGISTRY[experiment]["setup"]()
+            PLAN_REGISTRY[plan]["setup"]()
 
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
@@ -150,7 +150,7 @@ class RunExperiment(Resource):
                         f"Experiment plan '{experiment}' has no \"run\" method."
                     )
                 parameters = InternalParameters.from_external_json(request.data)
-                status_and_message = self.runner.start(plan, parameters)
+                status_and_message = self.runner.start(plan, parameters, experiment)
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
             except PlanNotFound as e:
