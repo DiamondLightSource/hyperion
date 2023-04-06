@@ -14,8 +14,8 @@ from flask_restful import Api, Resource
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
-from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
+from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
 )
 from artemis.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
@@ -46,7 +46,7 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    callbacks: FGSCallbackCollection
+    callbacks: AbstractPlanCallbackCollection
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
@@ -69,7 +69,9 @@ class BlueskyRunner:
         if self.skip_startup_connection:
             PLAN_REGISTRY[plan_name]["setup"]()
 
-        self.callbacks = FGSCallbackCollection.from_params(parameters)
+        self.callbacks = PLAN_REGISTRY[plan_name][
+            "callback_collection_type"
+        ].from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value

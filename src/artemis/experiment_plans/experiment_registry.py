@@ -5,6 +5,12 @@ from typing import Callable, Dict, Union
 from dodal.devices.fast_grid_scan import GridScanParams
 
 from artemis.experiment_plans import fast_grid_scan_plan, rotation_scan_plan
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
+from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
+    RotationCallbackCollection,
+)
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
@@ -29,12 +35,14 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
         "run": fast_grid_scan_plan.get_plan,
         "internal_param_type": FGSInternalParameters,
         "experiment_param_type": GridScanParams,
+        "callback_collection_type": FGSCallbackCollection,
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
         "run": rotation_scan_plan.get_plan,
         "internal_param_type": RotationInternalParameters,
         "experiment_param_type": RotationScanParams,
+        "callback_collection_type": RotationCallbackCollection,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())

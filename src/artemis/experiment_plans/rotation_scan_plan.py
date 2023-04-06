@@ -25,7 +25,7 @@ zebra: Zebra = None
 def create_devices():
     global eiger, smargon, zebra
 
-    eiger = i03.eiger()
+    eiger = i03.eiger(wait_for_connection=False)
     smargon = i03.smargon()
     zebra = i03.zebra()
 
