@@ -37,6 +37,15 @@
         },
         "z": {
             "type": "number"
+        },
+        "positive_rotation_direction": {
+            "type": "boolean"
+        },
+        "offset_deg": {
+            "type": "number"
+        },
+        "shutter_opening_time_s": {
+            "type": "number"
         }
     },
     "required": [

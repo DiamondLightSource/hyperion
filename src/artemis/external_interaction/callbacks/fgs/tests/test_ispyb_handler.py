@@ -8,7 +8,9 @@ from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
 )
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
 from artemis.log import LOGGER, set_up_logging_handlers
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 DC_IDS = [1, 2]
 DCG_ID = 4
@@ -24,7 +26,7 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    params = InternalParameters()
+    params = FGSInternalParameters()
     ispyb_handler = FGSISPyBHandlerCallback(params)
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document)
@@ -54,7 +56,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    params = InternalParameters()
+    params = FGSInternalParameters()
     ispyb_handler = FGSISPyBHandlerCallback(params)
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document)
@@ -87,7 +89,7 @@ def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then
 ):
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
 
-    params = InternalParameters()
+    params = FGSInternalParameters()
     ispyb_handler = FGSISPyBHandlerCallback(params)
 
     ispyb_handler.start(td.test_start_document)
@@ -110,7 +112,7 @@ def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_the
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    params = InternalParameters()
+    params = FGSInternalParameters()
     ispyb_handler = FGSISPyBHandlerCallback(params)
 
     ispyb_handler.start(td.test_start_document)

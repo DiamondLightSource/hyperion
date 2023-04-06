@@ -29,6 +29,7 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     setup_zebra_for_fgs,
 )
 from artemis.exceptions import WarningException
+from artemis.parameters import external_parameters
 from artemis.parameters.beamline_parameters import (
     GDABeamlineParameters,
     get_beamline_prefixes,
@@ -45,7 +46,9 @@ if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
-    from artemis.parameters.internal_parameters import InternalParameters
+    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+        FGSInternalParameters,
+    )
 
 
 class FGSComposite:
@@ -186,7 +189,7 @@ def tidy_up_plans(fgs_composite: FGSComposite):
 @bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
     fgs_composite: FGSComposite,
-    parameters: InternalParameters,
+    parameters: FGSInternalParameters,
     md={
         "plan_name": "run_gridscan",
     },
@@ -232,7 +235,7 @@ def run_gridscan(
 @bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
     fgs_composite: FGSComposite,
-    parameters: InternalParameters,
+    parameters: FGSInternalParameters,
     subscriptions: FGSCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
@@ -276,7 +279,7 @@ def run_gridscan_and_move(
 
 
 def get_plan(
-    parameters: InternalParameters,
+    parameters: FGSInternalParameters,
     subscriptions: FGSCallbackCollection,
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
@@ -285,7 +288,7 @@ def get_plan(
     at any point in it.
 
     Args:
-        parameters (InternalParameters): The parameters to run the scan.
+        parameters (FGSInternalParameters): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -316,8 +319,11 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
+    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+        FGSInternalParameters,
+    )
 
-    parameters = InternalParameters(beamline=args.artemis_parameters.beamline)
+    parameters = FGSInternalParameters(external_parameters.from_file())
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     create_devices()

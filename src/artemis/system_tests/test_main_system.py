@@ -11,14 +11,14 @@ from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
-from artemis.parameters.external_parameters import RawParameters
+from artemis.parameters import external_parameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
-TEST_PARAMS = RawParameters().to_json()
+TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameters.json"))
 
 
 class MockRunEngine:
@@ -50,12 +50,32 @@ def mock_dict_values(d: dict):
     return {k: MagicMock() for k, _ in d.items()}
 
 
+TEST_EXPTS = {
+    "test_experiment": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "internal_param_type": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "test_experiment_no_run": {
+        "setup": MagicMock(),
+        "internal_param_type": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "test_experiment_no_internal_param_type": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+}
+
+
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
     with patch.dict(
         "artemis.__main__.PLAN_REGISTRY",
-        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()},
+        dict({k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS),
     ):
         app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
@@ -63,7 +83,9 @@ def test_env():
     with app.test_client() as client:
         with patch.dict(
             "artemis.__main__.PLAN_REGISTRY",
-            {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()},
+            dict(
+                {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
+            ),
         ):
             yield ClientAndRunEngine(client, mock_run_engine)
 
@@ -117,6 +139,30 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     assert (
         response.get("message")
         == "PlanNotFound(\"Experiment plan 'bad_plan' not found in registry.\")"
+    )
+
+
+def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
+    response = test_env.client.put(
+        "/test_experiment_no_internal_param_type/start", data=TEST_PARAMS
+    ).json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "PlanNotFound(\"Corresponing internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
+    )
+
+
+def test_plan_with_no_run_fails(test_env: ClientAndRunEngine):
+    response = test_env.client.put(
+        "/test_experiment_no_run/start", data=TEST_PARAMS
+    ).json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "PlanNotFound(\"Experiment plan 'test_experiment_no_run' has no 'run' method.\")"
     )
 
 

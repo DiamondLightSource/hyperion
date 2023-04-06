@@ -10,6 +10,7 @@ from dodal.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
@@ -37,28 +38,22 @@ from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from artemis.log import set_up_logging_handlers
-from artemis.parameters.external_parameters import RawParameters
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters import external_parameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 from artemis.utils import Point3D
 
 
 @pytest.fixture
 def test_params():
-    return InternalParameters()
+    return FGSInternalParameters()
 
 
 @pytest.fixture
-def fake_fgs_composite(test_params: InternalParameters):
-    fake_composite = FGSComposite(
-        aperture_positions=AperturePositions(
-            LARGE=(1, 2, 3, 4, 5),
-            MEDIUM=(2, 3, 3, 5, 6),
-            SMALL=(3, 4, 3, 6, 7),
-            ROBOT_LOAD=(0, 0, 3, 0, 0),
-        ),
-        detector_params=test_params.artemis_params.detector_params,
-        fake=True,
-    )
+def fake_fgs_composite():
+    FakeComposite = make_fake_device(FGSComposite)
+    fake_composite: FGSComposite = FakeComposite("test", name="fgs")
     fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.z.user_setpoint._use_limits = False
@@ -68,10 +63,17 @@ def fake_fgs_composite(test_params: InternalParameters):
     fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
         False
     )
+    fake_composite.aperture_scatterguard.load_aperture_positions(
+        AperturePositions(
+            LARGE=(1, 2, 3, 4, 5),
+            MEDIUM=(2, 3, 3, 5, 6),
+            SMALL=(3, 4, 3, 6, 7),
+            ROBOT_LOAD=(0, 0, 3, 0, 0),
+        )
+    )
 
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)
     fake_composite.fast_grid_scan.position_counter.sim_put(0)
-
     return fake_composite
 
 
@@ -94,18 +96,26 @@ def mock_subscriptions(test_params):
     return subscriptions
 
 
+@pytest.fixture
+def fake_eiger(test_params: FGSInternalParameters):
+    FakeEiger: EigerDetector = make_fake_device(EigerDetector)
+    fake_eiger = FakeEiger.with_params(
+        params=test_params.artemis_params.detector_params, name="test"
+    )
+    return fake_eiger
+
+
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
-    params = InternalParameters(RawParameters())
+    params = FGSInternalParameters()
     assert (
         params.artemis_params.detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
     )
-    raw_params_dict = RawParameters().to_dict()
+    raw_params_dict = external_parameters.from_file()
     raw_params_dict["artemis_params"]["detector_params"][
         "detector_size_constants"
     ] = EIGER_TYPE_EIGER2_X_4M
-    raw_params = RawParameters.from_dict(raw_params_dict)
-    params: InternalParameters = InternalParameters(raw_params)
+    params: FGSInternalParameters = FGSInternalParameters(raw_params_dict)
     det_dimension = (
         params.artemis_params.detector_params.detector_size_constants.det_dimension
     )
@@ -121,7 +131,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite: FGSComposite,
 ):
     RE = RunEngine({})
-    params = InternalParameters()
+    params = FGSInternalParameters()
 
     undulator_test_value = 1.234
 
@@ -172,7 +182,8 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
     mock_subscriptions: FGSCallbackCollection,
-    test_params: InternalParameters,
+    fake_eiger: EigerDetector,
+    test_params: FGSInternalParameters,
 ):
     RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -226,9 +237,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(
-    bps_mv: MagicMock,
-    test_params: InternalParameters,
-    fake_fgs_composite: FGSComposite,
+    bps_mv: MagicMock, test_params: FGSInternalParameters
 ):
     from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
@@ -264,7 +273,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
-    params = InternalParameters()
+    params = FGSInternalParameters()
 
     RE(
         run_gridscan_and_move(
@@ -293,7 +302,8 @@ def test_logging_within_plan(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_params: InternalParameters,
+    fake_eiger: EigerDetector,
+    test_params: FGSInternalParameters,
 ):
     RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -355,7 +365,8 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_kickoff,
     mock_abs_set,
     fake_fgs_composite: FGSComposite,
-    test_params: InternalParameters,
+    fake_eiger: EigerDetector,
+    test_params: FGSInternalParameters,
     mock_subscriptions: FGSCallbackCollection,
 ):
     RE = RunEngine({})
