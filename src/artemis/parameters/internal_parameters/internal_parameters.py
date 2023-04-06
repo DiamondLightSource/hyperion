@@ -104,6 +104,8 @@ class InternalParameters(ABC):
 
     def __init__(self, external_params: dict = raw_parameters.from_file()):
         all_params_bucket = flatten_dict(external_params)
+        self.experiment_param_preprocessing(all_params_bucket)
+
         experiment_field_keys = list(self.experiment_params_type.__annotations__.keys())
         experiment_field_args: dict[str, Any] = {
             key: all_params_bucket.get(key)
@@ -114,8 +116,7 @@ class InternalParameters(ABC):
             self.experiment_params_type(**experiment_field_args)
         )
 
-        self.pre_sorting_translation(all_params_bucket)
-
+        self.artemis_param_preprocessing(all_params_bucket)
         (
             artemis_param_field_keys,
             detector_field_keys,
@@ -162,7 +163,12 @@ class InternalParameters(ABC):
 
         return artemis_param_field_keys, detector_field_keys, ispyb_field_keys
 
-    def pre_sorting_translation(self, param_dict: dict[str, Any]):
+    def experiment_param_preprocessing(self, param_dict: dict[str, Any]):
+        """operates on the supplied experiment parameter values befause the experiment
+        parameters object is initialised."""
+        pass
+
+    def artemis_param_preprocessing(self, param_dict: dict[str, Any]):
         """Operates on the the flattened external param dictionary before its values are
         distributed to the other dictionaries. In the default implementation,
         self.experiment_params is already initialised, so values which are defined or

@@ -50,7 +50,7 @@ class ParamTypeForTesting(AbstractExperimentParameterBase):
 
 
 class InternalParametersSubclassForTesting(InternalParameters):
-    def pre_sorting_translation(self, param_dict: dict[str, Any]):
+    def artemis_param_preprocessing(self, param_dict: dict[str, Any]):
         pass
 
     def key_definitions(self):
@@ -63,7 +63,7 @@ class InternalParametersSubclassForTesting(InternalParameters):
 
 
 class InternalParametersSubclass2(InternalParameters):
-    def pre_sorting_translation(self, param_dict: dict[str, Any]):
+    def artemis_param_preprocessing(self, param_dict: dict[str, Any]):
         param_dict["q"] = param_dict["l"]
 
     def key_definitions(self):

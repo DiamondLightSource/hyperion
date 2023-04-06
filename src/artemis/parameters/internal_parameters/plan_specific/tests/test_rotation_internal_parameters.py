@@ -49,6 +49,7 @@ def test_rotation_parameters_load_from_file():
     internal_parameters = RotationInternalParameters(params)
 
     assert isinstance(internal_parameters.experiment_params, RotationScanParams)
+    assert internal_parameters.experiment_params.rotation_direction == -1
 
     ispyb_params = internal_parameters.artemis_params.ispyb_params
 
@@ -58,3 +59,14 @@ def test_rotation_parameters_load_from_file():
     detector_params = internal_parameters.artemis_params.detector_params
 
     assert detector_params.detector_size_constants == EIGER2_X_16M_SIZE
+
+
+def test_rotation_parameters_preprocess():
+    params = external_parameters.from_file(
+        "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+    )
+    params["experiment_params"]["positive_rotation_direction"] = True
+    internal_parameters = RotationInternalParameters(params)
+    assert isinstance(internal_parameters.experiment_params, RotationScanParams)
+
+    assert internal_parameters.experiment_params.rotation_direction == 1

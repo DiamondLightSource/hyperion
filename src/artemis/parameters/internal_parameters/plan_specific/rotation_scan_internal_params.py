@@ -28,6 +28,9 @@ class RotationScanParams(DataClassJsonMixin, AbstractExperimentParameterBase):
     y: float = 0.0
     z: float = 0.0
     trigger_number: str = EigerTriggerNumber.MANY_TRIGGERS
+    rotation_direction: int = -1
+    offset_deg: float = 1.0
+    shutter_opening_time_s: float = 0.6
 
     def xyz_are_valid(self, limits: XYZLimitBundle) -> bool:
         """
@@ -52,8 +55,12 @@ class RotationScanParams(DataClassJsonMixin, AbstractExperimentParameterBase):
 class RotationInternalParameters(InternalParameters):
     experiment_params_type = RotationScanParams
 
-    def pre_sorting_translation(self, param_dict: dict[str, Any]):
-        super().pre_sorting_translation(param_dict)
+    def experiment_param_preprocessing(self, param_dict: dict[str, Any]):
+        positive_dir = param_dict.pop("positive_rotation_direction")
+        param_dict["rotation_direction"] = 1 if positive_dir else -1
+
+    def artemis_param_preprocessing(self, param_dict: dict[str, Any]):
+        super().artemis_param_preprocessing(param_dict)
         if param_dict["rotation_axis"] == "omega":
             param_dict["omega_increment"] = param_dict["rotation_increment"]
         else:
