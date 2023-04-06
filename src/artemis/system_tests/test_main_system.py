@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from flask.testing import FlaskClient
+from jsonschema.exceptions import ValidationError
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
@@ -209,3 +210,9 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     BlueskyRunner(MagicMock())
 
     mock_fgs.return_value.wait_for_connection.assert_called_once()
+
+
+def test_error_and_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
+    with pytest.raises(ValidationError):
+        test_env.client.put(START_ENDPOINT, data='{"bad":1}')
+    assert "Invalid json parameters" in caplog.text
