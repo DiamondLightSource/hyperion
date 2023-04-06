@@ -5,6 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Run artemis main",
+            "type": "python",
+            "request": "launch",
+            "module": "artemis",
+            "justMyCode": false,
+            "env": {
+                "EPICS_CA_SERVER_PORT": "5065"
+            },
+            "args": [
+                "--dev",
+                "--verbose-event-logging",
+                "--skip-startup-connection"
+            ]
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
