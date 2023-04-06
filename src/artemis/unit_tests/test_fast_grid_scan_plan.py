@@ -237,7 +237,9 @@ def test_results_adjusted_and_passed_to_move_xyz(
 
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(
-    bps_mv: MagicMock, test_params: FGSInternalParameters
+    bps_mv: MagicMock,
+    test_params: FGSInternalParameters,
+    fake_fgs_composite: FGSComposite,
 ):
     from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
