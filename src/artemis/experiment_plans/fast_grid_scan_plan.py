@@ -21,6 +21,7 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     setup_zebra_for_fgs,
 )
 from artemis.exceptions import WarningException
+from artemis.parameters import external_parameters
 from artemis.parameters.beamline_parameters import (
     GDABeamlineParameters,
     get_beamline_prefixes,
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
-    from artemis.parameters.internal_parameters.plan_specific import (
+    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
 
@@ -287,8 +288,11 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
+    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+        FGSInternalParameters,
+    )
 
-    parameters = FGSInternalParameters(beamline=args.artemis_parameters.beamline)
+    parameters = FGSInternalParameters(external_parameters.from_file())
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     create_devices()
