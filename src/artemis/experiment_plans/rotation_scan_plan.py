@@ -14,7 +14,12 @@ from artemis.device_setup_plans.setup_zebra_for_rotation import setup_zebra_for_
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters import InternalParameters
+    from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
+        RotationCallbackCollection,
+    )
+    from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+        RotationInternalParameters,
+    )
 
 
 eiger: EigerDetector = None
@@ -55,7 +60,7 @@ def set_speed(motors: Smargon, image_width, exposure_time):
     )
 
 
-def rotation_scan_plan(params: InternalParameters):
+def rotation_scan_plan(params: RotationInternalParameters):
     detector_params: DetectorParams = params.artemis_params.detector_params
     expt_params: RotationScanParams = params.experiment_params
 
@@ -99,16 +104,18 @@ def cleanup_plan():
     zebra.pc.disarm()
 
 
-def get_plan(params: InternalParameters):
+def get_plan(
+    params: RotationInternalParameters, subscriptions: RotationCallbackCollection
+):
     # TODO subscriptions
 
-    def rotation_scan_plan_with_stage_and_cleanup(params):
-        @stage_decorator(eiger)
+    def rotation_scan_plan_with_stage_and_cleanup(params: RotationInternalParameters):
+        @stage_decorator([eiger])
         def with_cleanup(params):
             yield from finalize_wrapper(rotation_scan_plan(params), cleanup_plan())
 
         # TODO planify these
-        eiger.set_detector_parameters()
+        eiger.set_detector_parameters(params.artemis_params.detector_params)
         eiger.set_num_triggers_and_captures()
         yield from with_cleanup(params)
 
