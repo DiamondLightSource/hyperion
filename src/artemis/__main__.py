@@ -159,9 +159,15 @@ class RunExperiment(Resource):
                     raise PlanNotFound(
                         f"Experiment plan '{plan_name}' has no 'run' method."
                     )
+
                 parameters = experiment_internal_param_type.from_external_json(
                     request.data
                 )
+                if plan_name != parameters.artemis_params.experiment_type:
+                    raise PlanNotFound(
+                        f"Wrong experiment parameters ({parameters.artemis_params.experiment_type}) "
+                        f"for plan endpoint {plan_name}."
+                    )
                 status_and_message = self.runner.start(
                     experiment, parameters, plan_name
                 )
