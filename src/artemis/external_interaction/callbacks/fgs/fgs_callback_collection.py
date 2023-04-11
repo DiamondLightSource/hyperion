@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import TYPE_CHECKING
 
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
@@ -27,6 +27,10 @@ class FGSCallbackCollection(AbstractPlanCallbackCollection):
     nexus_handler: FGSNexusFileHandlerCallback
     ispyb_handler: FGSISPyBHandlerCallback
     zocalo_handler: FGSZocaloCallback
+
+    def __iter__(self):
+        for field in fields(self):
+            yield getattr(self, field.name)
 
     @classmethod
     def from_params(cls, parameters: InternalParameters):
