@@ -252,7 +252,7 @@ def test_cli_args_parse():
         "--dev",
         "--logging-level=DEBUG",
         "--verbose-event-logging",
-        "--skip_startup_connection",
+        "--skip-startupconnection",
     ]
     test_args = cli_arg_parse()
     assert test_args == ("DEBUG", True, True, True)
@@ -317,6 +317,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
             },
         },
     ):
@@ -343,16 +344,19 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
             },
             "other_plan": {
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
             },
             "yet_another_plan": {
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
             },
         },
     ):

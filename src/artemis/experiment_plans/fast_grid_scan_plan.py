@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 
 
 class FGSComposite:
-    """A device consisting of all the Devices required for a fast gridscan."""
+    """A container for all the Devices required for a fast gridscan."""
 
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
