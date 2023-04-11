@@ -252,7 +252,7 @@ def test_cli_args_parse():
         "--dev",
         "--logging-level=DEBUG",
         "--verbose-event-logging",
-        "--skip-startupconnection",
+        "--skip-startup-connection",
     ]
     test_args = cli_arg_parse()
     assert test_args == ("DEBUG", True, True, True)
