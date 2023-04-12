@@ -10,6 +10,7 @@ from bluesky import RunEngine
 from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
+from jsonschema.exceptions import ValidationError
 
 import artemis.log
 from artemis.exceptions import WarningException
@@ -148,6 +149,10 @@ class RunExperiment(Resource):
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
             except PlanNotFound as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+            except ValidationError as e:
+                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+                artemis.log.LOGGER.error("Invalid json parameters")
+
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
         # no idea why mypy gives an attribute error here but nowhere else for this

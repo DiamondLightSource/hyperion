@@ -212,7 +212,12 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     mock_fgs.return_value.wait_for_connection.assert_called_once()
 
 
-def test_error_and_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
-    with pytest.raises(ValidationError):
-        test_env.client.put(START_ENDPOINT, data='{"bad":1}')
+def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
+    response = test_env.client.put(START_ENDPOINT, data='{"bad":1}').json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "<ValidationError: \"{'bad': 1} does not have enough properties\">"
+    )
     assert "Invalid json parameters" in caplog.text

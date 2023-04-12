@@ -8,10 +8,8 @@ from typing import Dict, Optional, Type, Union
 
 import jsonschema
 from dataclasses_json import DataClassJsonMixin
-from jsonschema.exceptions import ValidationError
 
 import artemis.experiment_plans.experiment_registry as registry
-import artemis.log
 from artemis.parameters.constants import (
     PARAMETER_VERSION,
     SIM_BEAMLINE,
@@ -171,11 +169,8 @@ class RawParameters:
             base_uri=f"{path.as_uri()}/",
             referrer=True,
         )
-        try:
-            jsonschema.validate(dict_params, full_schema, resolver=resolver)
-        except ValidationError:
-            artemis.log.LOGGER.error("Invalid json parameters")
-            raise ValidationError("Invalid Json parameters")
+
+        jsonschema.validate(dict_params, full_schema, resolver=resolver)
 
         experiment_type = EXTERNAL_EXPERIMENT_PARAM_DICT.get(
             dict_params["artemis_params"]["experiment_type"]
