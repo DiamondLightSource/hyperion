@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from flask.testing import FlaskClient
-from jsonschema.exceptions import ValidationError
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
