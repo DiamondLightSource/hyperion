@@ -18,7 +18,7 @@ START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
-TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameters.json"))
+TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameter_defaults.json"))
 
 
 class MockRunEngine:
@@ -47,7 +47,7 @@ class ClientAndRunEngine:
 
 
 def mock_dict_values(d: dict):
-    return {k: MagicMock() for k, _ in d.items()}
+    return {k: MagicMock() if k == "setup" or k == "run" else v for k, v in d.items()}
 
 
 TEST_EXPTS = {

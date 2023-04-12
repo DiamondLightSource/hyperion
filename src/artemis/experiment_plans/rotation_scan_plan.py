@@ -42,7 +42,6 @@ SHUTTER_OPENING_TIME = 0.5
 
 def move_to_start_w_buffer(motors: Smargon, start_angle):
     yield from bps.abs_set(motors.omega.velocity, 100, wait=True)
-    yield from bps.abs_set(motors.omega.velocity, 100, group="move_to_start")
     yield from bps.abs_set(
         motors.omega, start_angle - (OFFSET * DIRECTION), group="move_to_start"
     )
