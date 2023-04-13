@@ -38,7 +38,7 @@ python -m artemis --dev --verbose-event-logging
 
 Lastly, you can choose to skip running the hardware connection scripts on startup with the flag
 ```
-python -m artemis --skip_startup_connection
+python -m artemis --skip-startup-connection
 ```
 
 Testing

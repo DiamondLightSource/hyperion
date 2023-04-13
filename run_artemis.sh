@@ -54,6 +54,7 @@ for option in "$@"; do
             SKIP_STARTUP_CONNECTION=true
             ;;
         --help|--info)
+        #Combine help from here and help from artemis
             source .venv/bin/activate
             python -m artemis --help
             echo "  -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline"
