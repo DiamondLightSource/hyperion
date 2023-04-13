@@ -33,9 +33,7 @@ checkver () {
 
 STOP=0
 START=1
-DEPLOY=0
-SKIP_STARTUP_CONNECTION=0
-
+SKIP_STARTUP_CONNECTION=false
 for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
@@ -52,14 +50,12 @@ for option in "$@"; do
         --no-start)
             START=0
             ;;
-        --deploy)
-            DEPLOY=1
-            ;;
-        --skip_startup_connection)
-            SKIP_STARTUP_CONNECTION=1
+        --skip-startup-connection)
+            SKIP_STARTUP_CONNECTION=true
             ;;
         --help|--info)
-            echo "Options"
+            source .venv/bin/activate
+            python -m artemis --help
             echo "  -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline"
             echo "  -v, --version=VERSION   Specifies the artemis version number to deploy. Option should be given in the form 0.0.0.0"
             echo "                          Will check git tags and use the lastest version as a default if no version is specified."
@@ -103,35 +99,6 @@ if [[ $STOP == 1 ]]; then
     exit 0
 fi
 
-if [[ $DEPLOY == 1 ]]; then
-    git fetch --all --tags --prune
-    if [[ -z "${VERSION}" ]]; then
-        VERSION="0"
-        for version_tag in $(git ls-remote --tags origin/main); do
-            checkver $VERSION ${version_tag}
-            case $? in
-                0|1) ;; # do nothing if VERSION is still the latest version
-                2) VERSION = ${version_tag} ;;
-            esac
-        done
-    fi
-
-    git checkout "tags/${VERSION}"
-
-    module unload controls_dev
-    module load python/3.10
-
-    if [ -d "./.venv" ]
-    then
-    rm -rf .venv
-    fi
-    mkdir .venv
-
-    python -m venv .venv
-
-    pip install -e .
-fi
-
 if [[ $START == 1 ]]; then
     if [ $IN_DEV == false ]; then
         if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
@@ -168,7 +135,17 @@ if [[ $START == 1 ]]; then
 
     source .venv/bin/activate
 
-    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` `if [ $SKIP_STARTUP_CONNECTION == 1 ]; then echo "--skip_startup_connection"; fi`>$start_log_path 2>&1 &
+    #Add future arguments here
+    declare -A args=( ["IN_DEV"]="$IN_DEV" ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION")
+    declare -A arg_strings=( ["IN_DEV"]="--dev" ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection")
+
+    commands=()
+    for i in "${!args[@]}"
+    do
+        if [ "${args[$i]}" == true ]; then commands+="${arg_strings[$i]} "; fi;
+    done 
+    
+    python -m artemis `echo $commands;`>$start_log_path 2>&1 &
 
     echo "Waiting for Artemis to boot"
 
