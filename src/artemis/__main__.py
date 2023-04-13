@@ -248,9 +248,7 @@ if __name__ == "__main__":
     ) = cli_arg_parse()
 
     artemis.log.set_up_logging_handlers(logging_level, dev_mode)
-
     app, runner = create_app(skip_startup_connection=skip_startup_connection)
-
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
