@@ -19,7 +19,7 @@ ophyd_logger.parent = LOGGER
 bluesky_logger.parent = LOGGER
 
 
-class EnhancedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
+class EnhancedRollingFileHandler(logging.handlers.TimedRotatingFileHandler):
     """Combines features of TimedRotatingFileHandler and RotatingFileHandler"""
 
     def __init__(
@@ -31,7 +31,7 @@ class EnhancedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
         encoding=None,
         delay=0,
         utc=0,
-        maxBytes=1e9,
+        maxBytes=1e8,
     ):
         logging.handlers.TimedRotatingFileHandler.__init__(
             self, filename, when, interval, backupCount, encoding, delay, utc
@@ -80,19 +80,14 @@ class EnhancedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
                     addend = -3600
                 timeTuple = time.localtime(t + addend)
         dfn = self.baseFilename + "." + time.strftime(self.suffix, timeTuple)
-        if self.backupCount > 0:
-            cnt = 1
+        # Add the date to new logging file, add count if date already exists
+        cnt = 1
+        dfn2 = "%s.%03d" % (dfn, cnt)
+        while os.path.exists(dfn2):
             dfn2 = "%s.%03d" % (dfn, cnt)
-            while os.path.exists(dfn2):
-                dfn2 = "%s.%03d" % (dfn, cnt)
-                cnt += 1
-            os.rename(self.baseFilename, dfn2)
-            for s in self.getFilesToDelete():
-                os.remove(s)
-        else:
-            if os.path.exists(dfn):
-                os.remove(dfn)
-            os.rename(self.baseFilename, dfn)
+            cnt += 1
+        os.rename(self.baseFilename, dfn2)
+
         # print "%s -> %s" % (self.baseFilename, dfn)
         self.mode = "w"
         self.stream = self._open()
@@ -111,29 +106,6 @@ class EnhancedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
                     addend = 3600
                 newRolloverAt += addend
         self.rolloverAt = newRolloverAt
-
-    def getFilesToDelete(self):
-        """
-        Determine the files to delete when rolling over.
-
-        More specific than the earlier method, which just used glob.glob().
-        """
-        dirName, baseName = os.path.split(self.baseFilename)
-        fileNames = os.listdir(dirName)
-        result = []
-        prefix = baseName + "."
-        plen = len(prefix)
-        for fileName in fileNames:
-            if fileName[:plen] == prefix:
-                suffix = fileName[plen:-4]
-                if self.extMatch.match(suffix):
-                    result.append(os.path.join(dirName, fileName))
-        result.sort()
-        if len(result) < self.backupCount:
-            result = []
-        else:
-            result = result[: len(result) - self.backupCount]
-        return result
 
 
 class BeamlineFilter(logging.Filter):
@@ -176,12 +148,12 @@ def set_up_logging_handlers(
     handlers: list[logging.Handler] = [
         GELFTCPHandler(graylog_host, graylog_port),
         logging.StreamHandler(),
-        EnhancedRotatingFileHandler(
+        EnhancedRollingFileHandler(
             filename=file_path,
             when="S",
             interval=10,
             backupCount=10,
-            maxBytes=1e9,
+            maxBytes=1e8,
         ),
     ]
     for handler in handlers:
