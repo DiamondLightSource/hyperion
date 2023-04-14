@@ -3,13 +3,15 @@ from unittest.mock import MagicMock
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import DetectorParams, EigerDetector
-from dodal.devices.fast_grid_scan_composite import FGSComposite
 
-from artemis.experiment_plans.fast_grid_scan_plan import run_gridscan_and_move
+from artemis.experiment_plans.fast_grid_scan_plan import (
+    FGSComposite,
+    run_gridscan_and_move,
+)
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
-from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
+from artemis.parameters.constants import SIM_BEAMLINE
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.utils import Point3D
 
@@ -89,13 +91,10 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._run_start = MagicMock()
     callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
 
-    fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=SIM_INSERTION_PREFIX, name="fgs", prefix=SIM_BEAMLINE
-    )
+    fast_grid_scan_composite = FGSComposite()
     # this is where it's currently getting stuck:
     # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
     # but this is not a solution
-    fast_grid_scan_composite.wait_for_connection()
     # Would be better to use get_plan instead but eiger doesn't work well in S03
     RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, callbacks))
 
