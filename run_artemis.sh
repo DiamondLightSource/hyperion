@@ -18,6 +18,9 @@ for option in "$@"; do
         --skip-startup-connection)
             SKIP_STARTUP_CONNECTION=true
             ;;
+        --dev)
+            IN_DEV=true
+            ;;
         --help|--info)
         #Combine help from here and help from artemis
             source .venv/bin/activate
