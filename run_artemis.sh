@@ -1,36 +1,5 @@
 #!/bin/bash
 
-# Params - 2 semver strings of the form 1.11.2.3
-# Returns - 0 if equal version, 1 if 1st param is a greater version number, 2 if 2nd param has greater version number
-checkver () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if [[ -z ${ver2[i]} ]]
-        then
-            ver2[i]=0
-        fi
-        if ((10#${ver1[i]} > 10#${ver2[i]}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
-}
-
 STOP=0
 START=1
 SKIP_STARTUP_CONNECTION=false
@@ -38,10 +7,6 @@ for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
             BEAMLINE="${option#*=}"
-            shift
-            ;;
-        -v=*|--version=*)
-            VERSION="${option#*=}"
             shift
             ;;
         --stop)
@@ -58,14 +23,11 @@ for option in "$@"; do
             source .venv/bin/activate
             python -m artemis --help
             echo "  -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline"
-            echo "  -v, --version=VERSION   Specifies the artemis version number to deploy. Option should be given in the form 0.0.0.0"
-            echo "                          Will check git tags and use the lastest version as a default if no version is specified."
-            echo "                          Unused outside of deploy operation."
             echo " "
             echo "Operations"
             echo "  --stop                  Used to stop a currently running instance of Artemis. Will override any other operations"
             echo "                          options"
-            echo "  --deploy                Used to update and install a new version of Artemis."
+
             echo "  --no-start              Used to specify that the script should be run without starting the server."
             echo " "
             echo "By default this script will start an Artemis server unless the --no-start flag is specified."
