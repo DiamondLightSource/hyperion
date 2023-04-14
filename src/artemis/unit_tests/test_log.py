@@ -16,7 +16,9 @@ def mock_logger():
 
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
+@patch("artemis.log.EnhancedRotatingFileHandler")
 def test_handlers_set_at_correct_default_level(
+    mock_enhanced_log,
     mock_logging,
     mock_GELFTCPHandler,
     mock_logger: MagicMock,
@@ -30,7 +32,9 @@ def test_handlers_set_at_correct_default_level(
 
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
+@patch("artemis.log.EnhancedRotatingFileHandler")
 def test_handlers_set_at_correct_debug_level(
+    mock_enhanced_log,
     mock_logging,
     mock_GELFTCPHandler,
     mock_logger: MagicMock,
@@ -66,30 +70,42 @@ def test_prod_mode_sets_correct_graypy_handler(
 
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
+@patch("artemis.log.EnhancedRotatingFileHandler")
 def test_no_env_variable_sets_correct_file_handler(
+    mock_enhanced_log,
     mock_logging,
     mock_GELFTCPHandler,
     mock_logger: MagicMock,
 ):
     log.set_up_logging_handlers(None, True)
-    mock_logging.FileHandler.assert_called_once_with(
-        filename=Path("./tmp/dev/artemis.txt")
+    mock_enhanced_log.assert_called_once_with(
+        filename=Path("./tmp/dev/artemis.txt"),
+        when="S",
+        interval=10,
+        backupCount=10,
+        maxBytes=1e9,
     )
 
 
 @patch("artemis.log.Path.mkdir")
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
+@patch("artemis.log.EnhancedRotatingFileHandler")
 @patch.dict(os.environ, {"ARTEMIS_LOG_DIR": "/dls_sw/s03/logs/bluesky"})
 def test_set_env_variable_sets_correct_file_handler(
+    mock_enhanced_log,
     mock_logging,
     mock_GELFTCPHandler,
     mock_dir,
     mock_logger: MagicMock,
 ):
     log.set_up_logging_handlers(None, False)
-    mock_logging.FileHandler.assert_called_once_with(
-        filename=Path("/dls_sw/s03/logs/bluesky/artemis.txt")
+    mock_enhanced_log.assert_called_once_with(
+        filename=Path("/dls_sw/s03/logs/bluesky/artemis.txt"),
+        when="S",
+        interval=10,
+        backupCount=10,
+        maxBytes=1e9,
     )
 
 
