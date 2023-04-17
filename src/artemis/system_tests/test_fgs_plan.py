@@ -7,12 +7,12 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.detector import DetectorParams
-from dodal.devices.eiger import DetectorParams, EigerDetector
-from dodal.devices.fast_grid_scan_composite import FGSComposite
+from dodal.devices.eiger import DetectorParams
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
+    FGSComposite,
     get_plan,
     read_hardware_for_ispyb,
     run_gridscan,
@@ -28,46 +28,10 @@ from artemis.external_interaction.system_tests.test_ispyb_dev_connection import 
     ISPYB_CONFIG,
 )
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
-from artemis.parameters.constants import (
-    I03_BEAMLINE_PARAMETER_PATH,
-    SIM_BEAMLINE,
-    SIM_INSERTION_PREFIX,
-)
+from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH, SIM_BEAMLINE
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-
-
-@pytest.fixture()
-def eiger() -> EigerDetector:
-    detector_params: DetectorParams = DetectorParams(
-        current_energy=100,
-        exposure_time=0.1,
-        directory="/tmp",
-        prefix="file_name",
-        detector_distance=100.0,
-        omega_start=0.0,
-        omega_increment=0.1,
-        num_images_per_trigger=1,
-        num_triggers=50,
-        use_roi_mode=False,
-        run_number=0,
-        det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
-    )
-    eiger = EigerDetector.with_params(
-        params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
-    )
-
-    # Otherwise odin moves too fast to be tested
-    eiger.cam.manual_trigger.put("Yes")
-
-    # S03 currently does not have StaleParameters_RBV
-    eiger.wait_for_stale_parameters = lambda: None
-    eiger.odin.check_odin_initialised = lambda: (True, "")
-
-    fgs_plan.eiger = eiger
-
-    yield eiger
 
 
 @pytest.fixture
@@ -85,11 +49,21 @@ def RE():
 @pytest.fixture
 def fgs_composite():
     fast_grid_scan_composite = FGSComposite(
-        insertion_prefix=SIM_INSERTION_PREFIX,
-        name="fgs",
-        prefix=SIM_BEAMLINE,
+        detector_params=DetectorParams(
+            current_energy=100,
+            exposure_time=0.1,
+            directory="/tmp",
+            prefix="file_name",
+            detector_distance=100.0,
+            omega_start=0.0,
+            omega_increment=0.1,
+            num_images_per_trigger=1,
+            num_triggers=50,
+            use_roi_mode=False,
+            run_number=0,
+            det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
+        )
     )
-    fast_grid_scan_composite.wait_for_connection()
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         I03_BEAMLINE_PARAMETER_PATH
@@ -103,6 +77,12 @@ def fgs_composite():
     fast_grid_scan_composite.aperture_scatterguard.aperture.z.move(
         aperture_positions.LARGE[2], wait=True
     )
+    fast_grid_scan_composite.eiger.cam.manual_trigger.put("Yes")
+
+    # S03 currently does not have StaleParameters_RBV
+    fast_grid_scan_composite.eiger.wait_for_stale_parameters = lambda: None
+    fast_grid_scan_composite.eiger.odin.check_odin_initialised = lambda: (True, "")
+
     fast_grid_scan_composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
     return fast_grid_scan_composite
 
@@ -119,19 +99,16 @@ def test_run_gridscan(
     kickoff: MagicMock,
     wait: MagicMock,
     params: FGSInternalParameters,
-    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-    eiger.unstage = lambda: True
-    fgs_composite.wait_for_connection()
+    fgs_composite.eiger.unstage = lambda: True
     # Would be better to use get_plan instead but eiger doesn't work well in S03
-    RE(run_gridscan(fgs_composite, eiger, params))
+    RE(run_gridscan(fgs_composite, params))
 
 
 @pytest.mark.s03
 def test_read_hardware_for_ispyb(
-    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
@@ -143,13 +120,11 @@ def test_read_hardware_for_ispyb(
     def read_run(u, s, g):
         yield from read_hardware_for_ispyb(u, s, g)
 
-    fgs_composite.wait_for_connection()
     RE(read_run(undulator, synchrotron, slit_gaps))
 
 
 @pytest.mark.s03
 @patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.eiger")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
@@ -161,7 +136,6 @@ def test_full_plan_tidies_at_end(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    eiger: EigerDetector,
     fgs_composite: FGSComposite,
     params: FGSInternalParameters,
     RE: RunEngine,
@@ -173,7 +147,6 @@ def test_full_plan_tidies_at_end(
 
 @pytest.mark.s03
 @patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.eiger")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
@@ -185,7 +158,6 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    eiger: EigerDetector,
     fgs_composite: FGSComposite,
     params: FGSInternalParameters,
     RE: RunEngine,
@@ -195,12 +167,10 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
-    # tidy_plans.assert_called_once()
 
 
 @pytest.mark.s03
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
-    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
     fetch_comment: Callable,
@@ -235,7 +205,6 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     complete: MagicMock,
     kickoff: MagicMock,
-    eiger: EigerDetector,
     RE: RunEngine,
     fgs_composite: FGSComposite,
     zocalo_env: None,
@@ -251,8 +220,8 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     # Currently s03 calls anything with z_steps > 1 invalid
     parameters.experiment_params.z_steps = 1
 
-    eiger.stage = MagicMock()
-    eiger.unstage = MagicMock()
+    fgs_composite.eiger.stage = MagicMock()
+    fgs_composite.eiger.unstage = MagicMock()
 
     callbacks = FGSCallbackCollection.from_params(parameters)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG

@@ -9,7 +9,7 @@ https://nsls-ii.github.io/bluesky/
 Development Installation
 =================
 
-Run `dls_dev_env.sh` (This assumes you're on a DLS machine, if you are not you sould be able to just run a subset of this script)
+Run `dls_dev_env.sh` (This assumes you're on a DLS machine. If you are not, you should be able to just run a subset of this script)
 
 Note that because Artemis makes heavy use of [Dodal](https://github.com/DiamondLightSource/dodal) this will also pull a local editable version of dodal to the parent folder of this repo.
 

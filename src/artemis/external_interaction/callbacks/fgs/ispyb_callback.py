@@ -72,16 +72,16 @@ class FGSISPyBHandlerCallback(CallbackBase):
 
         if event_descriptor.get("name") == ISPYB_PLAN_NAME:
             self.params.artemis_params.ispyb_params.undulator_gap = doc["data"][
-                "fgs_undulator_gap"
+                "undulator_gap"
             ]
             self.params.artemis_params.ispyb_params.synchrotron_mode = doc["data"][
-                "fgs_synchrotron_machine_status_synchrotron_mode"
+                "synchrotron_machine_status_synchrotron_mode"
             ]
             self.params.artemis_params.ispyb_params.slit_gap_size_x = doc["data"][
-                "fgs_s4_slit_gaps_xgap"
+                "s4_slit_gaps_xgap"
             ]
             self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
-                "fgs_s4_slit_gaps_ygap"
+                "s4_slit_gaps_ygap"
             ]
 
             LOGGER.info("Creating ispyb entry.")
