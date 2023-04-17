@@ -1,4 +1,3 @@
-import glob
 import logging
 import os
 from pathlib import Path
@@ -156,6 +155,5 @@ def test_rollover_on_maxBytes():
     for i in range(100):
         string_to_get_over_max_bytes += "test"
     LOGGER.info(string_to_get_over_max_bytes)
-    my_handler.doRollover.assert_called_once()  # New log file created
-    for filename in glob.glob(".test_log*"):  # Remove files created during test
-        os.remove("test_log*")
+    my_handler.doRollover.assert_called_once()
+    os.remove("test_log.txt")

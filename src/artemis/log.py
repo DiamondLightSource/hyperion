@@ -60,10 +60,6 @@ class EnhancedRollingFileHandler(logging.handlers.TimedRotatingFileHandler):
         return []
 
 
-# def test():
-#     test_handler.stream = MagicMock()
-
-
 class BeamlineFilter(logging.Filter):
     def filter(self, record):
         record.beamline = beamline if beamline else "dev"
