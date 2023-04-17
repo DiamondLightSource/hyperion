@@ -1,3 +1,5 @@
+import glob
+import logging
 import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -16,7 +18,7 @@ def mock_logger():
 
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
-@patch("artemis.log.EnhancedRotatingFileHandler")
+@patch("artemis.log.EnhancedRollingFileHandler")
 def test_handlers_set_at_correct_default_level(
     mock_enhanced_log,
     mock_logging,
@@ -32,7 +34,7 @@ def test_handlers_set_at_correct_default_level(
 
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
-@patch("artemis.log.EnhancedRotatingFileHandler")
+@patch("artemis.log.EnhancedRollingFileHandler")
 def test_handlers_set_at_correct_debug_level(
     mock_enhanced_log,
     mock_logging,
@@ -70,7 +72,7 @@ def test_prod_mode_sets_correct_graypy_handler(
 
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
-@patch("artemis.log.EnhancedRotatingFileHandler")
+@patch("artemis.log.EnhancedRollingFileHandler")
 def test_no_env_variable_sets_correct_file_handler(
     mock_enhanced_log,
     mock_logging,
@@ -80,17 +82,17 @@ def test_no_env_variable_sets_correct_file_handler(
     log.set_up_logging_handlers(None, True)
     mock_enhanced_log.assert_called_once_with(
         filename=Path("./tmp/dev/artemis.txt"),
-        when="S",
-        interval=10,
+        when="D",
+        interval=1,
         backupCount=10,
-        maxBytes=1e9,
+        maxBytes=1e8,
     )
 
 
 @patch("artemis.log.Path.mkdir")
 @patch("artemis.log.GELFTCPHandler")
 @patch("artemis.log.logging")
-@patch("artemis.log.EnhancedRotatingFileHandler")
+@patch("artemis.log.EnhancedRollingFileHandler")
 @patch.dict(os.environ, {"ARTEMIS_LOG_DIR": "/dls_sw/s03/logs/bluesky"})
 def test_set_env_variable_sets_correct_file_handler(
     mock_enhanced_log,
@@ -102,10 +104,10 @@ def test_set_env_variable_sets_correct_file_handler(
     log.set_up_logging_handlers(None, False)
     mock_enhanced_log.assert_called_once_with(
         filename=Path("/dls_sw/s03/logs/bluesky/artemis.txt"),
-        when="S",
-        interval=10,
+        when="D",
+        interval=1,
         backupCount=10,
-        maxBytes=1e9,
+        maxBytes=1e8,
     )
 
 
@@ -130,3 +132,30 @@ def test_beamline_filter_adds_dev_if_no_beamline():
     record = MagicMock()
     assert filter.filter(record)
     assert record.beamline == "dev"
+
+
+def test_given_delay_set_when_do_rollover_then_stream_created():
+    my_handler = log.EnhancedRollingFileHandler(filename="", delay=True, maxBytes=0)
+    my_handler._open = MagicMock()
+    my_handler.shouldRollover(MagicMock())
+    my_handler._open.assert_called_once()
+
+
+def test_rollover_on_maxBytes():
+    my_handler = log.EnhancedRollingFileHandler(
+        filename="test_log.txt", delay=False, maxBytes=1000
+    )
+    my_handler.stream.tell = MagicMock()
+    my_handler.stream.tell.return_value = 900
+    my_handler.doRollover = MagicMock()
+    LOGGER = logging.getLogger("Artemis")
+    LOGGER.addHandler(my_handler)
+    LOGGER.info("test")
+    my_handler.doRollover.assert_not_called()  # Log file isn't 1000 bytes big yet
+    string_to_get_over_max_bytes = ""
+    for i in range(100):
+        string_to_get_over_max_bytes += "test"
+    LOGGER.info(string_to_get_over_max_bytes)
+    my_handler.doRollover.assert_called_once()  # New log file created
+    for filename in glob.glob(".test_log*"):  # Remove files created during test
+        os.remove("test_log*")
