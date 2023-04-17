@@ -72,7 +72,7 @@ class BlueskyRunner:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
 
         if self.skip_startup_connection:
-            plan["setup"]()
+            PLAN_REGISTRY[plan]["setup"]()
 
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
@@ -234,7 +234,7 @@ def cli_arg_parse() -> (
         help="Choose overall logging level, defaults to INFO",
     )
     parser.add_argument(
-        "--skip-startup-connection",
+        "--skip_startup_connection",
         action="store_true",
         help="Skip connecting to EPICS PVs on startup",
     )

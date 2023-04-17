@@ -12,7 +12,7 @@
             "args": [
                 "--dev",
                 "--verbose-event-logging",
-                "--skip-startup-connection"
+                "--skip_startup_connection"
             ],
             "env": {
                 "EPICS_CA_SERVER_PORT": "5066"
