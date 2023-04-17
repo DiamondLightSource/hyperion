@@ -5,6 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Run Artemis in dev mode",
+            "type": "python",
+            "request": "launch",
+            "module": "artemis",
+            "args": [
+                "--dev",
+                "--verbose-event-logging",
+                "--skip-startup-connection"
+            ],
+            "env": {
+                "EPICS_CA_SERVER_PORT": "5066"
+            },
+            "justMyCode": false
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",

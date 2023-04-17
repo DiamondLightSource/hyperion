@@ -83,7 +83,6 @@ class FGSComposite:
 
 
 fast_grid_scan_composite: FGSComposite | None = None
-selected_aperture = None
 
 
 def get_beamline_parameters():
@@ -110,7 +109,6 @@ def set_aperture_for_bbox_size(
     bbox_size: list[int],
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
-    global selected_aperture
     if bbox_size[0] < 2:
         aperture_size_positions = aperture_device.aperture_positions.MEDIUM
         selected_aperture = "MEDIUM_APERTURE"
@@ -120,7 +118,15 @@ def set_aperture_for_bbox_size(
     artemis.log.LOGGER.info(
         f"Setting aperture to {selected_aperture} ({aperture_size_positions}) based on bounding box size {bbox_size}."
     )
-    yield from bps.abs_set(aperture_device, aperture_size_positions)
+
+    @bpp.set_run_key_decorator("change_aperture")
+    @bpp.run_decorator(
+        md={"subplan_name": "change_aperture", "aperture_size": selected_aperture}
+    )
+    def set_aperture():
+        yield from bps.abs_set(aperture_device, aperture_size_positions)
+
+    yield from set_aperture()
 
 
 def read_hardware_for_ispyb(
