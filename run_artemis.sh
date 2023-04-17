@@ -34,6 +34,8 @@ checkver () {
 STOP=0
 START=1
 DEPLOY=0
+SKIP_STARTUP_CONNECTION=0
+
 for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
@@ -52,6 +54,9 @@ for option in "$@"; do
             ;;
         --deploy)
             DEPLOY=1
+            ;;
+        --skip_startup_connection)
+            SKIP_STARTUP_CONNECTION=1
             ;;
         --help|--info)
             echo "Options"
@@ -163,7 +168,7 @@ if [[ $START == 1 ]]; then
 
     source .venv/bin/activate
 
-    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` >$start_log_path 2>&1 &
+    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` `if [ $SKIP_STARTUP_CONNECTION == 1 ]; then echo "--skip_startup_connection"; fi`>$start_log_path 2>&1 &
 
     echo "Waiting for Artemis to boot"
 
