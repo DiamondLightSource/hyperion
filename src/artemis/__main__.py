@@ -4,6 +4,7 @@ import threading
 from dataclasses import dataclass
 from json import JSONDecodeError
 from queue import Queue
+from traceback import format_exception
 from typing import Callable, Optional, Tuple
 
 from bluesky import RunEngine
@@ -151,7 +152,11 @@ class RunExperiment(Resource):
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
             except ValidationError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
-                artemis.log.LOGGER.error("Invalid json parameters")
+                artemis.log.LOGGER.error(
+                    f" {format_exception(e)}: Invalid json parameters"
+                )
+            except Exception as e:
+                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
 
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
