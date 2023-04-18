@@ -1,49 +1,15 @@
 #!/bin/bash
 
-# Params - 2 semver strings of the form 1.11.2.3
-# Returns - 0 if equal version, 1 if 1st param is a greater version number, 2 if 2nd param has greater version number
-checkver () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if [[ -z ${ver2[i]} ]]
-        then
-            ver2[i]=0
-        fi
-        if ((10#${ver1[i]} > 10#${ver2[i]}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
-}
-
 STOP=0
 START=1
-DEPLOY=0
-SKIP_STARTUP_CONNECTION=0
+SKIP_STARTUP_CONNECTION=false
+VERBOSE_EVENT_LOGGING=false
+LOGGING_LEVEL="INFO"
 
 for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
             BEAMLINE="${option#*=}"
-            shift
-            ;;
-        -v=*|--version=*)
-            VERSION="${option#*=}"
             shift
             ;;
         --stop)
@@ -52,23 +18,30 @@ for option in "$@"; do
         --no-start)
             START=0
             ;;
-        --deploy)
-            DEPLOY=1
+        --skip-startup-connection)
+            SKIP_STARTUP_CONNECTION=true
             ;;
-        --skip_startup_connection)
-            SKIP_STARTUP_CONNECTION=1
+        --dev)
+            IN_DEV=true
             ;;
-        --help|--info)
-            echo "Options"
+        --verbose-event-logging)
+            VERBOSE_EVENT_LOGGING=true
+            ;;
+        --logging-level=*)
+        LOGGING_LEVEL="${option#*=}"
+        ;;
+
+        --help|--info|--h)
+        
+        #Combine help from here and help from artemis
+            source .venv/bin/activate
+            python -m artemis --help
             echo "  -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline"
-            echo "  -v, --version=VERSION   Specifies the artemis version number to deploy. Option should be given in the form 0.0.0.0"
-            echo "                          Will check git tags and use the lastest version as a default if no version is specified."
-            echo "                          Unused outside of deploy operation."
             echo " "
             echo "Operations"
             echo "  --stop                  Used to stop a currently running instance of Artemis. Will override any other operations"
             echo "                          options"
-            echo "  --deploy                Used to update and install a new version of Artemis."
+
             echo "  --no-start              Used to specify that the script should be run without starting the server."
             echo " "
             echo "By default this script will start an Artemis server unless the --no-start flag is specified."
@@ -80,6 +53,13 @@ for option in "$@"; do
             ;;
     esac
 done
+
+#Check valid logging level was chosen
+if [[ "$LOGGING_LEVEL" != "INFO" && "$LOGGING_LEVEL" != "CRITICAL" && "$LOGGING_LEVEL" != "ERROR" 
+    && "$LOGGING_LEVEL" != "WARNING" && "$LOGGING_LEVEL" != "DEBUG" ]]; then
+    echo "Invalid logging level selected, defaulting to INFO"
+    LOGGING_LEVEL="INFO"
+fi
 
 if [ -z "${BEAMLINE}" ]; then
     echo "BEAMLINE parameter not set, assuming running on a dev machine."
@@ -101,35 +81,6 @@ if [[ $STOP == 1 ]]; then
 
     echo "Artemis stopped"
     exit 0
-fi
-
-if [[ $DEPLOY == 1 ]]; then
-    git fetch --all --tags --prune
-    if [[ -z "${VERSION}" ]]; then
-        VERSION="0"
-        for version_tag in $(git ls-remote --tags origin/main); do
-            checkver $VERSION ${version_tag}
-            case $? in
-                0|1) ;; # do nothing if VERSION is still the latest version
-                2) VERSION = ${version_tag} ;;
-            esac
-        done
-    fi
-
-    git checkout "tags/${VERSION}"
-
-    module unload controls_dev
-    module load python/3.10
-
-    if [ -d "./.venv" ]
-    then
-    rm -rf .venv
-    fi
-    mkdir .venv
-
-    python -m venv .venv
-
-    pip install -e .
 fi
 
 if [[ $START == 1 ]]; then
@@ -168,7 +119,19 @@ if [[ $START == 1 ]]; then
 
     source .venv/bin/activate
 
-    python -m artemis `if [ $IN_DEV == true ]; then echo "--dev"; fi` `if [ $SKIP_STARTUP_CONNECTION == 1 ]; then echo "--skip_startup_connection"; fi`>$start_log_path 2>&1 &
+    #Add future arguments here
+    declare -A args=( ["IN_DEV"]="$IN_DEV" ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION" ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING"
+                    ["LOGGING_LEVEL"]="$LOGGING_LEVEL")
+    declare -A arg_strings=( ["IN_DEV"]="--dev" ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection" ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
+                            ["LOGGING_LEVEL"]="--logging-level=$LOGGING_LEVEL")
+
+    commands=()
+    for i in "${!args[@]}"
+    do
+        if [ "${args[$i]}" != false ]; then commands+="${arg_strings[$i]} "; fi;
+    done 
+    
+    python -m artemis `echo $commands;`>$start_log_path 2>&1 &
 
     echo "Waiting for Artemis to boot"
 

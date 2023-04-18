@@ -234,7 +234,7 @@ def cli_arg_parse() -> (
         help="Choose overall logging level, defaults to INFO",
     )
     parser.add_argument(
-        "--skip_startup_connection",
+        "--skip-startup-connection",
         action="store_true",
         help="Skip connecting to EPICS PVs on startup",
     )
