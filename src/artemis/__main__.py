@@ -166,6 +166,7 @@ class RunExperiment(Resource):
                 )
             except Exception as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+                artemis.log.LOGGER.error(format_exception(e))
 
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
