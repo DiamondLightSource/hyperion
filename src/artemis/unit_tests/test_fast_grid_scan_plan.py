@@ -39,7 +39,7 @@ from artemis.external_interaction.system_tests.conftest import (
 from artemis.log import set_up_logging_handlers
 from artemis.parameters.external_parameters import RawParameters
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.utils import Point3D, create_point
 
 
 @pytest.fixture
@@ -236,7 +236,7 @@ def test_results_passed_to_move_motors(
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
     motor_position = test_params.experiment_params.grid_position_to_motor_position(
-        Point3D(1, 2, 3)
+        create_point(1, 2, 3)
     )
     RE(move_xyz(fake_fgs_composite.sample_motors, motor_position))
     bps_mv.assert_called_once_with(

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import numpy as np
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal import i03
@@ -39,7 +40,7 @@ from artemis.parameters.constants import (
     SIM_BEAMLINE,
 )
 from artemis.tracing import TRACER
-from artemis.utils import Point3D
+from artemis.utils import create_point
 
 if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
@@ -143,7 +144,7 @@ def read_hardware_for_ispyb(
 @bpp.run_decorator(md={"subplan_name": "move_xyz"})
 def move_xyz(
     sample_motors,
-    xray_centre_motor_position: Point3D,
+    xray_centre_motor_position: np.ndarray,
     md={
         "plan_name": "move_xyz",
     },
@@ -152,12 +153,12 @@ def move_xyz(
     from gridscan processing results)"""
     artemis.log.LOGGER.info(f"Moving Smargon x, y, z to: {xray_centre_motor_position}")
     yield from bps.mv(
-        sample_motors.x,
-        xray_centre_motor_position.x,
-        sample_motors.y,
-        xray_centre_motor_position.y,
-        sample_motors.z,
-        xray_centre_motor_position.z,
+        sample_motors[0],
+        xray_centre_motor_position[0],
+        sample_motors[1],
+        xray_centre_motor_position[1],
+        sample_motors[2],
+        xray_centre_motor_position[2],
     )
 
 
@@ -239,7 +240,7 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = Point3D(
+    initial_xyz = create_point(
         (yield from bps.rd(fgs_composite.sample_motors.x)),
         (yield from bps.rd(fgs_composite.sample_motors.y)),
         (yield from bps.rd(fgs_composite.sample_motors.z)),
