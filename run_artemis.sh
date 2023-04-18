@@ -3,6 +3,9 @@
 STOP=0
 START=1
 SKIP_STARTUP_CONNECTION=false
+VERBOSE_EVENT_LOGGING=false
+LOGGING_LEVEL="INFO"
+
 for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
@@ -21,7 +24,15 @@ for option in "$@"; do
         --dev)
             IN_DEV=true
             ;;
-        --help|--info)
+        --verbose-event-logging)
+            VERBOSE_EVENT_LOGGING=true
+            ;;
+        --logging-level=*)
+        LOGGING_LEVEL="${option#*=}"
+        ;;
+
+        --help|--info|--h)
+        
         #Combine help from here and help from artemis
             source .venv/bin/activate
             python -m artemis --help
@@ -42,6 +53,13 @@ for option in "$@"; do
             ;;
     esac
 done
+
+#Check valid logging level was chosen
+if [[ "$LOGGING_LEVEL" != "INFO" && "$LOGGING_LEVEL" != "CRITICAL" && "$LOGGING_LEVEL" != "ERROR" 
+    && "$LOGGING_LEVEL" != "WARNING" && "$LOGGING_LEVEL" != "DEBUG" ]]; then
+    echo "Invalid logging level selected, defaulting to INFO"
+    LOGGING_LEVEL="INFO"
+fi
 
 if [ -z "${BEAMLINE}" ]; then
     echo "BEAMLINE parameter not set, assuming running on a dev machine."
@@ -102,13 +120,15 @@ if [[ $START == 1 ]]; then
     source .venv/bin/activate
 
     #Add future arguments here
-    declare -A args=( ["IN_DEV"]="$IN_DEV" ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION")
-    declare -A arg_strings=( ["IN_DEV"]="--dev" ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection")
+    declare -A args=( ["IN_DEV"]="$IN_DEV" ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION" ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING"
+                    ["LOGGING_LEVEL"]="$LOGGING_LEVEL")
+    declare -A arg_strings=( ["IN_DEV"]="--dev" ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection" ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
+                            ["LOGGING_LEVEL"]="--logging-level=$LOGGING_LEVEL")
 
     commands=()
     for i in "${!args[@]}"
     do
-        if [ "${args[$i]}" == true ]; then commands+="${arg_strings[$i]} "; fi;
+        if [ "${args[$i]}" != false ]; then commands+="${arg_strings[$i]} "; fi;
     done 
     
     python -m artemis `echo $commands;`>$start_log_path 2>&1 &
