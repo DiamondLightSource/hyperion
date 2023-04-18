@@ -14,6 +14,9 @@ from flask_restful import Api, Resource
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
+from artemis.external_interaction.callbacks.aperture_change_callback import (
+    ApertureChangeCallback,
+)
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
@@ -50,12 +53,14 @@ class BlueskyRunner:
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
+    aperture_change_callback = ApertureChangeCallback()
 
     def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
         self.RE = RE
         self.skip_startup_connection = skip_startup_connection
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
+        RE.subscribe(self.aperture_change_callback)
 
         if not self.skip_startup_connection:
             for plan in PLAN_REGISTRY:
@@ -114,7 +119,11 @@ class BlueskyRunner:
                 try:
                     with TRACER.start_span("do_run"):
                         self.RE(command.experiment(command.parameters, self.callbacks))
-                    self.current_status = StatusAndMessage(Status.IDLE)
+
+                    self.current_status = StatusAndMessage(
+                        Status.IDLE,
+                        self.aperture_change_callback.last_selected_aperture,
+                    )
                     self.last_run_aborted = False
                 except WarningException as exception:
                     artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
