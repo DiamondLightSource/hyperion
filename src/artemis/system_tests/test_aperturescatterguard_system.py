@@ -144,3 +144,19 @@ def test_aperturescatterguard_moves_in_correct_order(
     RE(monitor_and_moves())
 
     assert (cb.t_sg_y < cb.t_ap_y) == sg_first
+
+
+@pytest.mark.s03()
+def test_aperture_change_callback(ap_sg: ApertureScatterguard):
+    from bluesky.run_engine import RunEngine
+
+    from artemis.experiment_plans.fast_grid_scan_plan import set_aperture_for_bbox_size
+    from artemis.external_interaction.callbacks.aperture_change_callback import (
+        ApertureChangeCallback,
+    )
+
+    cb = ApertureChangeCallback()
+    RE = RunEngine({})
+    RE.subscribe(cb)
+    RE(set_aperture_for_bbox_size(ap_sg, [2, 2, 2]))
+    assert cb.last_selected_aperture == "LARGE_APERTURE"

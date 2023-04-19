@@ -220,12 +220,9 @@ def test_results_adjusted_and_passed_to_move_xyz(
     call_medium = call(
         *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
     )
-    call_small = call(
-        *(fake_fgs_composite.aperture_scatterguard.aperture_positions.SMALL)
-    )
 
     move_aperture.assert_has_calls(
-        [call_large, call_medium, call_small], any_order=True
+        [call_large, call_large, call_medium], any_order=True
     )
 
 
