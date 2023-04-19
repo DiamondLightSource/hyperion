@@ -10,6 +10,7 @@ I03_BEAMLINE_PARAMETER_PATH = (
 )
 PARAMETER_VERSION = 0.2
 SIM_ISPYB_CONFIG = "src/artemis/external_interaction/unit_tests/test_config.cfg"
+PARAMETER_SCHEMA_DIRECTORY = "src/artemis/parameters/schemas/"
 
 DETECTOR_PARAM_DEFAULTS = {
     "current_energy": 100,

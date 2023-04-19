@@ -1,24 +1,24 @@
 from __future__ import annotations
 
+from os.path import join
 import json
 from pathlib import Path
 from typing import Any
-
+from artemis.parameters.constants import PARAMETER_SCHEMA_DIRECTORY
 import jsonschema
 
 
 def validate_raw_parameters_from_dict(dict_params: dict[str, Any]):
     with open(
-        "src/artemis/parameters/schemas/full_external_parameters_schema.json", "r"
+        join(PARAMETER_SCHEMA_DIRECTORY, "full_external_parameters_schema.json"), "r"
     ) as f:
         full_schema = json.load(f)
 
-    path = Path("src/artemis/parameters/schemas/").absolute()
+    path = Path(PARAMETER_SCHEMA_DIRECTORY).absolute()
     resolver = jsonschema.validators.RefResolver(
         base_uri=f"{path.as_uri()}/",
         referrer=True,
     )
-    # TODO improve failed validation error messages
     jsonschema.validate(dict_params, full_schema, resolver=resolver)
     return dict_params
 

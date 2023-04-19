@@ -102,16 +102,23 @@ class InternalParameters(ABC):
 
     artemis_params: ArtemisParameters
 
-    def __init__(self, external_params: dict = raw_parameters.from_file()):
+    def __init__(self, external_params: dict):
         all_params_bucket = flatten_dict(external_params)
         self.experiment_param_preprocessing(all_params_bucket)
 
+        def fetch_subdict_from_bucket(
+            list_of_keys: list[str], bucket: dict[str, Any]
+        ) -> dict[str, Any]:
+            return {
+                key: bucket.get(key)
+                for key in list_of_keys
+                if bucket.get(key) is not None
+            }
+
         experiment_field_keys = list(self.experiment_params_type.__annotations__.keys())
-        experiment_field_args: dict[str, Any] = {
-            key: all_params_bucket.get(key)
-            for key in experiment_field_keys
-            if all_params_bucket.get(key) is not None
-        }
+        experiment_field_args: dict[str, Any] = fetch_subdict_from_bucket(
+            experiment_field_keys, all_params_bucket
+        )
         self.experiment_params: AbstractExperimentParameterBase = (
             self.experiment_params_type(**experiment_field_args)
         )
@@ -123,21 +130,15 @@ class InternalParameters(ABC):
             ispyb_field_keys,
         ) = self.key_definitions()
 
-        artemis_params_args: dict[str, Any] = {
-            key: all_params_bucket.get(key)
-            for key in artemis_param_field_keys
-            if all_params_bucket.get(key) is not None
-        }
-        detector_params_args = {
-            key: all_params_bucket.get(key)
-            for key in detector_field_keys
-            if all_params_bucket.get(key) is not None
-        }
-        ispyb_params_args = {
-            key: all_params_bucket.get(key)
-            for key in ispyb_field_keys
-            if all_params_bucket.get(key) is not None
-        }
+        artemis_params_args: dict[str, Any] = fetch_subdict_from_bucket(
+            artemis_param_field_keys, all_params_bucket
+        )
+        detector_params_args: dict[str, Any] = fetch_subdict_from_bucket(
+            detector_field_keys, all_params_bucket
+        )
+        ispyb_params_args: dict[str, Any] = fetch_subdict_from_bucket(
+            ispyb_field_keys, all_params_bucket
+        )
         artemis_params_args["ispyb_params"] = ispyb_params_args
         artemis_params_args["detector_params"] = detector_params_args
 

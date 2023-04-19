@@ -160,7 +160,7 @@ class RunExperiment(Resource):
                 experiment = experiment_registry_entry.get("run")
                 if experiment_internal_param_type is None:
                     raise PlanNotFound(
-                        f"Corresponing internal param type for '{plan_name}' not found in registry."
+                        f"Corresponding internal param type for '{plan_name}' not found in registry."
                     )
                 if experiment is None:
                     raise PlanNotFound(
