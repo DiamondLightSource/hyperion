@@ -169,8 +169,9 @@ class RawParameters:
             base_uri=f"{path.as_uri()}/",
             referrer=True,
         )
-        # TODO improve failed validation error messages
+
         jsonschema.validate(dict_params, full_schema, resolver=resolver)
+
         experiment_type = EXTERNAL_EXPERIMENT_PARAM_DICT.get(
             dict_params["artemis_params"]["experiment_type"]
         )
