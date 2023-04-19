@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import numpy as np
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal import i03
@@ -23,6 +22,7 @@ from dodal.i03 import (
     Undulator,
     Zebra,
 )
+from numpy import ndarray
 
 import artemis.log
 from artemis.device_setup_plans.setup_zebra_for_fgs import (
@@ -144,7 +144,7 @@ def read_hardware_for_ispyb(
 @bpp.run_decorator(md={"subplan_name": "move_xyz"})
 def move_xyz(
     sample_motors,
-    xray_centre_motor_position: np.ndarray,
+    xray_centre_motor_position: ndarray,
     md={
         "plan_name": "move_xyz",
     },
@@ -153,11 +153,11 @@ def move_xyz(
     from gridscan processing results)"""
     artemis.log.LOGGER.info(f"Moving Smargon x, y, z to: {xray_centre_motor_position}")
     yield from bps.mv(
-        sample_motors[0],
+        sample_motors.x,
         xray_centre_motor_position[0],
-        sample_motors[1],
+        sample_motors.y,
         xray_centre_motor_position[1],
-        sample_motors[2],
+        sample_motors.z,
         xray_centre_motor_position[2],
     )
 

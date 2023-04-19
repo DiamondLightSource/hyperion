@@ -2,6 +2,7 @@ import types
 from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
@@ -39,7 +40,7 @@ from artemis.external_interaction.system_tests.conftest import (
 from artemis.log import set_up_logging_handlers
 from artemis.parameters.external_parameters import RawParameters
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D, create_point
+from artemis.utils import create_point
 
 
 @pytest.fixture
@@ -240,7 +241,7 @@ def test_results_passed_to_move_motors(
     )
     RE(move_xyz(fake_fgs_composite.sample_motors, motor_position))
     bps_mv.assert_called_once_with(
-        ANY, motor_position.x, ANY, motor_position.y, ANY, motor_position.z
+        ANY, motor_position[0], ANY, motor_position[1], ANY, motor_position[2]
     )
 
 
@@ -275,7 +276,11 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, params)
-    move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
+    array_arg = move_xyz.call_args.args[1]
+    np.testing.assert_array_almost_equal(
+        array_arg, create_point(0.05, 0.15000000000000002, 0.25)
+    )
+    move_xyz.assert_called_once()
 
 
 @patch(
@@ -308,7 +313,11 @@ def test_logging_within_plan(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
-    move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
+    array_arg = move_xyz.call_args.args[1]
+    np.testing.assert_array_almost_equal(
+        array_arg, create_point(0.05, 0.15000000000000002, 0.25)
+    )
+    move_xyz.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
