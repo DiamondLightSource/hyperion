@@ -10,7 +10,6 @@ from dodal.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
