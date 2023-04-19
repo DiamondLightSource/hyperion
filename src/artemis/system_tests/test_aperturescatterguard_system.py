@@ -1,8 +1,5 @@
 import pytest
-from dodal.devices.aperturescatterguard import (
-    AperturePositions,
-    ApertureScatterguard,
-)
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
 from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH
