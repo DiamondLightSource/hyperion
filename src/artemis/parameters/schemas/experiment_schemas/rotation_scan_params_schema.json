@@ -8,6 +8,15 @@
         "rotation_angle": {
             "type": "number"
         },
+        "rotation_increment": {
+            "type": "number"
+        },
+        "exposure_time": {
+            "type": "number"
+        },
+        "detector_distance": {
+            "type": "number"
+        },
         "omega_start": {
             "type": "number"
         },
