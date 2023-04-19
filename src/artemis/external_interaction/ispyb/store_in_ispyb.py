@@ -13,7 +13,7 @@ from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.tracing import TRACER
-from artemis.utils import Point2D
+from artemis.utils import create_point
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
@@ -81,7 +81,7 @@ class StoreInIspyb(ABC):
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
-        self.upper_left = Point2D(
+        self.upper_left = create_point(
             self.ispyb_params.upper_left.x,
             self.ispyb_params.upper_left.y,
         )
@@ -311,7 +311,7 @@ class StoreInIspyb3D(StoreInIspyb):
         self.omega_start += 90
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
-        self.upper_left = Point2D(
+        self.upper_left = create_point(
             self.ispyb_params.upper_left.x,
             self.ispyb_params.upper_left.z,
         )

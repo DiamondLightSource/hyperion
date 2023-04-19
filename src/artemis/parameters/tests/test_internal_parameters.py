@@ -3,7 +3,7 @@ from dodal.devices.fast_grid_scan import GridScanParams
 
 from artemis.parameters.external_parameters import RawParameters
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.utils import create_point
 
 
 def test_parameters_load_from_file():
@@ -16,8 +16,8 @@ def test_parameters_load_from_file():
 
     ispyb_params = internal_parameters.artemis_params.ispyb_params
 
-    assert ispyb_params.position == Point3D(10, 20, 30)
-    assert ispyb_params.upper_left == Point3D(10, 20, 30)
+    assert ispyb_params.position == create_point(10, 20, 30)
+    assert ispyb_params.upper_left == create_point(10, 20, 30)
 
     detector_params = internal_parameters.artemis_params.detector_params
 

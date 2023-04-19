@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 import numpy as np
 
 
@@ -15,7 +13,3 @@ def create_point(*args):
         return np.array([args[0], args[1], args[2]], dtype=np.float16)
     else:
         raise TypeError("Invalid number of arguments")
-
-
-Point2D = namedtuple("Point2D", ["x", "y"])
-Point3D = namedtuple("Point3D", ["x", "y", "z"])

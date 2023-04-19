@@ -6,6 +6,7 @@ from time import sleep
 from typing import Callable, Dict
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from pytest import mark, raises
 from zocalo.configuration import Configuration
@@ -15,7 +16,7 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.parameters.constants import SIM_ZOCALO_ENV
-from artemis.utils import Point3D
+from artemis.utils import create_point
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -137,8 +138,10 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
         return_value = future.result()
 
     assert type(return_value) == list
-    returned_com = Point3D(*return_value[0]["centre_of_mass"])
-    assert returned_com == Point3D(*centre_of_mass_coords)
+    returned_com = create_point(*return_value[0]["centre_of_mass"])
+    np.testing.assert_array_almost_equal(
+        returned_com, create_point(*centre_of_mass_coords)
+    )
 
 
 @patch("workflows.recipe.wrap_subscribe")
