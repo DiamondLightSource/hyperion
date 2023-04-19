@@ -13,7 +13,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 )
 from artemis.parameters.constants import SIM_BEAMLINE
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.utils import create_point
 
 
 def test_callback_collection_init():
@@ -89,7 +89,7 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._wait_for_result = MagicMock()
     callbacks.zocalo_handler._run_end = MagicMock()
     callbacks.zocalo_handler._run_start = MagicMock()
-    callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
+    callbacks.zocalo_handler.xray_centre_motor_position = create_point(1, 2, 3)
 
     fast_grid_scan_composite = FGSComposite()
     # this is where it's currently getting stuck:

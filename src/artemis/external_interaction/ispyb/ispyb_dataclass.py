@@ -3,8 +3,9 @@ from enum import Enum
 from typing import List, Optional
 
 from dataclasses_json import config, dataclass_json
+from numpy import ndarray
 
-from artemis.utils import Point3D
+from artemis.utils import create_point
 
 ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
@@ -13,8 +14,8 @@ ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    "upper_left": Point3D(x=0, y=0, z=0),
-    "position": Point3D(x=0, y=0, z=0),
+    "upper_left": create_point(x=0, y=0, z=0),
+    "position": create_point(x=0, y=0, z=0),
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission": 1.0,
@@ -40,19 +41,19 @@ class IspybParams:
     microns_per_pixel_x: float
     microns_per_pixel_y: float
 
-    upper_left: Point3D = field(
+    upper_left: ndarray = field(
         # in px on the image
         metadata=config(
             encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict),
+            decoder=lambda mydict: create_point(**mydict),
         )
     )
 
-    position: Point3D = field(
+    position: ndarray = field(
         # motor position
         metadata=config(
             encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict),
+            decoder=lambda mydict: create_point(**mydict),
         )
     )
 
