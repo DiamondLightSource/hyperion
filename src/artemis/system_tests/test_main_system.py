@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import threading
 from dataclasses import dataclass
@@ -12,6 +14,9 @@ from flask.testing import FlaskClient
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.parameters import external_parameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -19,6 +24,7 @@ STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameters.json"))
+TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 
 
 class MockRunEngine:
@@ -68,6 +74,12 @@ TEST_EXPTS = {
     "test_experiment_no_internal_param_type": {
         "setup": MagicMock(),
         "run": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "fgs_real_params": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "internal_param_type": FGSInternalParameters,
         "experiment_param_type": MagicMock(),
     },
 }
@@ -363,7 +375,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
 
 
 def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
-    response = test_env.client.put(START_ENDPOINT, data='{"bad":1}').json
+    response = test_env.client.put(TEST_BAD_PARAM_ENDPOINT, data='{"bad":1}').json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
     assert (
