@@ -13,10 +13,12 @@ from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params im
 )
 from artemis.utils import Point3D
 
+from artemis.parameters.external_parameters import from_file as default_raw_params
+
 
 @pytest.mark.s03
 def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
-    params = FGSInternalParameters()
+    params = FGSInternalParameters(default_raw_params())
     zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
     dcids = [1, 2]
     zc.ispyb.ispyb_ids = (dcids, 0, 4)

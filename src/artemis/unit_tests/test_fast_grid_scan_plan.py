@@ -46,11 +46,12 @@ from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params im
     FGSInternalParameters,
 )
 from artemis.utils import Point3D
+from artemis.parameters.external_parameters import from_file as default_raw_params
 
 
 @pytest.fixture
 def test_params():
-    return FGSInternalParameters()
+    return FGSInternalParameters(default_raw_params())
 
 
 @pytest.fixture
@@ -100,10 +101,11 @@ def mock_subscriptions(test_params):
     return subscriptions
 
 
-def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
-    params = FGSInternalParameters()
+def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
+    test_params: FGSInternalParameters,
+):
     assert (
-        params.artemis_params.detector_params.detector_size_constants.det_type_string
+        test_params.artemis_params.detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
     )
     raw_params_dict = external_parameters.from_file()
@@ -123,10 +125,9 @@ def test_when_run_gridscan_called_then_generator_returned():
 
 
 def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
-    fake_fgs_composite: FGSComposite,
+    fake_fgs_composite: FGSComposite, test_params: FGSInternalParameters
 ):
     RE = RunEngine({})
-    params = FGSInternalParameters()
 
     undulator_test_value = 1.234
 
@@ -142,7 +143,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
     fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)
 
-    test_ispyb_callback = FGSISPyBHandlerCallback(params)
+    test_ispyb_callback = FGSISPyBHandlerCallback(test_params)
     test_ispyb_callback.ispyb = MagicMock()
     RE.subscribe(test_ispyb_callback)
 
@@ -261,12 +262,11 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_params: FGSComposite,
+    test_params: FGSInternalParameters,
 ):
     RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
-    params = FGSInternalParameters()
 
     RE(
         run_gridscan_and_move(
@@ -276,7 +276,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         )
     )
 
-    run_gridscan.assert_called_once_with(fake_fgs_composite, params)
+    run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
     move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
 
 

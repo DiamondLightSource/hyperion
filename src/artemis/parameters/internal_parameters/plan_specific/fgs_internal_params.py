@@ -9,6 +9,7 @@ from artemis.parameters.internal_parameters import InternalParameters
 
 class FGSInternalParameters(InternalParameters):
     experiment_params_type = GridScanParams
+    experiment_params: GridScanParams
 
     def artemis_param_preprocessing(self, param_dict: dict[str, Any]):
         super().artemis_param_preprocessing(param_dict)

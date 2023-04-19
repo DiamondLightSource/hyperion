@@ -17,9 +17,11 @@ from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params im
 )
 from artemis.utils import Point3D
 
+from artemis.parameters.external_parameters import from_file as default_raw_params
+
 
 def test_callback_collection_init():
-    test_parameters = FGSInternalParameters()
+    test_parameters = FGSInternalParameters(default_raw_params())
     callbacks = FGSCallbackCollection.from_params(test_parameters)
     assert (
         callbacks.ispyb_handler.params.experiment_params
@@ -70,6 +72,9 @@ def eiger():
     yield eiger
 
 
+from artemis.parameters.external_parameters import from_file as default_raw_params
+
+
 @pytest.mark.skip(
     reason="Needs better S03 or some other workaround for eiger/odin timeout."
 )
@@ -83,7 +88,7 @@ def test_communicator_in_composite_run(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
 
-    params = FGSInternalParameters()
+    params = FGSInternalParameters(default_raw_params())
     params.artemis_params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 

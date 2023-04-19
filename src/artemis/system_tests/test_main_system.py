@@ -153,7 +153,7 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
     assert response.get("status") == Status.FAILED.value
     assert (
         response.get("message")
-        == "PlanNotFound(\"Corresponing internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
+        == "PlanNotFound(\"Corresponding internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
     )
 
 

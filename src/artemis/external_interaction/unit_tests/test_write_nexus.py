@@ -21,6 +21,9 @@ that confirms that we're passing the right sorts of data to nexgen to get a sens
 Note that the testing process does now write temporary files to disk."""
 
 
+from artemis.parameters.external_parameters import from_file as default_raw_params
+
+
 def assert_end_data_correct(nexus_writer: NexusWriter):
     for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
@@ -29,7 +32,7 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 @pytest.fixture(params=[1044])
 def minimal_params(request):
-    params = FGSInternalParameters()
+    params = FGSInternalParameters(default_raw_params())
     params.artemis_params.ispyb_params.wavelength = 1.0
     params.artemis_params.ispyb_params.flux = 9.0
     params.artemis_params.ispyb_params.transmission = 0.5
