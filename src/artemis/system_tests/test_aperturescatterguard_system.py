@@ -25,6 +25,7 @@ def test_aperture_change_callback(ap_sg: ApertureScatterguard):
         ApertureChangeCallback,
     )
 
+    ap_sg.wait_for_connection()
     cb = ApertureChangeCallback()
     RE = RunEngine({})
     RE.subscribe(cb)
