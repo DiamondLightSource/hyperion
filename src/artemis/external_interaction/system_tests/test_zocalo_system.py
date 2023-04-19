@@ -8,13 +8,17 @@ from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_SMALL,
 )
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 from artemis.utils import Point3D
+
+from artemis.parameters.external_parameters import from_file as default_raw_params
 
 
 @pytest.mark.s03
 def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
-    params = InternalParameters()
+    params = FGSInternalParameters(default_raw_params())
     zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
     dcids = [1, 2]
     zc.ispyb.ispyb_ids = (dcids, 0, 4)
@@ -27,7 +31,7 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
 
 
 @pytest.fixture
-def run_zocalo_with_dev_ispyb(dummy_params: InternalParameters, dummy_ispyb_3d):
+def run_zocalo_with_dev_ispyb(dummy_params: FGSInternalParameters, dummy_ispyb_3d):
     def inner(sample_name="", fallback=Point3D(0, 0, 0)):
         dummy_params.artemis_params.detector_params.prefix = sample_name
         zc: FGSZocaloCallback = FGSCallbackCollection.from_params(

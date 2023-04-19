@@ -12,11 +12,16 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_parameters_for_first_file,
     create_parameters_for_second_file,
 )
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
 Note that the testing process does now write temporary files to disk."""
+
+
+from artemis.parameters.external_parameters import from_file as default_raw_params
 
 
 def assert_end_data_correct(nexus_writer: NexusWriter):
@@ -27,7 +32,7 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 @pytest.fixture(params=[1044])
 def minimal_params(request):
-    params = InternalParameters()
+    params = FGSInternalParameters(default_raw_params())
     params.artemis_params.ispyb_params.wavelength = 1.0
     params.artemis_params.ispyb_params.flux = 9.0
     params.artemis_params.ispyb_params.transmission = 0.5
@@ -41,7 +46,7 @@ def minimal_params(request):
 
 
 @pytest.fixture
-def dummy_nexus_writers(minimal_params: InternalParameters):
+def dummy_nexus_writers(minimal_params: FGSInternalParameters):
     first_file_params = create_parameters_for_first_file(minimal_params)
     nexus_writer_1 = NexusWriter(first_file_params)
 
@@ -56,7 +61,7 @@ def dummy_nexus_writers(minimal_params: InternalParameters):
 
 
 @pytest.fixture
-def dummy_nexus_writers_with_more_images(minimal_params: InternalParameters):
+def dummy_nexus_writers_with_more_images(minimal_params: FGSInternalParameters):
     x, y, z = 45, 35, 25
     minimal_params.experiment_params.x_steps = x
     minimal_params.experiment_params.y_steps = y
@@ -90,7 +95,7 @@ def single_dummy_file(minimal_params):
     indirect=["minimal_params"],
 )
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
-    minimal_params: InternalParameters, expected_num_of_files, single_dummy_file
+    minimal_params: FGSInternalParameters, expected_num_of_files, single_dummy_file
 ):
     first_writer = single_dummy_file
     assert len(first_writer.get_image_datafiles()) == expected_num_of_files
@@ -103,7 +108,7 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
-    minimal_params: InternalParameters,
+    minimal_params: FGSInternalParameters,
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
@@ -221,7 +226,7 @@ def assert_contains_external_link(data_path, entry_name, file_name):
 
 
 def test_nexus_writer_files_are_formatted_as_expected(
-    minimal_params: InternalParameters, single_dummy_file: NexusWriter
+    minimal_params: FGSInternalParameters, single_dummy_file: NexusWriter
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
