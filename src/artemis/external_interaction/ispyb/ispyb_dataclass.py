@@ -14,8 +14,8 @@ ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    "upper_left": create_point(x=0, y=0, z=0),
-    "position": create_point(x=0, y=0, z=0),
+    "upper_left": create_point(0, 0, 0),
+    "position": create_point(0, 0, 0),
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission": 1.0,

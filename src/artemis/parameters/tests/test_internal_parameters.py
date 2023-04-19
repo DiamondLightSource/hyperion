@@ -3,6 +3,7 @@ from dodal.devices.fast_grid_scan import GridScanParams
 
 from artemis.parameters.external_parameters import RawParameters
 from artemis.parameters.internal_parameters import InternalParameters
+
 from artemis.utils import create_point
 
 
