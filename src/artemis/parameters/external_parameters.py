@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from os.path import join
 import json
+from os.path import join
 from pathlib import Path
 from typing import Any
-from artemis.parameters.constants import PARAMETER_SCHEMA_DIRECTORY
+
 import jsonschema
+
+from artemis.parameters.constants import PARAMETER_SCHEMA_DIRECTORY
 
 
 def validate_raw_parameters_from_dict(dict_params: dict[str, Any]):

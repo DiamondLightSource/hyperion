@@ -23,25 +23,29 @@ def RE():
     return RunEngine({})
 
 
-@pytest.mark.s03
-def test_zebra_set_up_for_fgs(RE):
+@pytest.fixture
+def connected_zebra():
     zebra = Zebra(name="zebra", prefix="BL03S-EA-ZEBRA-01:")
-    RE(setup_zebra_for_fgs(zebra))
-    assert zebra.output.out_pvs[TTL_DETECTOR].get() == IN3_TTL
-    assert zebra.output.out_pvs[TTL_SHUTTER].get() == IN4_TTL
-
-
-@pytest.mark.s03
-def test_zebra_set_up_for_rotation(RE):
-    zebra = Zebra(name="zebra", prefix="BL03S-EA-ZEBRA-01:")
-    RE(setup_zebra_for_rotation(zebra))
-    assert zebra.pc.gate_trigger.get(as_string=True) == I03_axes.OMEGA.value
-    assert zebra.pc.gate_width.get() == pytest.approx(360, 0.01)
+    zebra.wait_for_connection()
+    return zebra
 
 
 @pytest.mark.s03
-def test_zebra_cleanup(RE):
-    zebra = Zebra(name="zebra", prefix="BL03S-EA-ZEBRA-01:")
-    RE(set_zebra_shutter_to_manual(zebra))
-    assert zebra.output.out_pvs[TTL_DETECTOR].get() == PC_PULSE
-    assert zebra.output.out_pvs[TTL_SHUTTER].get() == OR1
+def test_zebra_set_up_for_fgs(RE, connected_zebra: Zebra):
+    RE(setup_zebra_for_fgs(connected_zebra))
+    assert connected_zebra.output.out_pvs[TTL_DETECTOR].get() == IN3_TTL
+    assert connected_zebra.output.out_pvs[TTL_SHUTTER].get() == IN4_TTL
+
+
+@pytest.mark.s03
+def test_zebra_set_up_for_rotation(RE, connected_zebra: Zebra):
+    RE(setup_zebra_for_rotation(connected_zebra))
+    assert connected_zebra.pc.gate_trigger.get(as_string=True) == I03_axes.OMEGA.value
+    assert connected_zebra.pc.gate_width.get() == pytest.approx(360, 0.01)
+
+
+@pytest.mark.s03
+def test_zebra_cleanup(RE, connected_zebra: Zebra):
+    RE(set_zebra_shutter_to_manual(connected_zebra))
+    assert connected_zebra.output.out_pvs[TTL_DETECTOR].get() == PC_PULSE
+    assert connected_zebra.output.out_pvs[TTL_SHUTTER].get() == OR1

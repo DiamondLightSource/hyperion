@@ -360,3 +360,14 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
     ):
         BlueskyRunner(MagicMock(), skip_startup_connection=False)
         assert mock_setup.call_count == 3
+
+
+def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
+    response = test_env.client.put(START_ENDPOINT, data='{"bad":1}').json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "<ValidationError: \"{'bad': 1} does not have enough properties\">"
+    )
+    assert "Invalid json parameters" in caplog.text
