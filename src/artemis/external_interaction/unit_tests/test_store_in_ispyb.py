@@ -10,10 +10,10 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb3D,
 )
 from artemis.parameters.constants import SIM_ISPYB_CONFIG
+from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.utils import create_point
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
@@ -155,8 +155,8 @@ def test_store_3d_grid_scan(
     assert dummy_ispyb_3d.y_step_size == dummy_params.experiment_params.z_step_size
     assert dummy_ispyb_3d.y_steps == dummy_params.experiment_params.z_steps
 
-    assert dummy_ispyb_3d.upper_left.x == x
-    assert dummy_ispyb_3d.upper_left.y == z
+    assert dummy_ispyb_3d.upper_left[0] == x
+    assert dummy_ispyb_3d.upper_left[1] == z
 
 
 def setup_mock_return_values(ispyb_conn):

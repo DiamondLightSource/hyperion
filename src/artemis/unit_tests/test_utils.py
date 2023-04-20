@@ -13,10 +13,10 @@ def test_create_point_on_invalid_number_of_args():
         create_point(7, 45, 23, 2, 1, 4)
 
 
-def test_zero_array_created_on_none_type_args():
+def test_create_point_creates_zero_array_given_none_type_args():
     np.testing.assert_equal(np.array([0, 0, 5]), create_point(None, None, 5))
 
 
-def test_create_point_turns_correct_array_size():
+def test_create_point_returns_correct_array_size():
     assert create_point(5, 2).shape == (2,)
     assert create_point(5, 2, 4).shape == (3,)

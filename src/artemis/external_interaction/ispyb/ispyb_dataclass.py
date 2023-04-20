@@ -44,16 +44,16 @@ class IspybParams:
     upper_left: ndarray = field(
         # in px on the image
         metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: create_point(**mydict),
+            encoder=lambda my_array: str(my_array),
+            decoder=lambda my_list: ndarray(my_list),
         )
     )
 
     position: ndarray = field(
         # motor position
         metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: create_point(**mydict),
+            encoder=lambda my_array: str(my_array),
+            decoder=lambda my_list: ndarray(my_list),
         )
     )
 
@@ -77,6 +77,12 @@ class IspybParams:
     synchrotron_mode: Optional[str] = None
     slit_gap_size_x: Optional[float] = None
     slit_gap_size_y: Optional[float] = None
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, IspybParams):
+            return NotImplemented
+        else:
+            return self.to_json() == other.to_json()
 
 
 class Orientation(Enum):

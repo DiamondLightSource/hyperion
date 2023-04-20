@@ -1,6 +1,7 @@
 import operator
 from unittest.mock import MagicMock, call
 
+import numpy as np
 import pytest
 
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
@@ -9,13 +10,11 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
-from artemis.utils import create_point
+from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-
-from artemis.parameters.external_parameters import from_file as default_raw_params
-
+from artemis.utils import create_point
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -112,7 +111,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
             )
         )
     )
-    assert found_centre == expected_centre_motor_coords
+    np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
 
 
 def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
@@ -131,7 +130,7 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
         100
     )
-    assert found_centre == fallback_position
+    np.testing.assert_array_equal(found_centre, fallback_position)
 
 
 def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception(
@@ -179,13 +178,13 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
     expected_centre_motor_coords = (
         dummy_params.experiment_params.grid_position_to_motor_position(
             create_point(
-                expected_centre_grid_coords.x - 0.5,
-                expected_centre_grid_coords.y - 0.5,
-                expected_centre_grid_coords.z - 0.5,
+                expected_centre_grid_coords[0] - 0.5,
+                expected_centre_grid_coords[1] - 0.5,
+                expected_centre_grid_coords[2] - 0.5,
             )
         )
     )
-    assert found_centre == expected_centre_motor_coords
+    np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
 
     expected_bbox_size = list(map(operator.sub, [8, 8, 7], [2, 2, 2]))
     assert found_bbox == expected_bbox_size
