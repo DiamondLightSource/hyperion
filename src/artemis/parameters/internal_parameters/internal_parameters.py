@@ -16,7 +16,7 @@ from artemis.parameters.constants import (
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,
 )
-from artemis.utils import Point3D
+from artemis.utils import create_point
 
 
 class ArtemisParameters:
@@ -181,8 +181,8 @@ class InternalParameters(ABC):
         """
 
         param_dict["num_images"] = self.experiment_params.get_num_images()
-        param_dict["upper_left"] = Point3D(*param_dict["upper_left"])
-        param_dict["position"] = Point3D(*param_dict["position"])
+        param_dict["upper_left"] = create_point(*param_dict["upper_left"])
+        param_dict["position"] = create_point(*param_dict["position"])
 
     def __repr__(self):
         return (

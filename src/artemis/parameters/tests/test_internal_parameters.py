@@ -14,7 +14,6 @@ from artemis.parameters.internal_parameters.internal_parameters import (
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import create_point
 
 TEST_PARAM_DICT = {
     "layer_1": {
