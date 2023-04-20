@@ -345,7 +345,6 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
         mock_setup.assert_called_once()
 
 
-@pytest.mark.skip(reason="fixed in #595")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")

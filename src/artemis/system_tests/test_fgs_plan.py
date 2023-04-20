@@ -6,7 +6,6 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.devices.eiger import DetectorParams, EigerDetector
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.exceptions import WarningException
