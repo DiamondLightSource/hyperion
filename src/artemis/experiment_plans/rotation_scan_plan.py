@@ -22,9 +22,9 @@ if TYPE_CHECKING:
     )
 
 
-eiger: EigerDetector = None
-smargon: Smargon = None
-zebra: Zebra = None
+eiger: EigerDetector | None = None
+smargon: Smargon | None = None
+zebra: Zebra | None = None
 
 
 def create_devices():
@@ -41,7 +41,7 @@ SHUTTER_OPENING_TIME = 0.5
 
 
 def move_to_start_w_buffer(motors: Smargon, start_angle):
-    yield from bps.abs_set(motors.omega.velocity, 100, wait=True)
+    yield from bps.abs_set(motors.omega.velocity, 120, wait=True)
     yield from bps.abs_set(
         motors.omega, start_angle - (OFFSET * DIRECTION), group="move_to_start"
     )
@@ -49,7 +49,7 @@ def move_to_start_w_buffer(motors: Smargon, start_angle):
 
 def move_to_end_w_buffer(motors: Smargon, scan_width):
     yield from bps.rel_set(
-        motors.omega, (scan_width + 0.1 + OFFSET) * DIRECTION, group="move_to_end"
+        motors.omega, ((scan_width + 0.1 + OFFSET) * DIRECTION), group="move_to_end"
     )
 
 
@@ -60,6 +60,10 @@ def set_speed(motors: Smargon, image_width, exposure_time):
 
 
 def rotation_scan_plan(params: RotationInternalParameters):
+    assert eiger is not None
+    assert smargon is not None
+    assert zebra is not None
+
     detector_params: DetectorParams = params.artemis_params.detector_params
     expt_params: RotationScanParams = params.experiment_params
 
@@ -109,6 +113,10 @@ def get_plan(
     # TODO subscriptions
 
     def rotation_scan_plan_with_stage_and_cleanup(params: RotationInternalParameters):
+        assert eiger is not None
+        assert smargon is not None
+        assert zebra is not None
+
         @stage_decorator([eiger])
         def with_cleanup(params):
             yield from finalize_wrapper(rotation_scan_plan(params), cleanup_plan())
