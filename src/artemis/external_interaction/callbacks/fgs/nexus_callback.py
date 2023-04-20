@@ -10,7 +10,9 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.log import LOGGER
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 
 class FGSNexusFileHandlerCallback(CallbackBase):
@@ -30,7 +32,7 @@ class FGSNexusFileHandlerCallback(CallbackBase):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self, parameters: InternalParameters):
+    def __init__(self, parameters: FGSInternalParameters):
         self.nxs_writer_1 = NexusWriter(create_parameters_for_first_file(parameters))
         self.nxs_writer_2 = NexusWriter(create_parameters_for_second_file(parameters))
         self.run_gridscan_uid: Optional[str] = None

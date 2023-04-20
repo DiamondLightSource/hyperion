@@ -1,5 +1,5 @@
 {
-    "params_version": 0.2,
+    "params_version": 0.3,
     "artemis_params": {
         "beamline": "BL03S",
         "detector": "EIGER2_X_16M",
@@ -66,6 +66,9 @@
         "z": 3.0,
         "exposure_time": 0.1,
         "detector_distance": 100.0,
-        "rotation_increment": 0.1
+        "rotation_increment": 0.1,
+        "positive_rotation_direction": false,
+        "offset_deg": 1.0,
+        "shutter_opening_time_s": 0.6
     }
 }
