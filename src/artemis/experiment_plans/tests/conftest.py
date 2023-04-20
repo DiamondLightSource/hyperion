@@ -25,10 +25,10 @@ def test_rotation_params():
 
 
 @pytest.fixture
-def fake_fgs_composite(test_params: FGSInternalParameters):
+def fake_fgs_composite(test_fgs_params: FGSInternalParameters):
     fake_composite = FGSComposite(fake=True)
     fake_composite.eiger.set_detector_parameters(
-        test_params.artemis_params.detector_params
+        test_fgs_params.artemis_params.detector_params
     )
     fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False

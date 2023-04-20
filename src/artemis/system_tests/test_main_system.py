@@ -135,6 +135,8 @@ def test_start_gives_success(test_env: ClientAndRunEngine):
 
 
 def test_getting_status_return_idle(test_env: ClientAndRunEngine):
+    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(STOP_ENDPOINT)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.IDLE)
 

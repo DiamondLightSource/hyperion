@@ -8,7 +8,6 @@ from ophyd.status import Status
 from artemis.experiment_plans.rotation_scan_plan import (
     DIRECTION,
     OFFSET,
-    SHUTTER_OPENING_TIME,
     move_to_end_w_buffer,
     move_to_start_w_buffer,
 )
