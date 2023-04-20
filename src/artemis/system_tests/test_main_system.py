@@ -363,6 +363,12 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
                 "param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
+            "rotation_scan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
+            },
             "other_plan": {
                 "setup": mock_setup,
                 "run": MagicMock(),
@@ -378,7 +384,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
         },
     ):
         BlueskyRunner(MagicMock(), skip_startup_connection=False)
-        assert mock_setup.call_count == 3
+        assert mock_setup.call_count == 4
 
 
 def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
