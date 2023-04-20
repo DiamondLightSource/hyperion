@@ -1,3 +1,4 @@
+import numpy as np
 from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.fast_grid_scan import GridScanParams
 
@@ -18,8 +19,8 @@ def test_FGS_parameters_load_from_file():
 
     ispyb_params = internal_parameters.artemis_params.ispyb_params
 
-    assert ispyb_params.position == create_point(10, 20, 30)
-    assert ispyb_params.upper_left == create_point(10, 20, 30)
+    np.testing.assert_array_equal(ispyb_params.position, create_point(10, 20, 30))
+    np.testing.assert_array_equal(ispyb_params.upper_left, create_point(10, 20, 30))
 
     detector_params = internal_parameters.artemis_params.detector_params
 
