@@ -16,11 +16,11 @@ from jsonschema.exceptions import ValidationError
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
+from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
+)
 from artemis.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
-)
-from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
@@ -51,7 +51,7 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    callbacks: FGSCallbackCollection
+    callbacks: AbstractPlanCallbackCollection
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
@@ -76,7 +76,9 @@ class BlueskyRunner:
         if self.skip_startup_connection:
             PLAN_REGISTRY[plan_name]["setup"]()
 
-        self.callbacks = FGSCallbackCollection.from_params(parameters)
+        self.callbacks = PLAN_REGISTRY[plan_name][
+            "callback_collection_type"
+        ].from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -168,9 +170,15 @@ class RunExperiment(Resource):
                     raise PlanNotFound(
                         f"Experiment plan '{plan_name}' has no 'run' method."
                     )
+
                 parameters = experiment_internal_param_type.from_external_json(
                     request.data
                 )
+                if plan_name != parameters.artemis_params.experiment_type:
+                    raise PlanNotFound(
+                        f"Wrong experiment parameters ({parameters.artemis_params.experiment_type}) "
+                        f"for plan endpoint {plan_name}."
+                    )
                 status_and_message = self.runner.start(
                     experiment, parameters, plan_name
                 )

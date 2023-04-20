@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NamedTuple
+from dataclasses import dataclass, fields
+from typing import TYPE_CHECKING
 
+from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
+)
 from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
 )
@@ -14,7 +18,8 @@ if TYPE_CHECKING:
     from artemis.parameters.internal_parameters import InternalParameters
 
 
-class FGSCallbackCollection(NamedTuple):
+@dataclass(frozen=True, order=True)
+class FGSCallbackCollection(AbstractPlanCallbackCollection):
     """Groups the callbacks for external interactions in the fast grid scan, and
     connects the Zocalo and ISPyB handlers. Cast to a list to pass it to
     Bluesky.preprocessors.subs_decorator()."""
@@ -22,6 +27,10 @@ class FGSCallbackCollection(NamedTuple):
     nexus_handler: FGSNexusFileHandlerCallback
     ispyb_handler: FGSISPyBHandlerCallback
     zocalo_handler: FGSZocaloCallback
+
+    def __iter__(self):
+        for field in fields(self):
+            yield getattr(self, field.name)
 
     @classmethod
     def from_params(cls, parameters: InternalParameters):

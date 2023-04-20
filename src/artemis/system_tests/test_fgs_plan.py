@@ -6,8 +6,7 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.devices.detector import DetectorParams
-from dodal.devices.eiger import DetectorParams
+from dodal.devices.eiger import DetectorParams, EigerDetector
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.exceptions import WarningException
@@ -28,11 +27,15 @@ from artemis.external_interaction.system_tests.test_ispyb_dev_connection import 
     ISPYB_CONFIG,
 )
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
-from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH, SIM_BEAMLINE
+from artemis.parameters.constants import (
+    I03_BEAMLINE_PARAMETER_PATH,
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+)
+from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.parameters.external_parameters import from_file as default_raw_params
 
 
 @pytest.fixture
@@ -50,20 +53,9 @@ def RE():
 @pytest.fixture
 def fgs_composite():
     fast_grid_scan_composite = FGSComposite(
-        detector_params=DetectorParams(
-            current_energy=100,
-            exposure_time=0.1,
-            directory="/tmp",
-            prefix="file_name",
-            detector_distance=100.0,
-            omega_start=0.0,
-            omega_increment=0.1,
-            num_images_per_trigger=1,
-            num_triggers=50,
-            use_roi_mode=False,
-            run_number=0,
-            det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
-        )
+        insertion_prefix=SIM_INSERTION_PREFIX,
+        name="fgs",
+        prefix=SIM_BEAMLINE,
     )
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
