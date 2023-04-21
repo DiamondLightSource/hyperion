@@ -302,7 +302,6 @@ def get_plan(
         Generator: The plan for the gridscan
     """
     assert fast_grid_scan_composite is not None
-    assert isinstance(parameters.experiment_params, FGSInternalParameters)
     fast_grid_scan_composite.eiger.set_detector_parameters(
         parameters.artemis_params.detector_params
     )
