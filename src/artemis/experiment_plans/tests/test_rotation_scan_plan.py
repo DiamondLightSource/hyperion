@@ -16,7 +16,9 @@ from artemis.experiment_plans.rotation_scan_plan import (
 )
 
 if TYPE_CHECKING:
+    from dodal.devices.eiger import EigerDetector
     from dodal.devices.smargon import Smargon
+    from dodal.devices.zebra import Zebra
 
 
 def test_move_to_start(smargon: Smargon, RE):
@@ -52,7 +54,14 @@ def test_move_to_end(smargon: Smargon, RE):
 
 
 @patch("artemis.experiment_plans.rotation_scan_plan.rotation_scan_plan")
-def test_get_plan(plan: MagicMock, RE, test_rotation_params, smargon, zebra, eiger):
+def test_get_plan(
+    plan: MagicMock,
+    RE,
+    test_rotation_params,
+    smargon: Smargon,
+    zebra: Zebra,
+    eiger: EigerDetector,
+):
     plan.iter.return_value = iter([Msg("null"), Msg("null"), Msg("null")])
     eiger.stage = MagicMock()
     eiger.stage.iter.return_value = iter([Msg("null"), Msg("null"), Msg("null")])
@@ -66,11 +75,34 @@ def test_get_plan(plan: MagicMock, RE, test_rotation_params, smargon, zebra, eig
 
 
 @patch("bluesky.plan_stubs.wait")
-def test_rotation_plan(RE, test_rotation_params, smargon, zebra, eiger):
+def test_rotation_plan(
+    bps_wait: MagicMock,
+    RE,
+    test_rotation_params,
+    smargon: Smargon,
+    zebra: Zebra,
+    eiger: EigerDetector,
+):
+    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+
+    mock_arm_disarm = MagicMock(
+        side_effect=zebra.pc.armed.set, return_value=Status(done=True, success=True)
+    )
+    zebra.pc.arm_demand.set = mock_arm_disarm
+
+    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.set = mock_omega_sets
+
     with patch("artemis.experiment_plans.rotation_scan_plan.smargon", smargon):
         with patch("artemis.experiment_plans.rotation_scan_plan.eiger", eiger):
             with patch("artemis.experiment_plans.rotation_scan_plan.zebra", zebra):
-                RE(rotation_scan_plan(test_rotation_params))
+                with patch(
+                    "bluesky.preprocessors.__read_and_stash_a_motor",
+                    __fake_read,
+                ):
+                    RE(rotation_scan_plan(test_rotation_params))
+
+    assert mock_omega_sets.call_count == 4
 
 
 # TODO test finally in get plan

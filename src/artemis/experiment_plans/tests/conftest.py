@@ -8,6 +8,9 @@ from artemis.parameters.external_parameters import from_file as raw_params_from_
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
+from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 
 @pytest.fixture
@@ -17,7 +20,7 @@ def test_fgs_params():
 
 @pytest.fixture
 def test_rotation_params():
-    return FGSInternalParameters(
+    return RotationInternalParameters(
         raw_params_from_file(
             "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
         )
