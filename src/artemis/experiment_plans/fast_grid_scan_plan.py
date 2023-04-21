@@ -10,7 +10,7 @@ from bluesky.utils import ProgressBarManager
 from dodal import i03
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import DetectorParams
-from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
+from dodal.devices.fast_grid_scan import GridScanParams, set_fast_grid_scan_params
 from dodal.i03 import (
     ApertureScatterguard,
     Backlight,
@@ -29,22 +29,22 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
     setup_zebra_for_fgs,
 )
 from artemis.exceptions import WarningException
+
+# if TYPE_CHECKING:
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.parameters import external_parameters
 from artemis.parameters.beamline_parameters import (
     get_beamline_parameters,
     get_beamline_prefixes,
 )
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 from artemis.tracing import TRACER
 from artemis.utils.utils import Point3D
-
-if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-        FGSCallbackCollection,
-    )
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-        FGSInternalParameters,
-    )
 
 
 class FGSComposite:
@@ -84,9 +84,9 @@ class FGSComposite:
 fast_grid_scan_composite: FGSComposite | None = None
 
 
-def create_devices():
+def create_devices() -> FGSComposite:
     """Creates the devices required for the plan and connect to them"""
-    global fast_grid_scan_composite
+    # global fast_grid_scan_composite
     prefixes = get_beamline_prefixes()
     artemis.log.LOGGER.info(
         f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
@@ -97,6 +97,7 @@ def create_devices():
     artemis.log.LOGGER.info("Connecting to EPICS devices...")
     fast_grid_scan_composite = FGSComposite(aperture_positions=aperture_positions)
     artemis.log.LOGGER.info("Connected.")
+    return fast_grid_scan_composite
 
 
 def set_aperture_for_bbox_size(
@@ -278,34 +279,49 @@ def run_gridscan_and_move(
         )
 
 
-def get_plan(
-    parameters: FGSInternalParameters,
-    subscriptions: FGSCallbackCollection,
-) -> Callable:
-    """Create the plan to run the grid scan based on provided parameters.
+# def get_plan(
+#     parameters: FGSInternalParameters,
+#     subscriptions: FGSCallbackCollection,
+# ) -> Callable:
+#     """Create the plan to run the grid scan based on provided parameters.
 
-    The ispyb handler should be added to the whole gridscan as we want to capture errors
-    at any point in it.
+#     The ispyb handler should be added to the whole gridscan as we want to capture errors
+#     at any point in it.
 
-    Args:
-        parameters (FGSInternalParameters): The parameters to run the scan.
+#     Args:
+#         parameters (FGSInternalParameters): The parameters to run the scan.
 
-    Returns:
-        Generator: The plan for the gridscan
-    """
-    assert fast_grid_scan_composite is not None
-    fast_grid_scan_composite.eiger.set_detector_parameters(
-        parameters.artemis_params.detector_params
-    )
+#     Returns:
+#         Generator: The plan for the gridscan
+#     """
+#     assert fast_grid_scan_composite is not None
+#     fast_grid_scan_composite.eiger.set_detector_parameters(
+#         parameters.artemis_params.detector_params
+#     )
 
-    @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
+#     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
+#     @bpp.subs_decorator(subscriptions.ispyb_handler)
+#     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
+#         yield from run_gridscan_and_move(fgs_composite, params, comms)
+
+#     return run_gridscan_and_move_and_tidy(
+#         fast_grid_scan_composite, parameters, subscriptions
+#     )
+
+
+def fast_grid_scan(
+    api_parameters: GridScanParams,
+    composite: FGSComposite,
+):
+    parameters = FGSInternalParameters(api_parameters)
+    subscriptions = FGSCallbackCollection.from_params(parameters)
+
+    @bpp.finalize_decorator(lambda: tidy_up_plans(composite))
     @bpp.subs_decorator(subscriptions.ispyb_handler)
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
-    return run_gridscan_and_move_and_tidy(
-        fast_grid_scan_composite, parameters, subscriptions
-    )
+    yield from run_gridscan_and_move_and_tidy(composite, parameters, subscriptions)
 
 
 if __name__ == "__main__":
@@ -323,9 +339,9 @@ if __name__ == "__main__":
         FGSInternalParameters,
     )
 
-    parameters = FGSInternalParameters(external_parameters.from_file())
-    subscriptions = FGSCallbackCollection.from_params(parameters)
+    parameters = external_parameters.from_file()
+    # parameters = FGSInternalParameters(external_parameters.from_file())
+    # subscriptions = FGSCallbackCollection.from_params(parameters)
 
-    create_devices()
-
-    RE(get_plan(parameters, subscriptions))
+    composite = create_devices()
+    RE(fast_grid_scan(parameters, composite))

@@ -1,12 +1,15 @@
 import argparse
 import atexit
 import threading
+import uuid
 from dataclasses import dataclass
 from json import JSONDecodeError
 from queue import Queue
 from traceback import format_exception
 from typing import Callable, Optional, Tuple
 
+from blueapi.core import BlueskyContext
+from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_thread
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
 from flask import Flask, request
@@ -50,132 +53,99 @@ class StatusAndMessage:
         self.message = message
 
 
-class BlueskyRunner:
-    callbacks: AbstractPlanCallbackCollection
-    command_queue: "Queue[Command]" = Queue()
-    current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
-    last_run_aborted: bool = False
-    aperture_change_callback = ApertureChangeCallback()
+# class BlueskyRunner:
+#     callbacks: FGSCallbackCollection
+#     command_queue: "Queue[Command]" = Queue()
+#     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
+#     last_run_aborted: bool = False
+#     aperture_change_callback = ApertureChangeCallback()
 
-    def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
-        self.RE = RE
-        self.skip_startup_connection = skip_startup_connection
-        if VERBOSE_EVENT_LOGGING:
-            RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        RE.subscribe(self.aperture_change_callback)
+#     def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
+#         self.RE = RE
+#         self.skip_startup_connection = skip_startup_connection
+#         if VERBOSE_EVENT_LOGGING:
+#             RE.subscribe(VerbosePlanExecutionLoggingCallback())
+#         RE.subscribe(self.aperture_change_callback)
 
-        if not self.skip_startup_connection:
-            for plan_name in PLAN_REGISTRY:
-                PLAN_REGISTRY[plan_name]["setup"]()
+#         if not self.skip_startup_connection:
+#             for plan_name in PLAN_REGISTRY:
+#                 PLAN_REGISTRY[plan_name]["setup"]()
 
-    def start(
-        self, experiment: Callable, parameters: InternalParameters, plan_name: str
-    ) -> StatusAndMessage:
-        artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
+#     def start(
+#         self, experiment: Callable, parameters: InternalParameters, plan_name: str
+#     ) -> StatusAndMessage:
+#         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
 
-        if self.skip_startup_connection:
-            PLAN_REGISTRY[plan_name]["setup"]()
+#         if self.skip_startup_connection:
+#             PLAN_REGISTRY[plan_name]["setup"]()
 
-        self.callbacks = PLAN_REGISTRY[plan_name][
-            "callback_collection_type"
-        ].from_params(parameters)
-        if (
-            self.current_status.status == Status.BUSY.value
-            or self.current_status.status == Status.ABORTING.value
-        ):
-            return StatusAndMessage(Status.FAILED, "Bluesky already running")
-        else:
-            self.current_status = StatusAndMessage(Status.BUSY)
-            self.command_queue.put(Command(Actions.START, experiment, parameters))
-            return StatusAndMessage(Status.SUCCESS)
+#         self.callbacks = FGSCallbackCollection.from_params(parameters)
+#         if (
+#             self.current_status.status == Status.BUSY.value
+#             or self.current_status.status == Status.ABORTING.value
+#         ):
+#             return StatusAndMessage(Status.FAILED, "Bluesky already running")
+#         else:
+#             self.current_status = StatusAndMessage(Status.BUSY)
+#             self.command_queue.put(Command(Actions.START, experiment, parameters))
+#             return StatusAndMessage(Status.SUCCESS)
 
-    def stopping_thread(self):
-        try:
-            self.RE.abort()
-            self.current_status = StatusAndMessage(Status.IDLE)
-        except Exception as e:
-            self.current_status = StatusAndMessage(Status.FAILED, repr(e))
+#     def stopping_thread(self):
+#         try:
+#             self.RE.abort()
+#             self.current_status = StatusAndMessage(Status.IDLE)
+#         except Exception as e:
+#             self.current_status = StatusAndMessage(Status.FAILED, repr(e))
 
-    def stop(self) -> StatusAndMessage:
-        if self.current_status.status == Status.IDLE.value:
-            return StatusAndMessage(Status.FAILED, "Bluesky not running")
-        elif self.current_status.status == Status.ABORTING.value:
-            return StatusAndMessage(Status.FAILED, "Bluesky already stopping")
-        else:
-            self.current_status = StatusAndMessage(Status.ABORTING)
-            stopping_thread = threading.Thread(target=self.stopping_thread)
-            stopping_thread.start()
-            self.last_run_aborted = True
-            return StatusAndMessage(Status.ABORTING)
+#     def stop(self) -> StatusAndMessage:
+#         if self.current_status.status == Status.IDLE.value:
+#             return StatusAndMessage(Status.FAILED, "Bluesky not running")
+#         elif self.current_status.status == Status.ABORTING.value:
+#             return StatusAndMessage(Status.FAILED, "Bluesky already stopping")
+#         else:
+#             self.current_status = StatusAndMessage(Status.ABORTING)
+#             stopping_thread = threading.Thread(target=self.stopping_thread)
+#             stopping_thread.start()
+#             self.last_run_aborted = True
+#             return StatusAndMessage(Status.ABORTING)
 
-    def shutdown(self):
-        """Stops the run engine and the loop waiting for messages."""
-        print("Shutting down: Stopping the run engine gracefully")
-        self.stop()
-        self.command_queue.put(Command(Actions.SHUTDOWN))
+#     def shutdown(self):
+#         """Stops the run engine and the loop waiting for messages."""
+#         print("Shutting down: Stopping the run engine gracefully")
+#         self.stop()
+#         self.command_queue.put(Command(Actions.SHUTDOWN))
 
-    def wait_on_queue(self):
-        while True:
-            command = self.command_queue.get()
-            if command.action == Actions.SHUTDOWN:
-                return
-            elif command.action == Actions.START:
-                try:
-                    with TRACER.start_span("do_run"):
-                        self.RE(command.experiment(command.parameters, self.callbacks))
 
-                    self.current_status = StatusAndMessage(
-                        Status.IDLE,
-                        self.aperture_change_callback.last_selected_aperture,
-                    )
-                    self.last_run_aborted = False
-                except WarningException as exception:
-                    artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
-                    self.current_status = StatusAndMessage(Status.WARN, repr(exception))
-                except Exception as exception:
-                    artemis.log.LOGGER.error("Exception on running plan", exc_info=True)
-                    if self.last_run_aborted:
-                        # Aborting will cause an exception here that we want to swallow
-                        self.last_run_aborted = False
-                    else:
-                        self.current_status = StatusAndMessage(
-                            Status.FAILED, repr(exception)
-                        )
+def setup_context() -> BlueskyContext:
+    context = BlueskyContext()
+
+    composite_device = create_devices()
+    context.device(composite_device)
+    context.plan(fast_grid_scan)
+    return context
 
 
 class RunExperiment(Resource):
-    def __init__(self, runner: BlueskyRunner) -> None:
+    context: BlueskyContext
+    worker: Worker
+
+    def __init__(self, context: BlueskyContext, worker: Worker) -> None:
         super().__init__()
-        self.runner = runner
+        self.context = context
+        self.worker = worker
 
     def put(self, plan_name: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
-                if experiment_registry_entry is None:
+                if plan_name not in self.context.plans:
                     raise PlanNotFound(
                         f"Experiment plan '{plan_name}' not found in registry."
                     )
-
-                experiment_internal_param_type: InternalParameters = (
-                    experiment_registry_entry.get("internal_param_type")
-                )
-                experiment = experiment_registry_entry.get("run")
-                if experiment_internal_param_type is None:
-                    raise PlanNotFound(
-                        f"Corresponding internal param type for '{plan_name}' not found in registry."
-                    )
-                if experiment is None:
-                    raise PlanNotFound(
-                        f"Experiment plan '{plan_name}' has no 'run' method."
-                    )
-                parameters = experiment_internal_param_type.from_external_json(
-                    request.data
-                )
-                status_and_message = self.runner.start(
-                    experiment, parameters, plan_name
-                )
+                task = RunPlan(name=plan_name, params=request.data)
+                task_id = str(uuid.uuid1())
+                self.worker.submit_task(task_id, task)
+                status_and_message = StatusAndMessage(Status.SUCCESS)
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
             except PlanNotFound as e:
@@ -197,28 +167,34 @@ class RunExperiment(Resource):
 
 
 class StopOrStatus(Resource):
-    def __init__(self, runner: BlueskyRunner) -> None:
+    context: BlueskyContext
+    worker: Worker
+
+    def __init__(self, worker: Worker) -> None:
         super().__init__()
-        self.runner = runner
+        self.worker = worker
 
     def put(self, action):
+        return NotImplemented
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STOP.value:
-            status_and_message = self.runner.stop()
+            status_and_message = self.worke
         return status_and_message.to_dict()
 
     def get(self, **kwargs):
+        return NotImplemented
         action = kwargs.get("action")
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STATUS.value:
-            status_and_message = self.runner.current_status
+            status_and_message = self.worker
         return status_and_message.to_dict()
 
 
 def create_app(
     test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
-) -> Tuple[Flask, BlueskyRunner]:
-    runner = BlueskyRunner(RE, skip_startup_connection=skip_startup_connection)
+) -> Tuple[Flask, Worker, BlueskyContext]:
+    context = setup_context()
+    worker = RunEngineWorker(context)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
@@ -226,14 +202,14 @@ def create_app(
     api.add_resource(
         RunExperiment,
         "/<string:plan_name>/<string:action>",
-        resource_class_args=[runner],
+        resource_class_args=[context, worker],
     )
     api.add_resource(
         StopOrStatus,
         "/<string:action>",
-        resource_class_args=[runner],
+        resource_class_args=[worker],
     )
-    return app, runner
+    return app, worker, context
 
 
 def cli_arg_parse() -> (
@@ -280,8 +256,8 @@ if __name__ == "__main__":
     ) = cli_arg_parse()
 
     artemis.log.set_up_logging_handlers(logging_level, dev_mode)
-    app, runner = create_app(skip_startup_connection=skip_startup_connection)
-    atexit.register(runner.shutdown)
+    app, worker, context = create_app(skip_startup_connection=skip_startup_connection)
+    # atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
             host="0.0.0.0", port=artemis_port, debug=True, use_reloader=False
@@ -292,5 +268,6 @@ if __name__ == "__main__":
     artemis.log.LOGGER.info(
         f"Artemis now listening on {artemis_port} ({'IN DEV' if dev_mode else ''})"
     )
-    runner.wait_on_queue()
+    # runner.wait_on_queue()
+    worker.run_forever()
     flask_thread.join()
