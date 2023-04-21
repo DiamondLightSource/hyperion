@@ -62,16 +62,16 @@ def test_get_plan(
     zebra: Zebra,
     eiger: EigerDetector,
 ):
-    plan.iter.return_value = iter([Msg("null"), Msg("null"), Msg("null")])
     eiger.stage = MagicMock()
-    eiger.stage.iter.return_value = iter([Msg("null"), Msg("null"), Msg("null")])
     eiger.unstage = MagicMock()
-    eiger.unstage.return_value = Msg("null")
     zebra.pc.armed.set(False)
     with patch("artemis.experiment_plans.rotation_scan_plan.smargon", smargon):
         with patch("artemis.experiment_plans.rotation_scan_plan.eiger", eiger):
             with patch("artemis.experiment_plans.rotation_scan_plan.zebra", zebra):
                 RE(get_plan(test_rotation_params, MagicMock()))
+
+    eiger.stage.assert_called()
+    eiger.unstage.assert_called()
 
 
 @patch("bluesky.plan_stubs.wait")

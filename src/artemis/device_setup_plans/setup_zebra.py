@@ -18,7 +18,7 @@ def arm_zebra(zebra: Zebra, timeout: float = 0.5):
     armed = yield from bps.rd(zebra.pc.armed)
     time = 0.0
     while not armed and time < timeout:
-        armed = bps.rd(zebra.pc.armed)
+        armed = yield from bps.rd(zebra.pc.armed)
         time += 0.1
         yield from bps.sleep(0.1)
     if not armed:
@@ -30,7 +30,7 @@ def disarm_zebra(zebra: Zebra, timeout: float = 0.5):
     armed = yield from bps.rd(zebra.pc.armed)
     time = 0.0
     while armed and time < timeout:
-        armed = bps.rd(zebra.pc.armed)
+        armed = yield from bps.rd(zebra.pc.armed)
         time += 0.1
         yield from bps.sleep(0.1)
     if armed:
@@ -84,7 +84,7 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
 
     if wait:
-        bps.wait(group)
+        yield from bps.wait(group)
 
 
 def setup_zebra_for_fgs(zebra: Zebra, group="setup_zebra_for_fgs", wait=False):
@@ -94,7 +94,7 @@ def setup_zebra_for_fgs(zebra: Zebra, group="setup_zebra_for_fgs", wait=False):
     yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
 
     if wait:
-        bps.wait(group)
+        yield from bps.wait(group)
 
 
 def set_zebra_shutter_to_manual(
@@ -104,4 +104,4 @@ def set_zebra_shutter_to_manual(
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
 
     if wait:
-        bps.wait(group)
+        yield from bps.wait(group)
