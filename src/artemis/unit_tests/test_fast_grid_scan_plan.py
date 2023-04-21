@@ -39,6 +39,7 @@ from artemis.external_interaction.system_tests.conftest import (
 )
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import external_parameters
+from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.internal_parameters.internal_parameters import (
     InternalParameters,
 )
@@ -46,7 +47,6 @@ from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params im
     FGSInternalParameters,
 )
 from artemis.utils import create_point
-from artemis.parameters.external_parameters import from_file as default_raw_params
 
 
 @pytest.fixture
@@ -278,7 +278,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
     array_arg = move_xyz.call_args.args[1]
-    np.testing.assert_array_almost_equal(
+    np.testing.assert_array_equal(
         array_arg, create_point(0.05, 0.15000000000000002, 0.25)
     )
     move_xyz.assert_called_once()

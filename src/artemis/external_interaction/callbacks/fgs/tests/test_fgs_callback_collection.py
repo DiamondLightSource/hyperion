@@ -12,11 +12,11 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.parameters.constants import SIM_BEAMLINE
-from artemis.utils import create_point
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
+from artemis.utils import create_point
 
 
 def test_callback_collection_init():
