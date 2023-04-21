@@ -28,6 +28,7 @@ class RotationNexusFileHandlerCallback(CallbackBase):
 
     def __init__(self, parameters: InternalParameters):
         self.run_uid: Optional[str] = None
+        self.params = parameters
         # self.writer = NexusWriter(parameters)
 
     def start(self, doc: dict):

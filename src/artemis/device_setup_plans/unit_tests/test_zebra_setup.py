@@ -46,6 +46,8 @@ def test_zebra_set_up_for_rotation(bps_wait, RE, zebra: Zebra):
     RE(setup_zebra_for_rotation(zebra, wait=True))
     assert zebra.pc.gate_trigger.get(as_string=True) == I03_axes.OMEGA.value
     assert zebra.pc.gate_width.get() == pytest.approx(360, 0.01)
+    with pytest.raises(ValueError):
+        RE(setup_zebra_for_rotation(zebra, direction=25))
 
 
 @patch("bluesky.plan_stubs.wait")
