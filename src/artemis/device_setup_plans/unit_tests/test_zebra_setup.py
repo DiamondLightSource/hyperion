@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
-from bluesky.utils import Msg
 from dodal import i03
 from dodal.devices.zebra import (
     IN3_TTL,
