@@ -11,10 +11,10 @@ from dodal.devices.zebra import (
     Zebra,
 )
 
-from artemis.device_setup_plans.setup_zebra import setup_zebra_for_rotation
-from artemis.device_setup_plans.setup_zebra_for_fgs import (
+from artemis.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
+    setup_zebra_for_rotation,
 )
 
 
