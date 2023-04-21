@@ -49,3 +49,6 @@ def test_zebra_cleanup(RE, connected_zebra: Zebra):
     RE(set_zebra_shutter_to_manual(connected_zebra))
     assert connected_zebra.output.out_pvs[TTL_DETECTOR].get() == PC_PULSE
     assert connected_zebra.output.out_pvs[TTL_SHUTTER].get() == OR1
+
+
+# TODO test zebra rotation setup

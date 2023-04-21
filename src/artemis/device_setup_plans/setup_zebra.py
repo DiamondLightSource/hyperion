@@ -75,13 +75,11 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.pc.gate_width, scan_width, group=group)
     # Set gate position to be angle of interest
     yield from bps.abs_set(zebra.pc.gate_trigger, axis.value, group=group)
-
     # Trigger the shutter with the gate (from PC_GATE & SOFTIN1 -> OR1)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
-
     # Trigger the detector with a pulse
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
-
+    # Don't use the fluorescence detector
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
     yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
 
@@ -94,6 +92,7 @@ def setup_zebra_for_fgs(zebra: Zebra, group="setup_zebra_for_fgs", wait=False):
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
     yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+
     if wait:
         bps.wait(group)
 
@@ -103,5 +102,6 @@ def set_zebra_shutter_to_manual(
 ):
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
+
     if wait:
         bps.wait(group)

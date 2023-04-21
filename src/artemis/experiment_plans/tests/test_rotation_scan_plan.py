@@ -12,6 +12,7 @@ from artemis.experiment_plans.rotation_scan_plan import (
     get_plan,
     move_to_end_w_buffer,
     move_to_start_w_buffer,
+    rotation_scan_plan,
 )
 
 if TYPE_CHECKING:
@@ -64,6 +65,12 @@ def test_get_plan(plan: MagicMock, RE, test_rotation_params, smargon, zebra, eig
                 RE(get_plan(test_rotation_params, MagicMock()))
 
 
-# TODO test finally in get plan
+@patch("bluesky.plan_stubs.wait")
+def test_rotation_plan(RE, test_rotation_params, smargon, zebra, eiger):
+    with patch("artemis.experiment_plans.rotation_scan_plan.smargon", smargon):
+        with patch("artemis.experiment_plans.rotation_scan_plan.eiger", eiger):
+            with patch("artemis.experiment_plans.rotation_scan_plan.zebra", zebra):
+                RE(rotation_scan_plan(test_rotation_params))
 
-# TODO test zebra rotation setup
+
+# TODO test finally in get plan
