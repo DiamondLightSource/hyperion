@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
-from bluesky.utils import Msg
 
 from artemis.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileHandlerCallback,
