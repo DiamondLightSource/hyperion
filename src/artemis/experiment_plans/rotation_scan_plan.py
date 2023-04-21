@@ -3,14 +3,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
-from bluesky.preprocessors import finalize_wrapper, stage_decorator
+from bluesky.preprocessors import finalize_wrapper, stage_decorator, subs_decorator
 from dodal import i03
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.rotation_scan import RotationScanParams
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import Zebra
 
-from artemis.device_setup_plans.setup_zebra_for_rotation import setup_zebra_for_rotation
+from artemis.device_setup_plans.setup_zebra import (
+    arm_zebra,
+    disarm_zebra,
+    setup_zebra_for_rotation,
+)
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
@@ -97,21 +101,20 @@ def rotation_scan_plan(params: RotationInternalParameters):
     )
     yield from set_speed(smargon, image_width, exposure_time)
 
-    zebra.pc.arm()  # TODO planify this
+    yield from arm_zebra(zebra)
 
     LOGGER.info(f"{'increase' if DIRECTION > 0 else 'decrease'} omega by {scan_width}")
     yield from move_to_end_w_buffer(smargon, scan_width)
 
 
-def cleanup_plan():
-    zebra.pc.disarm()
+def cleanup_plan(zebra):
+    yield from disarm_zebra(zebra)
 
 
 def get_plan(
     params: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
-    # TODO subscriptions
-
+    @subs_decorator(list(subscriptions))
     def rotation_scan_plan_with_stage_and_cleanup(params: RotationInternalParameters):
         assert eiger is not None
         assert smargon is not None
@@ -119,7 +122,7 @@ def get_plan(
 
         @stage_decorator([eiger])
         def with_cleanup(params):
-            yield from finalize_wrapper(rotation_scan_plan(params), cleanup_plan())
+            yield from finalize_wrapper(rotation_scan_plan(params), cleanup_plan(zebra))
 
         # TODO planify these
         eiger.set_detector_parameters(params.artemis_params.detector_params)

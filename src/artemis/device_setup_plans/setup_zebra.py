@@ -11,6 +11,30 @@ from dodal.devices.zebra import (
 )
 
 
+def arm_zebra(zebra: Zebra, timeout: float = 0.5):
+    yield from bps.abs_set(zebra.pc.arm_demand, 1)
+    armed = bps.rd(zebra.pc.armed)
+    time = 0.0
+    while armed and time < timeout:
+        armed = bps.rd(zebra.pc.armed)
+        time += 0.1
+        yield from bps.sleep(0.1)
+    if armed:
+        raise TimeoutError("Zebra failed to arm!")
+
+
+def disarm_zebra(zebra: Zebra, timeout: float = 0.5):
+    yield from bps.abs_set(zebra.pc.arm_demand, 0)
+    armed = yield from bps.rd(zebra.pc.armed)
+    time = 0.0
+    while armed and time < timeout:
+        armed = bps.rd(zebra.pc.armed)
+        time += 0.1
+        yield from bps.sleep(0.1)
+    if armed:
+        raise TimeoutError("Zebra failed to disarm!")
+
+
 def setup_zebra_for_rotation(
     zebra: Zebra,
     axis: I03_axes = I03_axes.OMEGA,
