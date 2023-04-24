@@ -9,7 +9,6 @@ from typing import Any, Callable, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
-from dodal import i03
 from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
