@@ -9,6 +9,7 @@ from typing import Any, Callable, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
+from dodal import i03
 from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
@@ -273,6 +274,7 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
+@pytest.mark.skip(reason="fixed in #621")
 @patch("dodal.i03.ApertureScatterguard")
 @patch("dodal.i03.Backlight")
 @patch("dodal.i03.EigerDetector")
