@@ -28,11 +28,14 @@ def create_devices():
 def grid_detection_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
+    filenames: dict[str, str],
     width=600,
     box_size_microns=20,
 ):
     yield from finalize_wrapper(
-        grid_detection_main_plan(parameters, out_parameters, width, box_size_microns),
+        grid_detection_main_plan(
+            parameters, out_parameters, filenames, width, box_size_microns
+        ),
         reset_oav(parameters),
     )
 
@@ -40,6 +43,7 @@ def grid_detection_plan(
 def grid_detection_main_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
+    filenames: dict[str, str],
     grid_width_px: int,
     box_size_um: int,
 ):
@@ -117,15 +121,13 @@ def grid_detection_main_plan(
         LOGGER.info("Triggering snapshot")
 
         snapshot_filename = (
-            parameters.snapshot_1_filename
+            filenames["snapshot_1_filename"]
             if angle == 0
-            else parameters.snapshot_2_filename
+            else filenames["snapshot_2_filename"]
         )
 
-        test_snapshot_dir = "/dls_sw/i03/software/artemis/test_snaps"
-
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
-        yield from bps.abs_set(oav.snapshot.directory, test_snapshot_dir)
+        yield from bps.abs_set(oav.snapshot.directory, filenames["snapshot_dir"])
         yield from bps.trigger(oav.snapshot, wait=True)
 
         # Get the beam distance from the centre (in pixels).

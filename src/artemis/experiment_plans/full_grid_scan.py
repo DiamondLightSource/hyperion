@@ -68,23 +68,22 @@ def get_plan(
     gda_snap_1 = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start[0]
     gda_snap_2 = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end[0]
 
-    snapshot_dir = os.path.dirname(os.path.abspath(gda_snap_1))
-    snap_1_filename = os.path.basename(os.path.abspath(gda_snap_1))
-    snap_2_filename = os.path.basename(os.path.abspath(gda_snap_2))
+    snapshot_paths = {
+        "snapshot_dir": os.path.dirname(os.path.abspath(gda_snap_1)),
+        "snap_1_filename": os.path.basename(os.path.abspath(gda_snap_1)),
+        "snap_2_filename": os.path.basename(os.path.abspath(gda_snap_2)),
+    }
 
-    oav_params = OAVParameters(
-        snapshot_dir,
-        snap_1_filename,
-        snap_2_filename,
-        "xrayCentring",
-    )
+    oav_params = OAVParameters("xrayCentring")
 
     LOGGER.info(
         f"microns_per_pixel: GDA: {parameters.artemis_params.ispyb_params.pixels_per_micron_x, parameters.artemis_params.ispyb_params.pixels_per_micron_y} Artemis {oav_params.micronsPerXPixel, oav_params.micronsPerYPixel}"
     )
 
     def detect_grid_and_do_gridscan():
-        yield from grid_detection_plan(oav_params, None, parameters.experiment_params)
+        yield from grid_detection_plan(
+            oav_params, parameters.experiment_params, snapshot_paths
+        )
 
         yield from bps.abs_set(backlight.pos, Backlight.OUT)
         yield from bps.abs_set(
