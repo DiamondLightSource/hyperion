@@ -4,9 +4,10 @@ import os
 from typing import TYPE_CHECKING, Callable
 
 from bluesky import plan_stubs as bps
+from dodal import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
-from dodal.devices.detector_motion import Det
+from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from artemis.experiment_plans.fast_grid_scan_plan import (
@@ -23,28 +24,21 @@ if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
-    from artemis.parameters.internal_parameters import InternalParameters
-
-detector_motion: Det = None
-backlight: Backlight = None
-aperture_scatterguard: ApertureScatterguard = None
+    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+        FGSInternalParameters,
+    )
 
 
 def create_devices():
     fgs_create_devices()
     oav_create_devices()
-    from artemis.experiment_plans.fast_grid_scan_plan import fast_grid_scan_composite
 
-    global detector_motion, backlight, aperture_scatterguard
-    detector_motion = Det("BL03I", name="detector_motion")
-    backlight = Backlight("BL03I-EA-BL-01:", name="backlight")
-    aperture_scatterguard = fast_grid_scan_composite.aperture_scatterguard
-    detector_motion.wait_for_connection()
-    backlight.wait_for_connection()
-    aperture_scatterguard.wait_for_connection()
+    i03.detector_motion().wait_for_connection()
+    i03.backlight().wait_for_connection()
+    i03.aperture_scatterguard().wait_for_connection()
 
 
-def wait_for_det_to_finish_moving(detector: Det, timeout=2):
+def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=2):
     LOGGER.info("Waiting for detector to finish moving")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -60,13 +54,17 @@ def wait_for_det_to_finish_moving(detector: Det, timeout=2):
 
 
 def get_plan(
-    parameters: InternalParameters,
+    parameters: FGSInternalParameters,
     subscriptions: FGSCallbackCollection,
 ) -> Callable:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
+    backlight: Backlight = i03.backlight()
+    aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
+    detector_motion: DetectorMotion = i03.detector_motion()
+
     gda_snap_1 = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start[0]
     gda_snap_2 = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end[0]
 
@@ -85,13 +83,8 @@ def get_plan(
         f"microns_per_pixel: GDA: {parameters.artemis_params.ispyb_params.pixels_per_micron_x, parameters.artemis_params.ispyb_params.pixels_per_micron_y} Artemis {oav_params.micronsPerXPixel, oav_params.micronsPerYPixel}"
     )
 
-    def my_plan():
-        try:
-            yield from grid_detection_plan(
-                oav_params, None, parameters.experiment_params
-            )
-        except Exception as e:
-            LOGGER.error(e, exc_info=True)
+    def detect_grid_and_do_gridscan():
+        yield from grid_detection_plan(oav_params, None, parameters.experiment_params)
 
         yield from bps.abs_set(backlight.pos, Backlight.OUT)
         yield from bps.abs_set(
@@ -101,4 +94,4 @@ def get_plan(
 
         yield from fgs_get_plan(parameters, subscriptions)
 
-    return my_plan()
+    return detect_grid_and_do_gridscan()

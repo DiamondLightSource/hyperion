@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import numpy as np
-from dodal.devices.backlight import Backlight
+from bluesky.preprocessors import finalize_wrapper
+from dodal import i03
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV
@@ -13,48 +14,34 @@ from dodal.devices.smargon import Smargon
 
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
 from artemis.log import LOGGER
-from artemis.parameters.beamline_parameters import get_beamline_prefixes
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
 
-oav: OAV = None
-smargon: Smargon = None
-backlight: Backlight = None
-
 
 def create_devices():
-    global oav, smargon, backlight
-    prefixes = get_beamline_prefixes()
-    oav = OAV(name="oav", prefix=prefixes.beamline_prefix)
-    smargon = Smargon(name="smargon", prefix=prefixes.beamline_prefix)
-    backlight = Backlight(name="backlight", prefix="BL03I-EA-BL-01:")
-    oav.wait_for_connection()
-    smargon.wait_for_connection()
-    backlight.wait_for_connection()
+    i03.oav().wait_for_connection()
+    i03.smargon().wait_for_connection()
+    i03.backlight().wait_for_connection()
 
 
 def grid_detection_plan(
     parameters: OAVParameters,
-    subscriptions,
     out_parameters: GridScanParams,
     width=600,
     box_size_microns=20,
 ):
-    try:
-        yield from grid_detection_main_plan(
-            parameters, subscriptions, out_parameters, width, box_size_microns
-        )
-    finally:
-        yield from reset_oav(parameters)
+    yield from finalize_wrapper(
+        grid_detection_main_plan(parameters, out_parameters, width, box_size_microns),
+        reset_oav(parameters),
+    )
 
 
 def grid_detection_main_plan(
     parameters: OAVParameters,
-    subscriptions,
     out_parameters: GridScanParams,
-    width: int,
-    box_size_microns: int,
+    grid_width_px: int,
+    box_size_um: int,
 ):
     """
     Attempts to find the centre of the pin on the oav by rotating and sampling elements.
@@ -66,7 +53,8 @@ def grid_detection_main_plan(
         max_run_num (int): Maximum number of times to run.
         rotation_points (int): Test to see if the pin is widest `rotation_points` number of times on a full 180 degree rotation.
     """
-
+    oav: OAV = i03.oav()
+    smargon: Smargon = i03.smargon()
     LOGGER.info("OAV Centring: Starting loop centring")
 
     yield from bps.wait()
@@ -79,52 +67,46 @@ def grid_detection_main_plan(
     start_positions = []
     box_numbers = []
 
-    box_size_x_pixels = box_size_microns / parameters.micronsPerXPixel
-    box_size_y_pixels = box_size_microns / parameters.micronsPerYPixel
+    box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
+    box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
     for angle in [0, 90]:
         yield from bps.mv(smargon.omega, angle)
+        # need to wait for the OAV image to update
+        # TODO improve this from just waiting some random time
         yield from bps.sleep(0.5)
 
-        top = np.array((yield from bps.rd(oav.mxsc.top)))
-        bottom = np.array((yield from bps.rd(oav.mxsc.bottom)))
+        top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
+        bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
 
-        tip_i = yield from bps.rd(oav.mxsc.tip_x)
-        tip_j = yield from bps.rd(oav.mxsc.tip_y)
+        tip_x_px = yield from bps.rd(oav.mxsc.tip_x)
+        tip_y_px = yield from bps.rd(oav.mxsc.tip_y)
 
-        LOGGER.info(f"tip_i {tip_i}, tip_j {tip_j}")
+        LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
-        left_margin = 0
-        top_margin = 0
+        full_oav_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
-        top = top[tip_i : tip_i + width]
-        bottom = bottom[tip_i : tip_i + width]
+        # only use the area from the start of the pin onwards
+        top_edge = top_edge[tip_x_px : tip_x_px + grid_width_px]
+        bottom_edge = bottom_edge[tip_x_px : tip_x_px + grid_width_px]
 
-        LOGGER.info(f"Top: {top}")
-
-        LOGGER.info(f"Bottom: {bottom}")
-
-        min_y = np.min(top[top != 0])
-
-        full_oav_image_height = yield from bps.rd(oav.cam.array_size.array_size_y)
-
-        max_y = np.max(bottom[bottom != full_oav_image_height])
-
-        # if top and bottom empty after filter use the whole image (ask neil)
-
+        # the edge detection line can jump to the edge of the image sometimes, filter
+        # those points out
+        min_y = np.min(top_edge[top_edge != 0])
+        max_y = np.max(bottom_edge[bottom_edge != full_oav_image_height_px])
         LOGGER.info(f"Min/max {min_y, max_y}")
+        # if top and bottom empty after filter use the whole image (ask neil)
+        grid_height_px = max_y - min_y
 
-        height = max_y - min_y
-
-        LOGGER.info(f"Drawing snapshot {width} by {height}")
+        LOGGER.info(f"Drawing snapshot {grid_width_px} by {grid_height_px}")
 
         boxes = (
-            math.ceil(width / box_size_x_pixels),
-            math.ceil(height / box_size_y_pixels),
+            math.ceil(grid_width_px / box_size_x_pixels),
+            math.ceil(grid_height_px / box_size_y_pixels),
         )
         box_numbers.append(boxes)
 
-        upper_left = (tip_i - left_margin, min_y - top_margin)
+        upper_left = (tip_x_px, min_y)
 
         yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])
@@ -185,13 +167,13 @@ def grid_detection_main_plan(
     )
 
     LOGGER.info(
-        f"x_step_size: GDA: {out_parameters.x_step_size}, Artemis {box_size_microns}"
+        f"x_step_size: GDA: {out_parameters.x_step_size}, Artemis {box_size_um}"
     )
     LOGGER.info(
-        f"y_step_size: GDA: {out_parameters.y_step_size}, Artemis {box_size_microns}"
+        f"y_step_size: GDA: {out_parameters.y_step_size}, Artemis {box_size_um}"
     )
     LOGGER.info(
-        f"z_step_size: GDA: {out_parameters.z_step_size}, Artemis {box_size_microns}"
+        f"z_step_size: GDA: {out_parameters.z_step_size}, Artemis {box_size_um}"
     )
 
     LOGGER.info(f"x_steps: GDA: {out_parameters.x_steps}, Artemis {box_numbers[0][0]}")
@@ -200,5 +182,6 @@ def grid_detection_main_plan(
 
 
 def reset_oav(parameters: OAVParameters):
+    oav = i03.oav()
     yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")
     yield from bps.abs_set(oav.mxsc.enable_callbacks, 0)
