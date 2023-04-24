@@ -5,7 +5,7 @@ from artemis.parameters import external_parameters
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 def test_FGS_parameters_load_from_file():
