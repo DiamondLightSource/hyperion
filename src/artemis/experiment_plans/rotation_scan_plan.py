@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
-from bluesky.preprocessors import finalize_wrapper, stage_decorator, subs_decorator
+from bluesky.preprocessors import finalize_decorator, stage_decorator, subs_decorator
 from dodal import i03
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.rotation_scan import RotationScanParams
@@ -121,12 +121,13 @@ def get_plan(
         assert zebra is not None
 
         @stage_decorator([eiger])
-        def with_cleanup(params):
-            yield from finalize_wrapper(rotation_scan_plan(params), cleanup_plan(zebra))
+        @finalize_decorator(lambda: cleanup_plan(zebra))
+        def rotation_with_cleanup_and_stage(params):
+            yield from rotation_scan_plan(params)
 
         # TODO planify these
         eiger.set_detector_parameters(params.artemis_params.detector_params)
         eiger.set_num_triggers_and_captures()
-        yield from with_cleanup(params)
+        yield from rotation_with_cleanup_and_stage(params)
 
     yield from rotation_scan_plan_with_stage_and_cleanup(params)

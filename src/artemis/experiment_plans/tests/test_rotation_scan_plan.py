@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+import pytest
 from bluesky.utils import Msg
 from ophyd.status import Status
 
@@ -13,6 +14,9 @@ from artemis.experiment_plans.rotation_scan_plan import (
     move_to_end_w_buffer,
     move_to_start_w_buffer,
     rotation_scan_plan,
+)
+from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
+    RotationCallbackCollection,
 )
 
 if TYPE_CHECKING:
@@ -105,4 +109,35 @@ def test_rotation_plan(
     assert mock_omega_sets.call_count == 4
 
 
-# TODO test finally in get plan
+@patch("artemis.experiment_plans.rotation_scan_plan.cleanup_plan")
+@patch("bluesky.plan_stubs.wait")
+def test_cleanup_happens(
+    bps_wait: MagicMock,
+    cleanup_plan: MagicMock,
+    RE,
+    test_rotation_params,
+    smargon: Smargon,
+    zebra: Zebra,
+    eiger: EigerDetector,
+):
+    eiger.stage = MagicMock()
+    eiger.unstage = MagicMock()
+    smargon.omega.set = MagicMock(side_effect=Exception("Experiment fails"))
+    with patch("artemis.experiment_plans.rotation_scan_plan.smargon", smargon):
+        with patch("artemis.experiment_plans.rotation_scan_plan.eiger", eiger):
+            with patch("artemis.experiment_plans.rotation_scan_plan.zebra", zebra):
+                # check main subplan part fails
+                with pytest.raises(Exception):
+                    RE(rotation_scan_plan(test_rotation_params))
+                    cleanup_plan.assert_not_called()
+                # check that failure is handled in composite plan
+                with pytest.raises(Exception):
+                    RE(
+                        get_plan(
+                            test_rotation_params,
+                            RotationCallbackCollection.from_params(
+                                test_rotation_params
+                            ),
+                        )
+                    )
+                cleanup_plan.assert_called_once()
