@@ -34,7 +34,7 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
         "setup": full_grid_scan.create_devices,
         "run": full_grid_scan.get_plan,
         "internal_param_type": FGSInternalParameters,
-        "param_type": GridScanParams,
+        "experiment_param_type": GridScanParams,
     },
     "rotation_scan": {
         "setup": do_nothing,
