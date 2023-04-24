@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import argparse
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable, Mapping
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from blueapi.core import MsgGenerator
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal import i03
@@ -60,12 +61,16 @@ class FGSComposite:
     undulator: Undulator
     zebra: Zebra
 
+    _name: str
+
     def __init__(
         self,
+        name: str,
         aperture_positions: AperturePositions = None,
         detector_params: DetectorParams = None,
         fake: bool = False,
     ):
+        self._name = name
         self.aperture_scatterguard = i03.aperture_scatterguard(
             fake_with_ophyd_sim=fake, aperture_positions=aperture_positions
         )
@@ -80,11 +85,15 @@ class FGSComposite:
         self.synchrotron = i03.synchrotron(fake_with_ophyd_sim=fake)
         self.zebra = i03.zebra(fake_with_ophyd_sim=fake)
 
+    @property
+    def name(self) -> str:
+        return self._name
+
 
 fast_grid_scan_composite: FGSComposite | None = None
 
 
-def create_devices() -> FGSComposite:
+def create_devices(fake: bool = False) -> FGSComposite:
     """Creates the devices required for the plan and connect to them"""
     # global fast_grid_scan_composite
     prefixes = get_beamline_prefixes()
@@ -95,7 +104,11 @@ def create_devices() -> FGSComposite:
         get_beamline_parameters()
     )
     artemis.log.LOGGER.info("Connecting to EPICS devices...")
-    fast_grid_scan_composite = FGSComposite(aperture_positions=aperture_positions)
+    fast_grid_scan_composite = FGSComposite(
+        name="fast_grid_scan",
+        aperture_positions=aperture_positions,
+        fake=fake,
+    )
     artemis.log.LOGGER.info("Connected.")
     return fast_grid_scan_composite
 
@@ -310,10 +323,10 @@ def run_gridscan_and_move(
 
 
 def fast_grid_scan(
-    api_parameters: GridScanParams,
+    api_parameters: Mapping[str, Any],
     composite: FGSComposite,
-):
-    parameters = FGSInternalParameters(api_parameters)
+) -> MsgGenerator:
+    parameters = FGSInternalParameters.from_external_dict(api_parameters)
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(composite))

@@ -1,5 +1,6 @@
 import argparse
 import atexit
+import json
 import threading
 import uuid
 from dataclasses import dataclass
@@ -116,10 +117,10 @@ class StatusAndMessage:
 #         self.command_queue.put(Command(Actions.SHUTDOWN))
 
 
-def setup_context() -> BlueskyContext:
+def setup_context(fake: bool = False) -> BlueskyContext:
     context = BlueskyContext()
 
-    composite_device = create_devices()
+    composite_device = create_devices(fake)
     context.device(composite_device)
     context.plan(fast_grid_scan)
     return context
@@ -142,7 +143,7 @@ class RunExperiment(Resource):
                     raise PlanNotFound(
                         f"Experiment plan '{plan_name}' not found in registry."
                     )
-                task = RunPlan(name=plan_name, params=request.data)
+                task = RunPlan(name=plan_name, params=json.loads(request.data))
                 task_id = str(uuid.uuid1())
                 self.worker.submit_task(task_id, task)
                 status_and_message = StatusAndMessage(Status.SUCCESS)
@@ -193,7 +194,7 @@ class StopOrStatus(Resource):
 def create_app(
     test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
 ) -> Tuple[Flask, Worker, BlueskyContext]:
-    context = setup_context()
+    context = setup_context(fake=False)
     worker = RunEngineWorker(context)
     app = Flask(__name__)
     if test_config:

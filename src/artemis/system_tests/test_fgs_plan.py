@@ -50,6 +50,7 @@ def RE():
 @pytest.fixture
 def fgs_composite():
     fast_grid_scan_composite = FGSComposite(
+        name="fgs",
         detector_params=DetectorParams(
             current_energy=100,
             exposure_time=0.1,
@@ -63,7 +64,7 @@ def fgs_composite():
             use_roi_mode=False,
             run_number=0,
             det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
-        )
+        ),
     )
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(

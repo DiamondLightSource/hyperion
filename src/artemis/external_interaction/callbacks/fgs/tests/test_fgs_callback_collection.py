@@ -94,7 +94,7 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._run_start = MagicMock()
     callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
 
-    fast_grid_scan_composite = FGSComposite()
+    fast_grid_scan_composite = FGSComposite("fgs")
     # this is where it's currently getting stuck:
     # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
     # but this is not a solution
