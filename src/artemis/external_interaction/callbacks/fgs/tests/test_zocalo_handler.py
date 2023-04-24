@@ -9,7 +9,11 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.external_parameters import from_file as default_raw_params
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
+from artemis.utils import Point3D
 from artemis.utils.utils import Point3D
 
 EXPECTED_DCID = 100
@@ -23,6 +27,11 @@ EXPECTED_RUN_END_MESSAGE = {
 td = TestData()
 
 
+@pytest.fixture
+def dummy_params():
+    return FGSInternalParameters(default_raw_params())
+
+
 def mock_zocalo_functions(callbacks: FGSCallbackCollection):
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
@@ -34,6 +43,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
     nexus_writer: MagicMock,
+    dummy_params,
 ):
     dc_ids = [1, 2]
     dcg_id = 4
@@ -42,8 +52,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    params = InternalParameters()
-    callbacks = FGSCallbackCollection.from_params(params)
+    callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
 
     callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
@@ -70,9 +79,10 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_not_called()
 
 
-def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called():
-    params = InternalParameters()
-    callbacks = FGSCallbackCollection.from_params(params)
+def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
+    dummy_params: FGSInternalParameters,
+):
+    callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
     expected_centre_grid_coords = Point3D(1, 2, 3)
@@ -93,7 +103,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
         100
     )
     expected_centre_motor_coords = (
-        params.experiment_params.grid_position_to_motor_position(
+        dummy_params.experiment_params.grid_position_to_motor_position(
             Point3D(
                 expected_centre_grid_coords.x - 0.5,
                 expected_centre_grid_coords.y - 0.5,
@@ -104,9 +114,10 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     assert found_centre == expected_centre_motor_coords
 
 
-def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used():
-    params = InternalParameters()
-    callbacks = FGSCallbackCollection.from_params(params)
+def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
+    dummy_params,
+):
+    callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
@@ -122,18 +133,20 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
     assert found_centre == fallback_position
 
 
-def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception():
-    params = InternalParameters()
-    callbacks = FGSCallbackCollection.from_params(params)
+def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception(
+    dummy_params,
+):
+    callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
 
     with pytest.raises(ISPyBDepositionNotMade):
         callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
 
 
-def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_bbox_from_first():
-    params = InternalParameters()
-    callbacks = FGSCallbackCollection.from_params(params)
+def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_bbox_from_first(
+    dummy_params: FGSInternalParameters,
+):
+    callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
     expected_centre_grid_coords = Point3D(4, 6, 2)
@@ -163,7 +176,7 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
         100
     )
     expected_centre_motor_coords = (
-        params.experiment_params.grid_position_to_motor_position(
+        dummy_params.experiment_params.grid_position_to_motor_position(
             Point3D(
                 expected_centre_grid_coords.x - 0.5,
                 expected_centre_grid_coords.y - 0.5,

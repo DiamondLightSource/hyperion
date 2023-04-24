@@ -33,10 +33,8 @@ class GDABeamlineParameters:
         return self.params[item]
 
     @classmethod
-    def from_file(cls, path: str):
+    def from_lines(cls, config_lines: list[str]):
         ob = cls()
-        with open(path) as f:
-            config_lines = f.readlines()
         config_lines_nocomments = [line.split("#", 1)[0] for line in config_lines]
         config_lines_sep_key_and_value = [
             line.translate(str.maketrans("", "", " \n\t\r")).split("=")
@@ -58,3 +56,9 @@ class GDABeamlineParameters:
                 config_pairs[i] = (config_pairs[i][0], float(config_pairs[i][1]))
         ob.params = dict(config_pairs)
         return ob
+
+    @classmethod
+    def from_file(cls, path: str):
+        with open(path) as f:
+            config_lines = f.readlines()
+        return cls.from_lines(config_lines)
