@@ -36,7 +36,9 @@ def test_no_env_variable_sets_correct_file_handler(
 
 
 @patch("artemis.log.Path.mkdir")
-@patch.dict(os.environ, {"ARTEMIS_LOG_DIR": "/dls_sw/s03/logs/bluesky"})
+@patch.dict(
+    os.environ, {"ARTEMIS_LOG_DIR": "./dls_sw/s03/logs/bluesky"}
+)  # Note we use a relative path here so it works in CI
 def test_set_env_variable_sets_correct_file_handler(
     mock_dir,
     clear_loggers,
@@ -47,7 +49,7 @@ def test_set_env_variable_sets_correct_file_handler(
         filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)
     )
 
-    assert file_handlers.baseFilename == "/dls_sw/s03/logs/bluesky/artemis.txt"
+    assert file_handlers.baseFilename.endswith("/dls_sw/s03/logs/bluesky/artemis.txt")
 
 
 def test_messages_logged_from_dodal_and_artemis_contain_dcgid(
