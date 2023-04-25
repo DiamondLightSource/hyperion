@@ -26,7 +26,7 @@ def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
     yield from bps.abs_set(oav.mxsc.min_callback_time, min_callback_time)
 
     # Stop the plugin from blocking the IOC and hogging all the CPU
-    yield from bps.abs_set(oav.mxsc.blocking_callbacks_pv, 0)
+    yield from bps.abs_set(oav.mxsc.blocking_callbacks, 0)
 
     # Set the python file to use for calculating the edge waveforms
     current_filename = yield from bps.rd(oav.mxsc.filename)
@@ -45,9 +45,6 @@ def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
 
 def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
     """Setup OAV PVs with required values."""
-
-    parameters.load_parameters_from_json()
-
     yield from bps.abs_set(oav.cam.color_mode, ColorMode.RGB1)
     yield from bps.abs_set(oav.cam.acquire_period, parameters.acquire_period)
     yield from bps.abs_set(oav.cam.acquire_time, parameters.exposure)
@@ -85,7 +82,7 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         oav,
         parameters.input_plugin + "." + parameters.mxsc_input,
         parameters.min_callback_time,
-        parameters.filename,
+        parameters.detection_script_filename,
     )
 
     yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")

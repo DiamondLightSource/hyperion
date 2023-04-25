@@ -121,9 +121,7 @@ def grid_detection_main_plan(
         LOGGER.info("Triggering snapshot")
 
         snapshot_filename = (
-            filenames["snapshot_1_filename"]
-            if angle == 0
-            else filenames["snapshot_2_filename"]
+            filenames["snap_1_filename"] if angle == 0 else filenames["snap_2_filename"]
         )
 
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
