@@ -3,114 +3,93 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from dodal.log import LOGGER as dodal_logger
 
 from artemis import log
 
 
-@pytest.fixture()
-def mock_logger():
-    with patch("artemis.log.LOGGER") as mock_LOGGER:
-        yield mock_LOGGER
-        log.beamline = None
+@pytest.fixture
+def clear_loggers():
+    [log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
+    yield
+    [log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
 
 
-@patch("artemis.log.GELFTCPHandler")
-@patch("artemis.log.logging")
-def test_handlers_set_at_correct_default_level(
-    mock_logging,
-    mock_GELFTCPHandler,
-    mock_logger: MagicMock,
-):
-    handlers = log.set_up_logging_handlers(None, False)
-
-    for handler in handlers:
-        mock_logger.addHandler.assert_any_call(handler)
-        handler.setLevel.assert_called_once_with("INFO")
-
-
-@patch("artemis.log.GELFTCPHandler")
-@patch("artemis.log.logging")
-def test_handlers_set_at_correct_debug_level(
-    mock_logging,
-    mock_GELFTCPHandler,
-    mock_logger: MagicMock,
-):
-    handlers = log.set_up_logging_handlers("DEBUG", True)
-
-    for handler in handlers:
-        mock_logger.addHandler.assert_any_call(handler)
-        handler.setLevel.assert_called_once_with("DEBUG")
-
-
-@patch("artemis.log.GELFTCPHandler")
-@patch("artemis.log.logging")
-def test_dev_mode_sets_correct_graypy_handler(
-    mock_logging,
-    mock_GELFTCPHandler,
-    mock_logger: MagicMock,
-):
-    log.set_up_logging_handlers(None, True)
-    mock_GELFTCPHandler.assert_called_once_with("localhost", 5555)
-
-
-@patch("artemis.log.GELFTCPHandler")
-@patch("artemis.log.logging")
-def test_prod_mode_sets_correct_graypy_handler(
-    mock_logging,
-    mock_GELFTCPHandler,
-    mock_logger: MagicMock,
-):
-    log.set_up_logging_handlers(None, False)
-    mock_GELFTCPHandler.assert_called_once_with("graylog2.diamond.ac.uk", 12218)
-
-
-@patch("artemis.log.GELFTCPHandler")
-@patch("artemis.log.logging")
+@patch("dodal.log.config_bluesky_logging")
+@patch("dodal.log.config_ophyd_logging")
+@patch("dodal.log.GELFTCPHandler")
+@patch("dodal.log.logging.FileHandler")
 def test_no_env_variable_sets_correct_file_handler(
-    mock_logging,
+    mock_FileHandler,
     mock_GELFTCPHandler,
-    mock_logger: MagicMock,
+    mock_config_ophyd,
+    mock_config_bluesky,
+    clear_loggers,
 ):
     log.set_up_logging_handlers(None, True)
-    mock_logging.FileHandler.assert_called_once_with(
-        filename=Path("./tmp/dev/artemis.txt")
-    )
+    mock_FileHandler.assert_called_once_with(filename=Path("./tmp/dev/artemis.txt"))
 
 
 @patch("artemis.log.Path.mkdir")
-@patch("artemis.log.GELFTCPHandler")
-@patch("artemis.log.logging")
+@patch("dodal.log.GELFTCPHandler")
+@patch("dodal.log.logging.FileHandler")
 @patch.dict(os.environ, {"ARTEMIS_LOG_DIR": "/dls_sw/s03/logs/bluesky"})
 def test_set_env_variable_sets_correct_file_handler(
-    mock_logging,
-    mock_GELFTCPHandler,
-    mock_dir,
-    mock_logger: MagicMock,
+    mock_FileHandler, mock_GELFTCPHandler, mock_dir, clear_loggers
 ):
     log.set_up_logging_handlers(None, False)
-    mock_logging.FileHandler.assert_called_once_with(
+    mock_FileHandler.assert_called_once_with(
         filename=Path("/dls_sw/s03/logs/bluesky/artemis.txt")
     )
 
 
-@patch("artemis.log.GELFTCPHandler")
-@patch("artemis.log.logging")
-def test_setting_debug_in_prod_gives_warning(
-    mock_logging,
-    mock_GELFTCPHandler,
-    mock_logger: MagicMock,
+@patch("dodal.log.GELFTCPHandler.emit")
+@patch("dodal.log.logging.FileHandler.emit")
+def test_messages_logged_from_dodal_and_artemis_contain_dcgid(
+    mock_filehandler_emit: MagicMock,
+    mock_GELFTCPHandler_emit: MagicMock,
+    clear_loggers,
 ):
-    warning_string = (
-        'STARTING ARTEMIS IN DEBUG WITHOUT "--dev" WILL FLOOD PRODUCTION '
-        "GRAYLOG WITH MESSAGES. If you really need debug messages, set up a local "
-        "graylog instead!\n"
-    )
-    log.set_up_logging_handlers("DEBUG", False)
-    mock_logger.warning.assert_any_call(warning_string)
+    log.set_up_logging_handlers()
+
+    log.set_dcgid_tag(100)
+
+    logger = log.LOGGER
+    logger.info("test_artemis")
+    dodal_logger.info("test_dodal")
+
+    filehandler_calls = mock_filehandler_emit.mock_calls
+    graylog_calls = mock_GELFTCPHandler_emit.mock_calls
+
+    for handler in [filehandler_calls, graylog_calls]:
+        dc_group_id_correct = [c.args[0].dc_group_id == 100 for c in handler]
+        assert all(dc_group_id_correct)
 
 
-def test_beamline_filter_adds_dev_if_no_beamline():
-    filter = log.BeamlineFilter()
-    record = MagicMock()
-    assert filter.filter(record)
-    assert record.beamline == "dev"
+@patch("dodal.log.GELFTCPHandler.emit")
+@patch("dodal.log.logging.FileHandler.emit")
+def test_messages_logged_from_dodal_and_artemis_get_sent_to_graylog_and_file(
+    mock_filehandler_emit: MagicMock,
+    mock_GELFTCPHandler_emit: MagicMock,
+    clear_loggers,
+):
+    log.set_up_logging_handlers()
+    logger = log.LOGGER
+    logger.info("test_artemis")
+    dodal_logger.info("test_dodal")
+
+    filehandler_calls = mock_filehandler_emit.mock_calls
+    graylog_calls = mock_GELFTCPHandler_emit.mock_calls
+
+    assert len(filehandler_calls) >= 2
+    assert len(graylog_calls) >= 2
+
+    for handler in [filehandler_calls, graylog_calls]:
+        handler_names = [c.args[0].name for c in handler]
+        handler_messages = [c.args[0].message for c in handler]
+        assert "Artemis" in handler_names
+        assert "Dodal" in handler_names
+        assert "test_artemis" in handler_messages
+        assert "test_dodal" in handler_messages
