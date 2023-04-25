@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from logging import FileHandler
+from unittest.mock import patch
 
 import pytest
 from dodal.log import LOGGER as dodal_logger
@@ -10,48 +10,50 @@ from artemis import log
 
 @pytest.fixture
 def clear_loggers():
-    [log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
-    [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
-    yield
+    with (
+        patch("dodal.log.logging.FileHandler._open"),
+        patch("dodal.log.GELFTCPHandler.emit") as graylog_emit,
+        patch("dodal.log.logging.FileHandler.emit") as filehandler_emit,
+    ):
+        yield filehandler_emit, graylog_emit
     [log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
     [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
 
 
 @patch("dodal.log.config_bluesky_logging")
 @patch("dodal.log.config_ophyd_logging")
-@patch("dodal.log.GELFTCPHandler")
-@patch("dodal.log.logging.FileHandler")
 def test_no_env_variable_sets_correct_file_handler(
-    mock_FileHandler,
-    mock_GELFTCPHandler,
     mock_config_ophyd,
     mock_config_bluesky,
     clear_loggers,
 ):
     log.set_up_logging_handlers(None, True)
-    mock_FileHandler.assert_called_once_with(filename=Path("./tmp/dev/artemis.txt"))
+    file_handlers: FileHandler = next(
+        filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)
+    )
+
+    assert file_handlers.baseFilename.endswith("/tmp/dev/artemis.txt")
 
 
 @patch("artemis.log.Path.mkdir")
-@patch("dodal.log.GELFTCPHandler")
-@patch("dodal.log.logging.FileHandler")
 @patch.dict(os.environ, {"ARTEMIS_LOG_DIR": "/dls_sw/s03/logs/bluesky"})
 def test_set_env_variable_sets_correct_file_handler(
-    mock_FileHandler, mock_GELFTCPHandler, mock_dir, clear_loggers
-):
-    log.set_up_logging_handlers(None, False)
-    mock_FileHandler.assert_called_once_with(
-        filename=Path("/dls_sw/s03/logs/bluesky/artemis.txt")
-    )
-
-
-@patch("dodal.log.GELFTCPHandler.emit")
-@patch("dodal.log.logging.FileHandler.emit")
-def test_messages_logged_from_dodal_and_artemis_contain_dcgid(
-    mock_filehandler_emit: MagicMock,
-    mock_GELFTCPHandler_emit: MagicMock,
+    mock_dir,
     clear_loggers,
 ):
+    log.set_up_logging_handlers(None, False)
+
+    file_handlers: FileHandler = next(
+        filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)
+    )
+
+    assert file_handlers.baseFilename == "/dls_sw/s03/logs/bluesky/artemis.txt"
+
+
+def test_messages_logged_from_dodal_and_artemis_contain_dcgid(
+    clear_loggers,
+):
+    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_loggers
     log.set_up_logging_handlers()
 
     log.set_dcgid_tag(100)
@@ -68,13 +70,10 @@ def test_messages_logged_from_dodal_and_artemis_contain_dcgid(
         assert all(dc_group_id_correct)
 
 
-@patch("dodal.log.GELFTCPHandler.emit")
-@patch("dodal.log.logging.FileHandler.emit")
 def test_messages_logged_from_dodal_and_artemis_get_sent_to_graylog_and_file(
-    mock_filehandler_emit: MagicMock,
-    mock_GELFTCPHandler_emit: MagicMock,
     clear_loggers,
 ):
+    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_loggers
     log.set_up_logging_handlers()
     logger = log.LOGGER
     logger.info("test_artemis")
