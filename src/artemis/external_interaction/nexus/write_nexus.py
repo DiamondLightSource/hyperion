@@ -16,8 +16,6 @@ import h5py
 import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
-
-#
 from nexgen.nxs_utils import (
     Attenuator,
     Axis,
@@ -28,10 +26,6 @@ from nexgen.nxs_utils import (
     Source,
 )
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
-
-# from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
-# from nexgen.nxs_write.NXclassWriters import write_NXentry
-# from nexgen.tools.VDS_tools import image_vds_writer
 from numpy.typing import ArrayLike
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -47,9 +41,6 @@ def create_parameters_for_first_file(
     new_params.experiment_params.z_axis = GridAxis(
         parameters.experiment_params.z1_start, 0, 0
     )
-    # new_params.artemis_params.detector_params.num_triggers = (
-    #    parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
-    # )
     new_params.artemis_params.detector_params.nexus_file_run_number = (
         parameters.artemis_params.detector_params.run_number
     )
@@ -156,7 +147,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Detector:
     """
     detector_pixels = detector_params.get_detector_size_pizels()
 
-    detector_params = EigerDetector(
+    eiger_params = EigerDetector(
         "Eiger 16M", (detector_pixels.height, detector_pixels.width), "Si", 46051, 0
     )
 
@@ -171,7 +162,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Detector:
     ]
     # Eiger parameters, axes, beam_center, exp_time, [fast, slow]
     return Detector(
-        detector_params,
+        eiger_params,
         detector_axes,
         detector_params.get_beam_position_pixels(detector_params.detector_distance),
         detector_params.exposure_time,
@@ -263,6 +254,8 @@ class NexusWriter:
         start_time = self._get_current_time()
 
         vds_shape = self._get_data_shape_for_vds()
+
+        print(self.full_num_of_images)
 
         for filename in [self.nexus_file, self.master_file]:
             NXmxWriter = NXmxFileWriter(

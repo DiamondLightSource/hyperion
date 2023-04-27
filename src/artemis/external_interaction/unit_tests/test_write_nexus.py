@@ -42,11 +42,11 @@ def minimal_params(request):
 
 @pytest.fixture
 def dummy_nexus_writers(minimal_params: InternalParameters):
-    first_file_params = create_parameters_for_first_file(minimal_params)
-    nexus_writer_1 = NexusWriter(first_file_params)
+    first_file_params, first_scan = create_parameters_for_first_file(minimal_params)
+    nexus_writer_1 = NexusWriter(first_file_params, first_scan)
 
-    second_file_params = create_parameters_for_second_file(minimal_params)
-    nexus_writer_2 = NexusWriter(second_file_params)
+    second_file_params, second_scan = create_parameters_for_second_file(minimal_params)
+    nexus_writer_2 = NexusWriter(second_file_params, second_scan)
 
     yield nexus_writer_1, nexus_writer_2
 
@@ -61,12 +61,12 @@ def dummy_nexus_writers_with_more_images(minimal_params: InternalParameters):
     minimal_params.experiment_params.x_steps = x
     minimal_params.experiment_params.y_steps = y
     minimal_params.experiment_params.z_steps = z
-    minimal_params.artemis_params.detector_params.num_images_per_trigger = x * y + x * z
-    first_file_params = create_parameters_for_first_file(minimal_params)
-    nexus_writer_1 = NexusWriter(first_file_params)
+    minimal_params.artemis_params.detector_params.num_triggers = x * y + x * z
+    first_file_params, first_scan = create_parameters_for_first_file(minimal_params)
+    nexus_writer_1 = NexusWriter(first_file_params, first_scan)
 
-    second_file_params = create_parameters_for_second_file(minimal_params)
-    nexus_writer_2 = NexusWriter(second_file_params)
+    second_file_params, second_scan = create_parameters_for_second_file(minimal_params)
+    nexus_writer_2 = NexusWriter(second_file_params, second_scan)
 
     yield nexus_writer_1, nexus_writer_2
 
@@ -77,7 +77,7 @@ def dummy_nexus_writers_with_more_images(minimal_params: InternalParameters):
 
 @pytest.fixture
 def single_dummy_file(minimal_params):
-    nexus_writer = NexusWriter(minimal_params)
+    nexus_writer = NexusWriter(minimal_params, {"sam_x": np.array([1, 2])})
     yield nexus_writer
     for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
         if os.path.isfile(file):
@@ -185,16 +185,14 @@ def test_given_dummy_data_then_datafile_written_correctly(
 
 def assert_x_data_stride_correct(data_path, grid_scan_params, varying_axis_steps):
     sam_x_data = data_path["sam_x"][:]
-    assert len(sam_x_data) == (grid_scan_params.x_steps + 1) * (varying_axis_steps + 1)
+    assert len(sam_x_data) == (grid_scan_params.x_steps) * (varying_axis_steps)
     assert sam_x_data[1] - sam_x_data[0] == pytest.approx(grid_scan_params.x_step_size)
 
 
 def assert_varying_axis_stride_correct(
     axis_data, grid_scan_params: GridScanParams, varying_axis: GridAxis
 ):
-    assert len(axis_data) == (grid_scan_params.x_steps + 1) * (
-        varying_axis.full_steps + 1
-    )
+    assert len(axis_data) == (grid_scan_params.x_steps) * (varying_axis.full_steps)
     assert axis_data[grid_scan_params.x_steps + 1] - axis_data[0] == pytest.approx(
         varying_axis.step_size
     )
@@ -254,8 +252,12 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file):
         PIXELS_Y_EIGER2_X_4M,
     )
 
-    assert single_dummy_file.detector["image_size"][0] == PIXELS_Y_EIGER2_X_4M
-    assert single_dummy_file.detector["image_size"][1] == PIXELS_X_EIGER2_X_4M
+    assert (
+        single_dummy_file.detector.detector_params.image_size[0] == PIXELS_Y_EIGER2_X_4M
+    )
+    assert (
+        single_dummy_file.detector.detector_params.image_size[1] == PIXELS_X_EIGER2_X_4M
+    )
 
 
 def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]):
