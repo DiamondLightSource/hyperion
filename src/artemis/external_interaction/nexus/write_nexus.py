@@ -47,9 +47,9 @@ def create_parameters_for_first_file(
     new_params.experiment_params.z_axis = GridAxis(
         parameters.experiment_params.z1_start, 0, 0
     )
-    new_params.artemis_params.detector_params.num_triggers = (
-        parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
-    )
+    # new_params.artemis_params.detector_params.num_triggers = (
+    #    parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
+    # )
     new_params.artemis_params.detector_params.nexus_file_run_number = (
         parameters.artemis_params.detector_params.run_number
     )
@@ -241,6 +241,11 @@ class NexusWriter:
     def _get_current_time(self):
         return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
 
+    def _get_data_shape_for_vds(self):
+        ax = list(self.grid_scan.keys())[0]
+        num_frames_in_vds = len(self.grid_scan[ax])
+        return (num_frames_in_vds, *self.detector.detector_params.image_size)
+
     def get_image_datafiles(self):
         max_images_per_file = 1000
         return [
@@ -256,6 +261,8 @@ class NexusWriter:
         initialised.
         """
         start_time = self._get_current_time()
+
+        vds_shape = self._get_data_shape_for_vds()
 
         for filename in [self.nexus_file, self.master_file]:
             NXmxWriter = NXmxFileWriter(
@@ -273,6 +280,7 @@ class NexusWriter:
             )
             NXmxWriter.write_vds(
                 vds_offset=self.start_index,
+                vds_shape=vds_shape,
             )
 
     def update_nexus_file_timestamp(self):
