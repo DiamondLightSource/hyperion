@@ -18,7 +18,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 
 #
-from nexgen.nsx_utils import (
+from nexgen.nxs_utils import (
     Attenuator,
     Axis,
     Beam,
