@@ -27,7 +27,7 @@ from nexgen.nxs_utils import (
     Goniometer,
     Source,
 )
-from nexgen.nxs_write import NXmxFileWriter
+from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
 
 # from nexgen.nxs_write.NexusWriter import ScanReader, call_writers
 # from nexgen.nxs_write.NXclassWriters import write_NXentry
