@@ -269,9 +269,10 @@ class NexusWriter:
             )
             NXmxWriter.write(
                 image_filename=self.filename,
-                vds=True,
-                vds_offset=self.start_index,
                 start_time=start_time,
+            )
+            NXmxWriter.write_vds(
+                vds_offset=self.start_index,
             )
 
     def update_nexus_file_timestamp(self):
