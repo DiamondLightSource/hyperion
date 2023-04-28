@@ -47,7 +47,6 @@ def test_writers_setup_on_init(
     params_for_first: MagicMock,
     nexus_writer: MagicMock,
 ):
-
     params = InternalParameters()
     nexus_handler = FGSNexusFileHandlerCallback(params)
     # flake8 gives an error if we don't do something with communicator
@@ -55,8 +54,8 @@ def test_writers_setup_on_init(
 
     nexus_writer.assert_has_calls(
         [
-            call(params_for_first()),
-            call(params_for_second()),
+            call(*params_for_first()),
+            call(*params_for_second()),
         ],
         any_order=True,
     )
@@ -67,7 +66,6 @@ def test_writers_dont_create_on_init(
     params_for_first: MagicMock,
     nexus_writer: MagicMock,
 ):
-
     params = InternalParameters()
     nexus_handler = FGSNexusFileHandlerCallback(params)
 
