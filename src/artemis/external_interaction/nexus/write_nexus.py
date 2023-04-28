@@ -255,8 +255,6 @@ class NexusWriter:
 
         vds_shape = self._get_data_shape_for_vds()
 
-        print(self.full_num_of_images)
-
         for filename in [self.nexus_file, self.master_file]:
             NXmxWriter = NXmxFileWriter(
                 filename,
