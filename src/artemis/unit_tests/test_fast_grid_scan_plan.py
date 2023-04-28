@@ -272,7 +272,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, params)
-    move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
+    move_xyz.assert_called_once_with(ANY, Point3D(-0.05, 0.05, 0.15000000000000002))
 
 
 @patch(
@@ -305,7 +305,7 @@ def test_logging_within_plan(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
-    move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
+    move_xyz.assert_called_once_with(ANY, Point3D(-0.05, 0.05, 0.15000000000000002))
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
