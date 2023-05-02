@@ -224,7 +224,7 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.experiment_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    # Start fake_stage here (async arming)
+    # Start stage with asynchronous arming here
     yield from bps.abs_set(fgs_composite.eiger.do_arm, 1, group="arming")
 
     @bpp.set_run_key_decorator("do_fgs")
@@ -242,9 +242,9 @@ def run_gridscan(
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
     # Wait for arming to finish
-    artemis.log.LOGGER.INFO("Waiting for arming...")
-    yield from bps.wait("arming")
-    artemis.log.LOGGER.INFO("Arming finished")
+    artemis.log.LOGGER.info("Waiting for arming...")
+    yield from bps.wait("arming")  # Add timeout here?
+    artemis.log.LOGGER.info("Arming finished")
 
 
 @bpp.set_run_key_decorator("run_gridscan_and_move")
