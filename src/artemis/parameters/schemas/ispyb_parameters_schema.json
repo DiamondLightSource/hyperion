@@ -12,74 +12,20 @@
             "type": "number"
         },
         "upper_left": {
-            "oneOf": [
-                {
-                    "type": "object",
-                    "properties": {
-                        "x": {
-                            "type": [
-                                "number",
-                                "null"
-                            ]
-                        },
-                        "y": {
-                            "type": [
-                                "number",
-                                "null"
-                            ]
-                        },
-                        "z": {
-                            "type": [
-                                "number",
-                                "null"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    },
-                    "minItems": 3,
-                    "maxItems": 3
-                }
-            ]
+            "type": "array",
+            "items": {
+                "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
         },
         "position": {
-            "oneOf": [
-                {
-                    "type": "object",
-                    "properties": {
-                        "x": {
-                            "type": [
-                                "number",
-                                "null"
-                            ]
-                        },
-                        "y": {
-                            "type": [
-                                "number",
-                                "null"
-                            ]
-                        },
-                        "z": {
-                            "type": [
-                                "number",
-                                "null"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    },
-                    "minItems": 3,
-                    "maxItems": 3
-                }
-            ]
+            "type": "array",
+            "items": {
+                "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
         },
         "xtal_snapshots_omega_start": {
             "type": "array",

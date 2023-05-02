@@ -15,7 +15,9 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.log import LOGGER
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 from artemis.utils import Point3D
 
 
@@ -40,7 +42,7 @@ class FGSZocaloCallback(CallbackBase):
     """
 
     def __init__(
-        self, parameters: "InternalParameters", ispyb_handler: FGSISPyBHandlerCallback
+        self, parameters: FGSInternalParameters, ispyb_handler: FGSISPyBHandlerCallback
     ):
         self.grid_position_to_motor_position: Callable[
             [Point3D], Point3D
@@ -139,7 +141,7 @@ class FGSZocaloCallback(CallbackBase):
             self.ispyb.append_to_comment("Found no diffraction.")
             xray_centre = fallback_xyz
             bbox_size = None
-            LOGGER.warn(log_msg)
+            LOGGER.warning(log_msg)
 
         self.processing_time = time.time() - self.processing_start_time
         self.ispyb.append_to_comment(

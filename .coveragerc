@@ -1,2 +1,18 @@
 [run]
-omit = */test_*
+omit = 
+    */test_*
+    **/conftest.py
+data_file = /tmp/python-artemis.coverage
+
+[report]
+exclude_also = 
+    if TYPE_CHECKING:
+    def __repr__
+    raise NotImplementedError
+    @(abc\.)?abstractmethod
+
+[paths]
+# Tests are run from installed location, map back to the src directory
+source =
+    src
+    **/site-packages/

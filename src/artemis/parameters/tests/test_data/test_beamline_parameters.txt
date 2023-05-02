@@ -1,0 +1,299 @@
+#
+#
+BeamLine BL03I
+
+## BLSE=FB switches between scan alignment and feedback alignment
+## by creating bl energy scannable with beamLineSpecificEnergy_FB
+## after changing you must restart servers or >>> reset_namespace
+BLSE=FB
+
+## BPFB (Beam Position FeedBack)
+## HALF (default) only off during data collection
+## FULL only off for XBPM2 during attenuation optimisation, fluo when trans < 2% and wedged MAD
+## UNAVAILABLE (not default) prevents xbpm_feedback.py trying to access EPICS IOC that may not be running
+BPFB=FULL
+## Note: only beamline scientists control whether feedback is enabled
+## via the XBPM feedback EDM screen in Synoptic
+
+# DCM parameters
+DCM_Perp_Offset_FIXED = 25.6
+#
+# beamstop
+#
+parked_x = 4.49
+parked_y = -50.0
+parked_y_plate = -50.5
+parked_z = -49.5
+parked_z_robot = 30.0
+
+in_beam_z_MIN_START_POS = 60.0
+
+in_beam_x_HIGHRES = 1.52 
+in_beam_y_HIGHRES = 44.78
+in_beam_z_HIGHRES = 30.0
+
+in_beam_x_STANDARD = 1.52
+in_beam_y_STANDARD = 44.78
+in_beam_z_STANDARD = 30.0
+
+in_beam_x_LOWRES = 1.52
+in_beam_y_LOWRES = 44.78
+in_beam_z_LOWRES = 48
+
+checkCryojet = No
+#If is to be moved in by the script. If not Yes then control is handed to the robot on activate script
+#To force the cryojet run hutch_utilities.hutch.forceCryoOut()
+manualCryojet = Yes
+
+#########################################################
+#############    All these need checking!    ############
+#########################################################
+
+#Aperture - Scatterguard positions
+# 100 micron ap
+miniap_x_LARGE_APERTURE = 2.389
+miniap_y_LARGE_APERTURE = 40.986
+miniap_z_LARGE_APERTURE = 15.8
+
+sg_x_LARGE_APERTURE = 5.25
+sg_y_LARGE_APERTURE = 4.43
+
+# 50 micron ap
+miniap_x_MEDIUM_APERTURE = 2.384
+miniap_y_MEDIUM_APERTURE = 44.967
+miniap_z_MEDIUM_APERTURE = 15.8
+sg_x_MEDIUM_APERTURE = 5.285
+sg_y_MEDIUM_APERTURE = 0.46
+
+# 20 micron ap
+miniap_x_SMALL_APERTURE = 2.430
+miniap_y_SMALL_APERTURE = 48.974
+miniap_z_SMALL_APERTURE = 15.8
+sg_x_SMALL_APERTURE = 5.3375
+sg_y_SMALL_APERTURE = -3.55
+
+# Robot load
+miniap_x_ROBOT_LOAD = 2.386
+miniap_y_ROBOT_LOAD = 31.40
+miniap_z_ROBOT_LOAD = 15.8
+sg_x_ROBOT_LOAD = 5.25
+sg_y_ROBOT_LOAD = 4.43
+
+# manual mount
+miniap_x_MANUAL_LOAD = -4.91
+miniap_y_MANUAL_LOAD = -49.0
+miniap_z_MANUAL_LOAD = -10.0
+
+sg_x_MANUAL_LOAD = -4.7
+sg_y_MANUAL_LOAD = 1.8
+
+miniap_x_SCIN_MOVE = -4.91
+# prion setting
+#miniap_x_SCIN_MOVE = 0.0
+sg_x_SCIN_MOVE = -4.75
+
+scin_y_SCIN_IN = 100.855
+scin_y_SCIN_OUT = -0.02
+scin_z_SCIN_IN = 101.5115
+
+
+scin_z_SCIN_OUT = 0.1
+
+#distance to move gonx,y,z when scintillator is put in with standard pins
+# For old gonio:
+gon_x_SCIN_OUT_DISTANCE = 1.0
+# For SmarGon:
+gon_x_SCIN_OUT_DISTANCE_smargon = 1
+
+gon_y_SCIN_OUT_DISTANCE = 2.0
+gon_z_SCIN_OUT_DISTANCE = -0.5
+
+#CASS motor position tolerances (mm)
+miniap_x_tolerance = 0.004
+miniap_y_tolerance = 0.1
+miniap_z_tolerance = 0.1
+sg_x_tolerance = 0.1
+sg_y_tolerance = 0.1
+scin_y_tolerance = 0.1
+scin_z_tolerance = 0.12
+gon_x_tolerance = 0.01
+gon_y_tolerance = 0.1
+gon_z_tolerance = 0.001
+bs_x_tolerance = 0.02
+bs_y_tolerance = 0.005
+bs_z_tolerance = 0.3
+crl_x_tolerance = 0.01
+crl_y_tolerance = 0.01
+crl_pitch_tolerance = 0.01
+crl_yaw_tolerance = 0.01
+sg_y_up_movement_tolerance = 1.0
+
+sg_x_timeout = 10
+sg_y_timeout = 10
+miniap_x_timeout = 60
+miniap_y_timeout = 10
+gon_x_timeout = 60
+gon_y_timeout = 30
+gon_z_timeout = 30
+crl_x_timeout = 10
+crl_y_timeout = 10
+crl_pitch_timeout = 10
+crl_yaw_timeout = 10
+
+col_inbeam_tolerance = 1.0
+
+# robot load collimation table reference positions (mm)
+col_parked_tolerance = 1.0
+col_parked_upstream_x = 0.0
+col_parked_downstream_x = 0.0
+col_parked_upstream_y = 0.0
+col_parked_inboard_y = 0.0
+col_parked_outboard_y = 0.0
+
+## CRL positions for low and high energy lens sets. Should deliver beam to same position on scintillator. 
+## Normally should only adjust the low energy set to match the position of the high energy that you've
+## already checked on the scintillator screen.
+
+crl_x_LOWE = -11.78 
+crl_y_LOWE = -4.3 
+crl_pitch_LOWE = -4.75 
+crl_yaw_LOWE = -1.0 
+
+crl_x_HIGHE = 2.22  
+crl_y_HIGHE = -4.30 
+crl_pitch_HIGHE = -2.75 
+crl_yaw_HIGHE = 0 
+
+
+#########################################################
+##########        End of new parameters       ###########
+#########################################################
+
+
+#Beam visualisation parameters
+MinBackStopZ = 30.0
+BackStopYsafe = 20.0
+BackStopXyag = -4.8
+BackStopYyag = 17.20 
+BackStopZyag = 19.1
+SampleYnormal = 2.65
+SampleYshift = 2.0
+parked_fluo_x = -18.0
+in_beam_fluo_x = 12.0
+move_fluo = Yes
+safe_det_z_default = 900
+safe_det_z_sampleChanger = 337
+store_data_collections_in_ispyb = Yes
+TakePNGsOfSample = Yes
+
+#robot requires these values
+gonio_parked_x = 0.0
+gonio_parked_y = 0.0
+gonio_parked_z = 0.0
+gonio_parked_omega = 0
+gonio_parked_chi = 0
+gonio_parked_phi = 0
+
+# The following used by setupBeamLine script
+setupBeamLine_energyStart = 7000.0
+setupBeamLine_energyEnd = 17000.0
+setupBeamLine_energyStep = 500
+setupBeamLine_rollStart = -4
+setupBeamLine_rollEnd = 4
+setupBeamLine_rollSteps = 21
+setupBeamLine_pitchStart = -3.7
+setupBeamLine_pitchEnd = -3.5
+setupBeamLine_pitchSteps = 200
+#values below in microns
+beamXCentre = 0
+beamYCentre = 0
+beamXYSettleTime = 6.0
+beamXYTolerance = 5.0
+DataCollection_TurboMode = Yes
+#time in seconds. If not set then the default is 0.1
+
+#The following are used by beamLineenergy script
+beamLineEnergy_rollBeamX 50
+beamLineEnergy_rollBeamY 200
+beamLineEnergy__rollWidth = .2
+beamLineEnergy__rollStep = .02
+beamLineEnergy__pitchWidth = .02
+beamLineEnergy__pitchStep = .002
+beamLineEnergy__fpitchWidth = .02
+beamLineEnergy__fpitchStep = .001
+beamLineEnergy__adjustSlits = No
+#dataCollectionMinSampleCurrent = 0.245
+dataCollectionMinSampleCurrent = 0.000
+dataCollectionSampleCurrent qbpm3
+
+#Mark is using the following in some test scripts
+MinIPin = 1.0
+YAGPin = 1
+RotationAxisPin = 2
+PtPin = 3
+PowderPin = 4
+
+iPinInDetZ = 340.0
+
+DataCollectionDetX = -7.8504
+DataCollectionDetYaw = 6.499  
+DataCollectionDetY = 48.0
+
+# StandardEnergy on i03 is 12700eV
+StandardEnergy = 12700
+
+keyence_max_attempts = 1
+# Move gonio 100 microns, see difference in keyence values
+# Then do 100/difference, put that number below
+# Sign may change between Smargon and MiniKappa
+keyence_slopeYToX = 2.5
+keyence_slopeYToY = -2.5
+keyence_slopeXToZ = 3.23
+
+YAGSamX = 1022 
+YAGSamY = -98.0
+YAGSamZ = -147
+YAGOmega = 0.0
+
+#ipin value must be < ipin_threshold above background for data collection
+ipin_threshold = 0.1
+
+# energy thresholds for mirror stripes
+#  - first threshold is between bare/Rh stripes (e.g. 7000)
+#  - second threshold is between Rh/Pt stripes (e.g. 18000)
+mirror_threshold_bare_rh = 6900
+mirror_threshold_rh_pt   = 30000
+
+# flux conversion factors
+flux_factor_no_aperture     = 1
+flux_factor_LARGE_APERTURE  = 0.738
+flux_factor_MEDIUM_APERTURE = 0.36
+flux_factor_SMALL_APERTURE  = 0.084
+flux_factor_no_aperture_plate     = 1
+flux_factor_LARGE_APERTURE_plate  = 0.738
+flux_factor_MEDIUM_APERTURE_plate = 0.36
+flux_factor_SMALL_APERTURE_plate  = 0.084
+
+# assuming gain 10^3
+pin_diode_factor = 2.66E19
+
+# Fluorescence/Vortex detector settings
+attenuation_optimisation_type = deadtime # deadtime or total_counts
+
+#Deadtime settings
+fluorescence_analyser_deadtimeThreshold=0.002 # used by edge scans
+fluorescence_spectrum_deadtimeThreshold=0.0005 # used by spectrum
+
+#Other settings
+fluorescence_attenuation_low_roi = 100
+fluorescence_attenuation_high_roi = 2048
+attenuation_optimisation_optimisation_cycles = 10
+attenuation_optimisation_start_transmission = 0.1 # per cent
+fluorescence_mca_sca_offset = 400
+
+#Total count settings
+attenuation_optimisation_multiplier = 2
+attenuation_optimisation_target_count = 2000
+attenuation_optimisation_upper_limit = 50000
+attenuation_optimisation_lower_limit = 20000
+

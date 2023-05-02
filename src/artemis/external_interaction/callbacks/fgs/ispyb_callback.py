@@ -13,7 +13,9 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
 )
 from artemis.log import LOGGER, set_dcgid_tag
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 
 class FGSISPyBHandlerCallback(CallbackBase):
@@ -33,7 +35,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self, parameters: InternalParameters):
+    def __init__(self, parameters: FGSInternalParameters):
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
@@ -70,16 +72,16 @@ class FGSISPyBHandlerCallback(CallbackBase):
 
         if event_descriptor.get("name") == ISPYB_PLAN_NAME:
             self.params.artemis_params.ispyb_params.undulator_gap = doc["data"][
-                "fgs_undulator_gap"
+                "undulator_gap"
             ]
             self.params.artemis_params.ispyb_params.synchrotron_mode = doc["data"][
-                "fgs_synchrotron_machine_status_synchrotron_mode"
+                "synchrotron_machine_status_synchrotron_mode"
             ]
             self.params.artemis_params.ispyb_params.slit_gap_size_x = doc["data"][
-                "fgs_s4_slit_gaps_xgap"
+                "s4_slit_gaps_xgap"
             ]
             self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
-                "fgs_s4_slit_gaps_ygap"
+                "s4_slit_gaps_ygap"
             ]
 
             LOGGER.info("Creating ispyb entry.")

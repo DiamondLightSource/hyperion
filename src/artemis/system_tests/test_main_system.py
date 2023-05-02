@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import threading
 from dataclasses import dataclass
@@ -11,14 +13,18 @@ from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
-from artemis.parameters.external_parameters import RawParameters
+from artemis.parameters import external_parameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
-TEST_PARAMS = RawParameters().to_json()
+TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameters.json"))
+TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 
 
 class MockRunEngine:
@@ -39,6 +45,9 @@ class MockRunEngine:
                 raise Exception(self.error)
         self.RE_takes_time = False
 
+    def subscribe(self, *args):
+        pass
+
 
 @dataclass
 class ClientAndRunEngine:
@@ -46,12 +55,42 @@ class ClientAndRunEngine:
     mock_run_engine: MockRunEngine
 
 
+def mock_dict_values(d: dict):
+    return {k: MagicMock() for k, _ in d.items()}
+
+
+TEST_EXPTS = {
+    "test_experiment": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "internal_param_type": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "test_experiment_no_run": {
+        "setup": MagicMock(),
+        "internal_param_type": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "test_experiment_no_internal_param_type": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "fgs_real_params": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "internal_param_type": FGSInternalParameters,
+        "experiment_param_type": MagicMock(),
+    },
+}
+
+
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
     with patch.dict(
         "artemis.__main__.PLAN_REGISTRY",
-        {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+        dict({k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS),
     ):
         app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
@@ -59,7 +98,9 @@ def test_env():
     with app.test_client() as client:
         with patch.dict(
             "artemis.__main__.PLAN_REGISTRY",
-            {(k, MagicMock()) for k, _ in PLAN_REGISTRY.items()},
+            dict(
+                {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
+            ),
         ):
             yield ClientAndRunEngine(client, mock_run_engine)
 
@@ -113,6 +154,30 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     assert (
         response.get("message")
         == "PlanNotFound(\"Experiment plan 'bad_plan' not found in registry.\")"
+    )
+
+
+def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
+    response = test_env.client.put(
+        "/test_experiment_no_internal_param_type/start", data=TEST_PARAMS
+    ).json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "PlanNotFound(\"Corresponding internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
+    )
+
+
+def test_plan_with_no_run_fails(test_env: ClientAndRunEngine):
+    response = test_env.client.put(
+        "/test_experiment_no_run/start", data=TEST_PARAMS
+    ).json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "PlanNotFound(\"Experiment plan 'test_experiment_no_run' has no 'run' method.\")"
     )
 
 
@@ -202,20 +267,44 @@ def test_cli_args_parse():
         "--dev",
         "--logging-level=DEBUG",
         "--verbose-event-logging",
-        "--skip_startup_connection",
+        "--skip-startup-connection",
     ]
     test_args = cli_arg_parse()
     assert test_args == ("DEBUG", True, True, True)
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
+@patch("dodal.i03.ApertureScatterguard")
+@patch("dodal.i03.Backlight")
+@patch("dodal.i03.EigerDetector")
+@patch("dodal.i03.FastGridScan")
+@patch("dodal.i03.S4SlitGaps")
+@patch("dodal.i03.Smargon")
+@patch("dodal.i03.Synchrotron")
+@patch("dodal.i03.Undulator")
+@patch("dodal.i03.Zebra")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
-    mock_get_beamline_params, mock_fgs, mock_eiger
+    mock_get_beamline_params,
+    zebra,
+    undulator,
+    synchrotron,
+    smargon,
+    s4_slits,
+    fast_grid_scan,
+    eiger,
+    backlight,
+    aperture_scatterguard,
 ):
     BlueskyRunner(MagicMock(), skip_startup_connection=False)
-    mock_fgs.return_value.wait_for_connection.assert_called_once()
+    zebra.return_value.wait_for_connection.assert_called_once()
+    undulator.return_value.wait_for_connection.assert_called_once()
+    synchrotron.return_value.wait_for_connection.assert_called_once()
+    smargon.return_value.wait_for_connection.assert_called_once()
+    s4_slits.return_value.wait_for_connection.assert_called_once()
+    fast_grid_scan.return_value.wait_for_connection.assert_called_once()
+    eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
+    backlight.return_value.wait_for_connection.assert_called_once()
+    aperture_scatterguard.return_value.wait_for_connection.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
@@ -233,23 +322,64 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_plans_are_setup_
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_get_beamline_params, mock_fgs, mock_eiger, mock_setup
+    mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
 ):
-    runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
-    mock_setup.assert_not_called()
-    runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
-    mock_setup.assert_called_once()
+    mock_setup = MagicMock()
+    with patch.dict(
+        "artemis.__main__.PLAN_REGISTRY",
+        {
+            "fast_grid_scan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+            },
+        },
+    ):
+        runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
+        mock_setup.assert_not_called()
+        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
+        mock_setup.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
 def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
     mock_get_beamline_params,
     mock_fgs,
     mock_eiger,
-    mock_setup,
 ):
-    BlueskyRunner(MagicMock(), skip_startup_connection=False)
-    mock_setup.assert_called()
+    mock_setup = MagicMock()
+    with patch.dict(
+        "artemis.__main__.PLAN_REGISTRY",
+        {
+            "fast_grid_scan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+            },
+            "other_plan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+            },
+            "yet_another_plan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+            },
+        },
+    ):
+        BlueskyRunner(MagicMock(), skip_startup_connection=False)
+        assert mock_setup.call_count == 3
+
+
+def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
+    response = test_env.client.put(TEST_BAD_PARAM_ENDPOINT, data='{"bad":1}').json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "<ValidationError: \"{'bad': 1} does not have enough properties\">"
+    )
+    assert "Invalid json parameters" in caplog.text
