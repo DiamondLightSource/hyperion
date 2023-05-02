@@ -225,7 +225,7 @@ def run_gridscan(
     yield from wait_for_fgs_valid(fgs_motors)
 
     # Start fake_stage here (async arming)
-    yield from bps.abs_set(fgs_composite.eiger, 1, group="arming")
+    yield from bps.abs_set(fgs_composite.eiger.do_arm, 1, group="arming")
 
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
@@ -242,9 +242,9 @@ def run_gridscan(
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
     # Wait for arming to finish
-    artemis.log.LOGGER.debug("Waiting for arming...")
+    artemis.log.LOGGER.INFO("Waiting for arming...")
     yield from bps.wait("arming")
-    artemis.log.LOGGER.debug("Arming finished")
+    artemis.log.LOGGER.INFO("Arming finished")
 
 
 @bpp.set_run_key_decorator("run_gridscan_and_move")
