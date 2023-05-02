@@ -1,14 +1,12 @@
-from bluesky.run_engine import RunEngine
+from unittest.mock import MagicMock, patch
+
 import pytest
-from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
-from unittest.mock import patch, MagicMock
+from bluesky.run_engine import RunEngine
 from dodal import i03
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
-from artemis.parameters.external_parameters import from_file
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_parameters import OAVParameters
+
+from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
 
 
 @pytest.fixture
