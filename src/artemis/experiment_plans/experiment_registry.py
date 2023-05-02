@@ -4,8 +4,9 @@ from typing import Callable, Dict, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.rotation_scan import RotationScanParams
+from dodal.devices.stepped_grid_scan import SteppedGridScanParams
 
-from artemis.experiment_plans import fast_grid_scan_plan
+from artemis.experiment_plans import fast_grid_scan_plan, stepped_grid_scan_plan
 
 
 def not_implemented():
@@ -16,7 +17,7 @@ def do_nothing():
     pass
 
 
-EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
+EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
 PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
@@ -27,6 +28,11 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
         "setup": do_nothing,
         "run": not_implemented,
         "param_type": RotationScanParams,
+    },
+    "stepped_grid_scan": {
+        "setup": stepped_grid_scan_plan.create_devices,
+        "run": stepped_grid_scan_plan.get_plan,
+        "param_type": SteppedGridScanParams,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())
