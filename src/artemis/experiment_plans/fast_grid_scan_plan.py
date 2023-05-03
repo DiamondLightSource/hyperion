@@ -202,6 +202,9 @@ def run_gridscan(
         "plan_name": "run_gridscan",
     },
 ):
+    # Start stage with asynchronous arming here
+    yield from bps.abs_set(fgs_composite.eiger.do_arm, 1, group="arming")
+
     sample_motors = fgs_composite.sample_motors
 
     # Currently gridscan only works for omega 0, see #
@@ -224,27 +227,26 @@ def run_gridscan(
     yield from set_fast_grid_scan_params(fgs_motors, parameters.experiment_params)
     yield from wait_for_fgs_valid(fgs_motors)
 
-    # Start stage with asynchronous arming here
-    yield from bps.abs_set(fgs_composite.eiger.do_arm, 1, group="arming")
-
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
-    # @bpp.stage_decorator([fgs_composite.eiger])
     def do_fgs():
-        yield from bps.wait()  # Wait for all moves to complete
-        yield from bps.kickoff(fgs_motors)
-        yield from bps.complete(fgs_motors, wait=True)
+        try:
+            yield from bps.wait()  # Wait for all moves to complete
+            yield from bps.kickoff(fgs_motors)
+            yield from bps.complete(fgs_motors, wait=True)
+        finally:
+            yield from bps.unstage(fgs_composite.eiger)
+
+    # Wait for arming to finish
+    artemis.log.LOGGER.info("Waiting for arming...")
+    yield from bps.wait("arming")  # Add timeout here?
+    artemis.log.LOGGER.info("Arming finished")
 
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()
 
     with TRACER.start_span("move_to_z_0"):
         yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
-
-    # Wait for arming to finish
-    artemis.log.LOGGER.info("Waiting for arming...")
-    yield from bps.wait("arming")  # Add timeout here?
-    artemis.log.LOGGER.info("Arming finished")
 
 
 @bpp.set_run_key_decorator("run_gridscan_and_move")
