@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import finalize_decorator, stage_decorator, subs_decorator
 from dodal import i03
+from dodal.devices.backlight import Backlight
+from dodal.devices.detector_motion import Det as DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.rotation_scan import RotationScanParams
 from dodal.devices.smargon import Smargon
@@ -25,27 +27,49 @@ if TYPE_CHECKING:
         RotationInternalParameters,
     )
 
-# TODO SET AND UNSET SOFTIN1 AT START AND END
-# TODO OPEN AND CLOSE DETECTOR SHUTTER
-# TODO CHECK AND MOVE BACKLIGHT
-# TODO sometimes zebra fails to disarm
 
 eiger: EigerDetector | None = None
 smargon: Smargon | None = None
 zebra: Zebra | None = None
+detector_motion: DetectorMotion | None = None
+backlight: Backlight | None = None
 
 
 def create_devices():
-    global eiger, smargon, zebra
+    global eiger, smargon, zebra, detector_motion, backlight
 
     eiger = i03.eiger(wait_for_connection=False)
     smargon = i03.smargon()
     zebra = i03.zebra()
+    detector_motion = DetectorMotion("BL03I")  # TODO fix after merging 554
+    backlight = i03.backlight()
 
 
 DIRECTION = -1
 OFFSET = 1
 SHUTTER_OPENING_TIME = 0.5
+
+
+def setup_sample_environment(
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    group="setup_senv",
+):
+    # must be on for shutter trigger to be enabled
+    yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
+    yield from bps.abs_set(detector_motion.shutter, 1, group=group)
+    yield from bps.abs_set(backlight.position, backlight.OUT, group=group)
+
+
+def cleanup_sample_environment(
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    group="cleanup_senv",
+):
+    yield from bps.abs_set(zebra.inputs.soft_in_1, 0, group=group)
+    yield from bps.abs_set(detector_motion.shutter, 0, group=group)
 
 
 def move_to_start_w_buffer(motors: Smargon, start_angle):
@@ -122,7 +146,13 @@ def rotation_scan_plan(params: RotationInternalParameters):
 
 
 def cleanup_plan(zebra):
-    yield from disarm_zebra(zebra)
+    yield from cleanup_sample_environment(zebra, detector_motion)
+    try:
+        yield from disarm_zebra(zebra)
+    except Exception:
+        yield from bps.wait("cleanup_senv")
+        raise
+    yield from bps.wait("cleanup_senv")
 
 
 def get_plan(
