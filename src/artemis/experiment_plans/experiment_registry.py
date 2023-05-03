@@ -13,6 +13,9 @@ from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal
     RotationInternalParameters,
     RotationScanParams,
 )
+from artemis.parameters.internal_parameters.plan_specific.stepped_grid_scan_internal_params import (
+    SteppedGridScanInternalParameters,
+)
 
 
 def not_implemented():
@@ -40,7 +43,8 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     "stepped_grid_scan": {
         "setup": stepped_grid_scan_plan.create_devices,
         "run": stepped_grid_scan_plan.get_plan,
-        "param_type": SteppedGridScanParams,
+        "internal_param_type": SteppedGridScanInternalParameters,
+        "experiment_param_type": SteppedGridScanParams,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())
