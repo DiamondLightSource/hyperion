@@ -278,7 +278,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
     array_arg = move_xyz.call_args.args[1]
     np.testing.assert_array_equal(
-        array_arg, np.array([0.05, 0.15000000000000002, 0.25], dtype=np.float16)
+        array_arg, np.array([0.05, 0.15000000000000002, 0.25])
     )
     move_xyz.assert_called_once()
 
@@ -315,7 +315,7 @@ def test_logging_within_plan(
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
     array_arg = move_xyz.call_args.args[1]
     np.testing.assert_array_almost_equal(
-        array_arg, np.array([0.05, 0.15000000000000002, 0.25], dtype=np.float16)
+        array_arg, np.array([0.05, 0.15000000000000002, 0.25])
     )
     move_xyz.assert_called_once()
 
