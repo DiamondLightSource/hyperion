@@ -105,11 +105,7 @@ class FGSZocaloCallback(CallbackBase):
             bboxes = []
             for n, res in enumerate(raw_results):
                 bboxes.append(
-                    list(
-                        map(
-                            operator.sub, res["bounding_box"][1], res["bounding_box"][0]
-                        )
-                    )
+                    np.array(res["bounding_box"][1]) - np.array(res["bounding_box"][0])
                 )
 
                 nicely_formatted_com = [

@@ -183,5 +183,5 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
     )
     np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
 
-    expected_bbox_size = list(map(operator.sub, [8, 8, 7], [2, 2, 2]))
-    assert found_bbox == expected_bbox_size
+    expected_bbox_size = np.array([8, 8, 7]) - np.array([2, 2, 2])
+    np.testing.assert_array_equal(found_bbox, expected_bbox_size)
