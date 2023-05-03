@@ -7,7 +7,7 @@ from dodal.devices.oav.oav_detector import OAV
 
 
 def prepare_for_snapshot(backlight: Backlight, aperture: Aperture):
-    yield from bps.abs_set(backlight.position, Backlight.IN, group="A")
+    yield from bps.abs_set(backlight.pos, Backlight.IN, group="A")
     # TODO get from beamlineParameters miniap_y_ROBOT_LOAD
     aperture_y_snapshot_position = 31.40
     aperture.wait_for_connection()

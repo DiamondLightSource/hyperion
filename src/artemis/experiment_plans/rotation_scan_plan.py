@@ -59,13 +59,12 @@ def setup_sample_environment(
     # must be on for shutter trigger to be enabled
     yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
     yield from bps.abs_set(detector_motion.shutter, 1, group=group)
-    yield from bps.abs_set(backlight.position, backlight.OUT, group=group)
+    yield from bps.abs_set(backlight.pos, backlight.OUT, group=group)
 
 
 def cleanup_sample_environment(
     zebra: Zebra,
     detector_motion: DetectorMotion,
-    backlight: Backlight,
     group="cleanup_senv",
 ):
     yield from bps.abs_set(zebra.inputs.soft_in_1, 0, group=group)
