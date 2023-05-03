@@ -1,4 +1,3 @@
-import operator
 from unittest.mock import MagicMock, call
 
 import numpy as np

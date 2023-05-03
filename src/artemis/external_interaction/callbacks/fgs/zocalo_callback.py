@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import operator
 import time
 from typing import Callable, Optional
 
