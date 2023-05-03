@@ -113,7 +113,7 @@ if [[ $START == 1 ]]; then
         fi
     fi
     echo "Logging to $ARTEMIS_LOG_DIR"
-
+    export ARTEMIS_LOG_DIR
     mkdir -p $ARTEMIS_LOG_DIR
     start_log_path=$ARTEMIS_LOG_DIR/start_log.txt
 

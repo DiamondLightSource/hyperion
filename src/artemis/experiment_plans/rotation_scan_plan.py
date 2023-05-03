@@ -25,6 +25,10 @@ if TYPE_CHECKING:
         RotationInternalParameters,
     )
 
+# TODO SET AND UNSET SOFTIN1 AT START AND END
+# TODO OPEN AND CLOSE DETECTOR SHUTTER
+# TODO CHECK AND MOVE BACKLIGHT
+# TODO sometimes zebra fails to disarm
 
 eiger: EigerDetector | None = None
 smargon: Smargon | None = None
@@ -46,20 +50,28 @@ SHUTTER_OPENING_TIME = 0.5
 
 def move_to_start_w_buffer(motors: Smargon, start_angle):
     yield from bps.abs_set(motors.omega.velocity, 120, wait=True)
-    yield from bps.abs_set(
-        motors.omega, start_angle - (OFFSET * DIRECTION), group="move_to_start"
+    start_position = start_angle - (OFFSET * DIRECTION)
+    LOGGER.info(
+        "moving to_start_w_buffer doing: start_angle-(offset*direction)"
+        f" = {start_angle} - ({OFFSET} * {DIRECTION} = {start_position}"
     )
 
+    yield from bps.abs_set(motors.omega, start_position, group="move_to_start")
 
-def move_to_end_w_buffer(motors: Smargon, scan_width):
+
+def move_to_end_w_buffer(motors: Smargon, scan_width: float, wait: float = True):
+    distance_to_move = (scan_width + 0.1 + OFFSET) * DIRECTION
+    LOGGER.info(
+        f"Given scan width of {scan_width}, offset of {OFFSET}, direction {DIRECTION}, apply a relative set to omega of: {distance_to_move}"
+    )
     yield from bps.rel_set(
-        motors.omega, ((scan_width + 0.1 + OFFSET) * DIRECTION), group="move_to_end"
+        motors.omega, distance_to_move, group="move_to_end", wait=wait
     )
 
 
-def set_speed(motors: Smargon, image_width, exposure_time):
+def set_speed(motors: Smargon, image_width, exposure_time, wait=True):
     yield from bps.abs_set(
-        motors.omega.velocity, image_width / exposure_time, group="set_speed"
+        motors.omega.velocity, image_width / exposure_time, group="set_speed", wait=True
     )
 
 
@@ -78,10 +90,9 @@ def rotation_scan_plan(params: RotationInternalParameters):
 
     LOGGER.info("setting up and staging eiger")
 
-    LOGGER.info(f"moving omega to {start_angle}")
+    LOGGER.info(f"moving omega to beginning, start_angle={start_angle}")
     yield from move_to_start_w_buffer(smargon, start_angle)
     LOGGER.info("wait for any previous moves...")
-    yield from bps.wait("move_to_start")
     LOGGER.info(
         f"setting up zebra w: start_angle={start_angle}, scan_width={scan_width}"
     )
@@ -94,12 +105,15 @@ def rotation_scan_plan(params: RotationInternalParameters):
             SHUTTER_OPENING_TIME,
             image_width / exposure_time,
         ),
+        group="setup_zebra",
     )
+    yield from bps.wait("move_to_start")
+    yield from bps.wait("setup_zebra")
 
     LOGGER.info(
         f"setting rotation speed for image_width, exposure_time {image_width, exposure_time} to {image_width/exposure_time}"
     )
-    yield from set_speed(smargon, image_width, exposure_time)
+    yield from set_speed(smargon, image_width, exposure_time, wait=True)
 
     yield from arm_zebra(zebra)
 
