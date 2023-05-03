@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+import numpy as np
 from dodal.devices.eiger import DetectorParams
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
@@ -16,7 +17,6 @@ from artemis.parameters.constants import (
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,
 )
-from artemis.utils import create_point
 
 
 class ArtemisParameters:
@@ -181,8 +181,8 @@ class InternalParameters(ABC):
         """
 
         param_dict["num_images"] = self.experiment_params.get_num_images()
-        param_dict["upper_left"] = create_point(*param_dict["upper_left"])
-        param_dict["position"] = create_point(*param_dict["position"])
+        param_dict["upper_left"] = np.array([*param_dict["upper_left"]])
+        param_dict["position"] = np.array([*param_dict["position"]])
 
     def __repr__(self):
         return (

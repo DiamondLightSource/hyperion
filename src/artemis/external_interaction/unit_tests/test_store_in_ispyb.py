@@ -1,6 +1,7 @@
 import re
 from unittest.mock import MagicMock, Mock, mock_open, patch
 
+import numpy as np
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
@@ -14,7 +15,6 @@ from artemis.parameters.external_parameters import from_file as default_raw_para
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import create_point
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -28,7 +28,7 @@ TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 @pytest.fixture
 def dummy_params():
     dummy_params = FGSInternalParameters(default_raw_params())
-    dummy_params.artemis_params.ispyb_params.upper_left = create_point(100, 100, 50)
+    dummy_params.artemis_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.artemis_params.ispyb_params.microns_per_pixel_x = 0.8
     dummy_params.artemis_params.ispyb_params.microns_per_pixel_y = 0.8
     return dummy_params
@@ -129,7 +129,7 @@ def test_store_3d_grid_scan(
     y = 1
     z = 2
 
-    dummy_params.artemis_params.ispyb_params.upper_left = create_point(x, y, z)
+    dummy_params.artemis_params.ispyb_params.upper_left = np.array([x, y, z])
     dummy_params.experiment_params.z_step_size = 0.2
 
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
@@ -315,8 +315,8 @@ def test_ispyb_deposition_rounds_to_int(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    dummy_ispyb.full_params.artemis_params.ispyb_params.upper_left = create_point(
-        0.01, 100, 50
+    dummy_ispyb.full_params.artemis_params.ispyb_params.upper_left = np.array(
+        [0.01, 100, 50]
     )
     dummy_ispyb.begin_deposition()
     mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]

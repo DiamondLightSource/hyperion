@@ -9,7 +9,6 @@ from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal
     RotationInternalParameters,
     RotationScanParams,
 )
-from artemis.utils import create_point
 
 
 def test_rotation_scan_param_validity():
@@ -54,8 +53,8 @@ def test_rotation_parameters_load_from_file():
 
     ispyb_params = internal_parameters.artemis_params.ispyb_params
 
-    np.testing.assert_array_equal(ispyb_params.position, create_point(10, 20, 30))
-    np.testing.assert_array_equal(ispyb_params.upper_left, create_point(10, 20, 30))
+    np.testing.assert_array_equal(ispyb_params.position, np.array([10, 20, 30]))
+    np.testing.assert_array_equal(ispyb_params.upper_left, np.array([10, 20, 30]))
 
     detector_params = internal_parameters.artemis_params.detector_params
 

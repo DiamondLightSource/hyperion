@@ -14,7 +14,6 @@ from artemis.parameters.external_parameters import from_file as default_raw_para
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import create_point
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -85,7 +84,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
-    expected_centre_grid_coords = create_point(1, 2, 3)
+    expected_centre_grid_coords = np.array([1, 2, 3])
     single_crystal_result = [
         {
             "max_voxel": [1, 2, 3],
@@ -98,17 +97,13 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
         single_crystal_result
     )
 
-    found_centre = callbacks.zocalo_handler.wait_for_results(create_point(0, 0, 0))[0]
+    found_centre = callbacks.zocalo_handler.wait_for_results(np.array([0, 0, 0]))[0]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
         100
     )
     expected_centre_motor_coords = (
         dummy_params.experiment_params.grid_position_to_motor_position(
-            create_point(
-                expected_centre_grid_coords[0] - 0.5,
-                expected_centre_grid_coords[1] - 0.5,
-                expected_centre_grid_coords[2] - 0.5,
-            )
+            expected_centre_grid_coords - 0.5
         )
     )
     np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
@@ -124,7 +119,7 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
         NoDiffractionFound()
     )
 
-    fallback_position = create_point(1, 2, 3)
+    fallback_position = np.array([1, 2, 3])
 
     found_centre = callbacks.zocalo_handler.wait_for_results(fallback_position)[0]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
@@ -149,11 +144,11 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
     callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
-    expected_centre_grid_coords = create_point(4, 6, 2)
+    expected_centre_grid_coords = np.array([4, 6, 2])
     multi_crystal_result = [
         {
             "max_voxel": [1, 2, 3],
-            "centre_of_mass": create_point(3, 11, 11),
+            "centre_of_mass": np.array([3, 11, 11]),
             "bounding_box": [[1, 1, 1], [3, 3, 3]],
             "n_voxels": 2,
             "total_count": 192512.0,
@@ -170,17 +165,19 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
         multi_crystal_result
     )
     found_centre, found_bbox = callbacks.zocalo_handler.wait_for_results(
-        create_point(0, 0, 0)
+        np.array([0, 0, 0])
     )
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
         100
     )
     expected_centre_motor_coords = (
         dummy_params.experiment_params.grid_position_to_motor_position(
-            create_point(
-                expected_centre_grid_coords[0] - 0.5,
-                expected_centre_grid_coords[1] - 0.5,
-                expected_centre_grid_coords[2] - 0.5,
+            np.array(
+                [
+                    expected_centre_grid_coords[0] - 0.5,
+                    expected_centre_grid_coords[1] - 0.5,
+                    expected_centre_grid_coords[2] - 0.5,
+                ]
             )
         )
     )

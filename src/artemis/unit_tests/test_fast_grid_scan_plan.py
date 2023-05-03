@@ -46,7 +46,6 @@ from artemis.parameters.internal_parameters.internal_parameters import (
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import create_point
 
 
 @pytest.fixture
@@ -239,7 +238,7 @@ def test_results_passed_to_move_motors(
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
     motor_position = test_params.experiment_params.grid_position_to_motor_position(
-        create_point(1, 2, 3)
+        np.array([1, 2, 3])
     )
     RE(move_xyz(fake_fgs_composite.sample_motors, motor_position))
     bps_mv.assert_called_once_with(
@@ -279,7 +278,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
     array_arg = move_xyz.call_args.args[1]
     np.testing.assert_array_equal(
-        array_arg, create_point(0.05, 0.15000000000000002, 0.25)
+        array_arg, np.array([0.05, 0.15000000000000002, 0.25], dtype=np.float16)
     )
     move_xyz.assert_called_once()
 
@@ -316,7 +315,7 @@ def test_logging_within_plan(
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
     array_arg = move_xyz.call_args.args[1]
     np.testing.assert_array_almost_equal(
-        array_arg, create_point(0.05, 0.15000000000000002, 0.25)
+        array_arg, np.array([0.05, 0.15000000000000002, 0.25], dtype=np.float16)
     )
     move_xyz.assert_called_once()
 

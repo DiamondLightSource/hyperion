@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import numpy as np
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal import i03
@@ -22,7 +23,6 @@ from dodal.i03 import (
     Undulator,
     Zebra,
 )
-from numpy import ndarray
 
 import artemis.log
 from artemis.device_setup_plans.setup_zebra_for_fgs import (
@@ -41,7 +41,6 @@ from artemis.parameters.constants import (
     SIM_BEAMLINE,
 )
 from artemis.tracing import TRACER
-from artemis.utils import create_point
 
 if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
@@ -155,7 +154,7 @@ def read_hardware_for_ispyb(
 @bpp.run_decorator(md={"subplan_name": "move_xyz"})
 def move_xyz(
     sample_motors,
-    xray_centre_motor_position: ndarray,
+    xray_centre_motor_position: np.ndarray,
     md={
         "plan_name": "move_xyz",
     },
@@ -251,10 +250,12 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = create_point(
-        (yield from bps.rd(fgs_composite.sample_motors.x)),
-        (yield from bps.rd(fgs_composite.sample_motors.y)),
-        (yield from bps.rd(fgs_composite.sample_motors.z)),
+    initial_xyz = np.array(
+        [
+            (yield from bps.rd(fgs_composite.sample_motors.x)),
+            (yield from bps.rd(fgs_composite.sample_motors.y)),
+            (yield from bps.rd(fgs_composite.sample_motors.z)),
+        ]
     )
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)

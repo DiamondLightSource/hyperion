@@ -4,6 +4,7 @@ import operator
 import time
 from typing import Callable, Optional
 
+import numpy as np
 from bluesky.callbacks import CallbackBase
 from numpy import ndarray
 
@@ -19,7 +20,6 @@ from artemis.log import LOGGER
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import create_point
 
 
 class FGSZocaloCallback(CallbackBase):
@@ -111,7 +111,10 @@ class FGSZocaloCallback(CallbackBase):
                         )
                     )
                 )
-                nicely_formatted_com = [f"{com:.2f}" for com in res["centre_of_mass"]]
+
+                nicely_formatted_com = [
+                    f"{np.round(com,2)}" for com in res["centre_of_mass"]
+                ]
                 crystal_summary += (
                     f"Crystal {n+1}: "
                     f"Strength {res['total_count']}; "
@@ -120,11 +123,11 @@ class FGSZocaloCallback(CallbackBase):
                 )
             self.ispyb.append_to_comment(crystal_summary)
 
-            raw_centre = create_point(*(raw_results[0]["centre_of_mass"]))
+            raw_centre = np.array([*(raw_results[0]["centre_of_mass"])])
 
             # _wait_for_result returns the centre of the grid box, but we want the corner
-            results = create_point(
-                raw_centre[0] - 0.5, raw_centre[1] - 0.5, raw_centre[2] - 0.5
+            results = np.array(
+                [raw_centre[0] - 0.5, raw_centre[1] - 0.5, raw_centre[2] - 0.5]
             )
             xray_centre = self.grid_position_to_motor_position(results)
 

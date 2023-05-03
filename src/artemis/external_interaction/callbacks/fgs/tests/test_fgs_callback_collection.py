@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import DetectorParams, EigerDetector
@@ -16,7 +17,6 @@ from artemis.parameters.external_parameters import from_file as default_raw_para
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import create_point
 
 
 def test_callback_collection_init():
@@ -92,7 +92,7 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._wait_for_result = MagicMock()
     callbacks.zocalo_handler._run_end = MagicMock()
     callbacks.zocalo_handler._run_start = MagicMock()
-    callbacks.zocalo_handler.xray_centre_motor_position = create_point(1, 2, 3)
+    callbacks.zocalo_handler.xray_centre_motor_position = np.array([1, 2, 3])
 
     fast_grid_scan_composite = FGSComposite()
     # this is where it's currently getting stuck:

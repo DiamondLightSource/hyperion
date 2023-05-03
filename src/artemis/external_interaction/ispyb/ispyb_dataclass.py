@@ -2,10 +2,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
 
+import numpy as np
 from dataclasses_json import config, dataclass_json
-from numpy import ndarray
-
-from artemis.utils import create_point
 
 ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
@@ -14,8 +12,8 @@ ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    "upper_left": create_point(0, 0, 0),
-    "position": create_point(0, 0, 0),
+    "upper_left": np.array([0, 0, 0]),
+    "position": np.array([0, 0, 0]),
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission": 1.0,
@@ -41,19 +39,19 @@ class IspybParams:
     microns_per_pixel_x: float
     microns_per_pixel_y: float
 
-    upper_left: ndarray = field(
+    upper_left: np.ndarray = field(
         # in px on the image
         metadata=config(
             encoder=lambda my_array: str(my_array),
-            decoder=lambda my_list: ndarray(my_list),
+            decoder=lambda my_list: np.ndarray(my_list),
         )
     )
 
-    position: ndarray = field(
+    position: np.ndarray = field(
         # motor position
         metadata=config(
             encoder=lambda my_array: str(my_array),
-            decoder=lambda my_list: ndarray(my_list),
+            decoder=lambda my_list: np.ndarray(my_list),
         )
     )
 
