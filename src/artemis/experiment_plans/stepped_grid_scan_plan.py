@@ -9,12 +9,12 @@ from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.stepped_grid_scan import (
     SteppedGridScan,
     set_stepped_grid_scan_params,
 )
 from dodal.devices.stepped_grid_scan_composite import SteppedGridScanComposite
-from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
@@ -228,7 +228,7 @@ def run_gridscan_and_move(
     def gridscan_with_subscriptions(sgs_composite, detector, params):
         yield from run_gridscan(sgs_composite, detector, params)
 
-    artemis.log.LOGGER.info("Starting grid scan")
+    artemis.log.LOGGER.info("Starting stepped grid scan")
     yield from gridscan_with_subscriptions(sgs_composite, eiger, parameters)
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,

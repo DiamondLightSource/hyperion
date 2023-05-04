@@ -261,7 +261,7 @@ def run_gridscan_and_move(
     # While the gridscan is happening we want to write out nexus files and trigger zocalo
     @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
     def gridscan_with_subscriptions(fgs_composite, params):
-        artemis.log.LOGGER.info("Starting grid scan")
+        artemis.log.LOGGER.info("Starting fast grid scan")
         yield from run_gridscan(fgs_composite, params)
 
     yield from gridscan_with_subscriptions(fgs_composite, parameters)
