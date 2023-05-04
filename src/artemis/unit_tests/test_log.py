@@ -10,6 +10,8 @@ from artemis import log
 
 @pytest.fixture
 def clear_loggers():
+    [log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
     with (
         patch("dodal.log.logging.FileHandler._open"),
         patch("dodal.log.GELFTCPHandler.emit") as graylog_emit,
