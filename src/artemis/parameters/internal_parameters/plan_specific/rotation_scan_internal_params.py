@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from dataclasses_json import DataClassJsonMixin
-from dodal.devices.eiger import EigerTriggerNumber
 from dodal.devices.motors import XYZLimitBundle
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
@@ -27,7 +26,6 @@ class RotationScanParams(DataClassJsonMixin, AbstractExperimentParameterBase):
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
-    trigger_number: str = EigerTriggerNumber.MANY_TRIGGERS
     rotation_direction: int = -1
     offset_deg: float = 1.0
     shutter_opening_time_s: float = 0.6
