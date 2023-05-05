@@ -1,26 +1,14 @@
 import logging
 from os import environ
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
-from bluesky.log import config_bluesky_logging
-from bluesky.log import logger as bluesky_logger
-from graypy import GELFTCPHandler
-from ophyd.log import config_ophyd_logging
-from ophyd.log import logger as ophyd_logger
-
-beamline: Union[str, None] = environ.get("BEAMLINE")
+from dodal.log import LOGGER as dodal_logger
+from dodal.log import set_up_logging_handlers as setup_dodal_logging
 
 LOGGER = logging.getLogger("Artemis")
-LOGGER.setLevel(logging.DEBUG)  # default logger to log everything
-ophyd_logger.parent = LOGGER
-bluesky_logger.parent = LOGGER
-
-
-class BeamlineFilter(logging.Filter):
-    def filter(self, record):
-        record.beamline = beamline if beamline else "dev"
-        return True
+LOGGER.setLevel(logging.DEBUG)
+LOGGER.parent = dodal_logger
 
 
 class DCGIDFilter(logging.Filter):
@@ -48,55 +36,11 @@ def set_up_logging_handlers(
 
     Mode defaults to production and can be switched to dev with the --dev flag on run.
     """
-    logging_level = logging_level if logging_level else "INFO"
-    file_path = Path(_get_logging_file_path(), "artemis.txt")
-    graylog_host, graylog_port = _get_graylog_configuration(dev_mode)
-    formatter = logging.Formatter(
-        "[%(asctime)s] %(name)s %(module)s %(levelname)s: %(message)s"
-    )
-    handlers: list[logging.Handler] = [
-        GELFTCPHandler(graylog_host, graylog_port),
-        logging.StreamHandler(),
-        logging.FileHandler(filename=file_path),
-    ]
-    for handler in handlers:
-        handler.setFormatter(formatter)
-        handler.setLevel(logging_level)
-        LOGGER.addHandler(handler)
-
-    LOGGER.addFilter(BeamlineFilter())
+    handlers = setup_dodal_logging(logging_level, dev_mode, _get_logging_file_path())
+    dodal_logger.addFilter(dc_group_id_filter)
     LOGGER.addFilter(dc_group_id_filter)
 
-    # for assistance in debugging
-    if dev_mode:
-        set_seperate_ophyd_bluesky_files(
-            logging_level=logging_level, logging_path=_get_logging_file_path()
-        )
-
-    # Warn users if trying to run in prod in debug mode
-    if not dev_mode and logging_level == "DEBUG":
-        LOGGER.warning(
-            'STARTING ARTEMIS IN DEBUG WITHOUT "--dev" WILL FLOOD PRODUCTION GRAYLOG'
-            " WITH MESSAGES. If you really need debug messages, set up a"
-            " local graylog instead!\n"
-        )
-
     return handlers
-
-
-def _get_graylog_configuration(dev_mode: bool) -> Tuple[str, int]:
-    """Get the host and port for the  graylog interaction.
-
-    If running on dev mode, this switches to localhost. Otherwise it publishes to the
-    dls graylog.
-
-    Returns:
-        (host,port): A tuple of the relevent host and port for graylog.
-    """
-    if dev_mode:
-        return "localhost", 5555
-    else:
-        return "graylog2.diamond.ac.uk", 12218
 
 
 def _get_logging_file_path() -> Path:
@@ -118,17 +62,4 @@ def _get_logging_file_path() -> Path:
         logging_path = Path("./tmp/dev/")
 
     Path(logging_path).mkdir(parents=True, exist_ok=True)
-    return logging_path
-
-
-def set_seperate_ophyd_bluesky_files(logging_level: str, logging_path: Path) -> None:
-    """Set file path for the file handlder to the individual Bluesky and Ophyd loggers.
-
-    These provide seperate, nicely formatted logs in the same dir as the artemis log
-    file for each individual module.
-    """
-    bluesky_file_path: Path = Path(logging_path, "bluesky.log")
-    ophyd_file_path: Path = Path(logging_path, "ophyd.log")
-
-    config_bluesky_logging(file=str(bluesky_file_path), level=logging_level)
-    config_ophyd_logging(file=str(ophyd_file_path), level=logging_level)
+    return logging_path / Path("artemis.txt")
