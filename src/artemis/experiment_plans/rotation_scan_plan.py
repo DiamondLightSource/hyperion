@@ -29,13 +29,13 @@ if TYPE_CHECKING:
 
 
 def create_devices():
-    global eiger, smargon, zebra, detector_motion, backlight
-
-    eiger = i03.eiger(wait_for_connection=False)
-    smargon = i03.smargon()
-    zebra = i03.zebra()
-    detector_motion = DetectorMotion("BL03I")  # TODO fix after merging 554
-    backlight = i03.backlight()
+    i03.eiger(wait_for_connection=False)
+    i03.smargon()
+    i03.zebra()
+    DetectorMotion(
+        "BL03I", name="det"
+    ).wait_for_connection()  # TODO fix after merging 554
+    i03.backlight()
 
 
 DIRECTION = -1
@@ -156,7 +156,8 @@ def get_plan(
     eiger = i03.eiger(wait_for_connection=False)
     smargon = i03.smargon()
     zebra = i03.zebra()
-    detector_motion = (DetectorMotion("BL03I"),)  # TODO fix after merging 554
+    detector_motion = DetectorMotion("BL03I", name="det")  # TODO fix after merging 554
+    detector_motion.wait_for_connection()
     backlight = i03.backlight()
     devices = {
         "eiger": eiger,

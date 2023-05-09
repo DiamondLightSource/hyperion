@@ -20,6 +20,10 @@ from artemis.external_interaction.callbacks.rotation.rotation_callback_collectio
 )
 
 if TYPE_CHECKING:
+    from dodal.devices.backlight import Backlight
+    from dodal.devices.detector_motion import (
+        Det as DetectorMotion,  # TODO fix after 554
+    )
     from dodal.devices.eiger import EigerDetector
     from dodal.devices.smargon import Smargon
     from dodal.devices.zebra import Zebra
@@ -65,14 +69,23 @@ def test_get_plan(
     smargon: Smargon,
     zebra: Zebra,
     eiger: EigerDetector,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
     zebra.pc.armed.set(False)
-    with patch("artemis.experiment_plans.rotation_scan_plan.smargon", smargon):
-        with patch("artemis.experiment_plans.rotation_scan_plan.eiger", eiger):
-            with patch("artemis.experiment_plans.rotation_scan_plan.zebra", zebra):
-                RE(get_plan(test_rotation_params, MagicMock()))
+    with (
+        patch("dodal.i03.smargon", return_value=smargon),
+        patch("dodal.i03.eiger", return_value=eiger),
+        patch("dodal.i03.zebra", return_value=zebra),
+        patch("dodal.i03.backlight", return_value=backlight),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.DetectorMotion",
+            return_value=detector_motion,
+        ),
+    ):
+        RE(get_plan(test_rotation_params, MagicMock()))
 
     eiger.stage.assert_called()
     eiger.unstage.assert_called()
@@ -86,6 +99,8 @@ def test_rotation_plan(
     smargon: Smargon,
     zebra: Zebra,
     eiger: EigerDetector,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
@@ -97,14 +112,15 @@ def test_rotation_plan(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    with patch("artemis.experiment_plans.rotation_scan_plan.smargon", smargon):
-        with patch("artemis.experiment_plans.rotation_scan_plan.eiger", eiger):
-            with patch("artemis.experiment_plans.rotation_scan_plan.zebra", zebra):
-                with patch(
-                    "bluesky.preprocessors.__read_and_stash_a_motor",
-                    __fake_read,
-                ):
-                    RE(rotation_scan_plan(test_rotation_params))
+    with patch(
+        "bluesky.preprocessors.__read_and_stash_a_motor",
+        __fake_read,
+    ):
+        RE(
+            rotation_scan_plan(
+                test_rotation_params, eiger, smargon, zebra, backlight, detector_motion
+            )
+        )
 
     assert mock_omega_sets.call_count == 4
 
@@ -119,25 +135,37 @@ def test_cleanup_happens(
     smargon: Smargon,
     zebra: Zebra,
     eiger: EigerDetector,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
     smargon.omega.set = MagicMock(side_effect=Exception("Experiment fails"))
-    with patch("artemis.experiment_plans.rotation_scan_plan.smargon", smargon):
-        with patch("artemis.experiment_plans.rotation_scan_plan.eiger", eiger):
-            with patch("artemis.experiment_plans.rotation_scan_plan.zebra", zebra):
-                # check main subplan part fails
-                with pytest.raises(Exception):
-                    RE(rotation_scan_plan(test_rotation_params))
-                    cleanup_plan.assert_not_called()
-                # check that failure is handled in composite plan
-                with pytest.raises(Exception):
-                    RE(
-                        get_plan(
-                            test_rotation_params,
-                            RotationCallbackCollection.from_params(
-                                test_rotation_params
-                            ),
-                        )
-                    )
-                cleanup_plan.assert_called_once()
+
+    # check main subplan part fails
+    with pytest.raises(Exception):
+        RE(
+            rotation_scan_plan(
+                test_rotation_params, eiger, smargon, zebra, backlight, detector_motion
+            )
+        )
+        cleanup_plan.assert_not_called()
+    # check that failure is handled in composite plan
+    with (
+        patch("dodal.i03.smargon", return_value=smargon),
+        patch("dodal.i03.eiger", return_value=eiger),
+        patch("dodal.i03.zebra", return_value=zebra),
+        patch("dodal.i03.backlight", return_value=backlight),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.DetectorMotion",
+            return_value=detector_motion,
+        ),
+    ):
+        with pytest.raises(Exception):
+            RE(
+                get_plan(
+                    test_rotation_params,
+                    RotationCallbackCollection.from_params(test_rotation_params),
+                )
+            )
+        cleanup_plan.assert_called_once()

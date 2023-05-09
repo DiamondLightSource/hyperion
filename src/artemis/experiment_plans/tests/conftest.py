@@ -77,5 +77,20 @@ def zebra():
 
 
 @pytest.fixture
+def backlight():
+    return i03.backlight(fake_with_ophyd_sim=True)
+
+
+# TODO fix after #554
+@pytest.fixture
+def detector_motion():
+    from dodal.devices.detector_motion import Det
+    from ophyd.sim import make_fake_device
+
+    DM = make_fake_device(Det)
+    return DM("BL03I", name="det")
+
+
+@pytest.fixture
 def RE():
     return RunEngine({})
