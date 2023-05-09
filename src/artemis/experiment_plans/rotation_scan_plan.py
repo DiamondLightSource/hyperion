@@ -28,13 +28,6 @@ if TYPE_CHECKING:
     )
 
 
-eiger: EigerDetector | None = None
-smargon: Smargon | None = None
-zebra: Zebra | None = None
-detector_motion: DetectorMotion | None = None
-backlight: Backlight | None = None
-
-
 def create_devices():
     global eiger, smargon, zebra, detector_motion, backlight
 
@@ -98,11 +91,14 @@ def set_speed(motors: Smargon, image_width, exposure_time, wait=True):
     )
 
 
-def rotation_scan_plan(params: RotationInternalParameters):
-    assert eiger is not None
-    assert smargon is not None
-    assert zebra is not None
-
+def rotation_scan_plan(
+    params: RotationInternalParameters,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    backlight: Backlight,
+    detector_motion: DetectorMotion,
+):
     detector_params: DetectorParams = params.artemis_params.detector_params
     expt_params: RotationScanParams = params.experiment_params
 
@@ -144,7 +140,7 @@ def rotation_scan_plan(params: RotationInternalParameters):
     yield from move_to_end_w_buffer(smargon, scan_width)
 
 
-def cleanup_plan(zebra):
+def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
     yield from cleanup_sample_environment(zebra, detector_motion)
     try:
         yield from disarm_zebra(zebra)
@@ -157,16 +153,27 @@ def cleanup_plan(zebra):
 def get_plan(
     params: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
-    @subs_decorator(list(subscriptions))
-    def rotation_scan_plan_with_stage_and_cleanup(params: RotationInternalParameters):
-        assert eiger is not None
-        assert smargon is not None
-        assert zebra is not None
+    eiger = i03.eiger(wait_for_connection=False)
+    smargon = i03.smargon()
+    zebra = i03.zebra()
+    detector_motion = (DetectorMotion("BL03I"),)  # TODO fix after merging 554
+    backlight = i03.backlight()
+    devices = {
+        "eiger": eiger,
+        "smargon": smargon,
+        "zebra": zebra,
+        "detector_motion": detector_motion,
+        "backlight": backlight,
+    }
 
+    @subs_decorator(list(subscriptions))
+    def rotation_scan_plan_with_stage_and_cleanup(
+        params: RotationInternalParameters,
+    ):
         @stage_decorator([eiger])
-        @finalize_decorator(lambda: cleanup_plan(zebra))
+        @finalize_decorator(lambda: cleanup_plan(**devices))
         def rotation_with_cleanup_and_stage(params):
-            yield from rotation_scan_plan(params)
+            yield from rotation_scan_plan(params, **devices)
 
         # TODO planify these
         eiger.set_detector_parameters(params.artemis_params.detector_params)

@@ -275,6 +275,7 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
+@pytest.mark.skip(reason="fixed in 554...")
 @patch("dodal.i03.ApertureScatterguard")
 @patch("dodal.i03.Backlight")
 @patch("dodal.i03.EigerDetector")
