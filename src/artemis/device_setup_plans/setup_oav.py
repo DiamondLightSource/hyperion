@@ -31,7 +31,9 @@ def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
     # Set the python file to use for calculating the edge waveforms
     current_filename = yield from bps.rd(oav.mxsc.filename)
     if current_filename != filename:
-        LOGGER.info(f"Current python file is {current_filename}, setting to {filename}")
+        LOGGER.info(
+            f"Current OAV MXSC plugin python file is {current_filename}, setting to {filename}"
+        )
         yield from bps.abs_set(oav.mxsc.filename, filename)
         yield from bps.abs_set(oav.mxsc.read_file, 1)
 

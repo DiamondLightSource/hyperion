@@ -342,7 +342,6 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
         mock_setup.assert_called_once()
 
 
-@pytest.mark.skip("fixed in 595")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
@@ -371,6 +370,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
                 "param_type": MagicMock(),
             },
         },
+        clear=True,
     ):
         BlueskyRunner(MagicMock(), skip_startup_connection=False)
         assert mock_setup.call_count == 3

@@ -95,11 +95,16 @@ def grid_detection_main_plan(
         bottom_edge = bottom_edge[tip_x_px : tip_x_px + grid_width_px]
 
         # the edge detection line can jump to the edge of the image sometimes, filter
-        # those points out
-        min_y = np.min(top_edge[top_edge != 0])
-        max_y = np.max(bottom_edge[bottom_edge != full_oav_image_height_px])
+        # those points out, and if empty after filter use the whole image
+        filtered_top = top_edge[top_edge != 0]
+        if filtered_top.size == 0:
+            filtered_top = [full_oav_image_height_px]
+        filtered_bottom = bottom_edge[bottom_edge != full_oav_image_height_px]
+        if filtered_bottom.size == 0:
+            filtered_bottom = [0]
+        min_y = np.min(filtered_top)
+        max_y = np.max(filtered_bottom)
         LOGGER.info(f"Min/max {min_y, max_y}")
-        # if top and bottom empty after filter use the whole image (ask neil)
         grid_height_px = max_y - min_y
 
         LOGGER.info(f"Drawing snapshot {grid_width_px} by {grid_height_px}")
