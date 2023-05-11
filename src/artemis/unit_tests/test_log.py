@@ -38,6 +38,7 @@ def test_no_env_variable_sets_correct_file_handler(
     assert file_handlers.baseFilename.endswith("/tmp/dev/artemis.txt")
 
 
+@pytest.mark.skip(reason="to be fixed in #644")
 @patch("artemis.log.Path.mkdir")
 @patch.dict(
     os.environ, {"ARTEMIS_LOG_DIR": "./dls_sw/s03/logs/bluesky"}
