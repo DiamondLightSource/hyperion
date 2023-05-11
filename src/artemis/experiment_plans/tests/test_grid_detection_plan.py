@@ -48,11 +48,6 @@ def fake_create_devices():
     return oav, smargon, bl
 
 
-patch.dict(
-    "dodal.devices.oav.oav_parameters.OAV_CONFIG_FILE_DEFAULTS", test_config_files
-)
-
-
 @patch("dodal.i03.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.mv")
@@ -61,7 +56,12 @@ def test_grid_detection_plan(
     bps_trigger: MagicMock, bps_mv: MagicMock, bps_wait: MagicMock, RE
 ):
     oav, smargon, bl = fake_create_devices()
-    params = OAVParameters()
+    params = OAVParameters(
+        context="loopCentring",
+        zoom_params_file=test_config_files["zoom_params_file"],
+        oav_config_json=test_config_files["oav_json"],
+        display_config=test_config_files["display_config"],
+    )
     gridscan_params = GridScanParams()
     RE(
         grid_detection_plan(
