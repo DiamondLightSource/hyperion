@@ -20,6 +20,7 @@ from jsonschema.exceptions import ValidationError
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
+from artemis.experiment_plans.fast_grid_scan_plan import create_devices, fast_grid_scan
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
 )
@@ -52,69 +53,6 @@ class StatusAndMessage:
     def __init__(self, status: Status, message: str = "") -> None:
         self.status = status.value
         self.message = message
-
-
-# class BlueskyRunner:
-#     callbacks: FGSCallbackCollection
-#     command_queue: "Queue[Command]" = Queue()
-#     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
-#     last_run_aborted: bool = False
-#     aperture_change_callback = ApertureChangeCallback()
-
-#     def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
-#         self.RE = RE
-#         self.skip_startup_connection = skip_startup_connection
-#         if VERBOSE_EVENT_LOGGING:
-#             RE.subscribe(VerbosePlanExecutionLoggingCallback())
-#         RE.subscribe(self.aperture_change_callback)
-
-#         if not self.skip_startup_connection:
-#             for plan_name in PLAN_REGISTRY:
-#                 PLAN_REGISTRY[plan_name]["setup"]()
-
-#     def start(
-#         self, experiment: Callable, parameters: InternalParameters, plan_name: str
-#     ) -> StatusAndMessage:
-#         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
-
-#         if self.skip_startup_connection:
-#             PLAN_REGISTRY[plan_name]["setup"]()
-
-#         self.callbacks = FGSCallbackCollection.from_params(parameters)
-#         if (
-#             self.current_status.status == Status.BUSY.value
-#             or self.current_status.status == Status.ABORTING.value
-#         ):
-#             return StatusAndMessage(Status.FAILED, "Bluesky already running")
-#         else:
-#             self.current_status = StatusAndMessage(Status.BUSY)
-#             self.command_queue.put(Command(Actions.START, experiment, parameters))
-#             return StatusAndMessage(Status.SUCCESS)
-
-#     def stopping_thread(self):
-#         try:
-#             self.RE.abort()
-#             self.current_status = StatusAndMessage(Status.IDLE)
-#         except Exception as e:
-#             self.current_status = StatusAndMessage(Status.FAILED, repr(e))
-
-#     def stop(self) -> StatusAndMessage:
-#         if self.current_status.status == Status.IDLE.value:
-#             return StatusAndMessage(Status.FAILED, "Bluesky not running")
-#         elif self.current_status.status == Status.ABORTING.value:
-#             return StatusAndMessage(Status.FAILED, "Bluesky already stopping")
-#         else:
-#             self.current_status = StatusAndMessage(Status.ABORTING)
-#             stopping_thread = threading.Thread(target=self.stopping_thread)
-#             stopping_thread.start()
-#             self.last_run_aborted = True
-#             return StatusAndMessage(Status.ABORTING)
-
-#     def shutdown(self):
-#         """Stops the run engine and the loop waiting for messages."""
-#         print("Shutting down: Stopping the run engine gracefully")
-#         self.stop()
-#         self.command_queue.put(Command(Actions.SHUTDOWN))
 
 
 def setup_context(fake: bool, skip_startup_connection: bool) -> BlueskyContext:
