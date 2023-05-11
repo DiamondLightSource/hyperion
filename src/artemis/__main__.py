@@ -117,12 +117,18 @@ class StatusAndMessage:
 #         self.command_queue.put(Command(Actions.SHUTDOWN))
 
 
-def setup_context(fake: bool = False) -> BlueskyContext:
+def setup_context(fake: bool, skip_startup_connection: bool) -> BlueskyContext:
     context = BlueskyContext()
 
     composite_device = create_devices(fake)
     context.device(composite_device)
     context.plan(fast_grid_scan)
+
+    if not skip_startup_connection:
+        for device in context.devices.values():
+            if hasattr(device, "wait_for_connection"):
+                device.wait_for_connection()
+
     return context
 
 
@@ -143,7 +149,9 @@ class RunExperiment(Resource):
                     raise PlanNotFound(
                         f"Experiment plan '{plan_name}' not found in registry."
                     )
-                task = RunPlan(name=plan_name, params=json.loads(request.data))
+                api_params = json.loads(request.data)
+                params = {"apiParameters": api_params, "composite": "fast_grid_scan"}
+                task = RunPlan(name=plan_name, params=params)
                 task_id = str(uuid.uuid1())
                 self.worker.submit_task(task_id, task)
                 status_and_message = StatusAndMessage(Status.SUCCESS)
@@ -194,7 +202,10 @@ class StopOrStatus(Resource):
 def create_app(
     test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
 ) -> Tuple[Flask, Worker, BlueskyContext]:
-    context = setup_context(fake=False)
+    context = setup_context(
+        fake=False,
+        skip_startup_connection=skip_startup_connection,
+    )
     worker = RunEngineWorker(context)
     app = Flask(__name__)
     if test_config:
@@ -270,5 +281,5 @@ if __name__ == "__main__":
         f"Artemis now listening on {artemis_port} ({'IN DEV' if dev_mode else ''})"
     )
     # runner.wait_on_queue()
-    worker.run_forever()
+    worker.start()
     flask_thread.join()
