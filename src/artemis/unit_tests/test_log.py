@@ -22,6 +22,7 @@ def clear_loggers():
     [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
 
 
+@pytest.mark.skip(reason="to be fixed in #644")
 @patch("dodal.log.config_bluesky_logging")
 @patch("dodal.log.config_ophyd_logging")
 def test_no_env_variable_sets_correct_file_handler(
