@@ -12,7 +12,9 @@ from dodal.devices.zebra import (
 )
 
 
-def setup_zebra_for_sgs(zebra: Zebra, group="setup_zebra_for_sgs", wait=False):
+def setup_zebra_for_stepped_grid_scan(
+    zebra: Zebra, group="setup_zebra_for_stepped_grid_scan", wait=False
+):
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)

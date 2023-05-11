@@ -14,8 +14,8 @@ if TYPE_CHECKING:
     from artemis.parameters.internal_parameters import InternalParameters
 
 
-class SGSCallbackCollection(NamedTuple):
-    """Groups the callbacks for external interactions in the fast grid scan, and
+class SteppedGridScanCallbackCollection(NamedTuple):
+    """Groups the callbacks for external interactions in the stepped grid scan, and
     connects the Zocalo and ISPyB handlers. Cast to a list to pass it to
     Bluesky.preprocessors.subs_decorator()."""
 

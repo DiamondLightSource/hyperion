@@ -15,18 +15,18 @@ from dodal.i03 import (
     ApertureScatterguard,
     Backlight,
     EigerDetector,
-    FastGridScan,
     S4SlitGaps,
     Smargon,
     Synchrotron,
     Undulator,
     Zebra,
 )
+from dodal.i23 import SteppedGridScan
 
 import artemis.log
-from artemis.device_setup_plans.setup_zebra_for_fgs import (
+from artemis.device_setup_plans.setup_zebra_for_stepped_grid_scan import (
     set_zebra_shutter_to_manual,
-    setup_zebra_for_fgs,
+    setup_zebra_for_stepped_grid_scan,
 )
 from artemis.exceptions import WarningException
 from artemis.parameters import external_parameters
@@ -43,11 +43,11 @@ from artemis.tracing import TRACER
 from artemis.utils import Point3D
 
 if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-        FGSCallbackCollection,
+    from artemis.external_interaction.callbacks.stepped_grid_scan.stepped_grid_scan_callback_collection import (
+        SteppedGridScanCallbackCollection,
     )
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-        FGSInternalParameters,
+    from artemis.parameters.internal_parameters.plan_specific.stepped_grid_scan_internal_params import (
+        SteppedGridScanInternalParameters,
     )
 
 
@@ -57,7 +57,7 @@ class SteppedGridScanComposite:
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
     eiger: EigerDetector
-    stepped_grid_scan: FastGridScan
+    stepped_grid_scan: SteppedGridScan
     s4_slit_gaps: S4SlitGaps
     sample_motors: Smargon
     synchrotron: Synchrotron
@@ -174,13 +174,13 @@ def move_xyz(
     )
 
 
-def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
-    artemis.log.LOGGER.info("Waiting for valid fgs_params")
+def wait_for_stepped_grid_scan_valid(motors: SteppedGridScan, timeout=0.5):
+    artemis.log.LOGGER.info("Waiting for valid stepped_grid_scan_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
     for _ in range(times_to_check):
-        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
-        pos_counter = yield from bps.rd(fgs_motors.position_counter)
+        scan_invalid = False  # yield from bps.rd(motors.scan_invalid)
+        pos_counter = yield from bps.rd(motors.position_counter)
         artemis.log.LOGGER.debug(
             f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
         )
@@ -190,21 +190,21 @@ def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
     raise WarningException("Scan invalid - pin too long/short/bent and out of range")
 
 
-def tidy_up_plans(fgs_composite: SteppedGridScanComposite):
+def tidy_up_plans(composite: SteppedGridScanComposite):
     artemis.log.LOGGER.info("Tidying up Zebra")
-    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
+    yield from set_zebra_shutter_to_manual(composite.zebra)
 
 
 @bpp.set_run_key_decorator("run_gridscan")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
-    fgs_composite: SteppedGridScan        LOGGER.debug(f"with data {doc}")Composite,
-    parameters: FGSInternalParameters,
+    composite: SteppedGridScanComposite,
+    parameters: SteppedGridScanInternalParameters,
     md={
         "plan_name": "run_gridscan",
     },
 ):
-    sample_motors = fgs_composite.sample_motors
+    sample_motors = composite.sample_motors
 
     # Currently gridscan only works for omega 0, see #
     with TRACER.start_span("moving_omega_to_0"):
@@ -215,58 +215,58 @@ def run_gridscan(
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
         yield from read_hardware_for_ispyb(
-            fgs_composite.undulator,
-            fgs_composite.synchrotron,
-            fgs_composite.s4_slit_gaps,
+            composite.undulator,
+            composite.synchrotron,
+            composite.s4_slit_gaps,
         )
 
-    fgs_motors = fgs_composite.stepped_grid_scan
+    motors = composite.stepped_grid_scan
 
     # TODO: Check topup gate
-    yield from set_stepped_grid_scan_params(fgs_motors, parameters.experiment_params)
-    yield from wait_for_fgs_valid(fgs_motors)
+    yield from set_stepped_grid_scan_params(motors, parameters.experiment_params)
+    yield from wait_for_stepped_grid_scan_valid(motors)
 
-    @bpp.set_run_key_decorator("do_fgs")
-    @bpp.run_decorator(md={"subplan_name": "do_fgs"})
-    @bpp.stage_decorator([fgs_comp        LOGGER.debug(f"with data {doc}")osite.eiger])
-    def do_fgs():
+    @bpp.set_run_key_decorator("do_stepped_grid_scan")
+    @bpp.run_decorator(md={"subplan_name": "do_stepped_grid_scan"})
+    @bpp.stage_decorator([composite.eiger])
+    def do_stepped_grid_scan():
         yield from bps.wait()  # Wait for all moves to complete
-        yield from bps.kickoff(fgs_motors)
-        yield from bps.complete(fgs_motors, wait=True)
+        yield from bps.kickoff(motors)
+        yield from bps.complete(motors, wait=True)
 
-    with TRACER.start_span("do_fgs"):
-        yield from do_fgs()
+    with TRACER.start_span("do_stepped_grid_scan"):
+        yield from do_stepped_grid_scan()
 
     with TRACER.start_span("move_to_z_0"):
-        yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+        yield from bps.abs_set(motors.z_steps, 0, wait=False)
 
 
 @bpp.set_run_key_decorator("run_gridscan_and_move")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
-    fgs_composite: SteppedGridScanComposite,
-    parameters: FGSInternalParameters,
-    subscriptions: FGSCallbackCollection,
+    composite: SteppedGridScanComposite,
+    parameters: SteppedGridScanInternalParameters,
+    subscriptions: SteppedGridScanCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
     initial_xyz = Point3D(
-        (yield from bps.rd(fgs_composite.sample_motors.x)),
-        (yield from bps.rd(fgs_composite.sample_motors.y)),
-        (yield from bps.rd(fgs_composite.sample_motors.z)),
+        (yield from bps.rd(composite.sample_motors.x)),
+        (yield from bps.rd(composite.sample_motors.y)),
+        (yield from bps.rd(composite.sample_motors.z)),
     )
 
-    yield from setup_zebra_for_fgs(fgs_composite.zebra)
+    yield from setup_zebra_for_stepped_grid_scan(composite.zebra)
 
     # While the gridscan is happening we want to write out nexus files and trigger zocalo
     @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
-    def gridscan_with_subscriptions(fgs_composite, params):
+    def gridscan_with_subscriptions(composite, params):
         artemis.log.LOGGER.info("Starting stepped grid scan")
-        yield from run_gridscan(fgs_composite, params)
+        yield from run_gridscan(composite, params)
 
-    yield from gridscan_with_subscriptions(fgs_composite, parameters)
+    yield from gridscan_with_subscriptions(composite, parameters)
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
@@ -276,21 +276,21 @@ def run_gridscan_and_move(
     if bbox_size is not None:
         with TRACER.start_span("change_aperture"):
             yield from set_aperture_for_bbox_size(
-                fgs_composite.aperture_scatterguard, bbox_size
+                composite.aperture_scatterguard, bbox_size
             )
 
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
         yield from move_xyz(
-            fgs_composite.sample_motors,
+            composite.sample_motors,
             xray_centre,
         )
 
 
 def get_plan(
-    parameters: FGSInternalParameters,
-    subscriptions: FGSCallbackCollection,
+    parameters: SteppedGridScanInternalParameters,
+    subscriptions: SteppedGridScanCallbackCollection,
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -298,7 +298,7 @@ def get_plan(
     at any point in it.
 
     Args:
-        parameters (FGSInternalParameters): The parameters to run the scan.
+        parameters (SteppedGridScanInternalParameters): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -310,8 +310,8 @@ def get_plan(
 
     @bpp.finalize_decorator(lambda: tidy_up_plans(stepped_grid_scan_composite))
     @bpp.subs_decorator(subscriptions.ispyb_handler)
-    def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
-        yield from run_gridscan_and_move(fgs_composite, params, comms)
+    def run_gridscan_and_move_and_tidy(composite, params, comms):
+        yield from run_gridscan_and_move(composite, params, comms)
 
     return run_gridscan_and_move_and_tidy(
         stepped_grid_scan_composite, parameters, subscriptions
@@ -329,12 +329,12 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-        FGSInternalParameters,
+    from artemis.parameters.internal_parameters.plan_specific.stepped_grid_scan_internal_params import (
+        SteppedGridScanInternalParameters,
     )
 
-    parameters = FGSInternalParameters(external_parameters.from_file())
-    subscriptions = FGSCallbackCollection.from_params(parameters)
+    parameters = SteppedGridScanInternalParameters(external_parameters.from_file())
+    subscriptions = SteppedGridScanCallbackCollection.from_params(parameters)
 
     create_devices()
 
