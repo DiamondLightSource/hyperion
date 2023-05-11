@@ -23,7 +23,6 @@ def test_rotation_scan_param_validity():
         x=0,
         y=0,
         z=0,
-        trigger_number="many_triggers",
     )
 
     xlim = MagicMock()
