@@ -47,12 +47,7 @@ def test_grid_detection_plan(
     test_config_files,
 ):
     oav, smargon, bl = fake_create_devices()
-    params = OAVParameters(
-        context="loopCentring",
-        zoom_params_file=test_config_files["zoom_params_file"],
-        oav_config_json=test_config_files["oav_json"],
-        display_config=test_config_files["display_config"],
-    )
+    params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
     RE(
         grid_detection_plan(

@@ -22,7 +22,7 @@ from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params im
 def test_config_files():
     return {
         "zoom_params_file": "src/artemis/experiment_plans/tests/test_data/jCameraManZoomLevels.xml",
-        "oav_json": "src/artemis/experiment_plans/tests/test_data/OAVCentring.json",
+        "oav_config_json": "src/artemis/experiment_plans/tests/test_data/OAVCentring.json",
         "display_config": "src/artemis/experiment_plans/tests/test_data/display.configuration",
     }
 
