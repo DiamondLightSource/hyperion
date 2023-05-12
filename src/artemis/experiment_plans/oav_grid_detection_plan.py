@@ -88,7 +88,7 @@ def grid_detection_main_plan(
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
-        full_oav_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
+        full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
         # only use the area from the start of the pin onwards
         top_edge = top_edge[tip_x_px : tip_x_px + grid_width_px]
@@ -96,14 +96,10 @@ def grid_detection_main_plan(
 
         # the edge detection line can jump to the edge of the image sometimes, filter
         # those points out, and if empty after filter use the whole image
-        filtered_top = top_edge[top_edge != 0]
-        if filtered_top.size == 0:
-            filtered_top = [full_oav_image_height_px]
-        filtered_bottom = bottom_edge[bottom_edge != full_oav_image_height_px]
-        if filtered_bottom.size == 0:
-            filtered_bottom = [0]
-        min_y = np.min(filtered_top)
-        max_y = np.max(filtered_bottom)
+        filtered_top = list(top_edge[top_edge != 0]) or [full_image_height_px]
+        filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [0]
+        min_y = min(filtered_top)
+        max_y = max(filtered_bottom)
         LOGGER.info(f"Min/max {min_y, max_y}")
         grid_height_px = max_y - min_y
 
