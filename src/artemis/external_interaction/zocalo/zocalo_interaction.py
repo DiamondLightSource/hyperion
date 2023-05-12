@@ -12,7 +12,7 @@ from workflows.transport import lookup
 
 import artemis.log
 from artemis.exceptions import WarningException
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 TIMEOUT = 90
 
@@ -81,7 +81,7 @@ class ZocaloInteractor:
         )
 
     def wait_for_result(
-        self, data_collection_group_id: int, timeout: int = None
+        self, data_collection_group_id: int, timeout: int | None = None
     ) -> Point3D:
         """Block until a result is received from Zocalo.
         Args:

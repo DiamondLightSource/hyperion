@@ -16,7 +16,7 @@ from artemis.parameters.constants import (
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,
 )
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 class ArtemisParameters:

@@ -15,7 +15,7 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.parameters.constants import SIM_ZOCALO_ENV
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
