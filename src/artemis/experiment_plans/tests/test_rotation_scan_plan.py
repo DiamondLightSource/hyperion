@@ -21,9 +21,7 @@ from artemis.external_interaction.callbacks.rotation.rotation_callback_collectio
 
 if TYPE_CHECKING:
     from dodal.devices.backlight import Backlight
-    from dodal.devices.detector_motion import (
-        Det as DetectorMotion,  # TODO fix after 554
-    )
+    from dodal.devices.detector_motion import DetectorMotion
     from dodal.devices.eiger import EigerDetector
     from dodal.devices.smargon import Smargon
     from dodal.devices.zebra import Zebra

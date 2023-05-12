@@ -6,7 +6,7 @@ import bluesky.plan_stubs as bps
 from bluesky.preprocessors import finalize_decorator, stage_decorator, subs_decorator
 from dodal import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.detector_motion import Det as DetectorMotion
+from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.rotation_scan import RotationScanParams
 from dodal.devices.smargon import Smargon
@@ -32,9 +32,7 @@ def create_devices():
     i03.eiger(wait_for_connection=False)
     i03.smargon()
     i03.zebra()
-    DetectorMotion(
-        "BL03I", name="det"
-    ).wait_for_connection()  # TODO fix after merging 554
+    i03.detector_motion()
     i03.backlight()
 
 
@@ -156,8 +154,7 @@ def get_plan(
     eiger = i03.eiger(wait_for_connection=False)
     smargon = i03.smargon()
     zebra = i03.zebra()
-    detector_motion = DetectorMotion("BL03I", name="det")  # TODO fix after merging 554
-    detector_motion.wait_for_connection()
+    detector_motion = i03.detector_motion()
     backlight = i03.backlight()
     devices = {
         "eiger": eiger,
