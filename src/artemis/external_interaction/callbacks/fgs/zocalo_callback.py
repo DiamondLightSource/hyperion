@@ -18,7 +18,7 @@ from artemis.log import LOGGER
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 class FGSZocaloCallback(CallbackBase):

@@ -227,7 +227,7 @@ def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
     assert response_json["message"] == 'Exception("D\'Oh")'
 
 
-def test_given_started_and_return_status_interrupted_when_RE_aborted_then_error_reported(
+def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     test_env: ClientAndRunEngine,
 ):
     test_env.mock_run_engine.aborting_takes_time = True
@@ -275,7 +275,6 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
-@pytest.mark.skip(reason="fixed in 554...")
 @patch("dodal.i03.ApertureScatterguard")
 @patch("dodal.i03.Backlight")
 @patch("dodal.i03.EigerDetector")
@@ -385,6 +384,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
                 "callback_collection_type": MagicMock(),
             },
         },
+        clear=True,
     ):
         BlueskyRunner(MagicMock(), skip_startup_connection=False)
         assert mock_setup.call_count == 4

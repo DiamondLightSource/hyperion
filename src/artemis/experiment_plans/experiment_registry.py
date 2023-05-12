@@ -10,7 +10,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 )
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
-)
+), full_grid_scan
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
@@ -36,6 +36,12 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
         "internal_param_type": FGSInternalParameters,
         "experiment_param_type": GridScanParams,
         "callback_collection_type": FGSCallbackCollection,
+    },
+    "full_grid_scan": {
+        "setup": full_grid_scan.create_devices,
+        "run": full_grid_scan.get_plan,
+        "internal_param_type": FGSInternalParameters,
+        "experiment_param_type": GridScanParams,
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
