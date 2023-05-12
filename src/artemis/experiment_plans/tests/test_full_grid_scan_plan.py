@@ -1,3 +1,4 @@
+from typing import Generator
 from unittest.mock import patch
 
 import pytest
@@ -36,3 +37,10 @@ def test_wait_for_detector():
     d_m.shutter.sim_put(1)
     d_m.z.motor_done_move.sim_put(1)
     RE(wait_for_det_to_finish_moving(d_m, 0.5))
+
+
+def test_get_plan(test_params, mock_subscriptions):
+    with patch("artemis.experiment_plans.full_grid_scan.i03"):
+        plan = get_plan(test_params, mock_subscriptions)
+
+    assert isinstance(plan, Generator)
