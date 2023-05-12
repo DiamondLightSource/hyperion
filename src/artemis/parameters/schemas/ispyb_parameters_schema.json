@@ -79,5 +79,23 @@
             "type": "number"
         }
     },
-    "minProperties": 19
+    "required": [
+        "sample_id",
+        "visit_path",
+        "undulator_gap",
+        "microns_per_pixel_x",
+        "microns_per_pixel_y",
+        "sample_barcode",
+        "position",
+        "transmission",
+        "flux",
+        "wavelength",
+        "beam_size_x",
+        "beam_size_y",
+        "slit_gap_size_x",
+        "slit_gap_size_y",
+        "focal_spot_size_x",
+        "focal_spot_size_y",
+        "resolution"
+    ]
 }

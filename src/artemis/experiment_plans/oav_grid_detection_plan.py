@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -14,6 +14,7 @@ from dodal.devices.smargon import Smargon
 
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
 from artemis.log import LOGGER
+from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
@@ -28,13 +29,23 @@ def create_devices():
 def grid_detection_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
-    filenames: dict[str, str],
+    snapshot_template: str,
+    snapshot_dir: str,
+    out_snapshot_filenames: List[List[str]],
+    out_upper_left: Point3D,
     width=600,
     box_size_microns=20,
 ):
     yield from finalize_wrapper(
         grid_detection_main_plan(
-            parameters, out_parameters, filenames, width, box_size_microns
+            parameters,
+            out_parameters,
+            snapshot_template,
+            snapshot_dir,
+            out_snapshot_filenames,
+            out_upper_left,
+            width,
+            box_size_microns,
         ),
         reset_oav(parameters),
     )
@@ -43,7 +54,10 @@ def grid_detection_plan(
 def grid_detection_main_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
-    filenames: dict[str, str],
+    snapshot_template: str,
+    snapshot_dir: str,
+    out_snapshot_filenames: List[List[str]],
+    out_upper_left: Point3D,
     grid_width_px: int,
     box_size_um: int,
 ):
@@ -112,6 +126,11 @@ def grid_detection_main_plan(
         box_numbers.append(boxes)
 
         upper_left = (tip_x_px, min_y)
+        if angle == 0:
+            out_upper_left.x = tip_x_px
+            out_upper_left.y = min_y
+        else:
+            out_upper_left.z = min_y
 
         yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])
@@ -121,13 +140,19 @@ def grid_detection_main_plan(
 
         LOGGER.info("Triggering snapshot")
 
-        snapshot_filename = (
-            filenames["snap_1_filename"] if angle == 0 else filenames["snap_2_filename"]
-        )
+        snapshot_filename = snapshot_template.format(angle=angle)
 
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
-        yield from bps.abs_set(oav.snapshot.directory, filenames["snapshot_dir"])
+        yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
+
+        out_snapshot_filenames.append(
+            [
+                f"{snapshot_dir}/{snapshot_filename}.png",
+                f"{snapshot_dir}/{snapshot_filename}_outer_overlay.png",
+                f"{snapshot_dir}/{snapshot_filename}_grid_overlay.png",
+            ]
+        )  # TODO: Get these out of the device
 
         # Get the beam distance from the centre (in pixels).
         (
@@ -156,30 +181,27 @@ def grid_detection_main_plan(
         start_positions.append(start_position)
 
     LOGGER.info(
-        f"x_start: GDA: {out_parameters.x_start}, Artemis {start_positions[0][0]}"
+        f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][1]}"
     )
+    out_parameters.x_start = start_positions[0][0]
+
+    out_parameters.y1_start = start_positions[0][1]
+    out_parameters.y2_start = start_positions[0][1]
+
+    out_parameters.z1_start = start_positions[1][1]
+    out_parameters.z2_start = start_positions[1][1]
 
     LOGGER.info(
-        f"y1_start: GDA: {out_parameters.y1_start}, Artemis {start_positions[0][1]}"
+        f"Calculated number of steps {box_numbers[0][0], box_numbers[0][1], box_numbers[1][1]}"
     )
+    out_parameters.x_steps = box_numbers[0][0]
+    out_parameters.y_steps = box_numbers[0][1]
+    out_parameters.z_steps = box_numbers[1][1]
 
-    LOGGER.info(
-        f"z1_start: GDA: {out_parameters.z1_start}, Artemis {start_positions[1][1]}"
-    )
-
-    LOGGER.info(
-        f"x_step_size: GDA: {out_parameters.x_step_size}, Artemis {box_size_um}"
-    )
-    LOGGER.info(
-        f"y_step_size: GDA: {out_parameters.y_step_size}, Artemis {box_size_um}"
-    )
-    LOGGER.info(
-        f"z_step_size: GDA: {out_parameters.z_step_size}, Artemis {box_size_um}"
-    )
-
-    LOGGER.info(f"x_steps: GDA: {out_parameters.x_steps}, Artemis {box_numbers[0][0]}")
-    LOGGER.info(f"y_steps: GDA: {out_parameters.y_steps}, Artemis {box_numbers[0][1]}")
-    LOGGER.info(f"z_steps: GDA: {out_parameters.z_steps}, Artemis {box_numbers[1][1]}")
+    LOGGER.info(f"Calculated step sizes: {box_size_um, box_size_um, box_size_um}")
+    out_parameters.x_step_size = box_size_um
+    out_parameters.y_step_size = box_size_um
+    out_parameters.z_step_size = box_size_um
 
 
 def reset_oav(parameters: OAVParameters):

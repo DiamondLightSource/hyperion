@@ -5,6 +5,7 @@ from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
+from artemis.utils.utils import Point3D
 
 
 def fake_create_devices():
@@ -53,11 +54,10 @@ def test_grid_detection_plan(
         grid_detection_plan(
             parameters=params,
             out_parameters=gridscan_params,
-            filenames={
-                "snapshot_dir": "tmp",
-                "snap_1_filename": "1.jpg",
-                "snap_2_filename": "2.jpg",
-            },
+            snapshot_dir="tmp",
+            out_snapshot_filenames=[],
+            out_upper_left=Point3D(),
+            snapshot_template="test_{angle}",
         )
     )
     bps_trigger.assert_called_with(oav.snapshot, wait=True)
