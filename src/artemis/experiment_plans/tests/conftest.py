@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
@@ -15,6 +16,20 @@ from artemis.parameters.internal_parameters.internal_parameters import (
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
+
+
+@pytest.fixture()
+def test_config_files():
+    return {
+        "zoom_params_file": "src/artemis/experiment_plans/tests/test_data/jCameraManZoomLevels.xml",
+        "oav_json": "src/artemis/experiment_plans/tests/test_data/OAVCentring.json",
+        "display_config": "src/artemis/experiment_plans/tests/test_data/display.configuration",
+    }
+
+
+@pytest.fixture
+def RE():
+    return RunEngine({})
 
 
 @pytest.fixture

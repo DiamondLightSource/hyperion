@@ -1,23 +1,10 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-from bluesky.run_engine import RunEngine
 from dodal import i03
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
-
-test_config_files = {
-    "zoom_params_file": "src/artemis/experiment_plans/tests/test_data/jCameraManZoomLevels.xml",
-    "oav_json": "src/artemis/experiment_plans/tests/test_data/OAVCentring.json",
-    "display_config": "src/artemis/experiment_plans/tests/test_data/display.configuration",
-}
-
-
-@pytest.fixture
-def RE():
-    return RunEngine({})
 
 
 def fake_create_devices():
@@ -53,14 +40,18 @@ def fake_create_devices():
 @patch("bluesky.plan_stubs.mv")
 @patch("bluesky.plan_stubs.trigger")
 def test_grid_detection_plan(
-    bps_trigger: MagicMock, bps_mv: MagicMock, bps_wait: MagicMock, RE
+    bps_trigger: MagicMock,
+    bps_mv: MagicMock,
+    bps_wait: MagicMock,
+    RE,
+    test_config_files,
 ):
     oav, smargon, bl = fake_create_devices()
     params = OAVParameters(
         context="loopCentring",
-        zoom_params_file=test_config_files["zoom_params_file"],
-        oav_config_json=test_config_files["oav_json"],
-        display_config=test_config_files["display_config"],
+        zoom_params_file=test_config_files()["zoom_params_file"],
+        oav_config_json=test_config_files()["oav_json"],
+        display_config=test_config_files()["display_config"],
     )
     gridscan_params = GridScanParams()
     RE(

@@ -2,7 +2,6 @@ from typing import Generator
 from unittest.mock import patch
 
 import pytest
-from bluesky.run_engine import RunEngine
 from dodal.i03 import detector_motion
 
 from artemis.experiment_plans.full_grid_scan import (
@@ -29,9 +28,8 @@ def test_create_devices():
         i03.backlight.return_value.wait_for_connection.assert_called()
 
 
-def test_wait_for_detector():
+def test_wait_for_detector(RE):
     d_m = detector_motion(fake_with_ophyd_sim=True)
-    RE = RunEngine({})
     with pytest.raises(TimeoutError):
         RE(wait_for_det_to_finish_moving(d_m, 0.2))
     d_m.shutter.sim_put(1)
@@ -39,8 +37,8 @@ def test_wait_for_detector():
     RE(wait_for_det_to_finish_moving(d_m, 0.5))
 
 
-def test_get_plan(test_params, mock_subscriptions):
+def test_get_plan(test_params, mock_subscriptions, test_config_files):
     with patch("artemis.experiment_plans.full_grid_scan.i03"):
-        plan = get_plan(test_params, mock_subscriptions)
+        plan = get_plan(test_params, mock_subscriptions, test_config_files)
 
     assert isinstance(plan, Generator)

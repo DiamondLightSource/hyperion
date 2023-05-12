@@ -8,7 +8,7 @@ from dodal import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
-from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 
 from artemis.experiment_plans.fast_grid_scan_plan import (
     create_devices as fgs_create_devices,
@@ -56,6 +56,7 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=2):
 def get_plan(
     parameters: FGSInternalParameters,
     subscriptions: FGSCallbackCollection,
+    oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
 ) -> Callable:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
