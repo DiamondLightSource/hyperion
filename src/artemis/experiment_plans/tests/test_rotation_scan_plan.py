@@ -59,6 +59,7 @@ def test_move_to_end(smargon: Smargon, RE):
     mock_omega_set.assert_called_with((scan_width + 0.1 + OFFSET) * DIRECTION)
 
 
+@patch("dodal.i03.active_device_is_same_type", lambda a, b: True)
 @patch("artemis.experiment_plans.rotation_scan_plan.rotation_scan_plan")
 def test_get_plan(
     plan: MagicMock,
@@ -138,7 +139,9 @@ def test_cleanup_happens(
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
-    smargon.omega.set = MagicMock(side_effect=Exception("Experiment fails"))
+    smargon.omega.set = MagicMock(
+        side_effect=Exception("Experiment fails because this is a test")
+    )
 
     # check main subplan part fails
     with pytest.raises(Exception):
@@ -154,10 +157,7 @@ def test_cleanup_happens(
         patch("dodal.i03.eiger", return_value=eiger),
         patch("dodal.i03.zebra", return_value=zebra),
         patch("dodal.i03.backlight", return_value=backlight),
-        patch(
-            "artemis.experiment_plans.rotation_scan_plan.DetectorMotion",
-            return_value=detector_motion,
-        ),
+        patch("dodal.i03.detector_motion", return_value=detector_motion),
     ):
         with pytest.raises(Exception):
             RE(

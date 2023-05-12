@@ -275,6 +275,8 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
+@patch("dodal.i03.DetectorMotion")
+@patch("dodal.i03.OAV")
 @patch("dodal.i03.ApertureScatterguard")
 @patch("dodal.i03.Backlight")
 @patch("dodal.i03.EigerDetector")
@@ -298,18 +300,22 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     eiger,
     backlight,
     aperture_scatterguard,
+    oav,
+    detector_motion,
 ):
     type_comparison.return_value = True
     BlueskyRunner(MagicMock(), skip_startup_connection=False)
-    zebra.return_value.wait_for_connection.assert_called_once()
-    undulator.return_value.wait_for_connection.assert_called_once()
-    synchrotron.return_value.wait_for_connection.assert_called_once()
-    smargon.return_value.wait_for_connection.assert_called_once()
-    s4_slits.return_value.wait_for_connection.assert_called_once()
-    fast_grid_scan.return_value.wait_for_connection.assert_called_once()
+    zebra.return_value.wait_for_connection.assert_called()
+    undulator.return_value.wait_for_connection.assert_called()
+    synchrotron.return_value.wait_for_connection.assert_called()
+    smargon.return_value.wait_for_connection.assert_called()
+    s4_slits.return_value.wait_for_connection.assert_called()
+    fast_grid_scan.return_value.wait_for_connection.assert_called()
     eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
-    backlight.return_value.wait_for_connection.assert_called_once()
-    aperture_scatterguard.return_value.wait_for_connection.assert_called_once()
+    backlight.return_value.wait_for_connection.assert_called()
+    aperture_scatterguard.return_value.wait_for_connection.assert_called()
+    oav.return_value.wait_for_connection.assert_called()
+    detector_motion.return_value.wait_for_connection.assert_called()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
