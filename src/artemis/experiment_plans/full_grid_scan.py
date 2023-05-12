@@ -50,7 +50,7 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=2):
         if detector_state == 1 and detector_z_dmov == 1:
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
-    raise Exception("Detector not finished moving")
+    raise TimeoutError("Detector not finished moving")
 
 
 def get_plan(
