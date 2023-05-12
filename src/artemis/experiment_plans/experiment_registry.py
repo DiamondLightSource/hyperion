@@ -4,13 +4,17 @@ from typing import Callable, Dict, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 
-from artemis.experiment_plans import fast_grid_scan_plan, rotation_scan_plan
+from artemis.experiment_plans import (
+    fast_grid_scan_plan,
+    full_grid_scan,
+    rotation_scan_plan,
+)
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
-), full_grid_scan
+)
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
