@@ -5,7 +5,6 @@ import bluesky.plan_stubs as bps
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -124,10 +123,8 @@ def test_when_run_gridscan_called_then_generator_returned():
 
 
 def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
-    fake_fgs_composite: FGSComposite, test_params: FGSInternalParameters
+    fake_fgs_composite: FGSComposite, test_params: FGSInternalParameters, RE: RunEngine
 ):
-    RE = RunEngine({})
-
     undulator_test_value = 1.234
 
     fake_fgs_composite.undulator.gap.user_readback.sim_put(undulator_test_value)
@@ -178,8 +175,8 @@ def test_results_adjusted_and_passed_to_move_xyz(
     fake_fgs_composite: FGSComposite,
     mock_subscriptions: FGSCallbackCollection,
     test_params: InternalParameters,
+    RE: RunEngine,
 ):
-    RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -231,10 +228,10 @@ def test_results_passed_to_move_motors(
     bps_mv: MagicMock,
     test_params: InternalParameters,
     fake_fgs_composite: FGSComposite,
+    RE: RunEngine,
 ):
     from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
-    RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
     motor_position = test_params.experiment_params.grid_position_to_motor_position(
@@ -262,8 +259,8 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
     test_params: FGSInternalParameters,
+    RE: RunEngine,
 ):
-    RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -299,8 +296,8 @@ def test_logging_within_plan(
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
     test_params: InternalParameters,
+    RE: RunEngine,
 ):
-    RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -322,14 +319,12 @@ def test_logging_within_plan(
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
-    patch_sleep: MagicMock,
+    patch_sleep: MagicMock, RE: RunEngine
 ):
     test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
 
     test_fgs.scan_invalid.sim_put(False)
     test_fgs.position_counter.sim_put(0)
-
-    RE = RunEngine({})
 
     RE(wait_for_fgs_valid(test_fgs))
 
@@ -338,14 +333,12 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
-    patch_sleep: MagicMock,
+    patch_sleep: MagicMock, RE: RunEngine
 ):
     test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
 
     test_fgs.scan_invalid.sim_put(True)
     test_fgs.position_counter.sim_put(0)
-
-    RE = RunEngine({})
     with pytest.raises(WarningException):
         RE(wait_for_fgs_valid(test_fgs))
 
@@ -366,9 +359,8 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     fake_fgs_composite: FGSComposite,
     test_params: InternalParameters,
     mock_subscriptions: FGSCallbackCollection,
+    RE: RunEngine,
 ):
-    RE = RunEngine({})
-
     # Put both mocks in a parent to easily capture order
     mock_parent = MagicMock()
 
@@ -377,6 +369,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     fake_fgs_composite.eiger.filewriters_finished = Status()
     fake_fgs_composite.eiger.filewriters_finished.set_finished()
     fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
     fake_fgs_composite.eiger.stage = MagicMock()
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end

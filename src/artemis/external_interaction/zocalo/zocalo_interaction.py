@@ -5,11 +5,10 @@ from datetime import datetime, timedelta
 from time import sleep
 from typing import Optional
 
-from numpy import ndarray
-
 import workflows.recipe
 import workflows.transport
 import zocalo.configuration
+from numpy import ndarray
 from workflows.transport import lookup
 
 import artemis.log

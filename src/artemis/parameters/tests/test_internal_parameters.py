@@ -43,8 +43,6 @@ TEST_TRANSFORMED_PARAM_DICT_2: dict[str, Any] = {
 
 
 class ParamTypeForTesting(AbstractExperimentParameterBase):
-    trigger_number = "many_triggers"
-
     def get_num_images(self):
         return 15
 

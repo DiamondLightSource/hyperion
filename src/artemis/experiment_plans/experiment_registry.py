@@ -4,7 +4,7 @@ from typing import Callable, Dict, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 
-from artemis.experiment_plans import fast_grid_scan_plan
+from artemis.experiment_plans import fast_grid_scan_plan, full_grid_scan
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
@@ -27,6 +27,12 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
         "run": fast_grid_scan_plan.get_plan,
+        "internal_param_type": FGSInternalParameters,
+        "experiment_param_type": GridScanParams,
+    },
+    "full_grid_scan": {
+        "setup": full_grid_scan.create_devices,
+        "run": full_grid_scan.get_plan,
         "internal_param_type": FGSInternalParameters,
         "experiment_param_type": GridScanParams,
     },

@@ -24,3 +24,5 @@ def test_FGS_parameters_load_from_file():
     detector_params = internal_parameters.artemis_params.detector_params
 
     assert detector_params.detector_size_constants == EIGER2_X_16M_SIZE
+    assert detector_params.num_triggers == 60
+    assert detector_params.num_images_per_trigger == 1
