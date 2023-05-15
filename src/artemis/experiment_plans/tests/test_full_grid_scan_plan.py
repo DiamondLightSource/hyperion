@@ -2,6 +2,7 @@ from typing import Generator
 from unittest.mock import patch
 
 import pytest
+from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.i03 import detector_motion
 
 from artemis.experiment_plans.full_grid_scan import (
@@ -11,7 +12,8 @@ from artemis.experiment_plans.full_grid_scan import (
 )
 
 
-def test_create_devices():
+@patch("artemis.experiment_plans.full_grid_scan.get_beamline_parameters")
+def test_create_devices(mock_beamline_params):
     with (
         patch("artemis.experiment_plans.full_grid_scan.i03") as i03,
         patch(
@@ -24,8 +26,12 @@ def test_create_devices():
         create_devices()
         fgs_create_devices.assert_called()
         oav_create_devices.assert_called()
+
         i03.detector_motion.return_value.wait_for_connection.assert_called()
         i03.backlight.return_value.wait_for_connection.assert_called()
+        assert isinstance(
+            i03.aperture_scatterguard.call_args.args[-1], AperturePositions
+        )
 
 
 def test_wait_for_detector(RE):

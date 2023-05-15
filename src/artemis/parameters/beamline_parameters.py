@@ -2,7 +2,11 @@ from dataclasses import dataclass
 from os import environ
 from typing import Any, Tuple, cast
 
-from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
+from artemis.parameters.constants import (
+    I03_BEAMLINE_PARAMETER_PATH,
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+)
 
 BEAMLINE_PARAMETER_KEYWORDS = ["FB", "FULL", "deadtime"]
 
@@ -62,3 +66,7 @@ class GDABeamlineParameters:
         with open(path) as f:
             config_lines = f.readlines()
         return cls.from_lines(config_lines)
+
+
+def get_beamline_parameters():
+    return GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)

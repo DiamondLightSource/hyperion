@@ -31,14 +31,10 @@ from artemis.device_setup_plans.setup_zebra_for_fgs import (
 from artemis.exceptions import WarningException
 from artemis.parameters import external_parameters
 from artemis.parameters.beamline_parameters import (
-    GDABeamlineParameters,
+    get_beamline_parameters,
     get_beamline_prefixes,
 )
-from artemis.parameters.constants import (
-    I03_BEAMLINE_PARAMETER_PATH,
-    ISPYB_PLAN_NAME,
-    SIM_BEAMLINE,
-)
+from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.tracing import TRACER
 from artemis.utils.utils import Point3D
 
@@ -86,10 +82,6 @@ class FGSComposite:
 
 
 fast_grid_scan_composite: FGSComposite | None = None
-
-
-def get_beamline_parameters():
-    return GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 
 
 def create_devices():
