@@ -38,9 +38,9 @@ def create_devices():
         get_beamline_parameters()
     )
 
-    i03.detector_motion().wait_for_connection()
-    i03.backlight().wait_for_connection()
-    i03.aperture_scatterguard(aperture_positions).wait_for_connection()
+    i03.detector_motion()
+    i03.backlight()
+    i03.aperture_scatterguard(aperture_positions)
 
 
 def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=2):

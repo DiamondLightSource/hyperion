@@ -20,9 +20,9 @@ if TYPE_CHECKING:
 
 
 def create_devices():
-    i03.oav().wait_for_connection()
-    i03.smargon().wait_for_connection()
-    i03.backlight().wait_for_connection()
+    i03.oav()
+    i03.smargon()
+    i03.backlight()
 
 
 def grid_detection_plan(
