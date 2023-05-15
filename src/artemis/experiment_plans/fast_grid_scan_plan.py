@@ -239,7 +239,7 @@ def run_gridscan(
 
     # Wait for arming to finish
     artemis.log.LOGGER.info("Waiting for arming...")
-    fgs_composite.eiger.arming_status.wait(30)
+    yield from bps.wait("arming")
     artemis.log.LOGGER.info("Arming finished")
 
     with TRACER.start_span("do_fgs"):
