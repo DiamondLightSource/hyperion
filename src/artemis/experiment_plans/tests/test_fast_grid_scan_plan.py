@@ -220,7 +220,9 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
-    move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
+    move_xyz.assert_called_once_with(
+        ANY, Point3D(x=-0.05, y=0.05, z=0.15000000000000002)
+    )
 
 
 @patch(
