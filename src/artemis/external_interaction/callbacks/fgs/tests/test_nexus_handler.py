@@ -6,7 +6,10 @@ import pytest
 from artemis.external_interaction.callbacks.fgs.nexus_callback import (
     FGSNexusFileHandlerCallback,
 )
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.external_parameters import from_file as default_raw_params
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 test_start_document = {
     "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -16,6 +19,11 @@ test_start_document = {
     "plan_type": "generator",
     "plan_name": "run_gridscan_and_move",
 }
+
+
+@pytest.fixture
+def dummy_params():
+    return FGSInternalParameters(default_raw_params())
 
 
 @pytest.fixture
@@ -46,11 +54,12 @@ def test_writers_setup_on_init(
     params_for_second: MagicMock,
     params_for_first: MagicMock,
     nexus_writer: MagicMock,
+    dummy_params,
 ):
-    params = InternalParameters()
+    params = FGSInternalParameters()
     nexus_handler = FGSNexusFileHandlerCallback(params)
     # flake8 gives an error if we don't do something with communicator
-    nexus_handler.__init__(params)
+    nexus_handler.__init__(dummy_params)
 
     nexus_writer.assert_has_calls(
         [
@@ -65,8 +74,9 @@ def test_writers_dont_create_on_init(
     params_for_second: MagicMock,
     params_for_first: MagicMock,
     nexus_writer: MagicMock,
+    dummy_params,
 ):
-    params = InternalParameters()
+    params = FGSInternalParameters()
     nexus_handler = FGSNexusFileHandlerCallback(params)
 
     nexus_handler.nxs_writer_1.create_nexus_file.assert_not_called()
@@ -74,12 +84,11 @@ def test_writers_dont_create_on_init(
 
 
 def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
-    nexus_writer: MagicMock,
+    nexus_writer: MagicMock, dummy_params
 ):
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
 
-    params = InternalParameters()
-    nexus_handler = FGSNexusFileHandlerCallback(params)
+    nexus_handler = FGSNexusFileHandlerCallback(dummy_params)
     nexus_handler.start(test_start_document)
 
     nexus_handler.nxs_writer_1.create_nexus_file.assert_not_called()

@@ -29,10 +29,17 @@ from artemis.external_interaction.system_tests.test_ispyb_dev_connection import 
 )
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
 from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH, SIM_BEAMLINE
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
+from artemis.parameters.external_parameters import from_file as default_raw_params
 
-params = InternalParameters()
-params.artemis_params.beamline = SIM_BEAMLINE
+
+@pytest.fixture
+def params():
+    params = FGSInternalParameters(default_raw_params())
+    params.artemis_params.beamline = SIM_BEAMLINE
+    return params
 
 
 @pytest.fixture
@@ -83,15 +90,16 @@ def fgs_composite():
 
 @pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
-@patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid")
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.kickoff")
 @patch("bluesky.plan_stubs.complete")
+@patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid")
 def test_run_gridscan(
     wait_for_fgs_valid: MagicMock,
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
+    params: FGSInternalParameters,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
@@ -130,9 +138,10 @@ def test_full_plan_tidies_at_end(
     kickoff: MagicMock,
     wait: MagicMock,
     fgs_composite: FGSComposite,
+    params: FGSInternalParameters,
     RE: RunEngine,
 ):
-    callbacks = FGSCallbackCollection.from_params(InternalParameters())
+    callbacks = FGSCallbackCollection.from_params(params)
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
@@ -151,9 +160,10 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     kickoff: MagicMock,
     wait: MagicMock,
     fgs_composite: FGSComposite,
+    params: FGSInternalParameters,
     RE: RunEngine,
 ):
-    callbacks = FGSCallbackCollection.from_params(InternalParameters())
+    callbacks = FGSCallbackCollection.from_params(params)
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
         RE(get_plan(params, callbacks))
@@ -162,11 +172,9 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 
 @pytest.mark.s03
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
-    RE: RunEngine,
-    fgs_composite: FGSComposite,
-    fetch_comment: Callable,
+    RE: RunEngine, fgs_composite: FGSComposite, fetch_comment: Callable, params
 ):
-    parameters = InternalParameters()
+    parameters = FGSInternalParameters(params)
     parameters.artemis_params.detector_params.directory = "./tmp"
     parameters.artemis_params.detector_params.prefix = str(uuid.uuid1())
     parameters.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
@@ -199,25 +207,25 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     RE: RunEngine,
     fgs_composite: FGSComposite,
     zocalo_env: None,
+    params,
 ):
     """This test currently avoids hardware interaction and is mostly confirming
     interaction with dev_ispyb and dev_zocalo"""
 
-    parameters = InternalParameters()
-    parameters.artemis_params.detector_params.directory = "./tmp"
-    parameters.artemis_params.detector_params.prefix = str(uuid.uuid1())
-    parameters.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    params.artemis_params.detector_params.directory = "./tmp"
+    params.artemis_params.detector_params.prefix = str(uuid.uuid1())
+    params.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    parameters.experiment_params.z_steps = 1
+    params.experiment_params.z_steps = 1
 
     fgs_composite.eiger.stage = MagicMock()
     fgs_composite.eiger.unstage = MagicMock()
 
-    callbacks = FGSCallbackCollection.from_params(parameters)
+    callbacks = FGSCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
-    RE(get_plan(parameters, callbacks))
+    RE(get_plan(params, callbacks))
 
     # The following numbers are derived from the centre returned in fake_zocalo
     assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.05)

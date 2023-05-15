@@ -4,7 +4,6 @@ from unittest.mock import ANY, MagicMock, call, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -37,75 +36,28 @@ from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from artemis.log import set_up_logging_handlers
-from artemis.parameters.external_parameters import RawParameters
-from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.parameters import external_parameters
+from artemis.parameters.internal_parameters.internal_parameters import (
+    InternalParameters,
+)
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
+from artemis.utils.utils import Point3D
 
 
-@pytest.fixture
-def test_params():
-    return InternalParameters()
-
-
-@pytest.fixture
-def fake_fgs_composite(test_params: InternalParameters):
-    fake_composite = FGSComposite(
-        aperture_positions=AperturePositions(
-            LARGE=(1, 2, 3, 4, 5),
-            MEDIUM=(2, 3, 3, 5, 6),
-            SMALL=(3, 4, 3, 6, 7),
-            ROBOT_LOAD=(0, 0, 3, 0, 0),
-        ),
-        detector_params=test_params.artemis_params.detector_params,
-        fake=True,
-    )
-    fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.aperture.z.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.scatterguard.x.user_setpoint._use_limits = (
-        False
-    )
-    fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
-        False
-    )
-
-    fake_composite.fast_grid_scan.scan_invalid.sim_put(False)
-    fake_composite.fast_grid_scan.position_counter.sim_put(0)
-
-    return fake_composite
-
-
-@pytest.fixture
-def mock_subscriptions(test_params):
-    subscriptions = FGSCallbackCollection.from_params(test_params)
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        TEST_RESULT_LARGE
-    )
-
-    subscriptions.nexus_handler.nxs_writer_1 = MagicMock()
-    subscriptions.nexus_handler.nxs_writer_2 = MagicMock()
-
-    subscriptions.ispyb_handler.ispyb = MagicMock()
-    subscriptions.ispyb_handler.ispyb_ids = [[0, 0], 0, 0]
-
-    return subscriptions
-
-
-def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct():
-    params = InternalParameters(RawParameters())
+def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
+    test_params: FGSInternalParameters,
+):
     assert (
-        params.artemis_params.detector_params.detector_size_constants.det_type_string
+        test_params.artemis_params.detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
     )
-    raw_params_dict = RawParameters().to_dict()
+    raw_params_dict = external_parameters.from_file()
     raw_params_dict["artemis_params"]["detector_params"][
         "detector_size_constants"
     ] = EIGER_TYPE_EIGER2_X_4M
-    raw_params = RawParameters.from_dict(raw_params_dict)
-    params: InternalParameters = InternalParameters(raw_params)
+    params: FGSInternalParameters = FGSInternalParameters(raw_params_dict)
     det_dimension = (
         params.artemis_params.detector_params.detector_size_constants.det_dimension
     )
@@ -118,11 +70,8 @@ def test_when_run_gridscan_called_then_generator_returned():
 
 
 def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
-    fake_fgs_composite: FGSComposite,
+    fake_fgs_composite: FGSComposite, test_params: FGSInternalParameters, RE: RunEngine
 ):
-    RE = RunEngine({})
-    params = InternalParameters()
-
     undulator_test_value = 1.234
 
     fake_fgs_composite.undulator.gap.user_readback.sim_put(undulator_test_value)
@@ -137,7 +86,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
     fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)
 
-    test_ispyb_callback = FGSISPyBHandlerCallback(params)
+    test_ispyb_callback = FGSISPyBHandlerCallback(test_params)
     test_ispyb_callback.ispyb = MagicMock()
     RE.subscribe(test_ispyb_callback)
 
@@ -173,8 +122,8 @@ def test_results_adjusted_and_passed_to_move_xyz(
     fake_fgs_composite: FGSComposite,
     mock_subscriptions: FGSCallbackCollection,
     test_params: InternalParameters,
+    RE: RunEngine,
 ):
-    RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -226,10 +175,10 @@ def test_results_passed_to_move_motors(
     bps_mv: MagicMock,
     test_params: InternalParameters,
     fake_fgs_composite: FGSComposite,
+    RE: RunEngine,
 ):
     from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
 
-    RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
     motor_position = test_params.experiment_params.grid_position_to_motor_position(
@@ -256,12 +205,11 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_params: FGSComposite,
+    test_params: FGSInternalParameters,
+    RE: RunEngine,
 ):
-    RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
-    params = InternalParameters()
 
     RE(
         run_gridscan_and_move(
@@ -271,8 +219,8 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         )
     )
 
-    run_gridscan.assert_called_once_with(fake_fgs_composite, params)
-    move_xyz.assert_called_once_with(ANY, Point3D(-0.05, 0.05, 0.15000000000000002))
+    run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
+    move_xyz.assert_called_once_with(ANY, Point3D(0.05, 0.15000000000000002, 0.25))
 
 
 @patch(
@@ -291,8 +239,8 @@ def test_logging_within_plan(
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
     test_params: InternalParameters,
+    RE: RunEngine,
 ):
-    RE = RunEngine({})
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -310,14 +258,12 @@ def test_logging_within_plan(
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
-    patch_sleep: MagicMock,
+    patch_sleep: MagicMock, RE: RunEngine
 ):
     test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
 
     test_fgs.scan_invalid.sim_put(False)
     test_fgs.position_counter.sim_put(0)
-
-    RE = RunEngine({})
 
     RE(wait_for_fgs_valid(test_fgs))
 
@@ -326,14 +272,12 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
 def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
-    patch_sleep: MagicMock,
+    patch_sleep: MagicMock, RE: RunEngine
 ):
     test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
 
     test_fgs.scan_invalid.sim_put(True)
     test_fgs.position_counter.sim_put(0)
-
-    RE = RunEngine({})
     with pytest.raises(WarningException):
         RE(wait_for_fgs_valid(test_fgs))
 
@@ -354,9 +298,8 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     fake_fgs_composite: FGSComposite,
     test_params: InternalParameters,
     mock_subscriptions: FGSCallbackCollection,
+    RE: RunEngine,
 ):
-    RE = RunEngine({})
-
     # Put both mocks in a parent to easily capture order
     mock_parent = MagicMock()
 
@@ -365,6 +308,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     fake_fgs_composite.eiger.filewriters_finished = Status()
     fake_fgs_composite.eiger.filewriters_finished.set_finished()
     fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
     fake_fgs_composite.eiger.stage = MagicMock()
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end

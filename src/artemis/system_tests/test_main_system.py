@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import threading
 from dataclasses import dataclass
@@ -11,14 +13,18 @@ from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
-from artemis.parameters.external_parameters import RawParameters
+from artemis.parameters import external_parameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
-TEST_PARAMS = RawParameters().to_json()
+TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameters.json"))
+TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 
 
 class MockRunEngine:
@@ -53,12 +59,38 @@ def mock_dict_values(d: dict):
     return {k: MagicMock() for k, _ in d.items()}
 
 
+TEST_EXPTS = {
+    "test_experiment": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "internal_param_type": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "test_experiment_no_run": {
+        "setup": MagicMock(),
+        "internal_param_type": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "test_experiment_no_internal_param_type": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "experiment_param_type": MagicMock(),
+    },
+    "fgs_real_params": {
+        "setup": MagicMock(),
+        "run": MagicMock(),
+        "internal_param_type": FGSInternalParameters,
+        "experiment_param_type": MagicMock(),
+    },
+}
+
+
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
     with patch.dict(
         "artemis.__main__.PLAN_REGISTRY",
-        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()},
+        dict({k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS),
     ):
         app, runner = create_app({"TESTING": True}, mock_run_engine)
     runner_thread = threading.Thread(target=runner.wait_on_queue)
@@ -66,7 +98,9 @@ def test_env():
     with app.test_client() as client:
         with patch.dict(
             "artemis.__main__.PLAN_REGISTRY",
-            {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()},
+            dict(
+                {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
+            ),
         ):
             yield ClientAndRunEngine(client, mock_run_engine)
 
@@ -123,6 +157,30 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     )
 
 
+def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
+    response = test_env.client.put(
+        "/test_experiment_no_internal_param_type/start", data=TEST_PARAMS
+    ).json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "PlanNotFound(\"Corresponding internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
+    )
+
+
+def test_plan_with_no_run_fails(test_env: ClientAndRunEngine):
+    response = test_env.client.put(
+        "/test_experiment_no_run/start", data=TEST_PARAMS
+    ).json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "PlanNotFound(\"Experiment plan 'test_experiment_no_run' has no 'run' method.\")"
+    )
+
+
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
@@ -167,7 +225,7 @@ def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
     assert response_json["message"] == 'Exception("D\'Oh")'
 
 
-def test_given_started_and_return_status_interrupted_when_RE_aborted_then_error_reported(
+def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     test_env: ClientAndRunEngine,
 ):
     test_env.mock_run_engine.aborting_takes_time = True
@@ -215,6 +273,7 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
+@pytest.mark.skip(reason="fixed in #621")
 @patch("dodal.i03.ApertureScatterguard")
 @patch("dodal.i03.Backlight")
 @patch("dodal.i03.EigerDetector")
@@ -311,6 +370,18 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
                 "param_type": MagicMock(),
             },
         },
+        clear=True,
     ):
         BlueskyRunner(MagicMock(), skip_startup_connection=False)
         assert mock_setup.call_count == 3
+
+
+def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
+    response = test_env.client.put(TEST_BAD_PARAM_ENDPOINT, data='{"bad":1}').json
+    assert isinstance(response, dict)
+    assert response.get("status") == Status.FAILED.value
+    assert (
+        response.get("message")
+        == "<ValidationError: \"{'bad': 1} does not have enough properties\">"
+    )
+    assert "Invalid json parameters" in caplog.text

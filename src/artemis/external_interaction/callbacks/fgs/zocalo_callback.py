@@ -15,8 +15,10 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.log import LOGGER
-from artemis.parameters.internal_parameters import InternalParameters
-from artemis.utils import Point3D
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+)
+from artemis.utils.utils import Point3D
 
 
 class FGSZocaloCallback(CallbackBase):
@@ -40,7 +42,7 @@ class FGSZocaloCallback(CallbackBase):
     """
 
     def __init__(
-        self, parameters: "InternalParameters", ispyb_handler: FGSISPyBHandlerCallback
+        self, parameters: FGSInternalParameters, ispyb_handler: FGSISPyBHandlerCallback
     ):
         self.grid_position_to_motor_position: Callable[
             [Point3D], Point3D

@@ -4,12 +4,14 @@ import threading
 from dataclasses import dataclass
 from json import JSONDecodeError
 from queue import Queue
+from traceback import format_exception
 from typing import Callable, Optional, Tuple
 
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
+from jsonschema.exceptions import ValidationError
 
 import artemis.log
 from artemis.exceptions import WarningException
@@ -63,16 +65,16 @@ class BlueskyRunner:
         RE.subscribe(self.aperture_change_callback)
 
         if not self.skip_startup_connection:
-            for plan in PLAN_REGISTRY:
-                PLAN_REGISTRY[plan]["setup"]()
+            for plan_name in PLAN_REGISTRY:
+                PLAN_REGISTRY[plan_name]["setup"]()
 
     def start(
-        self, experiment: Callable, parameters: InternalParameters, plan: str
+        self, experiment: Callable, parameters: InternalParameters, plan_name: str
     ) -> StatusAndMessage:
         artemis.log.LOGGER.info(f"Started with parameters: {parameters}")
 
         if self.skip_startup_connection:
-            PLAN_REGISTRY[plan]["setup"]()
+            PLAN_REGISTRY[plan_name]["setup"]()
 
         self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
@@ -144,32 +146,51 @@ class RunExperiment(Resource):
         super().__init__()
         self.runner = runner
 
-    def put(self, plan: str, action: Actions):
+    def put(self, plan_name: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                experiment_type = PLAN_REGISTRY.get(plan)
-                if experiment_type is None:
+                experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
+                if experiment_registry_entry is None:
                     raise PlanNotFound(
-                        f"Experiment plan '{plan}' not found in registry."
+                        f"Experiment plan '{plan_name}' not found in registry."
                     )
-                experiment = experiment_type.get("run")
+
+                experiment_internal_param_type: InternalParameters = (
+                    experiment_registry_entry.get("internal_param_type")
+                )
+                experiment = experiment_registry_entry.get("run")
+                if experiment_internal_param_type is None:
+                    raise PlanNotFound(
+                        f"Corresponding internal param type for '{plan_name}' not found in registry."
+                    )
                 if experiment is None:
                     raise PlanNotFound(
-                        f"Experiment plan '{plan}' has no \"run\" method."
+                        f"Experiment plan '{plan_name}' has no 'run' method."
                     )
-                parameters = InternalParameters.from_external_json(request.data)
+                parameters = experiment_internal_param_type.from_external_json(
+                    request.data
+                )
                 status_and_message = self.runner.start(
-                    experiment, parameters, experiment_type
+                    experiment, parameters, plan_name
                 )
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
             except PlanNotFound as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+            except ValidationError as e:
+                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+                artemis.log.LOGGER.error(
+                    f" {format_exception(e)}: Invalid json parameters"
+                )
+            except Exception as e:
+                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+                artemis.log.LOGGER.error(format_exception(e))
+
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
         # no idea why mypy gives an attribute error here but nowhere else for this
-        # exactsame situation...
+        # exact same situation...
         return status_and_message.to_dict()  # type: ignore
 
 
@@ -202,7 +223,7 @@ def create_app(
     api = Api(app)
     api.add_resource(
         RunExperiment,
-        "/<string:plan>/<string:action>",
+        "/<string:plan_name>/<string:action>",
         resource_class_args=[runner],
     )
     api.add_resource(

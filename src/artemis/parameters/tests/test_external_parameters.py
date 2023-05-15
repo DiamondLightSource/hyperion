@@ -1,87 +1,43 @@
-import json
-
-from pytest import raises
-
-from artemis.parameters.external_parameters import (
-    ExternalGridScanParameters,
-    ExternalRotationScanParameters,
-    RawParameters,
-    WrongExperimentParameterSpecification,
-)
+from artemis.parameters import external_parameters
+from artemis.parameters.beamline_parameters import GDABeamlineParameters
 
 
-def test_new_parameters_is_a_deep_copy():
-    first_copy = RawParameters()
-    second_copy = RawParameters()
-    assert first_copy == second_copy
-    assert first_copy is not second_copy
-    assert (
-        first_copy.artemis_params.detector_params
-        is not second_copy.artemis_params.detector_params
+def test_new_parameters_is_a_new_object():
+    a = external_parameters.from_file(
+        "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
-    assert first_copy.experiment_params is not second_copy.experiment_params
-    assert (
-        first_copy.artemis_params.ispyb_params
-        is not second_copy.artemis_params.ispyb_params
+    b = external_parameters.from_file(
+        "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
+    assert a == b
+    assert a is not b
 
 
 def test_parameters_load_from_file():
-    params = RawParameters.from_file(
+    params = external_parameters.from_file(
         "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
-    expt_params: ExternalGridScanParameters = params.experiment_params
-    assert isinstance(expt_params, ExternalGridScanParameters)
-    assert expt_params.x_steps == 5
-    assert expt_params.y_steps == 10
-    assert expt_params.z_steps == 2
-    assert expt_params.x_step_size == 0.1
-    assert expt_params.y_step_size == 0.1
-    assert expt_params.z_step_size == 0.1
-    assert expt_params.dwell_time == 0.2
-    assert expt_params.x_start == 0.0
-    assert expt_params.y1_start == 0.0
-    assert expt_params.y2_start == 0.0
-    assert expt_params.z1_start == 0.0
-    assert expt_params.z2_start == 0.0
+    expt_params = params["experiment_params"]
+    assert expt_params["x_steps"] == 5
+    assert expt_params["y_steps"] == 10
+    assert expt_params["z_steps"] == 2
+    assert expt_params["x_step_size"] == 0.1
+    assert expt_params["y_step_size"] == 0.1
+    assert expt_params["z_step_size"] == 0.1
+    assert expt_params["dwell_time"] == 0.2
+    assert expt_params["x_start"] == 0.0
+    assert expt_params["y1_start"] == 0.0
+    assert expt_params["y2_start"] == 0.0
+    assert expt_params["z1_start"] == 0.0
+    assert expt_params["z2_start"] == 0.0
 
-    params = RawParameters.from_file(
-        "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+
+def test_beamline_parameters():
+    params = GDABeamlineParameters.from_file(
+        "src/artemis/parameters/tests/test_data/test_beamline_parameters.txt"
     )
-    expt_params: ExternalRotationScanParameters = params.experiment_params
-    assert isinstance(params.experiment_params, ExternalRotationScanParameters)
-    assert expt_params.rotation_axis == "omega"
-    assert expt_params.rotation_angle == 180.0
-    assert expt_params.omega_start == 0.0
-    assert expt_params.phi_start == 0.0
-    assert expt_params.chi_start == 0
-    assert expt_params.x == 1.0
-    assert expt_params.y == 2.0
-    assert expt_params.z == 3.0
-
-
-def test_parameter_eq():
-    params = RawParameters()
-
-    assert not params == 6
-    assert not params == ""
-
-    params2 = RawParameters()
-    assert params == params2
-    params2.artemis_params.insertion_prefix = ""
-    assert not params == params2
-
-    params2 = RawParameters()
-    assert params == params2
-    params2.experiment_params.x_start = 12345
-    assert not params == params2
-
-
-def test_parameter_init_with_bad_type_raises_exception():
-    with open(
-        "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
-    ) as f:
-        param_dict = json.load(f)
-    param_dict["artemis_params"]["experiment_type"] = "nonsense_scan"
-    with raises(WrongExperimentParameterSpecification):
-        params = RawParameters.from_dict(param_dict)  # noqa: F841
+    assert params["sg_x_MEDIUM_APERTURE"] == 5.285
+    assert params["col_parked_downstream_x"] == 0
+    assert params["beamLineEnergy__pitchStep"] == 0.002
+    assert params["DataCollection_TurboMode"] is True
+    assert params["beamLineEnergy__adjustSlits"] is False
