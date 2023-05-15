@@ -173,6 +173,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Dict:
         "starts": [detector_params.detector_distance],
         "ends": [detector_params.detector_distance],
         "increments": [0.0],
+        "bit_depth_image": "_dectris/bit_depth_image",
         "bit_depth_readout": "_dectris/bit_depth_readout",
         "detector_readout_time": "_dectris/detector_readout_time",
         "threshold_energy": "_dectris/threshold_energy",
