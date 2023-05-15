@@ -254,7 +254,7 @@ def test_logging_within_plan(
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
     move_xyz.assert_called_once_with(
-        ANY, Point3D(x=0.05, y=0.15000000000000002, z=0.25)
+        ANY, Point3D(x=-0.05, y=0.05, z=0.15000000000000002)
     )
 
 
