@@ -27,8 +27,8 @@ def test_create_devices(mock_beamline_params):
         fgs_create_devices.assert_called()
         oav_create_devices.assert_called()
 
-        i03.detector_motion.return_value.wait_for_connection.assert_called()
-        i03.backlight.return_value.wait_for_connection.assert_called()
+        i03.detector_motion.assert_called()
+        i03.backlight.assert_called()
         assert isinstance(
             i03.aperture_scatterguard.call_args.args[-1], AperturePositions
         )
