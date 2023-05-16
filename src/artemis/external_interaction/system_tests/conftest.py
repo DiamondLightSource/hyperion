@@ -13,11 +13,11 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     StoreInIspyb2D,
     StoreInIspyb3D,
 )
+from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import Point3D
-from artemis.parameters.external_parameters import from_file as default_raw_params
+from artemis.utils.utils import Point3D
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 

@@ -8,12 +8,11 @@ from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_SMALL,
 )
+from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import Point3D
-
-from artemis.parameters.external_parameters import from_file as default_raw_params
+from artemis.utils.utils import Point3D
 
 
 @pytest.mark.s03

@@ -8,7 +8,7 @@ from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal
     RotationInternalParameters,
     RotationScanParams,
 )
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 def test_rotation_scan_param_validity():
@@ -23,7 +23,6 @@ def test_rotation_scan_param_validity():
         x=0,
         y=0,
         z=0,
-        trigger_number="many_triggers",
     )
 
     xlim = MagicMock()
