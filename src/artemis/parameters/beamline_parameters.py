@@ -3,7 +3,7 @@ from os import environ
 from typing import Any, Tuple, cast
 
 from artemis.parameters.constants import (
-    I03_BEAMLINE_PARAMETER_PATH,
+    BEAMLINE_PARAMETER_PATHS,
     SIM_BEAMLINE,
     SIM_INSERTION_PREFIX,
 )
@@ -69,4 +69,8 @@ class GDABeamlineParameters:
 
 
 def get_beamline_parameters():
-    return GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
+    try:
+        beamline = environ["BEAMLINE"]
+    except KeyError:
+        raise KeyError("BEAMLINE environment variable not set!")
+    return GDABeamlineParameters.from_file(BEAMLINE_PARAMETER_PATHS[beamline])
