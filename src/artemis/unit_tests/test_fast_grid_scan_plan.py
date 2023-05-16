@@ -38,6 +38,7 @@ from artemis.external_interaction.system_tests.conftest import (
 )
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import external_parameters
+from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.internal_parameters.internal_parameters import (
     InternalParameters,
 )
@@ -45,7 +46,6 @@ from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params im
     FGSInternalParameters,
 )
 from artemis.utils import Point3D
-from artemis.parameters.external_parameters import from_file as default_raw_params
 
 
 @pytest.fixture
@@ -364,12 +364,14 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     # Put both mocks in a parent to easily capture order
     mock_parent = MagicMock()
 
+    fake_fgs_composite.eiger.armed = True
+
     fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
     fake_fgs_composite.eiger.filewriters_finished = Status()
     fake_fgs_composite.eiger.filewriters_finished.set_finished()
     fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
-    fake_fgs_composite.eiger.stage = MagicMock()
+    fake_fgs_composite.eiger.async_stage = MagicMock()
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
 
