@@ -292,36 +292,6 @@ def run_gridscan_and_move(
         )
 
 
-# def get_plan(
-#     parameters: FGSInternalParameters,
-#     subscriptions: FGSCallbackCollection,
-# ) -> Callable:
-#     """Create the plan to run the grid scan based on provided parameters.
-
-#     The ispyb handler should be added to the whole gridscan as we want to capture errors
-#     at any point in it.
-
-#     Args:
-#         parameters (FGSInternalParameters): The parameters to run the scan.
-
-#     Returns:
-#         Generator: The plan for the gridscan
-#     """
-#     assert fast_grid_scan_composite is not None
-#     fast_grid_scan_composite.eiger.set_detector_parameters(
-#         parameters.artemis_params.detector_params
-#     )
-
-#     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
-#     @bpp.subs_decorator(subscriptions.ispyb_handler)
-#     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
-#         yield from run_gridscan_and_move(fgs_composite, params, comms)
-
-#     return run_gridscan_and_move_and_tidy(
-#         fast_grid_scan_composite, parameters, subscriptions
-#     )
-
-
 def fast_grid_scan(
     api_parameters: Mapping[str, Any],
     composite: FGSComposite,

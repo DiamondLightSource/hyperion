@@ -21,6 +21,7 @@ import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from artemis.experiment_plans.fast_grid_scan_plan import create_devices, fast_grid_scan
+from artemis.experiment_plans.full_grid_scan import full_grid_scan
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
 )
@@ -61,6 +62,7 @@ def setup_context(fake: bool, skip_startup_connection: bool) -> BlueskyContext:
     composite_device = create_devices(fake)
     context.device(composite_device)
     context.plan(fast_grid_scan)
+    context.plan(full_grid_scan)
 
     if not skip_startup_connection:
         for device in context.devices.values():

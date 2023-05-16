@@ -1,7 +1,14 @@
 from __future__ import annotations
 
+<<<<<<< HEAD
 from typing import TYPE_CHECKING, Callable
+=======
+import os
+from typing import TYPE_CHECKING, Any, Callable, Mapping
+>>>>>>> bb83178 (Registered full grid scan plan)
 
+import bluesky.preprocessors as bpp
+from blueapi.core import MsgGenerator
 from bluesky import plan_stubs as bps
 from dodal import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
@@ -9,10 +16,11 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 
+from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
 from artemis.experiment_plans.fast_grid_scan_plan import (
     create_devices as fgs_create_devices,
 )
-from artemis.experiment_plans.fast_grid_scan_plan import get_plan as fgs_get_plan
+from artemis.experiment_plans.fast_grid_scan_plan import fast_grid_scan
 from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
@@ -30,7 +38,9 @@ from artemis.utils.utils import Point3D
 if TYPE_CHECKING:
     from artemis.parameters.internal_parameters.plan_specific.grid_scan_with_edge_detect_params import (
         GridScanWithEdgeDetectInternalParameters,
-        GridScanWithEdgeDetectParams,
+        GridScanWithEdgeDetectParams)
+    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+        FGSCallbackCollection,
     )
 
 
@@ -62,18 +72,22 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
     raise TimeoutError("Detector not finished moving")
 
 
+<<<<<<< HEAD
 def get_plan(
     parameters: GridScanWithEdgeDetectInternalParameters,
     subscriptions: FGSCallbackCollection,
+=======
+def full_grid_scan(
+    api_parameters: Mapping[str, Any],
+    composite: FGSComposite,
+    detector_motion: DetectorMotion,
+>>>>>>> bb83178 (Registered full grid scan plan)
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
-) -> Callable:
-    """
-    A plan which combines the collection of snapshots from the OAV and the determination
-    of the grid dimensions to use for the following grid scan.
-    """
-    backlight: Backlight = i03.backlight()
-    aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
-    detector_motion: DetectorMotion = i03.detector_motion()
+) -> MsgGenerator:
+    parameters = FGSInternalParameters.from_external_dict(api_parameters)
+
+    backlight: Backlight = composite.backlight
+    aperture_scatterguard: ApertureScatterguard = composite.aperture_scatterguard
 
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
@@ -126,6 +140,6 @@ def get_plan(
         )
         yield from wait_for_det_to_finish_moving(detector_motion)
 
-        yield from fgs_get_plan(parameters, subscriptions)
+        yield from fast_grid_scan(api_parameters, composite)
 
     return detect_grid_and_do_gridscan()
