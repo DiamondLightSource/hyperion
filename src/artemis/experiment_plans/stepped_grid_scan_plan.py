@@ -20,7 +20,7 @@ from artemis.parameters.beamline_parameters import (
 )
 from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH, SIM_BEAMLINE
 from artemis.tracing import TRACER
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.stepped_grid_scan.stepped_grid_scan_callback_collection import (
@@ -149,7 +149,6 @@ def get_plan(
     Returns:
         Generator: The plan for the gridscan
     """
-    LOGGER.info("******* get_plan called")
 
     assert stepped_grid_scan_composite is not None
 
