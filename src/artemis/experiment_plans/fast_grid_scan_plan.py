@@ -40,7 +40,7 @@ from artemis.parameters.constants import (
     SIM_BEAMLINE,
 )
 from artemis.tracing import TRACER
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (

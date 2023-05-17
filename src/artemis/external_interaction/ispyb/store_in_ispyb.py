@@ -13,7 +13,7 @@ from sqlalchemy.connectors import Connector
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
 from artemis.tracing import TRACER
-from artemis.utils import Point2D
+from artemis.utils.utils import Point2D
 
 if TYPE_CHECKING:
     from artemis.parameters.internal_parameters import InternalParameters

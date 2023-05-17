@@ -8,7 +8,7 @@ from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal
     RotationInternalParameters,
     RotationScanParams,
 )
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 def test_rotation_scan_param_validity():
