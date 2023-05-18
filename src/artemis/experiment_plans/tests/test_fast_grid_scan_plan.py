@@ -43,7 +43,7 @@ from artemis.parameters.internal_parameters.internal_parameters import (
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
-from artemis.utils import Point3D
+from artemis.utils.utils import Point3D
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
