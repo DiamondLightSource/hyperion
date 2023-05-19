@@ -70,7 +70,7 @@ def get_plan(
     aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
     detector_motion: DetectorMotion = i03.detector_motion()
 
-    oav_params = OAVParameters("loopCentring", **oav_param_files)
+    oav_params = OAVParameters("xrayCentring", **oav_param_files)
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
     def detect_grid_and_do_gridscan():
