@@ -59,17 +59,21 @@ def grid_detection_main_plan(
     out_snapshot_filenames: List[List[str]],
     out_upper_left: Dict,
     grid_width_px: int,
-    box_size_um: int,
+    box_size_um: float,
 ):
     """
-    Attempts to find the centre of the pin on the oav by rotating and sampling elements.
-    I03 gets the number of rotation points from gda.mx.loop.centring.omega.steps which defaults to 6.
+    Creates the parameters for two grids that are 90 degrees from each other and
+    encompass the whole of the sample as it appears in the OAV.
 
     Args:
-        oav (OAV): The OAV device in use.
-        parameters (OAVParamaters): Object containing values loaded in from various parameter files in use.
-        max_run_num (int): Maximum number of times to run.
-        rotation_points (int): Test to see if the pin is widest `rotation_points` number of times on a full 180 degree rotation.
+        parameters (OAVParamaters): Object containing paramters for setting up the OAV
+        out_parameters (GridScanParams): The returned parameters for the gridscan
+        snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
+        snapshot_dir (str): The location to save snapshots
+        out_snapshot_filenames (List[List[str]]): The returned full snapshot filenames
+        out_upper_left (Dict): The returned x, y, z value of the upper left pixel of the grid
+        grid_width_px (int): The width of the grid to scan in pixels
+        box_size_um (float): The size of each box of the grid in microns
     """
     oav: OAV = i03.oav()
     smargon: Smargon = i03.smargon()
