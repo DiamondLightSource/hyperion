@@ -49,6 +49,7 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
         "run": not_implemented,
         "internal_param_type": RotationInternalParameters,
         "experiment_param_type": RotationScanParams,
+        "callback_collection_type": NullPlanCallbackCollection,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())
