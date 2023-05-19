@@ -96,7 +96,7 @@ def grid_detection_main_plan(
     for angle in [0, -90]:
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
-        # TODO improve this from just waiting some random time
+        # See #673 for improvements
         yield from bps.sleep(0.3)
 
         top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
@@ -156,7 +156,7 @@ def grid_detection_main_plan(
                 path_join(snapshot_dir, f"{snapshot_filename}_outer_overlay.png"),
                 path_join(snapshot_dir, f"{snapshot_filename}.png"),
             ]
-        )  # TODO: make ispyb handler deal with this instead
+        )
 
         # Get the beam distance from the centre (in pixels).
         (
