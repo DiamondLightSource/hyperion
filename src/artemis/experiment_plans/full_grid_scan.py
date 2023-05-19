@@ -75,7 +75,7 @@ def get_plan(
         "snap_2_filename": os.path.basename(os.path.abspath(gda_snap_2)),
     }
 
-    oav_params = OAVParameters("loopCentring", **oav_param_files)
+    oav_params = OAVParameters("xrayCentring", **oav_param_files)
 
     LOGGER.info(
         f"microns_per_pixel: GDA: {parameters.artemis_params.ispyb_params.microns_per_pixel_x, parameters.artemis_params.ispyb_params.microns_per_pixel_y} Artemis {oav_params.micronsPerXPixel, oav_params.micronsPerYPixel}"
