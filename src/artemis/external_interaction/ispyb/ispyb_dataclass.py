@@ -40,13 +40,6 @@ class IspybParams:
     microns_per_pixel_x: float
     microns_per_pixel_y: float
 
-    position: Point3D = field(
-        # motor position
-        metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict),
-        )
-    )
     upper_left: Point3D = field(
         # in px on the image
         metadata=config(
@@ -54,6 +47,15 @@ class IspybParams:
             decoder=lambda mydict: Point3D(**mydict),
         )
     )
+
+    position: Point3D = field(
+        # motor position
+        metadata=config(
+            encoder=lambda mytuple: mytuple._asdict(),
+            decoder=lambda mydict: Point3D(**mydict),
+        )
+    )
+
     transmission: float
     flux: float
     wavelength: float

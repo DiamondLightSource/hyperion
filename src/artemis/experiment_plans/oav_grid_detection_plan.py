@@ -73,7 +73,7 @@ def grid_detection_main_plan(
     """
     oav: OAV = i03.oav()
     smargon: Smargon = i03.smargon()
-    LOGGER.info("OAV Centring: Starting loop centring")
+    LOGGER.info("OAV Centring: Starting grid detection centring")
 
     yield from bps.wait()
 
@@ -88,6 +88,7 @@ def grid_detection_main_plan(
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
+    # The FGS uses -90 so we need to match it
     for angle in [0, -90]:
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
@@ -116,7 +117,6 @@ def grid_detection_main_plan(
         ]
         min_y = min(filtered_top)
         max_y = max(filtered_bottom)
-        LOGGER.info(f"Min/max {min_y, max_y}")
         grid_height_px = max_y - min_y
 
         LOGGER.info(f"Drawing snapshot {grid_width_px} by {grid_height_px}")
@@ -140,8 +140,6 @@ def grid_detection_main_plan(
         yield from bps.abs_set(oav.snapshot.num_boxes_x, boxes[0])
         yield from bps.abs_set(oav.snapshot.num_boxes_y, boxes[1])
 
-        LOGGER.info("Triggering snapshot")
-
         snapshot_filename = snapshot_template.format(angle=abs(angle))
 
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
@@ -156,17 +154,11 @@ def grid_detection_main_plan(
             ]
         )  # TODO: make ispyb handler deal with this instead
 
-        LOGGER.info(f"Got upper left: {upper_left}")
-
         # Get the beam distance from the centre (in pixels).
         (
             beam_distance_i_pixels,
             beam_distance_j_pixels,
         ) = parameters.calculate_beam_distance(upper_left[0], upper_left[1])
-
-        LOGGER.info(
-            f"Got beam distance {beam_distance_i_pixels}, {beam_distance_j_pixels}"
-        )
 
         current_motor_xyz = np.array(
             [
@@ -176,8 +168,6 @@ def grid_detection_main_plan(
             ],
             dtype=np.float64,
         )
-
-        LOGGER.info(f"Current position {current_motor_xyz}")
 
         # Add the beam distance to the current motor position (adjusting for the changes in coordinate system
         # and the from the angle).
