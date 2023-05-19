@@ -17,6 +17,9 @@ from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
 from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.log import LOGGER
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     GridScanParams,
@@ -24,9 +27,6 @@ from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params im
 from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-        FGSCallbackCollection,
-    )
     from artemis.parameters.internal_parameters.plan_specific.grid_scan_with_edge_detect_params import (
         GridScanWithEdgeDetectInternalParameters,
         GridScanWithEdgeDetectParams,
@@ -82,7 +82,7 @@ def get_plan(
         )
 
         out_snapshot_filenames = []
-        out_upper_left = Point3D()
+        out_upper_left = {}
 
         yield from grid_detection_plan(
             oav_params,
@@ -99,9 +99,23 @@ def get_plan(
         parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end = (
             out_snapshot_filenames[1]
         )
-        parameters.artemis_params.ispyb_params.upper_left = out_upper_left
+        parameters.artemis_params.ispyb_params.upper_left = Point3D(**out_upper_left)
+
+        fgs_params.__post_init__()
+
+        parameters.experiment_params = fgs_params
+
+        parameters.artemis_params.detector_params.num_triggers = (
+            fgs_params.get_num_images()
+        )
+
+        LOGGER.info(f"Parameters for FGS: {parameters}")
+        subscriptions = FGSCallbackCollection.from_params(parameters)
 
         yield from bps.abs_set(backlight.pos, Backlight.OUT)
+        LOGGER.info(
+            f"Setting aperture position to {aperture_scatterguard.aperture_positions.SMALL}"
+        )
         yield from bps.abs_set(
             aperture_scatterguard, aperture_scatterguard.aperture_positions.SMALL
         )

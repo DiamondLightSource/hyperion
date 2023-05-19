@@ -40,14 +40,6 @@ class IspybParams:
     microns_per_pixel_x: float
     microns_per_pixel_y: float
 
-    upper_left: Point3D = field(
-        # in px on the image
-        metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict),
-        )
-    )
-
     position: Point3D = field(
         # motor position
         metadata=config(
@@ -55,9 +47,13 @@ class IspybParams:
             decoder=lambda mydict: Point3D(**mydict),
         )
     )
-
-    xtal_snapshots_omega_start: List[str]
-    xtal_snapshots_omega_end: List[str]
+    upper_left: Point3D = field(
+        # in px on the image
+        metadata=config(
+            encoder=lambda mytuple: mytuple._asdict(),
+            decoder=lambda mydict: Point3D(**mydict),
+        )
+    )
     transmission: float
     flux: float
     wavelength: float
@@ -76,6 +72,8 @@ class IspybParams:
     synchrotron_mode: Optional[str] = None
     slit_gap_size_x: Optional[float] = None
     slit_gap_size_y: Optional[float] = None
+    xtal_snapshots_omega_start: Optional[List[str]] = None
+    xtal_snapshots_omega_end: Optional[List[str]] = None
 
 
 class Orientation(Enum):

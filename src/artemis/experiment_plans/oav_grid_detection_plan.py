@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, List
+from os.path import join as path_join
+from typing import TYPE_CHECKING, Dict, List
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -14,7 +15,6 @@ from dodal.devices.smargon import Smargon
 
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
 from artemis.log import LOGGER
-from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
@@ -32,7 +32,7 @@ def grid_detection_plan(
     snapshot_template: str,
     snapshot_dir: str,
     out_snapshot_filenames: List[List[str]],
-    out_upper_left: Point3D,
+    out_upper_left: Dict,
     width=600,
     box_size_microns=20,
 ):
@@ -57,7 +57,7 @@ def grid_detection_main_plan(
     snapshot_template: str,
     snapshot_dir: str,
     out_snapshot_filenames: List[List[str]],
-    out_upper_left: Point3D,
+    out_upper_left: Dict,
     grid_width_px: int,
     box_size_um: int,
 ):
@@ -88,11 +88,11 @@ def grid_detection_main_plan(
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
-    for angle in [0, 90]:
+    for angle in [0, -90]:
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # TODO improve this from just waiting some random time
-        yield from bps.sleep(0.5)
+        yield from bps.sleep(0.3)
 
         top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
         bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
@@ -110,8 +110,10 @@ def grid_detection_main_plan(
 
         # the edge detection line can jump to the edge of the image sometimes, filter
         # those points out, and if empty after filter use the whole image
-        filtered_top = list(top_edge[top_edge != 0]) or [full_image_height_px]
-        filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [0]
+        filtered_top = list(top_edge[top_edge != 0]) or [0]
+        filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [
+            full_image_height_px
+        ]
         min_y = min(filtered_top)
         max_y = max(filtered_bottom)
         LOGGER.info(f"Min/max {min_y, max_y}")
@@ -127,10 +129,10 @@ def grid_detection_main_plan(
 
         upper_left = (tip_x_px, min_y)
         if angle == 0:
-            out_upper_left.x = tip_x_px
-            out_upper_left.y = min_y
+            out_upper_left["x"] = int(tip_x_px)
+            out_upper_left["y"] = int(min_y)
         else:
-            out_upper_left.z = min_y
+            out_upper_left["z"] = int(min_y)
 
         yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])
@@ -140,7 +142,7 @@ def grid_detection_main_plan(
 
         LOGGER.info("Triggering snapshot")
 
-        snapshot_filename = snapshot_template.format(angle=angle)
+        snapshot_filename = snapshot_template.format(angle=abs(angle))
 
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
         yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
@@ -148,17 +150,23 @@ def grid_detection_main_plan(
 
         out_snapshot_filenames.append(
             [
-                f"{snapshot_dir}/{snapshot_filename}.png",
-                f"{snapshot_dir}/{snapshot_filename}_outer_overlay.png",
-                f"{snapshot_dir}/{snapshot_filename}_grid_overlay.png",
+                path_join(snapshot_dir, f"{snapshot_filename}_grid_overlay.png"),
+                path_join(snapshot_dir, f"{snapshot_filename}_outer_overlay.png"),
+                path_join(snapshot_dir, f"{snapshot_filename}.png"),
             ]
-        )  # TODO: Get these out of the device
+        )  # TODO: make ispyb handler deal with this instead
+
+        LOGGER.info(f"Got upper left: {upper_left}")
 
         # Get the beam distance from the centre (in pixels).
         (
             beam_distance_i_pixels,
             beam_distance_j_pixels,
         ) = parameters.calculate_beam_distance(upper_left[0], upper_left[1])
+
+        LOGGER.info(
+            f"Got beam distance {beam_distance_i_pixels}, {beam_distance_j_pixels}"
+        )
 
         current_motor_xyz = np.array(
             [
@@ -168,6 +176,8 @@ def grid_detection_main_plan(
             ],
             dtype=np.float64,
         )
+
+        LOGGER.info(f"Current position {current_motor_xyz}")
 
         # Add the beam distance to the current motor position (adjusting for the changes in coordinate system
         # and the from the angle).
@@ -181,15 +191,15 @@ def grid_detection_main_plan(
         start_positions.append(start_position)
 
     LOGGER.info(
-        f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][1]}"
+        f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][2]}"
     )
     out_parameters.x_start = start_positions[0][0]
 
     out_parameters.y1_start = start_positions[0][1]
     out_parameters.y2_start = start_positions[0][1]
 
-    out_parameters.z1_start = start_positions[1][1]
-    out_parameters.z2_start = start_positions[1][1]
+    out_parameters.z1_start = start_positions[1][2]
+    out_parameters.z2_start = start_positions[1][2]
 
     LOGGER.info(
         f"Calculated number of steps {box_numbers[0][0], box_numbers[0][1], box_numbers[1][1]}"
@@ -198,10 +208,10 @@ def grid_detection_main_plan(
     out_parameters.y_steps = box_numbers[0][1]
     out_parameters.z_steps = box_numbers[1][1]
 
-    LOGGER.info(f"Calculated step sizes: {box_size_um, box_size_um, box_size_um}")
-    out_parameters.x_step_size = box_size_um
-    out_parameters.y_step_size = box_size_um
-    out_parameters.z_step_size = box_size_um
+    LOGGER.info(f"Step sizes: {box_size_um, box_size_um, box_size_um}")
+    out_parameters.x_step_size = box_size_um / 1000
+    out_parameters.y_step_size = box_size_um / 1000
+    out_parameters.z_step_size = box_size_um / 1000
 
 
 def reset_oav(parameters: OAVParameters):

@@ -31,6 +31,7 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
     def artemis_param_preprocessing(self, param_dict: dict[str, Any]):
         super().artemis_param_preprocessing(param_dict)
         param_dict["omega_increment"] = 0
-        param_dict["num_triggers"] = None
+        param_dict["num_triggers"] = 0
         param_dict["num_images_per_trigger"] = 1
         param_dict["trigger_mode"] = TriggerMode.FREE_RUN
+        param_dict["upper_left"] = {"x": 0, "y": 0, "z": 0}
