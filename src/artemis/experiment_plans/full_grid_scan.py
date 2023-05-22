@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-<<<<<<< HEAD
-from typing import TYPE_CHECKING, Callable
-=======
 import os
 from typing import TYPE_CHECKING, Any, Callable, Mapping
->>>>>>> bb83178 (Registered full grid scan plan)
 
 import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
@@ -31,16 +27,18 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
     GridScanParams,
 )
 from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters.plan_specific.grid_scan_with_edge_detect_params import (
-        GridScanWithEdgeDetectInternalParameters,
-        GridScanWithEdgeDetectParams)
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
+    )
+    from artemis.parameters.internal_parameters.plan_specific.grid_scan_with_edge_detect_params import (
+        GridScanWithEdgeDetectInternalParameters,
+        GridScanWithEdgeDetectParams,
     )
 
 
@@ -72,16 +70,10 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
     raise TimeoutError("Detector not finished moving")
 
 
-<<<<<<< HEAD
-def get_plan(
-    parameters: GridScanWithEdgeDetectInternalParameters,
-    subscriptions: FGSCallbackCollection,
-=======
 def full_grid_scan(
     api_parameters: Mapping[str, Any],
     composite: FGSComposite,
     detector_motion: DetectorMotion,
->>>>>>> bb83178 (Registered full grid scan plan)
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
 ) -> MsgGenerator:
     parameters = FGSInternalParameters.from_external_dict(api_parameters)

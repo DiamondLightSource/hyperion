@@ -19,7 +19,6 @@ from jsonschema.exceptions import ValidationError
 
 import artemis.log
 from artemis.exceptions import WarningException
-from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from artemis.experiment_plans.fast_grid_scan_plan import create_devices, fast_grid_scan
 from artemis.experiment_plans.full_grid_scan import full_grid_scan
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
@@ -56,13 +55,19 @@ class StatusAndMessage:
         self.message = message
 
 
+class PlanNotFound(Exception):
+    pass
+
+
 def setup_context(fake: bool, skip_startup_connection: bool) -> BlueskyContext:
     context = BlueskyContext()
 
     composite_device = create_devices(fake)
     context.device(composite_device)
-    context.plan(fast_grid_scan)
-    context.plan(full_grid_scan)
+
+    import artemis.experiment_plans.experiment_registry as artemis_plans
+
+    context.with_plan_module(artemis_plans)
 
     if not skip_startup_connection:
         for device in context.devices.values():
