@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, Union
+from typing import Callable
 
 from dodal.devices.fast_grid_scan import GridScanParams
 
@@ -39,8 +39,7 @@ def do_nothing():
     pass
 
 
-EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
-PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
+PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
         "run": fast_grid_scan_plan.get_plan,
