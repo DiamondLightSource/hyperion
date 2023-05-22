@@ -5,7 +5,6 @@ from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
-from artemis.utils.utils import Point3D
 
 
 def fake_create_devices():
@@ -56,7 +55,7 @@ def test_grid_detection_plan(
             out_parameters=gridscan_params,
             snapshot_dir="tmp",
             out_snapshot_filenames=[],
-            out_upper_left=Point3D(),
+            out_upper_left={},
             snapshot_template="test_{angle}",
         )
     )
