@@ -13,6 +13,9 @@ from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
+from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
+)
 from artemis.parameters import external_parameters
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
@@ -351,6 +354,31 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
         mock_setup.assert_not_called()
         runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
         mock_setup.assert_called_once()
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
+def test_when_plan_started_then_callbacks_created(
+    mock_get_beamline_params, mock_fgs, mock_eiger
+):
+    mock_callback: AbstractPlanCallbackCollection = MagicMock(
+        spec=AbstractPlanCallbackCollection
+    )
+    with patch.dict(
+        "artemis.__main__.PLAN_REGISTRY",
+        {
+            "fast_grid_scan": {
+                "setup": MagicMock(),
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+                "callback_collection_type": mock_callback,
+            },
+        },
+    ):
+        runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
+        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
+        mock_callback.from_params.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")

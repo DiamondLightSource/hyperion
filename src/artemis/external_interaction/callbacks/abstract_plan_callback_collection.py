@@ -25,3 +25,9 @@ class AbstractPlanCallbackCollection(ABC):
     def __iter__(self):
         for field in fields(self):
             yield getattr(self, field.name)
+
+
+class NullPlanCallbackCollection(AbstractPlanCallbackCollection):
+    @classmethod
+    def from_params(cls, params: InternalParameters):
+        pass
