@@ -53,12 +53,13 @@ def test_beamline_parameters():
     assert params["beamLineEnergy__adjustSlits"] is False
 
 
-def test_get_beamline_parameters():
+def test_get_beamline_parameters_works_with_no_environment_variable_set():
     if environ.get("BEAMLINE"):
         del environ["BEAMLINE"]
-    with pytest.raises(KeyError) as excinfo:
-        get_beamline_parameters()
-    assert "environment variable is not set" in str(excinfo.value)
+    assert get_beamline_parameters()
+
+
+def test_get_beamline_parameters():
     environ["BEAMLINE"] = "i03"
     with patch.dict(
         "artemis.parameters.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
