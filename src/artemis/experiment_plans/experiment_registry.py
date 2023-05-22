@@ -14,6 +14,10 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
+from artemis.parameters.internal_parameters.plan_specific.grid_scan_with_edge_detect_params import (
+    GridScanWithEdgeDetectInternalParameters,
+    GridScanWithEdgeDetectParams,
+)
 from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
@@ -40,8 +44,8 @@ PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
     "full_grid_scan": {
         "setup": full_grid_scan.create_devices,
         "run": full_grid_scan.get_plan,
-        "internal_param_type": FGSInternalParameters,
-        "experiment_param_type": GridScanParams,
+        "internal_param_type": GridScanWithEdgeDetectInternalParameters,
+        "experiment_param_type": GridScanWithEdgeDetectParams,
         "callback_collection_type": NullPlanCallbackCollection,
     },
     "rotation_scan": {
