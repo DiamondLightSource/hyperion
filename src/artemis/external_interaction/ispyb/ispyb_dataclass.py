@@ -56,8 +56,6 @@ class IspybParams:
         )
     )
 
-    xtal_snapshots_omega_start: List[str]
-    xtal_snapshots_omega_end: List[str]
     transmission: float
     flux: float
     wavelength: float
@@ -76,6 +74,8 @@ class IspybParams:
     synchrotron_mode: Optional[str] = None
     slit_gap_size_x: Optional[float] = None
     slit_gap_size_y: Optional[float] = None
+    xtal_snapshots_omega_start: Optional[List[str]] = None
+    xtal_snapshots_omega_end: Optional[List[str]] = None
 
 
 class Orientation(Enum):

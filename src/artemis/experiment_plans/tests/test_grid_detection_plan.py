@@ -59,11 +59,10 @@ def test_grid_detection_plan(
         grid_detection_plan(
             parameters=params,
             out_parameters=gridscan_params,
-            filenames={
-                "snapshot_dir": "tmp",
-                "snap_1_filename": "1.jpg",
-                "snap_2_filename": "2.jpg",
-            },
+            snapshot_dir="tmp",
+            out_snapshot_filenames=[],
+            out_upper_left={},
+            snapshot_template="test_{angle}",
         )
     )
     bps_trigger.assert_called_with(oav.snapshot, wait=True)
