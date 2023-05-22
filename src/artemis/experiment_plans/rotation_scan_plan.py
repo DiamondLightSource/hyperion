@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
-from bluesky.preprocessors import finalize_decorator, stage_decorator, subs_decorator
+from bluesky.preprocessors import (
+    finalize_decorator,
+    finalize_wrapper,
+    stage_decorator,
+    subs_decorator,
+)
 from dodal import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
@@ -146,12 +151,7 @@ def rotation_scan_plan(
 
 def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
     yield from cleanup_sample_environment(zebra, detector_motion)
-    try:
-        yield from disarm_zebra(zebra)
-    except Exception:
-        yield from bps.wait("cleanup_senv")
-        raise
-    yield from bps.wait("cleanup_senv")
+    yield from finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
 
 def get_plan(
