@@ -8,6 +8,7 @@ from dodal.devices.motors import XYZLimitBundle
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 from artemis.parameters.internal_parameters import InternalParameters
+from artemis.utils.utils import Point3D
 
 
 @dataclass
@@ -65,3 +66,4 @@ class RotationInternalParameters(InternalParameters):
             param_dict["omega_increment"] = 0
         param_dict["num_triggers"] = 1
         param_dict["num_images_per_trigger"] = param_dict["num_images"]
+        param_dict["upper_left"] = Point3D(*param_dict["upper_left"])
