@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from os import environ
 from typing import Any, Tuple, cast
 
+from dodal.utils import get_beamline_name
+
 from artemis.parameters.constants import (
     BEAMLINE_PARAMETER_PATHS,
     SIM_BEAMLINE,
@@ -69,8 +71,10 @@ class GDABeamlineParameters:
 
 
 def get_beamline_parameters():
-    try:
-        beamline = environ["BEAMLINE"]
-    except KeyError:
-        raise KeyError("BEAMLINE environment variable not set!")
-    return GDABeamlineParameters.from_file(BEAMLINE_PARAMETER_PATHS[beamline])
+    beamline_name = get_beamline_name("none")
+    beamline_param_path = BEAMLINE_PARAMETER_PATHS.get(beamline_name)
+    if beamline_param_path is None:
+        raise KeyError(
+            "No beamline parameter path found, maybe 'BEAMLINE' environment variable is not set!"
+        )
+    return GDABeamlineParameters.from_file(beamline_param_path)
