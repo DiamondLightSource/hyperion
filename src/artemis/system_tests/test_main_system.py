@@ -9,10 +9,10 @@ from typing import Any, Callable, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
+from blueapi.core import BlueskyContext, MsgGenerator
 from flask.testing import FlaskClient
 
-from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
-from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
+from artemis.__main__ import Actions, Status, cli_arg_parse, create_app, setup_context
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
 )
@@ -86,6 +86,31 @@ TEST_EXPTS = {
         "experiment_param_type": MagicMock(),
     },
 }
+
+
+@pytest.fixture
+def context_with_test_experiments() -> BlueskyContext:
+    context = BlueskyContext()
+
+    params_type: MagicMock()
+
+    @context.plan
+    def test_experiment(params: params_type) -> MsgGenerator:
+        ...
+
+    @context.plan
+    def test_experiment_no_run(params: params_type) -> MsgGenerator:
+        ...
+
+    @context.plan
+    def test_experiment_no_internal_param_type(params: params_type) -> MsgGenerator:
+        ...
+
+    @context.plan
+    def fgs_real_params(params: FGSInternalParameters) -> MsgGenerator:
+        ...
+
+    return context
 
 
 @pytest.fixture
@@ -287,7 +312,7 @@ def test_cli_args_parse():
 @patch("dodal.i03.Undulator")
 @patch("dodal.i03.Zebra")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
+def test_when_context_setup_then_plans_are_setup_and_devices_connected(
     mock_get_beamline_params,
     zebra,
     undulator,
@@ -299,7 +324,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     backlight,
     aperture_scatterguard,
 ):
-    BlueskyRunner(MagicMock(), skip_startup_connection=False)
+    setup_context()
     zebra.return_value.wait_for_connection.assert_called_once()
     undulator.return_value.wait_for_connection.assert_called_once()
     synchrotron.return_value.wait_for_connection.assert_called_once()
@@ -314,10 +339,10 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_plans_are_setup_and_devices_are_not_connected(
+def test_when_context_setup_and_skip_flag_is_set_then_plans_are_setup_and_devices_are_not_connected(
     mock_get_beamline_params, mock_fgs, mock_eiger
 ):
-    BlueskyRunner(MagicMock(), skip_startup_connection=True)
+    setup_context(skip_startup_connection=True)
     mock_fgs.return_value.wait_for_connection.assert_not_called()
 
 
@@ -325,7 +350,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_plans_are_setup_
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
-def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
+def test_when_context_setup_and_skip_flag_is_set_then_setup_called_upon_start(
     mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
 ):
     mock_setup = MagicMock()
@@ -340,7 +365,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
             },
         },
     ):
-        runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
+        context = setup_context(skip_startup_connection=True)
         mock_setup.assert_not_called()
         runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
         mock_setup.assert_called_once()
@@ -366,7 +391,7 @@ def test_when_plan_started_then_callbacks_created(
             },
         },
     ):
-        runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
+        context = setup_context(skip_startup_connection=True)
         runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
         mock_callback.from_params.assert_called_once()
 
@@ -401,7 +426,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
         },
         clear=True,
     ):
-        BlueskyRunner(MagicMock(), skip_startup_connection=False)
+        setup_context(skip_startup_connection=False)
         assert mock_setup.call_count == 3
 
 
