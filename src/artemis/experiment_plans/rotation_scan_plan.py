@@ -63,6 +63,8 @@ def cleanup_sample_environment(
 
 
 def move_to_start_w_buffer(axis: EpicsMotor, start_angle):
+    """Move an EpicsMotor 'axis' to angle 'start_angle', modified by an offset and
+    against the direction of rotation."""
     # can move to start as fast as possible
     yield from bps.abs_set(axis.velocity, 120, wait=True)
     start_position = start_angle - (OFFSET * DIRECTION)
@@ -126,6 +128,7 @@ def rotation_scan_plan(
         ),
         group="setup_zebra",
     )
+    # wait for all the setup tasks at once
     yield from bps.wait("setup_senv")
     yield from bps.wait("move_to_start")
     yield from bps.wait("setup_zebra")
