@@ -19,8 +19,8 @@ class BeamlinePrefixes:
 
 
 def get_beamline_prefixes():
-    beamline = get_beamline_name("none")
-    if beamline == "none":
+    beamline = get_beamline_name("s03")
+    if beamline == "s03":
         return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
     if beamline == "i03":
         return BeamlinePrefixes("BL03I", "SR03I")
@@ -70,7 +70,7 @@ class GDABeamlineParameters:
 
 
 def get_beamline_parameters():
-    beamline_name = get_beamline_name("none")
+    beamline_name = get_beamline_name("s03")
     beamline_param_path = BEAMLINE_PARAMETER_PATHS.get(beamline_name)
     if beamline_param_path is None:
         raise KeyError(
