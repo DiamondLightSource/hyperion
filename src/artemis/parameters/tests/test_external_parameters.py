@@ -58,7 +58,7 @@ def test_get_beamline_parameters():
         del environ["BEAMLINE"]
     with pytest.raises(KeyError) as excinfo:
         get_beamline_parameters()
-    assert "environment variable not set" in str(excinfo.value)
+    assert "environment variable is not set" in str(excinfo.value)
     environ["BEAMLINE"] = "i03"
     with patch.dict(
         "artemis.parameters.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
