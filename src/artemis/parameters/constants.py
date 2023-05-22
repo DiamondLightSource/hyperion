@@ -6,7 +6,8 @@ ISPYB_PLAN_NAME = "ispyb_readings"
 SIM_ZOCALO_ENV = "dev_artemis"
 DEFAULT_EXPERIMENT_TYPE = "grid_scan"
 BEAMLINE_PARAMETER_PATHS = {
-    "i03": "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters"
+    "i03": "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters",
+    "s03": "src/artemis/parameters/tests/test_data/test_beamline_parameters.txt",
 }
 
 PARAMETER_VERSION = 0.2
