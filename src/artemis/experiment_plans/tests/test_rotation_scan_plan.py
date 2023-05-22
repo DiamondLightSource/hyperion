@@ -33,7 +33,7 @@ def test_move_to_start(smargon: Smargon, RE):
     mock_omega_set = MagicMock(return_value=Status(done=True, success=True))
     with patch.object(smargon.omega.velocity, "set", mock_velocity_set):
         with patch.object(smargon.omega, "set", mock_omega_set):
-            RE(move_to_start_w_buffer(smargon, start_angle))
+            RE(move_to_start_w_buffer(smargon.omega, start_angle))
 
     mock_velocity_set.assert_called_with(120)
     mock_omega_set.assert_called_with(start_angle - OFFSET * DIRECTION)
@@ -53,7 +53,7 @@ def test_move_to_end(smargon: Smargon, RE):
             "bluesky.preprocessors.__read_and_stash_a_motor",
             __fake_read,
         ):
-            RE(move_to_end_w_buffer(smargon, scan_width))
+            RE(move_to_end_w_buffer(smargon.omega, scan_width))
 
     mock_omega_set.assert_called_with((scan_width + 0.1 + OFFSET) * DIRECTION)
 

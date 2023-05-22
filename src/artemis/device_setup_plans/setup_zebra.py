@@ -66,6 +66,11 @@ def setup_zebra_for_rotation(
                         (in seconds) for the shutter to open and the velocity of the
                         scan (in deg/s). Used to ajust the gate start so that
     """
+    if not isinstance(direction, RotationDirection):
+        raise ValueError(
+            "Disallowed rotation direction provided to Zebra setup plan. "
+            "Use RotationDirection.POSITIVE or RotationDirection.NEGATIVE."
+        )
     LOGGER.info("ZEBRA SETUP: START")
     # must be on for shutter trigger to be enabled
     yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
