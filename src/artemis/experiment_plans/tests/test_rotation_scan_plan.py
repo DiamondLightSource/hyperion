@@ -53,7 +53,6 @@ def test_move_to_end(smargon: Smargon, RE):
             "bluesky.preprocessors.__read_and_stash_a_motor",
             __fake_read,
         ):
-            # with patch.object(RE, "_read", MagicMock(return_value=0)):
             RE(move_to_end_w_buffer(smargon, scan_width))
 
     mock_omega_set.assert_called_with((scan_width + 0.1 + OFFSET) * DIRECTION)
@@ -121,6 +120,7 @@ def test_rotation_plan(
             )
         )
 
+    # once for each velocity set and once for each position set for a total of 4 calls
     assert mock_omega_sets.call_count == 4
 
 

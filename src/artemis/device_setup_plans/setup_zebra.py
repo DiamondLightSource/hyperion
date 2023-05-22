@@ -67,6 +67,8 @@ def setup_zebra_for_rotation(
                         scan (in deg/s). Used to ajust the gate start so that
     """
     LOGGER.info("ZEBRA SETUP: START")
+    # must be on for shutter trigger to be enabled
+    yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
     # Set gate start, adjust for shutter opening time if necessary
     LOGGER.info(f"ZEBRA SETUP: shutter_time_and_velocity = {shutter_time_and_velocity}")
     LOGGER.info(f"ZEBRA SETUP: start angle start: {start_angle}")

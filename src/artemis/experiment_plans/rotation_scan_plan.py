@@ -11,6 +11,7 @@ from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.rotation_scan import RotationScanParams
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import Zebra
+from ophyd.epics_motor import EpicsMotor
 
 from artemis.device_setup_plans.setup_zebra import (
     arm_zebra,
@@ -42,13 +43,10 @@ SHUTTER_OPENING_TIME = 0.5
 
 
 def setup_sample_environment(
-    zebra: Zebra,
     detector_motion: DetectorMotion,
     backlight: Backlight,
     group="setup_senv",
 ):
-    # must be on for shutter trigger to be enabled
-    yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
     yield from bps.abs_set(detector_motion.shutter, 1, group=group)
     yield from bps.abs_set(backlight.pos, backlight.OUT, group=group)
 
@@ -62,30 +60,29 @@ def cleanup_sample_environment(
     yield from bps.abs_set(detector_motion.shutter, 0, group=group)
 
 
-def move_to_start_w_buffer(motors: Smargon, start_angle):
-    yield from bps.abs_set(motors.omega.velocity, 120, wait=True)
+def move_to_start_w_buffer(axis: EpicsMotor, start_angle):
+    # can move to start as fast as possible
+    yield from bps.abs_set(axis.velocity, 120, wait=True)
     start_position = start_angle - (OFFSET * DIRECTION)
     LOGGER.info(
         "moving to_start_w_buffer doing: start_angle-(offset*direction)"
         f" = {start_angle} - ({OFFSET} * {DIRECTION} = {start_position}"
     )
 
-    yield from bps.abs_set(motors.omega, start_position, group="move_to_start")
+    yield from bps.abs_set(axis, start_position, group="move_to_start")
 
 
-def move_to_end_w_buffer(motors: Smargon, scan_width: float, wait: float = True):
+def move_to_end_w_buffer(axis: EpicsMotor, scan_width: float, wait: float = True):
     distance_to_move = (scan_width + 0.1 + OFFSET) * DIRECTION
     LOGGER.info(
         f"Given scan width of {scan_width}, offset of {OFFSET}, direction {DIRECTION}, apply a relative set to omega of: {distance_to_move}"
     )
-    yield from bps.rel_set(
-        motors.omega, distance_to_move, group="move_to_end", wait=wait
-    )
+    yield from bps.rel_set(axis, distance_to_move, group="move_to_end", wait=wait)
 
 
-def set_speed(motors: Smargon, image_width, exposure_time, wait=True):
+def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
     yield from bps.abs_set(
-        motors.omega.velocity, image_width / exposure_time, group="set_speed", wait=True
+        axis.velocity, image_width / exposure_time, group="set_speed", wait=True
     )
 
 
@@ -97,6 +94,8 @@ def rotation_scan_plan(
     backlight: Backlight,
     detector_motion: DetectorMotion,
 ):
+    """A plan to collect diffraction images from a sample continuously rotating about
+    a fixed axis - for now this axis is limited to omega."""
     detector_params: DetectorParams = params.artemis_params.detector_params
     expt_params: RotationScanParams = params.experiment_params
 
@@ -107,8 +106,9 @@ def rotation_scan_plan(
 
     LOGGER.info("setting up and staging eiger")
 
+    yield from setup_sample_environment(detector_motion, backlight)
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle}")
-    yield from move_to_start_w_buffer(smargon, start_angle)
+    yield from move_to_start_w_buffer(smargon.omega, start_angle)
     LOGGER.info("wait for any previous moves...")
     LOGGER.info(
         f"setting up zebra w: start_angle={start_angle}, scan_width={scan_width}"
@@ -124,18 +124,19 @@ def rotation_scan_plan(
         ),
         group="setup_zebra",
     )
+    yield from bps.wait("setup_senv")
     yield from bps.wait("move_to_start")
     yield from bps.wait("setup_zebra")
 
     LOGGER.info(
         f"setting rotation speed for image_width, exposure_time {image_width, exposure_time} to {image_width/exposure_time}"
     )
-    yield from set_speed(smargon, image_width, exposure_time, wait=True)
+    yield from set_speed(smargon.omega, image_width, exposure_time, wait=True)
 
     yield from arm_zebra(zebra)
 
     LOGGER.info(f"{'increase' if DIRECTION > 0 else 'decrease'} omega by {scan_width}")
-    yield from move_to_end_w_buffer(smargon, scan_width)
+    yield from move_to_end_w_buffer(smargon.omega, scan_width)
 
 
 def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
@@ -168,14 +169,13 @@ def get_plan(
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
+        eiger.set_detector_parameters(params.artemis_params.detector_params)
+
         @stage_decorator([eiger])
         @finalize_decorator(lambda: cleanup_plan(**devices))
         def rotation_with_cleanup_and_stage(params):
             yield from rotation_scan_plan(params, **devices)
 
-        # TODO planify these
-        eiger.set_detector_parameters(params.artemis_params.detector_params)
-        eiger.set_num_triggers_and_captures()
         yield from rotation_with_cleanup_and_stage(params)
 
     yield from rotation_scan_plan_with_stage_and_cleanup(params)
