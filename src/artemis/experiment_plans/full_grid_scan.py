@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Callable
 
 from bluesky import plan_stubs as bps
 from dodal import i03
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
@@ -21,6 +21,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.log import LOGGER
+from artemis.parameters.beamline_parameters import get_beamline_parameters
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     GridScanParams,
 )
@@ -37,9 +38,13 @@ def create_devices():
     fgs_create_devices()
     oav_create_devices()
 
-    i03.detector_motion().wait_for_connection()
-    i03.backlight().wait_for_connection()
-    i03.aperture_scatterguard().wait_for_connection()
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        get_beamline_parameters()
+    )
+
+    i03.detector_motion()
+    i03.backlight()
+    i03.aperture_scatterguard(aperture_positions)
 
 
 def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):

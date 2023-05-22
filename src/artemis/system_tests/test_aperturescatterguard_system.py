@@ -2,7 +2,7 @@ import pytest
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
-from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH
+from artemis.parameters.constants import BEAMLINE_PARAMETER_PATHS
 
 
 @pytest.fixture
@@ -10,7 +10,7 @@ def ap_sg():
     ap_sg = ApertureScatterguard(prefix="BL03S", name="ap_sg")
     ap_sg.load_aperture_positions(
         AperturePositions.from_gda_beamline_params(
-            GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
+            GDABeamlineParameters.from_file(BEAMLINE_PARAMETER_PATHS["i03"])
         )
     )
     return ap_sg
