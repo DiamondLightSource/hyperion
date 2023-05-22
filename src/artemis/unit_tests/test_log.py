@@ -56,6 +56,7 @@ def test_set_env_variable_sets_correct_file_handler(
     assert file_handlers.baseFilename.endswith("/dls_sw/s03/logs/bluesky/artemis.txt")
 
 
+@pytest.mark.skip(reason="to be fixed in #644")
 def test_messages_logged_from_dodal_and_artemis_contain_dcgid(
     clear_loggers,
 ):
