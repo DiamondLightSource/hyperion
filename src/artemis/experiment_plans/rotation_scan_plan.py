@@ -9,7 +9,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.smargon import Smargon
-from dodal.devices.zebra import Zebra
+from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.epics_motor import EpicsMotor
 
 from artemis.device_setup_plans.setup_zebra import (
@@ -39,7 +39,7 @@ def create_devices():
     i03.backlight()
 
 
-DIRECTION = -1
+DIRECTION = RotationDirection.NEGATIVE
 OFFSET = 1
 SHUTTER_OPENING_TIME = 0.5
 
