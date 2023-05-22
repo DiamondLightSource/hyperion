@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from os import environ
 from typing import Any, Tuple, cast
 
 from dodal.utils import get_beamline_name
@@ -20,8 +19,8 @@ class BeamlinePrefixes:
 
 
 def get_beamline_prefixes():
-    beamline = environ.get("BEAMLINE")
-    if beamline is None:
+    beamline = get_beamline_name("none")
+    if beamline == "none":
         return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
     if beamline == "i03":
         return BeamlinePrefixes("BL03I", "SR03I")
