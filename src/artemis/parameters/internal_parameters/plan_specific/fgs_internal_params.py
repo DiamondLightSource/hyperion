@@ -6,6 +6,7 @@ from dodal.devices.detector import TriggerMode
 from dodal.devices.fast_grid_scan import GridScanParams
 
 from artemis.parameters.internal_parameters import InternalParameters
+from artemis.utils.utils import Point3D
 
 
 class FGSInternalParameters(InternalParameters):
@@ -18,3 +19,4 @@ class FGSInternalParameters(InternalParameters):
         param_dict["num_triggers"] = param_dict["num_images"]
         param_dict["num_images_per_trigger"] = 1
         param_dict["trigger_mode"] = TriggerMode.FREE_RUN
+        param_dict["upper_left"] = Point3D(*param_dict["upper_left"])

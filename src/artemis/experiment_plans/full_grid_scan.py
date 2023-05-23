@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING, Callable
 
 from bluesky import plan_stubs as bps
 from dodal import i03
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
@@ -18,14 +17,20 @@ from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
 from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.log import LOGGER
+from artemis.parameters.beamline_parameters import get_beamline_parameters
+from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    GridScanParams,
+)
+from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-        FGSCallbackCollection,
-    )
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-        FGSInternalParameters,
+    from artemis.parameters.internal_parameters.plan_specific.grid_scan_with_edge_detect_params import (
+        GridScanWithEdgeDetectInternalParameters,
+        GridScanWithEdgeDetectParams,
     )
 
 
@@ -33,12 +38,16 @@ def create_devices():
     fgs_create_devices()
     oav_create_devices()
 
-    i03.detector_motion().wait_for_connection()
-    i03.backlight().wait_for_connection()
-    i03.aperture_scatterguard().wait_for_connection()
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        get_beamline_parameters()
+    )
+
+    i03.detector_motion()
+    i03.backlight()
+    i03.aperture_scatterguard(aperture_positions)
 
 
-def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=2):
+def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
     LOGGER.info("Waiting for detector to finish moving")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -54,7 +63,7 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=2):
 
 
 def get_plan(
-    parameters: FGSInternalParameters,
+    parameters: GridScanWithEdgeDetectInternalParameters,
     subscriptions: FGSCallbackCollection,
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
 ) -> Callable:
@@ -66,27 +75,52 @@ def get_plan(
     aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
     detector_motion: DetectorMotion = i03.detector_motion()
 
-    gda_snap_1 = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start[0]
-    gda_snap_2 = parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end[0]
-
-    snapshot_paths = {
-        "snapshot_dir": os.path.dirname(os.path.abspath(gda_snap_1)),
-        "snap_1_filename": os.path.basename(os.path.abspath(gda_snap_1)),
-        "snap_2_filename": os.path.basename(os.path.abspath(gda_snap_2)),
-    }
-
-    oav_params = OAVParameters("loopCentring", **oav_param_files)
-
-    LOGGER.info(
-        f"microns_per_pixel: GDA: {parameters.artemis_params.ispyb_params.microns_per_pixel_x, parameters.artemis_params.ispyb_params.microns_per_pixel_y} Artemis {oav_params.micronsPerXPixel, oav_params.micronsPerYPixel}"
-    )
+    oav_params = OAVParameters("xrayCentring", **oav_param_files)
+    experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
     def detect_grid_and_do_gridscan():
-        yield from grid_detection_plan(
-            oav_params, parameters.experiment_params, snapshot_paths
+        fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
+
+        detector_params = parameters.artemis_params.detector_params
+        snapshot_template = (
+            f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
         )
 
+        out_snapshot_filenames = []
+        out_upper_left = {}
+
+        yield from grid_detection_plan(
+            oav_params,
+            fgs_params,
+            snapshot_template,
+            experiment_params.snapshot_dir,
+            out_snapshot_filenames,
+            out_upper_left,
+        )
+
+        parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
+            out_snapshot_filenames[0]
+        )
+        parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end = (
+            out_snapshot_filenames[1]
+        )
+        parameters.artemis_params.ispyb_params.upper_left = Point3D(**out_upper_left)
+
+        fgs_params.__post_init__()
+
+        parameters.experiment_params = fgs_params
+
+        parameters.artemis_params.detector_params.num_triggers = (
+            fgs_params.get_num_images()
+        )
+
+        LOGGER.info(f"Parameters for FGS: {parameters}")
+        subscriptions = FGSCallbackCollection.from_params(parameters)
+
         yield from bps.abs_set(backlight.pos, Backlight.OUT)
+        LOGGER.info(
+            f"Setting aperture position to {aperture_scatterguard.aperture_positions.SMALL}"
+        )
         yield from bps.abs_set(
             aperture_scatterguard, aperture_scatterguard.aperture_positions.SMALL
         )

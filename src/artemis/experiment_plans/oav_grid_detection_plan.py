@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from os.path import join as path_join
+from typing import TYPE_CHECKING, Dict, List
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -20,21 +21,31 @@ if TYPE_CHECKING:
 
 
 def create_devices():
-    i03.oav().wait_for_connection()
-    i03.smargon().wait_for_connection()
-    i03.backlight().wait_for_connection()
+    i03.oav()
+    i03.smargon()
+    i03.backlight()
 
 
 def grid_detection_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
-    filenames: dict[str, str],
+    snapshot_template: str,
+    snapshot_dir: str,
+    out_snapshot_filenames: List[List[str]],
+    out_upper_left: Dict,
     width=600,
     box_size_microns=20,
 ):
     yield from finalize_wrapper(
         grid_detection_main_plan(
-            parameters, out_parameters, filenames, width, box_size_microns
+            parameters,
+            out_parameters,
+            snapshot_template,
+            snapshot_dir,
+            out_snapshot_filenames,
+            out_upper_left,
+            width,
+            box_size_microns,
         ),
         reset_oav(parameters),
     )
@@ -43,23 +54,30 @@ def grid_detection_plan(
 def grid_detection_main_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
-    filenames: dict[str, str],
+    snapshot_template: str,
+    snapshot_dir: str,
+    out_snapshot_filenames: List[List[str]],
+    out_upper_left: Dict,
     grid_width_px: int,
-    box_size_um: int,
+    box_size_um: float,
 ):
     """
-    Attempts to find the centre of the pin on the oav by rotating and sampling elements.
-    I03 gets the number of rotation points from gda.mx.loop.centring.omega.steps which defaults to 6.
+    Creates the parameters for two grids that are 90 degrees from each other and
+    encompass the whole of the sample as it appears in the OAV.
 
     Args:
-        oav (OAV): The OAV device in use.
-        parameters (OAVParamaters): Object containing values loaded in from various parameter files in use.
-        max_run_num (int): Maximum number of times to run.
-        rotation_points (int): Test to see if the pin is widest `rotation_points` number of times on a full 180 degree rotation.
+        parameters (OAVParamaters): Object containing paramters for setting up the OAV
+        out_parameters (GridScanParams): The returned parameters for the gridscan
+        snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
+        snapshot_dir (str): The location to save snapshots
+        out_snapshot_filenames (List[List[str]]): The returned full snapshot filenames
+        out_upper_left (Dict): The returned x, y, z value of the upper left pixel of the grid
+        grid_width_px (int): The width of the grid to scan in pixels
+        box_size_um (float): The size of each box of the grid in microns
     """
     oav: OAV = i03.oav()
     smargon: Smargon = i03.smargon()
-    LOGGER.info("OAV Centring: Starting loop centring")
+    LOGGER.info("OAV Centring: Starting grid detection centring")
 
     yield from bps.wait()
 
@@ -74,11 +92,12 @@ def grid_detection_main_plan(
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
-    for angle in [0, 90]:
+    # The FGS uses -90 so we need to match it
+    for angle in [0, -90]:
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
-        # TODO improve this from just waiting some random time
-        yield from bps.sleep(0.5)
+        # See #673 for improvements
+        yield from bps.sleep(0.3)
 
         top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
         bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
@@ -96,11 +115,12 @@ def grid_detection_main_plan(
 
         # the edge detection line can jump to the edge of the image sometimes, filter
         # those points out, and if empty after filter use the whole image
-        filtered_top = list(top_edge[top_edge != 0]) or [full_image_height_px]
-        filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [0]
+        filtered_top = list(top_edge[top_edge != 0]) or [0]
+        filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [
+            full_image_height_px
+        ]
         min_y = min(filtered_top)
         max_y = max(filtered_bottom)
-        LOGGER.info(f"Min/max {min_y, max_y}")
         grid_height_px = max_y - min_y
 
         LOGGER.info(f"Drawing snapshot {grid_width_px} by {grid_height_px}")
@@ -112,6 +132,11 @@ def grid_detection_main_plan(
         box_numbers.append(boxes)
 
         upper_left = (tip_x_px, min_y)
+        if angle == 0:
+            out_upper_left["x"] = int(tip_x_px)
+            out_upper_left["y"] = int(min_y)
+        else:
+            out_upper_left["z"] = int(min_y)
 
         yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])
@@ -119,15 +144,19 @@ def grid_detection_main_plan(
         yield from bps.abs_set(oav.snapshot.num_boxes_x, boxes[0])
         yield from bps.abs_set(oav.snapshot.num_boxes_y, boxes[1])
 
-        LOGGER.info("Triggering snapshot")
-
-        snapshot_filename = (
-            filenames["snap_1_filename"] if angle == 0 else filenames["snap_2_filename"]
-        )
+        snapshot_filename = snapshot_template.format(angle=abs(angle))
 
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
-        yield from bps.abs_set(oav.snapshot.directory, filenames["snapshot_dir"])
+        yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
+
+        out_snapshot_filenames.append(
+            [
+                path_join(snapshot_dir, f"{snapshot_filename}_grid_overlay.png"),
+                path_join(snapshot_dir, f"{snapshot_filename}_outer_overlay.png"),
+                path_join(snapshot_dir, f"{snapshot_filename}.png"),
+            ]
+        )
 
         # Get the beam distance from the centre (in pixels).
         (
@@ -156,30 +185,27 @@ def grid_detection_main_plan(
         start_positions.append(start_position)
 
     LOGGER.info(
-        f"x_start: GDA: {out_parameters.x_start}, Artemis {start_positions[0][0]}"
+        f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][2]}"
     )
+    out_parameters.x_start = start_positions[0][0]
+
+    out_parameters.y1_start = start_positions[0][1]
+    out_parameters.y2_start = start_positions[0][1]
+
+    out_parameters.z1_start = start_positions[1][2]
+    out_parameters.z2_start = start_positions[1][2]
 
     LOGGER.info(
-        f"y1_start: GDA: {out_parameters.y1_start}, Artemis {start_positions[0][1]}"
+        f"Calculated number of steps {box_numbers[0][0], box_numbers[0][1], box_numbers[1][1]}"
     )
+    out_parameters.x_steps = box_numbers[0][0]
+    out_parameters.y_steps = box_numbers[0][1]
+    out_parameters.z_steps = box_numbers[1][1]
 
-    LOGGER.info(
-        f"z1_start: GDA: {out_parameters.z1_start}, Artemis {start_positions[1][1]}"
-    )
-
-    LOGGER.info(
-        f"x_step_size: GDA: {out_parameters.x_step_size}, Artemis {box_size_um}"
-    )
-    LOGGER.info(
-        f"y_step_size: GDA: {out_parameters.y_step_size}, Artemis {box_size_um}"
-    )
-    LOGGER.info(
-        f"z_step_size: GDA: {out_parameters.z_step_size}, Artemis {box_size_um}"
-    )
-
-    LOGGER.info(f"x_steps: GDA: {out_parameters.x_steps}, Artemis {box_numbers[0][0]}")
-    LOGGER.info(f"y_steps: GDA: {out_parameters.y_steps}, Artemis {box_numbers[0][1]}")
-    LOGGER.info(f"z_steps: GDA: {out_parameters.z_steps}, Artemis {box_numbers[1][1]}")
+    LOGGER.info(f"Step sizes: {box_size_um, box_size_um, box_size_um}")
+    out_parameters.x_step_size = box_size_um / 1000
+    out_parameters.y_step_size = box_size_um / 1000
+    out_parameters.z_step_size = box_size_um / 1000
 
 
 def reset_oav(parameters: OAVParameters):

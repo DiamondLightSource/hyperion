@@ -1,8 +1,13 @@
 from dataclasses import dataclass
-from os import environ
 from typing import Any, Tuple, cast
 
-from artemis.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
+from dodal.utils import get_beamline_name
+
+from artemis.parameters.constants import (
+    BEAMLINE_PARAMETER_PATHS,
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+)
 
 BEAMLINE_PARAMETER_KEYWORDS = ["FB", "FULL", "deadtime"]
 
@@ -14,8 +19,8 @@ class BeamlinePrefixes:
 
 
 def get_beamline_prefixes():
-    beamline = environ.get("BEAMLINE")
-    if beamline is None:
+    beamline = get_beamline_name("s03")
+    if beamline == "s03":
         return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
     if beamline == "i03":
         return BeamlinePrefixes("BL03I", "SR03I")
@@ -62,3 +67,13 @@ class GDABeamlineParameters:
         with open(path) as f:
             config_lines = f.readlines()
         return cls.from_lines(config_lines)
+
+
+def get_beamline_parameters():
+    beamline_name = get_beamline_name("s03")
+    beamline_param_path = BEAMLINE_PARAMETER_PATHS.get(beamline_name)
+    if beamline_param_path is None:
+        raise KeyError(
+            "No beamline parameter path found, maybe 'BEAMLINE' environment variable is not set!"
+        )
+    return GDABeamlineParameters.from_file(beamline_param_path)

@@ -1,5 +1,5 @@
 {
-    "params_version": 0.3,
+    "params_version": 0.4,
     "artemis_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",
