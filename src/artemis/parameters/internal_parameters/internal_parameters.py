@@ -25,7 +25,7 @@ class ArtemisParameters:
     insertion_prefix: str = SIM_INSERTION_PREFIX
     experiment_type: str = DEFAULT_EXPERIMENT_TYPE
 
-    detector_params: DetectorParams = DetectorParams.from_dict(DETECTOR_PARAM_DEFAULTS)
+    detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
     ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS)
 
     def __init__(
@@ -41,7 +41,7 @@ class ArtemisParameters:
         self.beamline = beamline
         self.insertion_prefix = insertion_prefix
         self.experiment_type = experiment_type
-        self.detector_params: DetectorParams = DetectorParams.from_dict(detector_params)
+        self.detector_params: DetectorParams = DetectorParams(**detector_params)
         self.ispyb_params: IspybParams = IspybParams(**ispyb_params)
 
     def __repr__(self):
