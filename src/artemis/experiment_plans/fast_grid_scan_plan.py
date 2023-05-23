@@ -194,9 +194,6 @@ def run_gridscan(
         "plan_name": "run_gridscan",
     },
 ):
-    # Start stage with asynchronous arming here
-    yield from bps.abs_set(fgs_composite.eiger.do_arm, 1, group="arming")
-
     sample_motors = fgs_composite.sample_motors
 
     # Currently gridscan only works for omega 0, see #
