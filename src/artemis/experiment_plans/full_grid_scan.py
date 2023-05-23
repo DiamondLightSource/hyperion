@@ -7,6 +7,7 @@ from dodal import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 
 from artemis.experiment_plans.fast_grid_scan_plan import (
@@ -72,13 +73,19 @@ def get_plan(
     of the grid dimensions to use for the following grid scan.
     """
     backlight: Backlight = i03.backlight()
+    eiger: EigerDetector = i03.eiger()
     aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
     detector_motion: DetectorMotion = i03.detector_motion()
+
+    eiger.set_detector_parameters(parameters.artemis_params.detector_params)
 
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
     def detect_grid_and_do_gridscan():
+        # Start stage with asynchronous arming here
+        yield from bps.abs_set(eiger.do_arm, 1, group="arming")
+
         fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
         detector_params = parameters.artemis_params.detector_params
