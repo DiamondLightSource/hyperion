@@ -9,6 +9,7 @@ recognised_beamlines = ["dev"]
 
 
 class repo:
+    # Set name, setup remote origin, get the latest version"""
     def __init__(self, name: str, repo_args):
         self.name = name
         self.repo = Repo(repo_args)
@@ -40,7 +41,7 @@ class repo:
         os.system(f"setfacl -R -m {setfacl_params} {self.deploy_location}")
         os.system(f"setfacl -dR -m {setfacl_params} {self.deploy_location}")
 
-    # run this after initialising repos, then make function for repo set deply location
+    # Deploy location depends on the latest artemis version (...software/bluesky/artemis_V...)
     def set_deploy_location(self, release_area):
         self.deploy_location = os.path.join(release_area, self.name)
         if os.path.isdir(self.deploy_location):
@@ -49,10 +50,10 @@ class repo:
             )
 
 
-# only use this for artemis
+# Get the release directory based off the beamline and the latest artemis version
 def get_artemis_release_dir_from_args(repo: repo) -> str:
     if repo.name != "artemis":
-        raise Exception  # TODO: make this better
+        raise ValueError("This function should only be used with the artemis repo")
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -61,11 +62,6 @@ def get_artemis_release_dir_from_args(repo: repo) -> str:
         choices=recognised_beamlines,
         help="The beamline to deploy artemis to",
     )
-
-    repo.versions = [t.name for t in repo.repo.tags]
-    repo.versions.sort(key=Version, reverse=True)
-    print(f"Found {repo.name}_versions:\n{os.linesep.join(repo.versions)}")
-    repo.latest_version_str = repo.versions[0]
 
     args = parser.parse_args()
     if args.beamline == "dev":
@@ -77,8 +73,6 @@ def get_artemis_release_dir_from_args(repo: repo) -> str:
 
 
 if __name__ == "__main__":
-    # Get deployment info
-
     artemis_repo = repo(
         name="artemis",
         repo_args=os.path.join(os.path.dirname(__file__), "../.git"),
@@ -86,7 +80,6 @@ if __name__ == "__main__":
 
     release_area = get_artemis_release_dir_from_args(artemis_repo)
     print(f"Putting releases into {release_area}")
-    print("Gathering version tags from this repo")
 
     dodal_repo = repo(
         name="dodal",
@@ -101,16 +94,15 @@ if __name__ == "__main__":
 
     # Get version of dodal that latest artemis version uses
     with open(f"{release_area}/artemis/setup.cfg", "r") as setup_file:
-        # Note if setup.cfg changes, this line will also need to
+        # This is hacky - if setup.cfg changes, this line will also need to change
         dodal_url = setup_file.readlines()[37]
 
     dodal_url = dodal_url[dodal_url.find("https") :]
 
+    # Now deploy the correct version of dodal
     dodal_repo.deploy(dodal_url)
 
-    # Set up environment and run /dls_dev_env.sh
-
-    # Change working directory
+    # Set up environment and run /dls_dev_env.sh...
     os.chdir(artemis_repo.deploy_location)
     print(f"Setting up environment in {artemis_repo.deploy_location}")
 
@@ -139,5 +131,3 @@ Only do so if you have informed the beamline scientist and you're sure Artemis i
         print("To start this version run artemis_restart from the beamline's GDA")
     else:
         print("Quiting without latest version being updated")
-
-    # -------------------------------this section is just for artemis--------------------------
