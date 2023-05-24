@@ -79,5 +79,19 @@
             "type": "number"
         }
     },
-    "minProperties": 19
+    "required": [
+        "visit_path",
+        "microns_per_pixel_x",
+        "microns_per_pixel_y",
+        "position",
+        "transmission",
+        "flux",
+        "wavelength",
+        "beam_size_x",
+        "beam_size_y",
+        "focal_spot_size_x",
+        "focal_spot_size_y",
+        "comment",
+        "resolution"
+    ]
 }

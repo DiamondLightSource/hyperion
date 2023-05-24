@@ -1,5 +1,15 @@
+from os import environ
+from unittest.mock import patch
+
+import pytest
+
 from artemis.parameters import external_parameters
-from artemis.parameters.beamline_parameters import GDABeamlineParameters
+from artemis.parameters.beamline_parameters import (
+    BeamlinePrefixes,
+    GDABeamlineParameters,
+    get_beamline_parameters,
+    get_beamline_prefixes,
+)
 
 
 def test_new_parameters_is_a_new_object():
@@ -41,3 +51,34 @@ def test_beamline_parameters():
     assert params["beamLineEnergy__pitchStep"] == 0.002
     assert params["DataCollection_TurboMode"] is True
     assert params["beamLineEnergy__adjustSlits"] is False
+
+
+def test_get_beamline_parameters_works_with_no_environment_variable_set():
+    if environ.get("BEAMLINE"):
+        del environ["BEAMLINE"]
+    assert get_beamline_parameters()
+
+
+def test_get_beamline_parameters():
+    environ["BEAMLINE"] = "i03"
+    with patch.dict(
+        "artemis.parameters.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
+        {"i03": "src/artemis/parameters/tests/test_data/test_beamline_parameters.txt"},
+    ):
+        params = get_beamline_parameters()
+    assert params["col_parked_downstream_x"] == 0
+    assert params["BackStopZyag"] == 19.1
+    assert params["store_data_collections_in_ispyb"] is True
+    assert params["attenuation_optimisation_type"] == "deadtime"
+
+
+def test_beamline_prefixes():
+    if environ.get("BEAMLINE"):
+        del environ["BEAMLINE"]
+    assert get_beamline_prefixes() == BeamlinePrefixes("BL03S", "SR03S")
+    environ["BEAMLINE"] = "i03"
+    assert get_beamline_prefixes() == BeamlinePrefixes("BL03I", "SR03I")
+    environ["BEAMLINE"] = "i571"
+    with pytest.raises(Exception) as excinfo:
+        get_beamline_prefixes()
+    assert "i571 is not currently supported" in str(excinfo.value)

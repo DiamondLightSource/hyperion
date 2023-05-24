@@ -5,6 +5,12 @@ from os import environ, getenv
 def pytest_runtest_teardown():
     if "dodal.i03" in sys.modules:
         sys.modules["dodal.i03"].clear_devices()
+    if "artemis.log" in sys.modules:
+        artemis_log = sys.modules["artemis.log"]
+        [artemis_log.LOGGER.removeHandler(h) for h in artemis_log.LOGGER.handlers]
+    if "dodal.log" in sys.modules:
+        dodal_log = sys.modules["dodal.log"]
+        [dodal_log.LOGGER.removeHandler(h) for h in dodal_log.LOGGER.handlers]
 
 
 s03_epics_server_port = getenv("S03_EPICS_CA_SERVER_PORT")
