@@ -1,5 +1,5 @@
 import uuid
-from typing import Callable
+from typing import Any, Callable, Mapping
 from unittest.mock import MagicMock, patch
 
 import bluesky.preprocessors as bpp
@@ -13,9 +13,12 @@ import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     FGSComposite,
-    get_plan,
+    fast_grid_scan,
     read_hardware_for_ispyb,
     run_gridscan,
+)
+from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
 )
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
@@ -105,7 +108,7 @@ def test_run_gridscan(
     fgs_composite: FGSComposite,
 ):
     fgs_composite.eiger.unstage = lambda: True
-    # Would be better to use get_plan instead but eiger doesn't work well in S03
+    # Would be better to use fast_grid_scan instead but eiger doesn't work well in S03
     RE(run_gridscan(fgs_composite, params))
 
 
@@ -143,8 +146,32 @@ def test_full_plan_tidies_at_end(
     RE: RunEngine,
 ):
     callbacks = FGSCallbackCollection.from_params(params)
-    RE(get_plan(params, callbacks))
+    RE(fast_grid_scan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
+
+
+@pytest.mark.s03
+@patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params")
+@patch("bluesky.plan_stubs.wait")
+@patch("bluesky.plan_stubs.kickoff")
+@patch("bluesky.plan_stubs.complete")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual")
+def test_when_plan_started_then_callbacks_created(
+    fast_grid_scan_composite: MagicMock,
+    set_shutter_to_manual: MagicMock,
+    run_gridscan_and_move: MagicMock,
+    complete: MagicMock,
+    kickoff: MagicMock,
+    wait: MagicMock,
+    from_params: MagicMock,
+    fgs_composite: FGSComposite,
+    RE: RunEngine,
+):
+    params = default_raw_params()
+    RE(fast_grid_scan(params, fgs_composite))
+    from_params.assert_called_once()
 
 
 @pytest.mark.s03
@@ -167,7 +194,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     callbacks = FGSCallbackCollection.from_params(params)
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
-        RE(get_plan(params, callbacks))
+        RE(fast_grid_scan(params, fgs_composite))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -189,7 +216,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
 
     with pytest.raises(WarningException):
-        RE(get_plan(parameters, callbacks))
+        RE(fast_grid_scan(parameters, callbacks))
 
     dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
 
@@ -226,7 +253,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
-    RE(get_plan(params, callbacks))
+    RE(fast_grid_scan(params, callbacks))
 
     # The following numbers are derived from the centre returned in fake_zocalo
     assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.05)

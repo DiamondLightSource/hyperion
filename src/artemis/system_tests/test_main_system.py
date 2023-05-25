@@ -5,7 +5,7 @@ import threading
 from dataclasses import dataclass
 from sys import argv
 from time import sleep
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Mapping, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -107,7 +107,7 @@ def context_with_test_experiments() -> BlueskyContext:
         ...
 
     @context.plan
-    def fgs_real_params(params: FGSInternalParameters) -> MsgGenerator:
+    def fgs_real_params(params: Mapping[str, Any]) -> MsgGenerator:
         ...
 
     return context
@@ -116,24 +116,13 @@ def context_with_test_experiments() -> BlueskyContext:
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
-    with patch.dict(
-        "artemis.__main__.PLAN_REGISTRY",
-        dict({k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS),
-    ):
-        app, runner = create_app({"TESTING": True}, mock_run_engine)
-    runner_thread = threading.Thread(target=runner.wait_on_queue)
-    runner_thread.start()
-    with app.test_client() as client:
-        with patch.dict(
-            "artemis.__main__.PLAN_REGISTRY",
-            dict(
-                {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
-            ),
-        ):
-            yield ClientAndRunEngine(client, mock_run_engine)
+    app, worker, context = create_app({"TESTING": True}, mock_run_engine)
+    worker.start()
 
-    runner.shutdown()
-    runner_thread.join()
+    with app.test_client() as client:
+        yield ClientAndRunEngine(client, mock_run_engine)
+
+    worker.stop()
 
 
 def wait_for_run_engine_status(
@@ -354,46 +343,10 @@ def test_when_context_setup_and_skip_flag_is_set_then_setup_called_upon_start(
     mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
 ):
     mock_setup = MagicMock()
-    with patch.dict(
-        "artemis.__main__.PLAN_REGISTRY",
-        {
-            "fast_grid_scan": {
-                "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
-                "callback_collection_type": MagicMock(),
-            },
-        },
-    ):
-        context = setup_context(skip_startup_connection=True)
-        mock_setup.assert_not_called()
-        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
-        mock_setup.assert_called_once()
-
-
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_plan_started_then_callbacks_created(
-    mock_get_beamline_params, mock_fgs, mock_eiger
-):
-    mock_callback: AbstractPlanCallbackCollection = MagicMock(
-        spec=AbstractPlanCallbackCollection
-    )
-    with patch.dict(
-        "artemis.__main__.PLAN_REGISTRY",
-        {
-            "fast_grid_scan": {
-                "setup": MagicMock(),
-                "run": MagicMock(),
-                "param_type": MagicMock(),
-                "callback_collection_type": mock_callback,
-            },
-        },
-    ):
-        context = setup_context(skip_startup_connection=True)
-        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
-        mock_callback.from_params.assert_called_once()
+    context = setup_context(skip_startup_connection=True)
+    mock_setup.assert_not_called()
+    runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
+    mock_setup.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")

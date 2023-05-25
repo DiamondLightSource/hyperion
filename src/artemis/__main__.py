@@ -145,12 +145,16 @@ class StopOrStatus(Resource):
 
 
 def create_app(
-    test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
+    test_config=None,
+    RE: RunEngine = RunEngine({}),
+    context: Optional[BlueskyContext] = None,
+    skip_startup_connection=False,
 ) -> Tuple[Flask, Worker, BlueskyContext]:
-    context = setup_context(
-        fake=False,
-        skip_startup_connection=skip_startup_connection,
-    )
+    if context is None:
+        context = setup_context(
+            fake=False,
+            skip_startup_connection=skip_startup_connection,
+        )
     worker = RunEngineWorker(context)
     app = Flask(__name__)
     if test_config:
