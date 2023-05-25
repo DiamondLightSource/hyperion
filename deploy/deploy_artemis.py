@@ -66,10 +66,10 @@ def get_artemis_release_dir_from_args(repo: repo) -> str:
     args = parser.parse_args()
     if args.beamline == "dev":
         print("Running as dev")
-        return f"/tmp/artemis_release_test/bluesky/artemis_{repo.latest_version_str}"
+        return "/tmp/artemis_release_test/bluesky"
     else:
         raise Exception("not running in dev mode, exiting... (remove this)")
-        return f"/dls_sw/{args.beamline}/software/bluesky/artemis_{repo.latest_version_str}"
+        return f"/dls_sw/{args.beamline}/software/bluesky"
 
 
 if __name__ == "__main__":
@@ -79,21 +79,26 @@ if __name__ == "__main__":
     )
 
     release_area = get_artemis_release_dir_from_args(artemis_repo)
-    print(f"Putting releases into {release_area}")
+
+    release_area_version = os.path.join(
+        release_area, f"artemis_{artemis_repo.latest_version_str}"
+    )
+
+    print(f"Putting releases into {release_area_version}")
 
     dodal_repo = repo(
         name="dodal",
         repo_args=os.path.join(os.path.dirname(__file__), "../../dodal/.git"),
     )
 
-    dodal_repo.set_deploy_location(release_area)
-    artemis_repo.set_deploy_location(release_area)
+    dodal_repo.set_deploy_location(release_area_version)
+    artemis_repo.set_deploy_location(release_area_version)
 
     # Deploy artemis repo
     artemis_repo.deploy(artemis_repo.origin.url)
 
     # Get version of dodal that latest artemis version uses
-    with open(f"{release_area}/artemis/setup.cfg", "r") as setup_file:
+    with open(f"{release_area_version}/artemis/setup.cfg", "r") as setup_file:
         # This is hacky - if setup.cfg changes, this line will also need to change
         dodal_url = setup_file.readlines()[37]
 
@@ -123,8 +128,11 @@ Only do so if you have informed the beamline scientist and you're sure Artemis i
 """
     )
     if move_symlink == "y":
-        live_location = os.path.join(release_area, f"{artemis_repo.name}/artemis")
+        # release_area is software/bluesky, with version is ..bluesky/
+
+        live_location = os.path.join(release_area, "artemis")
         new_tmp_location = os.path.join(release_area, "tmp_art")
+        # Links software/bluesky/artemis_v/artemis to software/bluesky/artemis
         os.symlink(artemis_repo.deploy_location, new_tmp_location)
         os.rename(new_tmp_location, live_location)
         print(f"New version moved to {live_location}")
