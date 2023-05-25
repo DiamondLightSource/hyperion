@@ -40,6 +40,7 @@ def test_params():
 @pytest.fixture
 def fake_fgs_composite(test_params: InternalParameters):
     fake_composite = FGSComposite(
+        name="fgs",
         aperture_positions=AperturePositions(
             LARGE=(1, 2, 3, 4, 5),
             MEDIUM=(2, 3, 3, 5, 6),

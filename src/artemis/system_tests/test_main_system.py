@@ -174,27 +174,15 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
     )
 
 
-def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
+def test_nonexistant_plan_fails(test_env: ClientAndRunEngine):
     response = test_env.client.put(
-        "/test_experiment_no_internal_param_type/start", data=TEST_PARAMS
+        "/test_experiment_nonexistant/start", data=TEST_PARAMS
     ).json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
     assert (
         response.get("message")
-        == "PlanNotFound(\"Corresponding internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
-    )
-
-
-def test_plan_with_no_run_fails(test_env: ClientAndRunEngine):
-    response = test_env.client.put(
-        "/test_experiment_no_run/start", data=TEST_PARAMS
-    ).json
-    assert isinstance(response, dict)
-    assert response.get("status") == Status.FAILED.value
-    assert (
-        response.get("message")
-        == "PlanNotFound(\"Experiment plan 'test_experiment_no_run' has no 'run' method.\")"
+        == "PlanNotFound(\"Experiment plan 'test_experiment_nonexistant' not found in registry.\")"
     )
 
 

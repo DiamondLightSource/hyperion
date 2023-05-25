@@ -10,7 +10,13 @@ from traceback import format_exception
 from typing import Callable, Optional, Tuple
 
 from blueapi.core import BlueskyContext
-from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_thread
+from blueapi.worker import (
+    RunEngineWorker,
+    RunPlan,
+    Worker,
+    WorkerState,
+    run_worker_in_own_thread,
+)
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
 from flask import Flask, request
@@ -97,8 +103,8 @@ class RunExperiment(Resource):
                 api_params = json.loads(request.data)
                 params = {"apiParameters": api_params, "composite": "fast_grid_scan"}
                 task = RunPlan(name=plan_name, params=params)
-                task_id = str(uuid.uuid1())
-                self.worker.submit_task(task_id, task)
+                task_id = self.worker.submit_task(task)
+                self.worker.begin_task(task_id)
                 status_and_message = StatusAndMessage(Status.SUCCESS)
             except JSONDecodeError as e:
                 status_and_message = StatusAndMessage(Status.FAILED, repr(e))
@@ -129,19 +135,35 @@ class StopOrStatus(Resource):
         self.worker = worker
 
     def put(self, action):
-        return NotImplemented
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STOP.value:
-            status_and_message = self.worke
+            return NotImplemented
         return status_and_message.to_dict()
 
     def get(self, **kwargs):
-        return NotImplemented
         action = kwargs.get("action")
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
+
         if action == Actions.STATUS.value:
             status_and_message = self.worker
         return status_and_message.to_dict()
+
+    def _get_status(self) -> StatusAndMessage:
+        active_task = self.worker.get_active_task()
+        if active_task is not None:
+            if active_task.errors:
+                return StatusAndMessage(Status.FAILED, str(active_task.errors))
+            elif active_task.is_complete:
+                return StatusAndMessage(Status.SUCCESS)
+            else:
+                return StatusAndMessage(Status.BUSY)
+        else:
+            worker_state = self.worker.state
+            status = {
+                WorkerState.IDLE: Status.IDLE,
+                WorkerState.ABORTING: Status.ABORTING,
+            }.get(worker_state, Status.IDLE)
+            return StatusAndMessage(status)
 
 
 def create_app(
