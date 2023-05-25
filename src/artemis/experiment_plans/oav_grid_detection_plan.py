@@ -16,6 +16,9 @@ from dodal.devices.smargon import Smargon
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
 from artemis.log import LOGGER
 
+from artemis.exceptions import WarningException
+
+
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
 
@@ -49,6 +52,18 @@ def grid_detection_plan(
         ),
         reset_oav(parameters),
     )
+
+
+def wait_for_tip_to_be_found(oav: OAV, timeout=2):
+    LOGGER.info("Waiting for pin tip to be found")
+    SLEEP_PER_CHECK = 0.1
+    times_to_check = int(timeout / SLEEP_PER_CHECK)
+    for _ in range(times_to_check):
+        tip_x_px = yield from bps.rd(oav.mxsc.tip_x)
+        if tip_x_px != -1:
+            return
+        yield from bps.sleep(SLEEP_PER_CHECK)
+    raise WarningException(f"No pin found after {timeout} seconds")
 
 
 def grid_detection_main_plan(
@@ -99,13 +114,15 @@ def grid_detection_main_plan(
         # See #673 for improvements
         yield from bps.sleep(0.3)
 
-        top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
-        bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
+        yield from wait_for_tip_to_be_found(oav, 1)
 
         tip_x_px = yield from bps.rd(oav.mxsc.tip_x)
         tip_y_px = yield from bps.rd(oav.mxsc.tip_y)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
+
+        top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
+        bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
 
         full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
