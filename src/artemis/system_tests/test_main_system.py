@@ -5,7 +5,7 @@ import threading
 from dataclasses import dataclass
 from sys import argv
 from time import sleep
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Callable, Mapping, Optional, Type
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -92,22 +92,8 @@ TEST_EXPTS = {
 def context_with_test_experiments() -> BlueskyContext:
     context = BlueskyContext()
 
-    params_type: MagicMock()
-
     @context.plan
-    def test_experiment(params: params_type) -> MsgGenerator:
-        ...
-
-    @context.plan
-    def test_experiment_no_run(params: params_type) -> MsgGenerator:
-        ...
-
-    @context.plan
-    def test_experiment_no_internal_param_type(params: params_type) -> MsgGenerator:
-        ...
-
-    @context.plan
-    def fgs_real_params(params: Mapping[str, Any]) -> MsgGenerator:
+    def fast_grid_scan(parameters: Mapping[str, Any]) -> MsgGenerator:
         ...
 
     return context
@@ -147,7 +133,12 @@ def wait_for_run_engine_status(
 
 def check_status_in_response(response_object, expected_result: Status):
     response_json = json.loads(response_object.data)
-    assert response_json["status"] == expected_result.value
+    expected_status = expected_result.value
+    actual_status = response_json.get("status")
+    status_message = response_json.get("message")
+    assert (
+        actual_status == expected_status
+    ), f"Expected status {expected_status} but was {actual_status}, message was {status_message}"
 
 
 def test_start_gives_success(test_env: ClientAndRunEngine):
