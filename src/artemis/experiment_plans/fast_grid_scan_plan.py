@@ -24,7 +24,7 @@ from dodal.i03 import (
 )
 
 import artemis.log
-from artemis.device_setup_plans.setup_zebra_for_fgs import (
+from artemis.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
 
 class FGSComposite:
-    """A device consisting of all the Devices required for a fast gridscan."""
+    """A container for all the Devices required for a fast gridscan."""
 
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight

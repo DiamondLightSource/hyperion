@@ -26,8 +26,8 @@ START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
-TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameters.json"))
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
+TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameter_defaults.json"))
 
 
 class MockRunEngine:
@@ -59,7 +59,7 @@ class ClientAndRunEngine:
 
 
 def mock_dict_values(d: dict):
-    return {k: MagicMock() for k, _ in d.items()}
+    return {k: MagicMock() if k == "setup" or k == "run" else v for k, v in d.items()}
 
 
 TEST_EXPTS = {
@@ -138,6 +138,8 @@ def test_start_gives_success(test_env: ClientAndRunEngine):
 
 
 def test_getting_status_return_idle(test_env: ClientAndRunEngine):
+    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.client.put(STOP_ENDPOINT)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.IDLE)
 
@@ -276,7 +278,8 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
-@pytest.mark.skip(reason="fixed in #621")
+@patch("dodal.i03.DetectorMotion")
+@patch("dodal.i03.OAV")
 @patch("dodal.i03.ApertureScatterguard")
 @patch("dodal.i03.Backlight")
 @patch("dodal.i03.EigerDetector")
@@ -287,7 +290,9 @@ def test_cli_args_parse():
 @patch("dodal.i03.Undulator")
 @patch("dodal.i03.Zebra")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
+@patch("dodal.i03.active_device_is_same_type")
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
+    type_comparison,
     mock_get_beamline_params,
     zebra,
     undulator,
@@ -298,17 +303,22 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     eiger,
     backlight,
     aperture_scatterguard,
+    oav,
+    detector_motion,
 ):
+    type_comparison.return_value = True
     BlueskyRunner(MagicMock(), skip_startup_connection=False)
-    zebra.return_value.wait_for_connection.assert_called_once()
-    undulator.return_value.wait_for_connection.assert_called_once()
-    synchrotron.return_value.wait_for_connection.assert_called_once()
-    smargon.return_value.wait_for_connection.assert_called_once()
-    s4_slits.return_value.wait_for_connection.assert_called_once()
-    fast_grid_scan.return_value.wait_for_connection.assert_called_once()
+    zebra.return_value.wait_for_connection.assert_called()
+    undulator.return_value.wait_for_connection.assert_called()
+    synchrotron.return_value.wait_for_connection.assert_called()
+    smargon.return_value.wait_for_connection.assert_called()
+    s4_slits.return_value.wait_for_connection.assert_called()
+    fast_grid_scan.return_value.wait_for_connection.assert_called()
     eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
-    backlight.return_value.wait_for_connection.assert_called_once()
-    aperture_scatterguard.return_value.wait_for_connection.assert_called_once()
+    backlight.return_value.wait_for_connection.assert_called()
+    aperture_scatterguard.return_value.wait_for_connection.assert_called()
+    oav.return_value.wait_for_connection.assert_called()
+    detector_motion.return_value.wait_for_connection.assert_called()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
@@ -387,22 +397,31 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
+            },
+            "rotation_scan": {
+                "setup": mock_setup,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
             },
             "other_plan": {
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
             },
             "yet_another_plan": {
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
             },
         },
         clear=True,
     ):
         BlueskyRunner(MagicMock(), skip_startup_connection=False)
-        assert mock_setup.call_count == 3
+        assert mock_setup.call_count == 4
 
 
 def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):

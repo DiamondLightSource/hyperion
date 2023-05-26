@@ -37,9 +37,6 @@ from artemis.external_interaction.system_tests.conftest import (
 )
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.internal_parameters import (
-    InternalParameters,
-)
 from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
 )
@@ -47,10 +44,10 @@ from artemis.utils.utils import Point3D
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
-    test_params: FGSInternalParameters,
+    test_fgs_params: FGSInternalParameters,
 ):
     assert (
-        test_params.artemis_params.detector_params.detector_size_constants.det_type_string
+        test_fgs_params.artemis_params.detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
     )
     raw_params_dict = external_parameters.from_file()
@@ -121,7 +118,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
     mock_subscriptions: FGSCallbackCollection,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -173,7 +170,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(
     bps_mv: MagicMock,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     fake_fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
@@ -240,7 +237,7 @@ def test_logging_within_plan(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -300,13 +297,12 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_kickoff,
     mock_abs_set,
     fake_fgs_composite: FGSComposite,
-    test_params: InternalParameters,
+    test_fgs_params: FGSInternalParameters,
     mock_subscriptions: FGSCallbackCollection,
     RE: RunEngine,
 ):
     # Put both mocks in a parent to easily capture order
     mock_parent = MagicMock()
-
     fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
     fake_fgs_composite.eiger.filewriters_finished = Status()
@@ -320,7 +316,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            test_params,
+            test_fgs_params,
             mock_subscriptions,
         )
     )

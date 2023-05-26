@@ -7,15 +7,15 @@ from dodal.devices.zebra import (
     PC_PULSE,
     TTL_DETECTOR,
     TTL_SHUTTER,
-    I03_axes,
+    I03Axes,
     Zebra,
 )
 
-from artemis.device_setup_plans.setup_zebra_for_fgs import (
+from artemis.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
+    setup_zebra_for_rotation,
 )
-from artemis.device_setup_plans.setup_zebra_for_rotation import setup_zebra_for_rotation
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def test_zebra_set_up_for_fgs(RE, connected_zebra: Zebra):
 @pytest.mark.s03
 def test_zebra_set_up_for_rotation(RE, connected_zebra: Zebra):
     RE(setup_zebra_for_rotation(connected_zebra))
-    assert connected_zebra.pc.gate_trigger.get(as_string=True) == I03_axes.OMEGA.value
+    assert connected_zebra.pc.gate_trigger.get(as_string=True) == I03Axes.OMEGA.value
     assert connected_zebra.pc.gate_width.get() == pytest.approx(360, 0.01)
 
 
