@@ -114,9 +114,13 @@ def context_with_test_experiments() -> BlueskyContext:
 
 
 @pytest.fixture
-def test_env():
+def test_env(context_with_test_experiments: BlueskyContext):
     mock_run_engine = MockRunEngine()
-    app, worker, context = create_app({"TESTING": True}, mock_run_engine)
+    app, worker, context = create_app(
+        {"TESTING": True},
+        mock_run_engine,
+        context=context_with_test_experiments,
+    )
     worker.start()
 
     with app.test_client() as client:

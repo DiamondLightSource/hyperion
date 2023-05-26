@@ -145,7 +145,7 @@ class StopOrStatus(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
 
         if action == Actions.STATUS.value:
-            status_and_message = self.worker
+            status_and_message = self._get_status()
         return status_and_message.to_dict()
 
     def _get_status(self) -> StatusAndMessage:
