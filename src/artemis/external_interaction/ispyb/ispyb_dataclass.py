@@ -1,8 +1,7 @@
-from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from dataclasses_json import config, dataclass_json
+from pydantic import BaseModel, validator
 
 from artemis.utils.utils import Point3D
 
@@ -13,8 +12,8 @@ ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    "upper_left": Point3D(x=0, y=0, z=0),
-    "position": Point3D(x=0, y=0, z=0),
+    "upper_left": {"x": 0, "y": 0, "z": 0},
+    "position": {"x": 0, "y": 0, "z": 0},
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission": 1.0,
@@ -33,28 +32,29 @@ ISPYB_PARAM_DEFAULTS = {
 }
 
 
-@dataclass_json
-@dataclass
-class IspybParams:
+class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
 
-    upper_left: Point3D = field(
-        # in px on the image
-        metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict),
-        )
-    )
+    upper_left: Point3D
+    position: Point3D
 
-    position: Point3D = field(
-        # motor position
-        metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict),
-        )
-    )
+    @validator("upper_left", pre=True)
+    def _parse_upper_left(
+        cls, upper_left: dict[str, int | float] | Point3D, values: dict[str, Any]
+    ) -> Point3D:
+        if isinstance(upper_left, Point3D):
+            return upper_left
+        return Point3D(upper_left["x"], upper_left["y"], upper_left["z"])
+
+    @validator("position", pre=True)
+    def _parse_position(
+        cls, position: dict[str, int | float] | Point3D, values: dict[str, Any]
+    ) -> Point3D:
+        if isinstance(position, Point3D):
+            return position
+        return Point3D(position["x"], position["y"], position["z"])
 
     transmission: float
     flux: float
