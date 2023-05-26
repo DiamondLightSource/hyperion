@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, call, patch
 
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAV

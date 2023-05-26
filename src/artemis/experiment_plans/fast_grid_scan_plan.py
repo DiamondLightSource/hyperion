@@ -7,7 +7,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import DetectorParams
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
