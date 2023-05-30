@@ -322,3 +322,42 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     )
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.abs_set")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
+def test_when_exception_occurs_during_running_then_eiger_disarmed(
+    wait_for_valid,
+    mock_mv,
+    mock_complete,
+    mock_kickoff,
+    mock_abs_set,
+    fake_fgs_composite: FGSComposite,
+    test_fgs_params: FGSInternalParameters,
+    mock_subscriptions: FGSCallbackCollection,
+    RE: RunEngine,
+):
+    fake_fgs_composite.eiger.disarm_detector = MagicMock()
+
+    fake_fgs_composite.eiger.filewriters_finished = Status()
+    fake_fgs_composite.eiger.filewriters_finished.set_finished()
+    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
+
+    fake_fgs_composite.eiger.stage = MagicMock()
+
+    mock_complete.side_effect = Exception()
+
+    with pytest.raises(Exception):
+        RE(
+            run_gridscan_and_move(
+                fake_fgs_composite,
+                test_fgs_params,
+                mock_subscriptions,
+            )
+        )
+
+    fake_fgs_composite.eiger.disarm_detector.assert_called_once()
