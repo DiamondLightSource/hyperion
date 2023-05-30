@@ -26,7 +26,7 @@ td = TestData()
 
 @pytest.fixture
 def dummy_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 def mock_zocalo_functions(callbacks: FGSCallbackCollection):

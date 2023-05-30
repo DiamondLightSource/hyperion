@@ -323,7 +323,7 @@ if __name__ == "__main__":
         FGSInternalParameters,
     )
 
-    parameters = FGSInternalParameters(external_parameters.from_file())
+    parameters = FGSInternalParameters(**external_parameters.from_file())
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     create_devices()

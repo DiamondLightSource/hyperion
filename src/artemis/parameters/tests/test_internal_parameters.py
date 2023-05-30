@@ -82,7 +82,7 @@ class FakeArtemisParams:
 def test_cant_initialise_abstract_internalparams():
     with pytest.raises(TypeError):
         internal_parameters = InternalParameters(  # noqa
-            external_parameters.from_file()
+            **external_parameters.from_file()
         )
 
 

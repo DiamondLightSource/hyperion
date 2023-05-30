@@ -21,13 +21,13 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
 
 @pytest.fixture
 def test_fgs_params():
-    return FGSInternalParameters(raw_params_from_file())
+    return FGSInternalParameters(**raw_params_from_file())
 
 
 @pytest.fixture
 def test_rotation_params():
     return RotationInternalParameters(
-        raw_params_from_file(
+        **raw_params_from_file(
             "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
         )
     )
@@ -79,7 +79,7 @@ def test_config_files():
 
 @pytest.fixture
 def test_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 @pytest.fixture

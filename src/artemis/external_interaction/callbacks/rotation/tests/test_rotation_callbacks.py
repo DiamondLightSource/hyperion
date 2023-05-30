@@ -18,8 +18,8 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
 
 @pytest.fixture
 def params():
-    return RotationInternalParameters.from_external_dict(
-        from_file(
+    return RotationInternalParameters(
+        **from_file(
             "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
         )
     )
