@@ -18,14 +18,12 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
 )
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
-from artemis.parameters.internal_parameters.plan_specific.grid_scan_with_edge_detect_params import (
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
     GridScanWithEdgeDetectParams,
 )
-from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
 )

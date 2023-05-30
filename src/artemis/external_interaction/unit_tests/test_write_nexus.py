@@ -14,9 +14,7 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
