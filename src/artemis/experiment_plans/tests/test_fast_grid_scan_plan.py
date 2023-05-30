@@ -37,9 +37,7 @@ from artemis.external_interaction.system_tests.conftest import (
 )
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 from artemis.utils.utils import Point3D
 
 

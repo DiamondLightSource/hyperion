@@ -17,9 +17,7 @@ from artemis.external_interaction.callbacks.abstract_plan_callback_collection im
     AbstractPlanCallbackCollection,
 )
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value

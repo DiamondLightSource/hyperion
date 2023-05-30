@@ -23,7 +23,7 @@ from artemis.device_setup_plans.setup_zebra import (
     setup_zebra_for_rotation,
 )
 from artemis.log import LOGGER
-from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
 
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
         RotationCallbackCollection,
     )
-    from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+    from artemis.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
 

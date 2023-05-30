@@ -11,7 +11,7 @@ from artemis.external_interaction.callbacks.rotation.rotation_callback_collectio
     RotationCallbackCollection,
 )
 from artemis.parameters.external_parameters import from_file
-from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 

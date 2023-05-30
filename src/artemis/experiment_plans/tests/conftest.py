@@ -12,13 +12,9 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
-from artemis.parameters.internal_parameters.internal_parameters import (
-    InternalParameters,
-)
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
-from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 

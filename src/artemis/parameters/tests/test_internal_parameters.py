@@ -1,19 +1,16 @@
 import copy
+import json
 from dataclasses import dataclass
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.internal_parameters import (
-    InternalParameters,
-    flatten_dict,
-)
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.external_parameters import from_file
+from artemis.parameters.internal_parameters import InternalParameters, flatten_dict
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 TEST_PARAM_DICT = {
     "layer_1": {
@@ -89,44 +86,16 @@ def test_cant_initialise_abstract_internalparams():
         )
 
 
-@patch(
-    "artemis.parameters.internal_parameters.internal_parameters.ArtemisParameters",
-    FakeArtemisParams,
-)
-@patch("artemis.parameters.internal_parameters.internal_parameters.DetectorParams")
-@patch("artemis.parameters.internal_parameters.internal_parameters.IspybParams")
-def test_initialise_and_verify_transformation(
-    ispybparams: MagicMock, detectorparams: MagicMock
-):
-    test_params = InternalParametersSubclassForTesting(TEST_PARAM_DICT)
-    assert test_params.artemis_params.a == TEST_TRANSFORMED_PARAM_DICT["a"]
-    assert test_params.artemis_params.b == TEST_TRANSFORMED_PARAM_DICT["b"]
-    assert test_params.artemis_params.c == TEST_TRANSFORMED_PARAM_DICT["c"]
-    test_params.artemis_params.detector_params == (
-        TEST_TRANSFORMED_PARAM_DICT["detector_params"]
-    )
-    test_params.artemis_params.ispyb_params == (
-        TEST_TRANSFORMED_PARAM_DICT["ispyb_params"]
-    )
+def test_internal_param_serialisation_deserialisation():
+    data = from_file()
+    internal_parameters = FGSInternalParameters(**data)
 
+    serialised = internal_parameters.json(indent=2)
+    reloaded = json.loads(serialised)
 
-@patch(
-    "artemis.parameters.internal_parameters.internal_parameters.ArtemisParameters",
-    FakeArtemisParams,
-)
-@patch("artemis.parameters.internal_parameters.internal_parameters.DetectorParams")
-@patch("artemis.parameters.internal_parameters.internal_parameters.IspybParams")
-def test_pre_sorting_transformation(ispybparams: MagicMock, detectorparams: MagicMock):
-    test_params = InternalParametersSubclass2(TEST_PARAM_DICT)
-    assert test_params.artemis_params.a == TEST_TRANSFORMED_PARAM_DICT_2["a"]
-    assert test_params.artemis_params.b == TEST_TRANSFORMED_PARAM_DICT_2["b"]
-    assert test_params.artemis_params.c == TEST_TRANSFORMED_PARAM_DICT_2["c"]
-    test_params.artemis_params.detector_params == (
-        TEST_TRANSFORMED_PARAM_DICT_2["detector_params"]
-    )
-    test_params.artemis_params.ispyb_params == (
-        TEST_TRANSFORMED_PARAM_DICT_2["ispyb_params"]
-    )
+    deserialised = FGSInternalParameters(**reloaded)
+
+    assert deserialised == internal_parameters
 
 
 def test_flatten():
@@ -149,7 +118,7 @@ def test_internal_params_eq():
     params = external_parameters.from_file(
         "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
-    internal_params = FGSInternalParameters(params)
+    internal_params = FGSInternalParameters(**params)
     internal_params_2 = copy.deepcopy(internal_params)
 
     assert internal_params == internal_params_2

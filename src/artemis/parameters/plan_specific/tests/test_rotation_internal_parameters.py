@@ -4,7 +4,7 @@ from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.motors import XYZLimitBundle
 
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
 )
@@ -45,7 +45,7 @@ def test_rotation_parameters_load_from_file():
     params = external_parameters.from_file(
         "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
     )
-    internal_parameters = RotationInternalParameters(params)
+    internal_parameters = RotationInternalParameters(**params)
 
     assert isinstance(internal_parameters.experiment_params, RotationScanParams)
     assert internal_parameters.experiment_params.rotation_direction == -1
@@ -65,7 +65,7 @@ def test_rotation_parameters_preprocess():
         "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
     )
     params["experiment_params"]["positive_rotation_direction"] = True
-    internal_parameters = RotationInternalParameters(params)
+    internal_parameters = RotationInternalParameters(**params)
     assert isinstance(internal_parameters.experiment_params, RotationScanParams)
 
     assert internal_parameters.experiment_params.rotation_direction == 1
