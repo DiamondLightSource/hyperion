@@ -3,9 +3,10 @@ from __future__ import annotations
 import argparse
 from typing import TYPE_CHECKING, Any, Callable, Mapping
 
+import blueapi
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from blueapi.core import MsgGenerator
+from blueapi.core import MsgGenerator, inject
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal import i03
@@ -294,7 +295,7 @@ def run_gridscan_and_move(
 
 def fast_grid_scan(
     api_parameters: Mapping[str, Any],
-    composite: FGSComposite,
+    composite: FGSComposite = inject("fast_grid_scan"),
 ) -> MsgGenerator:
     parameters = FGSInternalParameters.from_external_dict(api_parameters)
     subscriptions = FGSCallbackCollection.from_params(parameters)

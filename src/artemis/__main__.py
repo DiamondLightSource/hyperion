@@ -101,7 +101,7 @@ class RunExperiment(Resource):
                         f"Experiment plan '{plan_name}' not found in registry."
                     )
                 api_params = json.loads(request.data)
-                params = {"api_parameters": api_params, "composite": "fast_grid_scan"}
+                params = {"api_parameters": api_params}
                 task = RunPlan(name=plan_name, params=params)
                 task_id = self.worker.submit_task(task)
                 self.worker.begin_task(task_id)

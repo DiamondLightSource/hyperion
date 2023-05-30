@@ -8,6 +8,7 @@ from time import sleep
 from typing import Any, Callable, Mapping, Optional, Type
 from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from blueapi.core import BlueskyContext, MsgGenerator
 from flask.testing import FlaskClient
@@ -27,7 +28,7 @@ STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameters.json"))
-TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
+TEST_BAD_PARAM_ENDPOINT = "/fast_grid_scan/" + Actions.START.value
 
 
 class MockRunEngine:
@@ -93,8 +94,8 @@ def context_with_test_experiments() -> BlueskyContext:
     context = BlueskyContext()
 
     @context.plan
-    def fast_grid_scan(parameters: Mapping[str, Any]) -> MsgGenerator:
-        ...
+    def fast_grid_scan(api_parameters: Mapping[str, Any]) -> MsgGenerator:
+        yield from bps.sleep(0.1)
 
     return context
 
@@ -102,6 +103,7 @@ def context_with_test_experiments() -> BlueskyContext:
 @pytest.fixture
 def test_env(context_with_test_experiments: BlueskyContext):
     mock_run_engine = MockRunEngine()
+    # context_with_test_experiments.run_engine = mock_run_engine
     app, worker, context = create_app(
         {"TESTING": True},
         mock_run_engine,
@@ -133,6 +135,13 @@ def wait_for_run_engine_status(
 
 def check_status_in_response(response_object, expected_result: Status):
     response_json = json.loads(response_object.data)
+    check_status_in_response_json(response_json, expected_result)
+
+
+def check_status_in_response_json(
+    response_json: Mapping[str, Any],
+    expected_result: Status,
+) -> None:
     expected_status = expected_result.value
     actual_status = response_json.get("status")
     status_message = response_json.get("message")
@@ -246,7 +255,7 @@ def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     test_env.mock_run_engine.RE_takes_time = False
     response_json = wait_for_run_engine_status(test_env.client)
-    assert response_json["status"] == Status.IDLE.value
+    check_status_in_response_json(response_json, Status.IDLE)
 
 
 def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
@@ -271,99 +280,6 @@ def test_cli_args_parse():
     ]
     test_args = cli_arg_parse()
     assert test_args == ("DEBUG", True, True, True)
-
-
-@pytest.mark.skip(reason="fixed in #621")
-@patch("dodal.i03.ApertureScatterguard")
-@patch("dodal.i03.Backlight")
-@patch("dodal.i03.EigerDetector")
-@patch("dodal.i03.FastGridScan")
-@patch("dodal.i03.S4SlitGaps")
-@patch("dodal.i03.Smargon")
-@patch("dodal.i03.Synchrotron")
-@patch("dodal.i03.Undulator")
-@patch("dodal.i03.Zebra")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_context_setup_then_plans_are_setup_and_devices_connected(
-    mock_get_beamline_params,
-    zebra,
-    undulator,
-    synchrotron,
-    smargon,
-    s4_slits,
-    fast_grid_scan,
-    eiger,
-    backlight,
-    aperture_scatterguard,
-):
-    setup_context()
-    zebra.return_value.wait_for_connection.assert_called_once()
-    undulator.return_value.wait_for_connection.assert_called_once()
-    synchrotron.return_value.wait_for_connection.assert_called_once()
-    smargon.return_value.wait_for_connection.assert_called_once()
-    s4_slits.return_value.wait_for_connection.assert_called_once()
-    fast_grid_scan.return_value.wait_for_connection.assert_called_once()
-    eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
-    backlight.return_value.wait_for_connection.assert_called_once()
-    aperture_scatterguard.return_value.wait_for_connection.assert_called_once()
-
-
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_context_setup_and_skip_flag_is_set_then_plans_are_setup_and_devices_are_not_connected(
-    mock_get_beamline_params, mock_fgs, mock_eiger
-):
-    setup_context(skip_startup_connection=True)
-    mock_fgs.return_value.wait_for_connection.assert_not_called()
-
-
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
-def test_when_context_setup_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
-):
-    mock_setup = MagicMock()
-    context = setup_context(skip_startup_connection=True)
-    mock_setup.assert_not_called()
-    runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
-    mock_setup.assert_called_once()
-
-
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
-    mock_get_beamline_params,
-    mock_fgs,
-    mock_eiger,
-):
-    mock_setup = MagicMock()
-    with patch.dict(
-        "artemis.__main__.PLAN_REGISTRY",
-        {
-            "fast_grid_scan": {
-                "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
-            },
-            "other_plan": {
-                "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
-            },
-            "yet_another_plan": {
-                "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
-            },
-        },
-        clear=True,
-    ):
-        setup_context(skip_startup_connection=False)
-        assert mock_setup.call_count == 3
 
 
 def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
