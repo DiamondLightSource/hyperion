@@ -33,7 +33,7 @@ from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalPara
 
 @pytest.fixture
 def params():
-    params = FGSInternalParameters(default_raw_params())
+    params = FGSInternalParameters(**default_raw_params())
     params.artemis_params.beamline = SIM_BEAMLINE
     return params
 

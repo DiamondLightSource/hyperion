@@ -19,7 +19,7 @@ td = TestData()
 
 @pytest.fixture
 def dummy_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 def test_fgs_failing_results_in_bad_run_status_in_ispyb(

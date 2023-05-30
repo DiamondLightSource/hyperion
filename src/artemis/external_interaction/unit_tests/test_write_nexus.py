@@ -29,7 +29,7 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 @pytest.fixture(params=[1044])
 def minimal_params(request):
-    params = FGSInternalParameters(default_raw_params())
+    params = FGSInternalParameters(**default_raw_params())
     params.artemis_params.ispyb_params.wavelength = 1.0
     params.artemis_params.ispyb_params.flux = 9.0
     params.artemis_params.ispyb_params.transmission = 0.5

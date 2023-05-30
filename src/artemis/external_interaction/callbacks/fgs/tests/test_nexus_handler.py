@@ -21,7 +21,7 @@ test_start_document = {
 
 @pytest.fixture
 def dummy_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 @pytest.fixture
