@@ -41,7 +41,7 @@ def fake_create_devices():
     return oav, smargon, bl
 
 
-@patch("dodal.beamlines.i03.active_device_is_same_type", lambda a, b: True)
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.mv")
 @patch("bluesky.plan_stubs.trigger")
@@ -73,8 +73,8 @@ def test_create_devices(create_device: MagicMock):
     create_devices()
     create_device.assert_has_calls(
         [
-            call(Smargon, "smargon", "", True, False),
-            call(OAV, "oav", "", True, False),
+            call(Smargon, "smargon", "-MO-SGON-01:", True, False),
+            call(OAV, "oav", "-DI-OAV-01:", True, False),
             call(
                 device=Backlight,
                 name="backlight",

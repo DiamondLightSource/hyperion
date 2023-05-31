@@ -58,7 +58,7 @@ def test_move_to_end(smargon: Smargon, RE):
     mock_omega_set.assert_called_with((scan_width + 0.1 + OFFSET) * DIRECTION)
 
 
-@patch("dodal.beamlines.i03.active_device_is_same_type", lambda a, b: True)
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("artemis.experiment_plans.rotation_scan_plan.rotation_scan_plan")
 def test_get_plan(
     plan: MagicMock,

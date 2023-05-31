@@ -290,7 +290,7 @@ def test_cli_args_parse():
 @patch("dodal.beamlines.i03.Undulator")
 @patch("dodal.beamlines.i03.Zebra")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-@patch("dodal.beamlines.i03.active_device_is_same_type")
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type")
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
     type_comparison,
     mock_get_beamline_params,
