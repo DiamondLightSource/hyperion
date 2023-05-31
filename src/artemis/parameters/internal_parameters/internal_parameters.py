@@ -4,6 +4,7 @@ from typing import Any
 import numpy as np
 from dodal.devices.eiger import DetectorParams
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
+from numpy import ndarray
 from pydantic import BaseModel
 
 import artemis.parameters.external_parameters as raw_parameters
@@ -27,6 +28,9 @@ class ArtemisParameters(BaseModel):
     experiment_type: str = DEFAULT_EXPERIMENT_TYPE
     detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
     ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS)
+
+    class Config:
+        json_encoders = {ndarray: lambda a: a.tolist()}
 
     def __repr__(self):
         return (

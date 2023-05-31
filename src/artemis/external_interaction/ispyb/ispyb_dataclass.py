@@ -40,6 +40,7 @@ class IspybParams(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+        json_encoders = {np.ndarray: lambda a: a.tolist()}
 
     @validator("upper_left", pre=True)
     def _parse_upper_left(
