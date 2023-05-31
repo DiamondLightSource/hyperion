@@ -3,8 +3,8 @@ from os import environ, getenv
 
 
 def pytest_runtest_teardown():
-    if "dodal.beamline_utils" in sys.modules:
-        sys.modules["dodal.beamline_utils"].clear_devices()
+    if "dodal.beamlines.beamline_utils" in sys.modules:
+        sys.modules["dodal.beamlines.beamline_utils"].clear_devices()
     if "artemis.log" in sys.modules:
         artemis_log = sys.modules["artemis.log"]
         [artemis_log.LOGGER.removeHandler(h) for h in artemis_log.LOGGER.handlers]
