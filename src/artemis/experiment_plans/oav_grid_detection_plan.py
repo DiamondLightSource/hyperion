@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from os.path import join as path_join
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, List
 
 import bluesky.plan_stubs as bps
 import numpy as np
