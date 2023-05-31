@@ -16,6 +16,7 @@ from artemis.parameters.constants import (
     SIM_INSERTION_PREFIX,
     SIM_ZOCALO_ENV,
 )
+from artemis.parameters.external_parameters import from_json
 
 
 class ParameterVersion(Version):
@@ -177,6 +178,10 @@ class InternalParameters(BaseModel):
             **ArtemisParameters.Config.json_encoders,
             ParameterVersion: lambda pv: str(pv),
         }
+
+    @classmethod
+    def from_json(cls, data):
+        return cls(**(from_json(data)))
 
     @root_validator(pre=True)
     def _preprocess_all(cls, values):
