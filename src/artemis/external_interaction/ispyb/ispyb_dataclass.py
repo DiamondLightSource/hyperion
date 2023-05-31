@@ -35,11 +35,17 @@ class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
+    upper_left: np.ndarray
+    position: np.ndarray
+
+    class Config:
+        arbitrary_types_allowed = True
 
     @validator("upper_left", pre=True)
     def _parse_upper_left(
         cls, upper_left: list[int | float] | np.ndarray, values: dict[str, Any]
     ) -> np.ndarray:
+        assert len(upper_left) == 3
         if isinstance(upper_left, np.ndarray):
             return upper_left
         return np.array(upper_left)
@@ -48,6 +54,7 @@ class IspybParams(BaseModel):
     def _parse_position(
         cls, position: list[int | float] | np.ndarray, values: dict[str, Any]
     ) -> np.ndarray:
+        assert len(position) == 3
         if isinstance(position, np.ndarray):
             return position
         return np.array(position)
