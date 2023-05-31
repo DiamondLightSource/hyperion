@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from bluesky import plan_stubs as bps
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion

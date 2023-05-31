@@ -58,7 +58,7 @@ def test_move_to_end(smargon: Smargon, RE):
     mock_omega_set.assert_called_with((scan_width + 0.1 + OFFSET) * DIRECTION)
 
 
-@patch("dodal.i03.active_device_is_same_type", lambda a, b: True)
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("artemis.experiment_plans.rotation_scan_plan.rotation_scan_plan")
 def test_get_plan(
     plan: MagicMock,
@@ -74,10 +74,10 @@ def test_get_plan(
     eiger.unstage = MagicMock()
     zebra.pc.armed.set(False)
     with (
-        patch("dodal.i03.smargon", return_value=smargon),
-        patch("dodal.i03.eiger", return_value=eiger),
-        patch("dodal.i03.zebra", return_value=zebra),
-        patch("dodal.i03.backlight", return_value=backlight),
+        patch("dodal.beamlines.i03.smargon", return_value=smargon),
+        patch("dodal.beamlines.i03.eiger", return_value=eiger),
+        patch("dodal.beamlines.i03.zebra", return_value=zebra),
+        patch("dodal.beamlines.i03.backlight", return_value=backlight),
         patch(
             "artemis.experiment_plans.rotation_scan_plan.DetectorMotion",
             return_value=detector_motion,
@@ -153,11 +153,11 @@ def test_cleanup_happens(
         cleanup_plan.assert_not_called()
     # check that failure is handled in composite plan
     with (
-        patch("dodal.i03.smargon", return_value=smargon),
-        patch("dodal.i03.eiger", return_value=eiger),
-        patch("dodal.i03.zebra", return_value=zebra),
-        patch("dodal.i03.backlight", return_value=backlight),
-        patch("dodal.i03.detector_motion", return_value=detector_motion),
+        patch("dodal.beamlines.i03.smargon", return_value=smargon),
+        patch("dodal.beamlines.i03.eiger", return_value=eiger),
+        patch("dodal.beamlines.i03.zebra", return_value=zebra),
+        patch("dodal.beamlines.i03.backlight", return_value=backlight),
+        patch("dodal.beamlines.i03.detector_motion", return_value=detector_motion),
     ):
         with pytest.raises(Exception):
             RE(
