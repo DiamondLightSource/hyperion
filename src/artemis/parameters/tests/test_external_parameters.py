@@ -60,6 +60,7 @@ def test_get_beamline_parameters_works_with_no_environment_variable_set():
 
 
 def test_get_beamline_parameters():
+    original_beamline = environ.get("BEAMLINE")
     environ["BEAMLINE"] = "i03"
     with patch.dict(
         "artemis.parameters.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
@@ -70,10 +71,15 @@ def test_get_beamline_parameters():
     assert params["BackStopZyag"] == 19.1
     assert params["store_data_collections_in_ispyb"] is True
     assert params["attenuation_optimisation_type"] == "deadtime"
+    if original_beamline:
+        environ["BEAMLINE"] = original_beamline
+    else:
+        del environ["BEAMLINE"]
 
 
 def test_beamline_prefixes():
-    if environ.get("BEAMLINE"):
+    original_beamline = environ.get("BEAMLINE")
+    if original_beamline:
         del environ["BEAMLINE"]
     assert get_beamline_prefixes() == BeamlinePrefixes("BL03S", "SR03S")
     environ["BEAMLINE"] = "i03"
@@ -82,3 +88,7 @@ def test_beamline_prefixes():
     with pytest.raises(Exception) as excinfo:
         get_beamline_prefixes()
     assert "i571 is not currently supported" in str(excinfo.value)
+    if original_beamline:
+        environ["BEAMLINE"] = original_beamline
+    else:
+        del environ["BEAMLINE"]

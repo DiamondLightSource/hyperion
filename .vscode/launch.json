@@ -15,7 +15,7 @@
                 "--skip_startup_connection"
             ],
             "env": {
-                "EPICS_CA_SERVER_PORT": "5066"
+                "EPICS_CA_SERVER_PORT": "5364"
             },
             "justMyCode": false
         },
