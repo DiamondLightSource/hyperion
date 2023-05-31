@@ -1,9 +1,8 @@
-from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
-from dataclasses_json import config, dataclass_json
+from pydantic import BaseModel, validator
 
 ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
@@ -32,31 +31,27 @@ ISPYB_PARAM_DEFAULTS = {
 }
 
 
-@dataclass_json
-@dataclass
-class IspybParams:
+class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
 
-    upper_left: np.ndarray = field(
-        # in px on the image
-        metadata=config(
-            encoder=lambda my_array: str(my_array),
-            decoder=lambda my_list: np.ndarray(my_list),
-        )
-    )
+    @validator("upper_left", pre=True)
+    def _parse_upper_left(
+        cls, upper_left: list[int | float] | np.ndarray, values: dict[str, Any]
+    ) -> np.ndarray:
+        if isinstance(upper_left, np.ndarray):
+            return upper_left
+        return np.array(upper_left)
 
-    position: np.ndarray = field(
-        # motor position
-        metadata=config(
-            encoder=lambda my_array: str(my_array),
-            decoder=lambda my_list: np.ndarray(my_list),
-        )
-    )
+    @validator("position", pre=True)
+    def _parse_position(
+        cls, position: list[int | float] | np.ndarray, values: dict[str, Any]
+    ) -> np.ndarray:
+        if isinstance(position, np.ndarray):
+            return position
+        return np.array(position)
 
-    xtal_snapshots_omega_start: List[str]
-    xtal_snapshots_omega_end: List[str]
     transmission: float
     flux: float
     wavelength: float
@@ -75,12 +70,14 @@ class IspybParams:
     synchrotron_mode: Optional[str] = None
     slit_gap_size_x: Optional[float] = None
     slit_gap_size_y: Optional[float] = None
+    xtal_snapshots_omega_start: Optional[List[str]] = None
+    xtal_snapshots_omega_end: Optional[List[str]] = None
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, IspybParams):
             return NotImplemented
         else:
-            return self.to_json() == other.to_json()
+            return self.json() == other.json()
 
 
 class Orientation(Enum):

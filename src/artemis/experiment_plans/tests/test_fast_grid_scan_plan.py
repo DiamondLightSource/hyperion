@@ -100,10 +100,10 @@ def mock_subscriptions(test_params):
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
-    test_params: FGSInternalParameters,
+    test_fgs_params: FGSInternalParameters,
 ):
     assert (
-        test_params.artemis_params.detector_params.detector_size_constants.det_type_string
+        test_fgs_params.artemis_params.detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
     )
     raw_params_dict = external_parameters.from_file()
@@ -174,7 +174,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
     mock_subscriptions: FGSCallbackCollection,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -226,7 +226,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(
     bps_mv: MagicMock,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     fake_fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
@@ -295,7 +295,7 @@ def test_logging_within_plan(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -357,13 +357,12 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_kickoff,
     mock_abs_set,
     fake_fgs_composite: FGSComposite,
-    test_params: InternalParameters,
+    test_fgs_params: FGSInternalParameters,
     mock_subscriptions: FGSCallbackCollection,
     RE: RunEngine,
 ):
     # Put both mocks in a parent to easily capture order
     mock_parent = MagicMock()
-
     fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
     fake_fgs_composite.eiger.filewriters_finished = Status()
@@ -377,9 +376,48 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            test_params,
+            test_fgs_params,
             mock_subscriptions,
         )
     )
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.abs_set")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
+def test_when_exception_occurs_during_running_then_eiger_disarmed(
+    wait_for_valid,
+    mock_mv,
+    mock_complete,
+    mock_kickoff,
+    mock_abs_set,
+    fake_fgs_composite: FGSComposite,
+    test_fgs_params: FGSInternalParameters,
+    mock_subscriptions: FGSCallbackCollection,
+    RE: RunEngine,
+):
+    fake_fgs_composite.eiger.disarm_detector = MagicMock()
+
+    fake_fgs_composite.eiger.filewriters_finished = Status()
+    fake_fgs_composite.eiger.filewriters_finished.set_finished()
+    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
+
+    fake_fgs_composite.eiger.stage = MagicMock()
+
+    mock_complete.side_effect = Exception()
+
+    with pytest.raises(Exception):
+        RE(
+            run_gridscan_and_move(
+                fake_fgs_composite,
+                test_fgs_params,
+                mock_subscriptions,
+            )
+        )
+
+    fake_fgs_composite.eiger.disarm_detector.assert_called_once()

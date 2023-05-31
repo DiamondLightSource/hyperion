@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 from dodal.devices.eiger import DetectorParams
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
+from pydantic import BaseModel
 
 import artemis.parameters.external_parameters as raw_parameters
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
@@ -19,30 +20,13 @@ from artemis.parameters.constants import (
 )
 
 
-class ArtemisParameters:
+class ArtemisParameters(BaseModel):
     zocalo_environment: str = SIM_ZOCALO_ENV
     beamline: str = SIM_BEAMLINE
     insertion_prefix: str = SIM_INSERTION_PREFIX
     experiment_type: str = DEFAULT_EXPERIMENT_TYPE
-
-    detector_params: DetectorParams = DetectorParams.from_dict(DETECTOR_PARAM_DEFAULTS)
-    ispyb_params: IspybParams = IspybParams.from_dict(ISPYB_PARAM_DEFAULTS)
-
-    def __init__(
-        self,
-        zocalo_environment: str = SIM_ZOCALO_ENV,
-        beamline: str = SIM_BEAMLINE,
-        insertion_prefix: str = SIM_INSERTION_PREFIX,
-        experiment_type: str = DEFAULT_EXPERIMENT_TYPE,
-        detector_params: Dict[str, Any] = DETECTOR_PARAM_DEFAULTS,
-        ispyb_params: Dict[str, Any] = ISPYB_PARAM_DEFAULTS,
-    ) -> None:
-        self.zocalo_environment = zocalo_environment
-        self.beamline = beamline
-        self.insertion_prefix = insertion_prefix
-        self.experiment_type = experiment_type
-        self.detector_params: DetectorParams = DetectorParams.from_dict(detector_params)
-        self.ispyb_params: IspybParams = IspybParams.from_dict(ispyb_params)
+    detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
+    ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS)
 
     def __repr__(self):
         return (
@@ -210,4 +194,10 @@ class InternalParameters(ABC):
     def from_external_dict(cls, dict_data):
         """Convenience method to generate from external parameter dictionary, uses
         RawParameters.from_dict()"""
+        return cls(raw_parameters.validate_raw_parameters_from_dict(dict_data))
+
+    @classmethod
+    def from_internal_dict(cls, dict_data):
+        """Convenience method to generate from a dictionary generated from an
+        InternalParameters object."""
         return cls(raw_parameters.validate_raw_parameters_from_dict(dict_data))

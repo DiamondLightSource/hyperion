@@ -25,21 +25,17 @@ from dodal.i03 import (
 )
 
 import artemis.log
-from artemis.device_setup_plans.setup_zebra_for_fgs import (
+from artemis.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
 from artemis.exceptions import WarningException
 from artemis.parameters import external_parameters
 from artemis.parameters.beamline_parameters import (
-    GDABeamlineParameters,
+    get_beamline_parameters,
     get_beamline_prefixes,
 )
-from artemis.parameters.constants import (
-    I03_BEAMLINE_PARAMETER_PATH,
-    ISPYB_PLAN_NAME,
-    SIM_BEAMLINE,
-)
+from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -52,7 +48,7 @@ if TYPE_CHECKING:
 
 
 class FGSComposite:
-    """A device consisting of all the Devices required for a fast gridscan."""
+    """A container for all the Devices required for a fast gridscan."""
 
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
@@ -86,10 +82,6 @@ class FGSComposite:
 
 
 fast_grid_scan_composite: FGSComposite | None = None
-
-
-def get_beamline_parameters():
-    return GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 
 
 def create_devices():
