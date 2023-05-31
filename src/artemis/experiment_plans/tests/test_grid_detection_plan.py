@@ -41,7 +41,7 @@ def fake_create_devices():
     return oav, smargon, bl
 
 
-@patch("dodal.i03.active_device_is_same_type", lambda a, b: True)
+@patch("dodal.beamlines.i03.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.mv")
 @patch("bluesky.plan_stubs.trigger")
@@ -68,7 +68,7 @@ def test_grid_detection_plan(
     bps_trigger.assert_called_with(oav.snapshot, wait=True)
 
 
-@patch("dodal.i03.device_instantiation")
+@patch("dodal.beamlines.i03.device_instantiation")
 def test_create_devices(create_device: MagicMock):
     create_devices()
     create_device.assert_has_calls(
