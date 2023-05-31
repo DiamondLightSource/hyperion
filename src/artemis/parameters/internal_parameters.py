@@ -100,7 +100,7 @@ def flatten_dict(d: dict, parent_items: dict = {}) -> dict:
     return items
 
 
-def key_definitions():
+def artemis_param_key_definitions():
     artemis_param_field_keys = [
         "zocalo_environment",
         "beamline",
@@ -151,7 +151,7 @@ def extract_artemis_params_from_flat_dict(
         artemis_param_field_keys,
         detector_field_keys,
         ispyb_field_keys,
-    ) = key_definitions()
+    ) = artemis_param_key_definitions()
 
     artemis_params_args: dict[str, Any] = fetch_subdict_from_bucket(
         artemis_param_field_keys, all_params_bucket

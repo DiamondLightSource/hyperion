@@ -12,8 +12,8 @@ ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    "upper_left": {"x": 0, "y": 0, "z": 0},
-    "position": {"x": 0, "y": 0, "z": 0},
+    "upper_left": [0, 0, 0],
+    "position": [0, 0, 0],
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission": 1.0,
@@ -42,19 +42,19 @@ class IspybParams(BaseModel):
 
     @validator("upper_left", pre=True)
     def _parse_upper_left(
-        cls, upper_left: dict[str, int | float] | Point3D, values: dict[str, Any]
+        cls, upper_left: list[int | float] | Point3D, values: dict[str, Any]
     ) -> Point3D:
         if isinstance(upper_left, Point3D):
             return upper_left
-        return Point3D(upper_left["x"], upper_left["y"], upper_left["z"])
+        return Point3D(upper_left[0], upper_left[1], upper_left[2])
 
     @validator("position", pre=True)
     def _parse_position(
-        cls, position: dict[str, int | float] | Point3D, values: dict[str, Any]
+        cls, position: list[int | float] | Point3D, values: dict[str, Any]
     ) -> Point3D:
         if isinstance(position, Point3D):
             return position
-        return Point3D(position["x"], position["y"], position["z"])
+        return Point3D(position[0], position[1], position[2])
 
     transmission: float
     flux: float
