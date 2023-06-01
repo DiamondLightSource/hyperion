@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
