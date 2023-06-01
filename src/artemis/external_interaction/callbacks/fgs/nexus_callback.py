@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from bluesky.callbacks import CallbackBase
 
 from artemis.external_interaction.nexus.write_nexus import (
-    NexusWriter,
-    create_parameters_for_first_file,
-    create_parameters_for_second_file,
+    FGSNexusWriter,
+    create_3d_gridscan_writers,
 )
 from artemis.log import LOGGER
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
@@ -30,17 +27,28 @@ class FGSNexusFileHandlerCallback(CallbackBase):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self, parameters: FGSInternalParameters):
-        self.nxs_writer_1 = NexusWriter(*create_parameters_for_first_file(parameters))
-        self.nxs_writer_2 = NexusWriter(*create_parameters_for_second_file(parameters))
-        self.run_gridscan_uid: Optional[str] = None
+    def __init__(self) -> None:
+        self.parameters: FGSInternalParameters | None = None
+        self.run_gridscan_uid: str | None = None
+        self.nexus_writer_1: FGSNexusWriter | None = None
+        self.nexus_writer_2: FGSNexusWriter | None = None
 
     def start(self, doc: dict):
-        if doc.get("subplan_name") == "run_gridscan":
+        if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
+            LOGGER.info(
+                "Nexus writer recieved start document with experiment parameters."
+            )
+            self.parameters = FGSInternalParameters(**doc.get("experiment_parameters"))
+        elif doc.get("subplan_name") == "run_gridscan":
+            LOGGER.info("Initialising nexus writers")
             self.run_gridscan_uid = doc.get("uid")
-            LOGGER.info("Creating Nexus files.")
-            self.nxs_writer_1.create_nexus_file()
-            self.nxs_writer_2.create_nexus_file()
+            self.nexus_writer_1, self.nexus_writer_2 = create_3d_gridscan_writers(
+                self.parameters
+            )
+
+    def event(self, doc: dict):
+        # TODO get ispyb data into params
+        ...
 
     def stop(self, doc: dict):
         if (
@@ -48,5 +56,8 @@ class FGSNexusFileHandlerCallback(CallbackBase):
             and doc.get("run_start") == self.run_gridscan_uid
         ):
             LOGGER.info("Updating Nexus file timestamps.")
-            self.nxs_writer_1.update_nexus_file_timestamp()
-            self.nxs_writer_2.update_nexus_file_timestamp()
+            assert (
+                self.nexus_writer_1 is not None and self.nexus_writer_2 is not None
+            ), "Failed to update Nexus file timestamps, writers were not initialised."
+            self.nexus_writer_1.update_nexus_file_timestamp()
+            self.nexus_writer_2.update_nexus_file_timestamp()
