@@ -293,6 +293,9 @@ def get_plan(
         parameters.artemis_params.detector_params
     )
 
+    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
+        list(subscriptions)  # must be the outermost decorator to receive the metadata
+    )
     @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
@@ -301,9 +304,6 @@ def get_plan(
         }
     )
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
-    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
-        list[subscriptions]
-    )
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
