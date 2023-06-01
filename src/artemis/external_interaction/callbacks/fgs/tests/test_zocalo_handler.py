@@ -10,9 +10,7 @@ from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 from artemis.utils.utils import Point3D
 
 EXPECTED_DCID = 100
@@ -28,7 +26,7 @@ td = TestData()
 
 @pytest.fixture
 def dummy_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 def mock_zocalo_functions(callbacks: FGSCallbackCollection):

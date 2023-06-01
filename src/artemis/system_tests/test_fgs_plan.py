@@ -28,14 +28,12 @@ from artemis.external_interaction.system_tests.test_ispyb_dev_connection import 
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
 from artemis.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
 @pytest.fixture
 def params():
-    params = FGSInternalParameters(default_raw_params())
+    params = FGSInternalParameters(**default_raw_params())
     params.artemis_params.beamline = SIM_BEAMLINE
     return params
 

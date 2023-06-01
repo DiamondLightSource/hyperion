@@ -37,9 +37,7 @@ from artemis.external_interaction.system_tests.conftest import (
 )
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 from artemis.utils.utils import Point3D
 
 
@@ -54,7 +52,7 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
     raw_params_dict["artemis_params"]["detector_params"][
         "detector_size_constants"
     ] = EIGER_TYPE_EIGER2_X_4M
-    params: FGSInternalParameters = FGSInternalParameters(raw_params_dict)
+    params: FGSInternalParameters = FGSInternalParameters(**raw_params_dict)
     det_dimension = (
         params.artemis_params.detector_params.detector_size_constants.det_dimension
     )

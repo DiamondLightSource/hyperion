@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    from artemis.parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
 
@@ -319,11 +319,11 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    from artemis.parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
 
-    parameters = FGSInternalParameters(external_parameters.from_file())
+    parameters = FGSInternalParameters(**external_parameters.from_file())
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     create_devices()

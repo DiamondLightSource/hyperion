@@ -5,9 +5,7 @@ from dataclasses import fields
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters.internal_parameters import (
-        InternalParameters,
-    )
+    from artemis.parameters.internal_parameters import InternalParameters
 
 
 class AbstractPlanCallbackCollection(ABC):
