@@ -26,16 +26,15 @@ def dummy_params():
 
 @pytest.fixture
 def nexus_writer():
-    with patch(
-        "artemis.external_interaction.callbacks.fgs.nexus_callback.FGSNexusWriter"
-    ) as nw:
+    with patch("artemis.external_interaction.nexus.write_nexus.FGSNexusWriter") as nw:
         yield nw
 
 
 @pytest.fixture
 def params_for_first():
     with patch(
-        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_first_file"
+        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_first_file",
+        return_value=(MagicMock(), {}),
     ) as p:
         yield p
 
@@ -43,25 +42,32 @@ def params_for_first():
 @pytest.fixture
 def params_for_second():
     with patch(
-        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_second_file"
+        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_second_file",
+        return_value=(MagicMock(), {}),
     ) as p:
         yield p
 
 
-def test_writers_setup_on_init(
+def test_writers_not_setup_on_init_or_whole_plan_start_doc_but_setup_on_run_gridscan(
     params_for_second: MagicMock,
     params_for_first: MagicMock,
     nexus_writer: MagicMock,
     dummy_params: FGSInternalParameters,
 ):
     nexus_handler = FGSNexusFileHandlerCallback()
+    nexus_writer.assert_not_called()
     nexus_handler.start(
         {
             "subplan_name": "run_gridscan_move_and_tidy",
             "hyperion_internal_parameters": dummy_params.json(),
         }
     )
-
+    nexus_writer.assert_not_called()
+    nexus_handler.start(
+        {
+            "subplan_name": "run_gridscan",
+        }
+    )
     nexus_writer.assert_has_calls(
         [
             call(*params_for_first()),
@@ -71,16 +77,37 @@ def test_writers_setup_on_init(
     )
 
 
-def test_writers_dont_create_on_init(
+def test_writers_dont_create_on_init_or_instantiation(
     params_for_second: MagicMock,
     params_for_first: MagicMock,
     nexus_writer: MagicMock,
-    dummy_params,
+    dummy_params: FGSInternalParameters,
 ):
     nexus_handler = FGSNexusFileHandlerCallback()
 
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_not_called()
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_not_called()
+    assert nexus_handler.nexus_writer_1 is None
+    assert nexus_handler.nexus_writer_2 is None
+
+    nexus_handler.start(
+        {
+            "subplan_name": "run_gridscan_move_and_tidy",
+            "hyperion_internal_parameters": dummy_params.json(),
+        }
+    )
+
+    assert nexus_handler.nexus_writer_1 is None
+    assert nexus_handler.nexus_writer_2 is None
+
+    nexus_handler.start(
+        {
+            "subplan_name": "run_gridscan",
+        }
+    )
+
+    assert nexus_handler.nexus_writer_1 is not None
+    assert nexus_handler.nexus_writer_2 is not None
+    nexus_handler.nexus_writer_1.write_nexus.assert_not_called()
+    nexus_handler.nexus_writer_2.write_nexus.assert_not_called()
 
 
 def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
@@ -89,15 +116,24 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
 
     nexus_handler = FGSNexusFileHandlerCallback()
-    nexus_handler.start(test_start_document)
+    nexus_handler.start(
+        {
+            "subplan_name": "run_gridscan_move_and_tidy",
+            "hyperion_internal_parameters": dummy_params.json(),
+        }
+    )
 
     nexus_handler.nexus_writer_1.create_nexus_file.assert_not_called()
     nexus_handler.nexus_writer_2.create_nexus_file.assert_not_called()
 
-    gridscan_start_doc = copy.deepcopy(test_start_document)
-    gridscan_start_doc["subplan_name"] = "run_gridscan"
+    nexus_handler.start(
+        {
+            "subplan_name": "run_gridscan",
+        }
+    )
 
-    nexus_handler.start(gridscan_start_doc)
+    nexus_handler.nexus_writer_1.create_nexus_file.assert_not_called()
+    nexus_handler.nexus_writer_2.create_nexus_file.assert_not_called()
 
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_called_once()
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_called_once()
+    # TODO send event doc for ispyb data
+    assert False

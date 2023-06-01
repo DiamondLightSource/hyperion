@@ -224,6 +224,8 @@ def create_parameters_for_second_file(
 def create_3d_gridscan_writers(
     parameters: FGSInternalParameters,
 ) -> tuple[NexusWriter, NexusWriter]:
-    nexus_writer_1 = FGSNexusWriter(*create_parameters_for_first_file(parameters))
-    nexus_writer_2 = FGSNexusWriter(*create_parameters_for_first_file(parameters))
+    params_for_first = create_parameters_for_first_file(parameters)
+    params_for_second = create_parameters_for_second_file(parameters)
+    nexus_writer_1 = FGSNexusWriter(*params_for_first)
+    nexus_writer_2 = FGSNexusWriter(*params_for_second)
     return nexus_writer_1, nexus_writer_2
