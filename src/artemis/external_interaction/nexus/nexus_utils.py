@@ -18,15 +18,6 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 
-def get_image_datafiles(
-    directory: Path, filename: Path, full_num_of_images: int, max_images_per_file=1000
-):
-    return [
-        directory / f"{filename}_{h5_num + 1:06}.h5"
-        for h5_num in range(-(-full_num_of_images // max_images_per_file))
-    ]
-
-
 def get_current_time():
     return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
 

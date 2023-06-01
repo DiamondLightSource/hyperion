@@ -125,6 +125,12 @@ class NexusWriter(ABC):
                 )
             shutil.move(temp_filename, filename)
 
+    def get_image_datafiles(self, max_images_per_file=1000):
+        return [
+            self.directory / f"{self.filename}_{h5_num + 1:06}.h5"
+            for h5_num in range(-(-self.full_num_of_images // max_images_per_file))
+        ]
+
 
 class FGSNexusWriter(NexusWriter):
     grid_scan: dict
