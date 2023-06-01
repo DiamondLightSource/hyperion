@@ -100,8 +100,8 @@ def test_communicator_in_composite_run(
     RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, callbacks))
 
     # nexus writing
-    callbacks.nexus_handler.nxs_writer_1.assert_called_once()
-    callbacks.nexus_handler.nxs_writer_2.assert_called_once()
+    callbacks.nexus_handler.nexus_writer_1.assert_called_once()
+    callbacks.nexus_handler.nexus_writer_2.assert_called_once()
     # ispyb
     ispyb_begin_deposition.assert_called_once()
     ispyb_end_deposition.assert_called_once()

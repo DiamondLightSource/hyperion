@@ -297,7 +297,7 @@ def get_plan(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": "run_gridscan_move_and_tidy",
-            "experiment_parameters": parameters.dict(),
+            "hyperion_internal_parameters": parameters.json(),
         }
     )
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))

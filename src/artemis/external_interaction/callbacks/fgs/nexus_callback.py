@@ -38,7 +38,8 @@ class FGSNexusFileHandlerCallback(CallbackBase):
             LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."
             )
-            self.parameters = FGSInternalParameters(**doc.get("experiment_parameters"))
+            json_params = doc.get("hyperion_internal_parameters")
+            self.parameters = FGSInternalParameters.from_json(json_params)
         elif doc.get("subplan_name") == "run_gridscan":
             LOGGER.info("Initialising nexus writers")
             self.run_gridscan_uid = doc.get("uid")

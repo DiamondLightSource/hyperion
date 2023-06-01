@@ -27,7 +27,7 @@ def get_image_datafiles(
     ]
 
 
-def get_current_time(self):
+def get_current_time():
     return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
 
 
