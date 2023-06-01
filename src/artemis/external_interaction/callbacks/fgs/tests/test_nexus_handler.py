@@ -1,4 +1,3 @@
-import copy
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -122,18 +121,16 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
             "hyperion_internal_parameters": dummy_params.json(),
         }
     )
-
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_not_called()
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_not_called()
-
     nexus_handler.start(
         {
             "subplan_name": "run_gridscan",
         }
     )
+    nexus_handler.descriptor(
+        {
+            "name": "ispyb_readings",
+        }
+    )
 
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_not_called()
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_not_called()
-
-    # TODO send event doc for ispyb data
-    assert False
+    nexus_handler.nexus_writer_1.create_nexus_file.assert_called()
+    nexus_handler.nexus_writer_2.create_nexus_file.assert_called()

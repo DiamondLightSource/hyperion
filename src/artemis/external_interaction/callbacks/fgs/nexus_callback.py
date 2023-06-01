@@ -47,8 +47,16 @@ class FGSNexusFileHandlerCallback(CallbackBase):
                 self.parameters
             )
 
+    def descriptor(self, doc):
+        if doc.get("name") == "ispyb_readings":
+            assert self.parameters is not None, "Failed to update parameters"
+            assert (
+                self.nexus_writer_1 is not None and self.nexus_writer_2 is not None
+            ), "Failed to create Nexus files, writers were not initialised."
+            self.nexus_writer_1.create_nexus_file()
+            self.nexus_writer_2.create_nexus_file()
+
     def event(self, doc: dict):
-        # TODO get ispyb data into params
         ...
 
     def stop(self, doc: dict):
