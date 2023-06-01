@@ -9,7 +9,7 @@ from bluesky.preprocessors import (
     stage_decorator,
     subs_decorator,
 )
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector

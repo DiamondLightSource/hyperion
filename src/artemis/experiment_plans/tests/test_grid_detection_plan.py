@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, call, patch
 
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAV
@@ -41,7 +41,7 @@ def fake_create_devices():
     return oav, smargon, bl
 
 
-@patch("dodal.i03.active_device_is_same_type", lambda a, b: True)
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.mv")
 @patch("bluesky.plan_stubs.trigger")
@@ -68,13 +68,13 @@ def test_grid_detection_plan(
     bps_trigger.assert_called_with(oav.snapshot, wait=True)
 
 
-@patch("dodal.i03.device_instantiation")
+@patch("dodal.beamlines.i03.device_instantiation")
 def test_create_devices(create_device: MagicMock):
     create_devices()
     create_device.assert_has_calls(
         [
-            call(Smargon, "smargon", "", True, False),
-            call(OAV, "oav", "", True, False),
+            call(Smargon, "smargon", "-MO-SGON-01:", True, False),
+            call(OAV, "oav", "-DI-OAV-01:", True, False),
             call(
                 device=Backlight,
                 name="backlight",

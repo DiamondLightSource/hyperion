@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Dict, List
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.preprocessors import finalize_wrapper
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
