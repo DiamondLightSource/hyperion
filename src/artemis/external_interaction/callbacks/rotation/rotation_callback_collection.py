@@ -16,9 +16,8 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, order=True)
 class RotationCallbackCollection(AbstractPlanCallbackCollection):
-    """Groups the callbacks for external interactions in the fast grid scan, and
-    connects the Zocalo and ISPyB handlers. Cast to a list to pass it to
-    Bluesky.preprocessors.subs_decorator()."""
+    """Groups the callbacks for external interactions for a rotation scan.
+    Cast to a list to pass it to Bluesky.preprocessors.subs_decorator()."""
 
     nexus_handler: RotationNexusFileHandlerCallback = RotationNexusFileHandlerCallback()
 
