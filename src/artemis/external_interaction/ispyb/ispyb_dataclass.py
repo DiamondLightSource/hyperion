@@ -1,9 +1,8 @@
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
+import numpy as np
 from pydantic import BaseModel, validator
-
-from artemis.utils.utils import Point3D
 
 ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
@@ -12,8 +11,8 @@ ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    "upper_left": {"x": 0, "y": 0, "z": 0},
-    "position": {"x": 0, "y": 0, "z": 0},
+    "upper_left": [0, 0, 0],
+    "position": [0, 0, 0],
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission": 1.0,
@@ -36,25 +35,36 @@ class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
+    upper_left: np.ndarray
+    position: np.ndarray
 
-    upper_left: Point3D
-    position: Point3D
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {np.ndarray: lambda a: a.tolist()}
+
+    def dict(self, **kwargs):
+        as_dict = super().dict(**kwargs)
+        as_dict["upper_left"] = as_dict["upper_left"].tolist()
+        as_dict["position"] = as_dict["position"].tolist()
+        return as_dict
 
     @validator("upper_left", pre=True)
     def _parse_upper_left(
-        cls, upper_left: dict[str, int | float] | Point3D, values: dict[str, Any]
-    ) -> Point3D:
-        if isinstance(upper_left, Point3D):
+        cls, upper_left: list[int | float] | np.ndarray, values: Dict[str, Any]
+    ) -> np.ndarray:
+        assert len(upper_left) == 3
+        if isinstance(upper_left, np.ndarray):
             return upper_left
-        return Point3D(upper_left["x"], upper_left["y"], upper_left["z"])
+        return np.array(upper_left)
 
     @validator("position", pre=True)
     def _parse_position(
-        cls, position: dict[str, int | float] | Point3D, values: dict[str, Any]
-    ) -> Point3D:
-        if isinstance(position, Point3D):
+        cls, position: list[int | float] | np.ndarray, values: Dict[str, Any]
+    ) -> np.ndarray:
+        assert len(position) == 3
+        if isinstance(position, np.ndarray):
             return position
-        return Point3D(position["x"], position["y"], position["z"])
+        return np.array(position)
 
     transmission: float
     flux: float
@@ -76,6 +86,12 @@ class IspybParams(BaseModel):
     slit_gap_size_y: Optional[float] = None
     xtal_snapshots_omega_start: Optional[List[str]] = None
     xtal_snapshots_omega_end: Optional[List[str]] = None
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, IspybParams):
+            return NotImplemented
+        else:
+            return self.json() == other.json()
 
 
 class Orientation(Enum):

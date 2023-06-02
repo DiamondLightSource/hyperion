@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from os.path import join as path_join
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, List
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -34,7 +34,7 @@ def grid_detection_plan(
     snapshot_template: str,
     snapshot_dir: str,
     out_snapshot_filenames: List[List[str]],
-    out_upper_left: Dict,
+    out_upper_left: list[float] | np.ndarray,
     width=600,
     box_size_microns=20,
 ):
@@ -70,7 +70,7 @@ def grid_detection_main_plan(
     snapshot_template: str,
     snapshot_dir: str,
     out_snapshot_filenames: List[List[str]],
-    out_upper_left: Dict,
+    out_upper_left: list[float] | np.ndarray,
     grid_width_px: int,
     box_size_um: float,
 ):
@@ -145,10 +145,10 @@ def grid_detection_main_plan(
 
         upper_left = (tip_x_px, min_y)
         if angle == 0:
-            out_upper_left["x"] = int(tip_x_px)
-            out_upper_left["y"] = int(min_y)
+            out_upper_left[0] = int(tip_x_px)
+            out_upper_left[1] = int(min_y)
         else:
-            out_upper_left["z"] = int(min_y)
+            out_upper_left[2] = int(min_y)
 
         yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])
