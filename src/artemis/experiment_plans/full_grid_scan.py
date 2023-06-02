@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from bluesky import plan_stubs as bps
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
@@ -22,12 +22,10 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 )
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    GridScanParams,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import GridScanParams
 
 if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters.plan_specific.grid_scan_with_edge_detect_params import (
+    from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
         GridScanWithEdgeDetectInternalParameters,
         GridScanWithEdgeDetectParams,
     )

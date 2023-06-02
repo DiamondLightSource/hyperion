@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
@@ -12,26 +12,22 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
-from artemis.parameters.internal_parameters.internal_parameters import (
-    InternalParameters,
-)
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
-from artemis.parameters.internal_parameters.plan_specific.rotation_scan_internal_params import (
+from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
 
 @pytest.fixture
 def test_fgs_params():
-    return FGSInternalParameters(raw_params_from_file())
+    return FGSInternalParameters(**raw_params_from_file())
 
 
 @pytest.fixture
 def test_rotation_params():
     return RotationInternalParameters(
-        raw_params_from_file(
+        **raw_params_from_file(
             "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
         )
     )
@@ -83,7 +79,7 @@ def test_config_files():
 
 @pytest.fixture
 def test_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 @pytest.fixture

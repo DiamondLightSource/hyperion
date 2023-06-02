@@ -12,9 +12,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
 )
 from artemis.parameters.constants import SIM_ISPYB_CONFIG
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
 TEST_DATA_COLLECTION_GROUP_ID = 34

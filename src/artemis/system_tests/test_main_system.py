@@ -17,9 +17,7 @@ from artemis.external_interaction.callbacks.abstract_plan_callback_collection im
     AbstractPlanCallbackCollection,
 )
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -278,19 +276,19 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
-@patch("dodal.i03.DetectorMotion")
-@patch("dodal.i03.OAV")
-@patch("dodal.i03.ApertureScatterguard")
-@patch("dodal.i03.Backlight")
-@patch("dodal.i03.EigerDetector")
-@patch("dodal.i03.FastGridScan")
-@patch("dodal.i03.S4SlitGaps")
-@patch("dodal.i03.Smargon")
-@patch("dodal.i03.Synchrotron")
-@patch("dodal.i03.Undulator")
-@patch("dodal.i03.Zebra")
+@patch("dodal.beamlines.i03.DetectorMotion")
+@patch("dodal.beamlines.i03.OAV")
+@patch("dodal.beamlines.i03.ApertureScatterguard")
+@patch("dodal.beamlines.i03.Backlight")
+@patch("dodal.beamlines.i03.EigerDetector")
+@patch("dodal.beamlines.i03.FastGridScan")
+@patch("dodal.beamlines.i03.S4SlitGaps")
+@patch("dodal.beamlines.i03.Smargon")
+@patch("dodal.beamlines.i03.Synchrotron")
+@patch("dodal.beamlines.i03.Undulator")
+@patch("dodal.beamlines.i03.Zebra")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-@patch("dodal.i03.active_device_is_same_type")
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type")
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
     type_comparison,
     mock_get_beamline_params,

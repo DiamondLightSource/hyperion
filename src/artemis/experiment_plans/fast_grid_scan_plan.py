@@ -8,11 +8,8 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal import i03
-from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.devices.eiger import DetectorParams
-from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
-from dodal.i03 import (
+from dodal.beamlines import i03
+from dodal.beamlines.i03 import (
     ApertureScatterguard,
     Backlight,
     EigerDetector,
@@ -23,6 +20,9 @@ from dodal.i03 import (
     Undulator,
     Zebra,
 )
+from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.eiger import DetectorParams
+from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
 
 import artemis.log
 from artemis.device_setup_plans.setup_zebra import (
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
         FGSCallbackCollection,
     )
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    from artemis.parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
 
@@ -321,11 +321,11 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    from artemis.parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
 
-    parameters = FGSInternalParameters(external_parameters.from_file())
+    parameters = FGSInternalParameters(**external_parameters.from_file())
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     create_devices()

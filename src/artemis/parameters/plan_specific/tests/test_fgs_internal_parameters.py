@@ -3,16 +3,14 @@ from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.fast_grid_scan import GridScanParams
 
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
 def test_FGS_parameters_load_from_file():
     params = external_parameters.from_file(
         "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
-    internal_parameters = FGSInternalParameters(params)
+    internal_parameters = FGSInternalParameters(**params)
 
     assert isinstance(internal_parameters.experiment_params, GridScanParams)
 
