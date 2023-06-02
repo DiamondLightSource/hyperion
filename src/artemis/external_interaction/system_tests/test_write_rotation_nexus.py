@@ -3,6 +3,8 @@ from pathlib import Path
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import h5py
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 
@@ -28,6 +30,7 @@ def test_params():
         "directory"
     ] = "src/artemis/external_interaction/unit_tests/test_data"
     param_dict["artemis_params"]["detector_params"]["prefix"] = TEST_FILENAME
+    param_dict["experiment_params"]["rotation_angle"] = 360.0
     params = RotationInternalParameters(**param_dict)
     params.artemis_params.detector_params.exposure_time = 0.004
     params.artemis_params.detector_params.current_energy_ev = 12700
@@ -71,3 +74,14 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
 
     assert os.path.isfile(nexus_filename)
     assert os.path.isfile(master_filename)
+
+    with (
+        h5py.File(str(TEST_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE), "r") as example_nexus,
+        h5py.File(nexus_filename, "r") as hyperion_nexus,
+    ):
+        our_omega: np.ndarray = hyperion_nexus["/entry/data/omega"][:]
+        example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]
+        assert np.allclose(our_omega, example_omega)
+
+    os.remove(nexus_filename)
+    os.remove(master_filename)
