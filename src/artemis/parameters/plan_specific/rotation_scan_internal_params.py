@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from dodal.devices.motors import XYZLimitBundle
@@ -26,8 +26,8 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     image_width: float = 0.1
     omega_start: float = 0.0
     phi_start: float = 0.0
-    chi_start: Optional[float] = None
-    kappa_start: Optional[float] = None
+    chi_start: float | None = None
+    kappa_start: float | None = None
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
@@ -37,7 +37,10 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
 
     @validator("rotation_direction", pre=True)
     def _parse_direction(cls, rotation_direction: str | int):
-        return RotationDirection[rotation_direction]
+        if isinstance(rotation_direction, str):
+            return RotationDirection[rotation_direction]
+        else:
+            return RotationDirection(rotation_direction)
 
     def xyz_are_valid(self, limits: XYZLimitBundle) -> bool:
         """

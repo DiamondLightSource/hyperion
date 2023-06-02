@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
@@ -26,27 +27,37 @@ def params():
 
 
 def test_callback_collection_init(params):
-    callbacks = RotationCallbackCollection.from_params(params)
+    callbacks = RotationCallbackCollection()
     assert isinstance(callbacks.nexus_handler, RotationNexusFileHandlerCallback)
-    assert callbacks.nexus_handler.params == params
 
 
-def test_nexus_handler(params):
+def fake_get_plan(
+    parameters: RotationInternalParameters, subscriptions: RotationCallbackCollection
+):
+    @bpp.subs_decorator(list(subscriptions))
+    @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": "rotation_scan_with_cleanup",
+            "hyperion_internal_parameters": parameters.json(),
+        }
+    )
+    def plan():
+        yield from bps.sleep(0)
+
+    return plan()
+
+
+def test_nexus_handler_gets_documents_in_mock_plan(params: RotationInternalParameters):
     RE = RunEngine({})
 
-    def plan():
-        yield from bps.open_run()
-        yield from bps.close_run()
+    cb = RotationCallbackCollection.from_params(params)
+    cb.nexus_handler.start = MagicMock()
+    cb.nexus_handler.stop = MagicMock()
 
-    cb = RotationCallbackCollection.from_params(params).nexus_handler
-    logger_mock = MagicMock()
+    RE(fake_get_plan(params, cb))
 
-    RE.subscribe(cb)
-
-    with patch(
-        "artemis.external_interaction.callbacks.rotation.nexus_callback.LOGGER.info",
-        logger_mock,
-    ):
-        RE(plan())
-
-    assert logger_mock.call_count == 2
+    cb.nexus_handler.start.assert_called_once()
+    call_content = cb.nexus_handler.start.call_args[0][0]
+    assert call_content["hyperion_internal_parameters"] == params.json()
+    cb.nexus_handler.stop.assert_called_once()

@@ -20,11 +20,11 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
     connects the Zocalo and ISPyB handlers. Cast to a list to pass it to
     Bluesky.preprocessors.subs_decorator()."""
 
-    nexus_handler: RotationNexusFileHandlerCallback
+    nexus_handler: RotationNexusFileHandlerCallback = RotationNexusFileHandlerCallback()
 
     @classmethod
     def from_params(cls, parameters: InternalParameters):
-        nexus_handler = RotationNexusFileHandlerCallback(parameters)
+        nexus_handler = RotationNexusFileHandlerCallback()
         callback_collection = cls(
             nexus_handler=nexus_handler,
         )

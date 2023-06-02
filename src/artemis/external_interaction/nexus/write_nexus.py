@@ -155,14 +155,10 @@ class FGSNexusWriter(NexusWriter):
 
 
 class RotationNexusWriter(NexusWriter):
-    def __init__(
-        self, parameters: RotationInternalParameters, rotation_scan: dict
-    ) -> None:
+    def __init__(self, parameters: RotationInternalParameters) -> None:
         super().__init__(parameters)
         self.goniometer = create_rotation_goniometer_axes(
-            parameters.artemis_params.detector_params,
-            parameters.experiment_params,
-            rotation_scan,
+            parameters.artemis_params.detector_params, parameters.experiment_params
         )
 
     def _get_data_shape_for_vds(self) -> tuple[int | float, ...]:

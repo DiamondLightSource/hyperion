@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from bluesky.callbacks import CallbackBase
 
+from artemis.external_interaction.nexus.write_nexus import RotationNexusWriter
 from artemis.log import LOGGER
-from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 
 class RotationNexusFileHandlerCallback(CallbackBase):
@@ -20,19 +21,30 @@ class RotationNexusFileHandlerCallback(CallbackBase):
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
 
-    Usually used as part of an FGSCallbackCollection.
+    Usually used as part of a RotationCallbackCollection.
     """
 
-    # TODO this is just a placeholder for the collection, registry etc to have something
-    # to grab, to be implemented in #370
-
-    def __init__(self, parameters: InternalParameters):
-        self.run_uid: Optional[str] = None
-        self.params = parameters
-        # self.writer = NexusWriter(parameters)
+    def __init__(self):
+        self.run_uid: str | None = None
+        self.parameters: RotationInternalParameters | None = None
+        self.writer: RotationNexusWriter | None = None
 
     def start(self, doc: dict):
-        LOGGER.info("Setting up nexus files for")
+        if doc.get("subplan_name") == "rotation_scan_with_cleanup":
+            LOGGER.info(
+                "Nexus writer recieved start document with experiment parameters."
+            )
+            json_params = doc.get("hyperion_internal_parameters")
+            self.parameters = RotationInternalParameters.from_json(json_params)
+            LOGGER.info("Setting up nexus file.")
+
+            self.writer = RotationNexusWriter(self.parameters)
 
     def stop(self, doc: dict):
-        LOGGER.info("Finalising nexus files for")
+        if self.run_uid is not None and doc.get("run_start") == self.run_uid:
+            LOGGER.info("Finalising nexus file.")
+            LOGGER.info("Updating Nexus file timestamps.")
+            assert (
+                self.writer is not None
+            ), "Failed to update Nexus file timestamp, writer was not initialised."
+            self.writer.update_nexus_file_timestamp()
