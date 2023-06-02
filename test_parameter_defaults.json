@@ -6,7 +6,7 @@
         "insertion_prefix": "SR03S",
         "experiment_type": "fast_grid_scan",
         "detector_params": {
-            "current_energy": 100,
+            "current_energy_ev": 100,
             "directory": "/tmp/",
             "prefix": "file_name",
             "run_number": 0,
