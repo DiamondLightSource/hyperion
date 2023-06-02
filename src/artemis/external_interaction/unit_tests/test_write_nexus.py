@@ -10,8 +10,8 @@ from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 
 from artemis.external_interaction.nexus.write_nexus import (
     FGSNexusWriter,
-    create_parameters_for_first_file,
-    create_parameters_for_second_file,
+    create_parameters_for_first_gridscan_file,
+    create_parameters_for_second_gridscan_file,
 )
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
@@ -44,9 +44,13 @@ def minimal_params(request):
 
 @pytest.fixture
 def dummy_nexus_writers(minimal_params: FGSInternalParameters):
-    first_file_params, first_scan = create_parameters_for_first_file(minimal_params)
+    first_file_params, first_scan = create_parameters_for_first_gridscan_file(
+        minimal_params
+    )
     nexus_writer_1 = FGSNexusWriter(first_file_params, first_scan)
-    second_file_params, second_scan = create_parameters_for_second_file(minimal_params)
+    second_file_params, second_scan = create_parameters_for_second_gridscan_file(
+        minimal_params
+    )
     nexus_writer_2 = FGSNexusWriter(second_file_params, second_scan)
 
     yield nexus_writer_1, nexus_writer_2
@@ -64,10 +68,14 @@ def create_nexus_writers_with_many_images(parameters: FGSInternalParameters):
         parameters.experiment_params.y_steps = y
         parameters.experiment_params.z_steps = z
         parameters.artemis_params.detector_params.num_triggers = x * y + x * z
-        first_file_params, first_scan = create_parameters_for_first_file(parameters)
+        first_file_params, first_scan = create_parameters_for_first_gridscan_file(
+            parameters
+        )
         nexus_writer_1 = FGSNexusWriter(first_file_params, first_scan)
 
-        second_file_params, second_scan = create_parameters_for_second_file(parameters)
+        second_file_params, second_scan = create_parameters_for_second_gridscan_file(
+            parameters
+        )
         nexus_writer_2 = FGSNexusWriter(second_file_params, second_scan)
 
         yield nexus_writer_1, nexus_writer_2
