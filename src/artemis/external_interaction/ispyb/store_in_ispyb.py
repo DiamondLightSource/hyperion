@@ -8,12 +8,12 @@ from typing import TYPE_CHECKING
 import dodal.devices.oav.utils as oav_utils
 import ispyb
 import ispyb.sqlalchemy
+import numpy as np
 from sqlalchemy.connectors import Connector
 
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
 from artemis.log import LOGGER
 from artemis.tracing import TRACER
-from artemis.utils.utils import Point2D
 
 if TYPE_CHECKING:
     from artemis.parameters.internal_parameters import InternalParameters
@@ -83,9 +83,11 @@ class StoreInIspyb(ABC):
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
-        self.upper_left = Point2D(
-            self.ispyb_params.upper_left.x,
-            self.ispyb_params.upper_left.y,
+        self.upper_left = np.array(
+            [
+                self.ispyb_params.upper_left[0],
+                self.ispyb_params.upper_left[1],
+            ]
         )
         self.y_steps = full_params.experiment_params.y_steps
         self.y_step_size = full_params.experiment_params.y_step_size
@@ -165,8 +167,8 @@ class StoreInIspyb(ABC):
             f"{self.y_steps} images in "
             f"{self.full_params.experiment_params.x_step_size*1e3} um by "
             f"{self.y_step_size*1e3} um steps. "
-            f"Top left (px): [{int(self.upper_left.x)},{int(self.upper_left.y)}], "
-            f"bottom right (px): [{bottom_right.x},{bottom_right.y}]."
+            f"Top left (px): [{int(self.upper_left[0])},{int(self.upper_left[1])}], "
+            f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
         )
 
     @TRACER.start_as_current_span("store_ispyb_datacollection_table")
@@ -313,9 +315,11 @@ class StoreInIspyb3D(StoreInIspyb):
         self.omega_start += 90
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
-        self.upper_left = Point2D(
-            self.ispyb_params.upper_left.x,
-            self.ispyb_params.upper_left.z,
+        self.upper_left = np.array(
+            [
+                self.ispyb_params.upper_left[0],
+                self.ispyb_params.upper_left[2],
+            ]
         )
         self.y_steps = self.full_params.experiment_params.z_steps
         self.y_step_size = self.full_params.experiment_params.z_step_size

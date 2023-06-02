@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+import numpy as np
 from dodal.devices.motors import XYZLimitBundle
 from dodal.devices.zebra import RotationDirection
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
@@ -13,7 +14,6 @@ from artemis.parameters.internal_parameters import (
     extract_artemis_params_from_flat_dict,
     extract_experiment_params_from_flat_dict,
 )
-from artemis.utils.utils import Point3D
 
 
 class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
@@ -80,12 +80,12 @@ class RotationInternalParameters(InternalParameters):
     ):
         experiment_params: RotationScanParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
-        all_params["position"] = Point3D(*all_params["position"])
+        all_params["position"] = np.array(all_params["position"])
         if all_params["rotation_axis"] == "omega":
             all_params["omega_increment"] = all_params["rotation_increment"]
         else:
             all_params["omega_increment"] = 0
         all_params["num_triggers"] = 1
         all_params["num_images_per_trigger"] = all_params["num_images"]
-        all_params["upper_left"] = Point3D(*all_params["upper_left"])
+        all_params["upper_left"] = np.array(all_params["upper_left"])
         return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))

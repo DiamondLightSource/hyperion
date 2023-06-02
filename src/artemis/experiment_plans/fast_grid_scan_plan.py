@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import numpy as np
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal.beamlines import i03
@@ -36,7 +37,6 @@ from artemis.parameters.beamline_parameters import (
 )
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.tracing import TRACER
-from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
     from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
@@ -146,7 +146,7 @@ def read_hardware_for_ispyb(
 @bpp.run_decorator(md={"subplan_name": "move_xyz"})
 def move_xyz(
     sample_motors,
-    xray_centre_motor_position: Point3D,
+    xray_centre_motor_position: np.ndarray,
     md={
         "plan_name": "move_xyz",
     },
@@ -156,11 +156,11 @@ def move_xyz(
     artemis.log.LOGGER.info(f"Moving Smargon x, y, z to: {xray_centre_motor_position}")
     yield from bps.mv(
         sample_motors.x,
-        xray_centre_motor_position.x,
+        xray_centre_motor_position[0],
         sample_motors.y,
-        xray_centre_motor_position.y,
+        xray_centre_motor_position[1],
         sample_motors.z,
-        xray_centre_motor_position.z,
+        xray_centre_motor_position[2],
     )
 
 
@@ -242,10 +242,12 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = Point3D(
-        (yield from bps.rd(fgs_composite.sample_motors.x)),
-        (yield from bps.rd(fgs_composite.sample_motors.y)),
-        (yield from bps.rd(fgs_composite.sample_motors.z)),
+    initial_xyz = np.array(
+        [
+            (yield from bps.rd(fgs_composite.sample_motors.x)),
+            (yield from bps.rd(fgs_composite.sample_motors.y)),
+            (yield from bps.rd(fgs_composite.sample_motors.z)),
+        ]
     )
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)

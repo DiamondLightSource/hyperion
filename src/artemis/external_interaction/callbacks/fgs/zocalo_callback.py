@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import operator
 import time
 from typing import Callable, Optional
 
+import numpy as np
 from bluesky.callbacks import CallbackBase
+from numpy import ndarray
 
 from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
@@ -16,7 +17,6 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
 )
 from artemis.log import LOGGER
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-from artemis.utils.utils import Point3D
 
 
 class FGSZocaloCallback(CallbackBase):
@@ -43,7 +43,7 @@ class FGSZocaloCallback(CallbackBase):
         self, parameters: FGSInternalParameters, ispyb_handler: FGSISPyBHandlerCallback
     ):
         self.grid_position_to_motor_position: Callable[
-            [Point3D], Point3D
+            [ndarray], ndarray
         ] = parameters.experiment_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
@@ -76,14 +76,14 @@ class FGSZocaloCallback(CallbackBase):
                 self.zocalo_interactor.run_end(id)
             self.processing_start_time = time.time()
 
-    def wait_for_results(self, fallback_xyz: Point3D) -> Point3D:
+    def wait_for_results(self, fallback_xyz: ndarray) -> tuple[ndarray, Optional[list]]:
         """Blocks until a centre has been received from Zocalo
 
         Args:
-            fallback_xyz (Point3D): The position to fallback to if no centre is found
+            fallback_xyz (ndarray): The position to fallback to if no centre is found
 
         Returns:
-            Point3D: The xray centre position to move to
+            ndarray: The xray centre position to move to
         """
         datacollection_group_id = self.ispyb.ispyb_ids[2]
 
@@ -102,13 +102,12 @@ class FGSZocaloCallback(CallbackBase):
             bboxes = []
             for n, res in enumerate(raw_results):
                 bboxes.append(
-                    list(
-                        map(
-                            operator.sub, res["bounding_box"][1], res["bounding_box"][0]
-                        )
-                    )
+                    np.array(res["bounding_box"][1]) - np.array(res["bounding_box"][0])
                 )
-                nicely_formatted_com = [f"{com:.2f}" for com in res["centre_of_mass"]]
+
+                nicely_formatted_com = [
+                    f"{np.round(com,2)}" for com in res["centre_of_mass"]
+                ]
                 crystal_summary += (
                     f"Crystal {n+1}: "
                     f"Strength {res['total_count']}; "
@@ -117,11 +116,11 @@ class FGSZocaloCallback(CallbackBase):
                 )
             self.ispyb.append_to_comment(crystal_summary)
 
-            raw_centre = Point3D(*(raw_results[0]["centre_of_mass"]))
+            raw_centre = np.array([*(raw_results[0]["centre_of_mass"])])
 
             # _wait_for_result returns the centre of the grid box, but we want the corner
-            results = Point3D(
-                raw_centre.x - 0.5, raw_centre.y - 0.5, raw_centre.z - 0.5
+            results = np.array(
+                [raw_centre[0] - 0.5, raw_centre[1] - 0.5, raw_centre[2] - 0.5]
             )
             xray_centre = self.grid_position_to_motor_position(results)
 
