@@ -162,13 +162,11 @@ class RotationNexusWriter(NexusWriter):
         )
 
     def _get_data_shape_for_vds(self) -> tuple[int | float, ...]:
-        return (1,)
-        # ax = list(self.grid_scan.keys())[0]
-        # num_frames_in_vds = len(self.grid_scan[ax])
-        # return (num_frames_in_vds, *self.detector.detector_params.image_size)
+        nexus_detector_params: EigerDetector = self.detector.detector_params
+        return (self.full_num_of_images, *nexus_detector_params.image_size)
 
 
-def create_parameters_for_first_file(
+def create_parameters_for_first_gridscan_file(
     parameters: FGSInternalParameters,
 ) -> Tuple[FGSInternalParameters, Dict]:
     new_params = deepcopy(parameters)
@@ -195,7 +193,7 @@ def create_parameters_for_first_file(
     return new_params, scan_path.consume().midpoints
 
 
-def create_parameters_for_second_file(
+def create_parameters_for_second_gridscan_file(
     parameters: FGSInternalParameters,
 ) -> Tuple[FGSInternalParameters, Dict]:
     new_params = deepcopy(parameters)
@@ -229,8 +227,8 @@ def create_parameters_for_second_file(
 def create_3d_gridscan_writers(
     parameters: FGSInternalParameters,
 ) -> tuple[NexusWriter, NexusWriter]:
-    params_for_first = create_parameters_for_first_file(parameters)
-    params_for_second = create_parameters_for_second_file(parameters)
+    params_for_first = create_parameters_for_first_gridscan_file(parameters)
+    params_for_second = create_parameters_for_second_gridscan_file(parameters)
     nexus_writer_1 = FGSNexusWriter(*params_for_first)
     nexus_writer_2 = FGSNexusWriter(*params_for_second)
     return nexus_writer_1, nexus_writer_2

@@ -33,7 +33,7 @@ def nexus_writer():
 @pytest.fixture
 def params_for_first():
     with patch(
-        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_first_file",
+        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_first_gridscan_file",
         return_value=(MagicMock(), {}),
     ) as p:
         yield p
@@ -42,7 +42,7 @@ def params_for_first():
 @pytest.fixture
 def params_for_second():
     with patch(
-        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_second_file",
+        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_second_gridscan_file",
         return_value=(MagicMock(), {}),
     ) as p:
         yield p
