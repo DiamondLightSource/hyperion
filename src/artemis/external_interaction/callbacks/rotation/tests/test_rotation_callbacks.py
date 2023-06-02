@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, patch
+import os
+from unittest.mock import MagicMock
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -61,3 +62,23 @@ def test_nexus_handler_gets_documents_in_mock_plan(params: RotationInternalParam
     call_content = cb.nexus_handler.start.call_args[0][0]
     assert call_content["hyperion_internal_parameters"] == params.json()
     cb.nexus_handler.stop.assert_called_once()
+
+
+def test_nexus_handler_triggers_write_file_when_told(
+    params: RotationInternalParameters,
+):
+    if os.path.isfile("/tmp/file_name_0.nxs"):
+        os.remove("/tmp/file_name_0.nxs")
+    if os.path.isfile("/tmp/file_name_0_master.h5"):
+        os.remove("/tmp/file_name_0_master.h5")
+
+    RE = RunEngine({})
+
+    cb = RotationCallbackCollection.from_params(params)
+
+    RE(fake_get_plan(params, cb))
+
+    assert os.path.isfile("/tmp/file_name_0.nxs")
+    assert os.path.isfile("/tmp/file_name_0_master.h5")
+    os.remove("/tmp/file_name_0.nxs")
+    os.remove("/tmp/file_name_0_master.h5")
