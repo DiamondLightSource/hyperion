@@ -2,7 +2,6 @@ from abc import abstractmethod
 from typing import Any
 
 from dodal.devices.eiger import DetectorParams
-from numpy import ndarray
 from pydantic import BaseModel, root_validator
 from semver import Version
 
