@@ -37,8 +37,8 @@ class RotationNexusFileHandlerCallback(CallbackBase):
             json_params = doc.get("hyperion_internal_parameters")
             self.parameters = RotationInternalParameters.from_json(json_params)
             LOGGER.info("Setting up nexus file.")
-
             self.writer = RotationNexusWriter(self.parameters)
+            self.writer.create_nexus_file()
 
     def stop(self, doc: dict):
         if self.run_uid is not None and doc.get("run_start") == self.run_uid:
