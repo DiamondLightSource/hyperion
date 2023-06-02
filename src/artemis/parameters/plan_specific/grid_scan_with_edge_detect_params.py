@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 from dataclasses_json import DataClassJsonMixin
 from dodal.devices.detector import TriggerMode
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
@@ -16,7 +17,6 @@ from artemis.parameters.internal_parameters import (
     flatten_dict,
     get_extracted_experiment_and_flat_artemis_params,
 )
-from artemis.utils.utils import Point3D
 
 
 @dataclass
@@ -61,10 +61,10 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
     ):
         experiment_params: GridScanWithEdgeDetectParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
-        all_params["position"] = Point3D(*all_params["position"])
+        all_params["position"] = np.array(all_params["position"])
         all_params["omega_increment"] = 0
         all_params["num_triggers"] = all_params["num_images"]
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
-        all_params["upper_left"] = Point3D(0, 0, 0)
+        all_params["upper_left"] = np.array([0, 0, 0])
         return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))

@@ -1,12 +1,16 @@
 import copy
 import json
 
+import numpy as np
 import pytest
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
 from pydantic import ValidationError
 
-from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
+from artemis.external_interaction.ispyb.ispyb_dataclass import (
+    ISPYB_PARAM_DEFAULTS,
+    IspybParams,
+)
 from artemis.parameters import external_parameters
 from artemis.parameters.external_parameters import from_file
 from artemis.parameters.internal_parameters import (
@@ -43,6 +47,19 @@ def test_cant_initialise_abstract_internalparams():
         internal_parameters = InternalParameters(  # noqa
             **external_parameters.from_file()
         )
+
+
+def test_ispyb_param_dict():
+    ispyb_params = IspybParams(**ISPYB_PARAM_DEFAULTS)
+    as_dict = ispyb_params.dict()
+    assert isinstance(as_dict.get("position"), list)
+    modified_params = copy.deepcopy(ISPYB_PARAM_DEFAULTS)
+    modified_params["position"] = [123, 7777777, 3]
+    modified_ispyb_params = IspybParams(**modified_params)
+    assert ispyb_params != modified_ispyb_params
+    assert isinstance(modified_ispyb_params.position, np.ndarray)
+    modified_as_dict = modified_ispyb_params.dict()
+    assert modified_as_dict.get("position") == [123, 7777777, 3]
 
 
 def test_internal_param_serialisation_deserialisation():

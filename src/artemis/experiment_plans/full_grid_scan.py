@@ -23,7 +23,6 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 from artemis.parameters.plan_specific.fgs_internal_params import GridScanParams
-from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
     from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -102,7 +101,7 @@ def get_plan(
         parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end = (
             out_snapshot_filenames[1]
         )
-        parameters.artemis_params.ispyb_params.upper_left = Point3D(**out_upper_left)
+        parameters.artemis_params.ispyb_params.upper_left = out_upper_left
 
         fgs_params.__post_init__()
 

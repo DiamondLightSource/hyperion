@@ -3,6 +3,7 @@ from functools import partial
 from typing import Callable
 
 import ispyb.sqlalchemy
+import numpy as np
 import pytest
 from ispyb.sqlalchemy import DataCollection
 from sqlalchemy import create_engine
@@ -15,7 +16,6 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
 )
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-from artemis.utils.utils import Point3D
 
 ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
@@ -76,8 +76,8 @@ def fetch_comment() -> Callable:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = FGSInternalParameters(**default_raw_params())
-    dummy_params.artemis_params.ispyb_params.upper_left = Point3D(100, 100, 50)
+    dummy_params = FGSInternalParameters(default_raw_params())
+    dummy_params.artemis_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.artemis_params.ispyb_params.microns_per_pixel_x = 0.8
     dummy_params.artemis_params.ispyb_params.microns_per_pixel_y = 0.8
     dummy_params.artemis_params.ispyb_params.visit_path = (
