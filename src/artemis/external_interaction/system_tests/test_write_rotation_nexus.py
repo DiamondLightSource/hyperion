@@ -86,27 +86,66 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     ):
         our_omega: np.ndarray = hyperion_nexus["/entry/data/omega"][:]
         example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]
+
+        hyperion_instrument = hyperion_nexus["/entry/instrument"]
+        example_instrument = example_nexus["/entry/instrument"]
+        transmission = "attenuator/attenuator_transmission"
+        wavelength = "beam/incident_wavelength"
         assert np.allclose(our_omega, example_omega)
         assert np.isclose(
-            hyperion_nexus["/entry/instrument/attenuator/attenuator_transmission"][()],
-            example_nexus["/entry/instrument/attenuator/attenuator_transmission"][()],
+            hyperion_instrument[transmission][()],
+            example_instrument[transmission][()],
         )
         assert np.isclose(
-            hyperion_nexus["/entry/instrument/beam/incident_wavelength"][()],
-            example_nexus["/entry/instrument/beam/incident_wavelength"][()],
+            hyperion_instrument[wavelength][()],
+            example_instrument[wavelength][()],
+        )
+
+        hyperion_sam_x = hyperion_nexus["/entry/sample/sample_x/sam_x"]
+        example_sam_x = example_nexus["/entry/sample/sample_x/sam_x"]
+        hyperion_sam_y = hyperion_nexus["/entry/sample/sample_y/sam_y"]
+        example_sam_y = example_nexus["/entry/sample/sample_y/sam_y"]
+        hyperion_sam_z = hyperion_nexus["/entry/sample/sample_z/sam_z"]
+        example_sam_z = example_nexus["/entry/sample/sample_z/sam_z"]
+
+        hyperion_sam_phi = hyperion_nexus["/entry/sample/sample_phi/phi"]
+        example_sam_phi = example_nexus["/entry/sample/sample_phi/phi"]
+        hyperion_sam_chi = hyperion_nexus["/entry/sample/sample_chi/chi"]
+        example_sam_chi = example_nexus["/entry/sample/sample_chi/chi"]
+        hyperion_sam_omega = hyperion_nexus["/entry/sample/sample_omega/omega"]
+        example_sam_omega = example_nexus["/entry/sample/sample_omega/omega"]
+
+        assert np.isclose(
+            hyperion_sam_x[()],
+            example_sam_x[()],
         )
         assert np.isclose(
-            hyperion_nexus["/entry/sample/sample_x/sam_x"][()],
-            example_nexus["/entry/sample/sample_x/sam_x"][()],
+            hyperion_sam_y[()],
+            example_sam_y[()],
         )
         assert np.isclose(
-            hyperion_nexus["/entry/sample/sample_y/sam_y"][()],
-            example_nexus["/entry/sample/sample_y/sam_y"][()],
+            hyperion_sam_z[()],
+            example_sam_z[()],
         )
-        assert np.isclose(
-            hyperion_nexus["/entry/sample/sample_z/sam_z"][()],
-            example_nexus["/entry/sample/sample_z/sam_z"][()],
+
+        assert hyperion_sam_x.attrs.get("depends_on") == example_sam_x.attrs.get(
+            "depends_on"
         )
+        assert hyperion_sam_y.attrs.get("depends_on") == example_sam_y.attrs.get(
+            "depends_on"
+        )
+        assert hyperion_sam_z.attrs.get("depends_on") == example_sam_z.attrs.get(
+            "depends_on"
+        )
+        assert hyperion_sam_phi.attrs.get("depends_on") == example_sam_phi.attrs.get(
+            "depends_on"
+        )
+        assert hyperion_sam_chi.attrs.get("depends_on") == example_sam_chi.attrs.get(
+            "depends_on"
+        )
+        assert hyperion_sam_omega.attrs.get(
+            "depends_on"
+        ) == example_sam_omega.attrs.get("depends_on")
 
     os.remove(nexus_filename)
     os.remove(master_filename)
