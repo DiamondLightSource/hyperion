@@ -84,14 +84,19 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         h5py.File(str(TEST_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE), "r") as example_nexus,
         h5py.File(nexus_filename, "r") as hyperion_nexus,
     ):
-        our_omega: np.ndarray = hyperion_nexus["/entry/data/omega"][:]
+        hyperion_omega: np.ndarray = hyperion_nexus["/entry/data/omega"][:]
         example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]
+        assert np.allclose(hyperion_omega, example_omega)
+
+        hyperion_data_shape = hyperion_nexus["/entry/data/data"].shape
+        example_data_shape = example_nexus["/entry/data/data"].shape
+
+        assert hyperion_data_shape == example_data_shape
 
         hyperion_instrument = hyperion_nexus["/entry/instrument"]
         example_instrument = example_nexus["/entry/instrument"]
         transmission = "attenuator/attenuator_transmission"
         wavelength = "beam/incident_wavelength"
-        assert np.allclose(our_omega, example_omega)
         assert np.isclose(
             hyperion_instrument[transmission][()],
             example_instrument[transmission][()],
