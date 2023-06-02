@@ -84,7 +84,10 @@ class RotationInternalParameters(InternalParameters):
         experiment_params: RotationScanParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])
-        if all_params["rotation_axis"] == "omega":
+        if (
+            all_params["rotation_axis"] == "omega"
+            and all_params.get("rotation_increment") is not None
+        ):
             all_params["omega_increment"] = all_params["rotation_increment"]
         else:
             all_params["omega_increment"] = 0

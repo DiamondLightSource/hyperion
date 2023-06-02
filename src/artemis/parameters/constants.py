@@ -15,7 +15,7 @@ SIM_ISPYB_CONFIG = "src/artemis/external_interaction/unit_tests/test_config.cfg"
 PARAMETER_SCHEMA_DIRECTORY = "src/artemis/parameters/schemas/"
 
 DETECTOR_PARAM_DEFAULTS = {
-    "current_energy": 100,
+    "current_energy_ev": 100,
     "exposure_time": 0.1,
     "directory": "/tmp",
     "prefix": "file_name",

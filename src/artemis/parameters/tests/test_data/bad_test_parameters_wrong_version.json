@@ -6,7 +6,7 @@
         "zocalo_environment": "devrmq",
         "experiment_type": "grid_scan",
         "detector_params": {
-            "current_energy": 100,
+            "current_energy_ev": 100,
             "exposure_time": 0.1,
             "directory": "/tmp",
             "prefix": "file_name",
