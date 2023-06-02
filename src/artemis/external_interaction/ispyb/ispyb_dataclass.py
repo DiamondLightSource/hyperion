@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from pydantic import BaseModel, validator
@@ -42,9 +42,15 @@ class IspybParams(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {np.ndarray: lambda a: a.tolist()}
 
+    def dict(self, **kwargs):
+        as_dict = super().dict(**kwargs)
+        as_dict["upper_left"] = as_dict["upper_left"].tolist()
+        as_dict["position"] = as_dict["position"].tolist()
+        return as_dict
+
     @validator("upper_left", pre=True)
     def _parse_upper_left(
-        cls, upper_left: list[int | float] | np.ndarray, values: dict[str, Any]
+        cls, upper_left: list[int | float] | np.ndarray, values: Dict[str, Any]
     ) -> np.ndarray:
         assert len(upper_left) == 3
         if isinstance(upper_left, np.ndarray):
@@ -53,7 +59,7 @@ class IspybParams(BaseModel):
 
     @validator("position", pre=True)
     def _parse_position(
-        cls, position: list[int | float] | np.ndarray, values: dict[str, Any]
+        cls, position: list[int | float] | np.ndarray, values: Dict[str, Any]
     ) -> np.ndarray:
         assert len(position) == 3
         if isinstance(position, np.ndarray):

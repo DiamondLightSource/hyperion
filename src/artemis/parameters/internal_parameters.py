@@ -50,34 +50,6 @@ class ArtemisParameters(BaseModel):
             **IspybParams.Config.json_encoders,
         }
 
-    def __repr__(self):
-        return (
-            "artemis_params:\n"
-            f"    zocalo_environment: {self.zocalo_environment}\n"
-            f"    beamline: {self.beamline}\n"
-            f"    insertion_prefix: {self.insertion_prefix}\n"
-            f"    experiment_type: {self.experiment_type}\n"
-            f"    detector_params: {self.detector_params}\n"
-            f"    ispyb_params: {self.ispyb_params}\n"
-        )
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, ArtemisParameters):
-            return NotImplemented
-        elif self.zocalo_environment != other.zocalo_environment:
-            return False
-        elif self.beamline != other.beamline:
-            return False
-        elif self.insertion_prefix != other.insertion_prefix:
-            return False
-        elif self.experiment_type != other.experiment_type:
-            return False
-        elif self.detector_params != other.detector_params:
-            return False
-        elif self.ispyb_params != other.ispyb_params:
-            return False
-        return True
-
 
 def flatten_dict(d: dict, parent_items: dict = {}) -> dict:
     """Flatten a dictionary assuming all keys are unique."""
