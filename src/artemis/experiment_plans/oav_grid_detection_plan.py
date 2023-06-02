@@ -56,12 +56,16 @@ def grid_detection_plan(
 def wait_for_tip_to_be_found(pin_tip: PinTipDetect):
     yield from bps.trigger(pin_tip, group="pin_tip")
     yield from bps.wait("pin_tip")
-    found_tip = yield from bps.rd(pin_tip)
-    if found_tip == pin_tip.INVALID_POSITION:
+    found_tip_x = yield from bps.rd(pin_tip.tip_x)
+    found_tip_y = yield from bps.rd(pin_tip.tip_x)
+    if (
+        found_tip_x == pin_tip.INVALID_POSITION[0]
+        or found_tip_y == pin_tip.INVALID_POSITION[1]
+    ):
         raise WarningException(
             f"No pin found after {pin_tip.validity_timeout.get()} seconds"
         )
-    return found_tip
+    return (found_tip_x, found_tip_y)
 
 
 def grid_detection_main_plan(
