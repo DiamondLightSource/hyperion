@@ -122,7 +122,7 @@ class NexusWriter(ABC):
             shutil.copy(filename, temp_filename)
             with h5py.File(temp_filename, "r+") as nxsfile:
                 nxsfile["entry"].create_dataset(
-                    "end_time", data=np.string_(get_current_time())
+                    "end_time", data=np.string_(get_current_time() + "Z")
                 )
             shutil.move(temp_filename, filename)
 
