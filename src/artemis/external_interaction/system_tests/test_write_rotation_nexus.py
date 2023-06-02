@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -74,8 +75,11 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     RE = RunEngine({})
 
     cb = RotationCallbackCollection.from_params(test_params)
-
-    RE(fake_get_plan(test_params, cb))
+    with patch(
+        "artemis.external_interaction.nexus.write_nexus.get_current_time",
+        return_value="test_time",
+    ):
+        RE(fake_get_plan(test_params, cb))
 
     assert os.path.isfile(nexus_filename)
     assert os.path.isfile(master_filename)
@@ -84,6 +88,9 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         h5py.File(str(TEST_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE), "r") as example_nexus,
         h5py.File(nexus_filename, "r") as hyperion_nexus,
     ):
+        assert hyperion_nexus["/entry/start_time"][()] == b"test_timeZ"
+        assert hyperion_nexus["/entry/end_time"][()] == b"test_timeZ"
+
         hyperion_omega: np.ndarray = hyperion_nexus["/entry/data/omega"][:]
         example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]
         assert np.allclose(hyperion_omega, example_omega)
