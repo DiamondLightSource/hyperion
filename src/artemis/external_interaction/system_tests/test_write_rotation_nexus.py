@@ -32,8 +32,13 @@ def test_params():
     param_dict["artemis_params"]["detector_params"]["prefix"] = TEST_FILENAME
     param_dict["experiment_params"]["rotation_angle"] = 360.0
     params = RotationInternalParameters(**param_dict)
+    params.experiment_params.x = 0
+    params.experiment_params.y = 0
+    params.experiment_params.z = 0
     params.artemis_params.detector_params.exposure_time = 0.004
     params.artemis_params.detector_params.current_energy_ev = 12700
+    params.artemis_params.ispyb_params.transmission = 0.49118047952
+    params.artemis_params.ispyb_params.wavelength = 0.9762535433
     return params
 
 
@@ -41,7 +46,7 @@ def fake_get_plan(
     parameters: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
     @bpp.subs_decorator(list(subscriptions))
-    @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
+    @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": "rotation_scan_with_cleanup",
@@ -82,6 +87,26 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         our_omega: np.ndarray = hyperion_nexus["/entry/data/omega"][:]
         example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]
         assert np.allclose(our_omega, example_omega)
+        assert np.isclose(
+            hyperion_nexus["/entry/instrument/attenuator/attenuator_transmission"][()],
+            example_nexus["/entry/instrument/attenuator/attenuator_transmission"][()],
+        )
+        assert np.isclose(
+            hyperion_nexus["/entry/instrument/beam/incident_wavelength"][()],
+            example_nexus["/entry/instrument/beam/incident_wavelength"][()],
+        )
+        assert np.isclose(
+            hyperion_nexus["/entry/sample/sample_x/sam_x"][()],
+            example_nexus["/entry/sample/sample_x/sam_x"][()],
+        )
+        assert np.isclose(
+            hyperion_nexus["/entry/sample/sample_y/sam_y"][()],
+            example_nexus["/entry/sample/sample_y/sam_y"][()],
+        )
+        assert np.isclose(
+            hyperion_nexus["/entry/sample/sample_z/sam_z"][()],
+            example_nexus["/entry/sample/sample_z/sam_z"][()],
+        )
 
     os.remove(nexus_filename)
     os.remove(master_filename)

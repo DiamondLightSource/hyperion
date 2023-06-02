@@ -36,7 +36,7 @@ def fake_get_plan(
     parameters: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
     @bpp.subs_decorator(list(subscriptions))
-    @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
+    @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": "rotation_scan_with_cleanup",
