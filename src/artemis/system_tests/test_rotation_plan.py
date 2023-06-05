@@ -37,7 +37,7 @@ def RE():
 
 @pytest.mark.s03()
 def test_move_to_start(devices, RE):
-    # may need 'caput BL03S-MO-SGON-01:OMEGA.VMAX 120'
+    # may need to run 'caput BL03S-MO-SGON-01:OMEGA.VMAX 120' as S03 has 45 by default
     smargon: Smargon = devices["smargon"]
     start_angle = 153
     RE(move_to_start_w_buffer(smargon.omega, start_angle, wait_for_velocity_set=False))
