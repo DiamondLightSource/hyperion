@@ -5,7 +5,7 @@ from subprocess import PIPE, CalledProcessError, Popen
 from git import Repo
 from packaging.version import Version
 
-recognised_beamlines = ["dev"]
+recognised_beamlines = ["dev", "i03"]
 
 
 class repo:
@@ -67,9 +67,10 @@ def get_artemis_release_dir_from_args(repo: repo) -> str:
     if args.beamline == "dev":
         print("Running as dev")
         return "/tmp/artemis_release_test/bluesky"
+    elif args.beamline == "i03":
+        return f"/dls_sw/{args.beamline}/software/bluesky"
     else:
         raise Exception("not running in dev mode, exiting... (remove this)")
-        return f"/dls_sw/{args.beamline}/software/bluesky"
 
 
 if __name__ == "__main__":
@@ -78,6 +79,7 @@ if __name__ == "__main__":
         repo_args=os.path.join(os.path.dirname(__file__), "../.git"),
     )
 
+    # Gives path to /bluesky
     release_area = get_artemis_release_dir_from_args(artemis_repo)
 
     release_area_version = os.path.join(
@@ -99,10 +101,11 @@ if __name__ == "__main__":
 
     # Get version of dodal that latest artemis version uses
     with open(f"{release_area_version}/artemis/setup.cfg", "r") as setup_file:
-        # This is hacky - if setup.cfg changes, this line will also need to change
-        dodal_url = setup_file.readlines()[37]
-
-    dodal_url = dodal_url[dodal_url.find("https") :]
+        dodal_url = [
+            line
+            for line in setup_file
+            if "https://github.com/DiamondLightSource/python-dodal" in line
+        ]
 
     # Now deploy the correct version of dodal
     dodal_repo.deploy(dodal_url)
@@ -127,12 +130,10 @@ if __name__ == "__main__":
 Only do so if you have informed the beamline scientist and you're sure Artemis is not running.
 """
     )
+    # Creates symlink: software/bluesky/artemis_version -> software/bluesky/artemis
     if move_symlink == "y":
-        # release_area is software/bluesky, with version is ..bluesky/
-
         live_location = os.path.join(release_area, "artemis")
         new_tmp_location = os.path.join(release_area, "tmp_art")
-        # Links software/bluesky/artemis_v/artemis to software/bluesky/artemis
         os.symlink(artemis_repo.deploy_location, new_tmp_location)
         os.rename(new_tmp_location, live_location)
         print(f"New version moved to {live_location}")
