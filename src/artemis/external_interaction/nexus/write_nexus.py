@@ -30,7 +30,7 @@ from numpy.typing import ArrayLike
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
+from artemis.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
 from artemis.parameters.internal_parameters import InternalParameters
 
 
@@ -171,12 +171,12 @@ def create_detector_parameters(detector_params: DetectorParams) -> Detector:
 
 
 def create_beam_and_attenuator_parameters(
-    ispyb_params: IspybParams,
+    ispyb_params: GridscanIspybParams,
 ) -> Tuple[Beam, Attenuator]:
     """Create beam and attenuator dictionaries that nexgen can understand.
 
     Args:
-        ispyb_params (IspybParams): An IspybParams object holding all required data.
+        ispyb_params (GridscanIspybParams): An GridscanIspybParams object holding all required data.
 
     Returns:
         Tuple[Beam, Attenuator]: Descriptions of the beam and attenuator for nexgen.

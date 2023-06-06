@@ -4,11 +4,15 @@ from typing import Any
 
 import numpy as np
 from dataclasses_json import DataClassJsonMixin
-from dodal.devices.detector import TriggerMode
+from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic import validator
 from pydantic.dataclasses import dataclass
 
+from artemis.external_interaction.ispyb.ispyb_dataclass import (
+    GridscanIspybParams,
+    IspybParams,
+)
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
     InternalParameters,
@@ -16,6 +20,9 @@ from artemis.parameters.internal_parameters import (
     extract_experiment_params_from_flat_dict,
     flatten_dict,
     get_extracted_experiment_and_flat_artemis_params,
+)
+from artemis.parameters.plan_specific.fgs_internal_params import (
+    GridscanArtemisParameters,
 )
 
 
@@ -36,13 +43,30 @@ class GridScanWithEdgeDetectParams(DataClassJsonMixin, AbstractExperimentParamet
 
 class GridScanWithEdgeDetectInternalParameters(InternalParameters):
     experiment_params: GridScanWithEdgeDetectParams
-    artemis_params: ArtemisParameters
+    artemis_params: GridscanArtemisParameters
 
     def __init__(self, data):
         prepared_args = get_extracted_experiment_and_flat_artemis_params(
             GridScanWithEdgeDetectParams, flatten_dict(data)
         )
         super().__init__(**prepared_args)
+
+    @staticmethod
+    def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
+        artemis_param_field_keys = [
+            "zocalo_environment",
+            "beamline",
+            "insertion_prefix",
+            "experiment_type",
+        ]
+        detector_field_keys = list(DetectorParams.__annotations__.keys())
+        # not an annotation but specified as field encoder in DetectorParams:
+        detector_field_keys.append("detector")
+        ispyb_field_keys = list(IspybParams.__annotations__.keys()) + list(
+            GridscanIspybParams.__annotations__.keys()
+        )
+
+        return artemis_param_field_keys, detector_field_keys, ispyb_field_keys
 
     @validator("experiment_params", pre=True)
     def _preprocess_experiment_params(
@@ -67,4 +91,8 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
         all_params["upper_left"] = np.array([0, 0, 0])
-        return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))
+        return ArtemisParameters(
+            **extract_artemis_params_from_flat_dict(
+                all_params, cls._artemis_param_key_definitions()
+            )
+        )

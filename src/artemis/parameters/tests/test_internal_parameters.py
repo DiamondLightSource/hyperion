@@ -8,20 +8,22 @@ from dodal.devices.fast_grid_scan import GridScanParams
 from pydantic import ValidationError
 
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
-    ISPYB_PARAM_DEFAULTS,
-    IspybParams,
+    GRIDSCAN_ISPYB_PARAM_DEFAULTS,
+    GridscanIspybParams,
 )
 from artemis.parameters import external_parameters
 from artemis.parameters.external_parameters import from_file
 from artemis.parameters.internal_parameters import (
-    ArtemisParameters,
     InternalParameters,
     extract_artemis_params_from_flat_dict,
     fetch_subdict_from_bucket,
     flatten_dict,
     get_extracted_experiment_and_flat_artemis_params,
 )
-from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+    GridscanArtemisParameters,
+)
 
 
 @pytest.fixture
@@ -50,12 +52,12 @@ def test_cant_initialise_abstract_internalparams():
 
 
 def test_ispyb_param_dict():
-    ispyb_params = IspybParams(**ISPYB_PARAM_DEFAULTS)
+    ispyb_params = GridscanIspybParams(**GRIDSCAN_ISPYB_PARAM_DEFAULTS)
     as_dict = ispyb_params.dict()
     assert isinstance(as_dict.get("position"), list)
-    modified_params = copy.deepcopy(ISPYB_PARAM_DEFAULTS)
+    modified_params = copy.deepcopy(GRIDSCAN_ISPYB_PARAM_DEFAULTS)
     modified_params["position"] = [123, 7777777, 3]
-    modified_ispyb_params = IspybParams(**modified_params)
+    modified_ispyb_params = GridscanIspybParams(**modified_params)
     assert ispyb_params != modified_ispyb_params
     assert isinstance(modified_ispyb_params.position, np.ndarray)
     modified_as_dict = modified_ispyb_params.dict()
@@ -92,12 +94,22 @@ def test_flatten():
 
 def test_artemis_params_needs_values_from_experiment(raw_params):
     extracted_artemis_param_dict = extract_artemis_params_from_flat_dict(
-        flatten_dict(raw_params)
+        flatten_dict(raw_params), FGSInternalParameters._artemis_param_key_definitions()
     )
     with pytest.raises(ValidationError):
-        artemis_params = ArtemisParameters(**extracted_artemis_param_dict)
+        artemis_params = GridscanArtemisParameters(**extracted_artemis_param_dict)
     with pytest.raises(UnboundLocalError):
         assert artemis_params is not None
+
+
+def test_artemis_parameters_only_from_file():
+    with open("src/artemis/parameters/tests/test_data/artemis_parameters.json") as f:
+        artemis_param_dict = json.load(f)
+    artemis_params_deserialised = GridscanArtemisParameters(**artemis_param_dict)
+    ispyb = artemis_params_deserialised.ispyb_params
+    detector = artemis_params_deserialised.detector_params
+    assert isinstance(ispyb, GridscanIspybParams)
+    assert isinstance(detector, DetectorParams)
 
 
 def test_artemis_params_can_be_deserialised_from_internal_representation(raw_params):
@@ -106,11 +118,11 @@ def test_artemis_params_can_be_deserialised_from_internal_representation(raw_par
     artemis_param_dict = json.loads(artemis_param_json)
     assert artemis_param_dict.get("ispyb_params") is not None
     assert artemis_param_dict.get("detector_params") is not None
-    artemis_params_deserialised = ArtemisParameters(**artemis_param_dict)
+    artemis_params_deserialised = GridscanArtemisParameters(**artemis_param_dict)
     assert internal_params.artemis_params == artemis_params_deserialised
     ispyb = artemis_params_deserialised.ispyb_params
     detector = artemis_params_deserialised.detector_params
-    assert isinstance(ispyb, IspybParams)
+    assert isinstance(ispyb, GridscanIspybParams)
     assert isinstance(detector, DetectorParams)
 
 

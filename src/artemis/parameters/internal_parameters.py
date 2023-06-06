@@ -5,10 +5,6 @@ from dodal.devices.eiger import DetectorParams
 from pydantic import BaseModel, root_validator
 from semver import Version
 
-from artemis.external_interaction.ispyb.ispyb_dataclass import (
-    ISPYB_PARAM_DEFAULTS,
-    IspybParams,
-)
 from artemis.parameters.constants import (
     DEFAULT_EXPERIMENT_TYPE,
     DETECTOR_PARAM_DEFAULTS,
@@ -41,14 +37,6 @@ class ArtemisParameters(BaseModel):
     insertion_prefix: str = SIM_INSERTION_PREFIX
     experiment_type: str = DEFAULT_EXPERIMENT_TYPE
     detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
-    ispyb_params: IspybParams = IspybParams(**ISPYB_PARAM_DEFAULTS)
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {
-            **DetectorParams.Config.json_encoders,
-            **IspybParams.Config.json_encoders,
-        }
 
 
 def flatten_dict(d: dict, parent_items: dict = {}) -> dict:
@@ -70,21 +58,6 @@ def flatten_dict(d: dict, parent_items: dict = {}) -> dict:
                 )
             items[k] = v
     return items
-
-
-def artemis_param_key_definitions():
-    artemis_param_field_keys = [
-        "zocalo_environment",
-        "beamline",
-        "insertion_prefix",
-        "experiment_type",
-    ]
-    detector_field_keys = list(DetectorParams.__annotations__.keys())
-    # not an annotation but specified as field encoder in DetectorParams:
-    detector_field_keys.append("detector")
-    ispyb_field_keys = list(IspybParams.__annotations__.keys())
-
-    return artemis_param_field_keys, detector_field_keys, ispyb_field_keys
 
 
 def fetch_subdict_from_bucket(
@@ -116,6 +89,7 @@ def get_extracted_experiment_and_flat_artemis_params(
 
 def extract_artemis_params_from_flat_dict(
     external_params: dict[str, Any],
+    artemis_param_key_definitions: tuple[list[str], list[str], list[str]],
 ) -> dict[str, Any]:
     all_params_bucket = flatten_dict(external_params)
 
@@ -123,7 +97,7 @@ def extract_artemis_params_from_flat_dict(
         artemis_param_field_keys,
         detector_field_keys,
         ispyb_field_keys,
-    ) = artemis_param_key_definitions()
+    ) = artemis_param_key_definitions
 
     artemis_params_args: dict[str, Any] = fetch_subdict_from_bucket(
         artemis_param_field_keys, all_params_bucket
@@ -147,7 +121,6 @@ class InternalParameters(BaseModel):
         use_enum_values = True
         arbitrary_types_allowed = True
         json_encoders = {
-            **ArtemisParameters.Config.json_encoders,
             ParameterVersion: lambda pv: str(pv),
         }
 
@@ -159,6 +132,11 @@ class InternalParameters(BaseModel):
     def _preprocess_all(cls, values):
         values["artemis_params"] = flatten_dict(values)
         return values
+
+    @staticmethod
+    @abstractmethod
+    def _artemis_param_key_definitions():
+        ...
 
     @abstractmethod
     def _preprocess_experiment_params(

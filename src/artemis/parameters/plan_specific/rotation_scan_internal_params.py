@@ -3,17 +3,42 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import numpy as np
+from dodal.devices.detector import DetectorParams
 from dodal.devices.motors import XYZLimitBundle
 from dodal.devices.zebra import RotationDirection
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic import BaseModel, validator
 
+from artemis.external_interaction.ispyb.ispyb_dataclass import (
+    GRIDSCAN_ISPYB_PARAM_DEFAULTS,
+    GridscanIspybParams,
+    IspybParams,
+    RotationIspybParams,
+)
+from artemis.parameters.constants import (
+    DEFAULT_EXPERIMENT_TYPE,
+    DETECTOR_PARAM_DEFAULTS,
+    SIM_BEAMLINE,
+    SIM_INSERTION_PREFIX,
+    SIM_ZOCALO_ENV,
+)
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
     InternalParameters,
     extract_artemis_params_from_flat_dict,
     extract_experiment_params_from_flat_dict,
 )
+
+
+class RotationArtemisParameters(ArtemisParameters):
+    ispyb_params: IspybParams = RotationIspybParams(**GRIDSCAN_ISPYB_PARAM_DEFAULTS)
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            **DetectorParams.Config.json_encoders,
+            **GridscanIspybParams.Config.json_encoders,
+        }
 
 
 class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
@@ -61,7 +86,24 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
 
 class RotationInternalParameters(InternalParameters):
     experiment_params: RotationScanParams
-    artemis_params: ArtemisParameters
+    artemis_params: RotationArtemisParameters
+
+    @staticmethod
+    def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
+        artemis_param_field_keys = [
+            "zocalo_environment",
+            "beamline",
+            "insertion_prefix",
+            "experiment_type",
+        ]
+        detector_field_keys = list(DetectorParams.__annotations__.keys())
+        # not an annotation but specified as field encoder in DetectorParams:
+        detector_field_keys.append("detector")
+        ispyb_field_keys = list(IspybParams.__annotations__.keys()) + list(
+            GridscanIspybParams.__annotations__.keys()
+        )
+
+        return artemis_param_field_keys, detector_field_keys, ispyb_field_keys
 
     @validator("experiment_params", pre=True)
     def _preprocess_experiment_params(
@@ -88,4 +130,8 @@ class RotationInternalParameters(InternalParameters):
         all_params["num_triggers"] = 1
         all_params["num_images_per_trigger"] = all_params["num_images"]
         all_params["upper_left"] = np.array(all_params["upper_left"])
-        return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))
+        return ArtemisParameters(
+            **extract_artemis_params_from_flat_dict(
+                all_params, cls._artemis_param_key_definitions()
+            )
+        )
