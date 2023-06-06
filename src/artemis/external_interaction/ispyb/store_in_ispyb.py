@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 import dodal.devices.oav.utils as oav_utils
 import ispyb
 import ispyb.sqlalchemy
-import numpy as np
 from sqlalchemy.connectors import Connector
 
 from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
