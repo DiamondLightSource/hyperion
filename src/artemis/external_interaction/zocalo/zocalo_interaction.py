@@ -8,11 +8,11 @@ from typing import Optional
 import workflows.recipe
 import workflows.transport
 import zocalo.configuration
+from numpy import ndarray
 from workflows.transport import lookup
 
 import artemis.log
 from artemis.exceptions import WarningException
-from artemis.utils.utils import Point3D
 
 TIMEOUT = 90
 
@@ -81,8 +81,8 @@ class ZocaloInteractor:
         )
 
     def wait_for_result(
-        self, data_collection_group_id: int, timeout: int | None = None
-    ) -> Point3D:
+        self, data_collection_group_id: int, timeout: int = None
+    ) -> ndarray:
         """Block until a result is received from Zocalo.
         Args:
             data_collection_group_id (int): The ID of the data collection group representing

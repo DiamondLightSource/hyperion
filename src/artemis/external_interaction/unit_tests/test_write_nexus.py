@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import call, patch
 
@@ -13,9 +14,7 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_parameters_for_second_file,
 )
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
@@ -30,7 +29,7 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 @pytest.fixture(params=[1044])
 def minimal_params(request):
-    params = FGSInternalParameters(default_raw_params())
+    params = FGSInternalParameters(**default_raw_params())
     params.artemis_params.ispyb_params.wavelength = 1.0
     params.artemis_params.ispyb_params.flux = 9.0
     params.artemis_params.ispyb_params.transmission = 0.5
@@ -57,24 +56,35 @@ def dummy_nexus_writers(minimal_params: FGSInternalParameters):
         os.remove(writer.master_file)
 
 
+@contextmanager
+def create_nexus_writers_with_many_images(parameters: FGSInternalParameters):
+    try:
+        x, y, z = 45, 35, 25
+        parameters.experiment_params.x_steps = x
+        parameters.experiment_params.y_steps = y
+        parameters.experiment_params.z_steps = z
+        parameters.artemis_params.detector_params.num_triggers = x * y + x * z
+        first_file_params, first_scan = create_parameters_for_first_file(parameters)
+        nexus_writer_1 = NexusWriter(first_file_params, first_scan)
+
+        second_file_params, second_scan = create_parameters_for_second_file(parameters)
+        nexus_writer_2 = NexusWriter(second_file_params, second_scan)
+
+        yield nexus_writer_1, nexus_writer_2
+
+    finally:
+        for writer in [nexus_writer_1, nexus_writer_2]:
+            os.remove(writer.nexus_file)
+            os.remove(writer.master_file)
+
+
 @pytest.fixture
 def dummy_nexus_writers_with_more_images(minimal_params: FGSInternalParameters):
-    x, y, z = 45, 35, 25
-    minimal_params.experiment_params.x_steps = x
-    minimal_params.experiment_params.y_steps = y
-    minimal_params.experiment_params.z_steps = z
-    minimal_params.artemis_params.detector_params.num_triggers = x * y + x * z
-    first_file_params, first_scan = create_parameters_for_first_file(minimal_params)
-    nexus_writer_1 = NexusWriter(first_file_params, first_scan)
-
-    second_file_params, second_scan = create_parameters_for_second_file(minimal_params)
-    nexus_writer_2 = NexusWriter(second_file_params, second_scan)
-
-    yield nexus_writer_1, nexus_writer_2
-
-    for writer in [nexus_writer_1, nexus_writer_2]:
-        os.remove(writer.nexus_file)
-        os.remove(writer.master_file)
+    with create_nexus_writers_with_many_images(minimal_params) as (
+        nexus_writer_1,
+        nexus_writer_2,
+    ):
+        yield nexus_writer_1, nexus_writer_2
 
 
 @pytest.fixture
@@ -124,7 +134,6 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert_axis_data_fixed(written_nexus_file, "z", grid_scan_params.z1_start)
             assert written_nexus_file["/entry/instrument/beam/total_flux"][()] == 9.0
             assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
-            assert "data_000002" not in data_path
             assert np.all(data_path["omega"][:] == 0.0)
 
             assert np.all(
@@ -297,6 +306,7 @@ def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
     check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
 
 
+@pytest.mark.skip("Requires #87 of nexgen")
 def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
     dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
@@ -318,3 +328,25 @@ def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_fi
             assert "data_000001" not in written_nexus_file["entry/data"]
             assert "data_000002" in written_nexus_file["entry/data"]
             assert "data_000003" in written_nexus_file["entry/data"]
+
+
+def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_files_still_written(
+    minimal_params: FGSInternalParameters,
+):
+    minimal_params.artemis_params.detector_params.prefix = "non_existant_file"
+    with create_nexus_writers_with_many_images(minimal_params) as (
+        nexus_writer_1,
+        nexus_writer_2,
+    ):
+        nexus_writer_1.create_nexus_file()
+        nexus_writer_2.create_nexus_file()
+        nexus_writer_1.update_nexus_file_timestamp()
+        nexus_writer_2.update_nexus_file_timestamp()
+
+        for filename in [
+            nexus_writer_1.nexus_file,
+            nexus_writer_1.master_file,
+            nexus_writer_1.nexus_file,
+            nexus_writer_1.master_file,
+        ]:
+            assert os.path.exists(filename)

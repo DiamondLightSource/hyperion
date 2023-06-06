@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
@@ -10,12 +11,61 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 )
 from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.internal_parameters import (
-    InternalParameters,
+from artemis.parameters.external_parameters import from_file as raw_params_from_file
+from artemis.parameters.internal_parameters import InternalParameters
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
 )
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+
+
+@pytest.fixture
+def test_fgs_params():
+    return FGSInternalParameters(**raw_params_from_file())
+
+
+@pytest.fixture
+def test_rotation_params():
+    return RotationInternalParameters(
+        **raw_params_from_file(
+            "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+        )
+    )
+
+
+@pytest.fixture
+def eiger():
+    return i03.eiger(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def smargon():
+    smargon = i03.smargon(fake_with_ophyd_sim=True)
+    smargon.x.user_setpoint._use_limits = False
+    smargon.y.user_setpoint._use_limits = False
+    smargon.z.user_setpoint._use_limits = False
+    smargon.omega.user_setpoint._use_limits = False
+    return smargon
+
+
+@pytest.fixture
+def zebra():
+    return i03.zebra(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def backlight():
+    return i03.backlight(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def detector_motion():
+    return i03.detector_motion(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def RE():
+    return RunEngine({})
 
 
 @pytest.fixture()
@@ -28,13 +78,8 @@ def test_config_files():
 
 
 @pytest.fixture
-def RE():
-    return RunEngine({})
-
-
-@pytest.fixture
 def test_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 @pytest.fixture

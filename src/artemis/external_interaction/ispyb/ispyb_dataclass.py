@@ -1,10 +1,8 @@
-from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from dataclasses_json import config, dataclass_json
-
-from artemis.utils.utils import Point3D
+import numpy as np
+from pydantic import BaseModel, validator
 
 ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
@@ -13,8 +11,8 @@ ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    "upper_left": Point3D(x=0, y=0, z=0),
-    "position": Point3D(x=0, y=0, z=0),
+    "upper_left": [0, 0, 0],
+    "position": [0, 0, 0],
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission": 1.0,
@@ -33,28 +31,40 @@ ISPYB_PARAM_DEFAULTS = {
 }
 
 
-@dataclass_json
-@dataclass
-class IspybParams:
+class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
+    upper_left: np.ndarray
+    position: np.ndarray
 
-    upper_left: Point3D = field(
-        # in px on the image
-        metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict),
-        )
-    )
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {np.ndarray: lambda a: a.tolist()}
 
-    position: Point3D = field(
-        # motor position
-        metadata=config(
-            encoder=lambda mytuple: mytuple._asdict(),
-            decoder=lambda mydict: Point3D(**mydict),
-        )
-    )
+    def dict(self, **kwargs):
+        as_dict = super().dict(**kwargs)
+        as_dict["upper_left"] = as_dict["upper_left"].tolist()
+        as_dict["position"] = as_dict["position"].tolist()
+        return as_dict
+
+    @validator("upper_left", pre=True)
+    def _parse_upper_left(
+        cls, upper_left: list[int | float] | np.ndarray, values: Dict[str, Any]
+    ) -> np.ndarray:
+        assert len(upper_left) == 3
+        if isinstance(upper_left, np.ndarray):
+            return upper_left
+        return np.array(upper_left)
+
+    @validator("position", pre=True)
+    def _parse_position(
+        cls, position: list[int | float] | np.ndarray, values: Dict[str, Any]
+    ) -> np.ndarray:
+        assert len(position) == 3
+        if isinstance(position, np.ndarray):
+            return position
+        return np.array(position)
 
     transmission: float
     flux: float
@@ -76,6 +86,12 @@ class IspybParams:
     slit_gap_size_y: Optional[float] = None
     xtal_snapshots_omega_start: Optional[List[str]] = None
     xtal_snapshots_omega_end: Optional[List[str]] = None
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, IspybParams):
+            return NotImplemented
+        else:
+            return self.json() == other.json()
 
 
 class Orientation(Enum):

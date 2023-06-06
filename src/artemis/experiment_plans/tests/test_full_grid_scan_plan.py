@@ -2,8 +2,8 @@ from typing import Generator
 from unittest.mock import patch
 
 import pytest
+from dodal.beamlines.i03 import detector_motion
 from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.i03 import detector_motion
 
 from artemis.experiment_plans.full_grid_scan import (
     create_devices,
