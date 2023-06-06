@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
 )
+from artemis.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBHandlerCallback,
+)
 from artemis.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileHandlerCallback,
 )
@@ -21,11 +24,13 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
     Bluesky.preprocessors.subs_decorator()."""
 
     nexus_handler: RotationNexusFileHandlerCallback
+    ispyb_handler: RotationISPyBHandlerCallback
 
     @classmethod
     def from_params(cls, parameters: InternalParameters):
         nexus_handler = RotationNexusFileHandlerCallback(parameters)
+        ispyb_handler = RotationISPyBHandlerCallback(parameters)
         callback_collection = cls(
-            nexus_handler=nexus_handler,
+            nexus_handler=nexus_handler, ispyb_handler=ispyb_handler
         )
         return callback_collection

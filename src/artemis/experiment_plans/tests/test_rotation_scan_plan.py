@@ -182,3 +182,42 @@ def test_cleanup_happens(
                 )
             )
         cleanup_plan.assert_called_once()
+
+
+@pytest.mark.s03()
+@patch("bluesky.plan_stubs.wait")
+def test_ispyb_deposition_in_plan(
+    bps_wait: MagicMock,
+    RE,
+    test_rotation_params,
+):
+    def fake_create_devices():
+        devices = {
+            "eiger": i03.eiger(wait_for_connection=False, fake_with_ophyd_sim=True),
+            "smargon": i03.smargon(),
+            "zebra": i03.zebra(),
+            "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),
+            "backlight": i03.backlight(fake_with_ophyd_sim=True),
+        }
+        return devices
+
+    undulator = i03.undulator(fake_with_ophyd_sim=True)
+    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
+    slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+
+    with (
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.create_devices",
+            fake_create_devices,
+        ),
+        patch("dodal.beamlines.i03.undulator", return_value=undulator),
+        patch("dodal.beamlines.i03.synchrotron", return_value=synchrotron),
+        patch("dodal.beamlines.i03.s4_slit_gaps", return_value=slit_gaps),
+        patch("dodal.devices.eiger.EigerDetector.stage"),
+    ):
+        RE(
+            get_plan(
+                test_rotation_params,
+                RotationCallbackCollection.from_params(test_rotation_params),
+            )
+        )

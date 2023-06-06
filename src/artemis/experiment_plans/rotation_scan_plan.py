@@ -10,6 +10,7 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import RotationDirection, Zebra
+from ophyd.device import Device
 from ophyd.epics_motor import EpicsMotor
 
 from artemis.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
@@ -32,12 +33,17 @@ if TYPE_CHECKING:
     )
 
 
-def create_devices():
-    i03.eiger(wait_for_connection=False)
-    i03.smargon()
-    i03.zebra()
-    i03.detector_motion()
-    i03.backlight()
+def create_devices() -> dict[str, Device]:
+    """Ensures necessary devices have been instantiated and returns a dict with
+    references to them"""
+    devices = {
+        "eiger": i03.eiger(wait_for_connection=False),
+        "smargon": i03.smargon(),
+        "zebra": i03.zebra(),
+        "detector_motion": i03.detector_motion(),
+        "backlight": i03.backlight(),
+    }
+    return devices
 
 
 DIRECTION = RotationDirection.NEGATIVE
@@ -164,26 +170,15 @@ def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
 def get_plan(
     params: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
-    eiger = i03.eiger(wait_for_connection=False)
-    smargon = i03.smargon()
-    zebra = i03.zebra()
-    detector_motion = i03.detector_motion()
-    backlight = i03.backlight()
-    devices = {
-        "eiger": eiger,
-        "smargon": smargon,
-        "zebra": zebra,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
-    }
+    devices = create_devices()
 
     @bpp.subs_decorator(list(subscriptions))
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
-        eiger.set_detector_parameters(params.artemis_params.detector_params)
+        devices["eiger"].set_detector_parameters(params.artemis_params.detector_params)
 
-        @bpp.stage_decorator([eiger])
+        @bpp.stage_decorator([devices["eiger"]])
         @bpp.set_run_key_decorator("rotation_scan_with_cleanup")
         @bpp.run_decorator(md={"subplan_name": "rotation_scan_with_cleanup"})
         @bpp.finalize_decorator(lambda: cleanup_plan(**devices))

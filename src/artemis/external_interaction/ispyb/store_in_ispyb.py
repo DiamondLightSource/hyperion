@@ -227,11 +227,12 @@ class StoreInIspyb(ABC):
 
 
 class StoreRotationInIspyb(StoreInIspyb):
-    ispyb_params: RotationIspybParams | None = None
+    ispyb_params: RotationIspybParams
     datacollection_id: int | None = None
 
-    def __init__(self, ispyb_config, parameters=None) -> None:
-        self.full_params: RotationInternalParameters | None = parameters
+    def __init__(self, ispyb_config, parameters: RotationInternalParameters) -> None:
+        self.full_params: RotationInternalParameters = parameters
+        self.ispyb_params = self.full_params.artemis_params.ispyb_params
         self.experiment_type = "SAD"
         super().__init__(ispyb_config, parameters)
 
