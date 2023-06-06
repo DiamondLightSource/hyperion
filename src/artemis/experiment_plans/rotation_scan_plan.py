@@ -3,12 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
-from bluesky.preprocessors import (
-    finalize_decorator,
-    finalize_wrapper,
-    stage_decorator,
-    subs_decorator,
-)
+import bluesky.preprocessors as bpp
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
@@ -96,6 +91,8 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
     )
 
 
+@bpp.set_run_key_decorator("rotation_scan_main")
+@bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
 def rotation_scan_plan(
     params: RotationInternalParameters,
     eiger: EigerDetector,
@@ -161,7 +158,7 @@ def rotation_scan_plan(
 
 def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
     yield from cleanup_sample_environment(zebra, detector_motion)
-    yield from finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
+    yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
 
 def get_plan(
@@ -180,14 +177,16 @@ def get_plan(
         "backlight": backlight,
     }
 
-    @subs_decorator(list(subscriptions))
+    @bpp.subs_decorator(list(subscriptions))
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
         eiger.set_detector_parameters(params.artemis_params.detector_params)
 
-        @stage_decorator([eiger])
-        @finalize_decorator(lambda: cleanup_plan(**devices))
+        @bpp.stage_decorator([eiger])
+        @bpp.set_run_key_decorator("rotation_scan_with_cleanup")
+        @bpp.run_decorator(md={"subplan_name": "rotation_scan_with_cleanup"})
+        @bpp.finalize_decorator(lambda: cleanup_plan(**devices))
         def rotation_with_cleanup_and_stage(params):
             yield from rotation_scan_plan(params, **devices)
 

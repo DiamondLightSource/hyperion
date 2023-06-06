@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.utils import Msg
+from dodal.beamlines import i03
 from ophyd.status import Status
 
 from artemis.experiment_plans.rotation_scan_plan import (
@@ -110,15 +111,29 @@ def test_rotation_plan(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        __fake_read,
+    undulator = i03.undulator(fake_with_ophyd_sim=True)
+    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
+    slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+
+    with (
+        patch("dodal.beamlines.i03.undulator", return_value=undulator),
+        patch("dodal.beamlines.i03.synchrotron", return_value=synchrotron),
+        patch("dodal.beamlines.i03.s4_slit_gaps", return_value=slit_gaps),
     ):
-        RE(
-            rotation_scan_plan(
-                test_rotation_params, eiger, smargon, zebra, backlight, detector_motion
+        with patch(
+            "bluesky.preprocessors.__read_and_stash_a_motor",
+            __fake_read,
+        ):
+            RE(
+                rotation_scan_plan(
+                    test_rotation_params,
+                    eiger,
+                    smargon,
+                    zebra,
+                    backlight,
+                    detector_motion,
+                )
             )
-        )
 
     # once for each velocity set and once for each position set for a total of 4 calls
     assert mock_omega_sets.call_count == 4
