@@ -12,13 +12,6 @@ from artemis.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
     IspybParams,
 )
-from artemis.parameters.constants import (
-    DEFAULT_EXPERIMENT_TYPE,
-    DETECTOR_PARAM_DEFAULTS,
-    SIM_BEAMLINE,
-    SIM_INSERTION_PREFIX,
-    SIM_ZOCALO_ENV,
-)
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
     InternalParameters,
@@ -31,6 +24,9 @@ class GridscanArtemisParameters(ArtemisParameters):
     ispyb_params: GridscanIspybParams = GridscanIspybParams(
         **GRIDSCAN_ISPYB_PARAM_DEFAULTS
     )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)  # TODO REMOVE JUST FOR DEBUGGING
 
     class Config:
         arbitrary_types_allowed = True
@@ -94,4 +90,4 @@ class FGSInternalParameters(InternalParameters):
         artemis_param_dict = extract_artemis_params_from_flat_dict(
             all_params, cls._artemis_param_key_definitions()
         )
-        return ArtemisParameters(**artemis_param_dict)
+        return GridscanArtemisParameters(**artemis_param_dict)
