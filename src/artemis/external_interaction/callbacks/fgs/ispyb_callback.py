@@ -7,9 +7,9 @@ from bluesky.callbacks import CallbackBase
 
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.ispyb.store_in_ispyb import (
-    StoreInIspyb,
-    StoreInIspyb2D,
-    StoreInIspyb3D,
+    Store2DGridscanInIspyb,
+    Store3DGridscanInIspyb,
+    StoreGridscanInIspyb,
 )
 from artemis.log import LOGGER, set_dcgid_tag
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
@@ -42,10 +42,10 @@ class FGSISPyBHandlerCallback(CallbackBase):
                 "Using dev ISPyB database. If you want to use the real database, please"
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
-        self.ispyb: StoreInIspyb = (
-            StoreInIspyb3D(ispyb_config, self.params)
+        self.ispyb: StoreGridscanInIspyb = (
+            Store3DGridscanInIspyb(ispyb_config, self.params)
             if self.params.experiment_params.is_3d_grid_scan
-            else StoreInIspyb2D(ispyb_config, self.params)
+            else Store2DGridscanInIspyb(ispyb_config, self.params)
         )
         self.ispyb_ids: tuple = (None, None, None)
         self.uid_to_finalize_on = None

@@ -8,10 +8,12 @@ from typing import TYPE_CHECKING
 import dodal.devices.oav.utils as oav_utils
 import ispyb
 import ispyb.sqlalchemy
-import numpy as np
+from dodal.devices.detector import DetectorParams
+from ispyb.sp.core import Core
+from ispyb.sp.mxacquisition import MXAcquisition
 from sqlalchemy.connectors import Connector
 
-from artemis.external_interaction.ispyb.ispyb_dataclass import Orientation
+from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams, Orientation
 from artemis.log import LOGGER
 from artemis.tracing import TRACER
 
@@ -22,28 +24,52 @@ EIGER_FILE_SUFFIX = "h5"
 
 
 class StoreInIspyb(ABC):
+    ispyb_params: IspybParams | None = None
+    detector_params: DetectorParams | None = None
+    run_number: int | None = None
+    omega_start: int | None = None
+    experiment_type: str | None = None
+    xtal_snapshots: list[str] | None = None
+    conn: Connector = None
+    mx_acquisition: MXAcquisition | None = None
+    core: Core | None = None
+    datacollection_ids: tuple[int, ...] | None = None
+    datacollection_group_id: int | None = None
+
+    def __init__(self, ispyb_config, parameters=None):
+        self.ISPYB_CONFIG_PATH: str = ispyb_config
+        self.full_params: InternalParameters = parameters
+
+    @abstractmethod
+    def _store_scan_data(self):
+        pass
+
+    @abstractmethod
+    def begin_deposition(self, success: str, reason: str):
+        pass
+
+    @abstractmethod
+    def end_deposition(self, success: str, reason: str):
+        pass
+
+    def append_to_comment(
+        self, datacollection_id: int, comment: str, delimiter: str = " "
+    ) -> None:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
+            self.mx_acquisition = self.conn.mx_acquisition
+            self.mx_acquisition.update_data_collection_append_comments(
+                datacollection_id, comment, delimiter
+            )
+
+
+class StoreGridscanInIspyb(StoreInIspyb):
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
     def __init__(self, ispyb_config, parameters=None):
-        self.ISPYB_CONFIG_PATH = ispyb_config
-        self.full_params = parameters
-        self.ispyb_params = None
-        self.detector_params = None
-        self.run_number = None
-        self.omega_start = None
-        self.experiment_type = None
-        self.xtal_snapshots = None
+        super().__init__(ispyb_config, parameters)
         self.upper_left = None
         self.y_steps = None
         self.y_step_size = None
-
-        # writing to ispyb
-        self.conn: Connector = None
-        self.mx_acquisition = None
-        self.core = None
-
-        self.datacollection_ids = None
-        self.datacollection_group_id = None
         self.grid_ids = None
 
     def begin_deposition(self):
@@ -71,6 +97,10 @@ class StoreInIspyb(ABC):
         else:
             run_status = "DataCollection Successful"
         current_time = self.get_current_time_string()
+        assert (
+            self.datacollection_ids is not None
+        ), "Can't end ISPyB deposition, datacollection IDs are missing"
+        assert self.datacollection_group_id is not None
         for id in self.datacollection_ids:
             self.update_grid_scan_with_end_time_and_status(
                 current_time, run_status, reason, id, self.datacollection_group_id
@@ -83,12 +113,10 @@ class StoreInIspyb(ABC):
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
-        self.upper_left = np.array(
-            [
-                self.ispyb_params.upper_left[0],
-                self.ispyb_params.upper_left[1],
-            ]
-        )
+        self.upper_left = [
+            int(self.ispyb_params.upper_left[0]),
+            int(self.ispyb_params.upper_left[1]),
+        ]
         self.y_steps = full_params.experiment_params.y_steps
         self.y_step_size = full_params.experiment_params.y_step_size
 
@@ -98,19 +126,6 @@ class StoreInIspyb(ABC):
 
             return self._store_scan_data()
 
-    @abstractmethod
-    def _store_scan_data(self):
-        pass
-
-    def append_to_comment(
-        self, datacollection_id: int, comment: str, delimiter: str = " "
-    ) -> None:
-        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
-            self.mx_acquisition = self.conn.mx_acquisition
-            self.mx_acquisition.update_data_collection_append_comments(
-                datacollection_id, comment, delimiter
-            )
-
     def update_grid_scan_with_end_time_and_status(
         self,
         end_time: str,
@@ -119,11 +134,13 @@ class StoreInIspyb(ABC):
         datacollection_id: int,
         datacollection_group_id: int,
     ) -> None:
+        assert self.ispyb_params is not None
+        assert self.detector_params is not None
         if reason is not None and reason != "":
             self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
-            self.mx_acquisition = self.conn.mx_acquisition
+            self.mx_acquisition: MXAcquisition = self.conn.mx_acquisition
 
             params = self.mx_acquisition.get_data_collection_params()
             params["id"] = datacollection_id
@@ -134,6 +151,8 @@ class StoreInIspyb(ABC):
             self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
+        assert self.ispyb_params is not None
+
         params = self.mx_acquisition.get_dc_grid_params()
 
         params["parentid"] = ispyb_data_collection_id
@@ -152,6 +171,8 @@ class StoreInIspyb(ABC):
         return self.mx_acquisition.upsert_dc_grid(list(params.values()))
 
     def _construct_comment(self) -> str:
+        assert self.ispyb_params is not None
+
         bottom_right = oav_utils.bottom_right_from_top_left(
             self.upper_left,
             self.full_params.experiment_params.x_steps,
@@ -173,6 +194,10 @@ class StoreInIspyb(ABC):
 
     @TRACER.start_as_current_span("store_ispyb_datacollection_table")
     def _store_data_collection_table(self, data_collection_group_id: int) -> int:
+        assert self.ispyb_params is not None
+        assert self.detector_params is not None
+        assert self.core is not None
+        assert self.xtal_snapshots is not None
         try:
             session_id = self.core.retrieve_visit_id(self.get_visit_string())
         except ispyb.NoResult:
@@ -236,6 +261,7 @@ class StoreInIspyb(ABC):
         return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_position_table(self, dc_id: int) -> int:
+        assert self.ispyb_params is not None
         params = self.mx_acquisition.get_dc_position_params()
 
         params["id"] = dc_id
@@ -243,11 +269,13 @@ class StoreInIspyb(ABC):
             params["pos_x"],
             params["pos_y"],
             params["pos_z"],
-        ) = self.ispyb_params.position
+        ) = self.ispyb_params.position.tolist()
 
         return self.mx_acquisition.update_dc_position(list(params.values()))
 
     def _store_data_collection_group_table(self) -> int:
+        assert self.core is not None
+        assert self.ispyb_params is not None
         try:
             session_id = self.core.retrieve_visit_id(self.get_visit_string())
         except ispyb.NoResult:
@@ -279,7 +307,7 @@ class StoreInIspyb(ABC):
         return match.group(1) if match else None
 
 
-class StoreInIspyb3D(StoreInIspyb):
+class Store3DGridscanInIspyb(StoreGridscanInIspyb):
     def __init__(self, ispyb_config, parameters=None):
         super().__init__(ispyb_config, parameters)
         self.experiment_type = "Mesh3D"
@@ -315,17 +343,15 @@ class StoreInIspyb3D(StoreInIspyb):
         self.omega_start += 90
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
-        self.upper_left = np.array(
-            [
-                self.ispyb_params.upper_left[0],
-                self.ispyb_params.upper_left[2],
-            ]
-        )
+        self.upper_left = [
+            int(self.ispyb_params.upper_left[0]),
+            int(self.ispyb_params.upper_left[2]),
+        ]
         self.y_steps = self.full_params.experiment_params.z_steps
         self.y_step_size = self.full_params.experiment_params.z_step_size
 
 
-class StoreInIspyb2D(StoreInIspyb):
+class Store2DGridscanInIspyb(StoreGridscanInIspyb):
     def __init__(self, ispyb_config, parameters=None):
         super().__init__(ispyb_config, parameters)
         self.experiment_type = "mesh"

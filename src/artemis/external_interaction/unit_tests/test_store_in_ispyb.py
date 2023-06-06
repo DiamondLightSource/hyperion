@@ -7,8 +7,8 @@ from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
 from artemis.external_interaction.ispyb.store_in_ispyb import (
-    StoreInIspyb2D,
-    StoreInIspyb3D,
+    Store2DGridscanInIspyb,
+    Store3DGridscanInIspyb,
 )
 from artemis.parameters.constants import SIM_ISPYB_CONFIG
 from artemis.parameters.external_parameters import from_file as default_raw_params
@@ -34,7 +34,7 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params):
-    store_in_ispyb_2d = StoreInIspyb2D(SIM_ISPYB_CONFIG, dummy_params)
+    store_in_ispyb_2d = Store2DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
     store_in_ispyb_2d.get_current_datacollection_comment = MagicMock()
     store_in_ispyb_2d.get_current_datacollection_comment.return_value = ""
     return store_in_ispyb_2d
@@ -42,7 +42,7 @@ def dummy_ispyb(dummy_params):
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params):
-    store_in_ispyb_3d = StoreInIspyb3D(SIM_ISPYB_CONFIG, dummy_params)
+    store_in_ispyb_3d = Store3DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
     store_in_ispyb_3d.get_current_datacollection_comment = MagicMock()
     store_in_ispyb_3d.get_current_datacollection_comment.return_value = ""
     return store_in_ispyb_3d
@@ -97,7 +97,9 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
 
 @patch("ispyb.open", new_callable=mock_open)
 def test_store_3d_grid_scan(
-    ispyb_conn, dummy_ispyb_3d: StoreInIspyb3D, dummy_params: FGSInternalParameters
+    ispyb_conn,
+    dummy_ispyb_3d: Store3DGridscanInIspyb,
+    dummy_params: FGSInternalParameters,
 ):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
@@ -225,7 +227,7 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
 
 @patch("ispyb.open")
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
-    ispyb_conn, dummy_ispyb: StoreInIspyb2D, dummy_params: FGSInternalParameters
+    ispyb_conn, dummy_ispyb: Store2DGridscanInIspyb, dummy_params: FGSInternalParameters
 ):
     expected_sample_id = "0001"
     dummy_params.artemis_params.ispyb_params.sample_id = expected_sample_id
@@ -242,7 +244,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
 @patch("ispyb.open")
 def test_fail_result_run_results_in_bad_run_status(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: Store2DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -265,7 +267,7 @@ def test_fail_result_run_results_in_bad_run_status(
 @patch("ispyb.open")
 def test_no_exception_during_run_results_in_good_run_status(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: Store2DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -286,7 +288,7 @@ def test_no_exception_during_run_results_in_good_run_status(
 @patch("ispyb.open")
 def test_ispyb_deposition_comment_correct(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: Store2DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -306,7 +308,7 @@ def test_ispyb_deposition_comment_correct(
 @patch("ispyb.open")
 def test_ispyb_deposition_rounds_to_int(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: Store2DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -329,7 +331,7 @@ def test_ispyb_deposition_rounds_to_int(
 @patch("ispyb.open")
 def test_ispyb_deposition_comment_for_3D_correct(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb_3d: StoreInIspyb3D,
+    dummy_ispyb_3d: Store3DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -351,7 +353,7 @@ def test_ispyb_deposition_comment_for_3D_correct(
 
 @patch("ispyb.open")
 def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
-    ispyb_conn, dummy_ispyb: StoreInIspyb2D, dummy_params: FGSInternalParameters
+    ispyb_conn, dummy_ispyb: Store2DGridscanInIspyb, dummy_params: FGSInternalParameters
 ):
     expected_number_of_steps = 200 * 3
     dummy_params.experiment_params.x_steps = 200

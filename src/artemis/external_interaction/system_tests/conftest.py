@@ -11,8 +11,8 @@ from sqlalchemy.orm import sessionmaker
 
 import artemis.external_interaction.zocalo.zocalo_interaction
 from artemis.external_interaction.ispyb.store_in_ispyb import (
-    StoreInIspyb2D,
-    StoreInIspyb3D,
+    Store2DGridscanInIspyb,
+    Store3DGridscanInIspyb,
 )
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
@@ -76,7 +76,7 @@ def fetch_comment() -> Callable:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = FGSInternalParameters(default_raw_params())
+    dummy_params = FGSInternalParameters(**default_raw_params())
     dummy_params.artemis_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.artemis_params.ispyb_params.microns_per_pixel_x = 0.8
     dummy_params.artemis_params.ispyb_params.microns_per_pixel_y = 0.8
@@ -87,13 +87,13 @@ def dummy_params():
 
 
 @pytest.fixture
-def dummy_ispyb(dummy_params) -> StoreInIspyb2D:
-    return StoreInIspyb2D(ISPYB_CONFIG, dummy_params)
+def dummy_ispyb(dummy_params) -> Store2DGridscanInIspyb:
+    return Store2DGridscanInIspyb(ISPYB_CONFIG, dummy_params)
 
 
 @pytest.fixture
-def dummy_ispyb_3d(dummy_params) -> StoreInIspyb3D:
-    return StoreInIspyb3D(ISPYB_CONFIG, dummy_params)
+def dummy_ispyb_3d(dummy_params) -> Store3DGridscanInIspyb:
+    return Store3DGridscanInIspyb(ISPYB_CONFIG, dummy_params)
 
 
 @pytest.fixture
