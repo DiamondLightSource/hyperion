@@ -13,12 +13,23 @@ from ispyb.sp.core import Core
 from ispyb.sp.mxacquisition import MXAcquisition
 from sqlalchemy.connectors import Connector
 
-from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams, Orientation
+from artemis.external_interaction.ispyb.ispyb_dataclass import (
+    GridscanIspybParams,
+    IspybParams,
+    Orientation,
+    RotationIspybParams,
+)
 from artemis.log import LOGGER
 from artemis.tracing import TRACER
 
 if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters import InternalParameters
+    from artemis.parameters.plan_specific.fgs_internal_params import (
+        FGSInternalParameters,
+    )
+    from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+        RotationInternalParameters,
+    )
+
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
 
@@ -36,9 +47,8 @@ class StoreInIspyb(ABC):
     datacollection_ids: tuple[int, ...] | None = None
     datacollection_group_id: int | None = None
 
-    def __init__(self, ispyb_config, parameters=None):
+    def __init__(self, ispyb_config, parameters=None) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
-        self.full_params: InternalParameters = parameters
 
     @abstractmethod
     def _store_scan_data(self):
@@ -62,15 +72,42 @@ class StoreInIspyb(ABC):
             )
 
 
+class StoreRotationInIspyb(StoreInIspyb):
+    ispyb_params: RotationIspybParams | None = None
+
+    def __init__(self, ispyb_config, parameters=None) -> None:
+        self.full_params: RotationInternalParameters | None = parameters
+        super().__init__(ispyb_config, parameters)
+
+    def store_rotation_scan(self):
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
+            self.mx_acquisition = self.conn.mx_acquisition
+            self.core = self.conn.core
+        return self._store_scan_data()
+
+    def _store_scan_data(self):
+        pass
+
+    @abstractmethod
+    def begin_deposition(self, success: str, reason: str):
+        pass
+
+    @abstractmethod
+    def end_deposition(self, success: str, reason: str):
+        pass
+
+
 class StoreGridscanInIspyb(StoreInIspyb):
     VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
+    ispyb_params: GridscanIspybParams | None = None
+    supper_left: list[int] | None = None
+    y_steps: int | None = None
+    y_step_size: int | None = None
+    grid_ids: tuple[int, ...] | None = None
 
-    def __init__(self, ispyb_config, parameters=None):
+    def __init__(self, ispyb_config, parameters=None) -> None:
+        self.full_params: FGSInternalParameters | None = parameters
         super().__init__(ispyb_config, parameters)
-        self.upper_left = None
-        self.y_steps = None
-        self.y_step_size = None
-        self.grid_ids = None
 
     def begin_deposition(self):
         (
@@ -106,7 +143,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
                 current_time, run_status, reason, id, self.datacollection_group_id
             )
 
-    def store_grid_scan(self, full_params: InternalParameters):
+    def store_grid_scan(self, full_params: FGSInternalParameters):
         self.full_params = full_params
         self.ispyb_params = full_params.artemis_params.ispyb_params
         self.detector_params = full_params.artemis_params.detector_params
@@ -152,6 +189,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
         assert self.ispyb_params is not None
+        assert self.full_params is not None
+        assert self.upper_left is not None
 
         params = self.mx_acquisition.get_dc_grid_params()
 
@@ -172,6 +211,9 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def _construct_comment(self) -> str:
         assert self.ispyb_params is not None
+        assert self.full_params is not None
+        assert self.upper_left is not None
+        assert self.y_step_size is not None
 
         bottom_right = oav_utils.bottom_right_from_top_left(
             self.upper_left,
@@ -197,6 +239,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         assert self.ispyb_params is not None
         assert self.detector_params is not None
         assert self.core is not None
+        assert self.full_params is not None
         assert self.xtal_snapshots is not None
         try:
             session_id = self.core.retrieve_visit_id(self.get_visit_string())
