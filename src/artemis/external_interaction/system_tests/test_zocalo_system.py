@@ -51,7 +51,7 @@ def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_to_fall
 ):
     fallback = np.array([1, 2, 3])
     zc, centre = run_zocalo_with_dev_ispyb("NO_DIFF", fallback)
-    assert centre == fallback
+    assert np.allclose(centre, fallback)
 
 
 @pytest.mark.s03

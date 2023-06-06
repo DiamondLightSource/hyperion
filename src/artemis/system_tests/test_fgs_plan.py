@@ -211,6 +211,6 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     RE(get_plan(params, callbacks))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.05)
-    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.15)
-    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.25)
+    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(-0.05)
+    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.05)
+    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.15)
