@@ -32,7 +32,7 @@ def mock_ispyb_store_grid_scan():
 @pytest.fixture
 def mock_ispyb_update_time_and_status():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb.update_grid_scan_with_end_time_and_status"
+        "artemis.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb.update_scan_with_end_time_and_status"
     ) as p:
         yield p
 

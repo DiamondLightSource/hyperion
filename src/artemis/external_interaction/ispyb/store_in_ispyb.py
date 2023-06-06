@@ -45,7 +45,6 @@ class StoreInIspyb(ABC):
     conn: Connector = None
     mx_acquisition: MXAcquisition | None = None
     core: Core | None = None
-    datacollection_ids: tuple[int, ...] | None = None
     datacollection_group_id: int | None = None
 
     def __init__(self, ispyb_config, parameters=None) -> None:
@@ -96,6 +95,30 @@ class StoreInIspyb(ABC):
     def get_visit_string_from_path(self, path):
         match = re.search(VISIT_PATH_REGEX, path) if path else None
         return match.group(1) if match else None
+
+    def update_scan_with_end_time_and_status(
+        self,
+        end_time: str,
+        run_status: str,
+        reason: str,
+        datacollection_id: int,
+        datacollection_group_id: int,
+    ) -> None:
+        assert self.ispyb_params is not None
+        assert self.detector_params is not None
+        if reason is not None and reason != "":
+            self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
+
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
+            self.mx_acquisition: MXAcquisition = self.conn.mx_acquisition
+
+            params = self.mx_acquisition.get_data_collection_params()
+            params["id"] = datacollection_id
+            params["parentid"] = datacollection_group_id
+            params["endtime"] = end_time
+            params["run_status"] = run_status
+
+            self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_position_table(self, dc_id: int) -> int:
         assert self.ispyb_params is not None
@@ -205,6 +228,7 @@ class StoreInIspyb(ABC):
 
 class StoreRotationInIspyb(StoreInIspyb):
     ispyb_params: RotationIspybParams | None = None
+    datacollection_id: int | None = None
 
     def __init__(self, ispyb_config, parameters=None) -> None:
         self.full_params: RotationInternalParameters | None = parameters
@@ -221,12 +245,6 @@ class StoreRotationInIspyb(StoreInIspyb):
         params["n_images"] = self.full_params.experiment_params.get_num_images()
         return params
 
-    def store_rotation_scan(self):
-        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
-            self.mx_acquisition = self.conn.mx_acquisition
-            self.core = self.conn.core
-        return self._store_scan_data()
-
     def _store_scan_data(self):
         data_collection_group_id = self._store_data_collection_group_table()
         data_collection_id = self._store_data_collection_table(data_collection_group_id)
@@ -235,11 +253,37 @@ class StoreRotationInIspyb(StoreInIspyb):
 
         return data_collection_id, data_collection_group_id
 
-    def begin_deposition(self, success: str, reason: str):
-        pass
+    def begin_deposition(self):
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
+            self.mx_acquisition = self.conn.mx_acquisition
+            self.core = self.conn.core
+        return self._store_scan_data()
 
     def end_deposition(self, success: str, reason: str):
-        pass
+        """Write the end of datacollection data.
+        Args:
+            success (str): The success of the run, could be fail or abort
+            reason (str): If the run failed, the reason why
+        """
+        LOGGER.info(
+            f"End ispyb deposition with status '{success}' and reason '{reason}'."
+        )
+        if success == "fail" or success == "abort":
+            run_status = "DataCollection Unsuccessful"
+        else:
+            run_status = "DataCollection Successful"
+        current_time = self.get_current_time_string()
+        assert (
+            self.datacollection_id is not None
+        ), "Can't end ISPyB deposition, datacollection IDs are missing"
+        assert self.datacollection_group_id is not None
+        self.update_scan_with_end_time_and_status(
+            current_time,
+            run_status,
+            reason,
+            self.datacollection_id,
+            self.datacollection_group_id,
+        )
 
     def _construct_comment(self) -> str:
         return "Hyperion rotation scan"
@@ -247,7 +291,8 @@ class StoreRotationInIspyb(StoreInIspyb):
 
 class StoreGridscanInIspyb(StoreInIspyb):
     ispyb_params: GridscanIspybParams | None = None
-    supper_left: list[int] | None = None
+    datacollection_ids: tuple[int, ...] | None = None
+    upper_left: list[int] | None = None
     y_steps: int | None = None
     y_step_size: int | None = None
     grid_ids: tuple[int, ...] | None = None
@@ -286,7 +331,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         ), "Can't end ISPyB deposition, datacollection IDs are missing"
         assert self.datacollection_group_id is not None
         for id in self.datacollection_ids:
-            self.update_grid_scan_with_end_time_and_status(
+            self.update_scan_with_end_time_and_status(
                 current_time, run_status, reason, id, self.datacollection_group_id
             )
 
@@ -318,34 +363,11 @@ class StoreGridscanInIspyb(StoreInIspyb):
         params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
         return params
 
-    def update_grid_scan_with_end_time_and_status(
-        self,
-        end_time: str,
-        run_status: str,
-        reason: str,
-        datacollection_id: int,
-        datacollection_group_id: int,
-    ) -> None:
-        assert self.ispyb_params is not None
-        assert self.detector_params is not None
-        if reason is not None and reason != "":
-            self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
-
-        with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
-            self.mx_acquisition: MXAcquisition = self.conn.mx_acquisition
-
-            params = self.mx_acquisition.get_data_collection_params()
-            params["id"] = datacollection_id
-            params["parentid"] = datacollection_group_id
-            params["endtime"] = end_time
-            params["run_status"] = run_status
-
-            self.mx_acquisition.upsert_data_collection(list(params.values()))
-
     def _store_grid_info_table(self, ispyb_data_collection_id: int) -> int:
         assert self.ispyb_params is not None
         assert self.full_params is not None
         assert self.upper_left is not None
+        assert self.mx_acquisition is not None
 
         params = self.mx_acquisition.get_dc_grid_params()
 
