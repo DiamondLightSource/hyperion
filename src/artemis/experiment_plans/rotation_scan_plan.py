@@ -17,6 +17,7 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.epics_motor import EpicsMotor
 
+from artemis.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from artemis.device_setup_plans.setup_zebra import (
     arm_zebra,
     disarm_zebra,
@@ -118,7 +119,14 @@ def rotation_scan_plan(
     yield from setup_sample_environment(detector_motion, backlight)
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle}")
     yield from move_to_start_w_buffer(smargon.omega, start_angle)
-    LOGGER.info("wait for any previous moves...")
+
+    # get some information for the ispyb deposition and trigger the callback
+    yield from read_hardware_for_ispyb(
+        i03.undulator(),
+        i03.synchrotron(),
+        i03.s4_slit_gaps(),
+    )
+
     LOGGER.info(
         f"setting up zebra w: start_angle={start_angle}, scan_width={scan_width}"
     )
@@ -133,6 +141,8 @@ def rotation_scan_plan(
         ),
         group="setup_zebra",
     )
+
+    LOGGER.info("wait for any previous moves...")
     # wait for all the setup tasks at once
     yield from bps.wait("setup_senv")
     yield from bps.wait("move_to_start")
