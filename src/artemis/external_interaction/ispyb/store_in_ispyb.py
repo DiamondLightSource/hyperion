@@ -71,12 +71,47 @@ class StoreInIspyb(ABC):
                 datacollection_id, comment, delimiter
             )
 
+    def get_current_time_string(self):
+        now = datetime.datetime.now()
+        return now.strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_visit_string(self):
+        visit_path_match = self.get_visit_string_from_path(self.ispyb_params.visit_path)
+        if visit_path_match:
+            return visit_path_match
+        else:
+            return self.get_visit_string_from_path(self.detector_params.directory)
+
+    def get_visit_string_from_path(self, path):
+        match = re.search(self.VISIT_PATH_REGEX, path) if path else None
+        return match.group(1) if match else None
+
+    def _store_data_collection_group_table(self) -> int:
+        assert self.core is not None
+        assert self.ispyb_params is not None
+        assert self.mx_acquisition is not None
+        try:
+            session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        except ispyb.NoResult:
+            raise Exception(
+                f"Not found - session ID for visit {self.get_visit_string()} where self.ispyb_params.visit_path is {self.ispyb_params.visit_path}"
+            )
+
+        params = self.mx_acquisition.get_data_collection_group_params()
+        params["parentid"] = session_id
+        params["experimenttype"] = self.experiment_type
+        params["sampleid"] = self.ispyb_params.sample_id
+        params["sample_barcode"] = self.ispyb_params.sample_barcode
+
+        return self.mx_acquisition.upsert_data_collection_group(list(params.values()))
+
 
 class StoreRotationInIspyb(StoreInIspyb):
     ispyb_params: RotationIspybParams | None = None
 
     def __init__(self, ispyb_config, parameters=None) -> None:
         self.full_params: RotationInternalParameters | None = parameters
+        self.experiment_type = "SAD"
         super().__init__(ispyb_config, parameters)
 
     def store_rotation_scan(self):
@@ -88,13 +123,14 @@ class StoreRotationInIspyb(StoreInIspyb):
     def _store_scan_data(self):
         pass
 
-    @abstractmethod
     def begin_deposition(self, success: str, reason: str):
         pass
 
-    @abstractmethod
     def end_deposition(self, success: str, reason: str):
         pass
+
+    def _construct_comment(self) -> str:
+        return "Hyperion rotation scan"
 
 
 class StoreGridscanInIspyb(StoreInIspyb):
@@ -315,39 +351,6 @@ class StoreGridscanInIspyb(StoreInIspyb):
         ) = self.ispyb_params.position.tolist()
 
         return self.mx_acquisition.update_dc_position(list(params.values()))
-
-    def _store_data_collection_group_table(self) -> int:
-        assert self.core is not None
-        assert self.ispyb_params is not None
-        try:
-            session_id = self.core.retrieve_visit_id(self.get_visit_string())
-        except ispyb.NoResult:
-            raise Exception(
-                f"Not found - session ID for visit {self.get_visit_string()} where self.ispyb_params.visit_path is {self.ispyb_params.visit_path}"
-            )
-
-        params = self.mx_acquisition.get_data_collection_group_params()
-        params["parentid"] = session_id
-        params["experimenttype"] = self.experiment_type
-        params["sampleid"] = self.ispyb_params.sample_id
-        params["sample_barcode"] = self.ispyb_params.sample_barcode
-
-        return self.mx_acquisition.upsert_data_collection_group(list(params.values()))
-
-    def get_current_time_string(self):
-        now = datetime.datetime.now()
-        return now.strftime("%Y-%m-%d %H:%M:%S")
-
-    def get_visit_string(self):
-        visit_path_match = self.get_visit_string_from_path(self.ispyb_params.visit_path)
-        if visit_path_match:
-            return visit_path_match
-        else:
-            return self.get_visit_string_from_path(self.detector_params.directory)
-
-    def get_visit_string_from_path(self, path):
-        match = re.search(self.VISIT_PATH_REGEX, path) if path else None
-        return match.group(1) if match else None
 
 
 class Store3DGridscanInIspyb(StoreGridscanInIspyb):
