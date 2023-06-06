@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import re
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import dodal.devices.oav.utils as oav_utils
 import ispyb
@@ -55,6 +55,16 @@ class StoreInIspyb(ABC):
         pass
 
     @abstractmethod
+    def _construct_comment(self) -> str:
+        pass
+
+    @abstractmethod
+    def _mutate_datacollection_params_for_experiment(
+        self, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        pass
+
+    @abstractmethod
     def begin_deposition(self, success: str, reason: str):
         pass
 
@@ -66,7 +76,7 @@ class StoreInIspyb(ABC):
         self, datacollection_id: int, comment: str, delimiter: str = " "
     ) -> None:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
-            self.mx_acquisition = self.conn.mx_acquisition
+            self.mx_acquisition: MXAcquisition = self.conn.mx_acquisition
             self.mx_acquisition.update_data_collection_append_comments(
                 datacollection_id, comment, delimiter
             )
@@ -105,6 +115,77 @@ class StoreInIspyb(ABC):
 
         return self.mx_acquisition.upsert_data_collection_group(list(params.values()))
 
+    @TRACER.start_as_current_span("store_ispyb_datacollection_table")
+    def _store_data_collection_table(self, data_collection_group_id: int) -> int:
+        assert self.ispyb_params is not None
+        assert self.detector_params is not None
+        assert self.core is not None
+        assert self.xtal_snapshots is not None
+        assert self.mx_acquisition is not None
+        try:
+            session_id = self.core.retrieve_visit_id(self.get_visit_string())
+        except ispyb.NoResult:
+            raise Exception(
+                f"Not found - session ID for visit {self.get_visit_string()}"
+            )
+
+        params = self.mx_acquisition.get_data_collection_params()
+
+        params = self._mutate_datacollection_params_for_experiment(params)
+
+        params["visitid"] = session_id
+        params["parentid"] = data_collection_group_id
+        params["sampleid"] = self.ispyb_params.sample_id
+        params["detectorid"] = I03_EIGER_DETECTOR
+        params["axis_start"] = self.omega_start
+
+        params["axis_range"] = 0
+        params["focal_spot_size_at_samplex"] = self.ispyb_params.focal_spot_size_x
+        params["focal_spot_size_at_sampley"] = self.ispyb_params.focal_spot_size_y
+        params["slitgap_vertical"] = self.ispyb_params.slit_gap_size_y
+        params["slitgap_horizontal"] = self.ispyb_params.slit_gap_size_x
+        params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x
+        params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
+        params["transmission"] = self.ispyb_params.transmission
+        params["comments"] = self._construct_comment()
+        params["datacollection_number"] = self.run_number
+        params["detector_distance"] = self.detector_params.detector_distance
+        params["exp_time"] = self.detector_params.exposure_time
+        params["imgdir"] = self.detector_params.directory
+        params["imgprefix"] = self.detector_params.prefix
+        params["imgsuffix"] = EIGER_FILE_SUFFIX
+
+        # Both overlap and n_passes included for backwards compatibility,
+        # planned to be removed later
+        params["n_passes"] = 1
+        params["overlap"] = 0
+
+        params["flux"] = self.ispyb_params.flux
+        params["omegastart"] = self.omega_start
+        params["start_image_number"] = 1
+        params["resolution"] = self.ispyb_params.resolution
+        params["wavelength"] = self.ispyb_params.wavelength
+        beam_position = self.detector_params.get_beam_position_mm(
+            self.detector_params.detector_distance
+        )
+        params["xbeam"], params["ybeam"] = beam_position
+        (
+            params["xtal_snapshot1"],
+            params["xtal_snapshot2"],
+            params["xtal_snapshot3"],
+        ) = self.xtal_snapshots
+        params["synchrotron_mode"] = self.ispyb_params.synchrotron_mode
+        params["undulator_gap1"] = self.ispyb_params.undulator_gap
+        params["starttime"] = self.get_current_time_string()
+
+        # temporary file template until nxs filewriting is integrated and we can use
+        # that file name
+        params[
+            "file_template"
+        ] = f"{self.detector_params.prefix}_{self.run_number}_master.h5"
+
+        return self.mx_acquisition.upsert_data_collection(list(params.values()))
+
 
 class StoreRotationInIspyb(StoreInIspyb):
     ispyb_params: RotationIspybParams | None = None
@@ -113,6 +194,16 @@ class StoreRotationInIspyb(StoreInIspyb):
         self.full_params: RotationInternalParameters | None = parameters
         self.experiment_type = "SAD"
         super().__init__(ispyb_config, parameters)
+
+    def _mutate_datacollection_params_for_experiment(
+        self, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        assert self.full_params is not None
+        params["axis_end"] = (
+            self.omega_start + self.full_params.experiment_params.rotation_angle
+        )
+        params["n_images"] = self.full_params.experiment_params.get_num_images()
+        return params
 
     def store_rotation_scan(self):
         with ispyb.open(self.ISPYB_CONFIG_PATH) as self.conn:
@@ -199,6 +290,14 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
             return self._store_scan_data()
 
+    def _mutate_datacollection_params_for_experiment(
+        self, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        assert self.full_params is not None
+        params["axis_end"] = self.omega_start
+        params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
+        return params
+
     def update_grid_scan_with_end_time_and_status(
         self,
         end_time: str,
@@ -269,75 +368,6 @@ class StoreGridscanInIspyb(StoreInIspyb):
             f"Top left (px): [{int(self.upper_left[0])},{int(self.upper_left[1])}], "
             f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
         )
-
-    @TRACER.start_as_current_span("store_ispyb_datacollection_table")
-    def _store_data_collection_table(self, data_collection_group_id: int) -> int:
-        assert self.ispyb_params is not None
-        assert self.detector_params is not None
-        assert self.core is not None
-        assert self.full_params is not None
-        assert self.xtal_snapshots is not None
-        try:
-            session_id = self.core.retrieve_visit_id(self.get_visit_string())
-        except ispyb.NoResult:
-            raise Exception(
-                f"Not found - session ID for visit {self.get_visit_string()}"
-            )
-
-        params = self.mx_acquisition.get_data_collection_params()
-        params["visitid"] = session_id
-        params["parentid"] = data_collection_group_id
-        params["sampleid"] = self.ispyb_params.sample_id
-        params["detectorid"] = I03_EIGER_DETECTOR
-        params["axis_start"] = self.omega_start
-        params["axis_end"] = self.omega_start
-        params["axis_range"] = 0
-        params["focal_spot_size_at_samplex"] = self.ispyb_params.focal_spot_size_x
-        params["focal_spot_size_at_sampley"] = self.ispyb_params.focal_spot_size_y
-        params["slitgap_vertical"] = self.ispyb_params.slit_gap_size_y
-        params["slitgap_horizontal"] = self.ispyb_params.slit_gap_size_x
-        params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x
-        params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
-        params["transmission"] = self.ispyb_params.transmission
-        params["comments"] = self._construct_comment()
-        params["datacollection_number"] = self.run_number
-        params["detector_distance"] = self.detector_params.detector_distance
-        params["exp_time"] = self.detector_params.exposure_time
-        params["imgdir"] = self.detector_params.directory
-        params["imgprefix"] = self.detector_params.prefix
-        params["imgsuffix"] = EIGER_FILE_SUFFIX
-        params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
-
-        # Both overlap and n_passes included for backwards compatibility,
-        # planned to be removed later
-        params["n_passes"] = 1
-        params["overlap"] = 0
-
-        params["flux"] = self.ispyb_params.flux
-        params["omegastart"] = self.omega_start
-        params["start_image_number"] = 1
-        params["resolution"] = self.ispyb_params.resolution
-        params["wavelength"] = self.ispyb_params.wavelength
-        beam_position = self.detector_params.get_beam_position_mm(
-            self.detector_params.detector_distance
-        )
-        params["xbeam"], params["ybeam"] = beam_position
-        (
-            params["xtal_snapshot1"],
-            params["xtal_snapshot2"],
-            params["xtal_snapshot3"],
-        ) = self.xtal_snapshots
-        params["synchrotron_mode"] = self.ispyb_params.synchrotron_mode
-        params["undulator_gap1"] = self.ispyb_params.undulator_gap
-        params["starttime"] = self.get_current_time_string()
-
-        # temporary file template until nxs filewriting is integrated and we can use
-        # that file name
-        params[
-            "file_template"
-        ] = f"{self.detector_params.prefix}_{self.run_number}_master.h5"
-
-        return self.mx_acquisition.upsert_data_collection(list(params.values()))
 
     def _store_position_table(self, dc_id: int) -> int:
         assert self.ispyb_params is not None
