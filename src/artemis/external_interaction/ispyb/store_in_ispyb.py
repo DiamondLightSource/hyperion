@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
+VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
 
 class StoreInIspyb(ABC):
@@ -93,8 +94,23 @@ class StoreInIspyb(ABC):
             return self.get_visit_string_from_path(self.detector_params.directory)
 
     def get_visit_string_from_path(self, path):
-        match = re.search(self.VISIT_PATH_REGEX, path) if path else None
+        match = re.search(VISIT_PATH_REGEX, path) if path else None
         return match.group(1) if match else None
+
+    def _store_position_table(self, dc_id: int) -> int:
+        assert self.ispyb_params is not None
+        assert self.mx_acquisition is not None
+
+        params = self.mx_acquisition.get_dc_position_params()
+
+        params["id"] = dc_id
+        (
+            params["pos_x"],
+            params["pos_y"],
+            params["pos_z"],
+        ) = self.ispyb_params.position.tolist()
+
+        return self.mx_acquisition.update_dc_position(list(params.values()))
 
     def _store_data_collection_group_table(self) -> int:
         assert self.core is not None
@@ -212,7 +228,12 @@ class StoreRotationInIspyb(StoreInIspyb):
         return self._store_scan_data()
 
     def _store_scan_data(self):
-        pass
+        data_collection_group_id = self._store_data_collection_group_table()
+        data_collection_id = self._store_data_collection_table(data_collection_group_id)
+
+        self._store_position_table(data_collection_id)
+
+        return data_collection_id, data_collection_group_id
 
     def begin_deposition(self, success: str, reason: str):
         pass
@@ -225,7 +246,6 @@ class StoreRotationInIspyb(StoreInIspyb):
 
 
 class StoreGridscanInIspyb(StoreInIspyb):
-    VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
     ispyb_params: GridscanIspybParams | None = None
     supper_left: list[int] | None = None
     y_steps: int | None = None
@@ -368,19 +388,6 @@ class StoreGridscanInIspyb(StoreInIspyb):
             f"Top left (px): [{int(self.upper_left[0])},{int(self.upper_left[1])}], "
             f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
         )
-
-    def _store_position_table(self, dc_id: int) -> int:
-        assert self.ispyb_params is not None
-        params = self.mx_acquisition.get_dc_position_params()
-
-        params["id"] = dc_id
-        (
-            params["pos_x"],
-            params["pos_y"],
-            params["pos_z"],
-        ) = self.ispyb_params.position.tolist()
-
-        return self.mx_acquisition.update_dc_position(list(params.values()))
 
 
 class Store3DGridscanInIspyb(StoreGridscanInIspyb):
