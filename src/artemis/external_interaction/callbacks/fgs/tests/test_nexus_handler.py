@@ -7,9 +7,7 @@ from artemis.external_interaction.callbacks.fgs.nexus_callback import (
     FGSNexusFileHandlerCallback,
 )
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 test_start_document = {
     "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -23,7 +21,7 @@ test_start_document = {
 
 @pytest.fixture
 def dummy_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 @pytest.fixture

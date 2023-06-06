@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
@@ -9,15 +10,12 @@ from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
-from artemis.utils.utils import Point3D
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
 @pytest.mark.s03
 def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
-    params = FGSInternalParameters(default_raw_params())
+    params = FGSInternalParameters(**default_raw_params())
     zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
     dcids = [1, 2]
     zc.ispyb.ispyb_ids = (dcids, 0, 4)
@@ -31,7 +29,7 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
 
 @pytest.fixture
 def run_zocalo_with_dev_ispyb(dummy_params: FGSInternalParameters, dummy_ispyb_3d):
-    def inner(sample_name="", fallback=Point3D(0, 0, 0)):
+    def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.artemis_params.detector_params.prefix = sample_name
         zc: FGSZocaloCallback = FGSCallbackCollection.from_params(
             dummy_params
@@ -51,7 +49,7 @@ def run_zocalo_with_dev_ispyb(dummy_params: FGSInternalParameters, dummy_ispyb_3
 def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_to_fallback(
     run_zocalo_with_dev_ispyb, zocalo_env
 ):
-    fallback = Point3D(1, 2, 3)
+    fallback = np.array([1, 2, 3])
     zc, centre = run_zocalo_with_dev_ispyb("NO_DIFF", fallback)
     assert centre == fallback
 

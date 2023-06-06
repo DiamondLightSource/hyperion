@@ -1,6 +1,6 @@
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
-from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
+from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, do_nothing
 from artemis.parameters.internal_parameters import InternalParameters
 
 
@@ -13,3 +13,7 @@ def test_experiment_registry_param_types():
         assert issubclass(
             PLAN_REGISTRY[plan]["internal_param_type"], InternalParameters
         )
+
+
+def test_do_nothing():
+    do_nothing()

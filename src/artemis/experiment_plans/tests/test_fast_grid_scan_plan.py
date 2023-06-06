@@ -2,6 +2,7 @@ import types
 from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.det_dim_constants import (
@@ -37,27 +38,21 @@ from artemis.external_interaction.system_tests.conftest import (
 )
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import external_parameters
-from artemis.parameters.internal_parameters.internal_parameters import (
-    InternalParameters,
-)
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
-from artemis.utils.utils import Point3D
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
-    test_params: FGSInternalParameters,
+    test_fgs_params: FGSInternalParameters,
 ):
     assert (
-        test_params.artemis_params.detector_params.detector_size_constants.det_type_string
+        test_fgs_params.artemis_params.detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
     )
     raw_params_dict = external_parameters.from_file()
     raw_params_dict["artemis_params"]["detector_params"][
         "detector_size_constants"
     ] = EIGER_TYPE_EIGER2_X_4M
-    params: FGSInternalParameters = FGSInternalParameters(raw_params_dict)
+    params: FGSInternalParameters = FGSInternalParameters(**raw_params_dict)
     det_dimension = (
         params.artemis_params.detector_params.detector_size_constants.det_dimension
     )
@@ -121,7 +116,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
     mock_subscriptions: FGSCallbackCollection,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -173,7 +168,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(
     bps_mv: MagicMock,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     fake_fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
@@ -182,11 +177,11 @@ def test_results_passed_to_move_motors(
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
     motor_position = test_params.experiment_params.grid_position_to_motor_position(
-        Point3D(1, 2, 3)
+        np.array([1, 2, 3])
     )
     RE(move_xyz(fake_fgs_composite.sample_motors, motor_position))
     bps_mv.assert_called_once_with(
-        ANY, motor_position.x, ANY, motor_position.y, ANY, motor_position.z
+        ANY, motor_position[0], ANY, motor_position[1], ANY, motor_position[2]
     )
 
 
@@ -220,9 +215,9 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
-    move_xyz.assert_called_once_with(
-        ANY, Point3D(x=-0.05, y=0.05, z=0.15000000000000002)
-    )
+    array_arg = move_xyz.call_args.args[1]
+    np.testing.assert_allclose(array_arg, np.array([-0.05, 0.05, 0.15]))
+    move_xyz.assert_called_once()
 
 
 @patch(
@@ -240,7 +235,7 @@ def test_logging_within_plan(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_params: InternalParameters,
+    test_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -255,9 +250,9 @@ def test_logging_within_plan(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
-    move_xyz.assert_called_once_with(
-        ANY, Point3D(x=-0.05, y=0.05, z=0.15000000000000002)
-    )
+    array_arg = move_xyz.call_args.args[1]
+    np.testing.assert_array_almost_equal(array_arg, np.array([-0.05, 0.05, 0.15]))
+    move_xyz.assert_called_once()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
@@ -300,13 +295,12 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_kickoff,
     mock_abs_set,
     fake_fgs_composite: FGSComposite,
-    test_params: InternalParameters,
+    test_fgs_params: FGSInternalParameters,
     mock_subscriptions: FGSCallbackCollection,
     RE: RunEngine,
 ):
     # Put both mocks in a parent to easily capture order
     mock_parent = MagicMock()
-
     fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
     fake_fgs_composite.eiger.filewriters_finished = Status()
@@ -320,9 +314,48 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            test_params,
+            test_fgs_params,
             mock_subscriptions,
         )
     )
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.abs_set")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
+def test_when_exception_occurs_during_running_then_eiger_disarmed(
+    wait_for_valid,
+    mock_mv,
+    mock_complete,
+    mock_kickoff,
+    mock_abs_set,
+    fake_fgs_composite: FGSComposite,
+    test_fgs_params: FGSInternalParameters,
+    mock_subscriptions: FGSCallbackCollection,
+    RE: RunEngine,
+):
+    fake_fgs_composite.eiger.disarm_detector = MagicMock()
+
+    fake_fgs_composite.eiger.filewriters_finished = Status()
+    fake_fgs_composite.eiger.filewriters_finished.set_finished()
+    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
+
+    fake_fgs_composite.eiger.stage = MagicMock()
+
+    mock_complete.side_effect = Exception()
+
+    with pytest.raises(Exception):
+        RE(
+            run_gridscan_and_move(
+                fake_fgs_composite,
+                test_fgs_params,
+                mock_subscriptions,
+            )
+        )
+
+    fake_fgs_composite.eiger.disarm_detector.assert_called_once()

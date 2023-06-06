@@ -2,18 +2,20 @@ from __future__ import annotations
 
 import math
 from os.path import join as path_join
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, List
 
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.preprocessors import finalize_wrapper
-from dodal import i03
+from dodal.beamlines import i03
+from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
+from artemis.exceptions import WarningException
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
@@ -32,7 +34,7 @@ def grid_detection_plan(
     snapshot_template: str,
     snapshot_dir: str,
     out_snapshot_filenames: List[List[str]],
-    out_upper_left: Dict,
+    out_upper_left: list[float] | np.ndarray,
     width=600,
     box_size_microns=20,
 ):
@@ -51,13 +53,28 @@ def grid_detection_plan(
     )
 
 
+def wait_for_tip_to_be_found(pin_tip: PinTipDetect):
+    yield from bps.trigger(pin_tip, group="pin_tip")
+    yield from bps.wait("pin_tip")
+    found_tip_x = yield from bps.rd(pin_tip.tip_x)
+    found_tip_y = yield from bps.rd(pin_tip.tip_x)
+    if (
+        found_tip_x == pin_tip.INVALID_POSITION[0]
+        or found_tip_y == pin_tip.INVALID_POSITION[1]
+    ):
+        raise WarningException(
+            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
+        )
+    return (found_tip_x, found_tip_y)
+
+
 def grid_detection_main_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
     out_snapshot_filenames: List[List[str]],
-    out_upper_left: Dict,
+    out_upper_left: list[float] | np.ndarray,
     grid_width_px: int,
     box_size_um: float,
 ):
@@ -99,13 +116,12 @@ def grid_detection_main_plan(
         # See #673 for improvements
         yield from bps.sleep(0.3)
 
-        top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
-        bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
-
-        tip_x_px = yield from bps.rd(oav.mxsc.tip_x)
-        tip_y_px = yield from bps.rd(oav.mxsc.tip_y)
+        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc.pin_tip)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
+
+        top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
+        bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
 
         full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
@@ -133,10 +149,10 @@ def grid_detection_main_plan(
 
         upper_left = (tip_x_px, min_y)
         if angle == 0:
-            out_upper_left["x"] = int(tip_x_px)
-            out_upper_left["y"] = int(min_y)
+            out_upper_left[0] = int(tip_x_px)
+            out_upper_left[1] = int(min_y)
         else:
-            out_upper_left["z"] = int(min_y)
+            out_upper_left[2] = int(min_y)
 
         yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])

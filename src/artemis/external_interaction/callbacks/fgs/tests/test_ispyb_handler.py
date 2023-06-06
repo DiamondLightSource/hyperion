@@ -10,9 +10,7 @@ from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
 from artemis.external_interaction.callbacks.fgs.tests.conftest import TestData
 from artemis.log import LOGGER, set_up_logging_handlers
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 DC_IDS = [1, 2]
 DCG_ID = 4
@@ -21,7 +19,7 @@ td = TestData()
 
 @pytest.fixture
 def dummy_params():
-    return FGSInternalParameters(default_raw_params())
+    return FGSInternalParameters(**default_raw_params())
 
 
 def test_fgs_failing_results_in_bad_run_status_in_ispyb(
