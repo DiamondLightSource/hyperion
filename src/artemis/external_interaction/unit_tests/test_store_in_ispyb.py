@@ -73,18 +73,18 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
-    when(dummy_ispyb)._store_position_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
-        TEST_POSITION_ID
-    )
-    when(dummy_ispyb)._store_data_collection_group_table().thenReturn(
+    when(dummy_ispyb)._store_position_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_POSITION_ID)
+    when(dummy_ispyb)._store_data_collection_group_table(ispyb_conn()).thenReturn(
         TEST_DATA_COLLECTION_GROUP_ID
     )
     when(dummy_ispyb)._store_data_collection_table(
-        TEST_DATA_COLLECTION_GROUP_ID
+        ispyb_conn(), TEST_DATA_COLLECTION_GROUP_ID
     ).thenReturn(TEST_DATA_COLLECTION_IDS[0])
-    when(dummy_ispyb)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
-        TEST_GRID_INFO_ID
-    )
+    when(dummy_ispyb)._store_grid_info_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_GRID_INFO_ID)
 
     assert dummy_ispyb.experiment_type == "mesh"
 
@@ -104,22 +104,22 @@ def test_store_3d_grid_scan(
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
-    when(dummy_ispyb_3d)._store_position_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
-        TEST_POSITION_ID
-    )
-    when(dummy_ispyb_3d)._store_position_table(TEST_DATA_COLLECTION_IDS[1]).thenReturn(
-        TEST_POSITION_ID
-    )
-    when(dummy_ispyb_3d)._store_data_collection_group_table().thenReturn(
+    when(dummy_ispyb_3d)._store_position_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_POSITION_ID)
+    when(dummy_ispyb_3d)._store_position_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[1]
+    ).thenReturn(TEST_POSITION_ID)
+    when(dummy_ispyb_3d)._store_data_collection_group_table(ispyb_conn()).thenReturn(
         TEST_DATA_COLLECTION_GROUP_ID
     )
 
-    when(dummy_ispyb_3d)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
-        TEST_GRID_INFO_ID
-    )
-    when(dummy_ispyb_3d)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[1]).thenReturn(
-        TEST_GRID_INFO_ID
-    )
+    when(dummy_ispyb_3d)._store_grid_info_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_GRID_INFO_ID)
+    when(dummy_ispyb_3d)._store_grid_info_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[1]
+    ).thenReturn(TEST_GRID_INFO_ID)
 
     dummy_ispyb_3d._store_data_collection_table = Mock(
         side_effect=TEST_DATA_COLLECTION_IDS
