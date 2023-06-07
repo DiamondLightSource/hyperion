@@ -9,10 +9,14 @@ from mockito import mock, when
 from artemis.external_interaction.ispyb.store_in_ispyb import (
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
+    StoreRotationInIspyb,
 )
 from artemis.parameters.constants import SIM_ISPYB_CONFIG
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -33,18 +37,30 @@ def dummy_params():
 
 
 @pytest.fixture
+def dummy_rotation_params():
+    dummy_params = RotationInternalParameters(
+        **default_raw_params(
+            "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+        )
+    )
+    return dummy_params
+
+
+@pytest.fixture
 def dummy_ispyb(dummy_params):
     store_in_ispyb_2d = Store2DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
-    store_in_ispyb_2d.get_current_datacollection_comment = MagicMock()
-    store_in_ispyb_2d.get_current_datacollection_comment.return_value = ""
     return store_in_ispyb_2d
+
+
+@pytest.fixture
+def dummy_rotation_ispyb(dummy_rotation_params):
+    store_in_ispyb = StoreRotationInIspyb(SIM_ISPYB_CONFIG, dummy_rotation_params)
+    return store_in_ispyb
 
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params):
     store_in_ispyb_3d = Store3DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
-    store_in_ispyb_3d.get_current_datacollection_comment = MagicMock()
-    store_in_ispyb_3d.get_current_datacollection_comment.return_value = ""
     return store_in_ispyb_3d
 
 
@@ -66,6 +82,33 @@ def test_get_current_time_string(dummy_ispyb):
 )
 def test_regex_string(dummy_ispyb, visit_path: str, expected_match: str):
     assert dummy_ispyb.get_visit_string_from_path(visit_path) == expected_match
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_store_rotation_scan(
+    ispyb_conn, dummy_rotation_ispyb: StoreRotationInIspyb, dummy_rotation_params
+):
+    ispyb_conn.return_value.mx_acquisition = mock()
+    ispyb_conn.return_value.core = mock()
+
+    when(dummy_rotation_ispyb)._store_position_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_POSITION_ID)
+
+    when(dummy_rotation_ispyb)._store_data_collection_group_table(
+        ispyb_conn()
+    ).thenReturn(TEST_DATA_COLLECTION_GROUP_ID)
+
+    when(dummy_rotation_ispyb)._store_data_collection_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_GROUP_ID
+    ).thenReturn(TEST_DATA_COLLECTION_IDS[0])
+
+    assert dummy_rotation_ispyb.experiment_type == "SAD"
+
+    assert dummy_rotation_ispyb._store_scan_data(ispyb_conn()) == (
+        TEST_DATA_COLLECTION_IDS[0],
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
 
 
 @patch("ispyb.open", new_callable=mock_open)
