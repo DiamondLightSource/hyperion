@@ -176,7 +176,6 @@ class StoreInIspyb(ABC):
         params["sampleid"] = self.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
         params["axis_start"] = self.omega_start
-        params["axis_range"] = 0
         params["focal_spot_size_at_samplex"] = self.ispyb_params.focal_spot_size_x
         params["focal_spot_size_at_sampley"] = self.ispyb_params.focal_spot_size_y
         params["slitgap_vertical"] = self.ispyb_params.slit_gap_size_y
@@ -234,6 +233,8 @@ class StoreRotationInIspyb(StoreInIspyb):
             parameters.artemis_params.ispyb_params
         )
         self.detector_params = parameters.artemis_params.detector_params
+        self.omega_start = self.detector_params.omega_start
+
         if self.ispyb_params.xtal_snapshots_omega_start:
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
         else:
@@ -246,6 +247,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         assert self.full_params is not None
+        params["axis_range"] = self.full_params.experiment_params.rotation_angle
         params["axis_end"] = (
             self.full_params.experiment_params.omega_start
             + self.full_params.experiment_params.rotation_angle
@@ -365,6 +367,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         assert self.full_params is not None
+        params["axis_range"] = 0
         params["axis_end"] = self.omega_start
         params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
         return params

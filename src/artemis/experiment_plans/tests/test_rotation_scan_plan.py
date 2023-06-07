@@ -19,6 +19,10 @@ from artemis.experiment_plans.rotation_scan_plan import (
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
 )
+from artemis.external_interaction.system_tests.conftest import (  # noqa
+    fetch_comment,
+    fetch_datacollection_attribute,
+)
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -221,16 +225,24 @@ def test_ispyb_deposition_in_plan(
     fake_create_devices,
     RE,
     test_rotation_params: RotationInternalParameters,
+    fetch_comment,
+    fetch_datacollection_attribute,
 ):
     undulator = i03.undulator(fake_with_ophyd_sim=True)
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
 
-    test_rotation_params.experiment_params.image_width = 0.27
-    test_rotation_params.artemis_params.ispyb_params.beam_size_x = 23
-    test_rotation_params.artemis_params.ispyb_params.beam_size_y = 47
-    test_rotation_params.artemis_params.detector_params.exposure_time = 0.023
-    test_rotation_params.artemis_params.ispyb_params.wavelength = 0.71
+    test_wl = 0.71
+    test_bs_x = 0.023
+    test_bs_y = 0.047
+    test_exp_time = 0.023
+    test_img_wid = 0.27
+
+    test_rotation_params.experiment_params.image_width = test_img_wid
+    test_rotation_params.artemis_params.ispyb_params.beam_size_x = test_bs_x
+    test_rotation_params.artemis_params.ispyb_params.beam_size_y = test_bs_y
+    test_rotation_params.artemis_params.detector_params.exposure_time = test_exp_time
+    test_rotation_params.artemis_params.ispyb_params.wavelength = test_wl
     callbacks = RotationCallbackCollection.from_params(test_rotation_params)
 
     with (
@@ -252,3 +264,16 @@ def test_ispyb_deposition_in_plan(
                 callbacks,
             )
         )
+
+    dcid = callbacks.ispyb_handler.ispyb_ids[0]
+    comment = fetch_comment(dcid)
+    assert comment == "Hyperion rotation scan"
+    wavelength = fetch_datacollection_attribute(dcid, "wavelength")
+    beamsize_x = fetch_datacollection_attribute(dcid, "beamSizeAtSampleX")
+    beamsize_y = fetch_datacollection_attribute(dcid, "beamSizeAtSampleY")
+    exposure = fetch_datacollection_attribute(dcid, "exposureTime")
+
+    assert wavelength == test_wl
+    assert beamsize_x == test_bs_x
+    assert beamsize_y == test_bs_y
+    assert exposure == test_exp_time

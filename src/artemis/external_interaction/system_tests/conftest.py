@@ -66,12 +66,38 @@ def get_current_datacollection_comment(Session: Callable, dcid: int) -> str:
     return current_comment
 
 
+def get_current_datacollection_attribute(
+    Session: Callable, dcid: int, attr: str
+) -> str:
+    """Read the specified field 'attr' from the given datacollection id's ISPyB entry.
+    Returns an empty string if the attribute is not found.
+    """
+    try:
+        with Session() as session:
+            query = session.query(DataCollection).filter(
+                DataCollection.dataCollectionId == dcid
+            )
+            first_result = query.first()
+            data: str = getattr(first_result, attr)
+    except Exception:
+        data = ""
+    return data
+
+
 @pytest.fixture
 def fetch_comment() -> Callable:
     url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
     engine = create_engine(url, connect_args={"use_pure": True})
     Session = sessionmaker(engine)
     return partial(get_current_datacollection_comment, Session)
+
+
+@pytest.fixture
+def fetch_datacollection_attribute() -> Callable:
+    url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
+    engine = create_engine(url, connect_args={"use_pure": True})
+    Session = sessionmaker(engine)
+    return partial(get_current_datacollection_attribute, Session)
 
 
 @pytest.fixture
