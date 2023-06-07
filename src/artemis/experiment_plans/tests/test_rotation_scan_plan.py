@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.utils import Msg
 from dodal.beamlines import i03
-from ophyd.status import Status
+from ophyd.status import Status, SubscriptionStatus
 
 from artemis.experiment_plans.rotation_scan_plan import (
     DIRECTION,
@@ -192,8 +192,13 @@ def test_ispyb_deposition_in_plan(
     test_rotation_params,
 ):
     def fake_create_devices():
+        with patch(
+            "dodal.devices.eiger_odin.EigerOdin.create_finished_status",
+            return_value=lambda: True,
+        ):
+            eiger = i03.eiger(wait_for_connection=False, fake_with_ophyd_sim=True)
         devices = {
-            "eiger": i03.eiger(wait_for_connection=False, fake_with_ophyd_sim=True),
+            "eiger": eiger,
             "smargon": i03.smargon(),
             "zebra": i03.zebra(),
             "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),
