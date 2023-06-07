@@ -92,8 +92,9 @@ def move_to_end_w_buffer(axis: EpicsMotor, scan_width: float, wait: float = True
 
 
 def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
+    speed_for_rotation = image_width / exposure_time
     yield from bps.abs_set(
-        axis.velocity, image_width / exposure_time, group="set_speed", wait=True
+        axis.velocity, speed_for_rotation, group="set_speed", wait=wait
     )
 
 

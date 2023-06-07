@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.utils import Msg
 from dodal.beamlines import i03
-from ophyd.status import Status, SubscriptionStatus
+from ophyd.status import Status
 
 from artemis.experiment_plans.rotation_scan_plan import (
     DIRECTION,
@@ -18,6 +18,9 @@ from artemis.experiment_plans.rotation_scan_plan import (
 )
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
+)
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
 )
 
 if TYPE_CHECKING:
@@ -184,45 +187,68 @@ def test_cleanup_happens(
         cleanup_plan.assert_called_once()
 
 
+@pytest.fixture()
+def fake_create_devices(
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+):
+    eiger.stage = MagicMock()
+    eiger.unstage = MagicMock()
+    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+    mock_arm_disarm = MagicMock(
+        side_effect=zebra.pc.armed.set, return_value=Status(done=True, success=True)
+    )
+    zebra.pc.arm_demand.set = mock_arm_disarm
+    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.set = mock_omega_sets
+    zebra.pc.arm_demand.set = mock_arm_disarm
+
+    devices = {
+        "eiger": i03.eiger(wait_for_connection=False, fake_with_ophyd_sim=True),
+        "smargon": smargon,
+        "zebra": zebra,
+        "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),
+        "backlight": i03.backlight(fake_with_ophyd_sim=True),
+    }
+    return devices
+
+
 @pytest.mark.s03()
 @patch("bluesky.plan_stubs.wait")
 def test_ispyb_deposition_in_plan(
-    bps_wait: MagicMock,
+    bps_wait,
+    fake_create_devices,
     RE,
-    test_rotation_params,
+    test_rotation_params: RotationInternalParameters,
 ):
-    def fake_create_devices():
-        with patch(
-            "dodal.devices.eiger_odin.EigerOdin.create_finished_status",
-            return_value=lambda: True,
-        ):
-            eiger = i03.eiger(wait_for_connection=False, fake_with_ophyd_sim=True)
-        devices = {
-            "eiger": eiger,
-            "smargon": i03.smargon(),
-            "zebra": i03.zebra(),
-            "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),
-            "backlight": i03.backlight(fake_with_ophyd_sim=True),
-        }
-        return devices
-
     undulator = i03.undulator(fake_with_ophyd_sim=True)
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
 
+    test_rotation_params.experiment_params.image_width = 0.27
+    test_rotation_params.artemis_params.ispyb_params.beam_size_x = 23
+    test_rotation_params.artemis_params.ispyb_params.beam_size_y = 47
+    test_rotation_params.artemis_params.detector_params.exposure_time = 0.023
+    test_rotation_params.artemis_params.ispyb_params.wavelength = 0.71
+    callbacks = RotationCallbackCollection.from_params(test_rotation_params)
+
     with (
         patch(
             "artemis.experiment_plans.rotation_scan_plan.create_devices",
-            fake_create_devices,
+            lambda: fake_create_devices,
         ),
         patch("dodal.beamlines.i03.undulator", return_value=undulator),
         patch("dodal.beamlines.i03.synchrotron", return_value=synchrotron),
         patch("dodal.beamlines.i03.s4_slit_gaps", return_value=slit_gaps),
-        patch("dodal.devices.eiger.EigerDetector.stage"),
+        patch(
+            "bluesky.preprocessors.__read_and_stash_a_motor",
+            __fake_read,
+        ),
     ):
         RE(
             get_plan(
                 test_rotation_params,
-                RotationCallbackCollection.from_params(test_rotation_params),
+                callbacks,
             )
         )

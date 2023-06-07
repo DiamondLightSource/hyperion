@@ -42,7 +42,7 @@ class StoreInIspyb(ABC):
     omega_start: int | None = None
     experiment_type: str | None = None
     xtal_snapshots: list[str] | None = None
-    datacollection_group_id: int | None = None
+    data_collection_group_id: int | None = None
 
     def __init__(self, ispyb_config, parameters=None) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
@@ -226,11 +226,19 @@ class StoreInIspyb(ABC):
 
 class StoreRotationInIspyb(StoreInIspyb):
     ispyb_params: RotationIspybParams
-    datacollection_id: int | None = None
+    data_collection_id: int | None = None
 
     def __init__(self, ispyb_config, parameters: RotationInternalParameters) -> None:
         self.full_params: RotationInternalParameters = parameters
-        self.ispyb_params = self.full_params.artemis_params.ispyb_params
+        self.ispyb_params: RotationInternalParameters = (
+            parameters.artemis_params.ispyb_params
+        )
+        self.detector_params = parameters.artemis_params.detector_params
+        if self.ispyb_params.xtal_snapshots_omega_start:
+            self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
+        else:
+            self.xtal_snapshots = []
+            LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
         self.experiment_type = "SAD"
         super().__init__(ispyb_config, parameters)
 
@@ -239,16 +247,20 @@ class StoreRotationInIspyb(StoreInIspyb):
     ) -> dict[str, Any]:
         assert self.full_params is not None
         params["axis_end"] = (
-            self.omega_start + self.full_params.experiment_params.rotation_angle
+            self.full_params.experiment_params.omega_start
+            + self.full_params.experiment_params.rotation_angle
         )
         params["n_images"] = self.full_params.experiment_params.get_num_images()
         return params
 
-    def _store_scan_data(self):
-        data_collection_group_id = self._store_data_collection_group_table()
-        data_collection_id = self._store_data_collection_table(data_collection_group_id)
-
-        self._store_position_table(data_collection_id)
+    def _store_scan_data(self, conn: Connector):
+        data_collection_group_id = self._store_data_collection_group_table(conn)
+        self.data_collection_group_id = data_collection_group_id
+        data_collection_id = self._store_data_collection_table(
+            conn, data_collection_group_id
+        )
+        self.data_collection_id = data_collection_id
+        self._store_position_table(conn, data_collection_id)
 
         return data_collection_id, data_collection_group_id
 
@@ -271,15 +283,15 @@ class StoreRotationInIspyb(StoreInIspyb):
             run_status = "DataCollection Successful"
         current_time = self.get_current_time_string()
         assert (
-            self.datacollection_id is not None
+            self.data_collection_id is not None
         ), "Can't end ISPyB deposition, datacollection IDs are missing"
-        assert self.datacollection_group_id is not None
+        assert self.data_collection_group_id is not None
         self.update_scan_with_end_time_and_status(
             current_time,
             run_status,
             reason,
-            self.datacollection_id,
-            self.datacollection_group_id,
+            self.data_collection_id,
+            self.data_collection_group_id,
         )
 
     def _construct_comment(self) -> str:
@@ -302,9 +314,9 @@ class StoreGridscanInIspyb(StoreInIspyb):
         (
             self.datacollection_ids,
             self.grid_ids,
-            self.datacollection_group_id,
+            self.data_collection_group_id,
         ) = self.store_grid_scan(self.full_params)
-        return self.datacollection_ids, self.grid_ids, self.datacollection_group_id
+        return self.datacollection_ids, self.grid_ids, self.data_collection_group_id
 
     def end_deposition(self, success: str, reason: str):
         """Write the end of datacollection data.
@@ -326,10 +338,10 @@ class StoreGridscanInIspyb(StoreInIspyb):
         assert (
             self.datacollection_ids is not None
         ), "Can't end ISPyB deposition, datacollection IDs are missing"
-        assert self.datacollection_group_id is not None
+        assert self.data_collection_group_id is not None
         for id in self.datacollection_ids:
             self.update_scan_with_end_time_and_status(
-                current_time, run_status, reason, id, self.datacollection_group_id
+                current_time, run_status, reason, id, self.data_collection_group_id
             )
 
     def store_grid_scan(self, full_params: FGSInternalParameters):

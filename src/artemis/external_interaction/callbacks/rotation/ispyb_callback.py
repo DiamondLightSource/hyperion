@@ -42,12 +42,12 @@ class RotationISPyBHandlerCallback(CallbackBase):
             ispyb_config, self.params
         )
 
-        self.ispyb_id: int | None = None
+        self.ispyb_ids: tuple[int, int] | tuple[None, None] = (None, None)
         self.uid_to_finalize_on: str | None = None
 
     def append_to_comment(self, comment: str):
         try:
-            self.ispyb.append_to_comment(self.ispyb_id, comment)
+            self.ispyb.append_to_comment(self.ispyb_ids[0], comment)
         except TypeError:
             LOGGER.warning("ISPyB deposition not initialised, can't update comment.")
 
@@ -78,14 +78,16 @@ class RotationISPyBHandlerCallback(CallbackBase):
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
-            set_dcgid_tag(self.ispyb_id)
+            set_dcgid_tag(self.ispyb_ids[1])
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
             LOGGER.debug("ISPyB handler received stop document.")
             exit_status = doc.get("exit_status")
             reason = doc.get("reason")
-            if self.ispyb_ids == (None, None, None):
-                raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
+            if self.ispyb_ids == (None, None):
+                raise ISPyBDepositionNotMade(
+                    "ISPyB deposition was not initialised at run start!"
+                )
             self.ispyb.end_deposition(exit_status, reason)
             set_dcgid_tag(None)
