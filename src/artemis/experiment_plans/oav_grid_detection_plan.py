@@ -8,12 +8,14 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.preprocessors import finalize_wrapper
 from dodal.beamlines import i03
+from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
+from artemis.exceptions import WarningException
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
@@ -49,6 +51,16 @@ def grid_detection_plan(
         ),
         reset_oav(parameters),
     )
+
+
+def wait_for_tip_to_be_found(pin_tip: PinTipDetect):
+    yield from bps.trigger(pin_tip, wait=True)
+    found_tip = yield from bps.rd(pin_tip)
+    if found_tip == pin_tip.INVALID_POSITION:
+        raise WarningException(
+            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
+        )
+    return found_tip
 
 
 def grid_detection_main_plan(
@@ -99,13 +111,12 @@ def grid_detection_main_plan(
         # See #673 for improvements
         yield from bps.sleep(0.3)
 
-        top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
-        bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
-
-        tip_x_px = yield from bps.rd(oav.mxsc.tip_x)
-        tip_y_px = yield from bps.rd(oav.mxsc.tip_y)
+        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc.pin_tip)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
+
+        top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
+        bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
 
         full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
