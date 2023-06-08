@@ -7,6 +7,7 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_3d_gridscan_writers,
 )
 from artemis.log import LOGGER
+from artemis.parameters.constants import ISPYB_PLAN_NAME
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
@@ -42,12 +43,15 @@ class FGSNexusFileHandlerCallback(CallbackBase):
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.parameters = FGSInternalParameters.from_json(json_params)
-            LOGGER.info("Initialising nexus writers")
             self.run_start_uid = doc.get("uid")
 
     def descriptor(self, doc):
-        if doc.get("name") == "ispyb_readings":
+        if doc.get("name") == ISPYB_PLAN_NAME:
+            # TODO instead of ispyb wait for detector parameter reading in plan
+            # https://github.com/DiamondLightSource/python-artemis/issues/629
+
             assert self.parameters is not None, "Failed to update parameters"
+            LOGGER.info("Initialising nexus writers")
             self.nexus_writer_1, self.nexus_writer_2 = create_3d_gridscan_writers(
                 self.parameters
             )
