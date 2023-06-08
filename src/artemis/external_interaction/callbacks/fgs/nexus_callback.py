@@ -11,10 +11,12 @@ from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalPara
 
 
 class FGSNexusFileHandlerCallback(CallbackBase):
-    """Callback class to handle the creation of Nexus files based on experiment
-    parameters. Creates the Nexus files on recieving a 'start' document for the
-    'run_gridscan' sub plan, and updates the timestamps on recieving a 'stop' document
-    for the same.
+    """Callback class to handle the creation of Nexus files based on experiment \
+    parameters. Initialises on recieving a 'start' document for the \
+    'run_gridscan_move_and_tidy' sub plan, which must also contain the run parameters, \
+    as metadata under the 'hyperion_internal_parameters' key. Actually writes the \
+    nexus files on updates the timestamps on recieving the 'ispyb_readings' event \
+    document, and finalises the files on getting a 'stop' document for the whole run.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
@@ -29,7 +31,7 @@ class FGSNexusFileHandlerCallback(CallbackBase):
 
     def __init__(self) -> None:
         self.parameters: FGSInternalParameters | None = None
-        self.run_gridscan_uid: str | None = None
+        self.run_start_uid: str | None = None
         self.nexus_writer_1: FGSNexusWriter | None = None
         self.nexus_writer_2: FGSNexusWriter | None = None
 
@@ -40,29 +42,25 @@ class FGSNexusFileHandlerCallback(CallbackBase):
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.parameters = FGSInternalParameters.from_json(json_params)
-        elif doc.get("subplan_name") == "run_gridscan":
             LOGGER.info("Initialising nexus writers")
-            self.run_gridscan_uid = doc.get("uid")
-            self.nexus_writer_1, self.nexus_writer_2 = create_3d_gridscan_writers(
-                self.parameters
-            )
+            self.run_start_uid = doc.get("uid")
 
     def descriptor(self, doc):
         if doc.get("name") == "ispyb_readings":
             assert self.parameters is not None, "Failed to update parameters"
+            self.nexus_writer_1, self.nexus_writer_2 = create_3d_gridscan_writers(
+                self.parameters
+            )
             assert (
                 self.nexus_writer_1 is not None and self.nexus_writer_2 is not None
             ), "Failed to create Nexus files, writers were not initialised."
             self.nexus_writer_1.create_nexus_file()
             self.nexus_writer_2.create_nexus_file()
 
-    def event(self, doc: dict):
-        ...
-
     def stop(self, doc: dict):
         if (
-            self.run_gridscan_uid is not None
-            and doc.get("run_start") == self.run_gridscan_uid
+            self.run_start_uid is not None
+            and doc.get("run_start") == self.run_start_uid
         ):
             LOGGER.info("Updating Nexus file timestamps.")
             assert (
