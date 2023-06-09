@@ -308,6 +308,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
     fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
     fake_fgs_composite.eiger.stage = MagicMock()
+    fake_fgs_composite.eiger.stage.return_value = Status(None, None, 0, True, True)
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
 
@@ -346,6 +347,7 @@ def test_when_exception_occurs_during_running_then_eiger_disarmed(
     fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
 
     fake_fgs_composite.eiger.stage = MagicMock()
+    fake_fgs_composite.eiger.stage.return_value = Status(None, None, 0, True, True)
 
     mock_complete.side_effect = Exception()
 
