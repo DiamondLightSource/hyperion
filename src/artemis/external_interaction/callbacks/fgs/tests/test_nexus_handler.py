@@ -5,6 +5,7 @@ import pytest
 from artemis.external_interaction.callbacks.fgs.nexus_callback import (
     FGSNexusFileHandlerCallback,
 )
+from artemis.parameters.constants import ISPYB_PLAN_NAME
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
@@ -47,7 +48,7 @@ def params_for_second():
         yield p
 
 
-def test_writers_not_setup_on_init_or_whole_plan_start_doc_but_setup_on_run_gridscan(
+def test_writers_not_setup_on_plan_start_doc(
     params_for_second: MagicMock,
     params_for_first: MagicMock,
     nexus_writer: MagicMock,
@@ -62,21 +63,9 @@ def test_writers_not_setup_on_init_or_whole_plan_start_doc_but_setup_on_run_grid
         }
     )
     nexus_writer.assert_not_called()
-    nexus_handler.start(
-        {
-            "subplan_name": "run_gridscan",
-        }
-    )
-    nexus_writer.assert_has_calls(
-        [
-            call(*params_for_first()),
-            call(*params_for_second()),
-        ],
-        any_order=True,
-    )
 
 
-def test_writers_dont_create_on_init_or_instantiation(
+def test_writers_dont_create_on_init_but_do_on_ispyb_event(
     params_for_second: MagicMock,
     params_for_first: MagicMock,
     nexus_writer: MagicMock,
@@ -97,16 +86,14 @@ def test_writers_dont_create_on_init_or_instantiation(
     assert nexus_handler.nexus_writer_1 is None
     assert nexus_handler.nexus_writer_2 is None
 
-    nexus_handler.start(
-        {
-            "subplan_name": "run_gridscan",
-        }
-    )
+    nexus_handler.descriptor({"name": ISPYB_PLAN_NAME})
 
     assert nexus_handler.nexus_writer_1 is not None
     assert nexus_handler.nexus_writer_2 is not None
-    nexus_handler.nexus_writer_1.write_nexus.assert_not_called()
-    nexus_handler.nexus_writer_2.write_nexus.assert_not_called()
+    nexus_handler.nexus_writer_1.create_nexus_file.assert_called_with(*params_for_first)
+    nexus_handler.nexus_writer_2.create_nexus_file.assert_called_with(
+        *params_for_second
+    )
 
 
 def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(

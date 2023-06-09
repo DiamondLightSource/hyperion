@@ -49,6 +49,7 @@ class FGSNexusFileHandlerCallback(CallbackBase):
         if doc.get("name") == ISPYB_PLAN_NAME:
             # TODO instead of ispyb wait for detector parameter reading in plan
             # https://github.com/DiamondLightSource/python-artemis/issues/629
+            # and update parameters before creating writers
 
             assert self.parameters is not None, "Failed to update parameters"
             LOGGER.info("Initialising nexus writers")

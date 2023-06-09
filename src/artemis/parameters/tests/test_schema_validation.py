@@ -3,7 +3,7 @@ from pathlib import Path
 
 import jsonschema
 import pytest
-from dodal.devices.fast_grid_scan import FastGridScan, GridScanParams
+from dodal.devices.fast_grid_scan import GridScanParams
 from jsonschema import ValidationError
 
 schema_folder = "src/artemis/parameters/schemas/"
