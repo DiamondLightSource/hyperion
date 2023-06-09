@@ -47,11 +47,13 @@ class FGSNexusFileHandlerCallback(CallbackBase):
 
     def descriptor(self, doc):
         if doc.get("name") == ISPYB_PLAN_NAME:
+            assert (
+                self.parameters is not None
+            ), "Nexus callback did not receive parameters before being asked to write!"
             # TODO instead of ispyb wait for detector parameter reading in plan
             # https://github.com/DiamondLightSource/python-artemis/issues/629
             # and update parameters before creating writers
 
-            assert self.parameters is not None, "Failed to update parameters"
             LOGGER.info("Initialising nexus writers")
             self.nexus_writer_1, self.nexus_writer_2 = create_3d_gridscan_writers(
                 self.parameters
