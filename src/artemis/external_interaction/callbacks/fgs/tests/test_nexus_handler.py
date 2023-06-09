@@ -121,3 +121,32 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
 
     nexus_handler.nexus_writer_1.create_nexus_file.assert_called()
     nexus_handler.nexus_writer_2.create_nexus_file.assert_called()
+
+
+def test_sensible_error_if_writing_triggered_before_params_received(
+    nexus_writer: MagicMock, dummy_params
+):
+    nexus_handler = FGSNexusFileHandlerCallback()
+    with pytest.raises(AssertionError) as excinfo:
+        nexus_handler.descriptor(
+            {
+                "name": "ispyb_readings",
+            }
+        )
+
+    assert "Nexus callback did not receive parameters" in excinfo.value.args[0]
+
+
+def test_sensible_error_stop_triggered_before_writing(
+    nexus_writer: MagicMock, dummy_params
+):
+    nexus_handler = FGSNexusFileHandlerCallback()
+    nexus_handler.run_start_uid = "test_run"
+    with pytest.raises(AssertionError) as excinfo:
+        nexus_handler.stop(
+            {
+                "run_start": "test_run",
+            }
+        )
+
+    assert "Failed to update Nexus file timestamps" in excinfo.value.args[0]
