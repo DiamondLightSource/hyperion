@@ -12,6 +12,7 @@ import pytest
 from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
+from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
@@ -31,19 +32,19 @@ TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameter_defaults.
 class MockRunEngine:
     RE_takes_time = True
     aborting_takes_time = False
-    error: Optional[str] = None
+    error: Optional[Exception] = None
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         while self.RE_takes_time:
             sleep(0.1)
             if self.error:
-                raise Exception(self.error)
+                raise self.error
 
     def abort(self):
         while self.aborting_takes_time:
             sleep(0.1)
             if self.error:
-                raise Exception(self.error)
+                raise self.error
         self.RE_takes_time = False
 
     def subscribe(self, *args):
@@ -218,14 +219,16 @@ def test_given_started_when_stopped_and_started_again_then_runs(
 
 
 def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
+    caplog,
     test_env: ClientAndRunEngine,
 ):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
-    error_message = "D'Oh"
-    test_env.mock_run_engine.error = error_message
+    test_env.mock_run_engine.error = Exception("D'Oh")
     response_json = wait_for_run_engine_status(test_env.client)
     assert response_json["status"] == Status.FAILED.value
     assert response_json["message"] == 'Exception("D\'Oh")'
+    assert response_json["exception_type"] == "Exception"
+    assert caplog.records[-1].levelname == "ERROR"
 
 
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
@@ -233,14 +236,14 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
 ):
     test_env.mock_run_engine.aborting_takes_time = True
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
-    error_message = "D'Oh"
     test_env.client.put(STOP_ENDPOINT)
-    test_env.mock_run_engine.error = error_message
+    test_env.mock_run_engine.error = Exception("D'Oh")
     response_json = wait_for_run_engine_status(
         test_env.client, lambda status: status != Status.ABORTING.value
     )
     assert response_json["status"] == Status.FAILED.value
     assert response_json["message"] == 'Exception("D\'Oh")'
+    assert response_json["exception_type"] == "Exception"
 
 
 def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
@@ -422,7 +425,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
         assert mock_setup.call_count == 4
 
 
-def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
+def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
     response = test_env.client.put(TEST_BAD_PARAM_ENDPOINT, data='{"bad":1}').json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
@@ -430,4 +433,14 @@ def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
         response.get("message")
         == "<ValidationError: \"{'bad': 1} does not have enough properties\">"
     )
-    assert "Invalid json parameters" in caplog.text
+    assert response.get("exception_type") == "ValidationError"
+
+
+def test_warn_exception_during_plan_causes_warning_in_log(caplog, test_env):
+    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
+    test_env.mock_run_engine.error = WarningException("D'Oh")
+    response_json = wait_for_run_engine_status(test_env.client)
+    assert response_json["status"] == Status.FAILED.value
+    assert response_json["message"] == 'WarningException("D\'Oh")'
+    assert response_json["exception_type"] == "WarningException"
+    assert caplog.records[-1].levelname == "WARNING"

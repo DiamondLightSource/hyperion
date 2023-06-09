@@ -2,7 +2,6 @@ import argparse
 import atexit
 import threading
 from dataclasses import dataclass
-from json import JSONDecodeError
 from queue import Queue
 from traceback import format_exception
 from typing import Callable, Optional, Tuple
@@ -11,7 +10,6 @@ from bluesky import RunEngine
 from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
-from jsonschema.exceptions import ValidationError
 
 import artemis.log
 from artemis.exceptions import WarningException
@@ -48,6 +46,16 @@ class StatusAndMessage:
     def __init__(self, status: Status, message: str = "") -> None:
         self.status = status.value
         self.message = message
+
+
+@dataclass_json
+@dataclass
+class ErrorStatusAndMessage(StatusAndMessage):
+    exception_type: str = ""
+
+    def __init__(self, exception: Exception) -> None:
+        super().__init__(Status.FAILED, repr(exception))
+        self.exception_type = type(exception).__name__
 
 
 class BlueskyRunner:
@@ -94,7 +102,7 @@ class BlueskyRunner:
             self.RE.abort()
             self.current_status = StatusAndMessage(Status.IDLE)
         except Exception as e:
-            self.current_status = StatusAndMessage(Status.FAILED, repr(e))
+            self.current_status = ErrorStatusAndMessage(e)
 
     def stop(self) -> StatusAndMessage:
         if self.current_status.status == Status.IDLE.value:
@@ -131,16 +139,14 @@ class BlueskyRunner:
                     self.last_run_aborted = False
                 except WarningException as exception:
                     artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
-                    self.current_status = StatusAndMessage(Status.WARN, repr(exception))
+                    self.current_status = ErrorStatusAndMessage(exception)
                 except Exception as exception:
                     artemis.log.LOGGER.error("Exception on running plan", exc_info=True)
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow
                         self.last_run_aborted = False
                     else:
-                        self.current_status = StatusAndMessage(
-                            Status.FAILED, repr(exception)
-                        )
+                        self.current_status = ErrorStatusAndMessage(exception)
 
 
 class RunExperiment(Resource):
@@ -180,17 +186,8 @@ class RunExperiment(Resource):
                 status_and_message = self.runner.start(
                     experiment, parameters, plan_name
                 )
-            except JSONDecodeError as e:
-                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
-            except PlanNotFound as e:
-                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
-            except ValidationError as e:
-                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
-                artemis.log.LOGGER.error(
-                    f" {format_exception(e)}: Invalid json parameters"
-                )
             except Exception as e:
-                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+                status_and_message = ErrorStatusAndMessage(e)
                 artemis.log.LOGGER.error(format_exception(e))
 
         elif action == Actions.STOP.value:
