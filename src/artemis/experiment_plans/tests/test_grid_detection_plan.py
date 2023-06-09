@@ -7,6 +7,7 @@ from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
+from ophyd.status import Status
 
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.oav_grid_detection_plan import (
@@ -46,17 +47,23 @@ def fake_create_devices():
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.mv")
-@patch("bluesky.plan_stubs.trigger")
-def test_grid_detection_plan(
-    bps_trigger: MagicMock,
+def test_grid_detection_plan_runs_and_triggers_snapshots(
     bps_mv: MagicMock,
     bps_wait: MagicMock,
     RE,
     test_config_files,
 ):
     oav, smargon, bl = fake_create_devices()
+
+    oav.mxsc.pin_tip.tip_x.sim_put(100)
+    oav.mxsc.pin_tip.tip_y.sim_put(100)
+
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
+
+    finished_status = Status(done=True, success=True)
+    oav.snapshot.trigger = MagicMock(return_value=finished_status)
+
     RE(
         grid_detection_plan(
             parameters=params,
@@ -67,24 +74,21 @@ def test_grid_detection_plan(
             snapshot_template="test_{angle}",
         )
     )
-    bps_trigger.assert_called_with(oav.snapshot, wait=True)
+    oav.snapshot.trigger.assert_called()
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
-@patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.mv")
-@patch("bluesky.plan_stubs.trigger")
 def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
-    bps_trigger: MagicMock,
     bps_mv: MagicMock,
-    bps_wait: MagicMock,
     RE,
     test_config_files,
 ):
     oav: OAV
     oav, smargon, bl = fake_create_devices()
-    oav.mxsc.pin_tip.tip_x.put(-1)
-    oav.mxsc.pin_tip.tip_y.put(-1)
+    oav.mxsc.pin_tip.tip_x.sim_put(-1)
+    oav.mxsc.pin_tip.tip_y.sim_put(-1)
+    oav.mxsc.pin_tip.validity_timeout.put(0.01)
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
     with pytest.raises(WarningException) as excinfo:
