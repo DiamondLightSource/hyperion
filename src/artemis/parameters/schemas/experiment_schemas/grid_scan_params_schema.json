@@ -46,11 +46,8 @@
         },
         "omega_start": {
             "type": "number"
-        },
-        "x_axis": {},
-        "y_axis": {},
-        "z_axis": {}
+        }
     },
-    "minProperties": 15,
+    "minProperties": 12,
     "additionalProperties": false
 }
