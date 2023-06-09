@@ -62,10 +62,9 @@ def test_good_params_gridparams_validates():
 
 
 def test_serialised_grid_scan_params_validate():
-    from dodal.devices.fast_grid_scan import GridScanParams
-
-    params = GridScanParams().json()
-    jsonschema.validate(json.loads(params), grid_scan_schema, resolver=resolver)
+    params = GridScanParams()
+    json_params = params.json()
+    jsonschema.validate(json.loads(json_params), grid_scan_schema, resolver=resolver)
 
 
 def test_good_params_rotationparams_validates():
