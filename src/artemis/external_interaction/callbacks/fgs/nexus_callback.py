@@ -58,9 +58,6 @@ class FGSNexusFileHandlerCallback(CallbackBase):
             self.nexus_writer_1, self.nexus_writer_2 = create_3d_gridscan_writers(
                 self.parameters
             )
-            assert (
-                self.nexus_writer_1 is not None and self.nexus_writer_2 is not None
-            ), "Failed to create Nexus files, writers were not initialised."
             self.nexus_writer_1.create_nexus_file()
             self.nexus_writer_2.create_nexus_file()
 
