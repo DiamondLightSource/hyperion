@@ -105,12 +105,14 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
     centre_of_mass_coords = [2.942925659754348, 7.142683401382778, 6.79110544979448]
 
-    message = [
-        {
-            "max_voxel": [3, 5, 5],
-            "centre_of_mass": centre_of_mass_coords,
-        }
-    ]
+    message = {
+        "results": [
+            {
+                "max_voxel": [3, 5, 5],
+                "centre_of_mass": centre_of_mass_coords,
+            }
+        ]
+    }
     datacollection_grid_id = 7263143
     step_params = {"dcid": "8183741", "dcgid": str(datacollection_grid_id)}
 
@@ -188,7 +190,7 @@ def test_when_no_results_returned_then_no_diffraction_exception_raised(
 ):
     zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
 
-    message = []
+    message = {}
     datacollection_grid_id = 7263143
     step_params = {"dcid": "8183741", "dcgid": str(datacollection_grid_id)}
 
