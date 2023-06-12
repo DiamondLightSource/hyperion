@@ -98,3 +98,10 @@ def set_zebra_shutter_to_manual(
 
     if wait:
         yield from bps.wait(group)
+
+
+def setup_zebra_for_fluorescence(
+    zebra: Zebra, group="setup_zebra_for_fluorescence", wait=False
+):
+    # Need to reset and arm
+    pass
