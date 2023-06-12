@@ -18,7 +18,7 @@ Controlling the Gridscan Externally (e.g. from GDA)
 
 Starting the bluesky runner
 -------------------------
-You can start the bluesky runner by running `run_artemis.sh`
+You can start the bluesky runner by running `run_artemis.sh`. Note that this will fail on a developer machine unless you have a simulated beamline running, instead you should do `run_artemis.sh --skip-startup-connection`, which will give you a running instance (note that without hardware trying to run a plan on this will fail).
 
 This script will determine whether you are on a beamline or a production machine based on the `BEAMLINE` environment variable.  If on a beamline Artemis will run with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/artemis.txt on the shared file system.
 
