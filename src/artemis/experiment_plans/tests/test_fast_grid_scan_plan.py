@@ -23,9 +23,6 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     run_gridscan_and_move,
     wait_for_fgs_valid,
 )
-from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
-    AbstractPlanCallbackCollection,
-)
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
