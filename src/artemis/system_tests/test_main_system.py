@@ -29,7 +29,7 @@ Every test in this file which uses the test_env fixture should either:
     - set RE_takes_time to false
     or
     - set an error on the mock run engine
-In order to avoid threads which get left alive forever after test completion    
+In order to avoid threads which get left alive forever after test completion
 """
 
 
