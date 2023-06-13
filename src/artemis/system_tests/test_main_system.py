@@ -39,10 +39,16 @@ class MockRunEngine:
     error: Optional[str] = None
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
+        time = 0.0
         while self.RE_takes_time:
             sleep(0.1)
+            time += 0.1
             if self.error:
                 raise Exception(self.error)
+            if time > 15:
+                raise TimeoutError(
+                    "Mock RunEngine thread spun too long without an error."
+                )
 
     def abort(self):
         while self.aborting_takes_time:
