@@ -16,12 +16,12 @@ from artemis.parameters.external_parameters import from_file as raw_params_from_
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectParams,
     GridScanWithEdgeDetectInternalParameters,
 )
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+from artemis.parameters import external_parameters
 
 
 @pytest.fixture
@@ -102,14 +102,10 @@ def test_params():
 
 @pytest.fixture
 def test_full_grid_scan_params():
-    return (
-        GridScanWithEdgeDetectInternalParameters(
-            {
-                "experiment_params": GridScanWithEdgeDetectParams(0, "", 0, 0),
-                "artemis_params": default_raw_params()["artemis_params"],
-            }
-        ),
+    params = external_parameters.from_file(
+        "src/artemis/parameters/tests/test_data/good_test_grid_with_edge_detect_parameters.json"
     )
+    return GridScanWithEdgeDetectInternalParameters(**params)
 
 
 @pytest.fixture
