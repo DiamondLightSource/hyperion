@@ -17,6 +17,7 @@ from ophyd.status import Status
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     FGSComposite,
+    get_plan,
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,
@@ -288,7 +289,9 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
+@patch("artemis.external_interaction.nexus.write_nexus.FGSNexusWriter")
 def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
+    nexuswriter,
     wait_for_valid,
     mock_mv,
     mock_complete,
@@ -312,14 +315,11 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     )
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
-
-    RE(
-        run_gridscan_and_move(
-            fake_fgs_composite,
-            test_fgs_params,
-            mock_subscriptions,
-        )
-    )
+    with patch(
+        "artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite",
+        fake_fgs_composite,
+    ):
+        RE(get_plan(test_fgs_params, mock_subscriptions))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 

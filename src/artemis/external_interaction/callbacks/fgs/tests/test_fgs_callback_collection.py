@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
 
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
@@ -100,8 +102,8 @@ def test_communicator_in_composite_run(
     RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, callbacks))
 
     # nexus writing
-    callbacks.nexus_handler.nxs_writer_1.assert_called_once()
-    callbacks.nexus_handler.nxs_writer_2.assert_called_once()
+    callbacks.nexus_handler.nexus_writer_1.assert_called_once()
+    callbacks.nexus_handler.nexus_writer_2.assert_called_once()
     # ispyb
     ispyb_begin_deposition.assert_called_once()
     ispyb_end_deposition.assert_called_once()
@@ -109,3 +111,40 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._run_start.assert_called()
     callbacks.zocalo_handler._run_end.assert_called()
     callbacks.zocalo_handler._wait_for_result.assert_called_once()
+
+
+def test_callback_collection_list():
+    test_parameters = FGSInternalParameters(**default_raw_params())
+    callbacks = FGSCallbackCollection.from_params(test_parameters)
+    callback_list = list(callbacks)
+    assert len(callback_list) == 3
+    assert callbacks.ispyb_handler in callback_list
+    assert callbacks.nexus_handler in callback_list
+    assert callbacks.zocalo_handler in callback_list
+
+
+def test_subscribe_in_plan():
+    test_parameters = FGSInternalParameters(**default_raw_params())
+    callbacks = FGSCallbackCollection.from_params(test_parameters)
+    document_event_mock = MagicMock()
+    callbacks.ispyb_handler.start = document_event_mock
+    callbacks.ispyb_handler.stop = document_event_mock
+    callbacks.zocalo_handler.start = document_event_mock
+    callbacks.zocalo_handler.stop = document_event_mock
+    callbacks.nexus_handler.start = document_event_mock
+    callbacks.nexus_handler.stop = document_event_mock
+
+    RE = RunEngine()
+
+    @bpp.subs_decorator(callbacks.ispyb_handler)
+    def outer_plan():
+        @bpp.set_run_key_decorator("inner_plan")
+        @bpp.run_decorator(md={"subplan_name": "inner_plan"})
+        def inner_plan():
+            yield from bps.sleep(0)
+
+        yield from inner_plan()
+
+    RE(outer_plan())
+
+    document_event_mock.assert_called()

@@ -8,7 +8,7 @@ from artemis.parameters.constants import ISPYB_PLAN_NAME
 @pytest.fixture
 def nexus_writer():
     with patch(
-        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter"
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.FGSNexusWriter"
     ) as nw:
         yield nw
 

@@ -120,10 +120,10 @@ def mock_subscriptions(test_params):
         TEST_RESULT_LARGE
     )
 
-    subscriptions.nexus_handler.nxs_writer_1 = MagicMock()
-    subscriptions.nexus_handler.nxs_writer_2 = MagicMock()
+    subscriptions.nexus_handler.nexus_writer_1 = MagicMock()
+    subscriptions.nexus_handler.nexus_writer_2 = MagicMock()
 
     subscriptions.ispyb_handler.ispyb = MagicMock()
-    subscriptions.ispyb_handler.ispyb_ids = [[0, 0], 0, 0]
+    subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: [[0, 0], 0, 0]
 
     return subscriptions
