@@ -62,7 +62,6 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
 
 def get_plan(
     parameters: GridScanWithEdgeDetectInternalParameters,
-    subscriptions: FGSCallbackCollection,
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
 ) -> Callable:
     """

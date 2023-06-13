@@ -16,9 +16,6 @@ from jsonschema.exceptions import ValidationError
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
-from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
-    AbstractPlanCallbackCollection,
-)
 from artemis.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
 )
@@ -51,7 +48,6 @@ class StatusAndMessage:
 
 
 class BlueskyRunner:
-    callbacks: AbstractPlanCallbackCollection
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
@@ -76,9 +72,6 @@ class BlueskyRunner:
         if self.skip_startup_connection:
             PLAN_REGISTRY[plan_name]["setup"]()
 
-        self.callbacks = PLAN_REGISTRY[plan_name][
-            "callback_collection_type"
-        ].from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -122,18 +115,20 @@ class BlueskyRunner:
             elif command.action == Actions.START:
                 try:
                     with TRACER.start_span("do_run"):
-                        self.RE(command.experiment(command.parameters, self.callbacks))
+                        self.RE(command.experiment(command.parameters))
 
                     self.current_status = StatusAndMessage(
                         Status.IDLE,
                         self.aperture_change_callback.last_selected_aperture,
                     )
+
                     self.last_run_aborted = False
-                except WarningException as exception:
-                    artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
-                    self.current_status = StatusAndMessage(Status.WARN, repr(exception))
+                # except WarningException as exception:
+                #    artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
+                #    self.current_status = StatusAndMessage(Status.WARN, repr(exception))
                 except Exception as exception:
                     artemis.log.LOGGER.error("Exception on running plan", exc_info=True)
+
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow
                         self.last_run_aborted = False

@@ -23,6 +23,9 @@ from artemis.experiment_plans.fast_grid_scan_plan import (
     run_gridscan_and_move,
     wait_for_fgs_valid,
 )
+from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
+)
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
@@ -318,8 +321,11 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     with patch(
         "artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite",
         fake_fgs_composite,
+    ), patch(
+        "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
+        lambda _: mock_subscriptions,
     ):
-        RE(get_plan(test_fgs_params, mock_subscriptions))
+        RE(get_plan(test_fgs_params))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 

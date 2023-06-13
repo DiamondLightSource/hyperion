@@ -43,8 +43,11 @@ def test_wait_for_detector(RE):
     RE(wait_for_det_to_finish_moving(d_m, 0.5))
 
 
-def test_get_plan(test_params, mock_subscriptions, test_config_files):
-    with patch("artemis.experiment_plans.full_grid_scan.i03"):
-        plan = get_plan(test_params, mock_subscriptions, test_config_files)
+def test_get_plan(test_params, test_config_files, mock_subscriptions):
+    with patch("artemis.experiment_plans.full_grid_scan.i03"), patch(
+        "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
+        lambda _: mock_subscriptions,
+    ):
+        plan = get_plan(test_params, test_config_files)
 
     assert isinstance(plan, Generator)
