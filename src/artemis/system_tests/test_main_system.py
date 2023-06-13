@@ -24,6 +24,14 @@ SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameter_defaults.json"))
 
+"""
+Every test in this file which uses the test_env fixture should either:
+    - set RE_takes_time to false
+    or
+    - set an error on the mock run engine
+In order to avoid threads which get left alive forever after test completion    
+"""
+
 
 class MockRunEngine:
     RE_takes_time = True
