@@ -1,5 +1,4 @@
 from unittest.mock import MagicMock
-from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 
 import pytest
 from bluesky.run_engine import RunEngine
