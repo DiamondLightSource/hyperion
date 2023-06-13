@@ -51,6 +51,7 @@ def smargon():
     return smargon
 
 
+@pytest.fixture
 def zebra():
     return i03.zebra(fake_with_ophyd_sim=True)
 
