@@ -48,6 +48,6 @@
             "type": "number"
         }
     },
-    "minProperties": 15,
+    "minProperties": 12,
     "additionalProperties": false
 }

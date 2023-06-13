@@ -30,7 +30,7 @@ class FGSCallbackCollection(AbstractPlanCallbackCollection):
 
     @classmethod
     def from_params(cls, parameters: InternalParameters):
-        nexus_handler = FGSNexusFileHandlerCallback(parameters)
+        nexus_handler = FGSNexusFileHandlerCallback()
         ispyb_handler = FGSISPyBHandlerCallback(parameters)
         zocalo_handler = FGSZocaloCallback(parameters, ispyb_handler)
         callback_collection = cls(

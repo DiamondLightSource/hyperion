@@ -259,13 +259,8 @@ def run_gridscan_and_move(
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
-    # While the gridscan is happening we want to write out nexus files and trigger zocalo
-    @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
-    def gridscan_with_subscriptions(fgs_composite, params):
-        artemis.log.LOGGER.info("Starting grid scan")
-        yield from run_gridscan(fgs_composite, params)
-
-    yield from gridscan_with_subscriptions(fgs_composite, parameters)
+    artemis.log.LOGGER.info("Starting grid scan")
+    yield from run_gridscan(fgs_composite, parameters)
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
@@ -307,8 +302,17 @@ def get_plan(
         parameters.artemis_params.detector_params
     )
 
+    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
+        list(subscriptions)  # must be the outermost decorator to receive the metadata
+    )
+    @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": "run_gridscan_move_and_tidy",
+            "hyperion_internal_parameters": parameters.json(),
+        }
+    )
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
-    @bpp.subs_decorator(subscriptions.ispyb_handler)
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
