@@ -82,7 +82,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
             parameters=params,
             out_parameters=gridscan_params,
             snapshot_dir="tmp",
-            out_upper_left={},
             snapshot_template="test_{angle}",
         )
     )
@@ -92,6 +91,9 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     assert len(cb.snapshot_filenames[0]) == 3
     assert cb.snapshot_filenames[0][0] == "tmp/test_0.png"
     assert cb.snapshot_filenames[1][2] == "tmp/test_90_grid_overlay.png"
+
+    assert len(cb.out_upper_left) == 2
+    assert len(cb.out_upper_left[0]) == 2
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)

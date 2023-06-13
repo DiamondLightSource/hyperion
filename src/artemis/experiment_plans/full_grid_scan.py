@@ -93,8 +93,6 @@ def get_plan(
             f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
         )
 
-        out_upper_left = {}
-
         oav_callback = OavSnapshotCallback()
         yield from bps.subscribe(oav_callback)
 
@@ -103,10 +101,14 @@ def get_plan(
             fgs_params,
             snapshot_template,
             experiment_params.snapshot_dir,
-            out_upper_left,
         )
 
         yield from bps.unsubscribe(oav_callback)
+
+        # Hack because GDA only passes 3 values to ispyb
+        out_upper_left = oav_callback.out_upper_left[0] + [
+            oav_callback.out_upper_left[1][1]
+        ]
 
         # hack because the callback returns the list in inverted order
         parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (

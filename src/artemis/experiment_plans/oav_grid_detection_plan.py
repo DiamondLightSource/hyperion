@@ -33,7 +33,6 @@ def grid_detection_plan(
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
-    out_upper_left: list[float] | np.ndarray,
     width=600,
     box_size_microns=20,
 ):
@@ -43,7 +42,6 @@ def grid_detection_plan(
             out_parameters,
             snapshot_template,
             snapshot_dir,
-            out_upper_left,
             width,
             box_size_microns,
         ),
@@ -67,7 +65,6 @@ def grid_detection_main_plan(
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
-    out_upper_left: list[float] | np.ndarray,
     grid_width_px: int,
     box_size_um: float,
 ):
@@ -80,7 +77,6 @@ def grid_detection_main_plan(
         out_parameters (GridScanParams): The returned parameters for the gridscan
         snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
         snapshot_dir (str): The location to save snapshots
-        out_upper_left (Dict): The returned x, y, z value of the upper left pixel of the grid
         grid_width_px (int): The width of the grid to scan in pixels
         box_size_um (float): The size of each box of the grid in microns
     """
@@ -140,11 +136,6 @@ def grid_detection_main_plan(
         box_numbers.append(boxes)
 
         upper_left = (tip_x_px, min_y)
-        if angle == 0:
-            out_upper_left[0] = int(tip_x_px)
-            out_upper_left[1] = int(min_y)
-        else:
-            out_upper_left[2] = int(min_y)
 
         yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])
@@ -162,6 +153,8 @@ def grid_detection_main_plan(
         yield from bps.read(oav.snapshot.last_saved_path)
         yield from bps.read(oav.snapshot.last_path_outer)
         yield from bps.read(oav.snapshot.last_path_full_overlay)
+        yield from bps.read(oav.snapshot.top_left_x)
+        yield from bps.read(oav.snapshot.top_left_y)
         yield from bps.save()
 
         # Get the beam distance from the centre (in pixels).
