@@ -14,6 +14,7 @@ from flask_restful import Api, Resource
 from jsonschema.exceptions import ValidationError
 
 import artemis.log
+from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from artemis.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
@@ -122,9 +123,9 @@ class BlueskyRunner:
                     )
 
                     self.last_run_aborted = False
-                # except WarningException as exception:
-                #    artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
-                #    self.current_status = StatusAndMessage(Status.WARN, repr(exception))
+                except WarningException as exception:
+                    artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
+                    self.current_status = StatusAndMessage(Status.WARN, repr(exception))
                 except Exception as exception:
                     artemis.log.LOGGER.error("Exception on running plan", exc_info=True)
 
