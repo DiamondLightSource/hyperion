@@ -6,7 +6,9 @@ from unittest.mock import call, patch
 import h5py
 import numpy as np
 import pytest
+from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
+from nexgen.nxs_utils import Axis, Goniometer
 
 from artemis.external_interaction.nexus.write_nexus import (
     FGSNexusWriter,
@@ -15,6 +17,108 @@ from artemis.external_interaction.nexus.write_nexus import (
 )
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationScanParams,
+)
+
+
+def create_gridscan_goniometer_axes(
+    detector_params: DetectorParams, grid_scan_params: GridScanParams, grid_scan: dict
+) -> Goniometer:
+    """Create the data for the goniometer.
+
+    Args:
+        detector_params (DetectorParams): Information about the detector.
+        grid_scan_params (GridScanParams): Information about the experiment.
+        grid_scan (dict): scan midpoints from scanspec.
+
+    Returns:
+        Goniometer: A Goniometer description for nexgen
+    """
+    # Axis: name, depends, type, vector, start
+    gonio_axes = [
+        Axis("omega", ".", "rotation", (-1.0, 0.0, 0.0), detector_params.omega_start),
+        Axis(
+            "sam_z",
+            "omega",
+            "translation",
+            (0.0, 0.0, 1.0),
+            grid_scan_params.z_axis.start,
+            grid_scan_params.z_axis.step_size,
+        ),
+        Axis(
+            "sam_y",
+            "sam_z",
+            "translation",
+            (0.0, 1.0, 0.0),
+            grid_scan_params.y_axis.start,
+            grid_scan_params.y_axis.step_size,
+        ),
+        Axis(
+            "sam_x",
+            "sam_y",
+            "translation",
+            (1.0, 0.0, 0.0),
+            grid_scan_params.x_axis.start,
+            grid_scan_params.x_axis.step_size,
+        ),
+        Axis("chi", "sam_x", "rotation", (0.006, -0.0264, 0.9996), 0.0),
+        Axis("phi", "chi", "rotation", (-1, -0.0025, -0.0056), 0.0),
+    ]
+    return Goniometer(gonio_axes, grid_scan)
+
+
+def create_rotation_goniometer_axes(
+    detector_params: DetectorParams, scan_params: RotationScanParams
+) -> Goniometer:
+    """Create the data for the goniometer.
+
+    Args:
+        detector_params (DetectorParams): Information about the detector.
+
+    Returns:
+        Goniometer: A Goniometer description for nexgen
+    """
+    # Axis: name, depends, type, vector, start
+    gonio_axes = [
+        Axis(
+            "omega",
+            ".",
+            "rotation",
+            (-1.0, 0.0, 0.0),
+            detector_params.omega_start,
+            increment=scan_params.image_width,
+            num_steps=detector_params.num_images_per_trigger,
+        ),
+        Axis(
+            "sam_z",
+            "omega",
+            "translation",
+            (0.0, 0.0, 1.0),
+            scan_params.z,
+            0,
+        ),
+        Axis(
+            "sam_y",
+            "sam_z",
+            "translation",
+            (0.0, 1.0, 0.0),
+            scan_params.y,
+            0,
+        ),
+        Axis(
+            "sam_x",
+            "sam_y",
+            "translation",
+            (1.0, 0.0, 0.0),
+            scan_params.x,
+            0,
+        ),
+        Axis("chi", "sam_x", "rotation", (0.006, -0.0264, 0.9996), 0.0),
+        Axis("phi", "chi", "rotation", (-1, -0.0025, -0.0056), 0.0),
+    ]
+    return Goniometer(gonio_axes)
+
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
