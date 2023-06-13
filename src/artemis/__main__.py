@@ -14,7 +14,6 @@ from flask_restful import Api, Resource
 from jsonschema.exceptions import ValidationError
 
 import artemis.log
-from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from artemis.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
