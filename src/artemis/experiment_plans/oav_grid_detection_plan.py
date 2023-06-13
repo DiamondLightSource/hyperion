@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.preprocessors import finalize_wrapper
 from dodal.beamlines import i03

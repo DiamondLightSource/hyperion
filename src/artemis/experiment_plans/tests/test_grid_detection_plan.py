@@ -1,15 +1,14 @@
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
-from ophyd.status import Status
 
-from bluesky.run_engine import RunEngine
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices,
@@ -74,8 +73,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
-
-    # finished_status = Status(done=True, success=True)
 
     cb = OavSnapshotCallback()
     RE.subscribe(cb)
