@@ -19,7 +19,36 @@ def create_goniometer_axes(
     experiment_params: AbstractExperimentParameterBase,
     scan_spec: dict,
 ):
-    return Goniometer(gonio_axes, grid_scan)
+    gonio_axes = [
+        Axis("omega", ".", "rotation", (-1.0, 0.0, 0.0), detector_params.omega_start),
+        Axis(
+            "sam_z",
+            "omega",
+            "translation",
+            (0.0, 0.0, 1.0),
+            0,
+            0,
+        ),
+        Axis(
+            "sam_y",
+            "sam_z",
+            "translation",
+            (0.0, 1.0, 0.0),
+            0,
+            0,
+        ),
+        Axis(
+            "sam_x",
+            "sam_y",
+            "translation",
+            (1.0, 0.0, 0.0),
+            0,
+            0,
+        ),
+        Axis("chi", "sam_x", "rotation", (0.006, -0.0264, 0.9996), 0.0),
+        Axis("phi", "chi", "rotation", (-1, -0.0025, -0.0056), 0.0),
+    ]
+    return Goniometer(gonio_axes, scan_spec)
 
 
 def get_current_time():

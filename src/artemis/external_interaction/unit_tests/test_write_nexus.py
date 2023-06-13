@@ -10,6 +10,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 from nexgen.nxs_utils import Axis, Goniometer
 
+from artemis.external_interaction.nexus.nexus_utils import create_goniometer_axes
 from artemis.external_interaction.nexus.write_nexus import (
     FGSNexusWriter,
     create_parameters_for_first_gridscan_file,
@@ -20,6 +21,21 @@ from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalPara
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
+
+
+@pytest.fixture(params=[1044])
+def minimal_params(request):
+    params = FGSInternalParameters(**default_raw_params())
+    params.artemis_params.ispyb_params.wavelength = 1.0
+    params.artemis_params.ispyb_params.flux = 9.0
+    params.artemis_params.ispyb_params.transmission = 0.5
+    params.artemis_params.detector_params.use_roi_mode = True
+    params.artemis_params.detector_params.num_triggers = request.param
+    params.artemis_params.detector_params.directory = (
+        os.path.dirname(os.path.realpath(__file__)) + "/test_data"
+    )
+    params.artemis_params.detector_params.prefix = "dummy"
+    yield params
 
 
 def create_gridscan_goniometer_axes(
@@ -120,6 +136,23 @@ def create_rotation_goniometer_axes(
     return Goniometer(gonio_axes)
 
 
+def test_generic_create_gonio_behaves_as_expected(
+    minimal_params: FGSInternalParameters,
+):
+    params_w_scan = create_parameters_for_first_gridscan_file(minimal_params)
+    new_fgs_axes = create_goniometer_axes(
+        params_w_scan[0].artemis_params.detector_params,
+        params_w_scan[0].experiment_params,
+        params_w_scan[1],
+    )
+    old_fgs_axes = create_gridscan_goniometer_axes(
+        params_w_scan[0].artemis_params.detector_params,
+        params_w_scan[0].experiment_params,
+        params_w_scan[1],
+    )
+    assert new_fgs_axes == old_fgs_axes
+
+
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
 Note that the testing process does now write temporary files to disk."""
@@ -129,21 +162,6 @@ def assert_end_data_correct(nexus_writer: FGSNexusWriter):
     for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
             assert "end_time" in written_nexus_file["entry"]
-
-
-@pytest.fixture(params=[1044])
-def minimal_params(request):
-    params = FGSInternalParameters(**default_raw_params())
-    params.artemis_params.ispyb_params.wavelength = 1.0
-    params.artemis_params.ispyb_params.flux = 9.0
-    params.artemis_params.ispyb_params.transmission = 0.5
-    params.artemis_params.detector_params.use_roi_mode = True
-    params.artemis_params.detector_params.num_triggers = request.param
-    params.artemis_params.detector_params.directory = (
-        os.path.dirname(os.path.realpath(__file__)) + "/test_data"
-    )
-    params.artemis_params.detector_params.prefix = "dummy"
-    yield params
 
 
 @pytest.fixture
