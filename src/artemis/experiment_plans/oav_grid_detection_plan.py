@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import math
-from os.path import join as path_join
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
+import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.preprocessors import finalize_wrapper
@@ -33,7 +33,6 @@ def grid_detection_plan(
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
-    out_snapshot_filenames: List[List[str]],
     out_upper_left: list[float] | np.ndarray,
     width=600,
     box_size_microns=20,
@@ -44,7 +43,6 @@ def grid_detection_plan(
             out_parameters,
             snapshot_template,
             snapshot_dir,
-            out_snapshot_filenames,
             out_upper_left,
             width,
             box_size_microns,
@@ -63,12 +61,12 @@ def wait_for_tip_to_be_found(pin_tip: PinTipDetect):
     return found_tip
 
 
+@bpp.run_decorator()
 def grid_detection_main_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
-    out_snapshot_filenames: List[List[str]],
     out_upper_left: list[float] | np.ndarray,
     grid_width_px: int,
     box_size_um: float,
@@ -82,7 +80,6 @@ def grid_detection_main_plan(
         out_parameters (GridScanParams): The returned parameters for the gridscan
         snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
         snapshot_dir (str): The location to save snapshots
-        out_snapshot_filenames (List[List[str]]): The returned full snapshot filenames
         out_upper_left (Dict): The returned x, y, z value of the upper left pixel of the grid
         grid_width_px (int): The width of the grid to scan in pixels
         box_size_um (float): The size of each box of the grid in microns
@@ -161,13 +158,11 @@ def grid_detection_main_plan(
         yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
 
-        out_snapshot_filenames.append(
-            [
-                path_join(snapshot_dir, f"{snapshot_filename}_grid_overlay.png"),
-                path_join(snapshot_dir, f"{snapshot_filename}_outer_overlay.png"),
-                path_join(snapshot_dir, f"{snapshot_filename}.png"),
-            ]
-        )
+        yield from bps.create("snapshot_directories")
+        yield from bps.read(oav.snapshot.last_saved_path)
+        yield from bps.read(oav.snapshot.last_path_outer)
+        yield from bps.read(oav.snapshot.last_path_full_overlay)
+        yield from bps.save()
 
         # Get the beam distance from the centre (in pixels).
         (

@@ -21,6 +21,9 @@ from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
+from artemis.external_interaction.callbacks.oav_snapshot_callback import (
+    OavSnapshotCallback,
+)
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 from artemis.parameters.plan_specific.fgs_internal_params import GridScanParams
@@ -90,23 +93,27 @@ def get_plan(
             f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
         )
 
-        out_snapshot_filenames = []
         out_upper_left = {}
+
+        oav_callback = OavSnapshotCallback()
+        yield from bps.subscribe(oav_callback)
 
         yield from grid_detection_plan(
             oav_params,
             fgs_params,
             snapshot_template,
             experiment_params.snapshot_dir,
-            out_snapshot_filenames,
             out_upper_left,
         )
 
+        yield from bps.unsubscribe(oav_callback)
+
+        # hack because the callback returns the list in inverted order
         parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
-            out_snapshot_filenames[0]
+            oav_callback.snapshot_filenames[0][::-1]
         )
         parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end = (
-            out_snapshot_filenames[1]
+            oav_callback.snapshot_filenames[1][::-1]
         )
         parameters.artemis_params.ispyb_params.upper_left = out_upper_left
 
