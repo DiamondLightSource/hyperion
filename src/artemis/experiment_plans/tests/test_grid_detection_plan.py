@@ -116,7 +116,6 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
                 parameters=params,
                 out_parameters=gridscan_params,
                 snapshot_dir="tmp",
-                out_upper_left={},
                 snapshot_template="test_{angle}",
             )
         )
