@@ -60,6 +60,64 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
     raise TimeoutError("Detector not finished moving")
 
 
+def detect_grid_and_do_gridscan(
+    parameters,
+    backlight,
+    eiger,
+    aperture_scatterguard,
+    detector_motion,
+    oav_params,
+    experiment_params,
+):
+    # Start stage with asynchronous arming here
+    yield from bps.abs_set(eiger.do_arm, 1, group="arming")
+
+    fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
+
+    detector_params = parameters.artemis_params.detector_params
+    snapshot_template = (
+        f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
+    )
+
+    out_snapshot_filenames = []
+    out_upper_left = {}
+
+    yield from grid_detection_plan(
+        oav_params,
+        fgs_params,
+        snapshot_template,
+        experiment_params.snapshot_dir,
+        out_snapshot_filenames,
+        out_upper_left,
+    )
+
+    parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
+        out_snapshot_filenames[0]
+    )
+    parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end = (
+        out_snapshot_filenames[1]
+    )
+    parameters.artemis_params.ispyb_params.upper_left = out_upper_left
+
+    parameters.experiment_params = fgs_params
+
+    parameters.artemis_params.detector_params.num_triggers = fgs_params.get_num_images()
+
+    LOGGER.info(f"Parameters for FGS: {parameters}")
+    subscriptions = FGSCallbackCollection.from_params(parameters)
+
+    yield from bps.abs_set(backlight.pos, Backlight.OUT)
+    LOGGER.info(
+        f"Setting aperture position to {aperture_scatterguard.aperture_positions.SMALL}"
+    )
+    yield from bps.abs_set(
+        aperture_scatterguard, aperture_scatterguard.aperture_positions.SMALL
+    )
+    yield from wait_for_det_to_finish_moving(detector_motion)
+
+    yield from fgs_get_plan(parameters, subscriptions)
+
+
 def get_plan(
     parameters: GridScanWithEdgeDetectInternalParameters,
     subscriptions: FGSCallbackCollection,
@@ -79,57 +137,12 @@ def get_plan(
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
-    def detect_grid_and_do_gridscan():
-        # Start stage with asynchronous arming here
-        yield from bps.abs_set(eiger.do_arm, 1, group="arming")
-
-        fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
-
-        detector_params = parameters.artemis_params.detector_params
-        snapshot_template = (
-            f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
-        )
-
-        out_snapshot_filenames = []
-        out_upper_left = {}
-
-        yield from grid_detection_plan(
-            oav_params,
-            fgs_params,
-            snapshot_template,
-            experiment_params.snapshot_dir,
-            out_snapshot_filenames,
-            out_upper_left,
-        )
-
-        parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
-            out_snapshot_filenames[0]
-        )
-        parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end = (
-            out_snapshot_filenames[1]
-        )
-        parameters.artemis_params.ispyb_params.upper_left = out_upper_left
-
-        fgs_params.__post_init__()
-
-        parameters.experiment_params = fgs_params
-
-        parameters.artemis_params.detector_params.num_triggers = (
-            fgs_params.get_num_images()
-        )
-
-        LOGGER.info(f"Parameters for FGS: {parameters}")
-        subscriptions = FGSCallbackCollection.from_params(parameters)
-
-        yield from bps.abs_set(backlight.pos, Backlight.OUT)
-        LOGGER.info(
-            f"Setting aperture position to {aperture_scatterguard.aperture_positions.SMALL}"
-        )
-        yield from bps.abs_set(
-            aperture_scatterguard, aperture_scatterguard.aperture_positions.SMALL
-        )
-        yield from wait_for_det_to_finish_moving(detector_motion)
-
-        yield from fgs_get_plan(parameters, subscriptions)
-
-    return detect_grid_and_do_gridscan()
+    return detect_grid_and_do_gridscan(
+        parameters,
+        backlight,
+        eiger,
+        aperture_scatterguard,
+        detector_motion,
+        oav_params,
+        experiment_params,
+    )

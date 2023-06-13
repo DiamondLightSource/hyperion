@@ -14,6 +14,9 @@ from artemis.parameters.external_parameters import from_file as default_raw_para
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
+    GridScanWithEdgeDetectParams,
+)
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -48,7 +51,6 @@ def smargon():
     return smargon
 
 
-@pytest.fixture
 def zebra():
     return i03.zebra(fake_with_ophyd_sim=True)
 
@@ -61,6 +63,19 @@ def backlight():
 @pytest.fixture
 def detector_motion():
     return i03.detector_motion(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def aperture_scatterguard():
+    return i03.aperture_scatterguard(
+        fake_with_ophyd_sim=True,
+        aperture_positions=AperturePositions(
+            LARGE=(0, 1, 2, 3, 4),
+            MEDIUM=(5, 6, 7, 8, 9),
+            SMALL=(10, 11, 12, 13, 14),
+            ROBOT_LOAD=(15, 16, 17, 18, 19),
+        ),
+    )
 
 
 @pytest.fixture
@@ -80,6 +95,13 @@ def test_config_files():
 @pytest.fixture
 def test_params():
     return FGSInternalParameters(**default_raw_params())
+
+
+@pytest.fixture
+def test_full_grid_scan_params():
+    params = FGSInternalParameters(**default_raw_params())
+    params.experiment_params = GridScanWithEdgeDetectParams(0, "", 0, 0)
+    return params
 
 
 @pytest.fixture
