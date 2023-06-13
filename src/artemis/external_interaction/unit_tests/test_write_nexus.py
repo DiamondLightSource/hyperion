@@ -140,6 +140,7 @@ def test_generic_create_gonio_behaves_as_expected(
     minimal_params: FGSInternalParameters,
 ):
     params_w_scan = create_parameters_for_first_gridscan_file(minimal_params)
+
     new_fgs_axes = create_goniometer_axes(
         params_w_scan[0].artemis_params.detector_params,
         params_w_scan[0].experiment_params,
@@ -151,6 +152,18 @@ def test_generic_create_gonio_behaves_as_expected(
         params_w_scan[1],
     )
     assert new_fgs_axes == old_fgs_axes
+
+    new_rot_axes = create_goniometer_axes(
+        params_w_scan[0].artemis_params.detector_params,
+        params_w_scan[0].experiment_params,
+        {},
+    )
+    old_rot_axes = create_gridscan_goniometer_axes(
+        params_w_scan[0].artemis_params.detector_params,
+        params_w_scan[0].experiment_params,
+        {},
+    )
+    assert new_rot_axes == old_rot_axes
 
 
 """It's hard to effectively unit test the nexus writing so these are really system tests

@@ -29,8 +29,7 @@ from scanspec.specs import Line
 from artemis.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     create_detector_parameters,
-    create_gridscan_goniometer_axes,
-    create_rotation_goniometer_axes,
+    create_goniometer_axes,
     get_current_time,
 )
 from artemis.parameters.internal_parameters import InternalParameters
@@ -140,7 +139,7 @@ class FGSNexusWriter(NexusWriter):
 
     def __init__(self, parameters: FGSInternalParameters, grid_scan: dict) -> None:
         super().__init__(parameters)
-        self.goniometer = create_gridscan_goniometer_axes(
+        self.goniometer = create_goniometer_axes(
             parameters.artemis_params.detector_params,
             parameters.experiment_params,
             grid_scan,
@@ -157,8 +156,8 @@ class FGSNexusWriter(NexusWriter):
 class RotationNexusWriter(NexusWriter):
     def __init__(self, parameters: RotationInternalParameters) -> None:
         super().__init__(parameters)
-        self.goniometer = create_rotation_goniometer_axes(
-            parameters.artemis_params.detector_params, parameters.experiment_params
+        self.goniometer = create_goniometer_axes(
+            parameters.artemis_params.detector_params, parameters.experiment_params, {}
         )
 
     def _get_data_shape_for_vds(self) -> tuple[int | float, ...]:
