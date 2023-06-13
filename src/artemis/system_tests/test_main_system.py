@@ -24,6 +24,9 @@ SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameter_defaults.json"))
 
+SECS_PER_RUNENGINE_LOOP = 0.1
+RUNENGINE_TAKES_TIME_TIMEOUT = 15
+
 """
 Every test in this file which uses the test_env fixture should either:
     - set RE_takes_time to false
@@ -41,18 +44,20 @@ class MockRunEngine:
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         time = 0.0
         while self.RE_takes_time:
-            sleep(0.1)
-            time += 0.1
+            sleep(SECS_PER_RUNENGINE_LOOP)
+            time += SECS_PER_RUNENGINE_LOOP
             if self.error:
                 raise Exception(self.error)
-            if time > 15:
+            if time > RUNENGINE_TAKES_TIME_TIMEOUT:
                 raise TimeoutError(
-                    "Mock RunEngine thread spun too long without an error."
+                    "Mock RunEngine thread spun too long without an error. Most likely "
+                    "you should initialise with RE_takes_time=false, or set RE.error "
+                    "from another thread."
                 )
 
     def abort(self):
         while self.aborting_takes_time:
-            sleep(0.1)
+            sleep(SECS_PER_RUNENGINE_LOOP)
             if self.error:
                 raise Exception(self.error)
         self.RE_takes_time = False
@@ -118,10 +123,7 @@ def test_env():
             yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()
-    try:
-        runner_thread.join(timeout=3)
-    except Exception:
-        raise ("couldn't join")
+    runner_thread.join(timeout=3)
 
 
 def wait_for_run_engine_status(
