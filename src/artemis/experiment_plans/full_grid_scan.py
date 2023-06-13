@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, List, Dict
 
 from bluesky import plan_stubs as bps
 from dodal.beamlines import i03
@@ -61,13 +61,13 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
 
 
 def detect_grid_and_do_gridscan(
-    parameters,
-    backlight,
-    eiger,
-    aperture_scatterguard,
-    detector_motion,
-    oav_params,
-    experiment_params,
+    parameters: GridScanWithEdgeDetectInternalParameters,
+    backlight: Backlight,
+    eiger: EigerDetector,
+    aperture_scatterguard: ApertureScatterguard,
+    detector_motion: DetectorMotion,
+    oav_params: OAVParameters,
+    experiment_params: GridScanWithEdgeDetectParams,
 ):
     # Start stage with asynchronous arming here
     yield from bps.abs_set(eiger.do_arm, 1, group="arming")
@@ -79,8 +79,8 @@ def detect_grid_and_do_gridscan(
         f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
     )
 
-    out_snapshot_filenames = []
-    out_upper_left = {}
+    out_snapshot_filenames: List = []
+    out_upper_left: Dict = {}
 
     yield from grid_detection_plan(
         oav_params,

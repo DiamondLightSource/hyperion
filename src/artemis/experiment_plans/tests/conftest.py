@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -16,6 +17,7 @@ from artemis.parameters.internal_parameters import InternalParameters
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectParams,
+    GridScanWithEdgeDetectInternalParameters,
 )
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -100,9 +102,14 @@ def test_params():
 
 @pytest.fixture
 def test_full_grid_scan_params():
-    params = FGSInternalParameters(**default_raw_params())
-    params.experiment_params = GridScanWithEdgeDetectParams(0, "", 0, 0)
-    return params
+    return (
+        GridScanWithEdgeDetectInternalParameters(
+            {
+                "experiment_params": GridScanWithEdgeDetectParams(0, "", 0, 0),
+                "artemis_params": default_raw_params()["artemis_params"],
+            }
+        ),
+    )
 
 
 @pytest.fixture
