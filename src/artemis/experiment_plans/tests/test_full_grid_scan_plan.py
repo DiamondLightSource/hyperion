@@ -1,25 +1,22 @@
-from typing import Generator, List
-from unittest.mock import patch, MagicMock, ANY
-import pytest
-import numpy as np
+from typing import Dict, Generator, List
+from unittest.mock import ANY, MagicMock, patch
 
-from typing import Dict
-from dodal.beamlines.i03 import detector_motion
-from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.devices.backlight import Backlight
-from dodal.devices.eiger import EigerDetector
-from dodal.devices.detector_motion import DetectorMotion
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+import numpy as np
+import pytest
 from bluesky import RunEngine
+from dodal.beamlines.i03 import detector_motion
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.backlight import Backlight
+from dodal.devices.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.oav.oav_parameters import OAVParameters
 
 from artemis.experiment_plans.full_grid_scan import (
     create_devices,
+    detect_grid_and_do_gridscan,
     get_plan,
     wait_for_det_to_finish_moving,
-    detect_grid_and_do_gridscan,
 )
-
 from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )

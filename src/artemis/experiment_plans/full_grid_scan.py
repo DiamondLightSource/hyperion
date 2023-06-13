@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, List, Dict
+from typing import TYPE_CHECKING, Callable, Dict, List
 
 from bluesky import plan_stubs as bps
 from dodal.beamlines import i03

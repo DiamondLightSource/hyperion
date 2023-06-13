@@ -10,6 +10,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
 from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
+from artemis.parameters import external_parameters
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
 from artemis.parameters.internal_parameters import InternalParameters
@@ -20,7 +21,6 @@ from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-from artemis.parameters import external_parameters
 
 
 @pytest.fixture
