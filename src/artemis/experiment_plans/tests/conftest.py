@@ -16,6 +16,9 @@ from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
+    GridScanWithEdgeDetectInternalParameters,
+)
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -66,6 +69,19 @@ def detector_motion():
 
 
 @pytest.fixture
+def aperture_scatterguard():
+    return i03.aperture_scatterguard(
+        fake_with_ophyd_sim=True,
+        aperture_positions=AperturePositions(
+            LARGE=(0, 1, 2, 3, 4),
+            MEDIUM=(5, 6, 7, 8, 9),
+            SMALL=(10, 11, 12, 13, 14),
+            ROBOT_LOAD=(15, 16, 17, 18, 19),
+        ),
+    )
+
+
+@pytest.fixture
 def RE():
     return RunEngine({})
 
@@ -77,6 +93,14 @@ def test_config_files():
         "oav_config_json": "src/artemis/experiment_plans/tests/test_data/OAVCentring.json",
         "display_config": "src/artemis/experiment_plans/tests/test_data/display.configuration",
     }
+
+
+@pytest.fixture
+def test_full_grid_scan_params():
+    params = raw_params_from_file(
+        "src/artemis/parameters/tests/test_data/good_test_grid_with_edge_detect_parameters.json"
+    )
+    return GridScanWithEdgeDetectInternalParameters(**params)
 
 
 @pytest.fixture
