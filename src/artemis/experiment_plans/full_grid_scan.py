@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import Backlight
@@ -94,16 +95,27 @@ def get_plan(
         )
 
         oav_callback = OavSnapshotCallback()
-        yield from bps.subscribe(oav_callback)
 
-        yield from grid_detection_plan(
+        @bpp.subs_decorator([oav_callback])
+        def run_grid_detection_plan(
+            oav_params,
+            fgs_params,
+            snapshot_template,
+            snapshot_dir,
+        ):
+            yield from grid_detection_plan(
+                oav_params,
+                fgs_params,
+                snapshot_template,
+                snapshot_dir,
+            )
+
+        run_grid_detection_plan(
             oav_params,
             fgs_params,
             snapshot_template,
             experiment_params.snapshot_dir,
         )
-
-        yield from bps.unsubscribe(oav_callback)
 
         # Hack because GDA only passes 3 values to ispyb
         out_upper_left = oav_callback.out_upper_left[0] + [
