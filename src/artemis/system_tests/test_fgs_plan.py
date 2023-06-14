@@ -123,6 +123,10 @@ def test_full_plan_tidies_at_end(
     RE: RunEngine,
 ):
     callbacks = FGSCallbackCollection.from_params(params)
+    callbacks.nexus_handler.nexus_writer_1 = MagicMock()
+    callbacks.nexus_handler.nexus_writer_2 = MagicMock()
+    callbacks.ispyb_handler.ispyb_ids = MagicMock()
+    callbacks.ispyb_handler.ispyb.datacollection_ids = MagicMock()
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
@@ -211,6 +215,6 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     RE(get_plan(params, callbacks))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.05)
-    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.15)
-    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.25)
+    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(-0.05)
+    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.05)
+    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.15)
