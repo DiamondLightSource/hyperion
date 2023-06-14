@@ -61,28 +61,29 @@ def test_zebra_arm_disarm(
     RE,
     zebra: Zebra,
 ):
-    def side_effect(val: int):
-        zebra.pc.armed.set(val)
+    def arm_fail_disarm_side_effect(_):
+        zebra.pc.armed.set(1)
         return Status(done=True, success=True)
 
-    def fail_side_effect(val: int):
-        zebra.pc.armed.set(0 if val else 1)
-        return Status(done=False)
+    def disarm_fail_arm_side_effect(_):
+        zebra.pc.armed.set(0)
+        return Status(done=True, success=True)
 
-    mock_arm_disarm = MagicMock(side_effect=side_effect)
-    mock_fail_arm_disarm = MagicMock(side_effect=fail_side_effect)
+    mock_arm_fail_disarm = MagicMock(side_effect=arm_fail_disarm_side_effect)
+    mock_disarm_fail_arm = MagicMock(side_effect=disarm_fail_arm_side_effect)
 
-    zebra.pc.arm_demand.set = mock_arm_disarm
+    zebra.pc.arm_demand.set = mock_arm_fail_disarm
+    zebra.pc.disarm_demand.set = mock_disarm_fail_arm
 
     zebra.pc.armed.set(0)
     RE(arm_zebra(zebra, 0.5))
     assert zebra.pc.is_armed()
-
     zebra.pc.armed.set(1)
     RE(disarm_zebra(zebra, 0.5))
     assert not zebra.pc.is_armed()
 
-    zebra.pc.arm_demand.set = mock_fail_arm_disarm
+    zebra.pc.arm_demand.set = mock_disarm_fail_arm
+    zebra.pc.disarm_demand.set = mock_arm_fail_disarm
 
     with pytest.raises(TimeoutError):
         zebra.pc.armed.set(0)
