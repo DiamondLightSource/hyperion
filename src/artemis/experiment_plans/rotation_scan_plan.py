@@ -17,6 +17,9 @@ from artemis.device_setup_plans.setup_zebra import (
     disarm_zebra,
     setup_zebra_for_rotation,
 )
+from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
+    RotationCallbackCollection,
+)
 from artemis.log import LOGGER
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
@@ -25,9 +28,6 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
 if TYPE_CHECKING:
     from ophyd.device import Device
 
-    from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
-        RotationCallbackCollection,
-    )
     from artemis.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
@@ -165,6 +165,7 @@ def get_plan(
     parameters: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
     devices = create_devices()
+    subscriptions = RotationCallbackCollection.from_params(parameters)
 
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")

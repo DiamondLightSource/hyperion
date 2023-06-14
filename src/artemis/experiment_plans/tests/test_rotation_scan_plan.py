@@ -15,9 +15,6 @@ from artemis.experiment_plans.rotation_scan_plan import (
     move_to_start_w_buffer,
     rotation_scan_plan,
 )
-from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
-    RotationCallbackCollection,
-)
 
 if TYPE_CHECKING:
     from dodal.devices.backlight import Backlight
@@ -69,6 +66,7 @@ def test_get_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    mock_subscriptions,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -82,8 +80,12 @@ def test_get_plan(
             "artemis.experiment_plans.rotation_scan_plan.DetectorMotion",
             return_value=detector_motion,
         ),
+        patch(
+            "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
+            lambda _: mock_subscriptions,
+        ),
     ):
-        RE(get_plan(test_rotation_params, MagicMock()))
+        RE(get_plan(test_rotation_params))
 
     eiger.stage.assert_called()
     eiger.unstage.assert_called()
@@ -159,11 +161,11 @@ def test_cleanup_happens(
         patch("dodal.beamlines.i03.backlight", return_value=backlight),
         patch("dodal.beamlines.i03.detector_motion", return_value=detector_motion),
     ):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception) as exc:
             RE(
                 get_plan(
                     test_rotation_params,
-                    RotationCallbackCollection.from_params(test_rotation_params),
                 )
             )
+        assert "Experiment fails because this is a test" in exc.value.args[0]
         cleanup_plan.assert_called_once()
