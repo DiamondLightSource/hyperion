@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -9,8 +9,10 @@ from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
+from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
+    RotationCallbackCollection,
+)
 from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
-from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
 from artemis.parameters.internal_parameters import InternalParameters
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
@@ -78,12 +80,7 @@ def test_config_files():
 
 
 @pytest.fixture
-def test_params():
-    return FGSInternalParameters(**default_raw_params())
-
-
-@pytest.fixture
-def fake_fgs_composite(test_params: InternalParameters):
+def fake_fgs_composite(test_fgs_params: InternalParameters):
     fake_composite = FGSComposite(
         aperture_positions=AperturePositions(
             LARGE=(1, 2, 3, 4, 5),
@@ -91,7 +88,7 @@ def fake_fgs_composite(test_params: InternalParameters):
             SMALL=(3, 4, 3, 6, 7),
             ROBOT_LOAD=(0, 0, 3, 0, 0),
         ),
-        detector_params=test_params.artemis_params.detector_params,
+        detector_params=test_fgs_params.artemis_params.detector_params,
         fake=True,
     )
     fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
@@ -111,8 +108,8 @@ def fake_fgs_composite(test_params: InternalParameters):
 
 
 @pytest.fixture
-def mock_subscriptions(test_params):
-    subscriptions = FGSCallbackCollection.from_params(test_params)
+def mock_subscriptions(test_fgs_params):
+    subscriptions = FGSCallbackCollection.from_params(test_fgs_params)
     subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
@@ -126,4 +123,13 @@ def mock_subscriptions(test_params):
     subscriptions.ispyb_handler.ispyb = MagicMock()
     subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: [[0, 0], 0, 0]
 
+    return subscriptions
+
+
+@pytest.fixture
+def mock_rotation_subscriptions(test_rotation_params):
+    with patch(
+        "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationNexusFileHandlerCallback"
+    ):
+        subscriptions = RotationCallbackCollection.from_params(test_rotation_params)
     return subscriptions

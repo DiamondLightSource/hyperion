@@ -15,6 +15,9 @@ from artemis.experiment_plans.rotation_scan_plan import (
     move_to_start_w_buffer,
     rotation_scan_plan,
 )
+from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
+    RotationCallbackCollection,
+)
 
 if TYPE_CHECKING:
     from dodal.devices.backlight import Backlight
@@ -66,7 +69,7 @@ def test_get_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    mock_subscriptions,
+    mock_rotation_subscriptions: RotationCallbackCollection,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -81,8 +84,8 @@ def test_get_plan(
             return_value=detector_motion,
         ),
         patch(
-            "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
-            lambda _: mock_subscriptions,
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: mock_rotation_subscriptions,
         ),
     ):
         RE(get_plan(test_rotation_params))
@@ -101,6 +104,7 @@ def test_rotation_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    mock_rotation_subscriptions: RotationCallbackCollection,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
@@ -115,6 +119,9 @@ def test_rotation_plan(
     with patch(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         __fake_read,
+    ), patch(
+        "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+        lambda _: mock_rotation_subscriptions,
     ):
         RE(
             rotation_scan_plan(
@@ -138,6 +145,7 @@ def test_cleanup_happens(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    mock_rotation_subscriptions: RotationCallbackCollection,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -160,6 +168,10 @@ def test_cleanup_happens(
         patch("dodal.beamlines.i03.zebra", return_value=zebra),
         patch("dodal.beamlines.i03.backlight", return_value=backlight),
         patch("dodal.beamlines.i03.detector_motion", return_value=detector_motion),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: mock_rotation_subscriptions,
+        ),
     ):
         with pytest.raises(Exception) as exc:
             RE(
