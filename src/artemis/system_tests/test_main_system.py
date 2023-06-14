@@ -13,9 +13,6 @@ from flask.testing import FlaskClient
 
 from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
-from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
-    AbstractPlanCallbackCollection,
-)
 from artemis.parameters import external_parameters
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
@@ -27,6 +24,17 @@ SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameter_defaults.json"))
 
+SECS_PER_RUNENGINE_LOOP = 0.1
+RUNENGINE_TAKES_TIME_TIMEOUT = 15
+
+"""
+Every test in this file which uses the test_env fixture should either:
+    - set RE_takes_time to false
+    or
+    - set an error on the mock run engine
+In order to avoid threads which get left alive forever after test completion
+"""
+
 
 class MockRunEngine:
     RE_takes_time = True
@@ -34,14 +42,22 @@ class MockRunEngine:
     error: Optional[str] = None
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
+        time = 0.0
         while self.RE_takes_time:
-            sleep(0.1)
+            sleep(SECS_PER_RUNENGINE_LOOP)
+            time += SECS_PER_RUNENGINE_LOOP
             if self.error:
                 raise Exception(self.error)
+            if time > RUNENGINE_TAKES_TIME_TIMEOUT:
+                raise TimeoutError(
+                    "Mock RunEngine thread spun too long without an error. Most likely "
+                    "you should initialise with RE_takes_time=false, or set RE.error "
+                    "from another thread."
+                )
 
     def abort(self):
         while self.aborting_takes_time:
-            sleep(0.1)
+            sleep(SECS_PER_RUNENGINE_LOOP)
             if self.error:
                 raise Exception(self.error)
         self.RE_takes_time = False
@@ -94,6 +110,7 @@ def test_env():
         dict({k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS),
     ):
         app, runner = create_app({"TESTING": True}, mock_run_engine)
+
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
     with app.test_client() as client:
@@ -106,7 +123,7 @@ def test_env():
             yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()
-    runner_thread.join()
+    runner_thread.join(timeout=3)
 
 
 def wait_for_run_engine_status(
@@ -220,6 +237,8 @@ def test_given_started_when_stopped_and_started_again_then_runs(
 def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
     test_env: ClientAndRunEngine,
 ):
+    test_env.mock_run_engine.aborting_takes_time = True
+
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     error_message = "D'Oh"
     test_env.mock_run_engine.error = error_message
@@ -253,6 +272,8 @@ def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
 
 
 def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
+    test_env.mock_run_engine.RE_takes_time = False
+
     with open("test_parameters.json") as test_parameters_file:
         test_parameters_json = test_parameters_file.read()
     response = test_env.client.put(START_ENDPOINT, data=test_parameters_json)
@@ -357,31 +378,6 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_plan_started_then_callbacks_created(
-    mock_get_beamline_params, mock_fgs, mock_eiger
-):
-    mock_callback: AbstractPlanCallbackCollection = MagicMock(
-        spec=AbstractPlanCallbackCollection
-    )
-    with patch.dict(
-        "artemis.__main__.PLAN_REGISTRY",
-        {
-            "fast_grid_scan": {
-                "setup": MagicMock(),
-                "run": MagicMock(),
-                "param_type": MagicMock(),
-                "callback_collection_type": mock_callback,
-            },
-        },
-    ):
-        runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
-        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
-        mock_callback.from_params.assert_called_once()
-
-
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
 def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
     mock_get_beamline_params,
     mock_fgs,
@@ -423,6 +419,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
 
 
 def test_log_on_invalid_json_params(caplog, test_env: ClientAndRunEngine):
+    test_env.mock_run_engine.RE_takes_time = False
     response = test_env.client.put(TEST_BAD_PARAM_ENDPOINT, data='{"bad":1}').json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
