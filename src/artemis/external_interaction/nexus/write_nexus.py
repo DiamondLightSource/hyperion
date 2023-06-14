@@ -50,6 +50,7 @@ class NexusWriter(ABC):
     full_num_of_images: int
     nexus_file: Path
     master_file: Path
+    scan_points: dict
 
     def __init__(
         self,
@@ -77,9 +78,13 @@ class NexusWriter(ABC):
             self.directory
             / f"{parameters.artemis_params.detector_params.nexus_filename}_master.h5"
         )
+        # Should be setup in subclass before super().__init__()
+        self.goniometer = create_goniometer_axes(
+            parameters.artemis_params.detector_params, self.scan_points
+        )
 
     @abstractmethod
-    def _get_data_shape_for_vds(self) -> tuple[int | float, ...]:
+    def _get_data_shape_for_vds(self) -> tuple[int, ...]:
         ...
 
     def create_nexus_file(self):
@@ -135,32 +140,33 @@ class NexusWriter(ABC):
 
 
 class FGSNexusWriter(NexusWriter):
-    grid_scan: dict
-
     def __init__(self, parameters: FGSInternalParameters, grid_scan: dict) -> None:
+        self.scan_points = grid_scan
         super().__init__(parameters)
-        self.goniometer = create_goniometer_axes(
-            parameters.artemis_params.detector_params,
-            parameters.experiment_params,
-            grid_scan,
-        )
-        self.grid_scan = grid_scan
 
-    def _get_data_shape_for_vds(self) -> tuple[int | float, ...]:
-        ax = list(self.grid_scan.keys())[0]
-        num_frames_in_vds = len(self.grid_scan[ax])
+    def _get_data_shape_for_vds(self) -> tuple[int, ...]:
+        ax = list(self.scan_points.keys())[0]
+        num_frames_in_vds = len(self.scan_points[ax])
         nexus_detector_params: EigerDetector = self.detector.detector_params
         return (num_frames_in_vds, *nexus_detector_params.image_size)
 
 
 class RotationNexusWriter(NexusWriter):
     def __init__(self, parameters: RotationInternalParameters) -> None:
-        super().__init__(parameters)
-        self.goniometer = create_goniometer_axes(
-            parameters.artemis_params.detector_params, parameters.experiment_params, {}
+        scan_spec = Line(
+            axis="omega",
+            start=parameters.experiment_params.omega_start,
+            stop=(
+                parameters.experiment_params.rotation_angle
+                + parameters.experiment_params.omega_start
+            ),
+            num=parameters.experiment_params.get_num_images(),
         )
+        scan_path = ScanPath(scan_spec.calculate())
+        self.scan_points = scan_path.consume().midpoints
+        super().__init__(parameters)
 
-    def _get_data_shape_for_vds(self) -> tuple[int | float, ...]:
+    def _get_data_shape_for_vds(self) -> tuple[int, ...]:
         nexus_detector_params: EigerDetector = self.detector.detector_params
         return (self.full_num_of_images, *nexus_detector_params.image_size)
 

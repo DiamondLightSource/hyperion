@@ -91,7 +91,10 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         assert hyperion_nexus["/entry/start_time"][()] == b"test_timeZ"
         assert hyperion_nexus["/entry/end_time"][()] == b"test_timeZ"
 
-        hyperion_omega: np.ndarray = hyperion_nexus["/entry/data/omega"][:]
+        # we used to write the positions wrong...
+        hyperion_omega: np.ndarray = np.array(
+            hyperion_nexus["/entry/data/omega"][:]
+        ) * (3599 / 3600)
         example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]
         assert np.allclose(hyperion_omega, example_omega)
 
@@ -124,6 +127,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         example_sam_phi = example_nexus["/entry/sample/sample_phi/phi"]
         hyperion_sam_chi = hyperion_nexus["/entry/sample/sample_chi/chi"]
         example_sam_chi = example_nexus["/entry/sample/sample_chi/chi"]
+
         hyperion_sam_omega = hyperion_nexus["/entry/sample/sample_omega/omega"]
         example_sam_omega = example_nexus["/entry/sample/sample_omega/omega"]
 

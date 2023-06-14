@@ -1,14 +1,13 @@
 import os
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Literal
 from unittest.mock import call, patch
 
 import h5py
 import numpy as np
 import pytest
-from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
-from nexgen.nxs_utils import Axis, Goniometer
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -18,150 +17,17 @@ from artemis.external_interaction.nexus.write_nexus import (
     create_parameters_for_first_gridscan_file,
     create_parameters_for_second_gridscan_file,
 )
-from artemis.parameters.external_parameters import from_file
-from artemis.parameters.external_parameters import from_file as default_raw_params
+from artemis.external_interaction.unit_tests.conftest import (
+    create_gridscan_goniometer_axes,
+    create_rotation_goniometer_axes,
+)
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
-    RotationScanParams,
 )
 
 
-@pytest.fixture
-def test_rotation_params():
-    param_dict = from_file(
-        "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
-    )
-    param_dict["artemis_params"]["detector_params"][
-        "directory"
-    ] = "src/artemis/external_interaction/unit_tests/test_data"
-    param_dict["artemis_params"]["detector_params"]["prefix"] = "TEST_FILENAME"
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    params = RotationInternalParameters(**param_dict)
-    params.experiment_params.x = 0
-    params.experiment_params.y = 0
-    params.experiment_params.z = 0
-    params.artemis_params.detector_params.exposure_time = 0.004
-    params.artemis_params.detector_params.current_energy_ev = 12700
-    params.artemis_params.ispyb_params.transmission = 0.49118047952
-    params.artemis_params.ispyb_params.wavelength = 0.9762535433
-    return params
-
-
-@pytest.fixture(params=[1044])
-def test_fgs_params(request):
-    params = FGSInternalParameters(**default_raw_params())
-    params.artemis_params.ispyb_params.wavelength = 1.0
-    params.artemis_params.ispyb_params.flux = 9.0
-    params.artemis_params.ispyb_params.transmission = 0.5
-    params.artemis_params.detector_params.use_roi_mode = True
-    params.artemis_params.detector_params.num_triggers = request.param
-    params.artemis_params.detector_params.directory = (
-        os.path.dirname(os.path.realpath(__file__)) + "/test_data"
-    )
-    params.artemis_params.detector_params.prefix = "dummy"
-    yield params
-
-
-def create_gridscan_goniometer_axes(
-    detector_params: DetectorParams, grid_scan_params: GridScanParams, grid_scan: dict
-) -> Goniometer:
-    """Create the data for the goniometer.
-
-    Args:
-        detector_params (DetectorParams): Information about the detector.
-        grid_scan_params (GridScanParams): Information about the experiment.
-        grid_scan (dict): scan midpoints from scanspec.
-
-    Returns:
-        Goniometer: A Goniometer description for nexgen
-    """
-    # Axis: name, depends, type, vector, start
-    gonio_axes = [
-        Axis("omega", ".", "rotation", (-1.0, 0.0, 0.0), detector_params.omega_start),
-        Axis(
-            "sam_z",
-            "omega",
-            "translation",
-            (0.0, 0.0, 1.0),
-            grid_scan_params.z_axis.start,
-            grid_scan_params.z_axis.step_size,
-        ),
-        Axis(
-            "sam_y",
-            "sam_z",
-            "translation",
-            (0.0, 1.0, 0.0),
-            grid_scan_params.y_axis.start,
-            grid_scan_params.y_axis.step_size,
-        ),
-        Axis(
-            "sam_x",
-            "sam_y",
-            "translation",
-            (1.0, 0.0, 0.0),
-            grid_scan_params.x_axis.start,
-            grid_scan_params.x_axis.step_size,
-        ),
-        Axis("chi", "sam_x", "rotation", (0.006, -0.0264, 0.9996), 0.0),
-        Axis("phi", "chi", "rotation", (-1, -0.0025, -0.0056), 0.0),
-    ]
-    return Goniometer(gonio_axes, grid_scan)
-
-
-def create_rotation_goniometer_axes(
-    detector_params: DetectorParams, scan_params: RotationScanParams
-) -> Goniometer:
-    """Create the data for the goniometer.
-
-    Args:
-        detector_params (DetectorParams): Information about the detector.
-
-    Returns:
-        Goniometer: A Goniometer description for nexgen
-    """
-    # Axis: name, depends, type, vector, start
-    gonio_axes = [
-        Axis(
-            "omega",
-            ".",
-            "rotation",
-            (-1.0, 0.0, 0.0),
-            detector_params.omega_start,
-            increment=scan_params.image_width,
-            num_steps=detector_params.num_images_per_trigger,
-        ),
-        Axis(
-            "sam_z",
-            "omega",
-            "translation",
-            (0.0, 0.0, 1.0),
-            scan_params.z,
-            0.0,
-        ),
-        Axis(
-            "sam_y",
-            "sam_z",
-            "translation",
-            (0.0, 1.0, 0.0),
-            scan_params.y,
-            0.0,
-        ),
-        Axis(
-            "sam_x",
-            "sam_y",
-            "translation",
-            (1.0, 0.0, 0.0),
-            scan_params.x,
-            0.0,
-        ),
-        Axis("chi", "sam_x", "rotation", (0.006, -0.0264, 0.9996), 0.0),
-        Axis("phi", "chi", "rotation", (-1, -0.0025, -0.0056), 0.0),
-    ]
-    return Goniometer(gonio_axes)
-
-
-def test_generic_create_gonio_behaves_as_expected(
+def test_generic_create_gonio_creates_same_gonio_as_defined_with_individual_params(
     test_fgs_params: FGSInternalParameters,
     test_rotation_params: RotationInternalParameters,
 ):
@@ -183,18 +49,20 @@ def test_generic_create_gonio_behaves_as_expected(
         scan_points,
     )
 
-    spec = Line(
-        "omega",
-        test_rotation_params.experiment_params.omega_start,
-        test_rotation_params.experiment_params.rotation_angle
-        + test_rotation_params.experiment_params.omega_start,
-        test_rotation_params.experiment_params.get_num_images(),
-    )
-    scan_path = ScanPath(spec.calculate())
-    scan_points = scan_path.consume().midpoints
-
     assert new_fgs_axes.axes_list == old_fgs_axes.axes_list
     assert new_fgs_axes.scan == old_fgs_axes.scan
+
+    rotation_360_spec = Line(
+        axis="omega",
+        start=test_rotation_params.experiment_params.omega_start,
+        stop=(
+            test_rotation_params.experiment_params.rotation_angle
+            + test_rotation_params.experiment_params.omega_start
+        ),
+        num=test_rotation_params.experiment_params.get_num_images(),
+    )
+    scan_path = ScanPath(rotation_360_spec.calculate())
+    scan_points = scan_path.consume().midpoints
 
     new_rot_axes = create_goniometer_axes(
         test_rotation_params.artemis_params.detector_params,
@@ -204,9 +72,8 @@ def test_generic_create_gonio_behaves_as_expected(
         test_rotation_params.artemis_params.detector_params,
         test_rotation_params.experiment_params,
     )
-
     assert new_rot_axes.axes_list == old_rot_axes.axes_list
-    assert new_rot_axes.scan == old_rot_axes.scan
+    # Scan is not the same since we don't pass one for the explicit rotation scan
 
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
@@ -274,7 +141,7 @@ def dummy_nexus_writers_with_more_images(test_fgs_params: FGSInternalParameters)
 
 
 @pytest.fixture
-def single_dummy_file(test_fgs_params):
+def single_dummy_file(test_fgs_params: FGSInternalParameters):
     nexus_writer = FGSNexusWriter(test_fgs_params, {"sam_x": np.array([1, 2])})
     yield nexus_writer
     for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
@@ -288,7 +155,9 @@ def single_dummy_file(test_fgs_params):
     indirect=["test_fgs_params"],
 )
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
-    test_fgs_params: FGSInternalParameters, expected_num_of_files, single_dummy_file
+    test_fgs_params: FGSInternalParameters,
+    expected_num_of_files: Literal[3, 4, 9],
+    single_dummy_file: FGSNexusWriter,
 ):
     first_writer = single_dummy_file
     assert len(first_writer.get_image_datafiles()) == expected_num_of_files
