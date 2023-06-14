@@ -110,7 +110,7 @@ def get_plan(
             oav_callback.out_upper_left[1][1]
         ]
 
-        # hack because the callback returns the list in inverted order
+        # Hack because the callback returns the list in inverted order
         parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
             oav_callback.snapshot_filenames[0][::-1]
         )

@@ -149,7 +149,7 @@ def grid_detection_main_plan(
         yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
 
-        yield from bps.create("snapshot_directories")
+        yield from bps.create("snapshot_to_ispyb")
         yield from bps.read(oav.snapshot.last_saved_path)
         yield from bps.read(oav.snapshot.last_path_outer)
         yield from bps.read(oav.snapshot.last_path_full_overlay)
