@@ -29,7 +29,7 @@ def arm_zebra(zebra: Zebra, timeout: float = 3):
 
 
 def disarm_zebra(zebra: Zebra, timeout: float = 3):
-    yield from bps.abs_set(zebra.pc.arm_demand, 0)
+    yield from bps.abs_set(zebra.pc.disarm_demand, 1)
     armed = yield from bps.rd(zebra.pc.armed)
     time = 0.0
     while armed and time < timeout:
