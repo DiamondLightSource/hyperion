@@ -22,15 +22,15 @@ from artemis.device_setup_plans.setup_zebra import (
     disarm_zebra,
     setup_zebra_for_rotation,
 )
+from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
+    RotationCallbackCollection,
+)
 from artemis.log import LOGGER
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
 
 if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
-        RotationCallbackCollection,
-    )
     from artemis.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
@@ -154,9 +154,7 @@ def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
     yield from finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
 
-def get_plan(
-    params: RotationInternalParameters, subscriptions: RotationCallbackCollection
-):
+def get_plan(params: RotationInternalParameters):
     eiger = i03.eiger(wait_for_connection=False)
     smargon = i03.smargon()
     zebra = i03.zebra()
@@ -169,6 +167,7 @@ def get_plan(
         "detector_motion": detector_motion,
         "backlight": backlight,
     }
+    subscriptions = RotationCallbackCollection.from_params(params)
 
     @subs_decorator(list(subscriptions))
     def rotation_scan_plan_with_stage_and_cleanup(

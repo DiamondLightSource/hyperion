@@ -30,6 +30,9 @@ from artemis.device_setup_plans.setup_zebra import (
     setup_zebra_for_fgs,
 )
 from artemis.exceptions import WarningException
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.parameters import external_parameters
 from artemis.parameters.beamline_parameters import (
     get_beamline_parameters,
@@ -39,9 +42,6 @@ from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.tracing import TRACER
 
 if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-        FGSCallbackCollection,
-    )
     from artemis.parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
@@ -284,7 +284,6 @@ def run_gridscan_and_move(
 
 def get_plan(
     parameters: FGSInternalParameters,
-    subscriptions: FGSCallbackCollection,
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -301,6 +300,8 @@ def get_plan(
     fast_grid_scan_composite.eiger.set_detector_parameters(
         parameters.artemis_params.detector_params
     )
+
+    subscriptions = FGSCallbackCollection.from_params(parameters)
 
     @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
         list(subscriptions)  # must be the outermost decorator to receive the metadata
@@ -341,4 +342,4 @@ if __name__ == "__main__":
 
     create_devices()
 
-    RE(get_plan(parameters, subscriptions))
+    RE(get_plan(parameters))
