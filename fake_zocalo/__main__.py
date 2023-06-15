@@ -52,7 +52,7 @@ def get_dcgid_and_prefix(dcid: int, Session) -> Tuple[int, str]:
 def make_result(payload):
     res = {
         "environment": {"ID": "6261b482-bef2-49f5-8699-eb274cd3b92e"},
-        "payload": payload,
+        "payload": {"results": payload},
         "recipe": {
             "start": [[1, payload]],
             "1": {

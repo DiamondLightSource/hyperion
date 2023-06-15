@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Any
 
 from dodal.devices.eiger import DetectorParams
+from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic import BaseModel, root_validator
 from semver import Version
 
@@ -116,6 +117,8 @@ def extract_artemis_params_from_flat_dict(
 
 class InternalParameters(BaseModel):
     params_version: ParameterVersion
+    experiment_params: AbstractExperimentParameterBase
+    artemis_params: ArtemisParameters
 
     class Config:
         use_enum_values = True

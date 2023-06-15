@@ -18,8 +18,6 @@ from artemis.parameters.internal_parameters import (
     InternalParameters,
     extract_artemis_params_from_flat_dict,
     extract_experiment_params_from_flat_dict,
-    flatten_dict,
-    get_extracted_experiment_and_flat_artemis_params,
 )
 from artemis.parameters.plan_specific.fgs_internal_params import (
     GridscanArtemisParameters,
@@ -38,18 +36,18 @@ class GridScanWithEdgeDetectParams(DataClassJsonMixin, AbstractExperimentParamet
     omega_start: float
 
     def get_num_images(self):
-        return None
+        return 0
 
 
 class GridScanWithEdgeDetectInternalParameters(InternalParameters):
     experiment_params: GridScanWithEdgeDetectParams
     artemis_params: GridscanArtemisParameters
 
-    def __init__(self, data):
-        prepared_args = get_extracted_experiment_and_flat_artemis_params(
-            GridScanWithEdgeDetectParams, flatten_dict(data)
-        )
-        super().__init__(**prepared_args)
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            **ArtemisParameters.Config.json_encoders,
+        }
 
     @staticmethod
     def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:

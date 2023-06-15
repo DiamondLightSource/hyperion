@@ -43,7 +43,6 @@ class FGSInternalParameters(InternalParameters):
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {
-            **GridScanParams.Config.json_encoders,
             **GridscanArtemisParameters.Config.json_encoders,
         }
 

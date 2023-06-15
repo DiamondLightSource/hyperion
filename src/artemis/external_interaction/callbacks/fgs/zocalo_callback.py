@@ -47,7 +47,7 @@ class FGSZocaloCallback(CallbackBase):
         ] = parameters.experiment_params.grid_position_to_motor_position
         self.processing_start_time = 0.0
         self.processing_time = 0.0
-        self.run_gridscan_uid: Optional[str] = None
+        self.do_fgs_uid: Optional[str] = None
         self.ispyb: FGSISPyBHandlerCallback = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(
             parameters.artemis_params.zocalo_environment
@@ -56,7 +56,7 @@ class FGSZocaloCallback(CallbackBase):
     def start(self, doc: dict):
         LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == "do_fgs":
-            self.run_gridscan_uid = doc.get("uid")
+            self.do_fgs_uid = doc.get("uid")
             if self.ispyb.ispyb_ids[0] is not None:
                 datacollection_ids = self.ispyb.ispyb_ids[0]
                 for id in datacollection_ids:
@@ -65,7 +65,7 @@ class FGSZocaloCallback(CallbackBase):
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
     def stop(self, doc: dict):
-        if doc.get("run_start") == self.run_gridscan_uid:
+        if doc.get("run_start") == self.do_fgs_uid:
             LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )

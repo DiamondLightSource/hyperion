@@ -123,6 +123,10 @@ def test_full_plan_tidies_at_end(
     RE: RunEngine,
 ):
     callbacks = FGSCallbackCollection.from_params(params)
+    callbacks.nexus_handler.nexus_writer_1 = MagicMock()
+    callbacks.nexus_handler.nexus_writer_2 = MagicMock()
+    callbacks.ispyb_handler.ispyb_ids = MagicMock()
+    callbacks.ispyb_handler.ispyb.datacollection_ids = MagicMock()
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 

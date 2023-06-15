@@ -19,15 +19,15 @@ from artemis.device_setup_plans.setup_zebra import (
     disarm_zebra,
     setup_zebra_for_rotation,
 )
+from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
+    RotationCallbackCollection,
+)
 from artemis.log import LOGGER
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
 
 if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
-        RotationCallbackCollection,
-    )
     from artemis.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
@@ -172,6 +172,8 @@ def get_plan(
     params: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
     devices = create_devices()
+
+    subscriptions = RotationCallbackCollection.from_params(params)
 
     @bpp.subs_decorator(list(subscriptions))
     def rotation_scan_plan_with_stage_and_cleanup(

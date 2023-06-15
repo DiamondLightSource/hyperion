@@ -3,6 +3,7 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from dodal.devices.fast_grid_scan import GridScanParams
 from jsonschema import ValidationError
 
 schema_folder = "src/artemis/parameters/schemas/"
@@ -54,10 +55,16 @@ def test_good_params_detectorparams_validates():
     )
 
 
-def test_good_params_gitparams_validates():
+def test_good_params_gridparams_validates():
     jsonschema.validate(
         params["experiment_params"], grid_scan_schema, resolver=resolver
     )
+
+
+def test_serialised_grid_scan_params_validate():
+    params = GridScanParams()
+    json_params = params.json()
+    jsonschema.validate(json.loads(json_params), grid_scan_schema, resolver=resolver)
 
 
 def test_good_params_rotationparams_validates():
