@@ -37,6 +37,9 @@ class IspybParams(BaseModel):
     microns_per_pixel_y: float
     position: np.ndarray
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)  # TODO REMOVE JUST FOR DEBUGGING
+
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {np.ndarray: lambda a: a.tolist()}
@@ -83,6 +86,9 @@ class RotationIspybParams(IspybParams):
 
 class GridscanIspybParams(IspybParams):
     upper_left: np.ndarray
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)  # TODO REMOVE JUST FOR DEBUGGING
 
     def dict(self, **kwargs):
         as_dict = super().dict(**kwargs)

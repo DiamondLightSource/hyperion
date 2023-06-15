@@ -49,6 +49,9 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
             **ArtemisParameters.Config.json_encoders,
         }
 
+    def __init__(self, **args):
+        super().__init__(**args)
+
     @staticmethod
     def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
         artemis_param_field_keys = [
@@ -89,7 +92,7 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
         all_params["upper_left"] = np.array([0, 0, 0])
-        return ArtemisParameters(
+        return GridscanArtemisParameters(
             **extract_artemis_params_from_flat_dict(
                 all_params, cls._artemis_param_key_definitions()
             )

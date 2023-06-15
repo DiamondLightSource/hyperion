@@ -77,7 +77,6 @@ def test_get_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    mock_subscriptions,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -92,8 +91,8 @@ def test_get_plan(
             return_value=detector_motion,
         ),
         patch(
-            "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
-            lambda _: mock_subscriptions,
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: MagicMock(),
         ),
     ):
         RE(get_plan(test_rotation_params))
