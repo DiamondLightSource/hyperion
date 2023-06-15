@@ -30,6 +30,9 @@ from artemis.device_setup_plans.setup_zebra import (
     setup_zebra_for_fgs,
 )
 from artemis.exceptions import WarningException
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.parameters import external_parameters
 from artemis.parameters.beamline_parameters import (
     get_beamline_parameters,
@@ -39,9 +42,6 @@ from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.tracing import TRACER
 
 if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-        FGSCallbackCollection,
-    )
     from artemis.parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
@@ -218,11 +218,18 @@ def run_gridscan(
 
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
-    @bpp.stage_decorator([fgs_composite.eiger])
     def do_fgs():
-        yield from bps.wait()  # Wait for all moves to complete
-        yield from bps.kickoff(fgs_motors)
-        yield from bps.complete(fgs_motors, wait=True)
+        try:
+            yield from bps.wait()  # Wait for all moves to complete
+            yield from bps.kickoff(fgs_motors)
+            yield from bps.complete(fgs_motors, wait=True)
+        finally:
+            yield from bps.unstage(fgs_composite.eiger)
+
+    # Wait for arming to finish
+    artemis.log.LOGGER.info("Waiting for arming...")
+    yield from bps.wait("arming")
+    artemis.log.LOGGER.info("Arming finished")
 
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()
@@ -252,13 +259,8 @@ def run_gridscan_and_move(
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
-    # While the gridscan is happening we want to write out nexus files and trigger zocalo
-    @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
-    def gridscan_with_subscriptions(fgs_composite, params):
-        artemis.log.LOGGER.info("Starting grid scan")
-        yield from run_gridscan(fgs_composite, params)
-
-    yield from gridscan_with_subscriptions(fgs_composite, parameters)
+    artemis.log.LOGGER.info("Starting grid scan")
+    yield from run_gridscan(fgs_composite, parameters)
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
@@ -282,7 +284,6 @@ def run_gridscan_and_move(
 
 def get_plan(
     parameters: FGSInternalParameters,
-    subscriptions: FGSCallbackCollection,
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -300,8 +301,19 @@ def get_plan(
         parameters.artemis_params.detector_params
     )
 
+    subscriptions = FGSCallbackCollection.from_params(parameters)
+
+    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
+        list(subscriptions)  # must be the outermost decorator to receive the metadata
+    )
+    @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": "run_gridscan_move_and_tidy",
+            "hyperion_internal_parameters": parameters.json(),
+        }
+    )
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
-    @bpp.subs_decorator(subscriptions.ispyb_handler)
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
@@ -330,4 +342,4 @@ if __name__ == "__main__":
 
     create_devices()
 
-    RE(get_plan(parameters, subscriptions))
+    RE(get_plan(parameters))
