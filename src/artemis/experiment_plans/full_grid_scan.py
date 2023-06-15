@@ -45,6 +45,7 @@ def create_devices():
     )
 
     i03.detector_motion()
+
     i03.backlight()
     i03.aperture_scatterguard(aperture_positions)
 
@@ -99,7 +100,7 @@ def detect_grid_and_do_gridscan(
             snapshot_dir,
         )
 
-    run_grid_detection_plan(
+    yield from run_grid_detection_plan(
         oav_params,
         fgs_params,
         snapshot_template,
