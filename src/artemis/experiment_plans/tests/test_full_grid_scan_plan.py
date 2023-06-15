@@ -130,6 +130,9 @@ def test_detect_grid_and_do_gridscan(
         # Verify we called the grid detection plan
         mock_grid_detection_plan.assert_called_once()
 
+        # Verify callback to oav snaposhot was called
+        mock_oav_callback.assert_called_once()
+
         # Check backlight was moved OUT
         assert backlight.pos.get() == Backlight.OUT
 
