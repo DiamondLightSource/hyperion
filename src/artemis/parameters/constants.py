@@ -11,7 +11,10 @@ BEAMLINE_PARAMETER_PATHS = {
 }
 
 PARAMETER_VERSION = 0.2
+# this one is for reading
 SIM_ISPYB_CONFIG = "src/artemis/external_interaction/unit_tests/test_config.cfg"
+# this one is for making depositions:
+DEF_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 PARAMETER_SCHEMA_DIRECTORY = "src/artemis/parameters/schemas/"
 
 DETECTOR_PARAM_DEFAULTS = {

@@ -14,10 +14,9 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
 )
+from artemis.parameters.constants import DEF_ISPYB_DATABASE_CFG
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-
-ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
 TEST_RESULT_LARGE = [
     {
@@ -86,7 +85,7 @@ def get_current_datacollection_attribute(
 
 @pytest.fixture
 def fetch_comment() -> Callable:
-    url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
+    url = ispyb.sqlalchemy.url(DEF_ISPYB_DATABASE_CFG)
     engine = create_engine(url, connect_args={"use_pure": True})
     Session = sessionmaker(engine)
     return partial(get_current_datacollection_comment, Session)
@@ -94,7 +93,7 @@ def fetch_comment() -> Callable:
 
 @pytest.fixture
 def fetch_datacollection_attribute() -> Callable:
-    url = ispyb.sqlalchemy.url(ISPYB_CONFIG)
+    url = ispyb.sqlalchemy.url(DEF_ISPYB_DATABASE_CFG)
     engine = create_engine(url, connect_args={"use_pure": True})
     Session = sessionmaker(engine)
     return partial(get_current_datacollection_attribute, Session)
@@ -114,12 +113,12 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params) -> Store2DGridscanInIspyb:
-    return Store2DGridscanInIspyb(ISPYB_CONFIG, dummy_params)
+    return Store2DGridscanInIspyb(DEF_ISPYB_DATABASE_CFG, dummy_params)
 
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> Store3DGridscanInIspyb:
-    return Store3DGridscanInIspyb(ISPYB_CONFIG, dummy_params)
+    return Store3DGridscanInIspyb(DEF_ISPYB_DATABASE_CFG, dummy_params)
 
 
 @pytest.fixture
