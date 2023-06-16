@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from bluesky.callbacks import CallbackBase
 
-from artemis.external_interaction.nexus.write_nexus import (
-    FGSNexusWriter,
-    create_3d_gridscan_writers,
-)
+from artemis.external_interaction.nexus.write_nexus import NexusWriter
 from artemis.log import LOGGER
 from artemis.parameters.constants import ISPYB_PLAN_NAME
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
@@ -33,8 +30,8 @@ class FGSNexusFileHandlerCallback(CallbackBase):
     def __init__(self) -> None:
         self.parameters: FGSInternalParameters | None = None
         self.run_start_uid: str | None = None
-        self.nexus_writer_1: FGSNexusWriter | None = None
-        self.nexus_writer_2: FGSNexusWriter | None = None
+        self.nexus_writer_1: NexusWriter | None = None
+        self.nexus_writer_2: NexusWriter | None = None
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
@@ -55,8 +52,11 @@ class FGSNexusFileHandlerCallback(CallbackBase):
             # and update parameters before creating writers
 
             LOGGER.info("Initialising nexus writers")
-            self.nexus_writer_1, self.nexus_writer_2 = create_3d_gridscan_writers(
-                self.parameters
+            self.nexus_writer_1 = NexusWriter(
+                self.parameters, **self.parameters.get_nexus_info(1)
+            )
+            self.nexus_writer_2 = NexusWriter(
+                self.parameters, **self.parameters.get_nexus_info(2)
             )
             self.nexus_writer_1.create_nexus_file()
             self.nexus_writer_2.create_nexus_file()

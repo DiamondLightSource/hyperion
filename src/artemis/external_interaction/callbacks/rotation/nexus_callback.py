@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from bluesky.callbacks import CallbackBase
 
-from artemis.external_interaction.nexus.write_nexus import RotationNexusWriter
+from artemis.external_interaction.nexus.write_nexus import NexusWriter
 from artemis.log import LOGGER
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -27,7 +27,7 @@ class RotationNexusFileHandlerCallback(CallbackBase):
     def __init__(self):
         self.run_uid: str | None = None
         self.parameters: RotationInternalParameters | None = None
-        self.writer: RotationNexusWriter | None = None
+        self.writer: NexusWriter | None = None
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == "rotation_scan_with_cleanup":
@@ -38,7 +38,7 @@ class RotationNexusFileHandlerCallback(CallbackBase):
             json_params = doc.get("hyperion_internal_parameters")
             self.parameters = RotationInternalParameters.from_json(json_params)
             LOGGER.info("Setting up nexus file.")
-            self.writer = RotationNexusWriter(self.parameters)
+            self.writer = NexusWriter(self.parameters)
             self.writer.create_nexus_file()
 
     def stop(self, doc: dict):

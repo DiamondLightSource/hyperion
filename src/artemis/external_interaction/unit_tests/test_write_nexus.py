@@ -12,11 +12,7 @@ from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
 from artemis.external_interaction.nexus.nexus_utils import create_goniometer_axes
-from artemis.external_interaction.nexus.write_nexus import (
-    FGSNexusWriter,
-    create_parameters_for_first_gridscan_file,
-    create_parameters_for_second_gridscan_file,
-)
+from artemis.external_interaction.nexus.write_nexus import NexusWriter
 from artemis.external_interaction.unit_tests.conftest import (
     create_gridscan_goniometer_axes,
     create_rotation_goniometer_axes,
@@ -81,7 +77,7 @@ that confirms that we're passing the right sorts of data to nexgen to get a sens
 Note that the testing process does now write temporary files to disk."""
 
 
-def assert_end_data_correct(nexus_writer: FGSNexusWriter):
+def assert_end_data_correct(nexus_writer: NexusWriter):
     for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
             assert "end_time" in written_nexus_file["entry"]
@@ -92,11 +88,11 @@ def dummy_nexus_writers(test_fgs_params: FGSInternalParameters):
     first_file_params, first_scan = create_parameters_for_first_gridscan_file(
         test_fgs_params
     )
-    nexus_writer_1 = FGSNexusWriter(first_file_params, first_scan)
+    nexus_writer_1 = NexusWriter(first_file_params, first_scan)
     second_file_params, second_scan = create_parameters_for_second_gridscan_file(
         test_fgs_params
     )
-    nexus_writer_2 = FGSNexusWriter(second_file_params, second_scan)
+    nexus_writer_2 = NexusWriter(second_file_params, second_scan)
 
     yield nexus_writer_1, nexus_writer_2
 
@@ -116,12 +112,12 @@ def create_nexus_writers_with_many_images(parameters: FGSInternalParameters):
         first_file_params, first_scan = create_parameters_for_first_gridscan_file(
             parameters
         )
-        nexus_writer_1 = FGSNexusWriter(first_file_params, first_scan)
+        nexus_writer_1 = NexusWriter(first_file_params, first_scan)
 
         second_file_params, second_scan = create_parameters_for_second_gridscan_file(
             parameters
         )
-        nexus_writer_2 = FGSNexusWriter(second_file_params, second_scan)
+        nexus_writer_2 = NexusWriter(second_file_params, second_scan)
 
         yield nexus_writer_1, nexus_writer_2
 
@@ -142,7 +138,7 @@ def dummy_nexus_writers_with_more_images(test_fgs_params: FGSInternalParameters)
 
 @pytest.fixture
 def single_dummy_file(test_fgs_params: FGSInternalParameters):
-    nexus_writer = FGSNexusWriter(test_fgs_params, {"sam_x": np.array([1, 2])})
+    nexus_writer = NexusWriter(test_fgs_params, {"sam_x": np.array([1, 2])})
     yield nexus_writer
     for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
         if os.path.isfile(file):
@@ -157,7 +153,7 @@ def single_dummy_file(test_fgs_params: FGSInternalParameters):
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
     test_fgs_params: FGSInternalParameters,
     expected_num_of_files: Literal[3, 4, 9],
-    single_dummy_file: FGSNexusWriter,
+    single_dummy_file: NexusWriter,
 ):
     first_writer = single_dummy_file
     assert len(first_writer.get_image_datafiles()) == expected_num_of_files
@@ -171,7 +167,7 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
 
 def test_given_dummy_data_then_datafile_written_correctly(
     test_fgs_params: FGSInternalParameters,
-    dummy_nexus_writers: tuple[FGSNexusWriter, FGSNexusWriter],
+    dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
     grid_scan_params: GridScanParams = test_fgs_params.experiment_params
@@ -285,7 +281,7 @@ def assert_contains_external_link(data_path, entry_name, file_name):
 
 
 def test_nexus_writer_files_are_formatted_as_expected(
-    test_fgs_params: FGSInternalParameters, single_dummy_file: FGSNexusWriter
+    test_fgs_params: FGSInternalParameters, single_dummy_file: NexusWriter
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
@@ -295,7 +291,7 @@ def test_nexus_writer_files_are_formatted_as_expected(
         assert file_name.startswith(expected_file_name_prefix)
 
 
-def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: FGSNexusWriter):
+def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: NexusWriter):
     nexus_file = single_dummy_file.nexus_file
     master_file = single_dummy_file.master_file
     temp_nexus_file = Path(f"{str(nexus_file)}.tmp")
@@ -313,7 +309,7 @@ def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: FGSNexusWriter)
 
 
 def test_nexus_writer_writes_width_and_height_correctly(
-    single_dummy_file: FGSNexusWriter,
+    single_dummy_file: NexusWriter,
 ):
     from dodal.devices.det_dim_constants import (
         PIXELS_X_EIGER2_X_4M,
@@ -328,7 +324,7 @@ def test_nexus_writer_writes_width_and_height_correctly(
     )
 
 
-def check_validity_through_zocalo(nexus_writers: tuple[FGSNexusWriter, FGSNexusWriter]):
+def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]):
     import dlstbx.swmr.h5check
 
     nexus_writer_1, nexus_writer_2 = nexus_writers
@@ -351,21 +347,21 @@ def check_validity_through_zocalo(nexus_writers: tuple[FGSNexusWriter, FGSNexusW
 
 @pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
-    dummy_nexus_writers: tuple[FGSNexusWriter, FGSNexusWriter]
+    dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
 ):
     check_validity_through_zocalo(dummy_nexus_writers)
 
 
 @pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
-    dummy_nexus_writers_with_more_images: tuple[FGSNexusWriter, FGSNexusWriter]
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
     check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
 
 
 @pytest.mark.skip("Requires #87 of nexgen")
 def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
-    dummy_nexus_writers_with_more_images: tuple[FGSNexusWriter, FGSNexusWriter]
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
 

@@ -26,7 +26,7 @@ def dummy_params():
 
 @pytest.fixture
 def nexus_writer():
-    with patch("artemis.external_interaction.nexus.write_nexus.FGSNexusWriter") as nw:
+    with patch("artemis.external_interaction.nexus.write_nexus.NexusWriter") as nw:
         yield nw
 
 

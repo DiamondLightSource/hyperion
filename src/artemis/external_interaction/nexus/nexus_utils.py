@@ -1,7 +1,3 @@
-"""
-Define beamline parameters for I03, Eiger detector and give an example of writing a
-gridscan.
-"""
 from __future__ import annotations
 
 import time
@@ -14,12 +10,26 @@ from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 
 
 def create_goniometer_axes(
-    detector_params: DetectorParams,
-    scan_points: dict,
+    omega_start: float,
+    scan_points: dict | None,
     x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
 ):
+    """Returns a Nexgen 'Goniometer' object with the dependency chain of I03's Smargon
+    goniometer. If scan points is provided these values will be used in preference to
+    those from the params object.
+
+    Args:
+        omega_start (float): the starting position of omega, the only extra value that
+                             needs to be specified except for the scan points.
+        scan_points (dict):  a dictionary of points in the scan for each axis. Obtained
+                             by calculating the scan path with scanspec and calling
+                             consume() on it.
+        x_y_z_increments:    optionally, specify the increments between each image for
+                             the x, y, and z axes. Will be ignored if scan_points
+                             is provided.
+    """
     gonio_axes = [
-        Axis("omega", ".", "rotation", (-1.0, 0.0, 0.0), detector_params.omega_start),
+        Axis("omega", ".", "rotation", (-1.0, 0.0, 0.0), omega_start),
         Axis(
             name="sam_z",
             depends="omega",

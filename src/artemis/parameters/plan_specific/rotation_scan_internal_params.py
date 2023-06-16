@@ -7,6 +7,8 @@ from dodal.devices.motors import XYZLimitBundle
 from dodal.devices.zebra import RotationDirection
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic import BaseModel, validator
+from scanspec.core import Path as ScanPath
+from scanspec.specs import Line
 
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
@@ -95,3 +97,22 @@ class RotationInternalParameters(InternalParameters):
         all_params["num_images_per_trigger"] = all_params["num_images"]
         all_params["upper_left"] = np.array(all_params["upper_left"])
         return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))
+
+    def get_scan_points(self):
+        scan_spec = Line(
+            axis="omega",
+            start=self.experiment_params.omega_start,
+            stop=(
+                self.experiment_params.rotation_angle
+                + self.experiment_params.omega_start
+            ),
+            num=self.experiment_params.get_num_images(),
+        )
+        scan_path = ScanPath(scan_spec.calculate())
+        self.scan_points = scan_path.consume().midpoints
+
+    def get_data_shape_for(self) -> tuple[int, ...]:
+        return (
+            self.experiment_params.get_num_images(),
+            *self.artemis_params.detector_params.detector_size_constants.det_size_pixels,
+        )

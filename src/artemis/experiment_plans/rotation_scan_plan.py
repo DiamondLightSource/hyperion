@@ -166,7 +166,7 @@ def get_plan(parameters: RotationInternalParameters):
     subscriptions = RotationCallbackCollection.from_params(parameters)
 
     @bpp.subs_decorator(list(subscriptions))
-    @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
+    @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": "rotation_scan_with_cleanup",

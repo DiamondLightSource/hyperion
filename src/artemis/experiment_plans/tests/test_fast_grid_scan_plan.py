@@ -291,7 +291,7 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
-@patch("artemis.external_interaction.nexus.write_nexus.FGSNexusWriter")
+@patch("artemis.external_interaction.nexus.write_nexus.NexusWriter")
 def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     nexuswriter,
     wait_for_valid,

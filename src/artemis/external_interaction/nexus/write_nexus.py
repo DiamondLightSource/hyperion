@@ -6,25 +6,12 @@ from __future__ import annotations
 
 import math
 import shutil
-from abc import ABC, abstractmethod
-from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Tuple
 
 import h5py
 import numpy as np
-from dodal.devices.fast_grid_scan import GridAxis
-from nexgen.nxs_utils import (
-    Attenuator,
-    Beam,
-    Detector,
-    EigerDetector,
-    Goniometer,
-    Source,
-)
+from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
-from scanspec.core import Path as ScanPath
-from scanspec.specs import Line
 
 from artemis.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
@@ -33,13 +20,9 @@ from artemis.external_interaction.nexus.nexus_utils import (
     get_current_time,
 )
 from artemis.parameters.internal_parameters import InternalParameters
-from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-from artemis.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
 
 
-class NexusWriter(ABC):
+class NexusWriter:
     detector: Detector
     source: Source
     beam: Beam
@@ -51,11 +34,20 @@ class NexusWriter(ABC):
     nexus_file: Path
     master_file: Path
     scan_points: dict
+    data_shape: tuple[int, int, int]
+    omega_start: float
 
     def __init__(
         self,
         parameters: InternalParameters,
+        scan_points: dict,
+        data_shape: tuple[int, int, int],
+        omega_start: float,
+        filename: str | None = None,
     ) -> None:
+        self.scan_points = scan_points
+        self.data_shape = data_shape
+        self.omega_start = omega_start
         self.detector = create_detector_parameters(
             parameters.artemis_params.detector_params
         )
@@ -64,7 +56,11 @@ class NexusWriter(ABC):
         )
         self.source = Source(parameters.artemis_params.beamline)
         self.directory = Path(parameters.artemis_params.detector_params.directory)
-        self.filename = parameters.artemis_params.detector_params.full_filename
+        self.filename = (
+            filename
+            if filename
+            else parameters.artemis_params.detector_params.full_filename
+        )
         self.start_index = parameters.artemis_params.detector_params.start_index
         self.full_num_of_images = (
             parameters.artemis_params.detector_params.num_triggers
@@ -78,14 +74,7 @@ class NexusWriter(ABC):
             self.directory
             / f"{parameters.artemis_params.detector_params.nexus_filename}_master.h5"
         )
-        # Should be setup in subclass before super().__init__()
-        self.goniometer = create_goniometer_axes(
-            parameters.artemis_params.detector_params, self.scan_points
-        )
-
-    @abstractmethod
-    def _get_data_shape_for_vds(self) -> tuple[int, ...]:
-        ...
+        self.goniometer = create_goniometer_axes(self.omega_start, self.scan_points)
 
     def create_nexus_file(self):
         """
@@ -94,7 +83,7 @@ class NexusWriter(ABC):
         """
         start_time = get_current_time()
 
-        vds_shape = self._get_data_shape_for_vds()
+        vds_shape = self.data_shape
 
         for filename in [self.nexus_file, self.master_file]:
             NXmx_Writer = NXmxFileWriter(
@@ -126,7 +115,7 @@ class NexusWriter(ABC):
             shutil.copy(filename, temp_filename)
             with h5py.File(temp_filename, "r+") as nxsfile:
                 nxsfile["entry"].create_dataset(
-                    "end_time", data=np.string_(get_current_time() + "Z")
+                    "end_time", data=np.string_(get_current_time())
                 )
             shutil.move(temp_filename, filename)
 
@@ -137,103 +126,3 @@ class NexusWriter(ABC):
                 math.ceil(self.full_num_of_images / max_images_per_file)
             )
         ]
-
-
-class FGSNexusWriter(NexusWriter):
-    def __init__(self, parameters: FGSInternalParameters, grid_scan: dict) -> None:
-        self.scan_points = grid_scan
-        super().__init__(parameters)
-
-    def _get_data_shape_for_vds(self) -> tuple[int, ...]:
-        ax = list(self.scan_points.keys())[0]
-        num_frames_in_vds = len(self.scan_points[ax])
-        nexus_detector_params: EigerDetector = self.detector.detector_params
-        return (num_frames_in_vds, *nexus_detector_params.image_size)
-
-
-class RotationNexusWriter(NexusWriter):
-    def __init__(self, parameters: RotationInternalParameters) -> None:
-        scan_spec = Line(
-            axis="omega",
-            start=parameters.experiment_params.omega_start,
-            stop=(
-                parameters.experiment_params.rotation_angle
-                + parameters.experiment_params.omega_start
-            ),
-            num=parameters.experiment_params.get_num_images(),
-        )
-        scan_path = ScanPath(scan_spec.calculate())
-        self.scan_points = scan_path.consume().midpoints
-        super().__init__(parameters)
-
-    def _get_data_shape_for_vds(self) -> tuple[int, ...]:
-        nexus_detector_params: EigerDetector = self.detector.detector_params
-        return (self.full_num_of_images, *nexus_detector_params.image_size)
-
-
-def create_parameters_for_first_gridscan_file(
-    parameters: FGSInternalParameters,
-) -> Tuple[FGSInternalParameters, Dict]:
-    new_params = deepcopy(parameters)
-    new_params.experiment_params.z_axis = GridAxis(
-        parameters.experiment_params.z1_start, 0, 0
-    )
-    new_params.artemis_params.detector_params.nexus_file_run_number = (
-        parameters.artemis_params.detector_params.run_number
-    )
-
-    spec = Line(
-        "sam_y",
-        new_params.experiment_params.y_axis.start,
-        new_params.experiment_params.y_axis.end,
-        new_params.experiment_params.y_steps,
-    ) * ~Line(
-        "sam_x",
-        new_params.experiment_params.x_axis.start,
-        new_params.experiment_params.x_axis.end,
-        new_params.experiment_params.x_steps,
-    )
-    scan_path = ScanPath(spec.calculate())
-
-    return new_params, scan_path.consume().midpoints
-
-
-def create_parameters_for_second_gridscan_file(
-    parameters: FGSInternalParameters,
-) -> Tuple[FGSInternalParameters, Dict]:
-    new_params = deepcopy(parameters)
-    new_params.experiment_params.y_axis = GridAxis(
-        parameters.experiment_params.y2_start, 0, 0
-    )
-    new_params.artemis_params.detector_params.omega_start += 90
-    new_params.artemis_params.detector_params.nexus_file_run_number = (
-        parameters.artemis_params.detector_params.run_number + 1
-    )
-    new_params.artemis_params.detector_params.start_index = (
-        parameters.experiment_params.x_steps * parameters.experiment_params.y_steps
-    )
-
-    spec = Line(
-        "sam_z",
-        new_params.experiment_params.z_axis.start,
-        new_params.experiment_params.z_axis.end,
-        new_params.experiment_params.z_steps,
-    ) * ~Line(
-        "sam_x",
-        new_params.experiment_params.x_axis.start,
-        new_params.experiment_params.x_axis.end,
-        new_params.experiment_params.x_steps,
-    )
-    scan_path = ScanPath(spec.calculate())
-
-    return new_params, scan_path.consume().midpoints
-
-
-def create_3d_gridscan_writers(
-    parameters: FGSInternalParameters,
-) -> tuple[NexusWriter, NexusWriter]:
-    params_for_first = create_parameters_for_first_gridscan_file(parameters)
-    params_for_second = create_parameters_for_second_gridscan_file(parameters)
-    nexus_writer_1 = FGSNexusWriter(*params_for_first)
-    nexus_writer_2 = FGSNexusWriter(*params_for_second)
-    return nexus_writer_1, nexus_writer_2
