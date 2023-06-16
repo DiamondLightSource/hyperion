@@ -26,7 +26,11 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 @pytest.fixture
 def dummy_nexus_writers(test_fgs_params: FGSInternalParameters):
     nexus_writer_1 = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(1))
-    nexus_writer_2 = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(2))
+    nexus_writer_2 = NexusWriter(
+        test_fgs_params,
+        **test_fgs_params.get_nexus_info(2),
+        vds_start_index=test_fgs_params.get_data_shape(1)[0],
+    )
 
     yield nexus_writer_1, nexus_writer_2
 
@@ -65,7 +69,7 @@ def dummy_nexus_writers_with_more_images(test_fgs_params: FGSInternalParameters)
 
 @pytest.fixture
 def single_dummy_file(test_fgs_params: FGSInternalParameters):
-    nexus_writer = NexusWriter(test_fgs_params, {"sam_x": np.array([1, 2])})
+    nexus_writer = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(1))
     yield nexus_writer
     for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
         if os.path.isfile(file):
@@ -197,7 +201,7 @@ def assert_data_edge_at(nexus_file, expected_edge_index):
     """Asserts that the datafile's last datapoint is at the specified index"""
     with h5py.File(nexus_file) as f:
         assert f["entry"]["data"]["data"][expected_edge_index, 0, 0] == 0
-
+        data = f["entry"]["data"]["data"]
         with pytest.raises(IndexError):
             assert f["entry"]["data"]["data"][expected_edge_index + 1, 0, 0] == 0
 

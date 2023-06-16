@@ -74,7 +74,7 @@ class FGSInternalParameters(InternalParameters):
             return scan_path.consume().midpoints
         elif scan_number == 2:
             x_axis = self.experiment_params.x_axis
-            z_axis = self.experiment_params.x_axis
+            z_axis = self.experiment_params.z_axis
             spec = Line(
                 "sam_z",
                 z_axis.start,
@@ -123,12 +123,6 @@ class FGSInternalParameters(InternalParameters):
         else:
             raise Exception("Cannot provide parameters for other scans than 1 or 2")
 
-    def get_filename(self, scan_number: int) -> str:
-        assert (
-            scan_number == 1 or scan_number == 2
-        ), "Cannot provide parameters for other scans than 1 or 2"
-        return f"{self.artemis_params.detector_params.prefix}_{self.get_run_number(scan_number)}"
-
     def get_nexus_info(self, scan_number: int) -> dict:
         """Returns a dict of info necessary for initialising NexusWriter, containing:
         data_shape, scan_points, omega_start, filename
@@ -140,5 +134,5 @@ class FGSInternalParameters(InternalParameters):
             "data_shape": self.get_data_shape(scan_number),
             "scan_points": self.get_scan_points(scan_number),
             "omega_start": self.get_omega_start(scan_number),
-            "filename": self.get_filename(scan_number),
+            "run_number": self.get_run_number(scan_number),
         }

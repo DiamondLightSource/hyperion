@@ -56,7 +56,9 @@ class FGSNexusFileHandlerCallback(CallbackBase):
                 self.parameters, **self.parameters.get_nexus_info(1)
             )
             self.nexus_writer_2 = NexusWriter(
-                self.parameters, **self.parameters.get_nexus_info(2)
+                self.parameters,
+                **self.parameters.get_nexus_info(2),
+                vds_start_index=self.parameters.get_data_shape(1)[0],
             )
             self.nexus_writer_1.create_nexus_file()
             self.nexus_writer_2.create_nexus_file()

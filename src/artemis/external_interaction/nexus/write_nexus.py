@@ -36,6 +36,7 @@ class NexusWriter:
     scan_points: dict
     data_shape: tuple[int, int, int]
     omega_start: float
+    run_number: int
 
     def __init__(
         self,
@@ -43,7 +44,8 @@ class NexusWriter:
         scan_points: dict,
         data_shape: tuple[int, int, int],
         omega_start: float | None = None,
-        filename: str | None = None,
+        run_number: int | None = None,
+        vds_start_index: int = 0,
     ) -> None:
         self.scan_points = scan_points
         self.data_shape = data_shape
@@ -51,6 +53,11 @@ class NexusWriter:
             omega_start
             if omega_start
             else parameters.artemis_params.detector_params.omega_start
+        )
+        self.run_number = (
+            run_number
+            if run_number
+            else parameters.artemis_params.detector_params.run_number
         )
         self.detector = create_detector_parameters(
             parameters.artemis_params.detector_params
@@ -60,18 +67,17 @@ class NexusWriter:
         )
         self.source = Source(parameters.artemis_params.beamline)
         self.directory = Path(parameters.artemis_params.detector_params.directory)
-        self.filename = (
-            filename
-            if filename
-            else parameters.artemis_params.detector_params.full_filename
-        )
-        self.start_index = parameters.artemis_params.detector_params.start_index
+        self.filename = parameters.artemis_params.detector_params.prefix
+        self.start_index = vds_start_index
         self.full_num_of_images = (
             parameters.artemis_params.detector_params.num_triggers
             * parameters.artemis_params.detector_params.num_images_per_trigger
         )
-        self.nexus_file = self.directory / f"{self.filename}.nxs"
-        self.master_file = self.directory / f"{self.filename}_master.h5"
+        self.full_filename = parameters.artemis_params.detector_params.full_filename
+        self.nexus_file = self.directory / f"{self.filename}_{self.run_number}.nxs"
+        self.master_file = (
+            self.directory / f"{self.filename}_{self.run_number}_master.h5"
+        )
         self.goniometer = create_goniometer_axes(self.omega_start, self.scan_points)
 
     def create_nexus_file(self):
@@ -94,7 +100,7 @@ class NexusWriter:
                 self.full_num_of_images,
             )
             NXmx_Writer.write(
-                image_filename=self.filename,
+                image_filename=f"{self.full_filename}",
                 start_time=start_time,
             )
             NXmx_Writer.write_vds(
@@ -119,7 +125,7 @@ class NexusWriter:
 
     def get_image_datafiles(self, max_images_per_file=1000):
         return [
-            self.directory / f"{self.filename}_{h5_num + 1:06}.h5"
+            self.directory / f"{self.full_filename}_{h5_num + 1:06}.h5"
             for h5_num in range(
                 math.ceil(self.full_num_of_images / max_images_per_file)
             )
