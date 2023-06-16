@@ -201,7 +201,6 @@ def assert_data_edge_at(nexus_file, expected_edge_index):
     """Asserts that the datafile's last datapoint is at the specified index"""
     with h5py.File(nexus_file) as f:
         assert f["entry"]["data"]["data"][expected_edge_index, 0, 0] == 0
-        data = f["entry"]["data"]["data"]
         with pytest.raises(IndexError):
             assert f["entry"]["data"]["data"][expected_edge_index + 1, 0, 0] == 0
 
