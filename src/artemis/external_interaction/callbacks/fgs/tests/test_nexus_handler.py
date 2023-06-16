@@ -30,27 +30,7 @@ def nexus_writer():
         yield nw
 
 
-@pytest.fixture
-def params_for_first():
-    with patch(
-        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_first_gridscan_file",
-        return_value=(MagicMock(), {}),
-    ) as p:
-        yield p
-
-
-@pytest.fixture
-def params_for_second():
-    with patch(
-        "artemis.external_interaction.nexus.write_nexus.create_parameters_for_second_gridscan_file",
-        return_value=(MagicMock(), {}),
-    ) as p:
-        yield p
-
-
 def test_writers_not_setup_on_plan_start_doc(
-    params_for_second: MagicMock,
-    params_for_first: MagicMock,
     nexus_writer: MagicMock,
     dummy_params: FGSInternalParameters,
 ):
@@ -66,8 +46,6 @@ def test_writers_not_setup_on_plan_start_doc(
 
 
 def test_writers_dont_create_on_init_but_do_on_ispyb_event(
-    params_for_second: MagicMock,
-    params_for_first: MagicMock,
     nexus_writer: MagicMock,
     dummy_params: FGSInternalParameters,
 ):
@@ -86,14 +64,18 @@ def test_writers_dont_create_on_init_but_do_on_ispyb_event(
     assert nexus_handler.nexus_writer_1 is None
     assert nexus_handler.nexus_writer_2 is None
 
-    nexus_handler.descriptor({"name": ISPYB_PLAN_NAME})
+    mock_writer = MagicMock()
+
+    with patch(
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter",
+        mock_writer,
+    ):
+        nexus_handler.descriptor({"name": ISPYB_PLAN_NAME})
 
     assert nexus_handler.nexus_writer_1 is not None
     assert nexus_handler.nexus_writer_2 is not None
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_called_with(*params_for_first)
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_called_with(
-        *params_for_second
-    )
+    nexus_handler.nexus_writer_1.create_nexus_file.assert_called()
+    nexus_handler.nexus_writer_2.create_nexus_file.assert_called()
 
 
 def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
@@ -113,11 +95,12 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
             "subplan_name": "run_gridscan",
         }
     )
-    nexus_handler.descriptor(
-        {
-            "name": "ispyb_readings",
-        }
-    )
+    with patch("artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter"):
+        nexus_handler.descriptor(
+            {
+                "name": "ispyb_readings",
+            }
+        )
 
     nexus_handler.nexus_writer_1.create_nexus_file.assert_called()
     nexus_handler.nexus_writer_2.create_nexus_file.assert_called()

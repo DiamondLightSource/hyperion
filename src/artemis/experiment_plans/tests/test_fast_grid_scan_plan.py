@@ -323,6 +323,10 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     ), patch(
         "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
         lambda _: mock_subscriptions,
+    ), patch(
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.create_nexus_file"
+    ), patch(
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.update_nexus_file_timestamp"
     ):
         RE(get_plan(test_fgs_params))
 

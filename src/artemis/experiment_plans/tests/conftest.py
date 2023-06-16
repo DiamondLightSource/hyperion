@@ -140,10 +140,6 @@ def mock_subscriptions(test_fgs_params):
     subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_LARGE
     )
-
-    subscriptions.nexus_handler.nexus_writer_1 = MagicMock()
-    subscriptions.nexus_handler.nexus_writer_2 = MagicMock()
-
     subscriptions.ispyb_handler.ispyb = MagicMock()
     subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: [[0, 0], 0, 0]
 

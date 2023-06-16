@@ -70,14 +70,8 @@ class NexusWriter:
             parameters.artemis_params.detector_params.num_triggers
             * parameters.artemis_params.detector_params.num_images_per_trigger
         )
-        self.nexus_file = (
-            self.directory
-            / f"{parameters.artemis_params.detector_params.nexus_filename}.nxs"
-        )
-        self.master_file = (
-            self.directory
-            / f"{parameters.artemis_params.detector_params.nexus_filename}_master.h5"
-        )
+        self.nexus_file = self.directory / f"{self.filename}.nxs"
+        self.master_file = self.directory / f"{self.filename}_master.h5"
         self.goniometer = create_goniometer_axes(self.omega_start, self.scan_points)
 
     def create_nexus_file(self):

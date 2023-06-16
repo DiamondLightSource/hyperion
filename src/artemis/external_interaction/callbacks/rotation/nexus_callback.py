@@ -40,8 +40,8 @@ class RotationNexusFileHandlerCallback(CallbackBase):
             LOGGER.info("Setting up nexus file.")
             self.writer = NexusWriter(
                 self.parameters,
-                self.parameters.get_scan_points,
-                self.parameters.get_data_shape,
+                self.parameters.get_scan_points(),
+                self.parameters.get_data_shape(),
             )
             self.writer.create_nexus_file()
 

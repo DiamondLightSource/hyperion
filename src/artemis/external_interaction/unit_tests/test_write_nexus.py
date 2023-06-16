@@ -8,69 +8,9 @@ import h5py
 import numpy as np
 import pytest
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
-from scanspec.core import Path as ScanPath
-from scanspec.specs import Line
 
-from artemis.external_interaction.nexus.nexus_utils import create_goniometer_axes
 from artemis.external_interaction.nexus.write_nexus import NexusWriter
-from artemis.external_interaction.unit_tests.conftest import (
-    create_gridscan_goniometer_axes,
-    create_rotation_goniometer_axes,
-)
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-from artemis.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
-
-
-def test_generic_create_gonio_creates_same_gonio_as_defined_with_individual_params(
-    test_fgs_params: FGSInternalParameters,
-    test_rotation_params: RotationInternalParameters,
-):
-    params, scan_points = create_parameters_for_first_gridscan_file(test_fgs_params)
-
-    grid_increments = (
-        params.experiment_params.x_axis.step_size,
-        params.experiment_params.y_axis.step_size,
-        params.experiment_params.z_axis.step_size,
-    )
-    new_fgs_axes = create_goniometer_axes(
-        params.artemis_params.detector_params,
-        scan_points,
-        grid_increments,
-    )
-    old_fgs_axes = create_gridscan_goniometer_axes(
-        params.artemis_params.detector_params,
-        params.experiment_params,
-        scan_points,
-    )
-
-    assert new_fgs_axes.axes_list == old_fgs_axes.axes_list
-    assert new_fgs_axes.scan == old_fgs_axes.scan
-
-    rotation_360_spec = Line(
-        axis="omega",
-        start=test_rotation_params.experiment_params.omega_start,
-        stop=(
-            test_rotation_params.experiment_params.rotation_angle
-            + test_rotation_params.experiment_params.omega_start
-        ),
-        num=test_rotation_params.experiment_params.get_num_images(),
-    )
-    scan_path = ScanPath(rotation_360_spec.calculate())
-    scan_points = scan_path.consume().midpoints
-
-    new_rot_axes = create_goniometer_axes(
-        test_rotation_params.artemis_params.detector_params,
-        scan_points,
-    )
-    old_rot_axes = create_rotation_goniometer_axes(
-        test_rotation_params.artemis_params.detector_params,
-        test_rotation_params.experiment_params,
-    )
-    assert new_rot_axes.axes_list == old_rot_axes.axes_list
-    # Scan is not the same since we don't pass one for the explicit rotation scan
-
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
@@ -85,14 +25,8 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 @pytest.fixture
 def dummy_nexus_writers(test_fgs_params: FGSInternalParameters):
-    first_file_params, first_scan = create_parameters_for_first_gridscan_file(
-        test_fgs_params
-    )
-    nexus_writer_1 = NexusWriter(first_file_params, first_scan)
-    second_file_params, second_scan = create_parameters_for_second_gridscan_file(
-        test_fgs_params
-    )
-    nexus_writer_2 = NexusWriter(second_file_params, second_scan)
+    nexus_writer_1 = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(1))
+    nexus_writer_2 = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(2))
 
     yield nexus_writer_1, nexus_writer_2
 
@@ -109,15 +43,8 @@ def create_nexus_writers_with_many_images(parameters: FGSInternalParameters):
         parameters.experiment_params.y_steps = y
         parameters.experiment_params.z_steps = z
         parameters.artemis_params.detector_params.num_triggers = x * y + x * z
-        first_file_params, first_scan = create_parameters_for_first_gridscan_file(
-            parameters
-        )
-        nexus_writer_1 = NexusWriter(first_file_params, first_scan)
-
-        second_file_params, second_scan = create_parameters_for_second_gridscan_file(
-            parameters
-        )
-        nexus_writer_2 = NexusWriter(second_file_params, second_scan)
+        nexus_writer_1 = NexusWriter(parameters, **parameters.get_nexus_info(1))
+        nexus_writer_2 = NexusWriter(parameters, **parameters.get_nexus_info(2))
 
         yield nexus_writer_1, nexus_writer_2
 

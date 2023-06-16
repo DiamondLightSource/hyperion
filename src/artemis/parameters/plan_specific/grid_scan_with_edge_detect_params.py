@@ -66,3 +66,9 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
         all_params["upper_left"] = np.array([0, 0, 0])
         return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))
+
+    def get_data_shape(self):
+        raise Exception("Data shape does not apply to this type of experiment!")
+
+    def get_scan_points(cls):
+        raise Exception("Scan points do not apply to this type of experiment!")

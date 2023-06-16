@@ -109,7 +109,7 @@ class RotationInternalParameters(InternalParameters):
             num=self.experiment_params.get_num_images(),
         )
         scan_path = ScanPath(scan_spec.calculate())
-        self.scan_points = scan_path.consume().midpoints
+        return scan_path.consume().midpoints
 
     def get_data_shape(self) -> tuple[int, ...]:
         size = (

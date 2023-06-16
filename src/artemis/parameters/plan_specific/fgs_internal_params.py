@@ -130,7 +130,9 @@ class FGSInternalParameters(InternalParameters):
         return f"{self.artemis_params.detector_params.prefix}_{self.get_run_number(scan_number)}"
 
     def get_nexus_info(self, scan_number: int) -> dict:
-        """returns a dict of info necessary for initialising NexusWriter"""
+        """Returns a dict of info necessary for initialising NexusWriter, containing:
+        data_shape, scan_points, omega_start, filename
+        """
         assert (
             scan_number == 1 or scan_number == 2
         ), "Cannot provide parameters for other scans than 1 or 2"
