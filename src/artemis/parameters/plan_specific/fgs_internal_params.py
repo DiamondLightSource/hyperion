@@ -97,13 +97,13 @@ class FGSInternalParameters(InternalParameters):
         assert (
             scan_number == 1 or scan_number == 2
         ), "Cannot provide parameters for other scans than 1 or 2"
+        size = (
+            self.artemis_params.detector_params.detector_size_constants.det_size_pixels
+        )
         scan_points = self.get_scan_points(scan_number)
         ax = list(scan_points.keys())[0]
         num_frames_in_vds = len(scan_points[ax])
-        return (
-            num_frames_in_vds,
-            *self.artemis_params.detector_params.detector_size_constants.det_size_pixels,
-        )
+        return (num_frames_in_vds, size.width, size.height)
 
     def get_omega_start(self, scan_number: int) -> float:
         detector_params = self.artemis_params.detector_params

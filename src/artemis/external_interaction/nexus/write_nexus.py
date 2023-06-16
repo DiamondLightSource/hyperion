@@ -42,12 +42,16 @@ class NexusWriter:
         parameters: InternalParameters,
         scan_points: dict,
         data_shape: tuple[int, int, int],
-        omega_start: float,
+        omega_start: float | None = None,
         filename: str | None = None,
     ) -> None:
         self.scan_points = scan_points
         self.data_shape = data_shape
-        self.omega_start = omega_start
+        self.omega_start = (
+            omega_start
+            if omega_start
+            else parameters.artemis_params.detector_params.omega_start
+        )
         self.detector = create_detector_parameters(
             parameters.artemis_params.detector_params
         )

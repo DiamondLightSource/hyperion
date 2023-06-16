@@ -111,8 +111,8 @@ class RotationInternalParameters(InternalParameters):
         scan_path = ScanPath(scan_spec.calculate())
         self.scan_points = scan_path.consume().midpoints
 
-    def get_data_shape_for(self) -> tuple[int, ...]:
-        return (
-            self.experiment_params.get_num_images(),
-            *self.artemis_params.detector_params.detector_size_constants.det_size_pixels,
+    def get_data_shape(self) -> tuple[int, ...]:
+        size = (
+            self.artemis_params.detector_params.detector_size_constants.det_size_pixels
         )
+        return (self.experiment_params.get_num_images(), size.width, size.height)
