@@ -44,8 +44,9 @@ class StoreInIspyb(ABC):
     xtal_snapshots: list[str] | None = None
     data_collection_group_id: int | None = None
 
-    def __init__(self, ispyb_config, parameters=None) -> None:
+    def __init__(self, ispyb_config: str, experiment_type: str) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
+        self.experiment_type = experiment_type
 
     @abstractmethod
     def _store_scan_data(self, conn: Connector):
@@ -240,8 +241,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         else:
             self.xtal_snapshots = []
             LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
-        self.experiment_type = "SAD"
-        super().__init__(ispyb_config, parameters)
+        super().__init__(ispyb_config, "SAD")
 
     def _mutate_datacollection_params_for_experiment(
         self, params: dict[str, Any]
@@ -308,9 +308,14 @@ class StoreGridscanInIspyb(StoreInIspyb):
     y_step_size: int | None = None
     grid_ids: tuple[int, ...] | None = None
 
-    def __init__(self, ispyb_config, parameters=None) -> None:
+    def __init__(
+        self,
+        ispyb_config: str,
+        experiment_type: str,
+        parameters: FGSInternalParameters = None,
+    ) -> None:
         self.full_params: FGSInternalParameters | None = parameters
-        super().__init__(ispyb_config, parameters)
+        super().__init__(ispyb_config, experiment_type)
 
     def begin_deposition(self):
         (
@@ -425,8 +430,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
 class Store3DGridscanInIspyb(StoreGridscanInIspyb):
     def __init__(self, ispyb_config, parameters=None):
-        super().__init__(ispyb_config, parameters)
-        self.experiment_type = "Mesh3D"
+        super().__init__(ispyb_config, "Mesh3D", parameters)
 
     def _store_scan_data(self, conn: Connector):
         data_collection_group_id = self._store_data_collection_group_table(conn)
@@ -469,8 +473,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
 
 class Store2DGridscanInIspyb(StoreGridscanInIspyb):
     def __init__(self, ispyb_config, parameters=None):
-        super().__init__(ispyb_config, parameters)
-        self.experiment_type = "mesh"
+        super().__init__(ispyb_config, "mesh", parameters)
 
     def _store_scan_data(self, conn: Connector):
         data_collection_group_id = self._store_data_collection_group_table(conn)
