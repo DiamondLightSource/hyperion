@@ -5,7 +5,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
     Store3DGridscanInIspyb,
     StoreGridscanInIspyb,
 )
-from artemis.parameters.constants import DEF_ISPYB_DATABASE_CFG
+from artemis.parameters.constants import DEV_ISPYB_DATABASE_CFG
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
@@ -68,7 +68,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 ):
     test_params = FGSInternalParameters(**default_raw_params())
     test_params.artemis_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
-    ispyb: StoreGridscanInIspyb = StoreClass(DEF_ISPYB_DATABASE_CFG, test_params)
+    ispyb: StoreGridscanInIspyb = StoreClass(DEV_ISPYB_DATABASE_CFG, test_params)
     dc_ids, grid_ids, dcg_id = ispyb.begin_deposition()
 
     assert len(dc_ids) == exp_num_of_grids

@@ -24,7 +24,7 @@ from artemis.external_interaction.system_tests.conftest import (  # noqa
 )
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
 from artemis.parameters.constants import BEAMLINE_PARAMETER_PATHS
-from artemis.parameters.constants import DEF_ISPYB_DATABASE_CFG as ISPYB_CONFIG
+from artemis.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
 from artemis.parameters.constants import SIM_BEAMLINE
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters

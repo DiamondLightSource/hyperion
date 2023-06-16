@@ -23,6 +23,7 @@ from artemis.external_interaction.system_tests.conftest import (  # noqa
     fetch_comment,
     fetch_datacollection_attribute,
 )
+from artemis.parameters.constants import DEV_ISPYB_DATABASE_CFG
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -248,6 +249,7 @@ def test_ispyb_deposition_in_plan(
     test_rotation_params.artemis_params.detector_params.exposure_time = test_exp_time
     test_rotation_params.artemis_params.ispyb_params.wavelength = test_wl
     callbacks = RotationCallbackCollection.from_params(test_rotation_params)
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = DEV_ISPYB_DATABASE_CFG
 
     with (
         patch(
