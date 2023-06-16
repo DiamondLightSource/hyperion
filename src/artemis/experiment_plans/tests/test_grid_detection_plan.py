@@ -1,18 +1,21 @@
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
-from ophyd.status import Status
 
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices,
     grid_detection_plan,
+)
+from artemis.external_interaction.callbacks.oav_snapshot_callback import (
+    OavSnapshotCallback,
 )
 
 
@@ -47,13 +50,23 @@ def fake_create_devices():
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
 @patch("bluesky.plan_stubs.mv")
+@patch("dodal.devices.areadetector.plugins.MJPG.requests")
+@patch("dodal.devices.areadetector.plugins.MJPG.Image")
 def test_grid_detection_plan_runs_and_triggers_snapshots(
+    mock_image_class: MagicMock,
+    mock_requests: MagicMock,
     bps_mv: MagicMock,
     bps_wait: MagicMock,
-    RE,
+    RE: RunEngine,
     test_config_files,
 ):
+    mock_image = MagicMock()
+    mock_image_class.open.return_value = mock_image
     oav, smargon, bl = fake_create_devices()
+
+    from time import sleep
+
+    sleep(0.1)
 
     oav.mxsc.pin_tip.tip_x.sim_put(100)
     oav.mxsc.pin_tip.tip_y.sim_put(100)
@@ -61,20 +74,26 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
 
-    finished_status = Status(done=True, success=True)
-    oav.snapshot.trigger = MagicMock(return_value=finished_status)
+    cb = OavSnapshotCallback()
+    RE.subscribe(cb)
 
     RE(
         grid_detection_plan(
             parameters=params,
             out_parameters=gridscan_params,
             snapshot_dir="tmp",
-            out_snapshot_filenames=[],
-            out_upper_left={},
             snapshot_template="test_{angle}",
         )
     )
-    oav.snapshot.trigger.assert_called()
+    assert mock_image.save.call_count == 6
+
+    assert len(cb.snapshot_filenames) == 2
+    assert len(cb.snapshot_filenames[0]) == 3
+    assert cb.snapshot_filenames[0][0] == "tmp/test_0.png"
+    assert cb.snapshot_filenames[1][2] == "tmp/test_90_grid_overlay.png"
+
+    assert len(cb.out_upper_left) == 2
+    assert len(cb.out_upper_left[0]) == 2
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -97,8 +116,6 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
                 parameters=params,
                 out_parameters=gridscan_params,
                 snapshot_dir="tmp",
-                out_snapshot_filenames=[],
-                out_upper_left={},
                 snapshot_template="test_{angle}",
             )
         )
