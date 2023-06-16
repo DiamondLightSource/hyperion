@@ -183,6 +183,6 @@ class InternalParameters(BaseModel):
 
     @abstractmethod
     def get_data_shape(cls):
-        """Get the shape of the data reulting from the experiment specified by
+        """Get the shape of the data resulting from the experiment specified by
         these parameters."""
         ...
