@@ -57,7 +57,7 @@ class StoreInIspyb(ABC):
         pass
 
     @abstractmethod
-    def _mutate_datacollection_params_for_experiment(
+    def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         pass
@@ -71,12 +71,12 @@ class StoreInIspyb(ABC):
         pass
 
     def append_to_comment(
-        self, datacollection_id: int, comment: str, delimiter: str = " "
+        self, data_collection_id: int, comment: str, delimiter: str = " "
     ) -> None:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             mx_acquisition: MXAcquisition = conn.mx_acquisition
             mx_acquisition.update_data_collection_append_comments(
-                datacollection_id, comment, delimiter
+                data_collection_id, comment, delimiter
             )
 
     def get_current_time_string(self):
@@ -99,24 +99,47 @@ class StoreInIspyb(ABC):
         end_time: str,
         run_status: str,
         reason: str,
-        datacollection_id: int,
-        datacollection_group_id: int,
+        data_collection_id: int,
+        data_collection_group_id: int,
     ) -> None:
         assert self.ispyb_params is not None
         assert self.detector_params is not None
         if reason is not None and reason != "":
-            self.append_to_comment(datacollection_id, f"{run_status} reason: {reason}")
+            self.append_to_comment(data_collection_id, f"{run_status} reason: {reason}")
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             mx_acquisition: MXAcquisition = conn.mx_acquisition
 
             params = mx_acquisition.get_data_collection_params()
-            params["id"] = datacollection_id
-            params["parentid"] = datacollection_group_id
+            params["id"] = data_collection_id
+            params["parentid"] = data_collection_group_id
             params["endtime"] = end_time
             params["run_status"] = run_status
 
             mx_acquisition.upsert_data_collection(list(params.values()))
+
+    def _end_deposition(self, dcid: int, success: str, reason: str):
+        """Write the end of data_collection data.
+        Args:
+            success (str): The success of the run, could be fail or abort
+            reason (str): If the run failed, the reason why
+        """
+        LOGGER.info(
+            f"End ispyb deposition with status '{success}' and reason '{reason}'."
+        )
+        if success == "fail" or success == "abort":
+            run_status = "DataCollection Unsuccessful"
+        else:
+            run_status = "DataCollection Successful"
+        current_time = self.get_current_time_string()
+        assert self.data_collection_group_id is not None
+        self.update_scan_with_end_time_and_status(
+            current_time,
+            run_status,
+            reason,
+            dcid,
+            self.data_collection_group_id,
+        )
 
     def _store_position_table(self, conn: Connector, dc_id: int) -> int:
         assert self.ispyb_params is not None
@@ -152,7 +175,7 @@ class StoreInIspyb(ABC):
 
         return mx_acquisition.upsert_data_collection_group(list(params.values()))
 
-    @TRACER.start_as_current_span("store_ispyb_datacollection_table")
+    @TRACER.start_as_current_span("store_ispyb_data_collection_table")
     def _store_data_collection_table(
         self, conn: Connector, data_collection_group_id: int
     ) -> int:
@@ -170,7 +193,7 @@ class StoreInIspyb(ABC):
             )
 
         params = mx_acquisition.get_data_collection_params()
-        params = self._mutate_datacollection_params_for_experiment(params)
+        params = self._mutate_data_collection_params_for_experiment(params)
 
         params["visitid"] = session_id
         params["parentid"] = data_collection_group_id
@@ -185,7 +208,7 @@ class StoreInIspyb(ABC):
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
         params["transmission"] = self.ispyb_params.transmission
         params["comments"] = self._construct_comment()
-        params["datacollection_number"] = self.run_number
+        params["data_collection_number"] = self.run_number
         params["detector_distance"] = self.detector_params.detector_distance
         params["exp_time"] = self.detector_params.exposure_time
         params["imgdir"] = self.detector_params.directory
@@ -243,7 +266,7 @@ class StoreRotationInIspyb(StoreInIspyb):
             LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
         super().__init__(ispyb_config, "SAD")
 
-    def _mutate_datacollection_params_for_experiment(
+    def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         assert self.full_params is not None
@@ -271,30 +294,10 @@ class StoreRotationInIspyb(StoreInIspyb):
             return self._store_scan_data(conn)
 
     def end_deposition(self, success: str, reason: str):
-        """Write the end of datacollection data.
-        Args:
-            success (str): The success of the run, could be fail or abort
-            reason (str): If the run failed, the reason why
-        """
-        LOGGER.info(
-            f"End ispyb deposition with status '{success}' and reason '{reason}'."
-        )
-        if success == "fail" or success == "abort":
-            run_status = "DataCollection Unsuccessful"
-        else:
-            run_status = "DataCollection Successful"
-        current_time = self.get_current_time_string()
         assert (
             self.data_collection_id is not None
-        ), "Can't end ISPyB deposition, datacollection IDs are missing"
-        assert self.data_collection_group_id is not None
-        self.update_scan_with_end_time_and_status(
-            current_time,
-            run_status,
-            reason,
-            self.data_collection_id,
-            self.data_collection_group_id,
-        )
+        ), "Can't end ISPyB deposition, data_collection IDs is missing"
+        self._end_deposition(self.data_collection_id, success, reason)
 
     def _construct_comment(self) -> str:
         return "Hyperion rotation scan"
@@ -302,7 +305,7 @@ class StoreRotationInIspyb(StoreInIspyb):
 
 class StoreGridscanInIspyb(StoreInIspyb):
     ispyb_params: GridscanIspybParams | None = None
-    datacollection_ids: tuple[int, ...] | None = None
+    data_collection_ids: tuple[int, ...] | None = None
     upper_left: list[int] | None = None
     y_steps: int | None = None
     y_step_size: int | None = None
@@ -319,37 +322,18 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def begin_deposition(self):
         (
-            self.datacollection_ids,
+            self.data_collection_ids,
             self.grid_ids,
             self.data_collection_group_id,
         ) = self.store_grid_scan(self.full_params)
-        return self.datacollection_ids, self.grid_ids, self.data_collection_group_id
+        return self.data_collection_ids, self.grid_ids, self.data_collection_group_id
 
     def end_deposition(self, success: str, reason: str):
-        """Write the end of datacollection data.
-
-        Args:
-            success (str): The success of the run, could be fail or abort
-            reason (str):If the run failed, the reason why
-        """
-        LOGGER.info(
-            f"End ispyb deposition with status '{success}' and reason '{reason}'."
-        )
-        if success == "fail":
-            run_status = "DataCollection Unsuccessful"
-        elif success == "abort":
-            run_status = "DataCollection Unsuccessful"
-        else:
-            run_status = "DataCollection Successful"
-        current_time = self.get_current_time_string()
         assert (
-            self.datacollection_ids is not None
-        ), "Can't end ISPyB deposition, datacollection IDs are missing"
-        assert self.data_collection_group_id is not None
-        for id in self.datacollection_ids:
-            self.update_scan_with_end_time_and_status(
-                current_time, run_status, reason, id, self.data_collection_group_id
-            )
+            self.data_collection_ids is not None
+        ), "Can't end ISPyB deposition, data_collection IDs are missing"
+        for id in self.data_collection_ids:
+            self._end_deposition(id, success, reason)
 
     def store_grid_scan(self, full_params: FGSInternalParameters):
         self.full_params = full_params
@@ -368,7 +352,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             return self._store_scan_data(conn)
 
-    def _mutate_datacollection_params_for_experiment(
+    def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         assert self.full_params is not None
