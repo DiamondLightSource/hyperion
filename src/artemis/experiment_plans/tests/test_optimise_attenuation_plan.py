@@ -58,7 +58,7 @@ def test_optimise(RE: RunEngine):
         increment,
     ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
 
-    target = 3000
+    target = 20000
 
     # Make list so we can modify within function (is there a better way to do this?)
     transmission_list = [transmission]
@@ -66,27 +66,13 @@ def test_optimise(RE: RunEngine):
     # Mock a calculation where the dt_corrected_latest_mca array data
     # is randomly created based on the transmission value
     def mock_set_transmission(_):
-        data = np.random.uniform(
-            low=0.0, high=(1.0 * (transmission_list[0] + 1)), size=2048
-        )
+        data = np.ones(shape=2048) * (transmission_list[0] + 1)
         total_count = sum(data[int(default_low_roi) : int(default_high_roi)])
         transmission_list[0] = (target / (total_count)) * transmission_list[0]
         xspress3mini.dt_corrected_latest_mca.sim_put(data)
         return get_good_status()
 
-    # Await_value currently doesn't work properly if the values are never changed.
-    # using this fixes the issue in this test for now.
-    def mock_apply_attenuator_values(val: int):
-        actual_states = attenuator.get_actual_filter_state_list()
-        calculated_states = attenuator.get_calculated_filter_state_list()
-        for i in range(16):
-            calculated_states[i].sim_put(
-                CALCULATED_VALUE
-            )  # Ignore the actual calculation as this is EPICS layer
-            actual_states[i].sim_put(calculated_states[i].get())
-        return Status(done=True, success=True)
-
-    attenuator.change.set = MagicMock(side_effect=mock_apply_attenuator_values)
+    # attenuator.change.set = MagicMock(side_effect=mock_apply_attenuator_values)
     attenuator.desired_transmission.set = mock_set_transmission
 
     # Force xspress3mini to pass arming
