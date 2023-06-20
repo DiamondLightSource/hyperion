@@ -2,6 +2,7 @@
     "params_version": "2.0.0",
     "artemis_params": {
         "beamline": "BL03S",
+        "insertion_prefix": "SR03S",
         "detector": "EIGER2_X_16M",
         "zocalo_environment": "devrmq",
         "experiment_type": "full_grid_scan",
