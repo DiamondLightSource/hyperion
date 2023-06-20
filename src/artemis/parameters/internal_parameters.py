@@ -177,12 +177,12 @@ class InternalParameters(BaseModel):
         ...
 
     @abstractmethod
-    def get_scan_points(cls):
+    def get_scan_points(cls) -> dict[str, list]:
         """Get points of the scan as calculated by scanspec."""
         ...
 
     @abstractmethod
-    def get_data_shape(cls):
+    def get_data_shape(cls) -> tuple[int, int, int]:
         """Get the shape of the data resulting from the experiment specified by
         these parameters."""
         ...

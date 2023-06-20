@@ -74,7 +74,7 @@ class FGSInternalParameters(InternalParameters):
         scan_path = ScanPath(spec.calculate())
         return scan_path.consume().midpoints
 
-    def get_data_shape(self, scan_points: dict):
+    def get_data_shape(self, scan_points: dict) -> tuple[int, int, int]:
         size = (
             self.artemis_params.detector_params.detector_size_constants.det_size_pixels
         )

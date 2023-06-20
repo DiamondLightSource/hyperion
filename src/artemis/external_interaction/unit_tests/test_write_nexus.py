@@ -25,11 +25,13 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 @pytest.fixture
 def dummy_nexus_writers(test_fgs_params: FGSInternalParameters):
-    nexus_writer_1 = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(1))
+    nexus_info_1 = test_fgs_params.get_nexus_info(1)
+    nexus_writer_1 = NexusWriter(test_fgs_params, **nexus_info_1)
+    nexus_info_2 = test_fgs_params.get_nexus_info(2)
     nexus_writer_2 = NexusWriter(
         test_fgs_params,
-        **test_fgs_params.get_nexus_info(2),
-        vds_start_index=test_fgs_params.get_data_shape(1)[0],
+        **nexus_info_2,
+        vds_start_index=nexus_info_1["data_shape"][0],
     )
 
     yield nexus_writer_1, nexus_writer_2
