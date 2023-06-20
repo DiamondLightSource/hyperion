@@ -39,6 +39,24 @@ def create_devices():
     i03.attenuator()
 
 
+def is_counts_within_target(total_count, lower_limit, upper_limit) -> bool:
+    if lower_limit <= total_count <= upper_limit:
+        return True
+    else:
+        return False
+
+
+def arm_devices(xspress3mini, zebra):
+    # Arm xspress3mini
+    yield from bps.abs_set(xspress3mini.do_arm, 1, group="xsarm")
+    LOGGER.info("Arming Zebra")
+    LOGGER.debug("Resetting Zebra")
+    yield from bps.abs_set(zebra.pc.reset, 1, group="reset_zebra")
+    yield from bps.wait(group="xsarm")
+    LOGGER.info("Arming Xspress3Mini complete")
+    yield from arm_zebra(zebra)
+
+
 def total_counts_optimisation(
     max_cycles,
     transmission,
@@ -59,36 +77,28 @@ def total_counts_optimisation(
         )
 
         yield from bps.abs_set(
-            attenuator.do_set_transmission,
+            attenuator,
             transmission,
             group="set_transmission",
         )
 
         yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
 
-        # Arm xspress3mini
-        yield from bps.abs_set(xspress3mini.do_arm, 1, group="xsarm")
-        LOGGER.info("Arming Zebra")
-        LOGGER.debug("Resetting Zebra")
-        yield from bps.abs_set(zebra.pc.reset, 1, group="reset_zebra")
-        yield from bps.wait(
-            group="xsarm"
-        )  # TODO test this also waits for acquire status
-        LOGGER.info("Arming Xspress3Mini complete")
-
-        yield from arm_zebra(zebra)
+        arm_devices(xspress3mini, zebra)
 
         data = np.array((yield from bps.rd(xspress3mini.dt_corrected_latest_mca)))
         total_count = sum(data[int(low_roi) : int(high_roi)])
         LOGGER.info(f"Total count is {total_count}")
-        if lower_limit <= total_count <= upper_limit:
+
+        if is_counts_within_target(total_count, lower_limit, upper_limit):
             optimised_transmission = transmission
             LOGGER.info(
                 f"Total count is within accepted limits: {lower_limit}, {total_count}, {upper_limit}"
             )
             break
 
-        transmission = (target_count / (total_count)) * transmission
+        else:
+            transmission = (target_count / (total_count)) * transmission
 
         if cycle == max_cycles - 1:
             raise AttenuationOptimisationFailedException(
