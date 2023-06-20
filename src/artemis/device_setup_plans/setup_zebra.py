@@ -8,6 +8,7 @@ from dodal.devices.zebra import (
     TTL_DETECTOR,
     TTL_SHUTTER,
     TTL_XSPRESS3,
+    ArmDemand,
     I03Axes,
     RotationDirection,
     Zebra,
@@ -16,28 +17,12 @@ from dodal.devices.zebra import (
 from artemis.log import LOGGER
 
 
-def arm_zebra(zebra: Zebra, timeout: float = 3):
-    yield from bps.abs_set(zebra.pc.arm_demand, 1)
-    armed = yield from bps.rd(zebra.pc.armed)
-    time = 0.0
-    while not armed and time < timeout:
-        armed = yield from bps.rd(zebra.pc.armed)
-        time += 0.1
-        yield from bps.sleep(0.1)
-    if not armed:
-        raise TimeoutError("Zebra failed to arm!")
+def arm_zebra(zebra: Zebra):
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
 
 
-def disarm_zebra(zebra: Zebra, timeout: float = 3):
-    yield from bps.abs_set(zebra.pc.disarm_demand, 1)
-    armed = yield from bps.rd(zebra.pc.armed)
-    time = 0.0
-    while armed and time < timeout:
-        armed = yield from bps.rd(zebra.pc.armed)
-        time += 0.1
-        yield from bps.sleep(0.1)
-    if armed:
-        raise TimeoutError("Zebra failed to disarm!")
+def disarm_zebra(zebra: Zebra):
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, wait=True)
 
 
 def setup_zebra_for_rotation(

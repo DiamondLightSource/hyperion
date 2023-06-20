@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Dict, List
+from typing import TYPE_CHECKING, Callable
 
 from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import Backlight
@@ -20,6 +21,9 @@ from artemis.experiment_plans.oav_grid_detection_plan import (
 from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
+)
+from artemis.external_interaction.callbacks.oav_snapshot_callback import (
+    OavSnapshotCallback,
 )
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
@@ -41,6 +45,7 @@ def create_devices():
     )
 
     i03.detector_motion()
+
     i03.backlight()
     i03.aperture_scatterguard(aperture_positions)
 
@@ -79,23 +84,40 @@ def detect_grid_and_do_gridscan(
         f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
     )
 
-    out_snapshot_filenames: List = []
-    out_upper_left: Dict = {}
+    oav_callback = OavSnapshotCallback()
 
-    yield from grid_detection_plan(
+    @bpp.subs_decorator([oav_callback])
+    def run_grid_detection_plan(
+        oav_params,
+        fgs_params,
+        snapshot_template,
+        snapshot_dir,
+    ):
+        yield from grid_detection_plan(
+            oav_params,
+            fgs_params,
+            snapshot_template,
+            snapshot_dir,
+        )
+
+    yield from run_grid_detection_plan(
         oav_params,
         fgs_params,
         snapshot_template,
         experiment_params.snapshot_dir,
-        out_snapshot_filenames,
-        out_upper_left,
     )
 
+    # Hack because GDA only passes 3 values to ispyb
+    out_upper_left = oav_callback.out_upper_left[0] + [
+        oav_callback.out_upper_left[1][1]
+    ]
+
+    # Hack because the callback returns the list in inverted order
     parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
-        out_snapshot_filenames[0]
+        oav_callback.snapshot_filenames[0][::-1]
     )
     parameters.artemis_params.ispyb_params.xtal_snapshots_omega_end = (
-        out_snapshot_filenames[1]
+        oav_callback.snapshot_filenames[1][::-1]
     )
     parameters.artemis_params.ispyb_params.upper_left = out_upper_left
 
