@@ -81,7 +81,7 @@ def test_get_plan(
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
-    zebra.pc.armed.set(False)
+    zebra.pc.arm.armed.set(False)
     with (
         patch("dodal.beamlines.i03.smargon", return_value=smargon),
         patch("dodal.beamlines.i03.eiger", return_value=eiger),
@@ -115,10 +115,10 @@ def test_rotation_plan(
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
-    mock_arm_disarm = MagicMock(
-        side_effect=zebra.pc.armed.set, return_value=Status(done=True, success=True)
+    mock_arm = MagicMock(
+        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
     )
-    zebra.pc.arm_demand.set = mock_arm_disarm
+    zebra.pc.arm.arm_set.set = mock_arm
 
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets

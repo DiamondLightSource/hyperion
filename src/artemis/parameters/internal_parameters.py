@@ -5,13 +5,7 @@ from dodal.devices.eiger import DetectorParams
 from pydantic import BaseModel, root_validator
 from semver import Version
 
-from artemis.parameters.constants import (
-    DEFAULT_EXPERIMENT_TYPE,
-    DETECTOR_PARAM_DEFAULTS,
-    SIM_BEAMLINE,
-    SIM_INSERTION_PREFIX,
-    SIM_ZOCALO_ENV,
-)
+from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from artemis.parameters.external_parameters import from_json
 
 
@@ -32,11 +26,19 @@ class ParameterVersion(Version):
 
 
 class ArtemisParameters(BaseModel):
-    zocalo_environment: str = SIM_ZOCALO_ENV
-    beamline: str = SIM_BEAMLINE
-    insertion_prefix: str = SIM_INSERTION_PREFIX
-    experiment_type: str = DEFAULT_EXPERIMENT_TYPE
-    detector_params: DetectorParams = DetectorParams(**DETECTOR_PARAM_DEFAULTS)
+    zocalo_environment: str
+    beamline: str
+    insertion_prefix: str
+    experiment_type: str
+    detector_params: DetectorParams
+    ispyb_params: IspybParams
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            **DetectorParams.Config.json_encoders,
+            **IspybParams.Config.json_encoders,
+        }
 
 
 def flatten_dict(d: dict, parent_items: dict = {}) -> dict:
