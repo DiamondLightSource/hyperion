@@ -1,7 +1,7 @@
 import bluesky.plan_stubs as bps
 import numpy as np
 from dodal.beamlines import i03
-from dodal.devices.attenuator.attenuator import Attenuator
+from dodal.devices.attenuator import Attenuator
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 from dodal.devices.zebra import Zebra
 
@@ -24,7 +24,8 @@ class PlaceholderParams:
             params["attenuation_optimisation_type"],  # optimisation type,
             int(params["fluorescence_attenuation_low_roi"]),  # low_roi,
             int(params["fluorescence_attenuation_high_roi"]),  # high_roi
-            params["attenuation_optimisation_start_transmission"] / 100,  # transmission
+            params["attenuation_optimisation_start_transmission"]
+            / 100,  # initial transmission, /100 to get decimal from percentage
             params["attenuation_optimisation_target_count"] * 10,  # target
             params["attenuation_optimisation_lower_limit"],  # lower limit
             params["attenuation_optimisation_upper_limit"],  # upper limit
@@ -47,7 +48,7 @@ def is_counts_within_target(total_count, lower_limit, upper_limit) -> bool:
 
 
 def arm_devices(xspress3mini, zebra):
-    # Arm xspress3mini
+    # Arm xspress3mini and zebra
     yield from bps.abs_set(xspress3mini.do_arm, 1, group="xsarm")
     LOGGER.info("Arming Zebra")
     LOGGER.debug("Resetting Zebra")
@@ -124,7 +125,6 @@ def check_parameters(
         raise ValueError(
             f"Upper limit {upper_limit} must be greater than lower limit {lower_limit}"
         )
-        # TODO test these exceptions
 
     if default_high_roi < default_low_roi:
         raise ValueError(
@@ -157,7 +157,7 @@ def optimise_attenuation_plan(
         target, upper_limit, lower_limit, default_high_roi, default_low_roi
     )
 
-    # Hardcode these to make more sense
+    # Hardcode these for now to make more sense
     upper_limit = 4000
     lower_limit = 2000
     target = 3000

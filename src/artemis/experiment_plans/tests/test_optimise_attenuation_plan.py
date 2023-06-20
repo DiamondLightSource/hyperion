@@ -48,7 +48,8 @@ def get_good_status():
     return status
 
 
-def test_optimise(RE: RunEngine):
+def test_total_count_optimise(RE: RunEngine):
+    """Test the overall total count algorithm"""
     zebra, xspress3mini, attenuator = fake_create_devices()
 
     # Mimic some of the logic to track the transmission and set realistic data
