@@ -88,9 +88,9 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     test_ispyb_callback.ispyb = MagicMock()
     RE.subscribe(test_ispyb_callback)
 
-    def standalone_read_hardware_for_ispyb(und, syn, slits):
+    def standalone_read_hardware_for_ispyb(und, syn, slits, attn):
         yield from bps.open_run()
-        yield from read_hardware_for_ispyb(und, syn, slits)
+        yield from read_hardware_for_ispyb(und, syn, slits, attn)
         yield from bps.close_run()
 
     RE(
@@ -98,6 +98,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
             fake_fgs_composite.undulator,
             fake_fgs_composite.synchrotron,
             fake_fgs_composite.s4_slit_gaps,
+            fake_fgs_composite.attenuator,
         )
     )
     params = test_ispyb_callback.params

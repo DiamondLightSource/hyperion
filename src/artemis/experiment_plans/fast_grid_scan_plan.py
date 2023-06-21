@@ -11,6 +11,7 @@ from bluesky.utils import ProgressBarManager
 from dodal.beamlines import i03
 from dodal.beamlines.i03 import (
     ApertureScatterguard,
+    Attenuator,
     Backlight,
     EigerDetector,
     FastGridScan,
@@ -59,6 +60,7 @@ class FGSComposite:
     synchrotron: Synchrotron
     undulator: Undulator
     zebra: Zebra
+    attenuator: Attenuator
 
     def __init__(
         self,
@@ -79,6 +81,7 @@ class FGSComposite:
         self.undulator = i03.undulator(fake_with_ophyd_sim=fake)
         self.synchrotron = i03.synchrotron(fake_with_ophyd_sim=fake)
         self.zebra = i03.zebra(fake_with_ophyd_sim=fake)
+        self.attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
 
 
 fast_grid_scan_composite: FGSComposite | None = None
@@ -128,6 +131,7 @@ def read_hardware_for_ispyb(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
+    attenuator: Attenuator,
 ):
     artemis.log.LOGGER.info(
         "Reading status of beamline parameters for ispyb deposition."
@@ -139,6 +143,7 @@ def read_hardware_for_ispyb(
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
     yield from bps.read(s4_slit_gaps.xgap)
     yield from bps.read(s4_slit_gaps.ygap)
+    yield from bps.read(attenuator.actual_transmission)
     yield from bps.save()
 
 
@@ -208,6 +213,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.attenuator,
         )
 
     fgs_motors = fgs_composite.fast_grid_scan

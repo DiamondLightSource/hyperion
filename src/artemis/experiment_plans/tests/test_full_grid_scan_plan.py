@@ -5,6 +5,7 @@ import pytest
 from bluesky import RunEngine
 from dodal.beamlines.i03 import detector_motion
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -96,6 +97,7 @@ def test_detect_grid_and_do_gridscan(
     eiger: EigerDetector,
     backlight: Backlight,
     detector_motion: DetectorMotion,
+    attenuator: Attenuator,
     aperture_scatterguard: ApertureScatterguard,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
@@ -115,6 +117,7 @@ def test_detect_grid_and_do_gridscan(
         RE(
             detect_grid_and_do_gridscan(
                 parameters=test_full_grid_scan_params,
+                attenuator=attenuator,
                 backlight=backlight,
                 eiger=eiger,
                 aperture_scatterguard=aperture_scatterguard,

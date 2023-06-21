@@ -6,6 +6,7 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -67,6 +68,7 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
 
 def detect_grid_and_do_gridscan(
     parameters: GridScanWithEdgeDetectInternalParameters,
+    attenuator: Attenuator,
     backlight: Backlight,
     eiger: EigerDetector,
     aperture_scatterguard: ApertureScatterguard,
@@ -76,7 +78,9 @@ def detect_grid_and_do_gridscan(
 ):
     # Start stage with asynchronous arming here
     yield from bps.abs_set(eiger.do_arm, 1, group="arming")
-
+    yield from bps.abs_set(
+        attenuator, parameters.artemis_params.ispyb_params.transmission
+    )
     fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
     detector_params = parameters.artemis_params.detector_params
@@ -152,6 +156,7 @@ def get_plan(
     eiger: EigerDetector = i03.eiger()
     aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
     detector_motion: DetectorMotion = i03.detector_motion()
+    attenuator: Attenuator = i03.attenuator()
 
     eiger.set_detector_parameters(parameters.artemis_params.detector_params)
 
@@ -160,6 +165,7 @@ def get_plan(
 
     return detect_grid_and_do_gridscan(
         parameters,
+        attenuator,
         backlight,
         eiger,
         aperture_scatterguard,
