@@ -64,21 +64,22 @@ def arm_devices(xspress3mini, zebra):
     yield from arm_zebra(zebra)
 
 
-# readout scaler values
-def read_scaler_values(xspress3mini: Xspress3Mini) -> dict:
-    # Then get timeseriescontrol
-
-    scaler_values = {}
-    scaler_values["time"] = xspress3mini.channel_1.time.get()
-    scaler_values["reset_ticks"] = xspress3mini.channel_1.reset_ticks.get()
-    scaler_values["reset_count"] = xspress3mini.channel_1.reset_count.get()
-    scaler_values["all_event"] = xspress3mini.channel_1.all_event.get()
-    scaler_values["all_good"] = xspress3mini.channel_1.all_good.get()
-    scaler_values["pileup"] = xspress3mini.channel_1.pileup.get()
-    scaler_values["total_time"] = xspress3mini.channel_1.total_time.get()
-
-    # TODO: If we only use total time and reset ticks, this function may not be needed. Check if we use the other readings at all
-    return scaler_values
+def is_deadtime_optimised(
+    direction, deadtime, deadtime_threshold, transmission
+) -> tuple[bool, bool]:
+    flip_direction = False
+    if direction:
+        if deadtime >= deadtime_threshold:
+            flip_direction = True
+            return False, flip_direction
+        else:
+            # TODO: is this number the 10% cap?
+            if transmission >= 0.9:
+                return True, flip_direction
+    else:
+        if deadtime <= deadtime_threshold:
+            return True, flip_direction
+    return False, flip_direction
 
 
 def deadtime_optimisation(
@@ -93,32 +94,27 @@ def deadtime_optimisation(
         yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
         arm_devices(xspress3mini, zebra)
 
-        scaler_values = read_scaler_values(xspress3mini)
+        total_time = xspress3mini.channel_1.total_time.get()
+        reset_ticks = xspress3mini.channel_1.reset_ticks.get()
 
-        LOGGER.info(f"Current total time = {scaler_values['total_time']}")
-        LOGGER.info(f"Current reset ticks = {scaler_values['reset_ticks']}")
-        deadtime = 0.0
+        LOGGER.info(f"Current total time = {total_time}")
+        LOGGER.info(f"Current reset ticks = {reset_ticks}")
 
-        if scaler_values["total_time"] != scaler_values["reset_ticks"]:
-            deadtime = 1 - abs(
-                float({scaler_values["total_time"]} - scaler_values["reset_ticks"])
-            ) / float({scaler_values["total_time"]})
+        if total_time != reset_ticks:
+            deadtime = 1 - abs(float({total_time} - reset_ticks)) / float({total_time})
 
         LOGGER.info(f"Deadtime is now at {deadtime}")
 
-        # Check if deadtime is optmised (TODO: put in function - useful for testing)
-        if direction:
-            if deadtime >= deadtime_threshold:
-                direction = False
-            else:
-                # TODO: is this number the 10% cap?
-                if transmission >= 0.9:
-                    optimised_tranmission = transmission
-                    break
-        else:
-            if deadtime <= deadtime_threshold:
-                optimised_tranmission = transmission
-                break
+        is_optimised, flip_direction = is_deadtime_optimised(
+            direction, deadtime, deadtime_threshold, transmission
+        )
+
+        if is_optimised:
+            optimised_transmission = transmission
+            break
+
+        if flip_direction:
+            direction = not direction
 
         # Calculate new transmission (TODO: put in function)
         if direction:
@@ -132,7 +128,7 @@ def deadtime_optimisation(
                 "Calculated transmission is below expected limit"
             )
 
-    return optimised_tranmission
+    return optimised_transmission
 
 
 def total_counts_optimisation(
