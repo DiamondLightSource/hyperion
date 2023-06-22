@@ -7,7 +7,6 @@ from dodal.devices.zebra import Zebra
 
 from artemis.device_setup_plans.setup_zebra import arm_zebra
 from artemis.log import LOGGER
-from artemis.parameters import beamline_parameters
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 
@@ -46,6 +45,27 @@ def create_devices():
     i03.attenuator()
 
 
+def check_parameters(
+    target, upper_limit, lower_limit, default_high_roi, default_low_roi
+):
+    if target < lower_limit or target > upper_limit:
+        raise (
+            ValueError(
+                f"Target {target} is outside of lower and upper bounds: {lower_limit} to {upper_limit}"
+            )
+        )
+
+    if upper_limit < lower_limit:
+        raise ValueError(
+            f"Upper limit {upper_limit} must be greater than lower limit {lower_limit}"
+        )
+
+    if default_high_roi < default_low_roi:
+        raise ValueError(
+            f"Upper roi {default_high_roi} must be greater than lower roi {default_low_roi}"
+        )
+
+
 def is_counts_within_target(total_count, lower_limit, upper_limit) -> bool:
     if lower_limit <= total_count and total_count <= upper_limit:
         return True
@@ -73,7 +93,7 @@ def deadtime_is_transmission_optimised(
             flip_direction = True
             return False, flip_direction
         else:
-            # TODO: is this number the 10% cap?
+            # The 0.9 is hardcoded in GDA
             if transmission >= 0.9:
                 return True, flip_direction
     else:
@@ -162,7 +182,9 @@ def total_counts_optimisation(
             f"Setting transmission to {transmission} for attenuation optimisation cycle {cycle}"
         )
 
-        do_device_optimise_iteration(attenuator, zebra, xspress3mini, transmission)
+        yield from do_device_optimise_iteration(
+            attenuator, zebra, xspress3mini, transmission
+        )
 
         data = np.array((yield from bps.rd(xspress3mini.dt_corrected_latest_mca)))
         total_count = sum(data[int(low_roi) : int(high_roi)])
@@ -188,30 +210,8 @@ def total_counts_optimisation(
     return optimised_transmission
 
 
-def check_parameters(
-    target, upper_limit, lower_limit, default_high_roi, default_low_roi
-):
-    if target < lower_limit or target > upper_limit:
-        raise (
-            ValueError(
-                f"Target {target} is outside of lower and upper bounds: {lower_limit} to {upper_limit}"
-            )
-        )
-
-    if upper_limit < lower_limit:
-        raise ValueError(
-            f"Upper limit {upper_limit} must be greater than lower limit {lower_limit}"
-        )
-
-    if default_high_roi < default_low_roi:
-        raise ValueError(
-            f"Upper roi {default_high_roi} must be greater than lower roi {default_low_roi}"
-        )
-
-
 def optimise_attenuation_plan(
     collection_time,  # Comes from self.parameters.acquisitionTime in fluorescence_spectrum.py
-    params: beamline_parameters,
     xspress3mini: Xspress3Mini,
     zebra: Zebra,
     attenuator: Attenuator,
