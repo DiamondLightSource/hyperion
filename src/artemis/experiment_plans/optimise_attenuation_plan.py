@@ -18,19 +18,25 @@ class AttenuationOptimisationFailedException(Exception):
 class PlaceholderParams:
     """placeholder for the actual params needed for this function"""
 
+    # Gets parameters from GDA i03-config/scripts/beamlineParameters
     @classmethod
     def from_beamline_params(cls, params):
         return (
-            params["attenuation_optimisation_type"],  # optimisation type,
-            int(params["fluorescence_attenuation_low_roi"]),  # low_roi,
-            int(params["fluorescence_attenuation_high_roi"]),  # high_roi
+            params["attenuation_optimisation_type"],  # optimisation type: deadtime
+            int(params["fluorescence_attenuation_low_roi"]),  # low_roi: 100
+            int(params["fluorescence_attenuation_high_roi"]),  # high_roi: 2048
             params["attenuation_optimisation_start_transmission"]
-            / 100,  # initial transmission, /100 to get decimal from percentage
-            params["attenuation_optimisation_target_count"] * 10,  # target
-            params["attenuation_optimisation_lower_limit"],  # lower limit
-            params["attenuation_optimisation_upper_limit"],  # upper limit
-            int(params["attenuation_optimisation_optimisation_cycles"]),  # max cycles
-            params["attenuation_optimisation_multiplier"],  # increment
+            / 100,  # initial transmission, /100 to get decimal from percentage: 0.1
+            params["attenuation_optimisation_target_count"] * 10,  # target:2000
+            params["attenuation_optimisation_lower_limit"],  # lower limit: 20000
+            params["attenuation_optimisation_upper_limit"],  # upper limit: 50000
+            int(
+                params["attenuation_optimisation_optimisation_cycles"]
+            ),  # max cycles: 10
+            params["attenuation_optimisation_multiplier"],  # increment: 2
+            params[
+                "fluorescence_analyser_deadtimeThreshold"
+            ],  # Threshold for edge scans: 0.002
         )
 
 
@@ -56,6 +62,77 @@ def arm_devices(xspress3mini, zebra):
     yield from bps.wait(group="xsarm")
     LOGGER.info("Arming Xspress3Mini complete")
     yield from arm_zebra(zebra)
+
+
+# readout scaler values
+def read_scaler_values(xspress3mini: Xspress3Mini) -> dict:
+    # Then get timeseriescontrol
+
+    scaler_values = {}
+    scaler_values["time"] = xspress3mini.channel_1.time.get()
+    scaler_values["reset_ticks"] = xspress3mini.channel_1.reset_ticks.get()
+    scaler_values["reset_count"] = xspress3mini.channel_1.reset_count.get()
+    scaler_values["all_event"] = xspress3mini.channel_1.all_event.get()
+    scaler_values["all_good"] = xspress3mini.channel_1.all_good.get()
+    scaler_values["pileup"] = xspress3mini.channel_1.pileup.get()
+    scaler_values["total_time"] = xspress3mini.channel_1.total_time.get()
+
+    # TODO: If we only use total time and reset ticks, this function may not be needed. Check if we use the other readings at all
+    return scaler_values
+
+
+def deadtime_optimisation(
+    attenuator, xspress3mini, zebra, transmission, increment, deadtime_threshold
+):
+    direction = True
+    LOGGER.info(f"Target deadtime is {deadtime_threshold}")
+
+    while True:
+        # TODO: loads of these statements (first 4 lines at least) are the same as in total counts - add to seperate function for neatness
+        yield from bps.abs_set(attenuator, transmission, group="set_transmission")
+        yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
+        arm_devices(xspress3mini, zebra)
+
+        scaler_values = read_scaler_values(xspress3mini)
+
+        LOGGER.info(f"Current total time = {scaler_values['total_time']}")
+        LOGGER.info(f"Current reset ticks = {scaler_values['reset_ticks']}")
+        deadtime = 0.0
+
+        if scaler_values["total_time"] != scaler_values["reset_ticks"]:
+            deadtime = 1 - abs(
+                float({scaler_values["total_time"]} - scaler_values["reset_ticks"])
+            ) / float({scaler_values["total_time"]})
+
+        LOGGER.info(f"Deadtime is now at {deadtime}")
+
+        # Check if deadtime is optmised (TODO: put in function - useful for testing)
+        if direction:
+            if deadtime >= deadtime_threshold:
+                direction = False
+            else:
+                # TODO: is this number the 10% cap?
+                if transmission >= 0.9:
+                    optimised_tranmission = transmission
+                    break
+        else:
+            if deadtime <= deadtime_threshold:
+                optimised_tranmission = transmission
+                break
+
+        # Calculate new transmission (TODO: put in function)
+        if direction:
+            transmission *= increment
+            if transmission > 0.999:
+                transmission = 1
+        else:
+            transmission /= increment
+        if transmission < 1.0e-6:
+            raise AttenuationOptimisationFailedException(
+                "Calculated transmission is below expected limit"
+            )
+
+    return optimised_tranmission
 
 
 def total_counts_optimisation(
@@ -151,6 +228,7 @@ def optimise_attenuation_plan(
         upper_limit,
         max_cycles,
         increment,
+        deadtime_threshold,
     ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
 
     check_parameters(
@@ -178,20 +256,35 @@ def optimise_attenuation_plan(
     # Do the attenuation optimisation using count threshold
     if optimisation_type == "total_counts":
         LOGGER.info(
-            f"Starting Xspress3Mini optimisation routine \nOptimisation will be performed across ROI channels {low_roi} - {high_roi}"
+            f"Starting Xspress3Mini total counts optimisation routine \nOptimisation will be performed across ROI channels {low_roi} - {high_roi}"
         )
 
-        return (
-            yield from total_counts_optimisation(
-                max_cycles,
-                initial_transmission,
-                attenuator,
-                xspress3mini,
-                zebra,
-                low_roi,
-                high_roi,
-                lower_limit,
-                upper_limit,
-                target,
-            )
+        optimised_transmission = yield from total_counts_optimisation(
+            max_cycles,
+            initial_transmission,
+            attenuator,
+            xspress3mini,
+            zebra,
+            low_roi,
+            high_roi,
+            lower_limit,
+            upper_limit,
+            target,
         )
+
+    elif optimisation_type == "deadtime":
+        LOGGER.info(
+            f"Starting Xspress3Mini deadtime optimisation routine \nOptimisation will be performed across ROI channels {low_roi} - {high_roi}"
+        )
+        optimised_transmission = yield from deadtime_optimisation(
+            attenuator,
+            xspress3mini,
+            zebra,
+            initial_transmission,
+            increment,
+            deadtime_threshold,
+        )
+
+    yield from bps.abs_set(attenuator, optimised_transmission, group="set_transmission")
+
+    return optimised_transmission
