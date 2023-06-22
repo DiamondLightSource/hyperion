@@ -129,7 +129,9 @@ def test_deadtime_optimise(RE: RunEngine):
     def mock_set_transmission(_):
         # Update reset ticks, calc new deadtime, increment transmission.
         reset_ticks = 151276 * transmission_list[0]
-        deadtime = 1 - abs(float(total_time - reset_ticks)) / float(total_time)
+        deadtime = 0
+        if total_time != reset_ticks:
+            deadtime = 1 - abs(float(total_time - reset_ticks)) / float(total_time)
 
         _, direction_flip = deadtime_is_transmission_optimised(
             direction_list[0], deadtime, deadtime_threshold, transmission
