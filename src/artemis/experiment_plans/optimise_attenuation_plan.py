@@ -132,7 +132,9 @@ def deadtime_optimisation(
     LOGGER.info(f"Target deadtime is {deadtime_threshold}")
 
     while True:
-        do_device_optimise_iteration(attenuator, zebra, xspress3mini, transmission)
+        yield from do_device_optimise_iteration(
+            attenuator, zebra, xspress3mini, transmission
+        )
 
         total_time = xspress3mini.channel_1.total_time.get()
         reset_ticks = xspress3mini.channel_1.reset_ticks.get()
@@ -141,7 +143,7 @@ def deadtime_optimisation(
         LOGGER.info(f"Current reset ticks = {reset_ticks}")
 
         if total_time != reset_ticks:
-            deadtime = 1 - abs(float({total_time} - reset_ticks)) / float({total_time})
+            deadtime = 1 - abs(total_time - reset_ticks) / (total_time)
 
         LOGGER.info(f"Deadtime is now at {deadtime}")
 
@@ -247,7 +249,7 @@ def optimise_attenuation_plan(
         high_roi = default_high_roi
 
     # Hardcode this for now:
-    optimisation_type = "total_counts"
+    optimisation_type = "deadtime"
 
     yield from bps.abs_set(
         xspress3mini.acquire_time, collection_time, wait=True
