@@ -45,7 +45,6 @@ def create_devices():
 
 
 DIRECTION = RotationDirection.NEGATIVE
-OFFSET = 1
 SHUTTER_OPENING_TIME = 0.5
 
 
@@ -67,24 +66,40 @@ def cleanup_sample_environment(
     yield from bps.abs_set(detector_motion.shutter, 0, group=group)
 
 
-def move_to_start_w_buffer(axis: EpicsMotor, start_angle):
+def move_to_start_w_buffer(
+    axis: EpicsMotor,
+    start_angle: float,
+    offset: float,
+    wait: bool = True,
+    direction: RotationDirection = DIRECTION,
+):
     """Move an EpicsMotor 'axis' to angle 'start_angle', modified by an offset and
     against the direction of rotation."""
     # can move to start as fast as possible
-    yield from bps.abs_set(axis.velocity, 120, wait=True)
-    start_position = start_angle - (OFFSET * DIRECTION)
+    # TODO get VMAX
+    yield from bps.abs_set(axis.velocity, 90, wait=True)
+    start_position = start_angle - (offset * direction)
     LOGGER.info(
         "moving to_start_w_buffer doing: start_angle-(offset*direction)"
-        f" = {start_angle} - ({OFFSET} * {DIRECTION} = {start_position}"
+        f" = {start_angle} - ({offset} * {direction}) = {start_position}"
     )
+    yield from bps.abs_set(axis, start_position, group="move_to_start", wait=wait)
 
-    yield from bps.abs_set(axis, start_position, group="move_to_start")
 
-
-def move_to_end_w_buffer(axis: EpicsMotor, scan_width: float, wait: float = True):
-    distance_to_move = (scan_width + 0.1 + OFFSET) * DIRECTION
+def move_to_end_w_buffer(
+    axis: EpicsMotor,
+    scan_width: float,
+    offset: float,
+    shutter_opening_degrees: float = 2.5,  # default for 100 deg/s
+    wait: bool = True,
+    direction: RotationDirection = DIRECTION,
+):
+    distance_to_move = (
+        scan_width + shutter_opening_degrees + offset * 2 + 0.1
+    ) * direction
     LOGGER.info(
-        f"Given scan width of {scan_width}, offset of {OFFSET}, direction {DIRECTION}, apply a relative set to omega of: {distance_to_move}"
+        f"Given scan width of {scan_width}, acceleration offset of {offset}, direction"
+        f" {direction}, apply a relative set to omega of: {distance_to_move}"
     )
     yield from bps.rel_set(axis, distance_to_move, group="move_to_end", wait=wait)
 
@@ -113,11 +128,29 @@ def rotation_scan_plan(
     image_width = detector_params.omega_increment
     exposure_time = detector_params.exposure_time
 
+    speed_for_rotation_deg_s = image_width / exposure_time
+    LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
+
+    # TODO get this from epics instead of hardcoded - time to velocity
+    acceleration_offset = 0.15 * speed_for_rotation_deg_s
+    LOGGER.info(
+        f"calculated rotation offset for acceleration: at {speed_for_rotation_deg_s} "
+        f"deg/s, to take 0.15s = {acceleration_offset}"
+    )
+
+    shutter_opening_degrees = (
+        speed_for_rotation_deg_s * expt_params.shutter_opening_time_s
+    )
+    LOGGER.info(
+        f"calculated degrees rotation needed for shutter: {shutter_opening_degrees} deg"
+        f" for {expt_params.shutter_opening_time_s} at {speed_for_rotation_deg_s} deg/s"
+    )
+
     LOGGER.info("setting up and staging eiger")
 
     yield from setup_sample_environment(detector_motion, backlight)
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle}")
-    yield from move_to_start_w_buffer(smargon.omega, start_angle)
+    yield from move_to_start_w_buffer(smargon.omega, start_angle, acceleration_offset)
     LOGGER.info("wait for any previous moves...")
     LOGGER.info(
         f"setting up zebra w: start_angle={start_angle}, scan_width={scan_width}"
@@ -127,10 +160,7 @@ def rotation_scan_plan(
         start_angle=start_angle,
         scan_width=scan_width,
         direction=DIRECTION,
-        shutter_time_and_velocity=(
-            SHUTTER_OPENING_TIME,
-            image_width / exposure_time,
-        ),
+        shutter_opening_deg=shutter_opening_degrees,
         group="setup_zebra",
     )
     # wait for all the setup tasks at once
@@ -145,8 +175,10 @@ def rotation_scan_plan(
 
     yield from arm_zebra(zebra)
 
-    LOGGER.info(f"{'increase' if DIRECTION > 0 else 'decrease'} omega by {scan_width}")
-    yield from move_to_end_w_buffer(smargon.omega, scan_width)
+    LOGGER.info(
+        f"{'increase' if DIRECTION > 0 else 'decrease'} omega through {scan_width}, to be modified by adjustments for shutter speed and acceleration"
+    )
+    yield from move_to_end_w_buffer(smargon.omega, scan_width, acceleration_offset)
 
 
 def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):

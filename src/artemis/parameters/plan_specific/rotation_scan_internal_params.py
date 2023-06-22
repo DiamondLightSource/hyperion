@@ -32,7 +32,6 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     y: float = 0.0
     z: float = 0.0
     rotation_direction: RotationDirection = RotationDirection.NEGATIVE
-    offset_deg: float = 1.0
     shutter_opening_time_s: float = 0.6
 
     @validator("rotation_direction", pre=True)
