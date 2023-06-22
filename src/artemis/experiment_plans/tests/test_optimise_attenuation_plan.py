@@ -4,7 +4,9 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.xspress3_mini.xspress3_mini import DetectorState
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.xspress3_mini.xspress3_mini import DetectorState, Xspress3Mini
+from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from artemis.experiment_plans import optimise_attenuation_plan
@@ -13,13 +15,14 @@ from artemis.experiment_plans.optimise_attenuation_plan import (
     PlaceholderParams,
     arm_devices,
     check_parameters,
+    deadtime_is_transmission_optimised,
     is_counts_within_target,
     total_counts_optimisation,
 )
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 
-def fake_create_devices():
+def fake_create_devices() -> tuple[Zebra, Xspress3Mini, Attenuator]:
     zebra = i03.zebra(fake_with_ophyd_sim=True)
     zebra.wait_for_connection()
     xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True)
@@ -64,6 +67,7 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
         upper_limit,
         max_cycles,
         increment,
+        deadtime_threshold,
     ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
 
     # Same as plan target
@@ -73,7 +77,7 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     transmission_list = [transmission]
 
     # Mock a calculation where the dt_corrected_latest_mca array data
-    # is randomly created based on the transmission value
+    # is created based on the transmission value
     def mock_set_transmission(_):
         data = np.ones(shape=2048) * (transmission_list[0] + 1)
         total_count = sum(data[int(default_low_roi) : int(default_high_roi)])
@@ -88,7 +92,63 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
 
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
-            5, 1, xspress3mini, zebra, attenuator, 0, 0
+            5, xspress3mini, zebra, attenuator, 0, 0
+        )
+    )
+
+
+def test_deadtime_optimise(RE: RunEngine):
+    """Test the overall deadtime optimisation"""
+
+    zebra, xspress3mini, attenuator = fake_create_devices()
+
+    # Mimic some of the logic to track the transmission and set realistic data
+    (
+        optimisation_type,
+        default_low_roi,
+        default_high_roi,
+        transmission,
+        target,
+        lower_limit,
+        upper_limit,
+        max_cycles,
+        increment,
+        deadtime_threshold,
+    ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
+
+    """ Similar to test_total_count, mimic the set transmission. For now, just assume total time is constant and increasing the transmission will increase the
+    reset ticks, thus decreasing the deadtime"""
+    transmission_list = [transmission]
+    direction_list = [True]
+    total_time = 8e7
+
+    # Put realistic values into PV's
+    xspress3mini.channel_1.total_time.sim_put(8e7)
+    xspress3mini.channel_1.reset_ticks.sim_put(151276)
+
+    def mock_set_transmission(_):
+        # Update reset ticks, calc new deadtime, increment transmission.
+        reset_ticks = 151276 * transmission_list[0]
+        deadtime = 1 - abs(float(total_time - reset_ticks)) / float(total_time)
+
+        _, direction_flip = deadtime_is_transmission_optimised(
+            direction_list[0], deadtime, deadtime_threshold, transmission
+        )
+        if direction_flip:
+            direction_list[0] = not direction_list[0]
+
+        if direction_list[0]:
+            transmission_list[0] *= increment
+        else:
+            transmission_list[0] /= increment
+
+        return get_good_status()
+
+    attenuator.desired_transmission.set = mock_set_transmission
+    force_fake_devices_to_arm(xspress3mini, zebra)
+    RE(
+        optimise_attenuation_plan.optimise_attenuation_plan(
+            5, xspress3mini, zebra, attenuator, 0, 0
         )
     )
 
