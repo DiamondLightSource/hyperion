@@ -82,6 +82,20 @@ def is_deadtime_optimised(
     return False, flip_direction
 
 
+def deadtime_calc_new_transmission(direction, transmission, increment):
+    if direction:
+        transmission *= increment
+        if transmission > 0.999:
+            transmission = 1
+    else:
+        transmission /= increment
+    if transmission < 1.0e-6:
+        raise AttenuationOptimisationFailedException(
+            "Calculated transmission is below expected limit"
+        )
+    return transmission
+
+
 def deadtime_optimisation(
     attenuator, xspress3mini, zebra, transmission, increment, deadtime_threshold
 ):
@@ -116,17 +130,9 @@ def deadtime_optimisation(
         if flip_direction:
             direction = not direction
 
-        # Calculate new transmission (TODO: put in function)
-        if direction:
-            transmission *= increment
-            if transmission > 0.999:
-                transmission = 1
-        else:
-            transmission /= increment
-        if transmission < 1.0e-6:
-            raise AttenuationOptimisationFailedException(
-                "Calculated transmission is below expected limit"
-            )
+        transmission = deadtime_calc_new_transmission(
+            direction, transmission, increment
+        )
 
     return optimised_transmission
 
