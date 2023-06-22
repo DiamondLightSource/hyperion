@@ -64,7 +64,7 @@ def arm_devices(xspress3mini, zebra):
     yield from arm_zebra(zebra)
 
 
-def is_deadtime_optimised(
+def deadtime_is_transmission_optimised(
     direction, deadtime, deadtime_threshold, transmission
 ) -> tuple[bool, bool]:
     flip_direction = False
@@ -96,6 +96,15 @@ def deadtime_calc_new_transmission(direction, transmission, increment):
     return transmission
 
 
+def do_device_optimise_iteration(
+    attenuator: Attenuator, zebra: Zebra, xspress3mini: Xspress3Mini, transmission
+):
+    """Set transmission, set number of images on xspress3mini, arm xspress3mini and zebra"""
+    yield from bps.abs_set(attenuator, transmission, group="set_transmission")
+    yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
+    arm_devices(xspress3mini, zebra)
+
+
 def deadtime_optimisation(
     attenuator, xspress3mini, zebra, transmission, increment, deadtime_threshold
 ):
@@ -103,10 +112,7 @@ def deadtime_optimisation(
     LOGGER.info(f"Target deadtime is {deadtime_threshold}")
 
     while True:
-        # TODO: loads of these statements (first 4 lines at least) are the same as in total counts - add to seperate function for neatness
-        yield from bps.abs_set(attenuator, transmission, group="set_transmission")
-        yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
-        arm_devices(xspress3mini, zebra)
+        do_device_optimise_iteration(attenuator, zebra, xspress3mini, transmission)
 
         total_time = xspress3mini.channel_1.total_time.get()
         reset_ticks = xspress3mini.channel_1.reset_ticks.get()
@@ -119,7 +125,7 @@ def deadtime_optimisation(
 
         LOGGER.info(f"Deadtime is now at {deadtime}")
 
-        is_optimised, flip_direction = is_deadtime_optimised(
+        is_optimised, flip_direction = deadtime_is_transmission_optimised(
             direction, deadtime, deadtime_threshold, transmission
         )
 
@@ -156,15 +162,7 @@ def total_counts_optimisation(
             f"Setting transmission to {transmission} for attenuation optimisation cycle {cycle}"
         )
 
-        yield from bps.abs_set(
-            attenuator,
-            transmission,
-            group="set_transmission",
-        )
-
-        yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
-
-        yield from arm_devices(xspress3mini, zebra)
+        do_device_optimise_iteration(attenuator, zebra, xspress3mini, transmission)
 
         data = np.array((yield from bps.rd(xspress3mini.dt_corrected_latest_mca)))
         total_count = sum(data[int(low_roi) : int(high_roi)])
