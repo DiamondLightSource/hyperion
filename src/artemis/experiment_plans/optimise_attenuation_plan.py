@@ -141,7 +141,7 @@ def deadtime_optimisation(
 
         LOGGER.info(f"Current total time = {total_time}")
         LOGGER.info(f"Current reset ticks = {reset_ticks}")
-
+        deadtime = 0
         if total_time != reset_ticks:
             deadtime = 1 - abs(total_time - reset_ticks) / (total_time)
 
