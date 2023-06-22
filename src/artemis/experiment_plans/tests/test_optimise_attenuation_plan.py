@@ -92,7 +92,7 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
 
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
-            5, xspress3mini, zebra, attenuator, 0, 0
+            5, "total_counts", xspress3mini, zebra, attenuator, 0, 0
         )
     )
 
@@ -150,7 +150,7 @@ def test_deadtime_optimise(RE: RunEngine):
     force_fake_devices_to_arm(xspress3mini, zebra)
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
-            5, xspress3mini, zebra, attenuator, 0, 0
+            5, "deadtime", xspress3mini, zebra, attenuator, 0, 0
         )
     )
 
