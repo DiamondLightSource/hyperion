@@ -214,6 +214,7 @@ def total_counts_optimisation(
 
 def optimise_attenuation_plan(
     collection_time,  # Comes from self.parameters.acquisitionTime in fluorescence_spectrum.py
+    optimisation_type,
     xspress3mini: Xspress3Mini,
     zebra: Zebra,
     attenuator: Attenuator,
@@ -221,7 +222,7 @@ def optimise_attenuation_plan(
     high_roi=None,
 ):
     (
-        optimisation_type,
+        _,  # This is optimisation type. Beter for testing if this is a parameter of the plan instead
         default_low_roi,
         default_high_roi,
         initial_transmission,
