@@ -103,7 +103,8 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     "high_roi, low_roi",
     [(0, 0), (0, 2048)],
 )
-def test_deadtime_optimise(high_roi, low_roi, RE: RunEngine):
+@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_zebra")
+def test_deadtime_optimise(mock_arm_zebra, high_roi, low_roi, RE: RunEngine):
     """Test the overall deadtime optimisation"""
 
     zebra, xspress3mini, attenuator = fake_create_devices()
@@ -153,7 +154,8 @@ def test_deadtime_optimise(high_roi, low_roi, RE: RunEngine):
         return get_good_status()
 
     attenuator.desired_transmission.set = mock_set_transmission
-    force_fake_devices_to_arm(xspress3mini, zebra)
+    # Force xspress3mini to pass arming
+    xspress3mini.detector_state.sim_put(DetectorState.ACQUIRE.value)
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
             5, "deadtime", xspress3mini, zebra, attenuator, high_roi, low_roi

@@ -117,7 +117,7 @@ def do_device_optimise_iteration(
     """Set transmission, set number of images on xspress3mini, arm xspress3mini and zebra"""
     yield from bps.abs_set(attenuator, transmission, group="set_transmission")
     yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
-    arm_devices(xspress3mini, zebra)
+    yield from arm_devices(xspress3mini, zebra)
 
 
 def deadtime_optimisation(
