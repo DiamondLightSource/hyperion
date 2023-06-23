@@ -249,9 +249,6 @@ def optimise_attenuation_plan(
     if high_roi is None or high_roi == 0:
         high_roi = default_high_roi
 
-    # Hardcode this for now:
-    optimisation_type = "deadtime"
-
     yield from bps.abs_set(
         xspress3mini.acquire_time, collection_time, wait=True
     )  # Don't necessarily need to wait here
