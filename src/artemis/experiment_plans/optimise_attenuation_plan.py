@@ -41,7 +41,7 @@ def create_devices():
 
 
 def is_counts_within_target(total_count, lower_limit, upper_limit) -> bool:
-    if lower_limit <= total_count <= upper_limit:
+    if lower_limit <= total_count and total_count <= upper_limit:
         return True
     else:
         return False
