@@ -85,7 +85,7 @@ def total_counts_optimisation(
 
         yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
 
-        arm_devices(xspress3mini, zebra)
+        yield from arm_devices(xspress3mini, zebra)
 
         data = np.array((yield from bps.rd(xspress3mini.dt_corrected_latest_mca)))
         total_count = sum(data[int(low_roi) : int(high_roi)])

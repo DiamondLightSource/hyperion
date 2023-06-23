@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -48,7 +48,8 @@ def get_good_status():
     return status
 
 
-def test_total_count_optimise(RE: RunEngine):
+@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_zebra")
+def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     """Test the overall total count algorithm"""
     zebra, xspress3mini, attenuator = fake_create_devices()
 
