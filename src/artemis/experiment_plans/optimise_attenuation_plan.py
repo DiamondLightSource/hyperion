@@ -55,11 +55,6 @@ def check_parameters(
             )
         )
 
-    if upper_limit < lower_limit:
-        raise ValueError(
-            f"Upper limit {upper_limit} must be greater than lower limit {lower_limit}"
-        )
-
     if default_high_roi < default_low_roi:
         raise ValueError(
             f"Upper roi {default_high_roi} must be greater than lower roi {default_low_roi}"

@@ -15,6 +15,8 @@ from artemis.experiment_plans.optimise_attenuation_plan import (
     PlaceholderParams,
     arm_devices,
     check_parameters,
+    create_devices,
+    deadtime_calc_new_transmission,
     deadtime_is_transmission_optimised,
     is_counts_within_target,
     total_counts_optimisation,
@@ -97,7 +99,11 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     )
 
 
-def test_deadtime_optimise(RE: RunEngine):
+@pytest.mark.parametrize(
+    "high_roi, low_roi",
+    [(0, 0), (0, 2048)],
+)
+def test_deadtime_optimise(high_roi, low_roi, RE: RunEngine):
     """Test the overall deadtime optimisation"""
 
     zebra, xspress3mini, attenuator = fake_create_devices()
@@ -150,7 +156,7 @@ def test_deadtime_optimise(RE: RunEngine):
     force_fake_devices_to_arm(xspress3mini, zebra)
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
-            5, "deadtime", xspress3mini, zebra, attenuator, 0, 0
+            5, "deadtime", xspress3mini, zebra, attenuator, high_roi, low_roi
         )
     )
 
@@ -210,3 +216,22 @@ def test_arm_devices_runs_correct_functions(RE: RunEngine):
     RE(arm_devices(xspress3mini, zebra))
     xspress3mini.arm.assert_called_once()
     optimise_attenuation_plan.arm_zebra.assert_called_once()
+
+
+def test_deadtime_calc_new_transmission_gets_correct_value():
+    assert deadtime_calc_new_transmission(True, 0.05, 2) == 0.1
+    assert deadtime_calc_new_transmission(False, 0.05, 2) == 0.025
+    assert deadtime_calc_new_transmission(True, 1, 2) == 1
+
+
+def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
+    with pytest.raises(AttenuationOptimisationFailedException):
+        deadtime_calc_new_transmission(False, 1e-6, 2)
+
+
+def test_create_new_devices():
+    with patch("artemis.experiment_plans.optimise_attenuation_plan.i03") as i03:
+        create_devices()
+        i03.zebra.assert_called()
+        i03.xspress3mini.assert_called()
+        i03.attenuator.assert_called()
