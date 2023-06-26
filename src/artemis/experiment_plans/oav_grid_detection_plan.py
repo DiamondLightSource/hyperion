@@ -45,7 +45,7 @@ def grid_detection_plan(
             width,
             box_size_microns,
         ),
-        reset_oav(parameters),
+        reset_oav(),
     )
 
 
@@ -207,6 +207,6 @@ def grid_detection_main_plan(
     out_parameters.z_step_size = box_size_um / 1000
 
 
-def reset_oav(parameters: OAVParameters):
+def reset_oav():
     oav = i03.oav()
     yield from bps.abs_set(oav.mxsc.enable_callbacks, 0)
