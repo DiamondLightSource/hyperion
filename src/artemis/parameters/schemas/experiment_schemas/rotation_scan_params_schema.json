@@ -24,10 +24,16 @@
             "type": "number"
         },
         "chi_start": {
-            "type": "number"
+            "type": [
+                "number",
+                "null"
+            ]
         },
         "kappa_start": {
-            "type": "number"
+            "type": [
+                "number",
+                "null"
+            ]
         },
         "x": {
             "type": "number"

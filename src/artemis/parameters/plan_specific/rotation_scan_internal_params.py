@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from dodal.devices.motors import XYZLimitBundle
 from dodal.devices.zebra import RotationDirection
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic import BaseModel, validator
+from scanspec.core import Path as ScanPath
+from scanspec.specs import Line
 
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
@@ -26,8 +28,8 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     image_width: float = 0.1
     omega_start: float = 0.0
     phi_start: float = 0.0
-    chi_start: Optional[float] = None
-    kappa_start: Optional[float] = None
+    chi_start: float | None = None
+    kappa_start: float | None = None
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
@@ -37,7 +39,10 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
 
     @validator("rotation_direction", pre=True)
     def _parse_direction(cls, rotation_direction: str | int):
-        return RotationDirection[rotation_direction]
+        if isinstance(rotation_direction, str):
+            return RotationDirection[rotation_direction]
+        else:
+            return RotationDirection(rotation_direction)
 
     def xyz_are_valid(self, limits: XYZLimitBundle) -> bool:
         """
@@ -81,7 +86,10 @@ class RotationInternalParameters(InternalParameters):
         experiment_params: RotationScanParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])
-        if all_params["rotation_axis"] == "omega":
+        if (
+            all_params["rotation_axis"] == "omega"
+            and all_params.get("rotation_increment") is not None
+        ):
             all_params["omega_increment"] = all_params["rotation_increment"]
         else:
             all_params["omega_increment"] = 0
@@ -89,3 +97,22 @@ class RotationInternalParameters(InternalParameters):
         all_params["num_images_per_trigger"] = all_params["num_images"]
         all_params["upper_left"] = np.array(all_params["upper_left"])
         return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))
+
+    def get_scan_points(self):
+        scan_spec = Line(
+            axis="omega",
+            start=self.experiment_params.omega_start,
+            stop=(
+                self.experiment_params.rotation_angle
+                + self.experiment_params.omega_start
+            ),
+            num=self.experiment_params.get_num_images(),
+        )
+        scan_path = ScanPath(scan_spec.calculate())
+        return scan_path.consume().midpoints
+
+    def get_data_shape(self) -> tuple[int, int, int]:
+        size = (
+            self.artemis_params.detector_params.detector_size_constants.det_size_pixels
+        )
+        return (self.experiment_params.get_num_images(), size.width, size.height)
