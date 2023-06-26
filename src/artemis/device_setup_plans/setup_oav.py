@@ -87,8 +87,6 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         parameters.detection_script_filename,
     )
 
-    yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")
-
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
         raise OAVError_ZoomLevelNotFound(

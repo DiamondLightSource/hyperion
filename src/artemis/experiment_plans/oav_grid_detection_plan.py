@@ -209,5 +209,4 @@ def grid_detection_main_plan(
 
 def reset_oav(parameters: OAVParameters):
     oav = i03.oav()
-    yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")
     yield from bps.abs_set(oav.mxsc.enable_callbacks, 0)
