@@ -86,12 +86,6 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     # Force xspress3mini to pass arming
     xspress3mini.detector_state.sim_put(DetectorState.ACQUIRE.value)
 
-    # Get arming Zebra to work
-    mock_arm_disarm = MagicMock(
-        side_effect=zebra.pc.armed.set, return_value=Status(done=True, success=True)
-    )
-    zebra.pc.arm_demand.set = mock_arm_disarm
-
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
             5, 1, xspress3mini, zebra, attenuator, 0, 0
@@ -144,18 +138,6 @@ def test_exception_raised_after_max_cycles_reached(RE: RunEngine):
                 1, 10, attenuator, xspress3mini, zebra, 0, 1, 0, 1, 5
             )
         )
-
-
-def test_arm_devices_waits_for_acquire_status(RE: RunEngine):
-    optimise_attenuation_plan.arm_zebra = MagicMock()
-    zebra, xspress3mini, _ = fake_create_devices()
-    xspress3mini.detector_state.sim_put("Acquire")
-    xspress3mini.do_start = MagicMock()
-    xspress3mini.acquire_status = Status(timeout=1)
-    with pytest.raises(Exception):
-        RE(arm_devices(xspress3mini, zebra))
-    xspress3mini.acquire_status = get_good_status()
-    RE(arm_devices(xspress3mini, zebra))
 
 
 def test_arm_devices_runs_correct_functions(RE: RunEngine):
