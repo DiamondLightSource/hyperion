@@ -400,5 +400,4 @@ def test_fgs_arms_eiger_without_grid_detect(
     )
 
     RE(bps.stage(fake_fgs_composite.eiger))
-    fake_fgs_composite.eiger.arming_status.wait(60)
     fake_fgs_composite.eiger._wait_fan_ready.assert_called_once()
