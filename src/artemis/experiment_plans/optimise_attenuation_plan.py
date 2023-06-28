@@ -93,35 +93,6 @@ def get_new_direction(direction: Direction, deadtime, deadtime_threshold):
     return direction
 
 
-def deadtime_is_transmission_optimised(
-    direction: Direction, deadtime, deadtime_threshold, transmission
-) -> bool:
-    """Compares the deadtime to the deadtime_threshold and checks against upper and lower bounds.
-
-    If deadtime is lower than the threshold or greater than 0.9, returns (True, flip_direction).
-    Marks the flip direction as positive if the deadtime has gone over the threshold. Raises error AttenuationOptimisationFailedException if
-    transmission goes too low
-
-    Args:
-        direction: Enum
-        Enum taking values of either POSITIVE or NEGATIVE, which determines whether the transmission should be increased or decreased in the next iteration
-
-        deadtime:
-        Current deadtime value
-
-    Returns:
-        boolean: marking whether or not attenuation is optimised
-    """
-
-    if direction == Direction.POSITIVE:
-        if deadtime <= deadtime_threshold:
-            return False
-    else:
-        if deadtime <= deadtime_threshold:
-            return True
-    return False
-
-
 def calculate_new_direction(direction: Direction, deadtime, deadtime_threshold):
     if direction == Direction.POSITIVE:
         if deadtime > deadtime_threshold:
