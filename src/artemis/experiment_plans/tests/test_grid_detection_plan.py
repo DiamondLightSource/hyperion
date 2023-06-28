@@ -128,7 +128,7 @@ def test_create_devices(create_device: MagicMock):
     create_device.assert_has_calls(
         [
             call(Smargon, "smargon", "-MO-SGON-01:", True, False),
-            call(OAV, "oav", "-DI-OAV-01:", True, False),
+            call(OAV, "oav", "", True, False),
             call(
                 device=Backlight,
                 name="backlight",
