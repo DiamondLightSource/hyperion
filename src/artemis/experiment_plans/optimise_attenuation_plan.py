@@ -62,10 +62,7 @@ def check_parameters(
 
 
 def is_counts_within_target(total_count, lower_limit, upper_limit) -> bool:
-    if lower_limit <= total_count and total_count <= upper_limit:
-        return True
-    else:
-        return False
+    return lower_limit <= total_count and total_count <= upper_limit
 
 
 def arm_devices(xspress3mini, zebra):
@@ -115,7 +112,9 @@ def do_device_optimise_iteration(
     attenuator: Attenuator, zebra: Zebra, xspress3mini: Xspress3Mini, transmission
 ):
     """Set transmission, set number of images on xspress3mini, arm xspress3mini and zebra"""
-    yield from bps.abs_set(attenuator, transmission, group="set_transmission")
+    yield from bps.abs_set(
+        attenuator, transmission, group="set_transmission", wait=True
+    )
     yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
     yield from arm_devices(xspress3mini, zebra)
 

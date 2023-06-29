@@ -18,6 +18,7 @@ from artemis.experiment_plans.optimise_attenuation_plan import (
     create_devices,
     deadtime_calc_new_transmission,
     deadtime_is_transmission_optimised,
+    do_device_optimise_iteration,
     is_counts_within_target,
     total_counts_optimisation,
 )
@@ -51,6 +52,52 @@ def get_good_status():
     status = Status()
     status.set_finished()
     return status
+
+
+# In each iteration, we get read the new data and check if it's within range using is_counts_within_target
+def test_total_counts_iteration_logic():
+    pass
+
+
+@pytest.mark.parametrize(
+    "optimisation_type",
+    [("total_counts"), ("deadtime")],
+)
+@patch("artemis.experiment_plans.optimise_attenuation_plan.total_counts_optimisation")
+@patch("artemis.experiment_plans.optimise_attenuation_plan.deadtime_optimisation")
+def test_optimisation_attenuation_plan_runs_correct_functions(
+    mock_deadtime_optimisation,
+    mock_total_counts_optimisation,
+    optimisation_type,
+    RE: RunEngine,
+):
+    zebra, xspress3mini, attenuator = fake_create_devices()
+    attenuator.set = MagicMock()
+    RE(
+        optimise_attenuation_plan.optimise_attenuation_plan(
+            5, optimisation_type, xspress3mini, zebra, attenuator, 0, 0
+        )
+    )
+    if optimisation_type == "total_counts":
+        mock_deadtime_optimisation.assert_not_called()
+        mock_total_counts_optimisation.assert_called_once()
+    else:
+        mock_total_counts_optimisation.assert_not_called()
+        mock_deadtime_optimisation.assert_called_once()
+    attenuator.set.assert_called_once()
+
+
+def test_total_counts_gets_within_target():
+    pass
+
+
+@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_devices")
+def test_do_device_optimise_iteration(mock_arm_devices, RE: RunEngine):
+    zebra, xspress3mini, attenuator = fake_create_devices()
+    attenuator.set = MagicMock(return_value=get_good_status())
+    RE(do_device_optimise_iteration(attenuator, zebra, xspress3mini, transmission=1))
+    attenuator.set.assert_called_once()
+    mock_arm_devices.assert_called_once()
 
 
 @patch("artemis.experiment_plans.optimise_attenuation_plan.arm_zebra")
