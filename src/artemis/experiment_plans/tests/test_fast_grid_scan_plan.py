@@ -355,6 +355,8 @@ def test_when_exception_occurs_during_running_then_eiger_disarmed(
     fake_fgs_composite.eiger.filewriters_finished.set_finished()
     fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
     fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
+    fake_fgs_composite.eiger.filewriters_finished = Status()
+    fake_fgs_composite.eiger.filewriters_finished.set_finished()
 
     fake_fgs_composite.eiger.stage = MagicMock(
         return_value=Status(None, None, 0, True, True)
@@ -372,3 +374,30 @@ def test_when_exception_occurs_during_running_then_eiger_disarmed(
         )
 
     fake_fgs_composite.eiger.disarm_detector.assert_called_once()
+
+
+# Eiger is armed if eiger.armed_status is complete and fan ready is called. This test is very slow - could mocking more functions could speed it up
+def test_fgs_arms_eiger_without_grid_detect(
+    fake_fgs_composite: FGSComposite,
+    test_fgs_params: FGSInternalParameters,
+    mock_subscriptions: FGSCallbackCollection,
+    RE: RunEngine,
+):
+    def get_good_status():
+        status = Status()
+        status.set_finished()
+        return status
+
+    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+    fake_fgs_composite.eiger.odin.check_odin_initialised = MagicMock(
+        return_value=[True, True]
+    )
+    fake_fgs_composite.eiger.set_odin_pvs = MagicMock(return_value=get_good_status())
+    fake_fgs_composite.eiger.stale_params.sim_put(0)
+    fake_fgs_composite.eiger._wait_fan_ready = MagicMock(return_value=get_good_status())
+    fake_fgs_composite.eiger._wait_for_odin_status = MagicMock(
+        return_value=get_good_status()
+    )
+
+    RE(bps.stage(fake_fgs_composite.eiger))
+    fake_fgs_composite.eiger._wait_fan_ready.assert_called_once()
