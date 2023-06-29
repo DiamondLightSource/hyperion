@@ -62,7 +62,7 @@ def check_parameters(
 
 
 def is_counts_within_target(total_count, lower_limit, upper_limit) -> bool:
-    return lower_limit <= total_count and total_count <= upper_limit
+    return lower_limit <= total_count <= upper_limit
 
 
 def arm_devices(xspress3mini, zebra):
@@ -182,8 +182,11 @@ def total_counts_optimisation(
             attenuator, zebra, xspress3mini, transmission
         )
 
-        data = np.array((yield from bps.rd(xspress3mini.dt_corrected_latest_mca)))
-        total_count = sum(data[int(low_roi) : int(high_roi)])
+        total_count = sum(
+            np.array((yield from bps.rd(xspress3mini.dt_corrected_latest_mca)))[
+                int(low_roi) : int(high_roi)
+            ]
+        )
         LOGGER.info(f"Total count is {total_count}")
 
         if is_counts_within_target(total_count, lower_limit, upper_limit):
