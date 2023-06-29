@@ -5,7 +5,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.xspress3_mini.xspress3_mini import DetectorState, Xspress3Mini
+from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
@@ -13,7 +13,6 @@ from artemis.experiment_plans import optimise_attenuation_plan
 from artemis.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
     Direction,
-    PlaceholderParams,
     arm_devices,
     calculate_new_direction,
     check_parameters,
@@ -26,7 +25,6 @@ from artemis.experiment_plans.optimise_attenuation_plan import (
     total_counts_optimisation,
 )
 from artemis.log import LOGGER
-from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 
 def fake_create_devices() -> tuple[Zebra, Xspress3Mini, Attenuator]:
@@ -58,9 +56,29 @@ def get_good_status():
     return status
 
 
-# In each iteration, we get read the new data and check if it's within range using is_counts_within_target
-def test_total_counts_iteration_logic():
-    pass
+@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_devices")
+def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
+    zebra, xspress3mini, attenuator = fake_create_devices()
+    LOGGER.info = MagicMock()
+
+    # For simplicity we just increase the data array each iteration. In reality it's the transmission value that affects the array
+    def update_data(_):
+        nonlocal iteration
+        iteration += 1
+        xspress3mini.dt_corrected_latest_mca.sim_put(
+            np.array([50, 50, 50, 50, 50]) * iteration
+        )
+        return get_good_status()
+
+    attenuator.set = update_data
+
+    iteration = 0
+
+    RE(
+        total_counts_optimisation(
+            attenuator, xspress3mini, zebra, 1, 0, 4, 1000, 2000, 1500, 5
+        )
+    )
 
 
 @pytest.mark.parametrize(
@@ -92,10 +110,6 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     attenuator.set.assert_called_once()
 
 
-def test_total_counts_gets_within_target():
-    pass
-
-
 @patch("artemis.experiment_plans.optimise_attenuation_plan.arm_devices")
 def test_do_device_optimise_iteration(mock_arm_devices, RE: RunEngine):
     zebra, xspress3mini, attenuator = fake_create_devices()
@@ -103,52 +117,6 @@ def test_do_device_optimise_iteration(mock_arm_devices, RE: RunEngine):
     RE(do_device_optimise_iteration(attenuator, zebra, xspress3mini, transmission=1))
     attenuator.set.assert_called_once()
     mock_arm_devices.assert_called_once()
-
-
-@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_zebra")
-def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
-    """Test the overall total count algorithm"""
-    zebra, xspress3mini, attenuator = fake_create_devices()
-
-    # Mimic some of the logic to track the transmission and set realistic data
-    (
-        optimisation_type,
-        default_low_roi,
-        default_high_roi,
-        transmission,
-        target,
-        lower_limit,
-        upper_limit,
-        max_cycles,
-        increment,
-        deadtime_threshold,
-    ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
-
-    # Same as plan target
-    target = 3000
-
-    # Make list so we can modify within function (is there a better way to do this?)
-    transmission_list = [transmission]
-
-    # Mock a calculation where the dt_corrected_latest_mca array data
-    # is created based on the transmission value
-    def mock_set_transmission(_):
-        data = np.ones(shape=2048) * (transmission_list[0] + 1)
-        total_count = sum(data[int(default_low_roi) : int(default_high_roi)])
-        transmission_list[0] = (target / (total_count)) * transmission_list[0]
-        xspress3mini.dt_corrected_latest_mca.sim_put(data)
-        return get_good_status()
-
-    attenuator.desired_transmission.set = mock_set_transmission
-
-    # Force xspress3mini to pass arming
-    xspress3mini.detector_state.sim_put(DetectorState.ACQUIRE.value)
-
-    RE(
-        optimise_attenuation_plan.optimise_attenuation_plan(
-            5, "total_counts", xspress3mini, zebra, attenuator, 0, 0
-        )
-    )
 
 
 @pytest.mark.parametrize(
@@ -244,10 +212,14 @@ def test_is_counts_within_target_is_false(total_count, lower_limit, upper_limit)
     assert is_counts_within_target(total_count, lower_limit, upper_limit) is False
 
 
-def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
+@patch(
+    "artemis.experiment_plans.optimise_attenuation_plan.do_device_optimise_iteration"
+)
+def test_exception_raised_after_max_cycles_reached(
+    mock_do_device_iteration, RE: RunEngine
+):
     zebra, xspress3mini, attenuator = fake_create_devices()
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
-    optimise_attenuation_plan.arm_zebra = MagicMock()
     xspress3mini.arm = MagicMock(return_value=get_good_status())
     xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
     with pytest.raises(AttenuationOptimisationFailedException):
