@@ -162,9 +162,9 @@ def deadtime_optimisation(
 def total_counts_optimisation(
     max_cycles,
     transmission,
-    attenuator,
-    xspress3mini,
-    zebra,
+    attenuator: Attenuator,
+    xspress3mini: Xspress3Mini,
+    zebra: Zebra,
     low_roi,
     high_roi,
     lower_limit,
