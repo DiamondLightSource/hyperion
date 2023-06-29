@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
+import numpy as np
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.beamlines import i03
@@ -19,9 +20,6 @@ from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
 from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
-from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
 from artemis.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
@@ -108,9 +106,9 @@ def detect_grid_and_do_gridscan(
     )
 
     # Hack because GDA only passes 3 values to ispyb
-    out_upper_left = oav_callback.out_upper_left[0] + [
-        oav_callback.out_upper_left[1][1]
-    ]
+    out_upper_left = np.array(
+        oav_callback.out_upper_left[0] + [oav_callback.out_upper_left[1][1]]
+    )
 
     # Hack because the callback returns the list in inverted order
     parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
@@ -126,7 +124,6 @@ def detect_grid_and_do_gridscan(
     parameters.artemis_params.detector_params.num_triggers = fgs_params.get_num_images()
 
     LOGGER.info(f"Parameters for FGS: {parameters}")
-    subscriptions = FGSCallbackCollection.from_params(parameters)
 
     yield from bps.abs_set(backlight.pos, Backlight.OUT)
     LOGGER.info(
@@ -137,7 +134,7 @@ def detect_grid_and_do_gridscan(
     )
     yield from wait_for_det_to_finish_moving(detector_motion)
 
-    yield from fgs_get_plan(parameters, subscriptions)
+    yield from fgs_get_plan(parameters)
 
 
 def get_plan(
