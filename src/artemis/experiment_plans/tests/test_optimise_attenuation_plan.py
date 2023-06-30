@@ -205,7 +205,7 @@ def test_exception_raised_after_max_cycles_reached(RE: RunEngine):
     with pytest.raises(AttenuationOptimisationFailedException):
         RE(
             total_counts_optimisation(
-                1, 10, attenuator, xspress3mini, zebra, 0, 1, 0, 1, 5
+                attenuator, xspress3mini, zebra, 1, 0, 1, 0, 1, 5, 10
             )
         )
 

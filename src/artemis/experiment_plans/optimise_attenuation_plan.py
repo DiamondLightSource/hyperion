@@ -149,12 +149,47 @@ def do_device_optimise_iteration(
 
 
 def deadtime_optimisation(
-    attenuator, xspress3mini, zebra, transmission, increment, deadtime_threshold
+    attenuator: Attenuator,
+    xspress3mini: Xspress3Mini,
+    zebra: Zebra,
+    transmission: float,
+    increment: float,
+    deadtime_threshold: float,
+    max_cycles: int,
 ):
+    """Optimises the attenuation for the Xspress3Mini based on the detector deadtime
+
+    Deadtime is the time after each event during which the detector cannot record another event. This loop adjusts the transmission of the attenuator
+    and checks the deadtime until the deadtime is below the accepted threshold. To protect the sample, the deadtime has a maximum value of 10%
+
+    Args:
+        attenuator: Attenuator Ophyd device
+
+        xspress3mini: Xspress3Mini ophyd device
+
+        zebra: Zebra Ophyd device
+
+        transmission: Float
+        The intial transmission value to use for the optimising
+
+        increment: Float
+        The factor to increase / decrease the transmission each cycle
+
+        deadtime_threshold: Float
+        The maximum acceptable percentage deadtime
+
+        max_cycles: int
+        The maximum number of iterations before an error is thrown
+
+    Returns:
+        optimised_transmission: float
+        The final transmission value which produces an acceptable deadtime
+    """
+
     direction = Direction.POSITIVE
     LOGGER.info(f"Target deadtime is {deadtime_threshold}")
 
-    while True:
+    for cycle in range(0, max_cycles):
         yield from do_device_optimise_iteration(
             attenuator, zebra, xspress3mini, transmission
         )
@@ -167,7 +202,7 @@ def deadtime_optimisation(
         deadtime = 0
 
         """ Deadtime is the time after each event during which the detector cannot record another event.
-            The reset ticks PV stops ticking while the detector is unable to process events, so the difference between the total time and the 
+            The reset ticks PV stops ticking while the detector is unable to process events, so the difference between the total time and the
             reset ticks time gives the deadtime. Then divide by total time to get it as a percentage.
             
             This percentage can then be used to calculate the real counts. Eg Real counts = observed counts / (deadtime fraction)
@@ -194,21 +229,59 @@ def deadtime_optimisation(
             direction, transmission, increment
         )
 
+        if cycle == max_cycles - 1:
+            raise AttenuationOptimisationFailedException(
+                f"Unable to optimise attenuation after maximum cycles.\
+                                                            Deadtime did not get lower than threshold: {deadtime_threshold} in maximum cycles {max_cycles}"
+            )
+
     return optimised_transmission
 
 
 def total_counts_optimisation(
-    max_cycles,
-    transmission,
-    attenuator,
-    xspress3mini,
-    zebra,
-    low_roi,
-    high_roi,
-    lower_limit,
-    upper_limit,
-    target_count,
+    attenuator: Attenuator,
+    xspress3mini: Xspress3Mini,
+    zebra: Zebra,
+    transmission: float,
+    low_roi: int,
+    high_roi: int,
+    lower_limit: float,
+    upper_limit: float,
+    target_count: float,
+    max_cycles: int,
 ):
+    """Optimises the attenuation for the Xspress3Mini based on the total counts
+
+    This loop adjusts the transmission of the attenuator and checks the total counts of the detector until the total counts as in the acceptable range,
+    defined by the lower and upper limit. To protect the sample, the transmission has a maximum value of 10%.
+
+    Args:
+        attenuator: Attenuator Ophyd device
+
+        xspress3mini: Xspress3Mini ophyd device
+
+        zebra: Zebra Ophyd device
+
+        transmission: Float
+        The intial transmission value to use for the optimising
+
+        low_roi: Float
+        Lower region of interest at which to include in the counts
+
+        high_roi: Float
+        Upper region of interest at which to include in the counts
+
+        target_count: int
+        The ideal number of target counts - used to calculate the transmission for the subsequent iteration.
+
+        max_cycles: int
+        The maximum number of iterations before an error is thrown
+
+    Returns:
+        optimised_transmission: float
+        The final transmission value which produces an acceptable total_count value
+    """
+
     LOGGER.info("Using total count optimisation")
 
     for cycle in range(0, max_cycles):
@@ -292,16 +365,16 @@ def optimise_attenuation_plan(
         )
 
         optimised_transmission = yield from total_counts_optimisation(
-            max_cycles,
-            initial_transmission,
             attenuator,
             xspress3mini,
             zebra,
+            initial_transmission,
             low_roi,
             high_roi,
             lower_limit,
             upper_limit,
             target,
+            max_cycles,
         )
 
     elif optimisation_type == "deadtime":
@@ -315,6 +388,7 @@ def optimise_attenuation_plan(
             initial_transmission,
             increment,
             deadtime_threshold,
+            max_cycles,
         )
 
     yield from bps.abs_set(attenuator, optimised_transmission, group="set_transmission")
