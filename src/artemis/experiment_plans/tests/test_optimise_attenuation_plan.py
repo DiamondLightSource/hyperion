@@ -12,6 +12,7 @@ from ophyd.status import Status
 from artemis.experiment_plans import optimise_attenuation_plan
 from artemis.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
+    Direction,
     PlaceholderParams,
     arm_devices,
     check_parameters,
@@ -196,7 +197,7 @@ def test_is_counts_within_target_is_false(total_count, lower_limit, upper_limit)
     assert is_counts_within_target(total_count, lower_limit, upper_limit) is False
 
 
-def test_exception_raised_after_max_cycles_reached(RE: RunEngine):
+def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
     zebra, xspress3mini, attenuator = fake_create_devices()
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
     optimise_attenuation_plan.arm_zebra = MagicMock()
@@ -220,15 +221,28 @@ def test_arm_devices_runs_correct_functions(RE: RunEngine):
     optimise_attenuation_plan.arm_zebra.assert_called_once()
 
 
-def test_deadtime_calc_new_transmission_gets_correct_value():
-    assert deadtime_calc_new_transmission(True, 0.05, 2) == 0.1
-    assert deadtime_calc_new_transmission(False, 0.05, 2) == 0.025
-    assert deadtime_calc_new_transmission(True, 1, 2) == 1
+@pytest.mark.parametrize(
+    "direction, transmission, increment, upper_limit, lower_limit, new_transmission",
+    [
+        (Direction.POSITIVE, 0.5, 2, 0.9, 1e-6, 0.9),
+        (Direction.POSITIVE, 0.1, 2, 0.9, 1e-6, 0.2),
+        (Direction.NEGATIVE, 0.8, 2, 0.9, 1e-6, 0.4),
+    ],
+)
+def test_deadtime_calc_new_transmission_gets_correct_value(
+    direction, transmission, increment, upper_limit, lower_limit, new_transmission
+):
+    assert (
+        deadtime_calc_new_transmission(
+            direction, transmission, increment, upper_limit, lower_limit
+        )
+        == new_transmission
+    )
 
 
 def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
     with pytest.raises(AttenuationOptimisationFailedException):
-        deadtime_calc_new_transmission(False, 1e-6, 2)
+        deadtime_calc_new_transmission(Direction.NEGATIVE, 1e-6, 2, 1, 1e-6)
 
 
 def test_create_new_devices():

@@ -86,10 +86,17 @@ def arm_devices(xspress3mini, zebra):
     yield from arm_zebra(zebra)
 
 
+def get_new_direction(direction: Direction, deadtime, deadtime_threshold):
+    if direction == Direction.POSITIVE:
+        if deadtime >= deadtime_threshold:
+            direction = Direction.NEGATIVE
+    return direction
+
+
 def deadtime_is_transmission_optimised(
     direction: Direction, deadtime, deadtime_threshold, transmission
-) -> tuple[bool, bool]:
-    """Compares the deadtime to the deadtime_threshold and determines behavior for the next optimisation iteration
+) -> bool:
+    """Compares the deadtime to the deadtime_threshold and checks against upper and lower bounds.
 
     If deadtime is lower than the threshold or greater than 0.9, returns (True, flip_direction).
     Marks the flip direction as positive if the deadtime has gone over the threshold. Raises error AttenuationOptimisationFailedException if
@@ -104,35 +111,53 @@ def deadtime_is_transmission_optimised(
 
     Returns:
         boolean: marking whether or not attenuation is optimised
-
-        flip_direction: Boolean
-        Set to true if the deadtime goes above its threshold while direction is positive. This makes deadtime decrease on the next iteration. Otherwise
-        set to false.
     """
 
-    flip_direction = False
-    if direction.value == Direction.POSITIVE:
-        if deadtime >= deadtime_threshold:
-            flip_direction = True
-            return False, flip_direction
-        else:
-            # The 0.9 is hardcoded in GDA
-            if transmission >= 0.9:
-                return True, flip_direction
+    if direction == Direction.POSITIVE:
+        if deadtime <= deadtime_threshold:
+            return False
     else:
         if deadtime <= deadtime_threshold:
-            return True, flip_direction
-    return False, flip_direction
+            return True
+    return False
 
 
-def deadtime_calc_new_transmission(direction: Direction, transmission, increment):
-    if direction.value == Direction.POSITIVE:
+def calculate_new_direction(direction: Direction, deadtime, deadtime_threshold):
+    if direction == Direction.POSITIVE:
+        if deadtime > deadtime_threshold:
+            direction = Direction.NEGATIVE
+    return direction
+
+
+def deadtime_calc_new_transmission(
+    direction: Direction,
+    transmission: float,
+    increment: float,
+    upper_transmission_limit: float,
+    lower_transmission_limit: float,
+) -> float:
+    """Calculate the new transmission value based on the current direction and increment. Raise error if transmission is too low.
+
+    Args:
+        direction (Direction: If positive, increase transmission by a factor of the increment. If negative, divide it
+        transmission (float): Current transmission value
+        increment (float): Factor to multiply or divide transmission by
+        upper_transmission_limit (float): Maximum allowed transmission, in order to protect sample.
+        lower_transmission_limit (float): Minimum expected transmission. Raise an error if transmission goes lower.
+
+    Raises:
+        AttenuationOptimisationFailedException: _description_
+
+    Returns:
+        transmission (float): New transmission value
+    """
+    if direction == Direction.POSITIVE:
         transmission *= increment
-        if transmission > 0.999:
-            transmission = 1
+        if transmission > upper_transmission_limit:
+            transmission = upper_transmission_limit
     else:
         transmission /= increment
-    if transmission < 1.0e-6:
+    if transmission < lower_transmission_limit:
         raise AttenuationOptimisationFailedException(
             "Calculated transmission is below expected limit"
         )
@@ -153,6 +178,8 @@ def deadtime_optimisation(
     xspress3mini: Xspress3Mini,
     zebra: Zebra,
     transmission: float,
+    upper_transmission_limit: float,
+    lower_transmission_limit: float,
     increment: float,
     deadtime_threshold: float,
     max_cycles: int,
@@ -160,29 +187,29 @@ def deadtime_optimisation(
     """Optimises the attenuation for the Xspress3Mini based on the detector deadtime
 
     Deadtime is the time after each event during which the detector cannot record another event. This loop adjusts the transmission of the attenuator
-    and checks the deadtime until the deadtime is below the accepted threshold. To protect the sample, the deadtime has a maximum value of 10%
+    and checks the deadtime until the deadtime is below the accepted threshold. To protect the sample, the transmission has a maximum value
 
     Args:
-        attenuator: Attenuator Ophyd device
+        attenuator: (Attenuator) Ophyd device
 
-        xspress3mini: Xspress3Mini ophyd device
+        xspress3mini: (Xspress3Mini) ophyd device
 
-        zebra: Zebra Ophyd device
+        zebra: (Zebra) Ophyd device
 
-        transmission: Float
+        transmission: (float)
         The intial transmission value to use for the optimising
 
-        increment: Float
+        increment: (float)
         The factor to increase / decrease the transmission each cycle
 
-        deadtime_threshold: Float
+        deadtime_threshold: (float)
         The maximum acceptable percentage deadtime
 
-        max_cycles: int
+        max_cycles: (int)
         The maximum number of iterations before an error is thrown
 
     Returns:
-        optimised_transmission: float
+        optimised_transmission: (float)
         The final transmission value which produces an acceptable deadtime
     """
 
@@ -202,11 +229,10 @@ def deadtime_optimisation(
         deadtime = 0
 
         """ Deadtime is the time after each event during which the detector cannot record another event.
-            The reset ticks PV stops ticking while the detector is unable to process events, so the difference between the total time and the
-            reset ticks time gives the deadtime. Then divide by total time to get it as a percentage.
-            
+            The reset ticks PV stops ticking while the detector is unable to process events, so the absolute difference between the total time and the
+            reset ticks time gives the deadtime. Divide by total time to get it as a percentage.
+
             This percentage can then be used to calculate the real counts. Eg Real counts = observed counts / (deadtime fraction)
-        
         """
 
         if total_time != reset_ticks:
@@ -214,26 +240,31 @@ def deadtime_optimisation(
 
         LOGGER.info(f"Deadtime is now at {deadtime}")
 
-        is_optimised, flip_direction = deadtime_is_transmission_optimised(
-            direction, deadtime, deadtime_threshold, transmission
-        )
-
-        if is_optimised:
+        # Check if new deadtime is OK
+        if deadtime <= deadtime_threshold or transmission == upper_transmission_limit:
+            if transmission == upper_transmission_limit:
+                LOGGER.warning(
+                    f"Deadtime {deadtime} is above threshold {deadtime_threshold} at maximum transmission {upper_transmission_limit}. Using maximum transmission\
+                            as optimised value."
+                )
             optimised_transmission = transmission
             break
-
-        if flip_direction:
-            direction = Direction.NEGATIVE
-
-        transmission = deadtime_calc_new_transmission(
-            direction, transmission, increment
-        )
 
         if cycle == max_cycles - 1:
             raise AttenuationOptimisationFailedException(
                 f"Unable to optimise attenuation after maximum cycles.\
                                                             Deadtime did not get lower than threshold: {deadtime_threshold} in maximum cycles {max_cycles}"
             )
+
+        direction = calculate_new_direction(direction, deadtime, deadtime_threshold)
+
+        transmission = deadtime_calc_new_transmission(
+            direction,
+            transmission,
+            increment,
+            upper_transmission_limit,
+            lower_transmission_limit,
+        )
 
     return optimised_transmission
 
@@ -325,6 +356,8 @@ def optimise_attenuation_plan(
     attenuator: Attenuator,
     low_roi=None,
     high_roi=None,
+    upper_transmission_limit=0.9,
+    lower_transmission_limit=1.0e-6,
 ):
     (
         _,  # This is optimisation type. Beter for testing if this is a parameter of the plan instead
@@ -386,6 +419,8 @@ def optimise_attenuation_plan(
             xspress3mini,
             zebra,
             initial_transmission,
+            upper_transmission_limit,
+            lower_transmission_limit,
             increment,
             deadtime_threshold,
             max_cycles,
