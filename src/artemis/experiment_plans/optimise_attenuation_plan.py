@@ -1,3 +1,5 @@
+from enum import Enum
+
 import bluesky.plan_stubs as bps
 import numpy as np
 from dodal.beamlines import i03
@@ -12,6 +14,11 @@ from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 class AttenuationOptimisationFailedException(Exception):
     pass
+
+
+class Direction(Enum):
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
 
 
 class PlaceholderParams:
@@ -80,10 +87,31 @@ def arm_devices(xspress3mini, zebra):
 
 
 def deadtime_is_transmission_optimised(
-    direction, deadtime, deadtime_threshold, transmission
+    direction: Direction, deadtime, deadtime_threshold, transmission
 ) -> tuple[bool, bool]:
+    """Compares the deadtime to the deadtime_threshold and determines behavior for the next optimisation iteration
+
+    If deadtime is lower than the threshold or greater than 0.9, returns (True, flip_direction).
+    Marks the flip direction as positive if the deadtime has gone over the threshold. Raises error AttenuationOptimisationFailedException if
+    transmission goes too low
+
+    Args:
+        direction: Enum
+        Enum taking values of either POSITIVE or NEGATIVE, which determines whether the transmission should be increased or decreased in the next iteration
+
+        deadtime:
+        Current deadtime value
+
+    Returns:
+        boolean: marking whether or not attenuation is optimised
+
+        flip_direction: Boolean
+        Set to true if the deadtime goes above its threshold while direction is positive. This makes deadtime decrease on the next iteration. Otherwise
+        set to false.
+    """
+
     flip_direction = False
-    if direction:
+    if direction.value == Direction.POSITIVE:
         if deadtime >= deadtime_threshold:
             flip_direction = True
             return False, flip_direction
@@ -97,8 +125,8 @@ def deadtime_is_transmission_optimised(
     return False, flip_direction
 
 
-def deadtime_calc_new_transmission(direction, transmission, increment):
-    if direction:
+def deadtime_calc_new_transmission(direction: Direction, transmission, increment):
+    if direction.value == Direction.POSITIVE:
         transmission *= increment
         if transmission > 0.999:
             transmission = 1
@@ -123,7 +151,7 @@ def do_device_optimise_iteration(
 def deadtime_optimisation(
     attenuator, xspress3mini, zebra, transmission, increment, deadtime_threshold
 ):
-    direction = True
+    direction = Direction.POSITIVE
     LOGGER.info(f"Target deadtime is {deadtime_threshold}")
 
     while True:
@@ -137,6 +165,15 @@ def deadtime_optimisation(
         LOGGER.info(f"Current total time = {total_time}")
         LOGGER.info(f"Current reset ticks = {reset_ticks}")
         deadtime = 0
+
+        """ Deadtime is the time after each event during which the detector cannot record another event.
+            The reset ticks PV gives the (absolute) time at which the last event was processed, so the difference between the total time and the 
+            reset ticks time gives the deadtime. Then divide by total time to get it as a percentage.
+            
+            This percentage can then be used to calculate the real counts. Eg Real counts = observed counts / (deadtime fraction)
+        
+        """
+
         if total_time != reset_ticks:
             deadtime = 1 - abs(total_time - reset_ticks) / (total_time)
 
@@ -151,7 +188,7 @@ def deadtime_optimisation(
             break
 
         if flip_direction:
-            direction = not direction
+            direction = Direction.NEGATIVE
 
         transmission = deadtime_calc_new_transmission(
             direction, transmission, increment
