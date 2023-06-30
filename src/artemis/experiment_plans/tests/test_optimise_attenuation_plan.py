@@ -104,14 +104,6 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     )
 
 
-"""LOGIC TO TEST HERE:
-
-check direction flip function
-check deadtime is calcualed and overall function returns value
-
-"""
-
-
 @pytest.mark.parametrize(
     "deadtime, deadtime_threshold, transmission, upper_transmission_limit, result",
     [(1, 1, 0.5, 1, True), (1, 0.5, 0.9, 1, False)],
