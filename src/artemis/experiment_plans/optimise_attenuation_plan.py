@@ -167,7 +167,7 @@ def deadtime_optimisation(
         deadtime = 0
 
         """ Deadtime is the time after each event during which the detector cannot record another event.
-            The reset ticks PV gives the (absolute) time at which the last event was processed, so the difference between the total time and the 
+            The reset ticks PV stops ticking while the detector is unable to process events, so the difference between the total time and the 
             reset ticks time gives the deadtime. Then divide by total time to get it as a percentage.
             
             This percentage can then be used to calculate the real counts. Eg Real counts = observed counts / (deadtime fraction)
