@@ -173,6 +173,23 @@ def do_device_optimise_iteration(
     yield from arm_devices(xspress3mini, zebra)
 
 
+def is_deadtime_optimised(
+    deadtime: float,
+    deadtime_threshold: float,
+    transmission: float,
+    upper_transmission_limit: float,
+) -> bool:
+    if deadtime <= deadtime_threshold or transmission == upper_transmission_limit:
+        if transmission == upper_transmission_limit:
+            LOGGER.warning(
+                f"Deadtime {deadtime} is above threshold {deadtime_threshold} at maximum transmission {upper_transmission_limit}. Using maximum transmission\
+                        as optimised value."
+            )
+        return True
+    else:
+        return False
+
+
 def deadtime_optimisation(
     attenuator: Attenuator,
     xspress3mini: Xspress3Mini,
@@ -232,7 +249,7 @@ def deadtime_optimisation(
             The reset ticks PV stops ticking while the detector is unable to process events, so the absolute difference between the total time and the
             reset ticks time gives the deadtime. Divide by total time to get it as a percentage.
 
-            This percentage can then be used to calculate the real counts. Eg Real counts = observed counts / (deadtime fraction)
+            This percentage can then be used to calculate the real counts.
         """
 
         if total_time != reset_ticks:
@@ -241,12 +258,10 @@ def deadtime_optimisation(
         LOGGER.info(f"Deadtime is now at {deadtime}")
 
         # Check if new deadtime is OK
-        if deadtime <= deadtime_threshold or transmission == upper_transmission_limit:
-            if transmission == upper_transmission_limit:
-                LOGGER.warning(
-                    f"Deadtime {deadtime} is above threshold {deadtime_threshold} at maximum transmission {upper_transmission_limit}. Using maximum transmission\
-                            as optimised value."
-                )
+
+        if is_deadtime_optimised(
+            deadtime, deadtime_threshold, transmission, upper_transmission_limit
+        ):
             optimised_transmission = transmission
             break
 

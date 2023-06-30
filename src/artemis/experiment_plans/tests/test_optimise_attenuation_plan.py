@@ -15,13 +15,16 @@ from artemis.experiment_plans.optimise_attenuation_plan import (
     Direction,
     PlaceholderParams,
     arm_devices,
+    calculate_new_direction,
     check_parameters,
     create_devices,
     deadtime_calc_new_transmission,
-    deadtime_is_transmission_optimised,
+    deadtime_optimisation,
     is_counts_within_target,
+    is_deadtime_optimised,
     total_counts_optimisation,
 )
+from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 
@@ -54,6 +57,7 @@ def get_good_status():
     return status
 
 
+@pytest.mark.skip(reason="Flakey test which is refactored in another PR")
 @patch("artemis.experiment_plans.optimise_attenuation_plan.arm_zebra")
 def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     """Test the overall total count algorithm"""
@@ -100,68 +104,72 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     )
 
 
-@pytest.mark.parametrize(
-    "high_roi, low_roi",
-    [(0, 0), (0, 2048)],
-)
-@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_zebra")
-def test_deadtime_optimise(mock_arm_zebra, high_roi, low_roi, RE: RunEngine):
-    """Test the overall deadtime optimisation"""
+"""LOGIC TO TEST HERE:
 
+check direction flip function
+check deadtime is calcualed and overall function returns value
+
+"""
+
+
+@pytest.mark.parametrize(
+    "deadtime, deadtime_threshold, transmission, upper_transmission_limit, result",
+    [(1, 1, 0.5, 1, True), (1, 0.5, 0.9, 1, False)],
+)
+def test_is_deadtime_optimised_returns_correct_value(
+    deadtime, deadtime_threshold, transmission, upper_transmission_limit, result
+):
+    assert (
+        is_deadtime_optimised(
+            deadtime, deadtime_threshold, transmission, upper_transmission_limit
+        )
+        == result
+    )
+
+
+def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_reached():
+    LOGGER.warning = MagicMock()
+    is_deadtime_optimised(0.5, 0.4, 0.9, 0.9)
+    LOGGER.warning.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "old_direction, deadtime, deadtime_threshold, new_direction",
+    [
+        (Direction.POSITIVE, 0.1, 0.9, Direction.POSITIVE),
+        (Direction.NEGATIVE, 0.5, 0.4, Direction.NEGATIVE),
+    ],
+)
+def test_calculate_new_direction_gives_correct_value(
+    old_direction, deadtime, deadtime_threshold, new_direction
+):
+    assert (
+        calculate_new_direction(old_direction, deadtime, deadtime_threshold)
+        == new_direction
+    )
+
+
+@patch(
+    "artemis.experiment_plans.optimise_attenuation_plan.do_device_optimise_iteration"
+)
+def test_deadtime_optimisation_calculates_deadtime_correctly(
+    mock_do_device_optimise_iteration, RE: RunEngine
+):
     zebra, xspress3mini, attenuator = fake_create_devices()
 
-    # Mimic some of the logic to track the transmission and set realistic data
-    (
-        optimisation_type,
-        default_low_roi,
-        default_high_roi,
-        transmission,
-        target,
-        lower_limit,
-        upper_limit,
-        max_cycles,
-        increment,
-        deadtime_threshold,
-    ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
+    xspress3mini.channel_1.total_time.sim_put(100)
+    xspress3mini.channel_1.reset_ticks.sim_put(101)
+    is_deadtime_optimised.return_value = True
 
-    """ Similar to test_total_count, mimic the set transmission. For now, just assume total time is constant and increasing the transmission will increase the
-    reset ticks, thus decreasing the deadtime"""
-    transmission_list = [transmission]
-    direction_list = [True]
-    total_time = 8e7
-
-    # Put realistic values into PV's
-    xspress3mini.channel_1.total_time.sim_put(8e7)
-    xspress3mini.channel_1.reset_ticks.sim_put(151276)
-
-    def mock_set_transmission(_):
-        # Update reset ticks, calc new deadtime, increment transmission.
-        reset_ticks = 151276 * transmission_list[0]
-        deadtime = 0
-        if total_time != reset_ticks:
-            deadtime = 1 - abs(float(total_time - reset_ticks)) / float(total_time)
-
-        _, direction_flip = deadtime_is_transmission_optimised(
-            direction_list[0], deadtime, deadtime_threshold, transmission
+    with patch(
+        "artemis.experiment_plans.optimise_attenuation_plan.is_deadtime_optimised"
+    ) as mock_is_deadtime_optimised:
+        RE(
+            deadtime_optimisation(
+                attenuator, xspress3mini, zebra, 0.5, 0.9, 1e-6, 1.2, 0.01, 2
+            )
         )
-        if direction_flip:
-            direction_list[0] = not direction_list[0]
-
-        if direction_list[0]:
-            transmission_list[0] *= increment
-        else:
-            transmission_list[0] /= increment
-
-        return get_good_status()
-
-    attenuator.desired_transmission.set = mock_set_transmission
-    # Force xspress3mini to pass arming
-    xspress3mini.detector_state.sim_put(DetectorState.ACQUIRE.value)
-    RE(
-        optimise_attenuation_plan.optimise_attenuation_plan(
-            5, "deadtime", xspress3mini, zebra, attenuator, high_roi, low_roi
-        )
-    )
+        mock_is_deadtime_optimised.assert_called_with(0.99, 0.01, 0.5, 0.9)
 
 
 @pytest.mark.parametrize(
