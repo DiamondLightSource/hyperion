@@ -27,12 +27,12 @@ def fake_create_devices():
     bl = i03.backlight(fake_with_ophyd_sim=True)
     bl.wait_for_connection()
 
-    oav.zoom.zrst.set("1.0x")
-    oav.zoom.onst.set("2.0x")
-    oav.zoom.twst.set("3.0x")
-    oav.zoom.thst.set("5.0x")
-    oav.zoom.frst.set("7.0x")
-    oav.zoom.fvst.set("9.0x")
+    oav.zoom_controller.zrst.set("1.0x")
+    oav.zoom_controller.onst.set("2.0x")
+    oav.zoom_controller.twst.set("3.0x")
+    oav.zoom_controller.thst.set("5.0x")
+    oav.zoom_controller.frst.set("7.0x")
+    oav.zoom_controller.fvst.set("9.0x")
 
     # fmt: off
     oav.mxsc.bottom.set([0,0,0,0,0,0,0,0,1,1,1,1,1,2,2,2,2,3,3,3,3,33,3,4,4,4])  # noqa: E231
