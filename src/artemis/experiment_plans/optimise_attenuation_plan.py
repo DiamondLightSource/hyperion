@@ -110,14 +110,24 @@ def deadtime_calc_new_transmission(
     """Calculate the new transmission value based on the current direction and increment. Raise error if transmission is too low.
 
     Args:
-        direction (Direction: If positive, increase transmission by a factor of the increment. If negative, divide it
-        transmission (float): Current transmission value
-        increment (float): Factor to multiply or divide transmission by
-        upper_transmission_limit (float): Maximum allowed transmission, in order to protect sample.
-        lower_transmission_limit (float): Minimum expected transmission. Raise an error if transmission goes lower.
+        direction (Direction):
+        If positive, increase transmission by a factor of the increment. If negative, divide it
+
+        transmission (float):
+        Current transmission value
+
+        increment (float):
+        Factor to multiply or divide transmission by
+
+        upper_transmission_limit (float):
+        Maximum allowed transmission, in order to protect sample.
+
+        lower_transmission_limit (float):
+        Minimum expected transmission. Raise an error if transmission goes lower.
 
     Raises:
-        AttenuationOptimisationFailedException: _description_
+        AttenuationOptimisationFailedException:
+        This error is thrown if the transmission goes below the expected value
 
     Returns:
         transmission (float): New transmission value
@@ -188,7 +198,7 @@ def deadtime_optimisation(
         The intial transmission value to use for the optimising
 
         increment: (float)
-        The factor to increase / decrease the transmission each cycle
+        The factor to increase / decrease the transmission by each iteration
 
         deadtime_threshold: (float)
         The maximum acceptable percentage deadtime
@@ -273,29 +283,29 @@ def total_counts_optimisation(
     defined by the lower and upper limit. To protect the sample, the transmission has a maximum value of 10%.
 
     Args:
-        attenuator: Attenuator Ophyd device
+        attenuator: (Attenuator) Ophyd device
 
-        xspress3mini: Xspress3Mini ophyd device
+        xspress3mini: (Xspress3Mini) ophyd device
 
-        zebra: Zebra Ophyd device
+        zebra: (Zebra) Ophyd device
 
-        transmission: Float
+        transmission: (float)
         The intial transmission value to use for the optimising
 
-        low_roi: Float
+        low_roi: (float)
         Lower region of interest at which to include in the counts
 
-        high_roi: Float
+        high_roi: (float)
         Upper region of interest at which to include in the counts
 
-        target_count: int
+        target_count: (int)
         The ideal number of target counts - used to calculate the transmission for the subsequent iteration.
 
-        max_cycles: int
+        max_cycles: (int)
         The maximum number of iterations before an error is thrown
 
     Returns:
-        optimised_transmission: float
+        optimised_transmission: (float)
         The final transmission value which produces an acceptable total_count value
     """
 
@@ -346,7 +356,7 @@ def optimise_attenuation_plan(
     lower_transmission_limit=1.0e-6,
 ):
     (
-        _,  # This is optimisation type. Beter for testing if this is a parameter of the plan instead
+        _,  # This is optimisation type. While we can get it from GDA, it's better for testing if this is a parameter of the plan instead
         default_low_roi,
         default_high_roi,
         initial_transmission,
@@ -412,6 +422,8 @@ def optimise_attenuation_plan(
             max_cycles,
         )
 
-    yield from bps.abs_set(attenuator, optimised_transmission, group="set_transmission")
+    yield from bps.abs_set(
+        attenuator, optimised_transmission, group="set_transmission", wait=True
+    )
 
     return optimised_transmission
