@@ -233,9 +233,9 @@ def run_gridscan(
             yield from bps.unstage(fgs_composite.eiger)
 
     # Wait for arming to finish
-    artemis.log.LOGGER.info("Waiting for arming...")
-    yield from bps.wait("arming")
-    artemis.log.LOGGER.info("Arming finished")
+    artemis.log.LOGGER.info("Waiting for data collection to be ready...")
+    yield from bps.wait("ready_for_data_collection")
+    artemis.log.LOGGER.info("Ready for data collection")
 
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()

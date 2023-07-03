@@ -77,9 +77,11 @@ def detect_grid_and_do_gridscan(
     experiment_params: GridScanWithEdgeDetectParams,
 ):
     # Start stage with asynchronous arming here
-    yield from bps.abs_set(eiger.do_arm, 1, group="arming")
+    yield from bps.abs_set(eiger.do_arm, 1, group="ready_for_data_collection")
     yield from bps.abs_set(
-        attenuator, parameters.artemis_params.ispyb_params.transmission
+        attenuator,
+        parameters.artemis_params.ispyb_params.transmission,
+        group="ready_for_data_collection",
     )
     fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
