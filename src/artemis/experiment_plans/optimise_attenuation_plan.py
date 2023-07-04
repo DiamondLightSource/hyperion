@@ -86,13 +86,6 @@ def arm_devices(xspress3mini, zebra):
     yield from arm_zebra(zebra)
 
 
-def get_new_direction(direction: Direction, deadtime, deadtime_threshold):
-    if direction == Direction.POSITIVE:
-        if deadtime >= deadtime_threshold:
-            direction = Direction.NEGATIVE
-    return direction
-
-
 def calculate_new_direction(direction: Direction, deadtime, deadtime_threshold):
     if direction == Direction.POSITIVE:
         if deadtime > deadtime_threshold:
