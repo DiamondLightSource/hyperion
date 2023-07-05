@@ -433,7 +433,12 @@ def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
     assert response.get("exception_type") == "ValidationError"
 
 
-def test_warn_exception_during_plan_causes_warning_in_log(caplog, test_env):
+@pytest.mark.skip(
+    reason="See https://github.com/DiamondLightSource/python-artemis/issues/777"
+)
+def test_warn_exception_during_plan_causes_warning_in_log(
+    caplog, test_env: ClientAndRunEngine
+):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     test_env.mock_run_engine.error = WarningException("D'Oh")
     response_json = wait_for_run_engine_status(test_env.client)
