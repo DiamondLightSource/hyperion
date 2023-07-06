@@ -65,18 +65,37 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
     raise TimeoutError("Detector not finished moving")
 
 
-def detect_grid_and_do_gridscan(
+def start_arming_then_do_grid(
     parameters: GridScanWithEdgeDetectInternalParameters,
     backlight: Backlight,
     eiger: EigerDetector,
     aperture_scatterguard: ApertureScatterguard,
     detector_motion: DetectorMotion,
     oav_params: OAVParameters,
-    experiment_params: GridScanWithEdgeDetectParams,
 ):
     # Start stage with asynchronous arming here
     yield from bps.abs_set(eiger.do_arm, 1, group="arming")
 
+    yield from bpp.finalize_wrapper(
+        detect_grid_and_do_gridscan(
+            parameters,
+            backlight,
+            aperture_scatterguard,
+            detector_motion,
+            oav_params,
+        ),
+        bps.unstage(eiger),
+    )
+
+
+def detect_grid_and_do_gridscan(
+    parameters: GridScanWithEdgeDetectInternalParameters,
+    backlight: Backlight,
+    aperture_scatterguard: ApertureScatterguard,
+    detector_motion: DetectorMotion,
+    oav_params: OAVParameters,
+):
+    experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
     fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
     detector_params = parameters.artemis_params.detector_params
@@ -156,14 +175,12 @@ def get_plan(
     eiger.set_detector_parameters(parameters.artemis_params.detector_params)
 
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
-    experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
-    return detect_grid_and_do_gridscan(
+    return start_arming_then_do_grid(
         parameters,
         backlight,
         eiger,
         aperture_scatterguard,
         detector_motion,
         oav_params,
-        experiment_params,
     )
