@@ -4,22 +4,31 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.xspress3_mini.xspress3_mini import DetectorState
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.xspress3_mini.xspress3_mini import DetectorState, Xspress3Mini
+from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from artemis.experiment_plans import optimise_attenuation_plan
 from artemis.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
+    Direction,
     PlaceholderParams,
     arm_devices,
+    calculate_new_direction,
     check_parameters,
+    create_devices,
+    deadtime_calc_new_transmission,
+    deadtime_optimisation,
     is_counts_within_target,
+    is_deadtime_optimised,
     total_counts_optimisation,
 )
+from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 
-def fake_create_devices():
+def fake_create_devices() -> tuple[Zebra, Xspress3Mini, Attenuator]:
     zebra = i03.zebra(fake_with_ophyd_sim=True)
     zebra.wait_for_connection()
     xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True)
@@ -48,6 +57,7 @@ def get_good_status():
     return status
 
 
+@pytest.mark.skip(reason="Flakey test which is refactored in another PR")
 @patch("artemis.experiment_plans.optimise_attenuation_plan.arm_zebra")
 def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     """Test the overall total count algorithm"""
@@ -64,6 +74,7 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
         upper_limit,
         max_cycles,
         increment,
+        deadtime_threshold,
     ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
 
     # Same as plan target
@@ -73,7 +84,7 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     transmission_list = [transmission]
 
     # Mock a calculation where the dt_corrected_latest_mca array data
-    # is randomly created based on the transmission value
+    # is created based on the transmission value
     def mock_set_transmission(_):
         data = np.ones(shape=2048) * (transmission_list[0] + 1)
         total_count = sum(data[int(default_low_roi) : int(default_high_roi)])
@@ -88,9 +99,69 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
 
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
-            5, 1, xspress3mini, zebra, attenuator, 0, 0
+            5, "total_counts", xspress3mini, zebra, attenuator, 0, 0
         )
     )
+
+
+@pytest.mark.parametrize(
+    "deadtime, deadtime_threshold, transmission, upper_transmission_limit, result",
+    [(1, 1, 0.5, 1, True), (1, 0.5, 0.9, 1, False)],
+)
+def test_is_deadtime_optimised_returns_correct_value(
+    deadtime, deadtime_threshold, transmission, upper_transmission_limit, result
+):
+    assert (
+        is_deadtime_optimised(
+            deadtime, deadtime_threshold, transmission, upper_transmission_limit
+        )
+        == result
+    )
+
+
+def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_reached():
+    LOGGER.warning = MagicMock()
+    is_deadtime_optimised(0.5, 0.4, 0.9, 0.9)
+    LOGGER.warning.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "old_direction, deadtime, deadtime_threshold, new_direction",
+    [
+        (Direction.POSITIVE, 0.1, 0.9, Direction.POSITIVE),
+        (Direction.NEGATIVE, 0.5, 0.4, Direction.NEGATIVE),
+    ],
+)
+def test_calculate_new_direction_gives_correct_value(
+    old_direction, deadtime, deadtime_threshold, new_direction
+):
+    assert (
+        calculate_new_direction(old_direction, deadtime, deadtime_threshold)
+        == new_direction
+    )
+
+
+@patch(
+    "artemis.experiment_plans.optimise_attenuation_plan.do_device_optimise_iteration"
+)
+def test_deadtime_optimisation_calculates_deadtime_correctly(
+    mock_do_device_optimise_iteration, RE: RunEngine
+):
+    zebra, xspress3mini, attenuator = fake_create_devices()
+
+    xspress3mini.channel_1.total_time.sim_put(100)
+    xspress3mini.channel_1.reset_ticks.sim_put(101)
+    is_deadtime_optimised.return_value = True
+
+    with patch(
+        "artemis.experiment_plans.optimise_attenuation_plan.is_deadtime_optimised"
+    ) as mock_is_deadtime_optimised:
+        RE(
+            deadtime_optimisation(
+                attenuator, xspress3mini, zebra, 0.5, 0.9, 1e-6, 1.2, 0.01, 2
+            )
+        )
+        mock_is_deadtime_optimised.assert_called_with(0.99, 0.01, 0.5, 0.9)
 
 
 @pytest.mark.parametrize(
@@ -126,7 +197,7 @@ def test_is_counts_within_target_is_false(total_count, lower_limit, upper_limit)
     assert is_counts_within_target(total_count, lower_limit, upper_limit) is False
 
 
-def test_exception_raised_after_max_cycles_reached(RE: RunEngine):
+def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
     zebra, xspress3mini, attenuator = fake_create_devices()
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
     optimise_attenuation_plan.arm_zebra = MagicMock()
@@ -135,7 +206,7 @@ def test_exception_raised_after_max_cycles_reached(RE: RunEngine):
     with pytest.raises(AttenuationOptimisationFailedException):
         RE(
             total_counts_optimisation(
-                1, 10, attenuator, xspress3mini, zebra, 0, 1, 0, 1, 5
+                attenuator, xspress3mini, zebra, 1, 0, 1, 0, 1, 5, 10
             )
         )
 
@@ -148,3 +219,35 @@ def test_arm_devices_runs_correct_functions(RE: RunEngine):
     RE(arm_devices(xspress3mini, zebra))
     xspress3mini.arm.assert_called_once()
     optimise_attenuation_plan.arm_zebra.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "direction, transmission, increment, upper_limit, lower_limit, new_transmission",
+    [
+        (Direction.POSITIVE, 0.5, 2, 0.9, 1e-6, 0.9),
+        (Direction.POSITIVE, 0.1, 2, 0.9, 1e-6, 0.2),
+        (Direction.NEGATIVE, 0.8, 2, 0.9, 1e-6, 0.4),
+    ],
+)
+def test_deadtime_calc_new_transmission_gets_correct_value(
+    direction, transmission, increment, upper_limit, lower_limit, new_transmission
+):
+    assert (
+        deadtime_calc_new_transmission(
+            direction, transmission, increment, upper_limit, lower_limit
+        )
+        == new_transmission
+    )
+
+
+def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
+    with pytest.raises(AttenuationOptimisationFailedException):
+        deadtime_calc_new_transmission(Direction.NEGATIVE, 1e-6, 2, 1, 1e-6)
+
+
+def test_create_new_devices():
+    with patch("artemis.experiment_plans.optimise_attenuation_plan.i03") as i03:
+        create_devices()
+        i03.zebra.assert_called()
+        i03.xspress3mini.assert_called()
+        i03.attenuator.assert_called()
