@@ -3,15 +3,11 @@ from enum import Enum
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from bluesky import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.sample_shutter import SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
-from dodal.devices.zebra import Zebra
 
-import artemis.log
-from artemis.device_setup_plans.setup_zebra import arm_zebra
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 
@@ -32,6 +28,8 @@ class PlaceholderParams:
     @classmethod
     def from_beamline_params(cls, params):
         return ("deadtime", 100, 2048, 0.001, 50, 40, 60, 10, 2, 0.0005)
+        # optimisation type, low roi, high roi, start transmission, target count, lower count, upper count, max cycles, deadtime increment,
+        # lower deadtime threshold
 
         # return (
         #     params["attenuation_optimisation_type"],  # optimisation type: deadtime
@@ -53,9 +51,9 @@ class PlaceholderParams:
 
 
 def create_devices():
-    i03.zebra()
     i03.xspress3mini()
     i03.attenuator()
+    i03.sample_shutter()
 
 
 def check_parameters(
@@ -81,15 +79,10 @@ def is_counts_within_target(total_count, lower_limit, upper_limit) -> bool:
         return False
 
 
-def arm_devices(xspress3mini, zebra):
-    # Arm xspress3mini and zebra
-    yield from bps.abs_set(xspress3mini.do_arm, 1, group="xsarm")
-    LOGGER.info("Arming Zebra")
-    LOGGER.debug("Resetting Zebra")
-    yield from bps.abs_set(zebra.pc.reset, 1, group="reset_zebra")
-    yield from bps.wait(group="xsarm")
+def arm_devices(xspress3mini):
+    # Arm xspress3mini and TODO: what else does this func do?
+    yield from bps.abs_set(xspress3mini.do_arm, 1, wait=True)
     LOGGER.info("Arming Xspress3Mini complete")
-    yield from arm_zebra(zebra)
 
 
 def calculate_new_direction(direction: Direction, deadtime, deadtime_threshold):
@@ -127,10 +120,10 @@ def deadtime_calc_new_transmission(
 
     Raises:
         AttenuationOptimisationFailedException:
-        This error is thrown if the transmission goes below the expected value
+        This error is thrown if the transmission goes below the expected value or if the maximum cycles are reached
 
     Returns:
-        transmission (float): New transmission value
+        transmission (float): Optimised transmission value
     """
     if direction == Direction.POSITIVE:
         transmission *= increment
@@ -147,7 +140,6 @@ def deadtime_calc_new_transmission(
 
 def do_device_optimise_iteration(
     attenuator: Attenuator,
-    zebra: Zebra,
     xspress3mini: Xspress3Mini,
     sample_shutter: SampleShutter,
     transmission,
@@ -157,14 +149,13 @@ def do_device_optimise_iteration(
 
     @bpp.finalize_decorator(close_shutter)
     def open_and_run():
-        """Set transmission, set number of images on xspress3mini, arm xspress3mini and zebra"""
+        """Set transmission, set number of images on xspress3mini, arm xspress3mini"""
         yield from bps.abs_set(attenuator, transmission, group="set_transmission")
         yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
         yield from bps.abs_set(sample_shutter, sample_shutter.OPEN, wait=True)
         yield from bps.abs_set(xspress3mini.do_arm, 1, wait=True)
 
     yield from open_and_run()
-    # yield from arm_devices(xspress3mini, zebra)
 
 
 def is_deadtime_optimised(
@@ -182,6 +173,7 @@ def is_deadtime_optimised(
                             as optimised value."
                 )
             return True
+    # Once direction is flipped and deadtime goes back above threshold, we consider attenuation to be optimised.
     else:
         if deadtime <= deadtime_threshold:
             return True
@@ -191,26 +183,31 @@ def is_deadtime_optimised(
 def deadtime_optimisation(
     attenuator: Attenuator,
     xspress3mini: Xspress3Mini,
-    zebra: Zebra,
     sample_shutter: SampleShutter,
     transmission: float,
-    upper_transmission_limit: float,
-    lower_transmission_limit: float,
     increment: float,
     deadtime_threshold: float,
     max_cycles: int,
+    upper_transmission_limit: float,
+    lower_transmission_limit: float,
 ):
     """Optimises the attenuation for the Xspress3Mini based on the detector deadtime
 
     Deadtime is the time after each event during which the detector cannot record another event. This loop adjusts the transmission of the attenuator
-    and checks the deadtime until the deadtime is below the accepted threshold. To protect the sample, the transmission has a maximum value
+    and checks the deadtime until the percentage deadtime is below the accepted threshold. To protect the sample, the transmission has a maximum value
+
+    Here we use the percentage deadtime - the percentage of time to which the detector is unable to process events.
+
+    This algorithm gradually increases the transmisssion until the percentage deadtime goes beneath the specified threshold. It then increases
+    the transmission and stops when the deadtime goes above the threshold. A smaller increment will provide a better optimised value, but take more
+    cycles to complete.
 
     Args:
         attenuator: (Attenuator) Ophyd device
 
-        xspress3mini: (Xspress3Mini) ophyd device
+        xspress3mini: (Xspress3Mini) Ophyd device
 
-        zebra: (Zebra) Ophyd device
+        sample_shutter: (SampleShutter) Ophyd device for the fast shutter
 
         transmission: (float)
         The intial transmission value to use for the optimising
@@ -224,6 +221,16 @@ def deadtime_optimisation(
         max_cycles: (int)
         The maximum number of iterations before an error is thrown
 
+        upper_transmission_limit (float):
+        Maximum allowed transmission, in order to protect sample.
+
+        lower_transmission_limit (float):
+        Minimum expected transmission. Raise an error if transmission goes lower.
+
+    Raises:
+        AttenuationOptimisationFailedException:
+        This error is thrown if the transmission goes below the expected value or the maximum cycles are reached
+
     Returns:
         optimised_transmission: (float)
         The final transmission value which produces an acceptable deadtime
@@ -234,7 +241,7 @@ def deadtime_optimisation(
 
     for cycle in range(0, max_cycles):
         yield from do_device_optimise_iteration(
-            attenuator, zebra, xspress3mini, sample_shutter, transmission
+            attenuator, xspress3mini, sample_shutter, transmission
         )
 
         total_time = xspress3mini.channel_1.total_time.get()
@@ -244,11 +251,9 @@ def deadtime_optimisation(
         LOGGER.info(f"Current reset ticks = {reset_ticks}")
         deadtime = 0
 
-        """ Deadtime is the time after each event during which the detector cannot record another event.
+        """ 
             The reset ticks PV stops ticking while the detector is unable to process events, so the absolute difference between the total time and the
-            reset ticks time gives the deadtime. Divide by total time to get it as a percentage.
-
-            This percentage can then be used to calculate the real counts.
+            reset ticks time gives the deadtime in unit time. Divide by total time to get it as a percentage.
         """
 
         if total_time != reset_ticks:
@@ -290,7 +295,6 @@ def deadtime_optimisation(
 def total_counts_optimisation(
     attenuator: Attenuator,
     xspress3mini: Xspress3Mini,
-    zebra: Zebra,
     sample_shutter: SampleShutter,
     transmission: float,
     low_roi: int,
@@ -299,6 +303,8 @@ def total_counts_optimisation(
     upper_limit: float,
     target_count: float,
     max_cycles: int,
+    upper_transmission_limit: int,
+    lower_transmission_limit: int,
 ):
     """Optimises the attenuation for the Xspress3Mini based on the total counts
 
@@ -308,9 +314,9 @@ def total_counts_optimisation(
     Args:
         attenuator: (Attenuator) Ophyd device
 
-        xspress3mini: (Xspress3Mini) ophyd device
+        xspress3mini: (Xspress3Mini) Ophyd device
 
-        zebra: (Zebra) Ophyd device
+        sample_shutter: (SampleShutter) Ophyd device for the fast shutter
 
         transmission: (float)
         The intial transmission value to use for the optimising
@@ -321,11 +327,23 @@ def total_counts_optimisation(
         high_roi: (float)
         Upper region of interest at which to include in the counts
 
+        lower_limit: (float)
+        The lowest acceptable value for count
+
+        upper_limit: (float)
+        The highest acceptable value for count
+
         target_count: (int)
         The ideal number of target counts - used to calculate the transmission for the subsequent iteration.
 
         max_cycles: (int)
         The maximum number of iterations before an error is thrown
+
+        upper_transmission_limit: (int)
+        The maximum allowed value for the transmission
+
+        lower_transmission_limit: (int)
+        The minimum allowed value for the transmission
 
     Returns:
         optimised_transmission: (float)
@@ -340,7 +358,7 @@ def total_counts_optimisation(
         )
 
         yield from do_device_optimise_iteration(
-            attenuator, zebra, xspress3mini, sample_shutter, transmission
+            attenuator, xspress3mini, sample_shutter, transmission
         )
 
         data = np.array((yield from bps.rd(xspress3mini.dt_corrected_latest_mca)))
@@ -353,11 +371,23 @@ def total_counts_optimisation(
                 f"Total count is within accepted limits: {lower_limit}, {total_count}, {upper_limit}"
             )
             break
+        elif transmission == upper_transmission_limit:
+            LOGGER.warning(
+                f"Total count is not within limits: {lower_limit} <= {total_count}\
+                                                                <= {upper_limit} after using maximum transmission {upper_transmission_limit}. Continuing \
+                                                                    with maximum transmission as optimised value..."
+            )
+            optimised_transmission = transmission
+            break
 
         else:
             transmission = (target_count / (total_count)) * transmission
-            if transmission > 0.1:
-                transmission = 0.1
+            if transmission > upper_transmission_limit:
+                transmission = upper_transmission_limit
+            elif transmission < lower_transmission_limit:
+                raise AttenuationOptimisationFailedException(
+                    f"Transmission has gone below lower threshold {lower_transmission_limit}"
+                )
 
         if cycle == max_cycles - 1:
             raise AttenuationOptimisationFailedException(
@@ -369,11 +399,15 @@ def total_counts_optimisation(
     return optimised_transmission
 
 
+# TODO EXTRA TESTS: test shutter, test that warning is thrown if max transmission is reached, test error thrown if transmission goes too low,
+# TEST  transmission can never go above limit in either algorithm
+
+
+# TODO: move all parameters into this first bit and give them all default values except the devices
 def optimise_attenuation_plan(
     collection_time,  # Comes from self.parameters.acquisitionTime in fluorescence_spectrum.py
     optimisation_type,
     xspress3mini: Xspress3Mini,
-    zebra: Zebra,
     attenuator: Attenuator,
     sample_shutter: SampleShutter,
     low_roi=None,
@@ -392,7 +426,9 @@ def optimise_attenuation_plan(
         max_cycles,
         increment,
         deadtime_threshold,
-    ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
+    ) = PlaceholderParams.from_beamline_params(
+        get_beamline_parameters()
+    )  # TODO: move all of these parameters into otimise_attenuation_plan  - dont use GDA for params at all
 
     check_parameters(
         target, upper_limit, lower_limit, default_high_roi, default_low_roi
@@ -422,7 +458,6 @@ def optimise_attenuation_plan(
         optimised_transmission = yield from total_counts_optimisation(
             attenuator,
             xspress3mini,
-            zebra,
             sample_shutter,
             initial_transmission,
             low_roi,
@@ -431,6 +466,8 @@ def optimise_attenuation_plan(
             upper_limit,
             target,
             max_cycles,
+            upper_transmission_limit,
+            lower_transmission_limit,
         )
 
     elif optimisation_type == "deadtime":
@@ -440,7 +477,6 @@ def optimise_attenuation_plan(
         optimised_transmission = yield from deadtime_optimisation(
             attenuator,
             xspress3mini,
-            zebra,
             sample_shutter,
             initial_transmission,
             upper_transmission_limit,
@@ -455,28 +491,3 @@ def optimise_attenuation_plan(
     )
 
     return optimised_transmission
-
-
-if __name__ == "__main__":
-    attenuator: Attenuator = i03.attenuator(wait_for_connection=True)
-    zebra: Zebra = i03.zebra(wait_for_connection=True)
-    xspress3mini: Xspress3Mini = i03.xspress3mini(wait_for_connection=True)
-    sample_shutter: SampleShutter = i03.sample_shutter(wait_for_connection=True)
-
-    artemis.log.set_up_logging_handlers("INFO", False)
-    RE = RunEngine()
-
-    RE(
-        optimise_attenuation_plan(
-            1,
-            "deadtime",
-            xspress3mini,
-            zebra,
-            attenuator,
-            sample_shutter,
-            None,
-            None,
-            0.1,
-            0.0005,
-        )
-    )

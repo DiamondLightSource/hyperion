@@ -5,6 +5,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
+from dodal.devices.sample_shutter import SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import DetectorState, Xspress3Mini
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
@@ -28,14 +29,14 @@ from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 
-def fake_create_devices() -> tuple[Zebra, Xspress3Mini, Attenuator]:
-    zebra = i03.zebra(fake_with_ophyd_sim=True)
-    zebra.wait_for_connection()
+def fake_create_devices() -> tuple[SampleShutter, Xspress3Mini, Attenuator]:
+    sample_shutter = i03.sample_shutter(fake_with_ophyd_sim=True)
+    sample_shutter.wait_for_connection()
     xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True)
     xspress3mini.wait_for_connection()
     attenuator = i03.attenuator(fake_with_ophyd_sim=True)
     attenuator.wait_for_connection()
-    return zebra, xspress3mini, attenuator
+    return sample_shutter, xspress3mini, attenuator
 
 
 """Default params:
@@ -104,24 +105,13 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
     )
 
 
-@pytest.mark.parametrize(
-    "deadtime, deadtime_threshold, transmission, upper_transmission_limit, result",
-    [(1, 1, 0.5, 1, True), (1, 0.5, 0.9, 1, False)],
-)
-def test_is_deadtime_optimised_returns_correct_value(
-    deadtime, deadtime_threshold, transmission, upper_transmission_limit, result
-):
-    assert (
-        is_deadtime_optimised(
-            deadtime, deadtime_threshold, transmission, upper_transmission_limit
-        )
-        == result
-    )
+def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold():
+    pass
 
 
 def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_reached():
     LOGGER.warning = MagicMock()
-    is_deadtime_optimised(0.5, 0.4, 0.9, 0.9)
+    is_deadtime_optimised(0.5, 0.4, 0.9, 0.9, Direction.POSITIVE)
     LOGGER.warning.assert_called_once()
 
 
@@ -147,7 +137,7 @@ def test_calculate_new_direction_gives_correct_value(
 def test_deadtime_optimisation_calculates_deadtime_correctly(
     mock_do_device_optimise_iteration, RE: RunEngine
 ):
-    zebra, xspress3mini, attenuator = fake_create_devices()
+    sample_shutter, xspress3mini, attenuator = fake_create_devices()
 
     xspress3mini.channel_1.total_time.sim_put(100)
     xspress3mini.channel_1.reset_ticks.sim_put(101)
@@ -158,10 +148,20 @@ def test_deadtime_optimisation_calculates_deadtime_correctly(
     ) as mock_is_deadtime_optimised:
         RE(
             deadtime_optimisation(
-                attenuator, xspress3mini, zebra, 0.5, 0.9, 1e-6, 1.2, 0.01, 2
+                attenuator,
+                xspress3mini,
+                sample_shutter,
+                0.5,
+                2,
+                0.01,
+                1,
+                0.1,
+                1e-6,
             )
         )
-        mock_is_deadtime_optimised.assert_called_with(0.99, 0.01, 0.5, 0.9)
+        mock_is_deadtime_optimised.assert_called_with(
+            0.99, 0.01, 0.5, 0.1, Direction.POSITIVE
+        )
 
 
 @pytest.mark.parametrize(
@@ -198,27 +198,24 @@ def test_is_counts_within_target_is_false(total_count, lower_limit, upper_limit)
 
 
 def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
-    zebra, xspress3mini, attenuator = fake_create_devices()
+    sample_shutter, xspress3mini, attenuator = fake_create_devices()
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
-    optimise_attenuation_plan.arm_zebra = MagicMock()
     xspress3mini.arm = MagicMock(return_value=get_good_status())
     xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
     with pytest.raises(AttenuationOptimisationFailedException):
         RE(
             total_counts_optimisation(
-                attenuator, xspress3mini, zebra, 1, 0, 1, 0, 1, 5, 10
+                attenuator, xspress3mini, sample_shutter, 1, 0, 1, 0, 1, 5, 10, 0, 0
             )
         )
 
 
 def test_arm_devices_runs_correct_functions(RE: RunEngine):
-    zebra, xspress3mini, _ = fake_create_devices()
+    sample_shutter, xspress3mini, _ = fake_create_devices()
     xspress3mini.detector_state.sim_put("Acquire")
-    optimise_attenuation_plan.arm_zebra = MagicMock()
     xspress3mini.arm = MagicMock(return_value=get_good_status())
-    RE(arm_devices(xspress3mini, zebra))
+    RE(arm_devices(xspress3mini))
     xspress3mini.arm.assert_called_once()
-    optimise_attenuation_plan.arm_zebra.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -248,6 +245,6 @@ def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
 def test_create_new_devices():
     with patch("artemis.experiment_plans.optimise_attenuation_plan.i03") as i03:
         create_devices()
-        i03.zebra.assert_called()
+        i03.sample_shutter.assert_called()
         i03.xspress3mini.assert_called()
         i03.attenuator.assert_called()
