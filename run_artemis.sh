@@ -135,7 +135,7 @@ if [[ $START == 1 ]]; then
 
     echo "Waiting for Artemis to boot"
 
-    for i in {1..10}
+    for i in {1..30}
     do
         curl --head -X GET http://localhost:5005/status >/dev/null
         ret_value=$?
