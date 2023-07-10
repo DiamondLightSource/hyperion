@@ -5,7 +5,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.sample_shutter import SampleShutter
+from dodal.devices.sample_shutter import OpenState, SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 
 from artemis.log import LOGGER
@@ -57,12 +57,12 @@ def create_devices():
 
 
 def check_parameters(
-    target, upper_limit, lower_limit, default_high_roi, default_low_roi
+    target, upper_count_limit, lower_count_limit, default_high_roi, default_low_roi
 ):
-    if target < lower_limit or target > upper_limit:
+    if target < lower_count_limit or target > upper_count_limit:
         raise (
             ValueError(
-                f"Target {target} is outside of lower and upper bounds: {lower_limit} to {upper_limit}"
+                f"Target {target} is outside of lower and upper bounds: {lower_count_limit} to {upper_count_limit}"
             )
         )
 
@@ -72,8 +72,8 @@ def check_parameters(
         )
 
 
-def is_counts_within_target(total_count, lower_limit, upper_limit) -> bool:
-    if lower_limit <= total_count and total_count <= upper_limit:
+def is_counts_within_target(total_count, lower_count_limit, upper_count_limit) -> bool:
+    if lower_count_limit <= total_count and total_count <= upper_count_limit:
         return True
     else:
         return False
@@ -145,14 +145,14 @@ def do_device_optimise_iteration(
     transmission,
 ):
     def close_shutter():
-        yield from bps.abs_set(sample_shutter, sample_shutter.CLOSE, wait=True)
+        yield from bps.abs_set(sample_shutter, OpenState.CLOSE, wait=True)
 
     @bpp.finalize_decorator(close_shutter)
     def open_and_run():
         """Set transmission, set number of images on xspress3mini, arm xspress3mini"""
         yield from bps.abs_set(attenuator, transmission, group="set_transmission")
         yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
-        yield from bps.abs_set(sample_shutter, sample_shutter.OPEN, wait=True)
+        yield from bps.abs_set(sample_shutter, OpenState.OPEN, wait=True)
         yield from bps.abs_set(xspress3mini.do_arm, 1, wait=True)
 
     yield from open_and_run()
@@ -299,8 +299,8 @@ def total_counts_optimisation(
     transmission: float,
     low_roi: int,
     high_roi: int,
-    lower_limit: float,
-    upper_limit: float,
+    lower_count_limit: float,
+    upper_count_limit: float,
     target_count: float,
     max_cycles: int,
     upper_transmission_limit: int,
@@ -327,10 +327,10 @@ def total_counts_optimisation(
         high_roi: (float)
         Upper region of interest at which to include in the counts
 
-        lower_limit: (float)
+        lower_count_limit: (float)
         The lowest acceptable value for count
 
-        upper_limit: (float)
+        upper_count_limit: (float)
         The highest acceptable value for count
 
         target_count: (int)
@@ -365,17 +365,17 @@ def total_counts_optimisation(
         total_count = sum(data[int(low_roi) : int(high_roi)])
         LOGGER.info(f"Total count is {total_count}")
 
-        if is_counts_within_target(total_count, lower_limit, upper_limit):
+        if is_counts_within_target(total_count, lower_count_limit, upper_count_limit):
             optimised_transmission = transmission
             LOGGER.info(
-                f"Total count is within accepted limits: {lower_limit}, {total_count}, {upper_limit}"
+                f"Total count is within accepted limits: {lower_count_limit}, {total_count}, {upper_count_limit}"
             )
             break
         elif transmission == upper_transmission_limit:
             LOGGER.warning(
-                f"Total count is not within limits: {lower_limit} <= {total_count}\
-                                                                <= {upper_limit} after using maximum transmission {upper_transmission_limit}. Continuing \
-                                                                    with maximum transmission as optimised value..."
+                f"Total count is not within limits: {lower_count_limit} <= {total_count}\<= {upper_count_limit}\
+                    after using maximum transmission {upper_transmission_limit}. Continuing\
+                    with maximum transmission as optimised value..."
             )
             optimised_transmission = transmission
             break
@@ -392,15 +392,11 @@ def total_counts_optimisation(
         if cycle == max_cycles - 1:
             raise AttenuationOptimisationFailedException(
                 f"Unable to optimise attenuation after maximum cycles.\
-                                                            Total count is not within limits: {lower_limit} <= {total_count}\
-                                                                <= {upper_limit}"
+                                                            Total count is not within limits: {lower_count_limit} <= {total_count}\
+                                                                <= {upper_count_limit}"
             )
 
     return optimised_transmission
-
-
-# TODO EXTRA TESTS: test shutter, test that warning is thrown if max transmission is reached, test error thrown if transmission goes too low,
-# TEST  transmission can never go above limit in either algorithm
 
 
 # TODO: move all parameters into this first bit and give them all default values except the devices
@@ -421,8 +417,8 @@ def optimise_attenuation_plan(
         default_high_roi,
         initial_transmission,
         target,
-        lower_limit,
-        upper_limit,
+        lower_count_limit,
+        upper_count_limit,
         max_cycles,
         increment,
         deadtime_threshold,
@@ -431,12 +427,12 @@ def optimise_attenuation_plan(
     )  # TODO: move all of these parameters into otimise_attenuation_plan  - dont use GDA for params at all
 
     check_parameters(
-        target, upper_limit, lower_limit, default_high_roi, default_low_roi
+        target, upper_count_limit, lower_count_limit, default_high_roi, default_low_roi
     )
 
     # Hardcode these for now to make more sense
-    upper_limit = 4000
-    lower_limit = 2000
+    upper_count_limit = 4000
+    lower_count_limit = 2000
     target = 3000
 
     # GDA params currently sets them to 0 by default
@@ -462,8 +458,8 @@ def optimise_attenuation_plan(
             initial_transmission,
             low_roi,
             high_roi,
-            lower_limit,
-            upper_limit,
+            lower_count_limit,
+            upper_count_limit,
             target,
             max_cycles,
             upper_transmission_limit,

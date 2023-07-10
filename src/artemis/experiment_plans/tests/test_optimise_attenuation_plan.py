@@ -7,7 +7,6 @@ from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.sample_shutter import SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import DetectorState, Xspress3Mini
-from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from artemis.experiment_plans import optimise_attenuation_plan
@@ -59,10 +58,9 @@ def get_good_status():
 
 
 @pytest.mark.skip(reason="Flakey test which is refactored in another PR")
-@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_zebra")
-def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
+def test_total_count_optimise(RE: RunEngine):
     """Test the overall total count algorithm"""
-    zebra, xspress3mini, attenuator = fake_create_devices()
+    sample_shutter, xspress3mini, attenuator = fake_create_devices()
 
     # Mimic some of the logic to track the transmission and set realistic data
     (
@@ -100,7 +98,7 @@ def test_total_count_optimise(mock_arm_zebra, RE: RunEngine):
 
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
-            5, "total_counts", xspress3mini, zebra, attenuator, 0, 0
+            5, "total_counts", xspress3mini, sample_shutter, attenuator, 0, 0
         )
     )
 
@@ -112,6 +110,33 @@ def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadti
 def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_reached():
     LOGGER.warning = MagicMock()
     is_deadtime_optimised(0.5, 0.4, 0.9, 0.9, Direction.POSITIVE)
+    LOGGER.warning.assert_called_once()
+
+
+def test_total_counts_calc_new_transmission_raises_warning_on_high_transmission(
+    RE: RunEngine,
+):
+    sample_shutter, xspress3mini, attenuator = fake_create_devices()
+    sample_shutter.set = MagicMock(return_value=get_good_status())
+    xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
+    xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
+    LOGGER.warning = MagicMock()
+    RE(
+        total_counts_optimisation(
+            attenuator,
+            xspress3mini,
+            sample_shutter,
+            transmission=0.1,
+            low_roi=0,
+            high_roi=1,
+            lower_count_limit=0,
+            upper_count_limit=0.1,
+            target_count=1,
+            max_cycles=1,
+            upper_transmission_limit=0.1,
+            lower_transmission_limit=0,
+        )
+    )
     LOGGER.warning.assert_called_once()
 
 
@@ -199,13 +224,14 @@ def test_is_counts_within_target_is_false(total_count, lower_limit, upper_limit)
 
 def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
     sample_shutter, xspress3mini, attenuator = fake_create_devices()
+    sample_shutter.set = MagicMock(return_value=get_good_status())
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
     xspress3mini.arm = MagicMock(return_value=get_good_status())
     xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
     with pytest.raises(AttenuationOptimisationFailedException):
         RE(
             total_counts_optimisation(
-                attenuator, xspress3mini, sample_shutter, 1, 0, 1, 0, 1, 5, 10, 0, 0
+                attenuator, xspress3mini, sample_shutter, 1, 0, 10, 0, 5, 2, 1, 0, 0
             )
         )
 
@@ -242,9 +268,39 @@ def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
         deadtime_calc_new_transmission(Direction.NEGATIVE, 1e-6, 2, 1, 1e-6)
 
 
+def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
+    RE: RunEngine,
+):
+    sample_shutter, xspress3mini, attenuator = fake_create_devices()
+    xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
+    sample_shutter.set = MagicMock(return_value=get_good_status())
+    xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
+    with pytest.raises(AttenuationOptimisationFailedException):
+        RE(
+            total_counts_optimisation(
+                attenuator,
+                xspress3mini,
+                sample_shutter,
+                1e-6,
+                0,
+                1,
+                10,
+                20,
+                1,
+                1,
+                0.5,
+                0.1,
+            )
+        )
+
+
 def test_create_new_devices():
     with patch("artemis.experiment_plans.optimise_attenuation_plan.i03") as i03:
         create_devices()
         i03.sample_shutter.assert_called()
         i03.xspress3mini.assert_called()
         i03.attenuator.assert_called()
+
+
+# TODO EXTRA TESTS:
+# TEST  change check parameters to check new params
