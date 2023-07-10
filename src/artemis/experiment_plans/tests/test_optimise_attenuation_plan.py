@@ -54,8 +54,17 @@ def get_good_status():
     return status
 
 
-def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold():
-    pass
+def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold(
+    RE: RunEngine,
+):
+    deadtime: float = 1
+    direction = Direction.POSITIVE
+    for i in range(5):
+        assert is_deadtime_optimised(deadtime, 0.5, 0.5, 1, Direction.POSITIVE) is False
+        direction = calculate_new_direction(direction, deadtime, 0.5)
+        deadtime -= 0.1
+    assert direction == Direction.NEGATIVE
+    is_deadtime_optimised(deadtime, 0.5, 0.5, 1, direction) is True
 
 
 def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_reached():
