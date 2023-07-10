@@ -1,19 +1,17 @@
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.sample_shutter import SampleShutter
-from dodal.devices.xspress3_mini.xspress3_mini import DetectorState, Xspress3Mini
+from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 from ophyd.status import Status
 
 from artemis.experiment_plans import optimise_attenuation_plan
 from artemis.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
     Direction,
-    PlaceholderParams,
     arm_devices,
     calculate_new_direction,
     check_parameters,
@@ -25,7 +23,6 @@ from artemis.experiment_plans.optimise_attenuation_plan import (
     total_counts_optimisation,
 )
 from artemis.log import LOGGER
-from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 
 def fake_create_devices() -> tuple[SampleShutter, Xspress3Mini, Attenuator]:
@@ -55,52 +52,6 @@ def get_good_status():
     status = Status()
     status.set_finished()
     return status
-
-
-@pytest.mark.skip(reason="Flakey test which is refactored in another PR")
-def test_total_count_optimise(RE: RunEngine):
-    """Test the overall total count algorithm"""
-    sample_shutter, xspress3mini, attenuator = fake_create_devices()
-
-    # Mimic some of the logic to track the transmission and set realistic data
-    (
-        optimisation_type,
-        default_low_roi,
-        default_high_roi,
-        transmission,
-        target,
-        lower_limit,
-        upper_limit,
-        max_cycles,
-        increment,
-        deadtime_threshold,
-    ) = PlaceholderParams.from_beamline_params(get_beamline_parameters())
-
-    # Same as plan target
-    target = 3000
-
-    # Make list so we can modify within function (is there a better way to do this?)
-    transmission_list = [transmission]
-
-    # Mock a calculation where the dt_corrected_latest_mca array data
-    # is created based on the transmission value
-    def mock_set_transmission(_):
-        data = np.ones(shape=2048) * (transmission_list[0] + 1)
-        total_count = sum(data[int(default_low_roi) : int(default_high_roi)])
-        transmission_list[0] = (target / (total_count)) * transmission_list[0]
-        xspress3mini.dt_corrected_latest_mca.sim_put(data)
-        return get_good_status()
-
-    attenuator.desired_transmission.set = mock_set_transmission
-
-    # Force xspress3mini to pass arming
-    xspress3mini.detector_state.sim_put(DetectorState.ACQUIRE.value)
-
-    RE(
-        optimise_attenuation_plan.optimise_attenuation_plan(
-            5, "total_counts", xspress3mini, sample_shutter, attenuator, 0, 0
-        )
-    )
 
 
 def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold():
@@ -190,20 +141,40 @@ def test_deadtime_optimisation_calculates_deadtime_correctly(
 
 
 @pytest.mark.parametrize(
-    "target, upper_limit, lower_limit, default_high_roi, default_low_roi",
-    [(100, 90, 110, 1, 0), (50, 100, 20, 10, 20), (100, 100, 101, 10, 1)],
+    "target, upper_limit, lower_limit, default_high_roi, default_low_roi,initial_transmission,upper_transmission,lower_transmission",
+    [
+        (100, 90, 110, 1, 0, 0.5, 1, 0),
+        (50, 100, 20, 10, 20, 0.5, 1, 0),
+        (100, 100, 101, 10, 1, 0.5, 1, 0),
+        (10, 100, 0, 2, 1, 0.5, 0, 1),
+        (10, 100, 0, 2, 1, 0.5, 0.4, 0.1),
+    ],
 )
 def test_check_parameters_fail_on_out_of_range_parameters(
-    target, upper_limit, lower_limit, default_high_roi, default_low_roi
+    target,
+    upper_limit,
+    lower_limit,
+    default_high_roi,
+    default_low_roi,
+    initial_transmission,
+    upper_transmission,
+    lower_transmission,
 ):
     with pytest.raises(ValueError):
         check_parameters(
-            target, upper_limit, lower_limit, default_high_roi, default_low_roi
+            target,
+            upper_limit,
+            lower_limit,
+            default_high_roi,
+            default_low_roi,
+            initial_transmission,
+            upper_transmission,
+            lower_transmission,
         )
 
 
 def test_check_parameters_runs_on_correct_params():
-    assert check_parameters(10, 100, 0, 2, 1) is None
+    assert check_parameters(10, 100, 0, 2, 1, 0.5, 1, 0) is None
 
 
 @pytest.mark.parametrize(
@@ -300,7 +271,3 @@ def test_create_new_devices():
         i03.sample_shutter.assert_called()
         i03.xspress3mini.assert_called()
         i03.attenuator.assert_called()
-
-
-# TODO EXTRA TESTS:
-# TEST  change check parameters to check new params

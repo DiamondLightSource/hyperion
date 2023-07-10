@@ -9,7 +9,6 @@ from dodal.devices.sample_shutter import OpenState, SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 
 from artemis.log import LOGGER
-from artemis.parameters.beamline_parameters import get_beamline_parameters
 
 
 class AttenuationOptimisationFailedException(Exception):
@@ -21,35 +20,6 @@ class Direction(Enum):
     NEGATIVE = "negative"
 
 
-class PlaceholderParams:
-    """placeholder for the actual params needed for this function"""
-
-    # Gets parameters from GDA i03-config/scripts/beamlineParameters
-    @classmethod
-    def from_beamline_params(cls, params):
-        return ("deadtime", 100, 2048, 0.001, 50, 40, 60, 10, 2, 0.0005)
-        # optimisation type, low roi, high roi, start transmission, target count, lower count, upper count, max cycles, deadtime increment,
-        # lower deadtime threshold
-
-        # return (
-        #     params["attenuation_optimisation_type"],  # optimisation type: deadtime
-        #     int(params["fluorescence_attenuation_low_roi"]),  # low_roi: 100
-        #     int(params["fluorescence_attenuation_high_roi"]),  # high_roi: 2048
-        #     params["attenuation_optimisation_start_transmission"]
-        #     / 100,  # initial transmission, /100 to get decimal from percentage: 0.1
-        #     params["attenuation_optimisation_target_count"] * 10,  # target:2000
-        #     params["attenuation_optimisation_lower_limit"],  # lower limit: 20000
-        #     params["attenuation_optimisation_upper_limit"],  # upper limit: 50000
-        #     int(
-        #         params["attenuation_optimisation_optimisation_cycles"]
-        #     ),  # max cycles: 10
-        #     params["attenuation_optimisation_multiplier"],  # increment: 2
-        #     params[
-        #         "fluorescence_analyser_deadtimeThreshold"
-        #     ],  # Threshold for edge scans: 0.002
-        # )
-
-
 def create_devices():
     i03.xspress3mini()
     i03.attenuator()
@@ -57,7 +27,14 @@ def create_devices():
 
 
 def check_parameters(
-    target, upper_count_limit, lower_count_limit, default_high_roi, default_low_roi
+    target,
+    upper_count_limit,
+    lower_count_limit,
+    default_high_roi,
+    default_low_roi,
+    initial_transmission,
+    upper_transmission,
+    lower_transmission,
 ):
     if target < lower_count_limit or target > upper_count_limit:
         raise (
@@ -69,6 +46,16 @@ def check_parameters(
     if default_high_roi < default_low_roi:
         raise ValueError(
             f"Upper roi {default_high_roi} must be greater than lower roi {default_low_roi}"
+        )
+
+    if upper_transmission < lower_transmission:
+        raise ValueError(
+            f"Upper transmission limit {upper_transmission} must be greater than lower tranmission limit {lower_transmission}"
+        )
+
+    if not upper_transmission >= initial_transmission >= lower_transmission:
+        raise ValueError(
+            f"initial transmission {initial_transmission} is outside range {lower_transmission} - {upper_transmission}"
         )
 
 
@@ -399,47 +386,34 @@ def total_counts_optimisation(
     return optimised_transmission
 
 
-# TODO: move all parameters into this first bit and give them all default values except the devices
 def optimise_attenuation_plan(
-    collection_time,  # Comes from self.parameters.acquisitionTime in fluorescence_spectrum.py
-    optimisation_type,
     xspress3mini: Xspress3Mini,
     attenuator: Attenuator,
     sample_shutter: SampleShutter,
-    low_roi=None,
-    high_roi=None,
-    upper_transmission_limit=0.9,
+    collection_time=1,  # Comes from self.parameters.acquisitionTime in fluorescence_spectrum.py
+    optimisation_type="deadtime",
+    low_roi=100,
+    high_roi=2048,
+    upper_transmission_limit=0.1,
     lower_transmission_limit=1.0e-6,
+    initial_transmission=0.1,
+    target_count=20000,
+    lower_count_limit=20000,
+    upper_count_limit=50000,
+    max_cycles=10,
+    increment=2,
+    deadtime_threshold=0.002,
 ):
-    (
-        _,  # This is optimisation type. While we can get it from GDA, it's better for testing if this is a parameter of the plan instead
-        default_low_roi,
-        default_high_roi,
-        initial_transmission,
-        target,
-        lower_count_limit,
-        upper_count_limit,
-        max_cycles,
-        increment,
-        deadtime_threshold,
-    ) = PlaceholderParams.from_beamline_params(
-        get_beamline_parameters()
-    )  # TODO: move all of these parameters into otimise_attenuation_plan  - dont use GDA for params at all
-
     check_parameters(
-        target, upper_count_limit, lower_count_limit, default_high_roi, default_low_roi
+        target_count,
+        upper_count_limit,
+        lower_count_limit,
+        high_roi,
+        low_roi,
+        initial_transmission,
+        upper_transmission_limit,
+        lower_transmission_limit,
     )
-
-    # Hardcode these for now to make more sense
-    upper_count_limit = 4000
-    lower_count_limit = 2000
-    target = 3000
-
-    # GDA params currently sets them to 0 by default
-    if low_roi is None or low_roi == 0:
-        low_roi = default_low_roi
-    if high_roi is None or high_roi == 0:
-        high_roi = default_high_roi
 
     yield from bps.abs_set(
         xspress3mini.acquire_time, collection_time, wait=True
@@ -460,7 +434,7 @@ def optimise_attenuation_plan(
             high_roi,
             lower_count_limit,
             upper_count_limit,
-            target,
+            target_count,
             max_cycles,
             upper_transmission_limit,
             lower_transmission_limit,
