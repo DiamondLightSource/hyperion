@@ -67,7 +67,6 @@ def is_counts_within_target(total_count, lower_count_limit, upper_count_limit) -
 
 
 def arm_devices(xspress3mini):
-    # Arm xspress3mini and TODO: what else does this func do?
     yield from bps.abs_set(xspress3mini.do_arm, 1, wait=True)
     LOGGER.info("Arming Xspress3Mini complete")
 

@@ -281,3 +281,76 @@ def test_create_new_devices():
         i03.sample_shutter.assert_called()
         i03.xspress3mini.assert_called()
         i03.attenuator.assert_called()
+
+
+@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_devices")
+def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
+    sample_shutter, xspress3mini, attenuator = fake_create_devices()
+    LOGGER.info = MagicMock()
+
+    # For simplicity we just increase the data array each iteration. In reality it's the transmission value that affects the array
+    def update_data(_):
+        nonlocal iteration
+        iteration += 1
+        xspress3mini.dt_corrected_latest_mca.sim_put(([50, 50, 50, 50, 50]) * iteration)
+        return get_good_status()
+
+    attenuator.set = update_data
+    iteration = 0
+    sample_shutter.set = MagicMock(return_value=get_good_status())
+    xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
+
+    RE(
+        total_counts_optimisation(
+            attenuator,
+            xspress3mini,
+            sample_shutter,
+            transmission=1,
+            low_roi=0,
+            high_roi=4,
+            lower_count_limit=1000,
+            upper_count_limit=2000,
+            target_count=1500,
+            max_cycles=10,
+            upper_transmission_limit=1,
+            lower_transmission_limit=0,
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "optimisation_type",
+    [("total_counts"), ("deadtime")],
+)
+@patch("artemis.experiment_plans.optimise_attenuation_plan.total_counts_optimisation")
+@patch("artemis.experiment_plans.optimise_attenuation_plan.deadtime_optimisation")
+@patch("artemis.experiment_plans.optimise_attenuation_plan.check_parameters")
+def test_optimisation_attenuation_plan_runs_correct_functions(
+    mock_check_parameters,
+    mock_deadtime_optimisation,
+    mock_total_counts_optimisation,
+    optimisation_type,
+    RE: RunEngine,
+):
+    sample_shutter, xspress3mini, attenuator = fake_create_devices()
+    attenuator.set = MagicMock(return_value=get_good_status())
+    xspress3mini.acquire_time.set = MagicMock(return_value=get_good_status())
+
+    RE(
+        optimise_attenuation_plan.optimise_attenuation_plan(
+            xspress3mini,
+            attenuator,
+            sample_shutter,
+            optimisation_type=optimisation_type,
+        )
+    )
+
+    if optimisation_type == "total_counts":
+        mock_deadtime_optimisation.assert_not_called()
+        mock_total_counts_optimisation.assert_called_once()
+    else:
+        mock_total_counts_optimisation.assert_not_called()
+        mock_deadtime_optimisation.assert_called_once()
+    attenuator.set.assert_called_once()
+    mock_check_parameters.assert_called_once()
+    xspress3mini.acquire_time.set.assert_called_once()
