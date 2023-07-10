@@ -55,6 +55,7 @@ class FGSComposite:
     backlight: Backlight
     eiger: EigerDetector
     fast_grid_scan: FastGridScan
+    flux: Flux
     s4_slit_gaps: S4SlitGaps
     sample_motors: Smargon
     synchrotron: Synchrotron
@@ -75,6 +76,7 @@ class FGSComposite:
             wait_for_connection=False, fake_with_ophyd_sim=fake, params=detector_params
         )
         self.fast_grid_scan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
+        self.flux = i03.flux(fake_with_ophyd_sim=fake)
         self.s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
         self.sample_motors = i03.smargon(fake_with_ophyd_sim=fake)
         self.undulator = i03.undulator(fake_with_ophyd_sim=fake)
@@ -211,6 +213,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.flux,
         )
 
     fgs_motors = fgs_composite.fast_grid_scan
