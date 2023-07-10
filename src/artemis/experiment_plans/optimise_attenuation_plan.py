@@ -238,7 +238,7 @@ def deadtime_optimisation(
         LOGGER.info(f"Current reset ticks = {reset_ticks}")
         deadtime = 0
 
-        """ 
+        """
             The reset ticks PV stops ticking while the detector is unable to process events, so the absolute difference between the total time and the
             reset ticks time gives the deadtime in unit time. Divide by total time to get it as a percentage.
         """
@@ -360,7 +360,7 @@ def total_counts_optimisation(
             break
         elif transmission == upper_transmission_limit:
             LOGGER.warning(
-                f"Total count is not within limits: {lower_count_limit} <= {total_count}\<= {upper_count_limit}\
+                f"Total count is not within limits: {lower_count_limit} <= {total_count} <= {upper_count_limit}\
                     after using maximum transmission {upper_transmission_limit}. Continuing\
                     with maximum transmission as optimised value..."
             )
