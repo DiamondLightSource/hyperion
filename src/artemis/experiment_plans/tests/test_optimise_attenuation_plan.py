@@ -35,19 +35,6 @@ def fake_create_devices() -> tuple[SampleShutter, Xspress3Mini, Attenuator]:
     return sample_shutter, xspress3mini, attenuator
 
 
-"""Default params:
-default_low_roi = 100
-default_high_roi = 2048
-increment = 2
-lower_lim = 20000
-upper_lim = 50000
-transmission = 0.1
-
-Produce an array with 1000 values between 0-1 * (1+transmission)
-"""
-CALCULATED_VALUE = 0
-
-
 def get_good_status():
     status = Status()
     status.set_finished()
