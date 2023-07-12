@@ -84,13 +84,16 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
     fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)
 
+    flux_test_value = 10.0
+    fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
+
     test_ispyb_callback = FGSISPyBHandlerCallback(test_fgs_params)
     test_ispyb_callback.ispyb = MagicMock()
     RE.subscribe(test_ispyb_callback)
 
-    def standalone_read_hardware_for_ispyb(und, syn, slits):
+    def standalone_read_hardware_for_ispyb(und, syn, slits, fl):
         yield from bps.open_run()
-        yield from read_hardware_for_ispyb(und, syn, slits)
+        yield from read_hardware_for_ispyb(und, syn, slits, fl)
         yield from bps.close_run()
 
     RE(
@@ -98,6 +101,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
             fake_fgs_composite.undulator,
             fake_fgs_composite.synchrotron,
             fake_fgs_composite.s4_slit_gaps,
+            fake_fgs_composite.flux,
         )
     )
     params = test_ispyb_callback.params

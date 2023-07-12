@@ -67,7 +67,6 @@ class IspybParams(BaseModel):
         return np.array(position)
 
     transmission: float
-    flux: float
     wavelength: float
     beam_size_x: float
     beam_size_y: float
@@ -80,6 +79,7 @@ class IspybParams(BaseModel):
     sample_barcode: Optional[str] = None
 
     # Optional from GDA as populated by Ophyd
+    flux: Optional[float] = None
     undulator_gap: Optional[float] = None
     synchrotron_mode: Optional[str] = None
     slit_gap_size_x: Optional[float] = None
