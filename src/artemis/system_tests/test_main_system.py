@@ -300,7 +300,7 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
-@patch("dodal.beamlines.i03.flux")
+@patch("dodal.beamlines.i03.Flux")
 @patch("dodal.beamlines.i03.DetectorMotion")
 @patch("dodal.beamlines.i03.OAV")
 @patch("dodal.beamlines.i03.ApertureScatterguard")
