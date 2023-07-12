@@ -44,11 +44,6 @@ def eiger():
 
 
 @pytest.fixture
-def attenuator():
-    return i03.attenuator(fake_with_ophyd_sim=True)
-
-
-@pytest.fixture
 def smargon():
     smargon = i03.smargon(fake_with_ophyd_sim=True)
     smargon.x.user_setpoint._use_limits = False
