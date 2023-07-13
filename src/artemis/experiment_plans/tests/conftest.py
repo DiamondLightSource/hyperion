@@ -4,6 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
+from ophyd.status import Status
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
@@ -50,7 +51,13 @@ def smargon():
     smargon.y.user_setpoint._use_limits = False
     smargon.z.user_setpoint._use_limits = False
     smargon.omega.user_setpoint._use_limits = False
-    return smargon
+
+    def mock_omega_set(val):
+        smargon.omega.user_readback.sim_put(val)
+        return Status(done=True, success=True)
+
+    with patch.object(smargon.omega, "set", mock_omega_set):
+        yield smargon
 
 
 @pytest.fixture
