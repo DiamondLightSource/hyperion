@@ -75,7 +75,9 @@ def calculate_new_direction(direction: Direction, deadtime, deadtime_threshold):
     if direction == Direction.POSITIVE:
         if deadtime > deadtime_threshold:
             direction = Direction.NEGATIVE
-            LOGGER.info("flipping direction")
+            LOGGER.info(
+                "Found tranmission to go above deadtime threshold. Reducing transmission..."
+            )
     return direction
 
 
@@ -153,12 +155,11 @@ def is_deadtime_optimised(
 ) -> bool:
     if direction == Direction.POSITIVE:
         if transmission == upper_transmission_limit:
-            if transmission == upper_transmission_limit:
-                LOGGER.warning(
-                    f"Deadtime {deadtime} is above threshold {deadtime_threshold} at maximum transmission {upper_transmission_limit}. Using maximum transmission\
-                            as optimised value."
-                )
-            return True
+            LOGGER.warning(
+                f"Deadtime {deadtime} is above threshold {deadtime_threshold} at maximum transmission {upper_transmission_limit}. Using maximum transmission\
+                        as optimised value."
+            )
+        return True
     # Once direction is flipped and deadtime goes back above threshold, we consider attenuation to be optimised.
     else:
         if deadtime <= deadtime_threshold:

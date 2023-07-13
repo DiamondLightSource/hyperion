@@ -25,6 +25,19 @@ from artemis.experiment_plans.optimise_attenuation_plan import (
 from artemis.log import LOGGER
 
 
+@pytest.fixture
+def mock_emit():
+    import logging
+
+    test_handler = logging.Handler()
+    test_handler.emit = MagicMock()  # type: ignore
+    LOGGER.addHandler(test_handler)
+
+    yield test_handler.emit
+
+    LOGGER.removeHandler(test_handler)
+
+
 def fake_create_devices() -> tuple[SampleShutter, Xspress3Mini, Attenuator]:
     sample_shutter = i03.sample_shutter(fake_with_ophyd_sim=True)
     sample_shutter.wait_for_connection()
@@ -55,20 +68,21 @@ def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadti
     assert is_deadtime_optimised(deadtime, 0.5, 0.5, 1, direction) is True
 
 
-def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_reached():
-    LOGGER.warning = MagicMock()
+def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_reached(
+    mock_emit,
+):
     is_deadtime_optimised(0.5, 0.4, 0.9, 0.9, Direction.POSITIVE)
-    LOGGER.warning.assert_called_once()
+    latest_record = mock_emit.call_args.args[-1]
+    assert latest_record.levelname == "WARNING"
 
 
 def test_total_counts_calc_new_transmission_raises_warning_on_high_transmission(
-    RE: RunEngine,
+    RE: RunEngine, mock_emit
 ):
     sample_shutter, xspress3mini, attenuator = fake_create_devices()
     sample_shutter.set = MagicMock(return_value=get_good_status())
     xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
     xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
-    LOGGER.warning = MagicMock()
     RE(
         total_counts_optimisation(
             attenuator,
@@ -85,7 +99,9 @@ def test_total_counts_calc_new_transmission_raises_warning_on_high_transmission(
             lower_transmission_limit=0,
         )
     )
-    LOGGER.warning.assert_called_once()
+
+    latest_record = mock_emit.call_args.args[-1]
+    assert latest_record.levelname == "WARNING"
 
 
 @pytest.mark.parametrize(
@@ -273,7 +289,6 @@ def test_create_new_devices():
 @patch("artemis.experiment_plans.optimise_attenuation_plan.arm_devices")
 def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
     sample_shutter, xspress3mini, attenuator = fake_create_devices()
-    LOGGER.info = MagicMock()
 
     # For simplicity we just increase the data array each iteration. In reality it's the transmission value that affects the array
     def update_data(_):
