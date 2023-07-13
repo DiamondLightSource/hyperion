@@ -157,11 +157,15 @@ def grid_detection_main_plan(
         yield from bps.read(oav.snapshot.top_left_y)
         yield from bps.save()
 
-        # Get the beam distance from the centre (in pixels).
+        # The first frame is taken at the centre of the first box
+        centre_of_first_box = (
+            upper_left[0] + box_size_x_pixels / 2,
+            upper_left[1] + box_size_y_pixels / 2,
+        )
         (
             beam_distance_i_pixels,
             beam_distance_j_pixels,
-        ) = parameters.calculate_beam_distance(upper_left[0], upper_left[1])
+        ) = parameters.calculate_beam_distance(*centre_of_first_box)
 
         current_motor_xyz = np.array(
             [
