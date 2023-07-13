@@ -159,7 +159,7 @@ def is_deadtime_optimised(
                 f"Deadtime {deadtime} is above threshold {deadtime_threshold} at maximum transmission {upper_transmission_limit}. Using maximum transmission\
                         as optimised value."
             )
-        return True
+            return True
     # Once direction is flipped and deadtime goes back above threshold, we consider attenuation to be optimised.
     else:
         if deadtime <= deadtime_threshold:
