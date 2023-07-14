@@ -4,6 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.smargon import Smargon
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
@@ -44,7 +45,7 @@ def eiger():
 
 
 @pytest.fixture
-def smargon():
+def smargon() -> Smargon:
     smargon = i03.smargon(fake_with_ophyd_sim=True)
     smargon.x.user_setpoint._use_limits = False
     smargon.y.user_setpoint._use_limits = False
@@ -104,7 +105,7 @@ def test_full_grid_scan_params():
 
 
 @pytest.fixture
-def fake_fgs_composite(test_fgs_params: InternalParameters):
+def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
     fake_composite = FGSComposite(
         aperture_positions=AperturePositions(
             LARGE=(1, 2, 3, 4, 5),
@@ -127,6 +128,8 @@ def fake_fgs_composite(test_fgs_params: InternalParameters):
 
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)
     fake_composite.fast_grid_scan.position_counter.sim_put(0)
+
+    fake_composite.sample_motors = smargon
 
     return fake_composite
 
