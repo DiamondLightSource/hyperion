@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Callable
 
 import numpy as np
@@ -25,7 +26,10 @@ from artemis.external_interaction.callbacks.oav_snapshot_callback import (
 )
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
-from artemis.parameters.plan_specific.fgs_internal_params import GridScanParams
+from artemis.parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+    GridScanParams,
+)
 
 if TYPE_CHECKING:
     from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -63,6 +67,17 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
     raise TimeoutError("Detector not finished moving")
 
 
+def create_parameters_for_fast_grid_scan(
+    grid_scan_with_edge_params: GridScanWithEdgeDetectInternalParameters,
+    grid_parameters: GridScanParams,
+) -> FGSInternalParameters:
+    params_json = json.loads(grid_scan_with_edge_params.json())
+    params_json["experiment_params"] = json.loads(grid_parameters.json())
+    fast_grid_scan_parameters = FGSInternalParameters(**params_json)
+    LOGGER.info(f"Parameters for FGS: {fast_grid_scan_parameters}")
+    return fast_grid_scan_parameters
+
+
 def start_arming_then_do_grid(
     parameters: GridScanWithEdgeDetectInternalParameters,
     backlight: Backlight,
@@ -94,7 +109,7 @@ def detect_grid_and_do_gridscan(
     oav_params: OAVParameters,
 ):
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
-    fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
+    grid_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
     detector_params = parameters.artemis_params.detector_params
     snapshot_template = (
@@ -119,7 +134,7 @@ def detect_grid_and_do_gridscan(
 
     yield from run_grid_detection_plan(
         oav_params,
-        fgs_params,
+        grid_params,
         snapshot_template,
         experiment_params.snapshot_dir,
     )
@@ -138,11 +153,9 @@ def detect_grid_and_do_gridscan(
     )
     parameters.artemis_params.ispyb_params.upper_left = out_upper_left
 
-    parameters.experiment_params = fgs_params
-
-    parameters.artemis_params.detector_params.num_triggers = fgs_params.get_num_images()
-
-    LOGGER.info(f"Parameters for FGS: {parameters}")
+    fast_grid_scan_parameters = create_parameters_for_fast_grid_scan(
+        parameters, grid_params
+    )
 
     yield from bps.abs_set(backlight.pos, Backlight.OUT)
     LOGGER.info(
@@ -153,7 +166,7 @@ def detect_grid_and_do_gridscan(
     )
     yield from wait_for_det_to_finish_moving(detector_motion)
 
-    yield from fgs_get_plan(parameters)
+    yield from fgs_get_plan(fast_grid_scan_parameters)
 
 
 def get_plan(
