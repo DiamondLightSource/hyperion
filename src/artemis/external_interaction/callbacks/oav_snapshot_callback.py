@@ -2,8 +2,13 @@ from bluesky.callbacks import CallbackBase
 
 
 class OavSnapshotCallback(CallbackBase):
-    snapshot_filenames: list = []
-    out_upper_left: list = []
+    snapshot_filenames: list
+    out_upper_left: list
+
+    def __init__(self, *args) -> None:
+        super().__init__(*args)
+        self.snapshot_filenames = []
+        self.out_upper_left = []
 
     def event(self, doc):
         data = doc.get("data")
