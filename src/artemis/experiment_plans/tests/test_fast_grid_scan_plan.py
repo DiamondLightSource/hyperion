@@ -84,13 +84,16 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
     fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)
 
+    flux_test_value = 10.0
+    fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
+
     test_ispyb_callback = FGSISPyBHandlerCallback(test_fgs_params)
     test_ispyb_callback.ispyb = MagicMock()
     RE.subscribe(test_ispyb_callback)
 
-    def standalone_read_hardware_for_ispyb(und, syn, slits):
+    def standalone_read_hardware_for_ispyb(und, syn, slits, fl):
         yield from bps.open_run()
-        yield from read_hardware_for_ispyb(und, syn, slits)
+        yield from read_hardware_for_ispyb(und, syn, slits, fl)
         yield from bps.close_run()
 
     RE(
@@ -98,6 +101,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
             fake_fgs_composite.undulator,
             fake_fgs_composite.synchrotron,
             fake_fgs_composite.s4_slit_gaps,
+            fake_fgs_composite.flux,
         )
     )
     params = test_ispyb_callback.params
@@ -333,71 +337,52 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.abs_set")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.wait")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
-def test_when_exception_occurs_during_running_then_eiger_disarmed(
-    wait_for_valid,
-    mock_mv,
+def test_fgs_arms_eiger_without_grid_detect(
     mock_complete,
-    mock_kickoff,
-    mock_abs_set,
+    mock_wait,
     fake_fgs_composite: FGSComposite,
     test_fgs_params: FGSInternalParameters,
-    mock_subscriptions: FGSCallbackCollection,
     RE: RunEngine,
 ):
-    fake_fgs_composite.eiger.disarm_detector = MagicMock()
+    fake_fgs_composite.eiger.stage = MagicMock()
+    fake_fgs_composite.eiger.unstage = MagicMock()
 
-    fake_fgs_composite.eiger.filewriters_finished = Status()
-    fake_fgs_composite.eiger.filewriters_finished.set_finished()
-    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
-    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
-    fake_fgs_composite.eiger.filewriters_finished = Status()
-    fake_fgs_composite.eiger.filewriters_finished.set_finished()
+    RE(run_gridscan(fake_fgs_composite, test_fgs_params))
+    fake_fgs_composite.eiger.stage.assert_called_once()
+    fake_fgs_composite.eiger.unstage.assert_called_once()
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.wait")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_returned(
+    mock_complete,
+    mock_wait,
+    fake_fgs_composite: FGSComposite,
+    test_fgs_params: FGSInternalParameters,
+    RE: RunEngine,
+):
+    class CompleteException(Exception):
+        pass
+
+    mock_complete.side_effect = CompleteException()
 
     fake_fgs_composite.eiger.stage = MagicMock(
         return_value=Status(None, None, 0, True, True)
     )
 
-    mock_complete.side_effect = Exception()
+    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock()
 
-    with pytest.raises(Exception):
-        RE(
-            run_gridscan_and_move(
-                fake_fgs_composite,
-                test_fgs_params,
-                mock_subscriptions,
-            )
-        )
+    fake_fgs_composite.eiger.disarm_detector = MagicMock()
+    fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
 
-    fake_fgs_composite.eiger.disarm_detector.assert_called_once()
+    # Without the complete finishing we will not get all the images
+    fake_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1
 
+    # Want to get the underlying completion error, not the one raised from unstage
+    with pytest.raises(CompleteException):
+        RE(run_gridscan(fake_fgs_composite, test_fgs_params))
 
-# Eiger is armed if eiger.armed_status is complete and fan ready is called. This test is very slow - could mocking more functions could speed it up
-def test_fgs_arms_eiger_without_grid_detect(
-    fake_fgs_composite: FGSComposite,
-    test_fgs_params: FGSInternalParameters,
-    mock_subscriptions: FGSCallbackCollection,
-    RE: RunEngine,
-):
-    def get_good_status():
-        status = Status()
-        status.set_finished()
-        return status
-
-    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
-    fake_fgs_composite.eiger.odin.check_odin_initialised = MagicMock(
-        return_value=[True, True]
-    )
-    fake_fgs_composite.eiger.set_odin_pvs = MagicMock(return_value=get_good_status())
-    fake_fgs_composite.eiger.stale_params.sim_put(0)
-    fake_fgs_composite.eiger._wait_fan_ready = MagicMock(return_value=get_good_status())
-    fake_fgs_composite.eiger._wait_for_odin_status = MagicMock(
-        return_value=get_good_status()
-    )
-
-    RE(bps.stage(fake_fgs_composite.eiger))
-    fake_fgs_composite.eiger._wait_fan_ready.assert_called_once()
+    fake_fgs_composite.eiger.disable_roi_mode.assert_called()
+    fake_fgs_composite.eiger.disarm_detector.assert_called()

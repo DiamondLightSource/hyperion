@@ -76,12 +76,14 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         parameters.minimum_height,
     )
 
-    # Connect MXSC output to MJPG input
     yield from start_mxsc(
         oav,
         parameters.min_callback_time,
         parameters.detection_script_filename,
     )
+
+    # Connect MXSC output to MJPG input for debugging
+    yield from bps.abs_set(oav.snapshot.input_plugin, "OAV.MXSC")
 
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
