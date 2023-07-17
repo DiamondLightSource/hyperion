@@ -300,6 +300,7 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
+@patch("dodal.beamlines.i03.Flux")
 @patch("dodal.beamlines.i03.DetectorMotion")
 @patch("dodal.beamlines.i03.OAV")
 @patch("dodal.beamlines.i03.ApertureScatterguard")
@@ -327,6 +328,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     aperture_scatterguard,
     oav,
     detector_motion,
+    flux,
 ):
     type_comparison.return_value = True
     BlueskyRunner(MagicMock(), skip_startup_connection=False)
@@ -341,6 +343,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     aperture_scatterguard.return_value.wait_for_connection.assert_called()
     oav.return_value.wait_for_connection.assert_called()
     detector_motion.return_value.wait_for_connection.assert_called()
+    flux.return_value.wait_for_connection.assert_called()
 
 
 @patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
