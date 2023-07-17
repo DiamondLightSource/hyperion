@@ -14,6 +14,7 @@ from dodal.beamlines.i03 import (
     Backlight,
     EigerDetector,
     FastGridScan,
+    Flux,
     S4SlitGaps,
     Smargon,
     Synchrotron,
@@ -55,6 +56,7 @@ class FGSComposite:
     backlight: Backlight
     eiger: EigerDetector
     fast_grid_scan: FastGridScan
+    flux: Flux
     s4_slit_gaps: S4SlitGaps
     sample_motors: Smargon
     synchrotron: Synchrotron
@@ -75,6 +77,7 @@ class FGSComposite:
             wait_for_connection=False, fake_with_ophyd_sim=fake, params=detector_params
         )
         self.fast_grid_scan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
+        self.flux = i03.flux(fake_with_ophyd_sim=fake)
         self.s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
         self.sample_motors = i03.smargon(fake_with_ophyd_sim=fake)
         self.undulator = i03.undulator(fake_with_ophyd_sim=fake)
@@ -191,6 +194,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.flux,
         )
 
     fgs_motors = fgs_composite.fast_grid_scan
@@ -201,24 +205,21 @@ def run_gridscan(
 
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
+    @bpp.contingency_decorator(
+        except_plan=lambda e: (yield from bps.stop(fgs_composite.eiger)),
+        else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
+    )
     def do_fgs():
-        try:
-            yield from bps.wait()  # Wait for all moves to complete
-            yield from bps.kickoff(fgs_motors)
-            yield from bps.complete(fgs_motors, wait=True)
-        finally:
-            yield from bps.unstage(fgs_composite.eiger)
+        yield from bps.wait()  # Wait for all moves to complete
+        yield from bps.kickoff(fgs_motors)
+        yield from bps.complete(fgs_motors, wait=True)
 
-    # Wait for arming to finish
-    artemis.log.LOGGER.info("Waiting for arming...")
-    yield from bps.wait("arming")
-    artemis.log.LOGGER.info("Arming finished")
+    yield from bps.stage(fgs_composite.eiger)
 
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()
 
-    with TRACER.start_span("move_to_z_0"):
-        yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
 @bpp.set_run_key_decorator("run_gridscan_and_move")

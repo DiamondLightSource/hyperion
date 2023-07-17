@@ -78,6 +78,7 @@ def test_get_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    mock_rotation_subscriptions: RotationCallbackCollection,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -93,7 +94,7 @@ def test_get_plan(
         ),
         patch(
             "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-            lambda _: MagicMock(),
+            lambda _: mock_rotation_subscriptions,
         ),
     ):
         RE(get_plan(test_rotation_params))
@@ -112,6 +113,7 @@ def test_rotation_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    mock_rotation_subscriptions: RotationCallbackCollection,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
@@ -123,30 +125,18 @@ def test_rotation_plan(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    undulator = i03.undulator(fake_with_ophyd_sim=True)
-    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
-    slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
-
-    with (
-        patch("dodal.beamlines.i03.undulator", return_value=undulator),
-        patch("dodal.beamlines.i03.synchrotron", return_value=synchrotron),
-        patch("dodal.beamlines.i03.s4_slit_gaps", return_value=slit_gaps),
+    with patch(
+        "bluesky.preprocessors.__read_and_stash_a_motor",
+        __fake_read,
+    ), patch(
+        "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+        lambda _: mock_rotation_subscriptions,
     ):
-        with patch(
-            "bluesky.preprocessors.__read_and_stash_a_motor",
-            __fake_read,
-        ):
-            RE(
-                rotation_scan_plan(
-                    test_rotation_params,
-                    eiger,
-                    smargon,
-                    zebra,
-                    backlight,
-                    detector_motion,
-                )
+        RE(
+            rotation_scan_plan(
+                test_rotation_params, eiger, smargon, zebra, backlight, detector_motion
             )
-
+        )
     # once for each velocity set and once for each position set for a total of 4 calls
     assert mock_omega_sets.call_count == 4
 
@@ -163,6 +153,7 @@ def test_cleanup_happens(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    mock_rotation_subscriptions: RotationCallbackCollection,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -185,6 +176,10 @@ def test_cleanup_happens(
         patch("dodal.beamlines.i03.zebra", return_value=zebra),
         patch("dodal.beamlines.i03.backlight", return_value=backlight),
         patch("dodal.beamlines.i03.detector_motion", return_value=detector_motion),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: mock_rotation_subscriptions,
+        ),
     ):
         with pytest.raises(Exception) as exc:
             RE(

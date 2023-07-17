@@ -11,6 +11,7 @@ def test_FGS_parameters_load_from_file():
         "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
     internal_parameters = FGSInternalParameters(**params)
+    internal_parameters.json()
 
     assert isinstance(internal_parameters.experiment_params, GridScanParams)
 

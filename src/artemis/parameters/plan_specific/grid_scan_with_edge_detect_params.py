@@ -97,3 +97,9 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
                 all_params, cls._artemis_param_key_definitions()
             )
         )
+
+    def get_data_shape(self):
+        raise Exception("Data shape does not apply to this type of experiment!")
+
+    def get_scan_points(cls):
+        raise Exception("Scan points do not apply to this type of experiment!")

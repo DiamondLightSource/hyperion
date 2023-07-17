@@ -128,7 +128,7 @@ def test_create_devices(create_device: MagicMock):
     create_device.assert_has_calls(
         [
             call(Smargon, "smargon", "-MO-SGON-01:", True, False),
-            call(OAV, "oav", "-DI-OAV-01:", True, False),
+            call(OAV, "oav", "", True, False),
             call(
                 device=Backlight,
                 name="backlight",
@@ -139,3 +139,42 @@ def test_create_devices(create_device: MagicMock):
         ],
         any_order=True,
     )
+
+
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch("bluesky.plan_stubs.wait")
+@patch("bluesky.plan_stubs.mv")
+@patch("dodal.devices.areadetector.plugins.MJPG.requests")
+@patch("dodal.devices.areadetector.plugins.MJPG.Image")
+def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
+    mock_image_class: MagicMock,
+    mock_requests: MagicMock,
+    bps_mv: MagicMock,
+    bps_wait: MagicMock,
+    RE: RunEngine,
+    test_config_files,
+):
+    mock_image = MagicMock()
+    mock_image_class.open.return_value = mock_image
+    oav, smargon, bl = fake_create_devices()
+
+    oav.mxsc.pin_tip.tip_x.sim_put(100)
+    oav.mxsc.pin_tip.tip_y.sim_put(100)
+
+    params = OAVParameters(context="loopCentring", **test_config_files)
+    gridscan_params = GridScanParams()
+
+    for _ in range(2):
+        cb = OavSnapshotCallback()
+        RE.subscribe(cb)
+
+        RE(
+            grid_detection_plan(
+                parameters=params,
+                out_parameters=gridscan_params,
+                snapshot_dir="tmp",
+                snapshot_template="test_{angle}",
+            )
+        )
+    assert len(cb.snapshot_filenames) == 2
+    assert len(cb.out_upper_left) == 2

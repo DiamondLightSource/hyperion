@@ -1,12 +1,12 @@
 {
-    "params_version": "1.0.0",
+    "params_version": "2.0.0",
     "artemis_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",
         "insertion_prefix": "SR03S",
         "experiment_type": "fast_grid_scan",
         "detector_params": {
-            "current_energy": 100,
+            "current_energy_ev": 100,
             "directory": "/tmp/",
             "prefix": "file_name",
             "run_number": 0,

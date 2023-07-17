@@ -7,18 +7,15 @@ from dodal.devices.oav.utils import ColorMode, EdgeOutputArrayImageType
 from artemis.log import LOGGER
 
 
-def start_mxsc(oav: OAV, input_plugin, min_callback_time, filename):
+def start_mxsc(oav: OAV, min_callback_time, filename):
     """
     Sets PVs relevant to edge detection plugin.
 
     Args:
-        input_plugin: link to the camera stream
         min_callback_time: the value to set the minimum callback time to
         filename: filename of the python script to detect edge waveforms from camera stream.
     Returns: None
     """
-    yield from bps.abs_set(oav.mxsc.input_plugin, input_plugin)
-
     # Turns the area detector plugin on
     yield from bps.abs_set(oav.mxsc.enable_callbacks, 1)
 
@@ -79,15 +76,14 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         parameters.minimum_height,
     )
 
-    # Connect MXSC output to MJPG input
     yield from start_mxsc(
         oav,
-        parameters.input_plugin + "." + parameters.mxsc_input,
         parameters.min_callback_time,
         parameters.detection_script_filename,
     )
 
-    yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")
+    # Connect MXSC output to MJPG input for debugging
+    yield from bps.abs_set(oav.snapshot.input_plugin, "OAV.MXSC")
 
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:

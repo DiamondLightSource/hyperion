@@ -28,6 +28,8 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
+    from ophyd.device import Device
+
     from artemis.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
@@ -36,14 +38,13 @@ if TYPE_CHECKING:
 def create_devices() -> dict[str, Device]:
     """Ensures necessary devices have been instantiated and returns a dict with
     references to them"""
-    devices = {
+    return {
         "eiger": i03.eiger(wait_for_connection=False),
         "smargon": i03.smargon(),
         "zebra": i03.zebra(),
         "detector_motion": i03.detector_motion(),
         "backlight": i03.backlight(),
     }
-    return devices
 
 
 DIRECTION = RotationDirection.NEGATIVE
@@ -69,18 +70,21 @@ def cleanup_sample_environment(
     yield from bps.abs_set(detector_motion.shutter, 0, group=group)
 
 
-def move_to_start_w_buffer(axis: EpicsMotor, start_angle):
+def move_to_start_w_buffer(
+    axis: EpicsMotor, start_angle, wait_for_velocity_set=True, wait_for_move=False
+):
     """Move an EpicsMotor 'axis' to angle 'start_angle', modified by an offset and
-    against the direction of rotation."""
+    against the direction of rotation. Status for the move has group 'move_to_start'."""
     # can move to start as fast as possible
-    yield from bps.abs_set(axis.velocity, 120, wait=True)
+    yield from bps.abs_set(axis.velocity, 120, wait=wait_for_velocity_set)
     start_position = start_angle - (OFFSET * DIRECTION)
     LOGGER.info(
         "moving to_start_w_buffer doing: start_angle-(offset*direction)"
         f" = {start_angle} - ({OFFSET} * {DIRECTION} = {start_position}"
     )
-
-    yield from bps.abs_set(axis, start_position, group="move_to_start")
+    yield from bps.abs_set(
+        axis, start_position, group="move_to_start", wait=wait_for_move
+    )
 
 
 def move_to_end_w_buffer(axis: EpicsMotor, scan_width: float, wait: float = True):
@@ -168,24 +172,28 @@ def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
     yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
 
-def get_plan(params: RotationInternalParameters):
+def get_plan(parameters: RotationInternalParameters):
     devices = create_devices()
-
-    subscriptions = RotationCallbackCollection.from_params(params)
+    subscriptions = RotationCallbackCollection.from_params(parameters)
 
     @bpp.subs_decorator(list(subscriptions))
+    @bpp.set_run_key_decorator("rotation_scan")
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": "rotation_scan_with_cleanup",
+            "hyperion_internal_parameters": parameters.json(),
+        }
+    )
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
         devices["eiger"].set_detector_parameters(params.artemis_params.detector_params)
 
         @bpp.stage_decorator([devices["eiger"]])
-        @bpp.set_run_key_decorator("rotation_scan_with_cleanup")
-        @bpp.run_decorator(md={"subplan_name": "rotation_scan_with_cleanup"})
         @bpp.finalize_decorator(lambda: cleanup_plan(**devices))
         def rotation_with_cleanup_and_stage(params):
             yield from rotation_scan_plan(params, **devices)
 
         yield from rotation_with_cleanup_and_stage(params)
 
-    yield from rotation_scan_plan_with_stage_and_cleanup(params)
+    yield from rotation_scan_plan_with_stage_and_cleanup(parameters)

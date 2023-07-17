@@ -145,7 +145,7 @@ def test_artemis_params_eq(raw_params):
     assert artemis_params_1 != artemis_params_2
 
     artemis_params_2 = copy.deepcopy(artemis_params_1)
-    artemis_params_2.detector_params.current_energy = 99999
+    artemis_params_2.detector_params.current_energy_ev = 99999
     assert artemis_params_1 != artemis_params_2
 
     artemis_params_2 = copy.deepcopy(artemis_params_1)
