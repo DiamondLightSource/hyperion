@@ -158,3 +158,30 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     assert gridscan_params.x_start == 0.0005
     assert gridscan_params.y1_start == -0.0001
     assert gridscan_params.z1_start == -0.0001
+
+
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch("bluesky.plan_stubs.wait")
+def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
+    bps_wait: MagicMock,
+    fake_devices,
+    RE: RunEngine,
+    test_config_files,
+):
+    params = OAVParameters(context="loopCentring", **test_config_files)
+    gridscan_params = GridScanParams()
+
+    for _ in range(2):
+        cb = OavSnapshotCallback()
+        RE.subscribe(cb)
+
+        RE(
+            grid_detection_plan(
+                parameters=params,
+                out_parameters=gridscan_params,
+                snapshot_dir="tmp",
+                snapshot_template="test_{angle}",
+            )
+        )
+    assert len(cb.snapshot_filenames) == 2
+    assert len(cb.out_upper_left) == 2

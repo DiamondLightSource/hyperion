@@ -224,24 +224,21 @@ def run_gridscan(
 
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
+    @bpp.contingency_decorator(
+        except_plan=lambda e: (yield from bps.stop(fgs_composite.eiger)),
+        else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
+    )
     def do_fgs():
-        try:
-            yield from bps.wait()  # Wait for all moves to complete
-            yield from bps.kickoff(fgs_motors)
-            yield from bps.complete(fgs_motors, wait=True)
-        finally:
-            yield from bps.unstage(fgs_composite.eiger)
+        yield from bps.wait()  # Wait for all moves to complete
+        yield from bps.kickoff(fgs_motors)
+        yield from bps.complete(fgs_motors, wait=True)
 
-    # Wait for arming to finish
-    artemis.log.LOGGER.info("Waiting for arming...")
-    yield from bps.wait("arming")
-    artemis.log.LOGGER.info("Arming finished")
+    yield from bps.stage(fgs_composite.eiger)
 
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()
 
-    with TRACER.start_span("move_to_z_0"):
-        yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
 @bpp.set_run_key_decorator("run_gridscan_and_move")
