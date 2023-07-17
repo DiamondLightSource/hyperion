@@ -37,9 +37,6 @@ class IspybParams(BaseModel):
     microns_per_pixel_y: float
     position: np.ndarray
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)  # TODO REMOVE JUST FOR DEBUGGING
-
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {np.ndarray: lambda a: a.tolist()}

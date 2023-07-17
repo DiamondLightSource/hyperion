@@ -27,9 +27,6 @@ class GridscanArtemisParameters(ArtemisParameters):
         **GRIDSCAN_ISPYB_PARAM_DEFAULTS
     )
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)  # TODO REMOVE JUST FOR DEBUGGING
-
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {

@@ -71,6 +71,8 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     oav.mxsc.pin_tip.tip_x.sim_put(100)
     oav.mxsc.pin_tip.tip_y.sim_put(100)
 
+    sleep(0.1)
+
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
 
