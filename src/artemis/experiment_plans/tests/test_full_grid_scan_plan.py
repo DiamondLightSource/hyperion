@@ -21,6 +21,7 @@ from artemis.experiment_plans.full_grid_scan import (
 from artemis.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
@@ -39,12 +40,12 @@ def _fake_grid_detection(
     out_parameters.y2_start = 0
     out_parameters.z1_start = 0
     out_parameters.z2_start = 0
-    out_parameters.x_steps = 0
-    out_parameters.y_steps = 0
-    out_parameters.z_steps = 0
-    out_parameters.x_step_size = 0
-    out_parameters.y_step_size = 0
-    out_parameters.z_step_size = 0
+    out_parameters.x_steps = 10
+    out_parameters.y_steps = 2
+    out_parameters.z_steps = 2
+    out_parameters.x_step_size = 1
+    out_parameters.y_step_size = 1
+    out_parameters.z_step_size = 1
     return []
 
 
@@ -92,7 +93,10 @@ def test_get_plan(test_fgs_params, test_config_files):
 )
 @patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True)
 @patch("artemis.experiment_plans.full_grid_scan.fgs_get_plan", autospec=True)
-@patch("artemis.experiment_plans.full_grid_scan.OavSnapshotCallback", autospec=True)
+@patch(
+    "artemis.experiment_plans.full_grid_scan.OavSnapshotCallback",
+    autospec=True,
+)
 def test_detect_grid_and_do_gridscan(
     mock_oav_callback_init: MagicMock,
     mock_fast_grid_scan_plan: MagicMock,
@@ -105,6 +109,10 @@ def test_detect_grid_and_do_gridscan(
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
     test_config_files: Dict,
 ):
+    mock_oav_callback = OavSnapshotCallback()
+    mock_oav_callback.out_upper_left = [[0, 1], [2, 3]]
+    mock_oav_callback.snapshot_filenames = [["test"], ["test3"]]
+    mock_oav_callback_init.return_value = mock_oav_callback
     mock_grid_detection_plan.side_effect = _fake_grid_detection
 
     with patch.object(
@@ -181,12 +189,9 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
             )
         )
 
-        params: GridScanWithEdgeDetectInternalParameters = (
-            mock_fast_grid_scan_plan.call_args[0][0]
-        )
+        params: FGSInternalParameters = mock_fast_grid_scan_plan.call_args[0][0]
 
-        # Parameters can be serialized
-        params.json()
+        assert isinstance(params, FGSInternalParameters)
 
         ispyb_params = params.artemis_params.ispyb_params
         assert_array_equal(ispyb_params.upper_left, [1, 2, 3])
@@ -200,6 +205,14 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
             "e",
             "d",
         ]
+
+        assert params.artemis_params.detector_params.num_triggers == 40
+
+        assert params.experiment_params.x_axis.full_steps == 10
+        assert params.experiment_params.y_axis.end == 1
+
+        # Parameters can be serialized
+        params.json()
 
 
 @patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan")
