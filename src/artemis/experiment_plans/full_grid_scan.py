@@ -89,7 +89,7 @@ def start_arming_then_do_grid(
     # Start stage with asynchronous arming here
     yield from bps.abs_set(eiger.do_arm, 1, group="arming")
 
-    yield from bpp.finalize_wrapper(
+    yield from bpp.contingency_wrapper(
         detect_grid_and_do_gridscan(
             parameters,
             backlight,
@@ -97,7 +97,7 @@ def start_arming_then_do_grid(
             detector_motion,
             oav_params,
         ),
-        bps.unstage(eiger),
+        except_plan=lambda e: (yield from bps.stop(eiger)),
     )
 
 

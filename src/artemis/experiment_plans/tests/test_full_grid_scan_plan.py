@@ -217,22 +217,28 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
 @patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan")
 @patch("artemis.experiment_plans.full_grid_scan.OavSnapshotCallback")
-def test_grid_detection_running_when_exception_raised_then_eiger_unstaged(
+def test_grid_detection_running_when_exception_raised_then_eiger_disarmed_and_correct_exception_returned(
     mock_oav_callback: MagicMock,
     mock_grid_detection_plan: MagicMock,
+    eiger: EigerDetector,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
     mock_subscriptions: MagicMock,
     test_config_files: Dict,
 ):
-    mock_grid_detection_plan.side_effect = Exception()
-    eiger: EigerDetector = MagicMock(spec=EigerDetector)
+    class DetectException(Exception):
+        pass
+
+    mock_grid_detection_plan.side_effect = DetectException()
+    eiger.detector_params = MagicMock()
+    eiger.async_stage = MagicMock()
+    eiger.disarm_detector = MagicMock()
 
     with patch(
         "artemis.external_interaction.callbacks.fgs.fgs_callback_collection.FGSCallbackCollection.from_params",
         return_value=mock_subscriptions,
     ):
-        with pytest.raises(Exception):
+        with pytest.raises(DetectException):
             RE(
                 start_arming_then_do_grid(
                     parameters=test_full_grid_scan_params,
@@ -245,6 +251,6 @@ def test_grid_detection_running_when_exception_raised_then_eiger_unstaged(
             )
 
         # Check detector was armed
-        eiger.do_arm.set.assert_called_once_with(1)
+        eiger.async_stage.assert_called_once()
 
-        eiger.unstage.assert_called_once()
+        eiger.disarm_detector.assert_called_once()
