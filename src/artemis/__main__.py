@@ -2,7 +2,6 @@ import argparse
 import atexit
 import threading
 from dataclasses import dataclass
-from json import JSONDecodeError
 from queue import Queue
 from traceback import format_exception
 from typing import Callable, Optional, Tuple
@@ -11,16 +10,12 @@ from bluesky import RunEngine
 from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
-from jsonschema.exceptions import ValidationError
 
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from artemis.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
-)
-from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
 )
 from artemis.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
@@ -50,8 +45,17 @@ class StatusAndMessage:
         self.message = message
 
 
+@dataclass_json
+@dataclass
+class ErrorStatusAndMessage(StatusAndMessage):
+    exception_type: str = ""
+
+    def __init__(self, exception: Exception) -> None:
+        super().__init__(Status.FAILED, repr(exception))
+        self.exception_type = type(exception).__name__
+
+
 class BlueskyRunner:
-    callbacks: FGSCallbackCollection
     command_queue: "Queue[Command]" = Queue()
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
@@ -76,7 +80,6 @@ class BlueskyRunner:
         if self.skip_startup_connection:
             PLAN_REGISTRY[plan_name]["setup"]()
 
-        self.callbacks = FGSCallbackCollection.from_params(parameters)
         if (
             self.current_status.status == Status.BUSY.value
             or self.current_status.status == Status.ABORTING.value
@@ -92,7 +95,7 @@ class BlueskyRunner:
             self.RE.abort()
             self.current_status = StatusAndMessage(Status.IDLE)
         except Exception as e:
-            self.current_status = StatusAndMessage(Status.FAILED, repr(e))
+            self.current_status = ErrorStatusAndMessage(e)
 
     def stop(self) -> StatusAndMessage:
         if self.current_status.status == Status.IDLE.value:
@@ -120,25 +123,25 @@ class BlueskyRunner:
             elif command.action == Actions.START:
                 try:
                     with TRACER.start_span("do_run"):
-                        self.RE(command.experiment(command.parameters, self.callbacks))
+                        self.RE(command.experiment(command.parameters))
 
                     self.current_status = StatusAndMessage(
                         Status.IDLE,
                         self.aperture_change_callback.last_selected_aperture,
                     )
+
                     self.last_run_aborted = False
                 except WarningException as exception:
                     artemis.log.LOGGER.warning("Warning Exception", exc_info=True)
-                    self.current_status = StatusAndMessage(Status.WARN, repr(exception))
+                    self.current_status = ErrorStatusAndMessage(exception)
                 except Exception as exception:
                     artemis.log.LOGGER.error("Exception on running plan", exc_info=True)
+
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow
                         self.last_run_aborted = False
                     else:
-                        self.current_status = StatusAndMessage(
-                            Status.FAILED, repr(exception)
-                        )
+                        self.current_status = ErrorStatusAndMessage(exception)
 
 
 class RunExperiment(Resource):
@@ -168,23 +171,18 @@ class RunExperiment(Resource):
                     raise PlanNotFound(
                         f"Experiment plan '{plan_name}' has no 'run' method."
                     )
-                parameters = experiment_internal_param_type.from_external_json(
-                    request.data
-                )
+
+                parameters = experiment_internal_param_type.from_json(request.data)
+                if plan_name != parameters.artemis_params.experiment_type:
+                    raise PlanNotFound(
+                        f"Wrong experiment parameters ({parameters.artemis_params.experiment_type}) "
+                        f"for plan endpoint {plan_name}."
+                    )
                 status_and_message = self.runner.start(
                     experiment, parameters, plan_name
                 )
-            except JSONDecodeError as e:
-                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
-            except PlanNotFound as e:
-                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
-            except ValidationError as e:
-                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
-                artemis.log.LOGGER.error(
-                    f" {format_exception(e)}: Invalid json parameters"
-                )
             except Exception as e:
-                status_and_message = StatusAndMessage(Status.FAILED, repr(e))
+                status_and_message = ErrorStatusAndMessage(e)
                 artemis.log.LOGGER.error(format_exception(e))
 
         elif action == Actions.STOP.value:

@@ -6,8 +6,6 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.devices.detector import DetectorParams
-from dodal.devices.eiger import DetectorParams
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.exceptions import WarningException
@@ -28,16 +26,14 @@ from artemis.external_interaction.system_tests.test_ispyb_dev_connection import 
     ISPYB_CONFIG,
 )
 from artemis.parameters.beamline_parameters import GDABeamlineParameters
-from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH, SIM_BEAMLINE
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from artemis.parameters.external_parameters import from_file as default_raw_params
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
 @pytest.fixture
 def params():
-    params = FGSInternalParameters(default_raw_params())
+    params = FGSInternalParameters(**default_raw_params())
     params.artemis_params.beamline = SIM_BEAMLINE
     return params
 
@@ -49,25 +45,10 @@ def RE():
 
 @pytest.fixture
 def fgs_composite():
-    fast_grid_scan_composite = FGSComposite(
-        detector_params=DetectorParams(
-            current_energy=100,
-            exposure_time=0.1,
-            directory="/tmp",
-            prefix="file_name",
-            detector_distance=100.0,
-            omega_start=0.0,
-            omega_increment=0.1,
-            num_images_per_trigger=1,
-            num_triggers=50,
-            use_roi_mode=False,
-            run_number=0,
-            det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
-        )
-    )
+    fast_grid_scan_composite = FGSComposite()
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
-        I03_BEAMLINE_PARAMETER_PATH
+        BEAMLINE_PARAMETER_PATHS["i03"]
     )
     aperture_positions = AperturePositions.from_gda_beamline_params(
         gda_beamline_parameters
@@ -142,6 +123,10 @@ def test_full_plan_tidies_at_end(
     RE: RunEngine,
 ):
     callbacks = FGSCallbackCollection.from_params(params)
+    callbacks.nexus_handler.nexus_writer_1 = MagicMock()
+    callbacks.nexus_handler.nexus_writer_2 = MagicMock()
+    callbacks.ispyb_handler.ispyb_ids = MagicMock()
+    callbacks.ispyb_handler.ispyb.datacollection_ids = MagicMock()
     RE(get_plan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
@@ -172,23 +157,25 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 
 @pytest.mark.s03
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
-    RE: RunEngine, fgs_composite: FGSComposite, fetch_comment: Callable, params
+    RE: RunEngine,
+    fgs_composite: FGSComposite,
+    fetch_comment: Callable,
+    params: FGSInternalParameters,
 ):
-    parameters = FGSInternalParameters(params)
-    parameters.artemis_params.detector_params.directory = "./tmp"
-    parameters.artemis_params.detector_params.prefix = str(uuid.uuid1())
-    parameters.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    params.artemis_params.detector_params.directory = "./tmp"
+    params.artemis_params.detector_params.prefix = str(uuid.uuid1())
+    params.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    parameters.experiment_params.z_steps = 100
+    params.experiment_params.z_steps = 100
 
-    callbacks = FGSCallbackCollection.from_params(parameters)
+    callbacks = FGSCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
     mock_start_zocalo = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
 
     with pytest.raises(WarningException):
-        RE(get_plan(parameters, callbacks))
+        RE(get_plan(params, callbacks))
 
     dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
 
@@ -207,7 +194,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     RE: RunEngine,
     fgs_composite: FGSComposite,
     zocalo_env: None,
-    params,
+    params: FGSInternalParameters,
 ):
     """This test currently avoids hardware interaction and is mostly confirming
     interaction with dev_ispyb and dev_zocalo"""
@@ -228,6 +215,6 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     RE(get_plan(params, callbacks))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.05)
-    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.15)
-    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.25)
+    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(-0.05)
+    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.05)
+    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.15)

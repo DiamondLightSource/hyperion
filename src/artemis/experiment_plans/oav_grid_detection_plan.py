@@ -4,15 +4,17 @@ import math
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.preprocessors import finalize_wrapper
-from dodal import i03
+from dodal.beamlines import i03
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import MXSC, OAV
 from dodal.devices.smargon import Smargon
 
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
+from artemis.exceptions import WarningException
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
@@ -20,46 +22,72 @@ if TYPE_CHECKING:
 
 
 def create_devices():
-    i03.oav().wait_for_connection()
-    i03.smargon().wait_for_connection()
-    i03.backlight().wait_for_connection()
+    i03.oav()
+    i03.smargon()
+    i03.backlight()
 
 
 def grid_detection_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
-    filenames: dict[str, str],
+    snapshot_template: str,
+    snapshot_dir: str,
     width=600,
     box_size_microns=20,
 ):
     yield from finalize_wrapper(
         grid_detection_main_plan(
-            parameters, out_parameters, filenames, width, box_size_microns
+            parameters,
+            out_parameters,
+            snapshot_template,
+            snapshot_dir,
+            width,
+            box_size_microns,
         ),
-        reset_oav(parameters),
+        reset_oav(),
     )
 
 
+def wait_for_tip_to_be_found(mxsc: MXSC):
+    pin_tip = mxsc.pin_tip
+    yield from bps.trigger(pin_tip, wait=True)
+    found_tip = yield from bps.rd(pin_tip)
+    if found_tip == pin_tip.INVALID_POSITION:
+        top_edge = yield from bps.rd(mxsc.top)
+        bottom_edge = yield from bps.rd(mxsc.bottom)
+        LOGGER.info(
+            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
+        )
+        raise WarningException(
+            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
+        )
+    return found_tip
+
+
+@bpp.run_decorator()
 def grid_detection_main_plan(
     parameters: OAVParameters,
     out_parameters: GridScanParams,
-    filenames: dict[str, str],
+    snapshot_template: str,
+    snapshot_dir: str,
     grid_width_px: int,
-    box_size_um: int,
+    box_size_um: float,
 ):
     """
-    Attempts to find the centre of the pin on the oav by rotating and sampling elements.
-    I03 gets the number of rotation points from gda.mx.loop.centring.omega.steps which defaults to 6.
+    Creates the parameters for two grids that are 90 degrees from each other and
+    encompass the whole of the sample as it appears in the OAV.
 
     Args:
-        oav (OAV): The OAV device in use.
-        parameters (OAVParamaters): Object containing values loaded in from various parameter files in use.
-        max_run_num (int): Maximum number of times to run.
-        rotation_points (int): Test to see if the pin is widest `rotation_points` number of times on a full 180 degree rotation.
+        parameters (OAVParamaters): Object containing paramters for setting up the OAV
+        out_parameters (GridScanParams): The returned parameters for the gridscan
+        snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
+        snapshot_dir (str): The location to save snapshots
+        grid_width_px (int): The width of the grid to scan in pixels
+        box_size_um (float): The size of each box of the grid in microns
     """
     oav: OAV = i03.oav()
     smargon: Smargon = i03.smargon()
-    LOGGER.info("OAV Centring: Starting loop centring")
+    LOGGER.info("OAV Centring: Starting grid detection centring")
 
     yield from bps.wait()
 
@@ -74,19 +102,19 @@ def grid_detection_main_plan(
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
-    for angle in [0, 90]:
+    # The FGS uses -90 so we need to match it
+    for angle in [0, -90]:
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
-        # TODO improve this from just waiting some random time
-        yield from bps.sleep(0.5)
+        # See #673 for improvements
+        yield from bps.sleep(0.3)
+
+        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc)
+
+        LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
         top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
         bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
-
-        tip_x_px = yield from bps.rd(oav.mxsc.tip_x)
-        tip_y_px = yield from bps.rd(oav.mxsc.tip_y)
-
-        LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
         full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
@@ -96,11 +124,12 @@ def grid_detection_main_plan(
 
         # the edge detection line can jump to the edge of the image sometimes, filter
         # those points out, and if empty after filter use the whole image
-        filtered_top = list(top_edge[top_edge != 0]) or [full_image_height_px]
-        filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [0]
+        filtered_top = list(top_edge[top_edge != 0]) or [0]
+        filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [
+            full_image_height_px
+        ]
         min_y = min(filtered_top)
         max_y = max(filtered_bottom)
-        LOGGER.info(f"Min/max {min_y, max_y}")
         grid_height_px = max_y - min_y
 
         LOGGER.info(f"Drawing snapshot {grid_width_px} by {grid_height_px}")
@@ -119,21 +148,29 @@ def grid_detection_main_plan(
         yield from bps.abs_set(oav.snapshot.num_boxes_x, boxes[0])
         yield from bps.abs_set(oav.snapshot.num_boxes_y, boxes[1])
 
-        LOGGER.info("Triggering snapshot")
-
-        snapshot_filename = (
-            filenames["snap_1_filename"] if angle == 0 else filenames["snap_2_filename"]
-        )
+        snapshot_filename = snapshot_template.format(angle=abs(angle))
 
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
-        yield from bps.abs_set(oav.snapshot.directory, filenames["snapshot_dir"])
+        yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
 
-        # Get the beam distance from the centre (in pixels).
+        yield from bps.create("snapshot_to_ispyb")
+        yield from bps.read(oav.snapshot.last_saved_path)
+        yield from bps.read(oav.snapshot.last_path_outer)
+        yield from bps.read(oav.snapshot.last_path_full_overlay)
+        yield from bps.read(oav.snapshot.top_left_x)
+        yield from bps.read(oav.snapshot.top_left_y)
+        yield from bps.save()
+
+        # The first frame is taken at the centre of the first box
+        centre_of_first_box = (
+            upper_left[0] + box_size_x_pixels / 2,
+            upper_left[1] + box_size_y_pixels / 2,
+        )
         (
             beam_distance_i_pixels,
             beam_distance_j_pixels,
-        ) = parameters.calculate_beam_distance(upper_left[0], upper_left[1])
+        ) = parameters.calculate_beam_distance(*centre_of_first_box)
 
         current_motor_xyz = np.array(
             [
@@ -156,33 +193,31 @@ def grid_detection_main_plan(
         start_positions.append(start_position)
 
     LOGGER.info(
-        f"x_start: GDA: {out_parameters.x_start}, Artemis {start_positions[0][0]}"
+        f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][2]}"
     )
+    out_parameters.x_start = start_positions[0][0]
+
+    out_parameters.y1_start = start_positions[0][1]
+    out_parameters.y2_start = start_positions[0][1]
+
+    out_parameters.z1_start = start_positions[1][2]
+    out_parameters.z2_start = start_positions[1][2]
 
     LOGGER.info(
-        f"y1_start: GDA: {out_parameters.y1_start}, Artemis {start_positions[0][1]}"
+        f"Calculated number of steps {box_numbers[0][0], box_numbers[0][1], box_numbers[1][1]}"
     )
+    out_parameters.x_steps = box_numbers[0][0]
+    out_parameters.y_steps = box_numbers[0][1]
+    out_parameters.z_steps = box_numbers[1][1]
 
-    LOGGER.info(
-        f"z1_start: GDA: {out_parameters.z1_start}, Artemis {start_positions[1][1]}"
-    )
-
-    LOGGER.info(
-        f"x_step_size: GDA: {out_parameters.x_step_size}, Artemis {box_size_um}"
-    )
-    LOGGER.info(
-        f"y_step_size: GDA: {out_parameters.y_step_size}, Artemis {box_size_um}"
-    )
-    LOGGER.info(
-        f"z_step_size: GDA: {out_parameters.z_step_size}, Artemis {box_size_um}"
-    )
-
-    LOGGER.info(f"x_steps: GDA: {out_parameters.x_steps}, Artemis {box_numbers[0][0]}")
-    LOGGER.info(f"y_steps: GDA: {out_parameters.y_steps}, Artemis {box_numbers[0][1]}")
-    LOGGER.info(f"z_steps: GDA: {out_parameters.z_steps}, Artemis {box_numbers[1][1]}")
+    LOGGER.info(f"Step sizes: {box_size_um, box_size_um, box_size_um}")
+    out_parameters.x_step_size = box_size_um / 1000
+    out_parameters.y_step_size = box_size_um / 1000
+    out_parameters.z_step_size = box_size_um / 1000
 
 
-def reset_oav(parameters: OAVParameters):
+def reset_oav():
+    """Changes the MJPG stream to look at the camera without the edge detection and turns off the edge detcetion plugin."""
     oav = i03.oav()
-    yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")
+    yield from bps.abs_set(oav.snapshot.input_plugin, "OAV.CAM")
     yield from bps.abs_set(oav.mxsc.enable_callbacks, 0)

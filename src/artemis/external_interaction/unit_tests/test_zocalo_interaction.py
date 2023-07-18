@@ -6,6 +6,7 @@ from time import sleep
 from typing import Callable, Dict
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from pytest import mark, raises
 from zocalo.configuration import Configuration
@@ -15,7 +16,6 @@ from artemis.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from artemis.parameters.constants import SIM_ZOCALO_ENV
-from artemis.utils.utils import Point3D
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -105,12 +105,14 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
     centre_of_mass_coords = [2.942925659754348, 7.142683401382778, 6.79110544979448]
 
-    message = [
-        {
-            "max_voxel": [3, 5, 5],
-            "centre_of_mass": centre_of_mass_coords,
-        }
-    ]
+    message = {
+        "results": [
+            {
+                "max_voxel": [3, 5, 5],
+                "centre_of_mass": centre_of_mass_coords,
+            }
+        ]
+    }
     datacollection_grid_id = 7263143
     step_params = {"dcid": "8183741", "dcgid": str(datacollection_grid_id)}
 
@@ -137,8 +139,10 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
         return_value = future.result()
 
     assert type(return_value) == list
-    returned_com = Point3D(*return_value[0]["centre_of_mass"])
-    assert returned_com == Point3D(*centre_of_mass_coords)
+    returned_com = np.array([*return_value[0]["centre_of_mass"]])
+    np.testing.assert_array_almost_equal(
+        returned_com, np.array([*centre_of_mass_coords])
+    )
 
 
 @patch("workflows.recipe.wrap_subscribe")
@@ -186,7 +190,7 @@ def test_when_no_results_returned_then_no_diffraction_exception_raised(
 ):
     zc = ZocaloInteractor(environment=SIM_ZOCALO_ENV)
 
-    message = []
+    message = {}
     datacollection_grid_id = 7263143
     step_params = {"dcid": "8183741", "dcgid": str(datacollection_grid_id)}
 

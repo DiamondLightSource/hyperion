@@ -5,64 +5,64 @@ from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import numpy as np
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal import i03
-from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.devices.eiger import DetectorParams
-from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
-from dodal.i03 import (
+from dodal.beamlines import i03
+from dodal.beamlines.i03 import (
     ApertureScatterguard,
+    Attenuator,
     Backlight,
     EigerDetector,
     FastGridScan,
+    Flux,
     S4SlitGaps,
     Smargon,
     Synchrotron,
     Undulator,
     Zebra,
 )
+from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.eiger import DetectorParams
+from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
 
 import artemis.log
-from artemis.device_setup_plans.setup_zebra_for_fgs import (
+from artemis.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
 )
 from artemis.exceptions import WarningException
+from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
+    FGSCallbackCollection,
+)
 from artemis.parameters import external_parameters
 from artemis.parameters.beamline_parameters import (
-    GDABeamlineParameters,
+    get_beamline_parameters,
     get_beamline_prefixes,
 )
-from artemis.parameters.constants import (
-    I03_BEAMLINE_PARAMETER_PATH,
-    ISPYB_PLAN_NAME,
-    SIM_BEAMLINE,
-)
+from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
 from artemis.tracing import TRACER
-from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
-    from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-        FGSCallbackCollection,
-    )
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    from artemis.parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
 
 
 class FGSComposite:
-    """A device consisting of all the Devices required for a fast gridscan."""
+    """A container for all the Devices required for a fast gridscan."""
 
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
     eiger: EigerDetector
     fast_grid_scan: FastGridScan
+    flux: Flux
     s4_slit_gaps: S4SlitGaps
     sample_motors: Smargon
     synchrotron: Synchrotron
     undulator: Undulator
     zebra: Zebra
+    attenuator: Attenuator
 
     def __init__(
         self,
@@ -78,18 +78,16 @@ class FGSComposite:
             wait_for_connection=False, fake_with_ophyd_sim=fake, params=detector_params
         )
         self.fast_grid_scan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
+        self.flux = i03.flux(fake_with_ophyd_sim=fake)
         self.s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
         self.sample_motors = i03.smargon(fake_with_ophyd_sim=fake)
         self.undulator = i03.undulator(fake_with_ophyd_sim=fake)
         self.synchrotron = i03.synchrotron(fake_with_ophyd_sim=fake)
         self.zebra = i03.zebra(fake_with_ophyd_sim=fake)
+        self.attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
 
 
 fast_grid_scan_composite: FGSComposite | None = None
-
-
-def get_beamline_parameters():
-    return GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
 
 
 def create_devices():
@@ -136,6 +134,8 @@ def read_hardware_for_ispyb(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
+    attenuator: Attenuator,
+    flux: Flux,
 ):
     artemis.log.LOGGER.info(
         "Reading status of beamline parameters for ispyb deposition."
@@ -147,6 +147,8 @@ def read_hardware_for_ispyb(
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
     yield from bps.read(s4_slit_gaps.xgap)
     yield from bps.read(s4_slit_gaps.ygap)
+    yield from bps.read(attenuator.actual_transmission)
+    yield from bps.read(flux.flux_reading)
     yield from bps.save()
 
 
@@ -154,7 +156,7 @@ def read_hardware_for_ispyb(
 @bpp.run_decorator(md={"subplan_name": "move_xyz"})
 def move_xyz(
     sample_motors,
-    xray_centre_motor_position: Point3D,
+    xray_centre_motor_position: np.ndarray,
     md={
         "plan_name": "move_xyz",
     },
@@ -164,11 +166,11 @@ def move_xyz(
     artemis.log.LOGGER.info(f"Moving Smargon x, y, z to: {xray_centre_motor_position}")
     yield from bps.mv(
         sample_motors.x,
-        xray_centre_motor_position.x,
+        xray_centre_motor_position[0],
         sample_motors.y,
-        xray_centre_motor_position.y,
+        xray_centre_motor_position[1],
         sample_motors.z,
-        xray_centre_motor_position.z,
+        xray_centre_motor_position[2],
     )
 
 
@@ -216,6 +218,8 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.attenuator,
+            fgs_composite.flux,
         )
 
     fgs_motors = fgs_composite.fast_grid_scan
@@ -226,17 +230,23 @@ def run_gridscan(
 
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
-    @bpp.stage_decorator([fgs_composite.eiger])
+    @bpp.contingency_decorator(
+        except_plan=lambda e: (yield from bps.stop(fgs_composite.eiger)),
+        else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
+    )
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
+    # Wait for arming to finish
+    yield from bps.wait("ready_for_data_collection")
+    yield from bps.stage(fgs_composite.eiger)
+
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()
 
-    with TRACER.start_span("move_to_z_0"):
-        yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
 @bpp.set_run_key_decorator("run_gridscan_and_move")
@@ -250,14 +260,17 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = Point3D(
-        (yield from bps.rd(fgs_composite.sample_motors.x)),
-        (yield from bps.rd(fgs_composite.sample_motors.y)),
-        (yield from bps.rd(fgs_composite.sample_motors.z)),
+    initial_xyz = np.array(
+        [
+            (yield from bps.rd(fgs_composite.sample_motors.x)),
+            (yield from bps.rd(fgs_composite.sample_motors.y)),
+            (yield from bps.rd(fgs_composite.sample_motors.z)),
+        ]
     )
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
+<<<<<<< HEAD
     # While the gridscan is happening we want to write out nexus files and trigger zocalo
     @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
     def gridscan_with_subscriptions(fgs_composite, params):
@@ -265,6 +278,10 @@ def run_gridscan_and_move(
         yield from run_gridscan(fgs_composite, params)
 
     yield from gridscan_with_subscriptions(fgs_composite, parameters)
+=======
+    artemis.log.LOGGER.info("Starting grid scan")
+    yield from run_gridscan(fgs_composite, parameters)
+>>>>>>> origin/main
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
@@ -288,7 +305,6 @@ def run_gridscan_and_move(
 
 def get_plan(
     parameters: FGSInternalParameters,
-    subscriptions: FGSCallbackCollection,
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -306,8 +322,19 @@ def get_plan(
         parameters.artemis_params.detector_params
     )
 
+    subscriptions = FGSCallbackCollection.from_params(parameters)
+
+    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
+        list(subscriptions)  # must be the outermost decorator to receive the metadata
+    )
+    @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": "run_gridscan_move_and_tidy",
+            "hyperion_internal_parameters": parameters.json(),
+        }
+    )
     @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
-    @bpp.subs_decorator(subscriptions.ispyb_handler)
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
@@ -327,13 +354,13 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
-    from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
+    from artemis.parameters.plan_specific.fgs_internal_params import (
         FGSInternalParameters,
     )
 
-    parameters = FGSInternalParameters(external_parameters.from_file())
+    parameters = FGSInternalParameters(**external_parameters.from_file())
     subscriptions = FGSCallbackCollection.from_params(parameters)
 
     create_devices()
 
-    RE(get_plan(parameters, subscriptions))
+    RE(get_plan(parameters))

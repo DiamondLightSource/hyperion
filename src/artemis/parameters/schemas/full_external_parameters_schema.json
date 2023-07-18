@@ -3,7 +3,7 @@
     "type": "object",
     "properties": {
         "params_version": {
-            "const": 0.3
+            "const": "2.0.0"
         },
         "artemis_params": {
             "type": "object",
@@ -16,6 +16,9 @@
                 },
                 {
                     "$ref": "experiment_schemas/rotation_scan_params_schema.json"
+                },
+                {
+                    "$ref": "experiment_schemas/grid_scan_with_edge_detect_params_schema.json"
                 }
             ]
         }

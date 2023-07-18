@@ -13,9 +13,7 @@ from artemis.external_interaction.ispyb.store_in_ispyb import (
 )
 from artemis.log import LOGGER, set_dcgid_tag
 from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
 class FGSISPyBHandlerCallback(CallbackBase):
@@ -82,6 +80,9 @@ class FGSISPyBHandlerCallback(CallbackBase):
             ]
             self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
                 "s4_slit_gaps_ygap"
+            ]
+            self.params.artemis_params.ispyb_params.transmission = doc["data"][
+                "attenuator_actual_transmission"
             ]
 
             LOGGER.info("Creating ispyb entry.")

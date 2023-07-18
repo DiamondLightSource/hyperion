@@ -1,5 +1,8 @@
 from unittest.mock import MagicMock
 
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import DetectorParams, EigerDetector
@@ -13,14 +16,11 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 )
 from artemis.parameters.constants import SIM_BEAMLINE
 from artemis.parameters.external_parameters import from_file as default_raw_params
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-)
-from artemis.utils.utils import Point3D
+from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
 def test_callback_collection_init():
-    test_parameters = FGSInternalParameters(default_raw_params())
+    test_parameters = FGSInternalParameters(**default_raw_params())
     callbacks = FGSCallbackCollection.from_params(test_parameters)
     assert (
         callbacks.ispyb_handler.params.experiment_params
@@ -45,7 +45,7 @@ def test_callback_collection_init():
 @pytest.fixture()
 def eiger():
     detector_params: DetectorParams = DetectorParams(
-        current_energy=100,
+        current_energy_ev=100,
         exposure_time=0.1,
         directory="/tmp",
         prefix="file_name",
@@ -84,7 +84,7 @@ def test_communicator_in_composite_run(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
 
-    params = FGSInternalParameters(default_raw_params())
+    params = FGSInternalParameters(**default_raw_params())
     params.artemis_params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
@@ -92,7 +92,7 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._wait_for_result = MagicMock()
     callbacks.zocalo_handler._run_end = MagicMock()
     callbacks.zocalo_handler._run_start = MagicMock()
-    callbacks.zocalo_handler.xray_centre_motor_position = Point3D(1, 2, 3)
+    callbacks.zocalo_handler.xray_centre_motor_position = np.array([1, 2, 3])
 
     fast_grid_scan_composite = FGSComposite()
     # this is where it's currently getting stuck:
@@ -102,8 +102,8 @@ def test_communicator_in_composite_run(
     RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, callbacks))
 
     # nexus writing
-    callbacks.nexus_handler.nxs_writer_1.assert_called_once()
-    callbacks.nexus_handler.nxs_writer_2.assert_called_once()
+    callbacks.nexus_handler.nexus_writer_1.assert_called_once()
+    callbacks.nexus_handler.nexus_writer_2.assert_called_once()
     # ispyb
     ispyb_begin_deposition.assert_called_once()
     ispyb_end_deposition.assert_called_once()
@@ -111,3 +111,40 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._run_start.assert_called()
     callbacks.zocalo_handler._run_end.assert_called()
     callbacks.zocalo_handler._wait_for_result.assert_called_once()
+
+
+def test_callback_collection_list():
+    test_parameters = FGSInternalParameters(**default_raw_params())
+    callbacks = FGSCallbackCollection.from_params(test_parameters)
+    callback_list = list(callbacks)
+    assert len(callback_list) == 3
+    assert callbacks.ispyb_handler in callback_list
+    assert callbacks.nexus_handler in callback_list
+    assert callbacks.zocalo_handler in callback_list
+
+
+def test_subscribe_in_plan():
+    test_parameters = FGSInternalParameters(**default_raw_params())
+    callbacks = FGSCallbackCollection.from_params(test_parameters)
+    document_event_mock = MagicMock()
+    callbacks.ispyb_handler.start = document_event_mock
+    callbacks.ispyb_handler.stop = document_event_mock
+    callbacks.zocalo_handler.start = document_event_mock
+    callbacks.zocalo_handler.stop = document_event_mock
+    callbacks.nexus_handler.start = document_event_mock
+    callbacks.nexus_handler.stop = document_event_mock
+
+    RE = RunEngine()
+
+    @bpp.subs_decorator(callbacks.ispyb_handler)
+    def outer_plan():
+        @bpp.set_run_key_decorator("inner_plan")
+        @bpp.run_decorator(md={"subplan_name": "inner_plan"})
+        def inner_plan():
+            yield from bps.sleep(0)
+
+        yield from inner_plan()
+
+    RE(outer_plan())
+
+    document_event_mock.assert_called()

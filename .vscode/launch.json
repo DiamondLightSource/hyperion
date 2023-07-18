@@ -12,14 +12,10 @@
             "args": [
                 "--dev",
                 "--verbose-event-logging",
-                "--skip-startup-connection",
-                "--logging-level",
-                "DEBUG"
+                "--skip-startup-connection"
             ],
             "env": {
-                "EPICS_CA_SERVER_PORT": "5065",
-                "EPICS_CA_REPEATER_PORT": "5066",
-                "ISPYB_CONFIG_PATH": "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
+                "EPICS_CA_SERVER_PORT": "5364"
             },
             "justMyCode": false
         },

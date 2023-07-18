@@ -8,11 +8,11 @@ from typing import Optional
 import workflows.recipe
 import workflows.transport
 import zocalo.configuration
+from numpy import ndarray
 from workflows.transport import lookup
 
 import artemis.log
 from artemis.exceptions import WarningException
-from artemis.utils.utils import Point3D
 
 TIMEOUT = 90
 
@@ -81,8 +81,8 @@ class ZocaloInteractor:
         )
 
     def wait_for_result(
-        self, data_collection_group_id: int, timeout: int | None = None
-    ) -> Point3D:
+        self, data_collection_group_id: int, timeout: int = None
+    ) -> ndarray:
         """Block until a result is received from Zocalo.
         Args:
             data_collection_group_id (int): The ID of the data collection group representing
@@ -92,20 +92,22 @@ class ZocaloInteractor:
         Returns:
             Returns the message from zocalo, as a list of dicts describing each crystal
             which zocalo found:
-            [
-                {
-                    "centre_of_mass": [1, 2, 3],
-                    "max_voxel": [2, 4, 5],
-                    "max_count": 105062,
-                    "n_voxels": 35,
-                    "total_count": 2387574,
-                    "bounding_box": [[1, 2, 3], [3, 4, 4]],
-                },
-                {
-                    result 2
-                },
-                ...
-            ]
+            {
+                "results": [
+                    {
+                        "centre_of_mass": [1, 2, 3],
+                        "max_voxel": [2, 4, 5],
+                        "max_count": 105062,
+                        "n_voxels": 35,
+                        "total_count": 2387574,
+                        "bounding_box": [[1, 2, 3], [3, 4, 4]],
+                    },
+                    {
+                        result 2
+                    },
+                    ...
+                ]
+            }
         """
         # Set timeout default like this so that we can modify TIMEOUT during tests
         if timeout is None:
@@ -124,9 +126,10 @@ class ZocaloInteractor:
                 transport.ack(header)
                 received_group_id = recipe_parameters["dcgid"]
                 if received_group_id == str(data_collection_group_id):
-                    if len(message) == 0:
+                    results = message.get("results", [])
+                    if len(results) == 0:
                         raise NoDiffractionFound()
-                    result_received.put(message)
+                    result_received.put(results)
                 else:
                     artemis.log.LOGGER.warning(
                         f"Warning: results for {received_group_id} received but expected \
