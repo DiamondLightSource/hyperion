@@ -138,7 +138,6 @@ class RotationInternalParameters(InternalParameters):
             all_params["omega_increment"] = 0
         all_params["num_triggers"] = 1
         all_params["num_images_per_trigger"] = all_params["num_images"]
-        all_params["upper_left"] = np.array(all_params["upper_left"])
         return RotationArtemisParameters(
             **extract_artemis_params_from_flat_dict(
                 all_params, cls._artemis_param_key_definitions()

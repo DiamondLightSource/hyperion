@@ -47,6 +47,8 @@ def test_nexus_handler_gets_documents_in_mock_plan(params: RotationInternalParam
     cb = RotationCallbackCollection.from_params(params)
     cb.nexus_handler.start = MagicMock()
     cb.nexus_handler.stop = MagicMock()
+    cb.ispyb_handler.start = MagicMock()
+    cb.ispyb_handler.stop = MagicMock()
 
     RE(fake_get_plan(params, cb))
 
@@ -67,6 +69,9 @@ def test_nexus_handler_triggers_write_file_when_told(
     RE = RunEngine({})
 
     cb = RotationCallbackCollection.from_params(params)
+
+    cb.ispyb_handler.start = MagicMock()
+    cb.ispyb_handler.stop = MagicMock()
 
     RE(fake_get_plan(params, cb))
 

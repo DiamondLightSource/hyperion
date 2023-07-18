@@ -182,13 +182,11 @@ def test_cleanup_happens(
         cleanup_plan.assert_not_called()
     # check that failure is handled in composite plan
     with (
-        patch("dodal.beamlines.i03.smargon", return_value=lambda: smargon),
-        patch("dodal.beamlines.i03.eiger", return_value=lambda: eiger),
-        patch("dodal.beamlines.i03.zebra", return_value=lambda: zebra),
-        patch("dodal.beamlines.i03.backlight", return_value=lambda: backlight),
-        patch(
-            "dodal.beamlines.i03.detector_motion", return_value=lambda: detector_motion
-        ),
+        patch("dodal.beamlines.i03.smargon", return_value=smargon),
+        patch("dodal.beamlines.i03.eiger", return_value=eiger),
+        patch("dodal.beamlines.i03.zebra", return_value=zebra),
+        patch("dodal.beamlines.i03.backlight", return_value=backlight),
+        patch("dodal.beamlines.i03.detector_motion", return_value=detector_motion),
         patch(
             "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
             lambda _: mock_rotation_subscriptions,

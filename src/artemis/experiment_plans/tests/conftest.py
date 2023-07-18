@@ -173,6 +173,8 @@ def mock_subscriptions(test_fgs_params):
 def mock_rotation_subscriptions(test_rotation_params):
     with patch(
         "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationNexusFileHandlerCallback"
+    ), patch(
+        "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationISPyBHandlerCallback"
     ):
         subscriptions = RotationCallbackCollection.from_params(test_rotation_params)
     return subscriptions

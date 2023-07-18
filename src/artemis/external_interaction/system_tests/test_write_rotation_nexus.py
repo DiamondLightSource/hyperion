@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -75,6 +75,9 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     RE = RunEngine({})
 
     cb = RotationCallbackCollection.from_params(test_params)
+    cb.ispyb_handler.start = MagicMock()
+    cb.ispyb_handler.stop = MagicMock()
+    cb.ispyb_handler.event = MagicMock()
     with patch(
         "artemis.external_interaction.nexus.write_nexus.get_current_time",
         return_value="test_time",
