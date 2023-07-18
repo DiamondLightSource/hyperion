@@ -84,9 +84,6 @@ class RotationIspybParams(IspybParams):
 class GridscanIspybParams(IspybParams):
     upper_left: np.ndarray
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)  # TODO REMOVE JUST FOR DEBUGGING
-
     def dict(self, **kwargs):
         as_dict = super().dict(**kwargs)
         as_dict["upper_left"] = as_dict["upper_left"].tolist()
