@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 from bluesky.callbacks import CallbackBase
 
@@ -48,7 +48,7 @@ class FGSISPyBHandlerCallback(CallbackBase):
             else StoreInIspyb2D(ispyb_config, self.params)
         )
         self.ispyb_ids: tuple = (None, None, None)
-        self.uid_to_finalize_on = None
+        self.uid_to_finalize_on: Optional[str] = None
 
     def append_to_comment(self, comment: str):
         try:
