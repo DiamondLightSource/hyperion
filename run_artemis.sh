@@ -112,7 +112,7 @@ if [[ $START == 1 ]]; then
             ARTEMIS_LOG_DIR=/dls_sw/$BEAMLINE/logs/bluesky
         fi
     fi
-    echo "Logging to $ARTEMIS_LOG_DIR"
+    echo "$(date) Logging to $ARTEMIS_LOG_DIR"
     export ARTEMIS_LOG_DIR
     mkdir -p $ARTEMIS_LOG_DIR
     start_log_path=$ARTEMIS_LOG_DIR/start_log.txt
@@ -129,15 +129,16 @@ if [[ $START == 1 ]]; then
     for i in "${!args[@]}"
     do
         if [ "${args[$i]}" != false ]; then commands+="${arg_strings[$i]} "; fi;
-    done 
+    done
     
     python -m artemis `echo $commands;`>$start_log_path 2>&1 &
 
-    echo "Waiting for Artemis to boot"
+    echo "$(date) Waiting for Artemis to boot"
 
-    for i in {1..10}
+    for i in {1..30}
     do
         curl --head -X GET http://localhost:5005/status >/dev/null
+        echo "$(date)"
         ret_value=$?
         if [ $ret_value -ne 0 ]; then
             sleep 1
@@ -147,10 +148,10 @@ if [[ $START == 1 ]]; then
     done
 
     if [ $ret_value -ne 0 ]; then
-        echo "Artemis Failed to start!!!!"
+        echo "$(date) Artemis Failed to start!!!!"
         exit 1
     else
-        echo "Artemis started"
+        echo "$(date) Artemis started"
     fi
 fi
 

@@ -79,6 +79,9 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         synchrotron_test_value
     )
 
+    transmission_test_value = 0.5
+    fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)
+
     xgap_test_value = 0.1234
     ygap_test_value = 0.2345
     fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
@@ -91,9 +94,9 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     test_ispyb_callback.ispyb = MagicMock()
     RE.subscribe(test_ispyb_callback)
 
-    def standalone_read_hardware_for_ispyb(und, syn, slits, fl):
+    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
         yield from bps.open_run()
-        yield from read_hardware_for_ispyb(und, syn, slits, fl)
+        yield from read_hardware_for_ispyb(und, syn, slits, attn, fl)
         yield from bps.close_run()
 
     RE(
@@ -101,6 +104,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
             fake_fgs_composite.undulator,
             fake_fgs_composite.synchrotron,
             fake_fgs_composite.s4_slit_gaps,
+            fake_fgs_composite.attenuator,
             fake_fgs_composite.flux,
         )
     )
@@ -110,6 +114,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     assert params.artemis_params.ispyb_params.synchrotron_mode == synchrotron_test_value
     assert params.artemis_params.ispyb_params.slit_gap_size_x == xgap_test_value
     assert params.artemis_params.ispyb_params.slit_gap_size_y == ygap_test_value
+    assert params.artemis_params.ispyb_params.transmission == transmission_test_value
+    assert params.artemis_params.ispyb_params.flux == flux_test_value
 
 
 @patch(

@@ -130,7 +130,11 @@ def rotation_scan_plan(
 
     # get some information for the ispyb deposition and trigger the callback
     yield from read_hardware_for_ispyb(
-        i03.undulator(), i03.synchrotron(), i03.s4_slit_gaps(), i03.flux()
+        i03.undulator(),
+        i03.synchrotron(),
+        i03.s4_slit_gaps(),
+        i03.attenuator(),
+        i03.flux(),
     )
 
     LOGGER.info(
