@@ -7,10 +7,10 @@ import bluesky.plan_stubs as bps
 from bluesky import RunEngine
 from bluesky.plans import grid_scan
 from bluesky.utils import ProgressBarManager
-from dodal import i03
+from dodal.beamlines import i03
+from dodal.beamlines.i03 import Smargon
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import DetectorParams
-from dodal.i03 import Smargon
 
 from artemis.log import LOGGER
 from artemis.parameters import external_parameters
@@ -18,15 +18,16 @@ from artemis.parameters.beamline_parameters import (
     GDABeamlineParameters,
     get_beamline_prefixes,
 )
-from artemis.parameters.constants import I03_BEAMLINE_PARAMETER_PATH, SIM_BEAMLINE
+from artemis.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from artemis.tracing import TRACER
-from artemis.utils.utils import Point3D
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from artemis.external_interaction.callbacks.stepped_grid_scan.stepped_grid_scan_callback_collection import (
         SteppedGridScanCallbackCollection,
     )
-    from artemis.parameters.internal_parameters.plan_specific.stepped_grid_scan_internal_params import (
+    from artemis.parameters.plan_specific.stepped_grid_scan_internal_params import (
         SteppedGridScanInternalParameters,
     )
 
@@ -49,7 +50,7 @@ stepped_grid_scan_composite: SteppedGridScanComposite | None = None
 
 
 def get_beamline_parameters():
-    return GDABeamlineParameters.from_file(I03_BEAMLINE_PARAMETER_PATH)
+    return GDABeamlineParameters.from_file(BEAMLINE_PARAMETER_PATHS["i03"])
 
 
 def create_devices():
@@ -71,7 +72,7 @@ def create_devices():
 
 def move_xyz(
     sample_motors,
-    xray_centre_motor_position: Point3D,
+    xray_centre_motor_position: np.array,
     md={
         "plan_name": "move_xyz",
     },

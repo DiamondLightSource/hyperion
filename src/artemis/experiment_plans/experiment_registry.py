@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.stepped_grid_scan import SteppedGridScanParams
@@ -8,14 +8,8 @@ from dodal.devices.stepped_grid_scan import SteppedGridScanParams
 from artemis.experiment_plans import (
     fast_grid_scan_plan,
     full_grid_scan,
-<<<<<<< HEAD
-    stepped_grid_scan_plan,
-)
-from artemis.parameters.internal_parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
-=======
     rotation_scan_plan,
->>>>>>> origin/main
+    stepped_grid_scan_plan,
 )
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
     NullPlanCallbackCollection,
@@ -35,7 +29,7 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
 )
-from artemis.parameters.internal_parameters.plan_specific.stepped_grid_scan_internal_params import (
+from artemis.parameters.plan_specific.stepped_grid_scan_internal_params import (
     SteppedGridScanInternalParameters,
 )
 
@@ -48,12 +42,8 @@ def do_nothing():
     pass
 
 
-<<<<<<< HEAD
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
-PLAN_REGISTRY: Dict[str, Dict[str, Callable]] = {
-=======
 PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
->>>>>>> origin/main
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
         "run": fast_grid_scan_plan.get_plan,

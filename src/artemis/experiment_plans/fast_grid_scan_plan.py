@@ -270,7 +270,6 @@ def run_gridscan_and_move(
 
     yield from setup_zebra_for_fgs(fgs_composite.zebra)
 
-<<<<<<< HEAD
     # While the gridscan is happening we want to write out nexus files and trigger zocalo
     @bpp.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
     def gridscan_with_subscriptions(fgs_composite, params):
@@ -278,10 +277,6 @@ def run_gridscan_and_move(
         yield from run_gridscan(fgs_composite, params)
 
     yield from gridscan_with_subscriptions(fgs_composite, parameters)
-=======
-    artemis.log.LOGGER.info("Starting grid scan")
-    yield from run_gridscan(fgs_composite, parameters)
->>>>>>> origin/main
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
