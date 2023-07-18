@@ -71,10 +71,10 @@ def fgs_composite():
 
 @pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
-@patch("bluesky.plan_stubs.wait")
-@patch("bluesky.plan_stubs.kickoff")
-@patch("bluesky.plan_stubs.complete")
-@patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid")
+@patch("bluesky.plan_stubs.wait", autospec=True)
+@patch("bluesky.plan_stubs.kickoff", autospec=True)
+@patch("bluesky.plan_stubs.complete", autospec=True)
+@patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid", autospec=True)
 def test_run_gridscan(
     wait_for_fgs_valid: MagicMock,
     complete: MagicMock,
@@ -106,12 +106,20 @@ def test_read_hardware_for_ispyb(
 
 
 @pytest.mark.s03
-@patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
-@patch("bluesky.plan_stubs.wait")
-@patch("bluesky.plan_stubs.kickoff")
-@patch("bluesky.plan_stubs.complete")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual")
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite",
+    autospec=True,
+)
+@patch("bluesky.plan_stubs.wait", autospec=True)
+@patch("bluesky.plan_stubs.kickoff", autospec=True)
+@patch("bluesky.plan_stubs.complete", autospec=True)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move", autospec=True
+)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual",
+    autospec=True,
+)
 def test_full_plan_tidies_at_end(
     set_shutter_to_manual: MagicMock,
     run_gridscan_and_move: MagicMock,
@@ -132,12 +140,20 @@ def test_full_plan_tidies_at_end(
 
 
 @pytest.mark.s03
-@patch("artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite")
-@patch("bluesky.plan_stubs.wait")
-@patch("bluesky.plan_stubs.kickoff")
-@patch("bluesky.plan_stubs.complete")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual")
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite",
+    autospec=True,
+)
+@patch("bluesky.plan_stubs.wait", autospec=True)
+@patch("bluesky.plan_stubs.kickoff", autospec=True)
+@patch("bluesky.plan_stubs.complete", autospec=True)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.run_gridscan_and_move", autospec=True
+)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.set_zebra_shutter_to_manual",
+    autospec=True,
+)
 def test_full_plan_tidies_at_end_when_plan_fails(
     set_shutter_to_manual: MagicMock,
     run_gridscan_and_move: MagicMock,
@@ -186,8 +202,8 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 
 
 @pytest.mark.s03
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
 def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     complete: MagicMock,
     kickoff: MagicMock,

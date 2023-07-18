@@ -176,7 +176,7 @@ def setup_mock_return_values(ispyb_conn):
     mx_acquisition.upsert_dc_grid.return_value = TEST_GRID_INFO_ID
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_param_keys(ispyb_conn, dummy_ispyb, dummy_params):
     setup_mock_return_values(ispyb_conn)
 
@@ -210,7 +210,7 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
         assert test_function(MXAcquisition.get_data_collection_group_params(), actual)
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     ispyb_conn, dummy_ispyb, dummy_params
 ):
@@ -223,7 +223,7 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     )
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     ispyb_conn, dummy_ispyb: StoreInIspyb2D, dummy_params: FGSInternalParameters
 ):
@@ -239,7 +239,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     )
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_fail_result_run_results_in_bad_run_status(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb: StoreInIspyb2D,
@@ -262,7 +262,7 @@ def test_fail_result_run_results_in_bad_run_status(
     assert "DataCollection Successful" not in upserted_param_value_list
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_no_exception_during_run_results_in_good_run_status(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb: StoreInIspyb2D,
@@ -283,7 +283,7 @@ def test_no_exception_during_run_results_in_good_run_status(
     assert "DataCollection Successful" in upserted_param_value_list
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_comment_correct(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb: StoreInIspyb2D,
@@ -303,7 +303,7 @@ def test_ispyb_deposition_comment_correct(
     )
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_rounds_to_int(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb: StoreInIspyb2D,
@@ -326,7 +326,7 @@ def test_ispyb_deposition_rounds_to_int(
     )
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_comment_for_3D_correct(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb_3d: StoreInIspyb3D,
@@ -349,7 +349,7 @@ def test_ispyb_deposition_comment_for_3D_correct(
     )
 
 
-@patch("ispyb.open")
+@patch("ispyb.open", autospec=True)
 def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
     ispyb_conn, dummy_ispyb: StoreInIspyb2D, dummy_params: FGSInternalParameters
 ):
