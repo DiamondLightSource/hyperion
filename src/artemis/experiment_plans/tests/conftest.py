@@ -70,6 +70,26 @@ def detector_motion():
 
 
 @pytest.fixture
+def undulator():
+    return i03.undulator(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def s4_slit_gaps():
+    return i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def synchrotron():
+    return i03.synchrotron(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def flux():
+    return i03.flux(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
 def aperture_scatterguard():
     return i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,

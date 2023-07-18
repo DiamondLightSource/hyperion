@@ -88,6 +88,12 @@ class RotationInternalParameters(InternalParameters):
     experiment_params: RotationScanParams
     artemis_params: RotationArtemisParameters
 
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            **RotationArtemisParameters.Config.json_encoders,
+        }
+
     @staticmethod
     def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
         artemis_param_field_keys = [

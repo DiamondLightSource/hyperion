@@ -68,8 +68,8 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 
     sleep(0.1)
 
-    oav.mxsc.pin_tip.tip_x.sim_put(100)
     oav.mxsc.pin_tip.tip_y.sim_put(100)
+    oav.mxsc.pin_tip.tip_x.sim_put(100)
 
     sleep(0.1)
 

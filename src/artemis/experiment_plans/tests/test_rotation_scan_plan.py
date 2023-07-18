@@ -114,6 +114,10 @@ def test_rotation_plan(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     mock_rotation_subscriptions: RotationCallbackCollection,
+    synchrotron,
+    s4_slit_gaps,
+    undulator,
+    flux,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
@@ -125,12 +129,19 @@ def test_rotation_plan(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        __fake_read,
-    ), patch(
-        "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-        lambda _: mock_rotation_subscriptions,
+    with (
+        patch(
+            "bluesky.preprocessors.__read_and_stash_a_motor",
+            __fake_read,
+        ),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: mock_rotation_subscriptions,
+        ),
+        patch("dodal.beamlines.i03.undulator", lambda: undulator),
+        patch("dodal.beamlines.i03.synchrotron", lambda: synchrotron),
+        patch("dodal.beamlines.i03.s4_slit_gaps", lambda: s4_slit_gaps),
+        patch("dodal.beamlines.i03.flux", lambda: flux),
     ):
         RE(
             rotation_scan_plan(
@@ -171,11 +182,13 @@ def test_cleanup_happens(
         cleanup_plan.assert_not_called()
     # check that failure is handled in composite plan
     with (
-        patch("dodal.beamlines.i03.smargon", return_value=smargon),
-        patch("dodal.beamlines.i03.eiger", return_value=eiger),
-        patch("dodal.beamlines.i03.zebra", return_value=zebra),
-        patch("dodal.beamlines.i03.backlight", return_value=backlight),
-        patch("dodal.beamlines.i03.detector_motion", return_value=detector_motion),
+        patch("dodal.beamlines.i03.smargon", return_value=lambda: smargon),
+        patch("dodal.beamlines.i03.eiger", return_value=lambda: eiger),
+        patch("dodal.beamlines.i03.zebra", return_value=lambda: zebra),
+        patch("dodal.beamlines.i03.backlight", return_value=lambda: backlight),
+        patch(
+            "dodal.beamlines.i03.detector_motion", return_value=lambda: detector_motion
+        ),
         patch(
             "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
             lambda _: mock_rotation_subscriptions,
@@ -227,11 +240,11 @@ def test_ispyb_deposition_in_plan(
     test_rotation_params: RotationInternalParameters,
     fetch_comment,
     fetch_datacollection_attribute,
+    undulator,
+    synchrotron,
+    s4_slit_gaps,
+    flux,
 ):
-    undulator = i03.undulator(fake_with_ophyd_sim=True)
-    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
-    slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
-
     test_wl = 0.71
     test_bs_x = 0.023
     test_bs_y = 0.047
@@ -253,7 +266,8 @@ def test_ispyb_deposition_in_plan(
         ),
         patch("dodal.beamlines.i03.undulator", return_value=undulator),
         patch("dodal.beamlines.i03.synchrotron", return_value=synchrotron),
-        patch("dodal.beamlines.i03.s4_slit_gaps", return_value=slit_gaps),
+        patch("dodal.beamlines.i03.s4_slit_gaps", return_value=s4_slit_gaps),
+        patch("dodal.beamlines.i03.flux", return_value=flux),
         patch(
             "bluesky.preprocessors.__read_and_stash_a_motor",
             __fake_read,
