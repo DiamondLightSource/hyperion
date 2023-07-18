@@ -30,13 +30,11 @@ if TYPE_CHECKING:
 def test_move_to_start(smargon: Smargon, RE):
     start_angle = 153
     mock_velocity_set = MagicMock(return_value=Status(done=True, success=True))
-    mock_omega_set = MagicMock(return_value=Status(done=True, success=True))
     with patch.object(smargon.omega.velocity, "set", mock_velocity_set):
-        with patch.object(smargon.omega, "set", mock_omega_set):
-            RE(move_to_start_w_buffer(smargon.omega, start_angle))
+        RE(move_to_start_w_buffer(smargon.omega, start_angle))
 
     mock_velocity_set.assert_called_with(120)
-    mock_omega_set.assert_called_with(start_angle - OFFSET * DIRECTION)
+    assert smargon.omega.user_readback.get() == start_angle - OFFSET * DIRECTION
 
 
 def __fake_read(obj, initial_positions, _):
@@ -46,16 +44,13 @@ def __fake_read(obj, initial_positions, _):
 
 def test_move_to_end(smargon: Smargon, RE):
     scan_width = 153
-    mock_omega_set = MagicMock(return_value=Status(done=True, success=True))
+    with patch(
+        "bluesky.preprocessors.__read_and_stash_a_motor",
+        __fake_read,
+    ):
+        RE(move_to_end_w_buffer(smargon.omega, scan_width))
 
-    with patch.object(smargon.omega, "set", mock_omega_set):
-        with patch(
-            "bluesky.preprocessors.__read_and_stash_a_motor",
-            __fake_read,
-        ):
-            RE(move_to_end_w_buffer(smargon.omega, scan_width))
-
-    mock_omega_set.assert_called_with((scan_width + 0.1 + OFFSET) * DIRECTION)
+    assert smargon.omega.user_readback.get() == (scan_width + 0.1 + OFFSET) * DIRECTION
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -116,10 +111,7 @@ def test_rotation_plan(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        __fake_read,
-    ), patch(
+    with patch("bluesky.preprocessors.__read_and_stash_a_motor", __fake_read,), patch(
         "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
         lambda _: mock_rotation_subscriptions,
     ):

@@ -19,13 +19,10 @@ from artemis.external_interaction.callbacks.oav_snapshot_callback import (
 )
 
 
-def fake_create_devices():
+@pytest.fixture
+def fake_devices(smargon: Smargon, backlight: Backlight):
     oav = i03.oav(fake_with_ophyd_sim=True)
     oav.wait_for_connection()
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
-    smargon.wait_for_connection()
-    bl = i03.backlight(fake_with_ophyd_sim=True)
-    bl.wait_for_connection()
 
     oav.zoom_controller.zrst.set("1.0x")
     oav.zoom_controller.onst.set("2.0x")
@@ -35,42 +32,29 @@ def fake_create_devices():
     oav.zoom_controller.fvst.set("9.0x")
 
     # fmt: off
-    oav.mxsc.bottom.set([0,0,0,0,0,0,0,0,1,1,1,1,1,2,2,2,2,3,3,3,3,33,3,4,4,4])  # noqa: E231
-    oav.mxsc.top.set([7,7,7,7,7,7,6,6,6,6,6,6,2,2,2,2,3,3,3,3,33,3,4,4,4])  # noqa: E231
+    oav.mxsc.bottom.set([0,0,0,0,0,0,0,0,5,5,6,6,7,7,8,8,7,7,6,6])  # noqa: E231
+    oav.mxsc.top.set([0,0,0,0,0,0,0,0,5,5,4,4,3,3,2,2,3,3,4,4])  # noqa: E231
     # fmt: on
 
-    smargon.x.user_setpoint._use_limits = False
-    smargon.y.user_setpoint._use_limits = False
-    smargon.z.user_setpoint._use_limits = False
-    smargon.omega.user_setpoint._use_limits = False
+    oav.mxsc.pin_tip.tip_x.sim_put(8)
+    oav.mxsc.pin_tip.tip_y.sim_put(5)
 
-    return oav, smargon, bl
+    with patch("dodal.devices.areadetector.plugins.MJPG.requests"), patch(
+        "dodal.devices.areadetector.plugins.MJPG.Image"
+    ) as mock_image_class:
+        mock_image = MagicMock()
+        mock_image_class.open.return_value = mock_image
+        yield oav, smargon, backlight, mock_image
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
-@patch("bluesky.plan_stubs.mv")
-@patch("dodal.devices.areadetector.plugins.MJPG.requests")
-@patch("dodal.devices.areadetector.plugins.MJPG.Image")
 def test_grid_detection_plan_runs_and_triggers_snapshots(
-    mock_image_class: MagicMock,
-    mock_requests: MagicMock,
-    bps_mv: MagicMock,
     bps_wait: MagicMock,
     RE: RunEngine,
     test_config_files,
+    fake_devices,
 ):
-    mock_image = MagicMock()
-    mock_image_class.open.return_value = mock_image
-    oav, smargon, bl = fake_create_devices()
-
-    from time import sleep
-
-    sleep(0.1)
-
-    oav.mxsc.pin_tip.tip_x.sim_put(100)
-    oav.mxsc.pin_tip.tip_y.sim_put(100)
-
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
 
@@ -85,7 +69,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
             snapshot_template="test_{angle}",
         )
     )
-    assert mock_image.save.call_count == 6
+    assert fake_devices[3].save.call_count == 6
 
     assert len(cb.snapshot_filenames) == 2
     assert len(cb.snapshot_filenames[0]) == 3
@@ -97,14 +81,12 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
-@patch("bluesky.plan_stubs.mv")
 def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
-    bps_mv: MagicMock,
     RE,
     test_config_files,
+    fake_devices,
 ):
-    oav: OAV
-    oav, smargon, bl = fake_create_devices()
+    oav: OAV = fake_devices[0]
     oav.mxsc.pin_tip.tip_x.sim_put(-1)
     oav.mxsc.pin_tip.tip_y.sim_put(-1)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
@@ -143,24 +125,49 @@ def test_create_devices(create_device: MagicMock):
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
-@patch("bluesky.plan_stubs.mv")
-@patch("dodal.devices.areadetector.plugins.MJPG.requests")
-@patch("dodal.devices.areadetector.plugins.MJPG.Image")
-def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
-    mock_image_class: MagicMock,
-    mock_requests: MagicMock,
-    bps_mv: MagicMock,
-    bps_wait: MagicMock,
+def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
+    mock_wait,
+    fake_devices,
     RE: RunEngine,
     test_config_files,
 ):
-    mock_image = MagicMock()
-    mock_image_class.open.return_value = mock_image
-    oav, smargon, bl = fake_create_devices()
+    params = OAVParameters(context="loopCentring", **test_config_files)
+    params.micronsPerXPixel = 0.1
+    params.micronsPerYPixel = 0.1
+    params.beam_centre_i = 4
+    params.beam_centre_j = 4
+    gridscan_params = GridScanParams()
 
-    oav.mxsc.pin_tip.tip_x.sim_put(100)
-    oav.mxsc.pin_tip.tip_y.sim_put(100)
+    cb = OavSnapshotCallback()
+    RE.subscribe(cb)
 
+    RE(
+        grid_detection_plan(
+            parameters=params,
+            out_parameters=gridscan_params,
+            snapshot_dir="tmp",
+            snapshot_template="test_{angle}",
+            box_size_microns=0.2,
+        )
+    )
+
+    # 8, 2 based on tip x, and lowest value in the top array
+    assert cb.out_upper_left[0] == [8, 2]
+    assert cb.out_upper_left[1] == [8, 2]
+
+    assert gridscan_params.x_start == 0.0005
+    assert gridscan_params.y1_start == -0.0001
+    assert gridscan_params.z1_start == -0.0001
+
+
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch("bluesky.plan_stubs.wait")
+def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
+    bps_wait: MagicMock,
+    fake_devices,
+    RE: RunEngine,
+    test_config_files,
+):
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
 
