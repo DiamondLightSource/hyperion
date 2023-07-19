@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Callable
 
+import numpy as np
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -19,15 +22,15 @@ from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
 from artemis.experiment_plans.oav_grid_detection_plan import grid_detection_plan
-from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
 from artemis.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
 from artemis.log import LOGGER
 from artemis.parameters.beamline_parameters import get_beamline_parameters
-from artemis.parameters.plan_specific.fgs_internal_params import GridScanParams
+from artemis.parameters.plan_specific.fgs_internal_params import (
+    FGSInternalParameters,
+    GridScanParams,
+)
 
 if TYPE_CHECKING:
     from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -65,19 +68,55 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
     raise TimeoutError("Detector not finished moving")
 
 
-def detect_grid_and_do_gridscan(
+def create_parameters_for_fast_grid_scan(
+    grid_scan_with_edge_params: GridScanWithEdgeDetectInternalParameters,
+    grid_parameters: GridScanParams,
+) -> FGSInternalParameters:
+    params_json = json.loads(grid_scan_with_edge_params.json())
+    params_json["experiment_params"] = json.loads(grid_parameters.json())
+    fast_grid_scan_parameters = FGSInternalParameters(**params_json)
+    LOGGER.info(f"Parameters for FGS: {fast_grid_scan_parameters}")
+    return fast_grid_scan_parameters
+
+
+def start_arming_then_do_grid(
     parameters: GridScanWithEdgeDetectInternalParameters,
+    attenuator: Attenuator,
     backlight: Backlight,
     eiger: EigerDetector,
     aperture_scatterguard: ApertureScatterguard,
     detector_motion: DetectorMotion,
     oav_params: OAVParameters,
-    experiment_params: GridScanWithEdgeDetectParams,
 ):
     # Start stage with asynchronous arming here
-    yield from bps.abs_set(eiger.do_arm, 1, group="arming")
+    yield from bps.abs_set(eiger.do_arm, 1, group="ready_for_data_collection")
+    yield from bps.abs_set(
+        attenuator,
+        parameters.artemis_params.ispyb_params.transmission,
+        group="ready_for_data_collection",
+    )
 
-    fgs_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
+    yield from bpp.contingency_wrapper(
+        detect_grid_and_do_gridscan(
+            parameters,
+            backlight,
+            aperture_scatterguard,
+            detector_motion,
+            oav_params,
+        ),
+        except_plan=lambda e: (yield from bps.stop(eiger)),
+    )
+
+
+def detect_grid_and_do_gridscan(
+    parameters: GridScanWithEdgeDetectInternalParameters,
+    backlight: Backlight,
+    aperture_scatterguard: ApertureScatterguard,
+    detector_motion: DetectorMotion,
+    oav_params: OAVParameters,
+):
+    experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
+    grid_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
     detector_params = parameters.artemis_params.detector_params
     snapshot_template = (
@@ -102,15 +141,15 @@ def detect_grid_and_do_gridscan(
 
     yield from run_grid_detection_plan(
         oav_params,
-        fgs_params,
+        grid_params,
         snapshot_template,
         experiment_params.snapshot_dir,
     )
 
     # Hack because GDA only passes 3 values to ispyb
-    out_upper_left = oav_callback.out_upper_left[0] + [
-        oav_callback.out_upper_left[1][1]
-    ]
+    out_upper_left = np.array(
+        oav_callback.out_upper_left[0] + [oav_callback.out_upper_left[1][1]]
+    )
 
     # Hack because the callback returns the list in inverted order
     parameters.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
@@ -121,12 +160,9 @@ def detect_grid_and_do_gridscan(
     )
     parameters.artemis_params.ispyb_params.upper_left = out_upper_left
 
-    parameters.experiment_params = fgs_params
-
-    parameters.artemis_params.detector_params.num_triggers = fgs_params.get_num_images()
-
-    LOGGER.info(f"Parameters for FGS: {parameters}")
-    subscriptions = FGSCallbackCollection.from_params(parameters)
+    fast_grid_scan_parameters = create_parameters_for_fast_grid_scan(
+        parameters, grid_params
+    )
 
     yield from bps.abs_set(backlight.pos, Backlight.OUT)
     LOGGER.info(
@@ -137,7 +173,7 @@ def detect_grid_and_do_gridscan(
     )
     yield from wait_for_det_to_finish_moving(detector_motion)
 
-    yield from fgs_get_plan(parameters, subscriptions)
+    yield from fgs_get_plan(fast_grid_scan_parameters)
 
 
 def get_plan(
@@ -152,18 +188,18 @@ def get_plan(
     eiger: EigerDetector = i03.eiger()
     aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
     detector_motion: DetectorMotion = i03.detector_motion()
+    attenuator: Attenuator = i03.attenuator()
 
     eiger.set_detector_parameters(parameters.artemis_params.detector_params)
 
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
-    experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
-    return detect_grid_and_do_gridscan(
+    return start_arming_then_do_grid(
         parameters,
+        attenuator,
         backlight,
         eiger,
         aperture_scatterguard,
         detector_motion,
         oav_params,
-        experiment_params,
     )

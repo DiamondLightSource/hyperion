@@ -8,10 +8,9 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.preprocessors import finalize_wrapper
 from dodal.beamlines import i03
-from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import MXSC, OAV
 from dodal.devices.smargon import Smargon
 
 from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
@@ -45,14 +44,20 @@ def grid_detection_plan(
             width,
             box_size_microns,
         ),
-        reset_oav(parameters),
+        reset_oav(),
     )
 
 
-def wait_for_tip_to_be_found(pin_tip: PinTipDetect):
+def wait_for_tip_to_be_found(mxsc: MXSC):
+    pin_tip = mxsc.pin_tip
     yield from bps.trigger(pin_tip, wait=True)
     found_tip = yield from bps.rd(pin_tip)
     if found_tip == pin_tip.INVALID_POSITION:
+        top_edge = yield from bps.rd(mxsc.top)
+        bottom_edge = yield from bps.rd(mxsc.bottom)
+        LOGGER.info(
+            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
+        )
         raise WarningException(
             f"No pin found after {pin_tip.validity_timeout.get()} seconds"
         )
@@ -104,7 +109,7 @@ def grid_detection_main_plan(
         # See #673 for improvements
         yield from bps.sleep(0.3)
 
-        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc.pin_tip)
+        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
@@ -157,11 +162,15 @@ def grid_detection_main_plan(
         yield from bps.read(oav.snapshot.top_left_y)
         yield from bps.save()
 
-        # Get the beam distance from the centre (in pixels).
+        # The first frame is taken at the centre of the first box
+        centre_of_first_box = (
+            upper_left[0] + box_size_x_pixels / 2,
+            upper_left[1] + box_size_y_pixels / 2,
+        )
         (
             beam_distance_i_pixels,
             beam_distance_j_pixels,
-        ) = parameters.calculate_beam_distance(upper_left[0], upper_left[1])
+        ) = parameters.calculate_beam_distance(*centre_of_first_box)
 
         current_motor_xyz = np.array(
             [
@@ -207,7 +216,8 @@ def grid_detection_main_plan(
     out_parameters.z_step_size = box_size_um / 1000
 
 
-def reset_oav(parameters: OAVParameters):
+def reset_oav():
+    """Changes the MJPG stream to look at the camera without the edge detection and turns off the edge detcetion plugin."""
     oav = i03.oav()
-    yield from bps.abs_set(oav.snapshot.input_plugin, parameters.input_plugin + ".CAM")
+    yield from bps.abs_set(oav.snapshot.input_plugin, "OAV.CAM")
     yield from bps.abs_set(oav.mxsc.enable_callbacks, 0)

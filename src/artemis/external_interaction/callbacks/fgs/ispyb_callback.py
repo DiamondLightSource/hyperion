@@ -81,6 +81,9 @@ class FGSISPyBHandlerCallback(CallbackBase):
             self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
                 "s4_slit_gaps_ygap"
             ]
+            self.params.artemis_params.ispyb_params.transmission = doc["data"][
+                "attenuator_actual_transmission"
+            ]
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()

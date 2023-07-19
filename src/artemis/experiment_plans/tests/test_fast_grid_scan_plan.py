@@ -66,7 +66,9 @@ def test_when_run_gridscan_called_then_generator_returned():
 
 
 def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
-    fake_fgs_composite: FGSComposite, test_params: FGSInternalParameters, RE: RunEngine
+    fake_fgs_composite: FGSComposite,
+    test_fgs_params: FGSInternalParameters,
+    RE: RunEngine,
 ):
     undulator_test_value = 1.234
 
@@ -77,18 +79,24 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         synchrotron_test_value
     )
 
+    transmission_test_value = 0.5
+    fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)
+
     xgap_test_value = 0.1234
     ygap_test_value = 0.2345
     fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
     fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)
 
-    test_ispyb_callback = FGSISPyBHandlerCallback(test_params)
+    flux_test_value = 10.0
+    fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
+
+    test_ispyb_callback = FGSISPyBHandlerCallback(test_fgs_params)
     test_ispyb_callback.ispyb = MagicMock()
     RE.subscribe(test_ispyb_callback)
 
-    def standalone_read_hardware_for_ispyb(und, syn, slits):
+    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
         yield from bps.open_run()
-        yield from read_hardware_for_ispyb(und, syn, slits)
+        yield from read_hardware_for_ispyb(und, syn, slits, attn, fl)
         yield from bps.close_run()
 
     RE(
@@ -96,6 +104,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
             fake_fgs_composite.undulator,
             fake_fgs_composite.synchrotron,
             fake_fgs_composite.s4_slit_gaps,
+            fake_fgs_composite.attenuator,
+            fake_fgs_composite.flux,
         )
     )
     params = test_ispyb_callback.params
@@ -104,6 +114,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     assert params.artemis_params.ispyb_params.synchrotron_mode == synchrotron_test_value
     assert params.artemis_params.ispyb_params.slit_gap_size_x == xgap_test_value
     assert params.artemis_params.ispyb_params.slit_gap_size_y == ygap_test_value
+    assert params.artemis_params.ispyb_params.transmission == transmission_test_value
+    assert params.artemis_params.ispyb_params.flux == flux_test_value
 
 
 @patch(
@@ -117,7 +129,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
     mock_subscriptions: FGSCallbackCollection,
-    test_params: FGSInternalParameters,
+    test_fgs_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -129,7 +141,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            test_params,
+            test_fgs_params,
             mock_subscriptions,
         )
     )
@@ -139,7 +151,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            test_params,
+            test_fgs_params,
             mock_subscriptions,
         )
     )
@@ -149,7 +161,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            test_params,
+            test_fgs_params,
             mock_subscriptions,
         )
     )
@@ -169,7 +181,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 @patch("bluesky.plan_stubs.mv")
 def test_results_passed_to_move_motors(
     bps_mv: MagicMock,
-    test_params: FGSInternalParameters,
+    test_fgs_params: FGSInternalParameters,
     fake_fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
@@ -177,7 +189,7 @@ def test_results_passed_to_move_motors(
 
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
-    motor_position = test_params.experiment_params.grid_position_to_motor_position(
+    motor_position = test_fgs_params.experiment_params.grid_position_to_motor_position(
         np.array([1, 2, 3])
     )
     RE(move_xyz(fake_fgs_composite.sample_motors, motor_position))
@@ -201,7 +213,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_params: FGSInternalParameters,
+    test_fgs_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -210,14 +222,14 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            test_params,
+            test_fgs_params,
             mock_subscriptions,
         )
     )
 
-    run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
+    run_gridscan.assert_called_once_with(fake_fgs_composite, test_fgs_params)
     array_arg = move_xyz.call_args.args[1]
-    np.testing.assert_allclose(array_arg, np.array([-0.05, 0.05, 0.15]))
+    np.testing.assert_allclose(array_arg, np.array([0.05, 0.15, 0.25]))
     move_xyz.assert_called_once()
 
 
@@ -236,7 +248,7 @@ def test_logging_within_plan(
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_params: FGSInternalParameters,
+    test_fgs_params: FGSInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -245,14 +257,14 @@ def test_logging_within_plan(
     RE(
         run_gridscan_and_move(
             fake_fgs_composite,
-            test_params,
+            test_fgs_params,
             mock_subscriptions,
         )
     )
 
-    run_gridscan.assert_called_once_with(fake_fgs_composite, test_params)
+    run_gridscan.assert_called_once_with(fake_fgs_composite, test_fgs_params)
     array_arg = move_xyz.call_args.args[1]
-    np.testing.assert_array_almost_equal(array_arg, np.array([-0.05, 0.05, 0.15]))
+    np.testing.assert_array_almost_equal(array_arg, np.array([0.05, 0.15, 0.25]))
     move_xyz.assert_called_once()
 
 
@@ -289,7 +301,7 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
-@patch("artemis.external_interaction.nexus.write_nexus.FGSNexusWriter")
+@patch("artemis.external_interaction.nexus.write_nexus.NexusWriter")
 def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     nexuswriter,
     wait_for_valid,
@@ -321,48 +333,62 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     ), patch(
         "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
         lambda _: mock_subscriptions,
+    ), patch(
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.create_nexus_file"
+    ), patch(
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.update_nexus_file_timestamp"
     ):
         RE(get_plan(test_fgs_params))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.abs_set")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.wait")
 @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
-def test_when_exception_occurs_during_running_then_eiger_disarmed(
-    wait_for_valid,
-    mock_mv,
+def test_fgs_arms_eiger_without_grid_detect(
     mock_complete,
-    mock_kickoff,
-    mock_abs_set,
+    mock_wait,
     fake_fgs_composite: FGSComposite,
     test_fgs_params: FGSInternalParameters,
-    mock_subscriptions: FGSCallbackCollection,
     RE: RunEngine,
 ):
-    fake_fgs_composite.eiger.disarm_detector = MagicMock()
+    fake_fgs_composite.eiger.stage = MagicMock()
+    fake_fgs_composite.eiger.unstage = MagicMock()
 
-    fake_fgs_composite.eiger.filewriters_finished = Status()
-    fake_fgs_composite.eiger.filewriters_finished.set_finished()
-    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
-    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
+    RE(run_gridscan(fake_fgs_composite, test_fgs_params))
+    fake_fgs_composite.eiger.stage.assert_called_once()
+    fake_fgs_composite.eiger.unstage.assert_called_once()
+
+
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.wait")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_returned(
+    mock_complete,
+    mock_wait,
+    fake_fgs_composite: FGSComposite,
+    test_fgs_params: FGSInternalParameters,
+    RE: RunEngine,
+):
+    class CompleteException(Exception):
+        pass
+
+    mock_complete.side_effect = CompleteException()
 
     fake_fgs_composite.eiger.stage = MagicMock(
         return_value=Status(None, None, 0, True, True)
     )
 
-    mock_complete.side_effect = Exception()
+    fake_fgs_composite.eiger.odin.check_odin_state = MagicMock()
 
-    with pytest.raises(Exception):
-        RE(
-            run_gridscan_and_move(
-                fake_fgs_composite,
-                test_fgs_params,
-                mock_subscriptions,
-            )
-        )
+    fake_fgs_composite.eiger.disarm_detector = MagicMock()
+    fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
 
-    fake_fgs_composite.eiger.disarm_detector.assert_called_once()
+    # Without the complete finishing we will not get all the images
+    fake_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1
+
+    # Want to get the underlying completion error, not the one raised from unstage
+    with pytest.raises(CompleteException):
+        RE(run_gridscan(fake_fgs_composite, test_fgs_params))
+
+    fake_fgs_composite.eiger.disable_roi_mode.assert_called()
+    fake_fgs_composite.eiger.disarm_detector.assert_called()

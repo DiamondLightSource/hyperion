@@ -3,12 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
-from bluesky.preprocessors import (
-    finalize_decorator,
-    finalize_wrapper,
-    stage_decorator,
-    subs_decorator,
-)
+import bluesky.preprocessors as bpp
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
@@ -31,21 +26,29 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
+    from ophyd.device import Device
+
     from artemis.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
 
 
-def create_devices():
-    i03.eiger(wait_for_connection=False)
-    i03.smargon()
-    i03.zebra()
-    i03.detector_motion()
-    i03.backlight()
+def create_devices() -> dict[str, Device]:
+    eiger = i03.eiger(wait_for_connection=False)
+    smargon = i03.smargon()
+    zebra = i03.zebra()
+    detector_motion = i03.detector_motion()
+    backlight = i03.backlight()
+    return {
+        "eiger": eiger,
+        "smargon": smargon,
+        "zebra": zebra,
+        "detector_motion": detector_motion,
+        "backlight": backlight,
+    }
 
 
 DIRECTION = RotationDirection.NEGATIVE
-SHUTTER_OPENING_TIME = 0.5
 
 
 def setup_sample_environment(
@@ -70,20 +73,23 @@ def move_to_start_w_buffer(
     axis: EpicsMotor,
     start_angle: float,
     offset: float,
-    wait: bool = True,
+    wait_for_velocity_set: bool = True,
+    wait_for_move: bool = False,
     direction: RotationDirection = DIRECTION,
 ):
     """Move an EpicsMotor 'axis' to angle 'start_angle', modified by an offset and
-    against the direction of rotation."""
+    against the direction of rotation. Status for the move has group 'move_to_start'."""
     # can move to start as fast as possible
     # TODO get VMAX
-    yield from bps.abs_set(axis.velocity, 90, wait=True)
+    yield from bps.abs_set(axis.velocity, 120, wait=wait_for_velocity_set)
     start_position = start_angle - (offset * direction)
     LOGGER.info(
         "moving to_start_w_buffer doing: start_angle-(offset*direction)"
         f" = {start_angle} - ({offset} * {direction}) = {start_position}"
     )
-    yield from bps.abs_set(axis, start_position, group="move_to_start", wait=wait)
+    yield from bps.abs_set(
+        axis, start_position, group="move_to_start", wait=wait_for_move
+    )
 
 
 def move_to_end_w_buffer(
@@ -183,35 +189,31 @@ def rotation_scan_plan(
 
 def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
     yield from cleanup_sample_environment(zebra, detector_motion)
-    yield from finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
+    yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
 
-def get_plan(params: RotationInternalParameters):
-    eiger = i03.eiger(wait_for_connection=False)
-    smargon = i03.smargon()
-    zebra = i03.zebra()
-    detector_motion = i03.detector_motion()
-    backlight = i03.backlight()
-    devices = {
-        "eiger": eiger,
-        "smargon": smargon,
-        "zebra": zebra,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
-    }
-    subscriptions = RotationCallbackCollection.from_params(params)
+def get_plan(parameters: RotationInternalParameters):
+    devices = create_devices()
+    subscriptions = RotationCallbackCollection.from_params(parameters)
 
-    @subs_decorator(list(subscriptions))
+    @bpp.subs_decorator(list(subscriptions))
+    @bpp.set_run_key_decorator("rotation_scan")
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": "rotation_scan_with_cleanup",
+            "hyperion_internal_parameters": parameters.json(),
+        }
+    )
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
-        eiger.set_detector_parameters(params.artemis_params.detector_params)
+        devices["eiger"].set_detector_parameters(params.artemis_params.detector_params)
 
-        @stage_decorator([eiger])
-        @finalize_decorator(lambda: cleanup_plan(**devices))
+        @bpp.stage_decorator([devices["eiger"]])
+        @bpp.finalize_decorator(lambda: cleanup_plan(**devices))
         def rotation_with_cleanup_and_stage(params):
             yield from rotation_scan_plan(params, **devices)
 
         yield from rotation_with_cleanup_and_stage(params)
 
-    yield from rotation_scan_plan_with_stage_and_cleanup(params)
+    yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
