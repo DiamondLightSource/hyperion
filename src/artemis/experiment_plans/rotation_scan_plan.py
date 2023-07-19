@@ -5,11 +5,16 @@ from typing import TYPE_CHECKING
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from dodal.beamlines import i03
-from dodal.devices.backlight import Backlight
-from dodal.devices.detector_motion import DetectorMotion
-from dodal.devices.eiger import DetectorParams, EigerDetector
-from dodal.devices.smargon import Smargon
-from dodal.devices.zebra import RotationDirection, Zebra
+from dodal.beamlines.i03 import (
+    Attenuator,
+    Backlight,
+    DetectorMotion,
+    EigerDetector,
+    Smargon,
+    Zebra,
+)
+from dodal.devices.detector import DetectorParams
+from dodal.devices.zebra import RotationDirection
 from ophyd.epics_motor import EpicsMotor
 
 from artemis.device_setup_plans.setup_zebra import (
@@ -34,17 +39,13 @@ if TYPE_CHECKING:
 
 
 def create_devices() -> dict[str, Device]:
-    eiger = i03.eiger(wait_for_connection=False)
-    smargon = i03.smargon()
-    zebra = i03.zebra()
-    detector_motion = i03.detector_motion()
-    backlight = i03.backlight()
     return {
-        "eiger": eiger,
-        "smargon": smargon,
-        "zebra": zebra,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
+        "eiger": i03.eiger(wait_for_connection=False),
+        "smargon": i03.smargon(),
+        "zebra": i03.zebra(),
+        "detector_motion": i03.detector_motion(),
+        "backlight": i03.backlight(),
+        "attenuator": i03.attenuator(),
     }
 
 
@@ -54,10 +55,13 @@ DIRECTION = RotationDirection.NEGATIVE
 def setup_sample_environment(
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    attenuator: Attenuator,
+    transmission: float,
     group="setup_senv",
 ):
     yield from bps.abs_set(detector_motion.shutter, 1, group=group)
     yield from bps.abs_set(backlight.pos, backlight.OUT, group=group)
+    yield from bps.abs_set(attenuator, transmission, group=group)
 
 
 def cleanup_sample_environment(
@@ -122,6 +126,7 @@ def rotation_scan_plan(
     smargon: Smargon,
     zebra: Zebra,
     backlight: Backlight,
+    attenuator: Attenuator,
     detector_motion: DetectorMotion,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
@@ -154,7 +159,10 @@ def rotation_scan_plan(
 
     LOGGER.info("setting up and staging eiger")
 
-    yield from setup_sample_environment(detector_motion, backlight)
+    transmission = params.artemis_params.ispyb_params.transmission
+    yield from setup_sample_environment(
+        detector_motion, backlight, attenuator, transmission
+    )
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle}")
     yield from move_to_start_w_buffer(smargon.omega, start_angle, acceleration_offset)
     LOGGER.info("wait for any previous moves...")
