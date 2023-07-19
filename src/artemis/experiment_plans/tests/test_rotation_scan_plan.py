@@ -9,7 +9,6 @@ from ophyd.status import Status
 
 from artemis.experiment_plans.rotation_scan_plan import (
     DIRECTION,
-    OFFSET,
     get_plan,
     move_to_end_w_buffer,
     move_to_start_w_buffer,
@@ -26,15 +25,18 @@ if TYPE_CHECKING:
     from dodal.devices.smargon import Smargon
     from dodal.devices.zebra import Zebra
 
+TEST_OFFSET = 1
+TEST_SHUTTER_OPENING_DEGREES = 2.5
+
 
 def test_move_to_start(smargon: Smargon, RE):
     start_angle = 153
     mock_velocity_set = MagicMock(return_value=Status(done=True, success=True))
     with patch.object(smargon.omega.velocity, "set", mock_velocity_set):
-        RE(move_to_start_w_buffer(smargon.omega, start_angle))
+        RE(move_to_start_w_buffer(smargon.omega, start_angle, TEST_OFFSET))
 
     mock_velocity_set.assert_called_with(120)
-    assert smargon.omega.user_readback.get() == start_angle - OFFSET * DIRECTION
+    assert smargon.omega.user_readback.get() == start_angle - TEST_OFFSET * DIRECTION
 
 
 def __fake_read(obj, initial_positions, _):
@@ -48,9 +50,17 @@ def test_move_to_end(smargon: Smargon, RE):
         "bluesky.preprocessors.__read_and_stash_a_motor",
         __fake_read,
     ):
-        RE(move_to_end_w_buffer(smargon.omega, scan_width))
+        RE(
+            move_to_end_w_buffer(
+                smargon.omega, scan_width, TEST_OFFSET, TEST_SHUTTER_OPENING_DEGREES
+            )
+        )
 
-    assert smargon.omega.user_readback.get() == (scan_width + 0.1 + OFFSET) * DIRECTION
+    distance_to_move = (
+        scan_width + TEST_SHUTTER_OPENING_DEGREES + TEST_OFFSET * 2 + 0.1
+    ) * DIRECTION
+
+    assert smargon.omega.user_readback.get() == distance_to_move
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -111,7 +121,10 @@ def test_rotation_plan(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    with patch("bluesky.preprocessors.__read_and_stash_a_motor", __fake_read,), patch(
+    with patch(
+        "bluesky.preprocessors.__read_and_stash_a_motor",
+        __fake_read,
+    ), patch(
         "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
         lambda _: mock_rotation_subscriptions,
     ):
