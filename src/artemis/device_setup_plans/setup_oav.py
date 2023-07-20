@@ -92,7 +92,7 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         )
 
     yield from bps.abs_set(
-        oav.zoom_controller.level,
+        oav.zoom_controller,
         zoom_level_str,
         wait=True,
     )
