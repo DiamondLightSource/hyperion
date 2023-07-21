@@ -77,12 +77,11 @@ def fgs_composite():
     return fast_grid_scan_composite
 
 
-@pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
-@patch("artemis.fast_grid_scan_plan.wait_for_fgs_valid", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid", autospec=True)
 def test_run_gridscan(
     wait_for_fgs_valid: MagicMock,
     complete: MagicMock,
@@ -93,6 +92,7 @@ def test_run_gridscan(
     fgs_composite: FGSComposite,
 ):
     fgs_composite.eiger.unstage = lambda: True
+    fgs_composite.eiger.set_detector_parameters(params.artemis_params.detector_params)
     # Would be better to use get_plan instead but eiger doesn't work well in S03
     RE(run_gridscan(fgs_composite, params))
 
