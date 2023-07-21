@@ -9,7 +9,6 @@ from bluesky.plans import grid_scan
 from bluesky.utils import ProgressBarManager
 from dodal.beamlines import i03
 from dodal.beamlines.i03 import Smargon
-from dodal.devices.eiger import DetectorParams
 
 from artemis.log import LOGGER
 from artemis.parameters import external_parameters
@@ -21,8 +20,6 @@ from artemis.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from artemis.tracing import TRACER
 
 if TYPE_CHECKING:
-    import numpy as np
-
     from artemis.external_interaction.callbacks.stepped_grid_scan.stepped_grid_scan_callback_collection import (
         SteppedGridScanCallbackCollection,
     )
@@ -60,9 +57,6 @@ def create_devices():
     LOGGER.info("Connecting to EPICS devices...")
     stepped_grid_scan_composite = SteppedGridScanComposite()
     LOGGER.info("Connected.")
-
-
-
 
 
 def run_gridscan(

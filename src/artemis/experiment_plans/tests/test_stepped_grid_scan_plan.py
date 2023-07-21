@@ -1,11 +1,6 @@
-import bluesky.plan_stubs as bps
-from artemis.experiment_plans import stepped_grid_scan_plan
 from artemis.experiment_plans.stepped_grid_scan_plan import (
     run_gridscan,
     create_devices,
-    stepped_grid_scan_composite,
-    SteppedGridScanComposite,
-    get_plan
 )
 import unittest.mock
 from unittest.mock import MagicMock
