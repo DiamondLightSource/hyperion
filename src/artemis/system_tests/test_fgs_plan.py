@@ -45,7 +45,15 @@ def RE():
 
 @pytest.fixture
 def fgs_composite():
-    fast_grid_scan_composite = FGSComposite()
+    # TODO remove fake device patch when flux PV is added
+    # https://github.com/DiamondLightSource/python-artemis/issues/822
+    from dodal.devices.flux import Flux
+    from ophyd.sim import make_fake_device
+
+    FakeFlux = make_fake_device(Flux)
+
+    with patch("dodal.beamlines.i03.Flux", FakeFlux):
+        fast_grid_scan_composite = FGSComposite()
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         BEAMLINE_PARAMETER_PATHS["i03"]
@@ -97,12 +105,14 @@ def test_read_hardware_for_ispyb(
     undulator = fgs_composite.undulator
     synchrotron = fgs_composite.synchrotron
     slit_gaps = fgs_composite.s4_slit_gaps
+    attenuator = fgs_composite.attenuator
+    flux = fgs_composite.flux
 
     @bpp.run_decorator()
-    def read_run(u, s, g):
-        yield from read_hardware_for_ispyb(u, s, g)
+    def read_run(u, s, g, a, f):
+        yield from read_hardware_for_ispyb(u, s, g, a, f)
 
-    RE(read_run(undulator, synchrotron, slit_gaps))
+    RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux))
 
 
 @pytest.mark.s03
