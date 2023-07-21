@@ -9,7 +9,6 @@ from bluesky.plans import grid_scan
 from bluesky.utils import ProgressBarManager
 from dodal.beamlines import i03
 from dodal.beamlines.i03 import Smargon
-from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import DetectorParams
 
 from artemis.log import LOGGER
@@ -39,8 +38,6 @@ class SteppedGridScanComposite:
 
     def __init__(
         self,
-        aperture_positions: AperturePositions = None,
-        detector_params: DetectorParams = None,
         fake: bool = False,
     ):
         self.sample_motors = i03.smargon(fake_with_ophyd_sim=fake)
@@ -60,38 +57,12 @@ def create_devices():
     LOGGER.info(
         f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
     )
-    aperture_positions = AperturePositions.from_gda_beamline_params(
-        get_beamline_parameters()
-    )
     LOGGER.info("Connecting to EPICS devices...")
-    stepped_grid_scan_composite = SteppedGridScanComposite(
-        aperture_positions=aperture_positions
-    )
+    stepped_grid_scan_composite = SteppedGridScanComposite()
     LOGGER.info("Connected.")
 
 
-def move_xyz(
-    sample_motors,
-    xray_centre_motor_position: np.array,
-    md={
-        "plan_name": "move_xyz",
-    },
-):
-    """Move 'sample motors' to a specific motor position (e.g. a position obtained
-    from gridscan processing results)"""
-    LOGGER.info(f"Moving Smargon x, y, z to: {xray_centre_motor_position}")
-    yield from bps.mv(
-        sample_motors.x,
-        xray_centre_motor_position.x,
-        sample_motors.y,
-        xray_centre_motor_position.y,
-        sample_motors.z,
-        xray_centre_motor_position.z,
-    )
 
-
-def tidy_up_plans(composite: SteppedGridScanComposite):
-    LOGGER.info("Tidying up Zebra")
 
 
 def run_gridscan(
@@ -108,7 +79,7 @@ def run_gridscan(
         yield from bps.abs_set(sample_motors.omega, 0)
 
     def do_stepped_grid_scan():
-        LOGGER.info("About to yeald from grid_scan")
+        LOGGER.info("About to yield from grid_scan")
         detectors = []
         grid_args = [sample_motors.x, 0, 40, 5, sample_motors.y, 0, 40, 5]
         yield from grid_scan(
@@ -128,6 +99,7 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
 
     # While the gridscan is happening we want to write out nexus files and trigger zocalo
+    @bps.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
     def gridscan_with_subscriptions(composite, params):
         LOGGER.info("Starting stepped grid scan")
         yield from run_gridscan(composite, params)
@@ -141,9 +113,6 @@ def get_plan(
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
-    The ispyb handler should be added to the whole gridscan as we want to capture errors
-    at any point in it.
-
     Args:
         parameters (SteppedGridScanInternalParameters): The parameters to run the scan.
 
@@ -153,10 +122,7 @@ def get_plan(
 
     assert stepped_grid_scan_composite is not None
 
-    def run_gridscan_and_move_and_tidy(composite, params, comms):
-        yield from run_gridscan_and_move(composite, params, comms)
-
-    return run_gridscan_and_move_and_tidy(
+    return run_gridscan_and_move(
         stepped_grid_scan_composite, parameters, subscriptions
     )
 
@@ -188,7 +154,7 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
-    from artemis.parameters.internal_parameters.plan_specific.stepped_grid_scan_internal_params import (
+    from artemis.parameters.plan_specific.stepped_grid_scan_internal_params import (
         SteppedGridScanInternalParameters,
     )
 
