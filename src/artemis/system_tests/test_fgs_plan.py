@@ -91,6 +91,7 @@ def test_run_gridscan(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
+    fgs_composite.eiger.stage = lambda: True
     fgs_composite.eiger.unstage = lambda: True
     fgs_composite.eiger.set_detector_parameters(params.artemis_params.detector_params)
     # Would be better to use get_plan instead but eiger doesn't work well in S03
@@ -237,8 +238,8 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 1
 
-    fgs_composite.eiger.stage = MagicMock()
-    fgs_composite.eiger.unstage = MagicMock()
+    fgs_composite.eiger.stage = lambda: True
+    fgs_composite.eiger.unstage = lambda: True
 
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
@@ -247,10 +248,13 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
         "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
         return_value=callbacks,
         autospec=True,
+    ), patch(
+        "artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite",
+        fgs_composite,
     ):
         RE(get_plan(params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(-0.05)
-    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.05)
-    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.15)
+    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(0.05)
+    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.15)
+    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.25)
