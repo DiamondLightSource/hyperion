@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Callable, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.stepped_grid_scan import SteppedGridScanParams
 
 from artemis.experiment_plans import (
     fast_grid_scan_plan,
@@ -31,6 +30,7 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
 )
 from artemis.parameters.plan_specific.stepped_grid_scan_internal_params import (
     SteppedGridScanInternalParameters,
+    SteppedGridScanParams
 )
 
 
