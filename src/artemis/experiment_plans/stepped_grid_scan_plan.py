@@ -66,13 +66,12 @@ def create_devices():
 
 
 def run_gridscan(
-    composite: SteppedGridScanComposite,
     parameters: SteppedGridScanInternalParameters,
     md={
         "plan_name": "run_gridscan",
     },
 ):
-    sample_motors = composite.sample_motors
+    sample_motors = i03.smargon()
 
     # Currently gridscan only works for omega 0, see #
     with TRACER.start_span("moving_omega_to_0"):
@@ -90,23 +89,6 @@ def run_gridscan(
         yield from do_stepped_grid_scan()
 
 
-def run_gridscan_and_move(
-    composite: SteppedGridScanComposite,
-    parameters: SteppedGridScanInternalParameters,
-    subscriptions: SteppedGridScanCallbackCollection,
-):
-    """A multi-run plan which runs a gridscan, gets the results from zocalo
-    and moves to the centre of mass determined by zocalo"""
-
-    # While the gridscan is happening we want to write out nexus files and trigger zocalo
-    @bps.subs_decorator([subscriptions.nexus_handler, subscriptions.zocalo_handler])
-    def gridscan_with_subscriptions(composite, params):
-        LOGGER.info("Starting stepped grid scan")
-        yield from run_gridscan(composite, params)
-
-    yield from gridscan_with_subscriptions(composite, parameters)
-
-
 def get_plan(
     parameters: SteppedGridScanInternalParameters,
     subscriptions: SteppedGridScanCallbackCollection,
@@ -122,8 +104,8 @@ def get_plan(
 
     assert stepped_grid_scan_composite is not None
 
-    return run_gridscan_and_move(
-        stepped_grid_scan_composite, parameters, subscriptions
+    return run_gridscan(
+        parameters, subscriptions
     )
 
 
