@@ -146,9 +146,10 @@ class BlueskyRunner:
 
 
 class RunExperiment(Resource):
-    def __init__(self, runner: BlueskyRunner) -> None:
+    def __init__(self, runner: BlueskyRunner, context: BlueskyContext) -> None:
         super().__init__()
         self.runner = runner
+        self.context = context
 
     def put(self, plan_name: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
@@ -163,12 +164,12 @@ class RunExperiment(Resource):
                 experiment_internal_param_type: InternalParameters = (
                     experiment_registry_entry.get("internal_param_type")
                 )
-                experiment = experiment_registry_entry.get("run")
+                plan = self.context.plan_functions.get(plan_name)
                 if experiment_internal_param_type is None:
                     raise PlanNotFound(
                         f"Corresponding internal param type for '{plan_name}' not found in registry."
                     )
-                if experiment is None:
+                if plan is None:
                     raise PlanNotFound(
                         f"Experiment plan '{plan_name}' has no 'run' method."
                     )
@@ -179,9 +180,7 @@ class RunExperiment(Resource):
                         f"Wrong experiment parameters ({parameters.artemis_params.experiment_type}) "
                         f"for plan endpoint {plan_name}."
                     )
-                status_and_message = self.runner.start(
-                    experiment, parameters, plan_name
-                )
+                status_and_message = self.runner.start(plan, parameters, plan_name)
             except Exception as e:
                 status_and_message = ErrorStatusAndMessage(e)
                 artemis.log.LOGGER.error(format_exception(e))
@@ -199,7 +198,6 @@ def setup_context() -> BlueskyContext:
     import artemis.experiment_plans as artemis_plans
 
     context.with_plan_module(artemis_plans)
-
     return context
 
 
@@ -226,6 +224,7 @@ def create_app(
     test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
 ) -> Tuple[Flask, BlueskyRunner]:
     runner = BlueskyRunner(RE, skip_startup_connection=skip_startup_connection)
+    context = setup_context()
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
@@ -233,7 +232,7 @@ def create_app(
     api.add_resource(
         RunExperiment,
         "/<string:plan_name>/<string:action>",
-        resource_class_args=[runner],
+        resource_class_args=[runner, context],
     )
     api.add_resource(
         StopOrStatus,

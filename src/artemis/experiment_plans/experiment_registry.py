@@ -40,21 +40,18 @@ def do_nothing():
 PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
-        "run": fast_grid_scan_plan.fast_grid_scan,
         "internal_param_type": FGSInternalParameters,
         "experiment_param_type": GridScanParams,
         "callback_collection_type": FGSCallbackCollection,
     },
     "full_grid_scan": {
         "setup": full_grid_scan_plan.create_devices,
-        "run": full_grid_scan_plan.full_grid_scan,
         "internal_param_type": GridScanWithEdgeDetectInternalParameters,
         "experiment_param_type": GridScanWithEdgeDetectParams,
         "callback_collection_type": NullPlanCallbackCollection,
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
-        "run": rotation_scan_plan.rotation_scan,
         "internal_param_type": RotationInternalParameters,
         "experiment_param_type": RotationScanParams,
         "callback_collection_type": RotationCallbackCollection,
