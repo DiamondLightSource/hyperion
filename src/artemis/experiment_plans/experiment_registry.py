@@ -54,7 +54,7 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
-        "run": rotation_scan_plan.get_plan,
+        "run": rotation_scan_plan.rotation_scan,
         "internal_param_type": RotationInternalParameters,
         "experiment_param_type": RotationScanParams,
         "callback_collection_type": RotationCallbackCollection,

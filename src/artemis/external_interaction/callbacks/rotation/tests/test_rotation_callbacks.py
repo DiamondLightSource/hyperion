@@ -32,7 +32,7 @@ def test_callback_collection_init(params):
     assert isinstance(callbacks.nexus_handler, RotationNexusFileHandlerCallback)
 
 
-def fake_get_plan(
+def fake_rotation_scan(
     parameters: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
     @bpp.subs_decorator(list(subscriptions))
@@ -56,7 +56,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(params: RotationInternalParam
     cb.nexus_handler.start = MagicMock()
     cb.nexus_handler.stop = MagicMock()
 
-    RE(fake_get_plan(params, cb))
+    RE(fake_rotation_scan(params, cb))
 
     cb.nexus_handler.start.assert_called_once()
     call_content = cb.nexus_handler.start.call_args[0][0]
@@ -76,7 +76,7 @@ def test_nexus_handler_triggers_write_file_when_told(
 
     cb = RotationCallbackCollection.from_params(params)
 
-    RE(fake_get_plan(params, cb))
+    RE(fake_rotation_scan(params, cb))
 
     assert os.path.isfile("/tmp/file_name_0.nxs")
     assert os.path.isfile("/tmp/file_name_0_master.h5")

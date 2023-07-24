@@ -85,7 +85,7 @@ def test_run_gridscan(
     fgs_composite: FGSComposite,
 ):
     fgs_composite.eiger.unstage = lambda: True
-    # Would be better to use get_plan instead but eiger doesn't work well in S03
+    # Would be better to use fast_grid_scan instead but eiger doesn't work well in S03
     RE(run_gridscan(fgs_composite, params))
 
 

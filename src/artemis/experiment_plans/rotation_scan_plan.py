@@ -161,7 +161,7 @@ def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
     yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
 
-def get_plan(parameters: RotationInternalParameters):
+def rotation_scan(parameters: RotationInternalParameters):
     devices = create_devices()
     subscriptions = RotationCallbackCollection.from_params(parameters)
 

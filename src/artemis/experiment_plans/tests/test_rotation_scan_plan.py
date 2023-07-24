@@ -10,9 +10,9 @@ from ophyd.status import Status
 from artemis.experiment_plans.rotation_scan_plan import (
     DIRECTION,
     OFFSET,
-    get_plan,
     move_to_end_w_buffer,
     move_to_start_w_buffer,
+    rotation_scan,
     rotation_scan_plan,
 )
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
@@ -55,7 +55,7 @@ def test_move_to_end(smargon: Smargon, RE):
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("artemis.experiment_plans.rotation_scan_plan.rotation_scan_plan", autospec=True)
-def test_get_plan(
+def test_rotation_scan(
     plan: MagicMock,
     RE,
     test_rotation_params,
@@ -83,7 +83,7 @@ def test_get_plan(
             lambda _: mock_rotation_subscriptions,
         ),
     ):
-        RE(get_plan(test_rotation_params))
+        RE(rotation_scan(test_rotation_params))
 
     eiger.stage.assert_called()
     eiger.unstage.assert_called()
@@ -167,7 +167,7 @@ def test_cleanup_happens(
     ):
         with pytest.raises(Exception) as exc:
             RE(
-                get_plan(
+                rotation_scan(
                     test_rotation_params,
                 )
             )
