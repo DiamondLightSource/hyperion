@@ -6,7 +6,7 @@ from artemis.parameters.internal_parameters import InternalParameters
 from dataclasses_json import DataClassJsonMixin
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from dodal.devices.motors import XYZLimitBundle
-from dataclasses import dataclass
+from pydantic.dataclasses import dataclass
 import numpy as np
 
 
