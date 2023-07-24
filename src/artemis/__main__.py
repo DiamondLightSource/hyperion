@@ -6,6 +6,7 @@ from queue import Queue
 from traceback import format_exception
 from typing import Callable, Optional, Tuple
 
+from blueapi.core import BlueskyContext
 from bluesky import RunEngine
 from dataclasses_json import dataclass_json
 from flask import Flask, request
@@ -190,6 +191,16 @@ class RunExperiment(Resource):
         # no idea why mypy gives an attribute error here but nowhere else for this
         # exact same situation...
         return status_and_message.to_dict()  # type: ignore
+
+
+def setup_context() -> BlueskyContext:
+    context = BlueskyContext()
+
+    import artemis.experiment_plans as artemis_plans
+
+    context.with_plan_module(artemis_plans)
+
+    return context
 
 
 class StopOrStatus(Resource):

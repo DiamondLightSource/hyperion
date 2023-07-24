@@ -11,7 +11,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from flask.testing import FlaskClient
 
-from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
+from artemis.__main__ import (
+    Actions,
+    BlueskyRunner,
+    Status,
+    cli_arg_parse,
+    create_app,
+    setup_context,
+)
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.parameters import external_parameters
@@ -467,3 +474,9 @@ def test_warn_exception_during_plan_causes_warning_in_log(
     assert response_json["message"] == 'WarningException("D\'Oh")'
     assert response_json["exception_type"] == "WarningException"
     assert caplog.records[-1].levelname == "WARNING"
+
+
+def test_when_context_created_then_contains_expected_number_of_plans():
+    context = setup_context()
+
+    assert len(context.plan_functions) == 3
