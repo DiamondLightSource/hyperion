@@ -17,7 +17,7 @@ from ophyd.status import Status
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     FGSComposite,
-    get_plan,
+    fast_grid_scan,
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,
@@ -341,7 +341,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
         "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.update_nexus_file_timestamp",
         autospec=True,
     ):
-        RE(get_plan(test_fgs_params))
+        RE(fast_grid_scan(test_fgs_params))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 

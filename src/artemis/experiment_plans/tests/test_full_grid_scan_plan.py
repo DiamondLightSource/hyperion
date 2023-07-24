@@ -92,7 +92,7 @@ def test_get_plan(test_fgs_params, test_config_files):
     autospec=True,
 )
 @patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True)
-@patch("artemis.experiment_plans.full_grid_scan.fgs_get_plan", autospec=True)
+@patch("artemis.experiment_plans.full_grid_scan.fast_grid_scan", autospec=True)
 @patch(
     "artemis.experiment_plans.full_grid_scan.OavSnapshotCallback",
     autospec=True,
@@ -153,7 +153,7 @@ def test_detect_grid_and_do_gridscan(
     autospec=True,
 )
 @patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True)
-@patch("artemis.experiment_plans.full_grid_scan.fgs_get_plan", autospec=True)
+@patch("artemis.experiment_plans.full_grid_scan.fast_grid_scan", autospec=True)
 @patch("artemis.experiment_plans.full_grid_scan.OavSnapshotCallback", autospec=True)
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_oav_callback_init: MagicMock,

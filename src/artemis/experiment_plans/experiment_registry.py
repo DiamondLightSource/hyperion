@@ -40,7 +40,7 @@ def do_nothing():
 PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
-        "run": fast_grid_scan_plan.get_plan,
+        "run": fast_grid_scan_plan.fast_grid_scan,
         "internal_param_type": FGSInternalParameters,
         "experiment_param_type": GridScanParams,
         "callback_collection_type": FGSCallbackCollection,

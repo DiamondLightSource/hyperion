@@ -17,7 +17,7 @@ from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParame
 from artemis.experiment_plans.fast_grid_scan_plan import (
     create_devices as fgs_create_devices,
 )
-from artemis.experiment_plans.fast_grid_scan_plan import get_plan as fgs_get_plan
+from artemis.experiment_plans.fast_grid_scan_plan import fast_grid_scan
 from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
@@ -173,7 +173,7 @@ def detect_grid_and_do_gridscan(
     )
     yield from wait_for_det_to_finish_moving(detector_motion)
 
-    yield from fgs_get_plan(fast_grid_scan_parameters)
+    yield from fast_grid_scan(fast_grid_scan_parameters)
 
 
 def get_plan(

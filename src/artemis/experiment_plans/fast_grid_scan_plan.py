@@ -293,7 +293,7 @@ def run_gridscan_and_move(
         )
 
 
-def get_plan(
+def fast_grid_scan(
     parameters: FGSInternalParameters,
 ) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
@@ -353,4 +353,4 @@ if __name__ == "__main__":
 
     create_devices()
 
-    RE(get_plan(parameters))
+    RE(fast_grid_scan(parameters))
