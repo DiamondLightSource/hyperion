@@ -176,7 +176,7 @@ def detect_grid_and_do_gridscan(
     yield from fast_grid_scan(fast_grid_scan_parameters)
 
 
-def get_plan(
+def full_grid_scan(
     parameters: GridScanWithEdgeDetectInternalParameters,
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
 ) -> Callable:

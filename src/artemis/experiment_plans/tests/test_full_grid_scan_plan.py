@@ -14,7 +14,7 @@ from numpy.testing import assert_array_equal
 from artemis.experiment_plans.full_grid_scan import (
     create_devices,
     detect_grid_and_do_gridscan,
-    get_plan,
+    full_grid_scan,
     start_arming_then_do_grid,
     wait_for_det_to_finish_moving,
 )
@@ -80,9 +80,9 @@ def test_wait_for_detector(RE):
     RE(wait_for_det_to_finish_moving(d_m, 0.5))
 
 
-def test_get_plan(test_fgs_params, test_config_files):
+def test_full_grid_scan(test_fgs_params, test_config_files):
     with patch("artemis.experiment_plans.full_grid_scan.i03"):
-        plan = get_plan(test_fgs_params, test_config_files)
+        plan = full_grid_scan(test_fgs_params, test_config_files)
 
     assert isinstance(plan, Generator)
 

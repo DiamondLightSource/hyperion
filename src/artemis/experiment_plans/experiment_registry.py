@@ -47,7 +47,7 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     },
     "full_grid_scan": {
         "setup": full_grid_scan.create_devices,
-        "run": full_grid_scan.get_plan,
+        "run": full_grid_scan.full_grid_scan,
         "internal_param_type": GridScanWithEdgeDetectInternalParameters,
         "experiment_param_type": GridScanWithEdgeDetectParams,
         "callback_collection_type": NullPlanCallbackCollection,
