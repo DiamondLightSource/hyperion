@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from blueapi.core import MsgGenerator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.beamlines import i03
@@ -177,9 +178,9 @@ def detect_grid_and_do_gridscan(
 
 
 def full_grid_scan(
-    parameters: GridScanWithEdgeDetectInternalParameters,
+    parameters: Any,
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
-) -> Callable:
+) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.

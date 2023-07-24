@@ -6,7 +6,7 @@ from dodal.devices.fast_grid_scan import GridScanParams
 
 from artemis.experiment_plans import (
     fast_grid_scan_plan,
-    full_grid_scan,
+    full_grid_scan_plan,
     rotation_scan_plan,
 )
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
@@ -46,8 +46,8 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
         "callback_collection_type": FGSCallbackCollection,
     },
     "full_grid_scan": {
-        "setup": full_grid_scan.create_devices,
-        "run": full_grid_scan.full_grid_scan,
+        "setup": full_grid_scan_plan.create_devices,
+        "run": full_grid_scan_plan.full_grid_scan,
         "internal_param_type": GridScanWithEdgeDetectInternalParameters,
         "experiment_param_type": GridScanWithEdgeDetectParams,
         "callback_collection_type": NullPlanCallbackCollection,
