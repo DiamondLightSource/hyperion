@@ -5,9 +5,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.aperturescatterguard import AperturePositions
 
-import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     FGSComposite,
@@ -25,56 +23,7 @@ from artemis.external_interaction.system_tests.conftest import (  # noqa
 from artemis.external_interaction.system_tests.test_ispyb_dev_connection import (
     ISPYB_CONFIG,
 )
-from artemis.parameters.beamline_parameters import GDABeamlineParameters
-from artemis.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
-from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-
-
-@pytest.fixture
-def params():
-    params = FGSInternalParameters(**default_raw_params())
-    params.artemis_params.beamline = SIM_BEAMLINE
-    return params
-
-
-@pytest.fixture
-def RE():
-    return RunEngine({})
-
-
-@pytest.fixture
-def fgs_composite():
-    # TODO remove fake device patch when flux PV is added
-    # https://github.com/DiamondLightSource/python-artemis/issues/822
-    from dodal.devices.flux import Flux
-    from ophyd.sim import make_fake_device
-
-    FakeFlux = make_fake_device(Flux)
-
-    with patch("dodal.beamlines.i03.Flux", FakeFlux):
-        fast_grid_scan_composite = FGSComposite()
-    fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
-    gda_beamline_parameters = GDABeamlineParameters.from_file(
-        BEAMLINE_PARAMETER_PATHS["i03"]
-    )
-    aperture_positions = AperturePositions.from_gda_beamline_params(
-        gda_beamline_parameters
-    )
-    fast_grid_scan_composite.aperture_scatterguard.load_aperture_positions(
-        aperture_positions
-    )
-    fast_grid_scan_composite.aperture_scatterguard.aperture.z.move(
-        aperture_positions.LARGE[2], wait=True
-    )
-    fast_grid_scan_composite.eiger.cam.manual_trigger.put("Yes")
-
-    # S03 currently does not have StaleParameters_RBV
-    fast_grid_scan_composite.eiger.wait_for_stale_parameters = lambda: None
-    fast_grid_scan_composite.eiger.odin.check_odin_initialised = lambda: (True, "")
-
-    fast_grid_scan_composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
-    return fast_grid_scan_composite
 
 
 @pytest.mark.s03

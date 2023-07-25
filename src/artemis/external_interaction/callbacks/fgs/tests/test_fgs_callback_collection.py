@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -17,6 +17,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.parameters.constants import SIM_BEAMLINE
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.system_tests.conftest import fgs_composite
 
 
 def test_callback_collection_init():
@@ -43,7 +44,7 @@ def test_callback_collection_init():
 
 
 @pytest.fixture()
-def eiger():
+def eiger() -> EigerDetector:
     detector_params: DetectorParams = DetectorParams(
         current_energy_ev=100,
         exposure_time=0.1,
@@ -52,37 +53,49 @@ def eiger():
         detector_distance=100.0,
         omega_start=0.0,
         omega_increment=0.1,
-        num_images=50,
+        num_images_per_trigger=50,
+        num_triggers=1,
         use_roi_mode=False,
         run_number=0,
         det_dist_to_beam_converter_path="src/artemis/unit_tests/test_lookup_table.txt",
     )
-    eiger = EigerDetector(
-        detector_params=detector_params, name="eiger", prefix="BL03S-EA-EIGER-01:"
-    )
+    eiger = EigerDetector(name="eiger", prefix="BL03S-EA-EIGER-01:")
+    eiger.set_detector_parameters(detector_params)
 
     # Otherwise odin moves too fast to be tested
     eiger.cam.manual_trigger.put("Yes")
 
     # S03 currently does not have StaleParameters_RBV
-    eiger.wait_for_stale_parameters = lambda: None
     eiger.odin.check_odin_initialised = lambda: (True, "")
+
+    # These also involve things S03 can't do
+    eiger.stage = lambda: True
+    eiger.unstage = lambda: True
 
     yield eiger
 
 
-@pytest.mark.skip(
-    reason="Needs better S03 or some other workaround for eiger/odin timeout."
-)
+# @pytest.mark.skip(
+#    reason="Needs better S03 or some other workaround for eiger/odin timeout."
+# )
 @pytest.mark.s03
+@patch(
+    "artemis.external_interaction.ispyb.store_in_ispyb.StoreInIspyb3D.end_deposition"
+)
+@patch(
+    "artemis.external_interaction.ispyb.store_in_ispyb.StoreInIspyb3D.begin_deposition"
+)
+@patch("artemis.external_interaction.nexus.write_nexus.NexusWriter")
 def test_communicator_in_composite_run(
     nexus_writer: MagicMock,
     ispyb_begin_deposition: MagicMock,
     ispyb_end_deposition: MagicMock,
     eiger: EigerDetector,
+    fgs_composite: FGSComposite,
 ):
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
+    # fgs_composite.eiger = eiger
 
     params = FGSInternalParameters(**default_raw_params())
     params.artemis_params.beamline = SIM_BEAMLINE
@@ -94,12 +107,13 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._run_start = MagicMock()
     callbacks.zocalo_handler.xray_centre_motor_position = np.array([1, 2, 3])
 
-    fast_grid_scan_composite = FGSComposite()
-    # this is where it's currently getting stuck:
-    # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
-    # but this is not a solution
-    # Would be better to use get_plan instead but eiger doesn't work well in S03
-    RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, callbacks))
+    def fake_valid(_):
+        yield from bps.sleep(0)
+
+    with patch(
+        "artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid", fake_valid
+    ):
+        RE(run_gridscan_and_move(fgs_composite, params, callbacks))
 
     # nexus writing
     callbacks.nexus_handler.nexus_writer_1.assert_called_once()
