@@ -104,7 +104,7 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     assert "No pin found" in excinfo.value.args[0]
 
 
-@patch("dodal.beamlines.i03.device_instantiation")
+@patch("dodal.beamlines.i03.device_instantiation", autospec=True)
 def test_create_devices(create_device: MagicMock):
     create_devices()
     create_device.assert_has_calls(

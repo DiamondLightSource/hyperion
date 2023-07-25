@@ -121,7 +121,8 @@ def test_calculate_new_direction_gives_correct_value(
 
 
 @patch(
-    "artemis.experiment_plans.optimise_attenuation_plan.do_device_optimise_iteration"
+    "artemis.experiment_plans.optimise_attenuation_plan.do_device_optimise_iteration",
+    autospec=True,
 )
 def test_deadtime_optimisation_calculates_deadtime_correctly(
     mock_do_device_optimise_iteration, RE: RunEngine
@@ -133,7 +134,8 @@ def test_deadtime_optimisation_calculates_deadtime_correctly(
     is_deadtime_optimised.return_value = True
 
     with patch(
-        "artemis.experiment_plans.optimise_attenuation_plan.is_deadtime_optimised"
+        "artemis.experiment_plans.optimise_attenuation_plan.is_deadtime_optimised",
+        autospec=True,
     ) as mock_is_deadtime_optimised:
         RE(
             deadtime_optimisation(
@@ -286,7 +288,7 @@ def test_create_new_devices():
         i03.attenuator.assert_called()
 
 
-@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_devices")
+@patch("artemis.experiment_plans.optimise_attenuation_plan.arm_devices", autospec=True)
 def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
     sample_shutter, xspress3mini, attenuator = fake_create_devices()
 
@@ -324,9 +326,17 @@ def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
     "optimisation_type",
     [("total_counts"), ("deadtime")],
 )
-@patch("artemis.experiment_plans.optimise_attenuation_plan.total_counts_optimisation")
-@patch("artemis.experiment_plans.optimise_attenuation_plan.deadtime_optimisation")
-@patch("artemis.experiment_plans.optimise_attenuation_plan.check_parameters")
+@patch(
+    "artemis.experiment_plans.optimise_attenuation_plan.total_counts_optimisation",
+    autospec=True,
+)
+@patch(
+    "artemis.experiment_plans.optimise_attenuation_plan.deadtime_optimisation",
+    autospec=True,
+)
+@patch(
+    "artemis.experiment_plans.optimise_attenuation_plan.check_parameters", autospec=True
+)
 def test_optimisation_attenuation_plan_runs_correct_functions(
     mock_check_parameters,
     mock_deadtime_optimisation,

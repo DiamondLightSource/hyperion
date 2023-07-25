@@ -25,8 +25,8 @@ EXPECTED_RUN_END_MESSAGE = {
 }
 
 
-@patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
+@patch("zocalo.configuration.from_file", autospec=True)
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup", autospec=True)
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
@@ -96,9 +96,9 @@ def test__run_start_and_end(
     _test_zocalo(function_to_run, expected_message)
 
 
-@patch("workflows.recipe.wrap_subscribe")
-@patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
+@patch("workflows.recipe.wrap_subscribe", autospec=True)
+@patch("zocalo.configuration.from_file", autospec=True)
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup", autospec=True)
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
@@ -145,9 +145,9 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
     )
 
 
-@patch("workflows.recipe.wrap_subscribe")
-@patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
+@patch("workflows.recipe.wrap_subscribe", autospec=True)
+@patch("zocalo.configuration.from_file", autospec=True)
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup", autospec=True)
 def test_when_exception_caused_by_zocalo_message_then_exception_propagated(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
@@ -182,9 +182,9 @@ def test_when_exception_caused_by_zocalo_message_then_exception_propagated(
         assert str(actual_exception.value) == str(failure_exception)
 
 
-@patch("workflows.recipe.wrap_subscribe")
-@patch("zocalo.configuration.from_file")
-@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup")
+@patch("workflows.recipe.wrap_subscribe", autospec=True)
+@patch("zocalo.configuration.from_file", autospec=True)
+@patch("artemis.external_interaction.zocalo.zocalo_interaction.lookup", autospec=True)
 def test_when_no_results_returned_then_no_diffraction_exception_raised(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
