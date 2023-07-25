@@ -50,6 +50,7 @@ def create_devices() -> dict[str, Device]:
 
 
 DIRECTION = RotationDirection.NEGATIVE
+MAX_VELOCITY = 120
 
 
 def setup_sample_environment(
@@ -85,7 +86,7 @@ def move_to_start_w_buffer(
     against the direction of rotation. Status for the move has group 'move_to_start'."""
     # can move to start as fast as possible
     # TODO get VMAX
-    yield from bps.abs_set(axis.velocity, 120, wait=wait_for_velocity_set)
+    yield from bps.abs_set(axis.velocity, MAX_VELOCITY, wait=wait_for_velocity_set)
     start_position = start_angle - (offset * direction)
     LOGGER.info(
         "moving to_start_w_buffer doing: start_angle-(offset*direction)"
@@ -195,8 +196,12 @@ def rotation_scan_plan(
     yield from move_to_end_w_buffer(smargon.omega, scan_width, acceleration_offset)
 
 
-def cleanup_plan(eiger, zebra, smargon, detector_motion, backlight):
+def cleanup_plan(
+    eiger, zebra: Zebra, smargon: Smargon, detector_motion: DetectorMotion, backlight
+):
     yield from cleanup_sample_environment(zebra, detector_motion)
+    # TODO get the real axis used
+    yield from bps.abs_set(smargon.omega.velocity, MAX_VELOCITY)
     yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
 
