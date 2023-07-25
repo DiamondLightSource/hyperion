@@ -217,7 +217,7 @@ def fake_create_devices(
     zebra.pc.arm_demand.set = mock_arm_disarm
 
     devices = {
-        "eiger": i03.eiger(wait_for_connection=False, fake_with_ophyd_sim=True),
+        "eiger": i03.eiger(fake_with_ophyd_sim=True),
         "smargon": smargon,
         "zebra": zebra,
         "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),

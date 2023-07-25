@@ -16,17 +16,17 @@ class RotationISPyBHandlerCallback(CallbackBase):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
     recieving an 'event' document for the 'ispyb_readings' event, and updates the
-    deposition on recieving it's final 'stop' document.
+    deposition on recieving its final 'stop' document.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
-        nexus_file_handler_callback = NexusFileHandlerCallback(parameters)
-        RE.subscribe(nexus_file_handler_callback)
+        ispyb_handler_callback = RotationISPyBHandlerCallback(parameters)
+        RE.subscribe(ispyb_handler_callback)
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
 
-    Usually used as part of an FGSCallbackCollection.
+    Usually used as part of a RotationCallbackCollection.
     """
 
     def __init__(self, parameters: FGSInternalParameters):

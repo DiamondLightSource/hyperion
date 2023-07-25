@@ -39,7 +39,7 @@ def create_devices() -> dict[str, Device]:
     """Ensures necessary devices have been instantiated and returns a dict with
     references to them"""
     return {
-        "eiger": i03.eiger(wait_for_connection=False),
+        "eiger": i03.eiger(),
         "smargon": i03.smargon(),
         "zebra": i03.zebra(),
         "detector_motion": i03.detector_motion(),

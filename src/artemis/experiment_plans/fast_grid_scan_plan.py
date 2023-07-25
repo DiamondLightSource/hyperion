@@ -75,9 +75,7 @@ class FGSComposite:
             fake_with_ophyd_sim=fake, aperture_positions=aperture_positions
         )
         self.backlight = i03.backlight(fake_with_ophyd_sim=fake)
-        self.eiger = i03.eiger(
-            wait_for_connection=False, fake_with_ophyd_sim=fake, params=detector_params
-        )
+        self.eiger = i03.eiger(fake_with_ophyd_sim=fake, params=detector_params)
         self.fast_grid_scan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
         self.flux = i03.flux(fake_with_ophyd_sim=fake)
         self.s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
