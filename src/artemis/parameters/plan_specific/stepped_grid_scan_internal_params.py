@@ -131,8 +131,8 @@ class SteppedGridScanInternalParameters(InternalParameters):
     def _preprocess_artemis_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
     ):
-        all_params["num_images"] = 1  # FIXME
-
+        experiment_params: SteppedGridScanParams = values["experiment_params"]
+        all_params["num_images"] = experiment_params.get_num_images()
         all_params["omega_increment"] = 0
         all_params["num_images_per_trigger"] = 1
 
