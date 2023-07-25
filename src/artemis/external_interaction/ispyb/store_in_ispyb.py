@@ -36,15 +36,14 @@ VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
 
 
 class StoreInIspyb(ABC):
-    ispyb_params: IspybParams | None = None
-    detector_params: DetectorParams | None = None
-    run_number: int | None = None
-    omega_start: int | None = None
-    experiment_type: str | None = None
-    xtal_snapshots: list[str] | None = None
-    data_collection_group_id: int | None = None
-
     def __init__(self, ispyb_config: str, experiment_type: str) -> None:
+        self.ispyb_params: IspybParams | None = None
+        self.detector_params: DetectorParams | None = None
+        self.run_number: int | None = None
+        self.omega_start: int | None = None
+        self.experiment_type: str | None = None
+        self.xtal_snapshots: list[str] | None = None
+        self.data_collection_group_id: int | None = None
         self.ISPYB_CONFIG_PATH: str = ispyb_config
         self.experiment_type = experiment_type
 
@@ -248,16 +247,12 @@ class StoreInIspyb(ABC):
 
 
 class StoreRotationInIspyb(StoreInIspyb):
-    ispyb_params: RotationIspybParams
-    data_collection_id: int | None = None
-
     def __init__(self, ispyb_config, parameters: RotationInternalParameters) -> None:
         self.full_params: RotationInternalParameters = parameters
-        self.ispyb_params: RotationInternalParameters = (
-            parameters.artemis_params.ispyb_params
-        )
+        self.ispyb_params: RotationIspybParams = parameters.artemis_params.ispyb_params
         self.detector_params = parameters.artemis_params.detector_params
         self.omega_start = self.detector_params.omega_start
+        self.data_collection_id: int | None = None
 
         if self.ispyb_params.xtal_snapshots_omega_start:
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
@@ -304,13 +299,6 @@ class StoreRotationInIspyb(StoreInIspyb):
 
 
 class StoreGridscanInIspyb(StoreInIspyb):
-    ispyb_params: GridscanIspybParams | None = None
-    data_collection_ids: tuple[int, ...] | None = None
-    upper_left: list[int] | None = None
-    y_steps: int | None = None
-    y_step_size: int | None = None
-    grid_ids: tuple[int, ...] | None = None
-
     def __init__(
         self,
         ispyb_config: str,
@@ -318,6 +306,12 @@ class StoreGridscanInIspyb(StoreInIspyb):
         parameters: FGSInternalParameters = None,
     ) -> None:
         self.full_params: FGSInternalParameters | None = parameters
+        self.ispyb_params: GridscanIspybParams | None = None
+        self.data_collection_ids: tuple[int, ...] | None = None
+        self.upper_left: list[int] | None = None
+        self.y_steps: int | None = None
+        self.y_step_size: int | None = None
+        self.grid_ids: tuple[int, ...] | None = None
         super().__init__(ispyb_config, experiment_type)
 
     def begin_deposition(self):
