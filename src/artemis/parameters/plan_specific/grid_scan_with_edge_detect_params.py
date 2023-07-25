@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from dataclasses_json import DataClassJsonMixin
 from dodal.devices.detector import TriggerMode
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic import validator
@@ -18,7 +17,7 @@ from artemis.parameters.internal_parameters import (
 
 
 @dataclass
-class GridScanWithEdgeDetectParams(DataClassJsonMixin, AbstractExperimentParameterBase):
+class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
     """
     Holder class for the parameters of a grid scan that uses edge detection to detect the grid.
     """

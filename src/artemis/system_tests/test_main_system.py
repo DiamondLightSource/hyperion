@@ -384,7 +384,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
+        runner.start(None, None, "fast_grid_scan")
         mock_setup.assert_called_once()
 
 
