@@ -98,9 +98,7 @@ def get_plan(
 
     assert stepped_grid_scan_composite is not None
 
-    return run_gridscan(
-        parameters, subscriptions
-    )
+    return run_gridscan(parameters, subscriptions)
 
 
 def take_reading(dets, name="primary"):

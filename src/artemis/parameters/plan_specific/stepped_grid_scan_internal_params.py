@@ -105,11 +105,13 @@ class SteppedGridScanParams(AbstractExperimentParameterBase):
             if not axis.is_within(position):
                 raise IndexError(f"{grid_position} is outside the bounds of the grid")
 
-        return np.array([
-            self.x_axis.steps_to_motor_position(grid_position[0]),
-            self.y_axis.steps_to_motor_position(grid_position[1]),
-            self.z_axis.steps_to_motor_position(grid_position[2]),
-        ])
+        return np.array(
+            [
+                self.x_axis.steps_to_motor_position(grid_position[0]),
+                self.y_axis.steps_to_motor_position(grid_position[1]),
+                self.z_axis.steps_to_motor_position(grid_position[2]),
+            ]
+        )
 
 
 class SteppedGridScanInternalParameters(InternalParameters):
@@ -126,7 +128,7 @@ class SteppedGridScanInternalParameters(InternalParameters):
                 SteppedGridScanParams, experiment_params
             )
         )
-    
+
     @validator("artemis_params", pre=True)
     def _preprocess_artemis_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
@@ -137,7 +139,7 @@ class SteppedGridScanInternalParameters(InternalParameters):
         all_params["num_images_per_trigger"] = 1
 
         return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))
-    
+
     def get_scan_points(self, scan_number: int) -> dict:
         """Get the scan points for the first or second gridscan: scan number must be
         1 or 2"""
