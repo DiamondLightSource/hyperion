@@ -100,3 +100,4 @@ def dummy_ispyb_3d(dummy_params) -> StoreInIspyb3D:
 def zocalo_env():
     os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
     artemis.external_interaction.zocalo.zocalo_interaction.TIMEOUT = 5
+    return "dev_artemis"

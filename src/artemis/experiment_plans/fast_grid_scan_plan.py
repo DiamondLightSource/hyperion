@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal.beamlines import i03
 from dodal.beamlines.i03 import (
@@ -66,8 +66,8 @@ class FGSComposite:
 
     def __init__(
         self,
-        aperture_positions: AperturePositions = None,
-        detector_params: DetectorParams = None,
+        aperture_positions: AperturePositions | None = None,
+        detector_params: DetectorParams | None = None,
         fake: bool = False,
     ):
         self.aperture_scatterguard = i03.aperture_scatterguard(
@@ -109,6 +109,7 @@ def set_aperture_for_bbox_size(
     aperture_device: ApertureScatterguard,
     bbox_size: list[int],
 ):
+    assert aperture_device.aperture_positions is not None
     # bbox_size is [x,y,z], for i03 we only care about x
     if bbox_size[0] < 2:
         aperture_size_positions = aperture_device.aperture_positions.MEDIUM

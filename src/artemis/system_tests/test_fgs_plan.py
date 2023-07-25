@@ -40,7 +40,7 @@ def test_run_gridscan(
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
-    fgs_composite.eiger.stage = lambda: True
+    fgs_composite.eiger.stage = lambda: None
     fgs_composite.eiger.unstage = lambda: True
     fgs_composite.eiger.set_detector_parameters(params.artemis_params.detector_params)
     # Would be better to use get_plan instead but eiger doesn't work well in S03
@@ -158,6 +158,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
         with pytest.raises(WarningException):
             RE(get_plan(params))
 
+    assert callbacks.ispyb_handler.ispyb.datacollection_ids is not None
     dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
 
     comment = fetch_comment(dcid_used)
@@ -167,14 +168,14 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 
 
 @pytest.mark.s03
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff", autospec=True)
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
+# @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff", autospec=True)
+# @patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
 def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
-    complete: MagicMock,
-    kickoff: MagicMock,
+    # complete: MagicMock,
+    # kickoff: MagicMock,
     RE: RunEngine,
     fgs_composite: FGSComposite,
-    zocalo_env: None,
+    zocalo_env: str,
     params: FGSInternalParameters,
 ):
     """This test currently avoids hardware interaction and is mostly confirming
@@ -183,12 +184,10 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     params.artemis_params.detector_params.directory = "./tmp"
     params.artemis_params.detector_params.prefix = str(uuid.uuid1())
     params.artemis_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    params.artemis_params.zocalo_environment = zocalo_env
 
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 1
-
-    fgs_composite.eiger.stage = lambda: True
-    fgs_composite.eiger.unstage = lambda: True
 
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG

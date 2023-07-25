@@ -15,7 +15,9 @@ from artemis.external_interaction.callbacks.fgs.nexus_callback import (
 from artemis.external_interaction.callbacks.fgs.zocalo_callback import FGSZocaloCallback
 
 if TYPE_CHECKING:
-    from artemis.parameters.internal_parameters import InternalParameters
+    from artemis.parameters.plan_specific.fgs_internal_params import (
+        FGSInternalParameters,
+    )
 
 
 @dataclass(frozen=True, order=True)
@@ -29,7 +31,7 @@ class FGSCallbackCollection(AbstractPlanCallbackCollection):
     zocalo_handler: FGSZocaloCallback
 
     @classmethod
-    def from_params(cls, parameters: InternalParameters):
+    def from_params(cls, parameters: FGSInternalParameters):
         nexus_handler = FGSNexusFileHandlerCallback()
         ispyb_handler = FGSISPyBHandlerCallback(parameters)
         zocalo_handler = FGSZocaloCallback(parameters, ispyb_handler)

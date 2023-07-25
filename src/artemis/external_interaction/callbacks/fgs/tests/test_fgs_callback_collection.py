@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import DetectorParams, EigerDetector
@@ -17,7 +16,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.parameters.constants import SIM_BEAMLINE
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-from artemis.system_tests.conftest import fgs_composite
+from artemis.system_tests.conftest import fgs_composite  # noqa
 
 
 def test_callback_collection_init():
@@ -44,7 +43,7 @@ def test_callback_collection_init():
 
 
 @pytest.fixture()
-def eiger() -> EigerDetector:
+def eiger():
     detector_params: DetectorParams = DetectorParams(
         current_energy_ev=100,
         exposure_time=0.1,
@@ -69,15 +68,12 @@ def eiger() -> EigerDetector:
     eiger.odin.check_odin_initialised = lambda: (True, "")
 
     # These also involve things S03 can't do
-    eiger.stage = lambda: True
+    eiger.stage = lambda: None
     eiger.unstage = lambda: True
 
     yield eiger
 
 
-# @pytest.mark.skip(
-#    reason="Needs better S03 or some other workaround for eiger/odin timeout."
-# )
 @pytest.mark.s03
 @patch(
     "artemis.external_interaction.ispyb.store_in_ispyb.StoreInIspyb3D.end_deposition"
@@ -90,22 +86,23 @@ def test_communicator_in_composite_run(
     nexus_writer: MagicMock,
     ispyb_begin_deposition: MagicMock,
     ispyb_end_deposition: MagicMock,
-    eiger: EigerDetector,
     fgs_composite: FGSComposite,
 ):
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
-    # fgs_composite.eiger = eiger
 
     params = FGSInternalParameters(**default_raw_params())
+    fgs_composite.eiger.set_detector_parameters(params.artemis_params.detector_params)
+
     params.artemis_params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
     callbacks = FGSCallbackCollection.from_params(params)
-    callbacks.zocalo_handler._wait_for_result = MagicMock()
-    callbacks.zocalo_handler._run_end = MagicMock()
-    callbacks.zocalo_handler._run_start = MagicMock()
-    callbacks.zocalo_handler.xray_centre_motor_position = np.array([1, 2, 3])
+    callbacks.zocalo_handler.wait_for_results = MagicMock(
+        autospec=True, return_value=([1, 2, 3], [4, 5, 6])
+    )
+    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
 
     def fake_valid(_):
         yield from bps.sleep(0)
@@ -116,15 +113,15 @@ def test_communicator_in_composite_run(
         RE(run_gridscan_and_move(fgs_composite, params, callbacks))
 
     # nexus writing
-    callbacks.nexus_handler.nexus_writer_1.assert_called_once()
-    callbacks.nexus_handler.nexus_writer_2.assert_called_once()
+    callbacks.nexus_handler.nexus_writer_1.assert_called_once()  # type: ignore
+    callbacks.nexus_handler.nexus_writer_2.assert_called_once()  # type: ignore
     # ispyb
     ispyb_begin_deposition.assert_called_once()
     ispyb_end_deposition.assert_called_once()
     # zocalo
-    callbacks.zocalo_handler._run_start.assert_called()
-    callbacks.zocalo_handler._run_end.assert_called()
-    callbacks.zocalo_handler._wait_for_result.assert_called_once()
+    callbacks.zocalo_handler.zocalo_interactor.run_end.assert_called()
+    callbacks.zocalo_handler.zocalo_interactor.run_start.assert_called()
+    callbacks.zocalo_handler.wait_for_results.assert_called_once()
 
 
 def test_callback_collection_list():

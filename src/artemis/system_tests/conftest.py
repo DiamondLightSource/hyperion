@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
+from ophyd.status import Status
 
 import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
@@ -33,6 +34,9 @@ def fgs_composite():
 
     FakeFlux = make_fake_device(Flux)
 
+    arm_status = Status()
+    arm_status.set_finished()
+
     with patch("dodal.beamlines.i03.Flux", FakeFlux):
         fast_grid_scan_composite = FGSComposite()
     fgs_plan.fast_grid_scan_composite = fast_grid_scan_composite
@@ -50,9 +54,16 @@ def fgs_composite():
     )
     fast_grid_scan_composite.eiger.cam.manual_trigger.put("Yes")
 
-    # S03 currently does not have StaleParameters_RBV
-    fast_grid_scan_composite.eiger.wait_for_stale_parameters = lambda: None
     fast_grid_scan_composite.eiger.odin.check_odin_initialised = lambda: (True, "")
-
+    fast_grid_scan_composite.eiger.async_stage = lambda: arm_status
+    fast_grid_scan_composite.eiger.unstage = lambda: True
     fast_grid_scan_composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
+
+    def fake_complete():
+        comp_status = Status()
+        comp_status.set_finished()
+        return comp_status
+
+    fast_grid_scan_composite.fast_grid_scan.complete = fake_complete  # type: ignore
+    fast_grid_scan_composite.fast_grid_scan.position_counter.set(0)
     return fast_grid_scan_composite
