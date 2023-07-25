@@ -135,10 +135,19 @@ class InternalParameters(BaseModel):
         values["artemis_params"] = flatten_dict(values)
         return values
 
-    @staticmethod
     @abstractmethod
-    def _artemis_param_key_definitions():
-        ...
+    def _artemis_param_key_definitions(self):
+        artemis_param_field_keys = [
+            "zocalo_environment",
+            "beamline",
+            "insertion_prefix",
+            "experiment_type",
+        ]
+        detector_field_keys = list(DetectorParams.__annotations__.keys())
+        # not an annotation but specified as field encoder in DetectorParams:
+        detector_field_keys.append("detector")
+        ispyb_field_keys = list(IspybParams.__annotations__.keys())
+        return artemis_param_field_keys, detector_field_keys, ispyb_field_keys
 
     @abstractmethod
     def _preprocess_experiment_params(
