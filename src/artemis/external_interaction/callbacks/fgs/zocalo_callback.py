@@ -10,6 +10,7 @@ from numpy import ndarray
 from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
     FGSISPyBHandlerCallback,
 )
+from artemis.external_interaction.create_GDA_ECR import create_new_ECRs
 from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.zocalo.zocalo_interaction import (
     NoDiffractionFound,
@@ -92,10 +93,8 @@ class FGSZocaloCallback(CallbackBase):
                 datacollection_group_id
             )
 
-            # Sort from strongest to weakest in case of multiple crystals
-            raw_results = sorted(
-                raw_results, key=lambda d: d["total_count"], reverse=True
-            )
+            # Sort based on x position
+            raw_results = sorted(raw_results, key=lambda d: d["centre_of_mass"][0])
             LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
             crystal_summary = ""
 
@@ -116,13 +115,22 @@ class FGSZocaloCallback(CallbackBase):
                 )
             self.ispyb.append_to_comment(crystal_summary)
 
-            raw_centre = np.array([*(raw_results[0]["centre_of_mass"])])
+            motor_position_centres = []
+            for centre in raw_results:
+                raw_centre = np.array([*(centre["centre_of_mass"])])
 
-            # _wait_for_result returns the centre of the grid box, but we want the corner
-            results = np.array(
-                [raw_centre[0] - 0.5, raw_centre[1] - 0.5, raw_centre[2] - 0.5]
+                results = raw_centre - np.array([0.5, 0.5, 0.5])
+
+                motor_position_centres.append(
+                    self.grid_position_to_motor_position(results)
+                )
+
+            xray_centre = motor_position_centres[0]
+
+            create_new_ECRs(
+                motor_position_centres,
+                self.ispyb.ispyb.ispyb_params.visit_path + "/xml",
             )
-            xray_centre = self.grid_position_to_motor_position(results)
 
             bbox_size: list[int] | None = bboxes[0]
 
