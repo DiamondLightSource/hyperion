@@ -30,7 +30,7 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
 )
 from artemis.parameters.plan_specific.stepped_grid_scan_internal_params import (
     SteppedGridScanInternalParameters,
-    SteppedGridScanParams
+    SteppedGridScanParams,
 )
 
 

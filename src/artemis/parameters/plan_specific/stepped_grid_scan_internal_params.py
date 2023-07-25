@@ -2,19 +2,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
-from dodal.devices.motors import XYZLimitBundle
-from pydantic.dataclasses import dataclass
-from pydantic import validator
 import numpy as np
+from dodal.devices.motors import XYZLimitBundle
+from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
+from pydantic import validator
+from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
     InternalParameters,
+    extract_artemis_params_from_flat_dict,
     extract_experiment_params_from_flat_dict,
-    extract_artemis_params_from_flat_dict
 )
 
 

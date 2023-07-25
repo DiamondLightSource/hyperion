@@ -1,13 +1,11 @@
-from artemis.experiment_plans.stepped_grid_scan_plan import (
-    run_gridscan,
-    create_devices,
-)
+import functools
+import types
 import unittest.mock
 from unittest.mock import MagicMock
-import types
-import functools
+
 from bluesky import RunEngine
 
+from artemis.experiment_plans.stepped_grid_scan_plan import create_devices, run_gridscan
 
 patch = functools.partial(unittest.mock.patch, autospec=True)
 
