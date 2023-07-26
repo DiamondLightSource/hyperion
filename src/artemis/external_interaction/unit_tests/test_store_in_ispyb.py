@@ -115,6 +115,35 @@ def test_store_rotation_scan(
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
+    assert dummy_rotation_ispyb.begin_deposition() == (
+        TEST_DATA_COLLECTION_IDS[0],
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_store_rotation_scan_failures(
+    ispyb_conn,
+    dummy_rotation_ispyb: StoreRotationInIspyb,
+    dummy_rotation_params: RotationInternalParameters,
+):
+    ispyb_conn.return_value.mx_acquisition = mock()
+    ispyb_conn.return_value.core = mock()
+
+    dummy_rotation_ispyb.data_collection_id = None
+
+    with pytest.raises(AssertionError):
+        dummy_rotation_ispyb.end_deposition("", "")
+
+    with patch("artemis.log.LOGGER.warning", autospec=True) as warning:
+        dummy_rotation_params.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
+            None
+        )
+        ispyb_no_snapshots = StoreRotationInIspyb(  # noqa
+            SIM_ISPYB_CONFIG, dummy_rotation_params
+        )
+        warning.assert_called_once_with("No xtal snapshot paths sent to ISPyB!")
+
 
 @patch("ispyb.open", new_callable=mock_open)
 def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
