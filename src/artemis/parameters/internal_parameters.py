@@ -135,8 +135,9 @@ class InternalParameters(BaseModel):
         values["artemis_params"] = flatten_dict(values)
         return values
 
+    @staticmethod
     @abstractmethod
-    def _artemis_param_key_definitions(self):
+    def _artemis_param_key_definitions():
         artemis_param_field_keys = [
             "zocalo_environment",
             "beamline",

@@ -75,13 +75,18 @@ def test_get_current_time_string(dummy_ispyb):
     "visit_path, expected_match",
     [
         ("/dls/i03/data/2022/cm6477-45/", "cm6477-45"),
+        ("/dls/i03/data/2022/cm6477-45", "cm6477-45"),
         ("/dls/i03/data/2022/mx54663-1/", "mx54663-1"),
+        ("/dls/i03/data/2022/mx54663-1", "mx54663-1"),
         ("/dls/i03/data/2022/mx53-1/", None),
+        ("/dls/i03/data/2022/mx53-1", None),
         ("/dls/i03/data/2022/mx5563-1565/", None),
+        ("/dls/i03/data/2022/mx5563-1565", None),
     ],
 )
 def test_regex_string(dummy_ispyb, visit_path: str, expected_match: str):
-    assert dummy_ispyb.get_visit_string_from_path(visit_path) == expected_match
+    test_visit_path = dummy_ispyb.get_visit_string_from_path(visit_path)
+    assert test_visit_path == expected_match
 
 
 @patch("ispyb.open", new_callable=mock_open)

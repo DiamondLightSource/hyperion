@@ -208,13 +208,13 @@ def fake_create_devices(
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+
     mock_arm_disarm = MagicMock(
-        side_effect=zebra.pc.armed.set, return_value=Status(done=True, success=True)
+        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
     )
-    zebra.pc.arm_demand.set = mock_arm_disarm
+    zebra.pc.arm.set = mock_arm_disarm
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
-    zebra.pc.arm_demand.set = mock_arm_disarm
 
     devices = {
         "eiger": i03.eiger(fake_with_ophyd_sim=True),
@@ -226,10 +226,12 @@ def fake_create_devices(
     return devices
 
 
-@pytest.mark.s03()
+@pytest.mark.s03
 @patch("bluesky.plan_stubs.wait")
+@patch("artemis.external_interaction.nexus.write_nexus.NexusWriter")
 def test_ispyb_deposition_in_plan(
     bps_wait,
+    nexus_writer,
     fake_create_devices,
     RE,
     test_rotation_params: RotationInternalParameters,
@@ -267,11 +269,14 @@ def test_ispyb_deposition_in_plan(
             "bluesky.preprocessors.__read_and_stash_a_motor",
             __fake_read,
         ),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: callbacks,
+        ),
     ):
         RE(
             get_plan(
                 test_rotation_params,
-                callbacks,
             )
         )
 

@@ -14,6 +14,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
 )
+from artemis.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
 from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
 from artemis.parameters.internal_parameters import InternalParameters
@@ -175,7 +176,7 @@ def mock_subscriptions(test_fgs_params):
     subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_LARGE
     )
-    subscriptions.ispyb_handler.ispyb = MagicMock()
+    subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: [[0, 0], 0, 0]
 
     return subscriptions

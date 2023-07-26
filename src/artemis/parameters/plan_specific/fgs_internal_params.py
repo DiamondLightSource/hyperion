@@ -12,7 +12,6 @@ from scanspec.specs import Line
 from artemis.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     GridscanIspybParams,
-    IspybParams,
 )
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
@@ -45,12 +44,13 @@ class FGSInternalParameters(InternalParameters):
             **GridscanArtemisParameters.Config.json_encoders,
         }
 
-    def _artemis_param_key_definitions(self) -> tuple[list[str], list[str], list[str]]:
+    @staticmethod
+    def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
         (
             artemis_param_field_keys,
             detector_field_keys,
             ispyb_field_keys,
-        ) = super()._artemis_param_key_definitions()
+        ) = InternalParameters._artemis_param_key_definitions()
         ispyb_field_keys += list(GridscanIspybParams.__annotations__.keys())
         return artemis_param_field_keys, detector_field_keys, ispyb_field_keys
 

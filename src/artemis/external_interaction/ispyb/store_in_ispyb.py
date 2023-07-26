@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
-VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})/"
+VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})(/?$)"
 
 
 class StoreInIspyb(ABC):
@@ -248,6 +248,7 @@ class StoreInIspyb(ABC):
 
 class StoreRotationInIspyb(StoreInIspyb):
     def __init__(self, ispyb_config, parameters: RotationInternalParameters) -> None:
+        super().__init__(ispyb_config, "SAD")
         self.full_params: RotationInternalParameters = parameters
         self.ispyb_params: RotationIspybParams = parameters.artemis_params.ispyb_params
         self.detector_params = parameters.artemis_params.detector_params
@@ -259,7 +260,6 @@ class StoreRotationInIspyb(StoreInIspyb):
         else:
             self.xtal_snapshots = []
             LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
-        super().__init__(ispyb_config, "SAD")
 
     def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]
@@ -305,6 +305,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         experiment_type: str,
         parameters: FGSInternalParameters = None,
     ) -> None:
+        super().__init__(ispyb_config, experiment_type)
         self.full_params: FGSInternalParameters | None = parameters
         self.ispyb_params: GridscanIspybParams | None = None
         self.data_collection_ids: tuple[int, ...] | None = None
@@ -312,7 +313,6 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self.y_steps: int | None = None
         self.y_step_size: int | None = None
         self.grid_ids: tuple[int, ...] | None = None
-        super().__init__(ispyb_config, experiment_type)
 
     def begin_deposition(self):
         (

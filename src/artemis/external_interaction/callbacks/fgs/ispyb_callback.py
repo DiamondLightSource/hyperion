@@ -31,7 +31,7 @@ class FGSISPyBHandlerCallback(BaseISPyBHandlerCallback):
     """
 
     def __init__(self, parameters: FGSInternalParameters):
-        super.__init__(parameters)
+        super().__init__(parameters)
         self.ispyb: StoreGridscanInIspyb = (
             Store3DGridscanInIspyb(self.ispyb_config, self.params)
             if self.params.experiment_params.is_3d_grid_scan

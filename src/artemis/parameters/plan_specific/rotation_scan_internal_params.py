@@ -92,12 +92,13 @@ class RotationInternalParameters(InternalParameters):
             **RotationArtemisParameters.Config.json_encoders,
         }
 
-    def _artemis_param_key_definitions(self) -> tuple[list[str], list[str], list[str]]:
+    @staticmethod
+    def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
         (
             artemis_param_field_keys,
             detector_field_keys,
             ispyb_field_keys,
-        ) = super()._artemis_param_key_definitions()
+        ) = InternalParameters._artemis_param_key_definitions()
         ispyb_field_keys += list(RotationIspybParams.__annotations__.keys())
 
         return artemis_param_field_keys, detector_field_keys, ispyb_field_keys

@@ -8,10 +8,7 @@ from dodal.parameters.experiment_parameter_base import AbstractExperimentParamet
 from pydantic import validator
 from pydantic.dataclasses import dataclass
 
-from artemis.external_interaction.ispyb.ispyb_dataclass import (
-    GridscanIspybParams,
-    IspybParams,
-)
+from artemis.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
     InternalParameters,
@@ -53,19 +50,12 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
 
     @staticmethod
     def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
-        artemis_param_field_keys = [
-            "zocalo_environment",
-            "beamline",
-            "insertion_prefix",
-            "experiment_type",
-        ]
-        detector_field_keys = list(DetectorParams.__annotations__.keys())
-        # not an annotation but specified as field encoder in DetectorParams:
-        detector_field_keys.append("detector")
-        ispyb_field_keys = list(IspybParams.__annotations__.keys()) + list(
-            GridscanIspybParams.__annotations__.keys()
-        )
-
+        (
+            artemis_param_field_keys,
+            detector_field_keys,
+            ispyb_field_keys,
+        ) = InternalParameters._artemis_param_key_definitions()
+        ispyb_field_keys += list(GridscanIspybParams.__annotations__.keys())
         return artemis_param_field_keys, detector_field_keys, ispyb_field_keys
 
     @validator("experiment_params", pre=True)
