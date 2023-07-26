@@ -6,10 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import DetectorParams, EigerDetector
 
-from artemis.experiment_plans.fast_grid_scan_plan import (
-    FGSComposite,
-    run_gridscan_and_move,
-)
+from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite, get_plan
 from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
     FGSCallbackCollection,
 )
@@ -81,7 +78,7 @@ def eiger():
 @patch(
     "artemis.external_interaction.ispyb.store_in_ispyb.StoreInIspyb3D.begin_deposition"
 )
-@patch("artemis.external_interaction.nexus.write_nexus.NexusWriter")
+@patch("artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter")
 def test_communicator_in_composite_run(
     nexus_writer: MagicMock,
     ispyb_begin_deposition: MagicMock,
@@ -92,6 +89,7 @@ def test_communicator_in_composite_run(
     RE = RunEngine({})
 
     params = FGSInternalParameters(**default_raw_params())
+    params.experiment_params.z_steps = 0
     fgs_composite.eiger.set_detector_parameters(params.artemis_params.detector_params)
 
     params.artemis_params.beamline = SIM_BEAMLINE
@@ -104,17 +102,18 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
 
-    def fake_valid(_):
-        yield from bps.sleep(0)
-
     with patch(
-        "artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid", fake_valid
+        "artemis.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite",
+        fgs_composite,
+    ), patch(
+        "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
+        lambda _: callbacks,
     ):
-        RE(run_gridscan_and_move(fgs_composite, params, callbacks))
+        RE(get_plan(params))
 
     # nexus writing
-    callbacks.nexus_handler.nexus_writer_1.assert_called_once()  # type: ignore
-    callbacks.nexus_handler.nexus_writer_2.assert_called_once()  # type: ignore
+    callbacks.nexus_handler.nexus_writer_1.create_nexus_file.assert_called_once()  # type: ignore
+    callbacks.nexus_handler.nexus_writer_2.create_nexus_file.assert_called_once()  # type: ignore
     # ispyb
     ispyb_begin_deposition.assert_called_once()
     ispyb_end_deposition.assert_called_once()

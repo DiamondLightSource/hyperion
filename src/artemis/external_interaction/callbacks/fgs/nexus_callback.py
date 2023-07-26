@@ -42,7 +42,7 @@ class FGSNexusFileHandlerCallback(CallbackBase):
             self.parameters = FGSInternalParameters.from_json(json_params)
             self.run_start_uid = doc.get("uid")
 
-    def descriptor(self, doc):
+    def descriptor(self, doc: dict):
         if doc.get("name") == ISPYB_PLAN_NAME:
             assert (
                 self.parameters is not None
