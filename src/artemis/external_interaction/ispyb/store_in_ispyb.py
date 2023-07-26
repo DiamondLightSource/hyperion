@@ -192,7 +192,6 @@ class StoreInIspyb(ABC):
             )
 
         params = mx_acquisition.get_data_collection_params()
-        params = self._mutate_data_collection_params_for_experiment(params)
 
         params["visitid"] = session_id
         params["parentid"] = data_collection_group_id
@@ -242,6 +241,8 @@ class StoreInIspyb(ABC):
         params[
             "file_template"
         ] = f"{self.detector_params.prefix}_{self.run_number}_master.h5"
+
+        params = self._mutate_data_collection_params_for_experiment(params)
 
         return mx_acquisition.upsert_data_collection(list(params.values()))
 

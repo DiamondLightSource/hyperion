@@ -1,4 +1,6 @@
+import json
 import re
+from copy import deepcopy
 from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import numpy as np
@@ -25,6 +27,87 @@ TEST_POSITION_ID = 78
 TEST_SESSION_ID = 90
 
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
+
+EMPTY_DATA_COLLECTION_PARAMS = {
+    "id": None,
+    "parentid": None,
+    "visitid": None,
+    "sampleid": None,
+    "detectorid": None,
+    "positionid": None,
+    "apertureid": None,
+    "datacollectionnumber": None,
+    "starttime": None,
+    "endtime": None,
+    "runstatus": None,
+    "axisstart": None,
+    "axisend": None,
+    "axisrange": None,
+    "overlap": None,
+    "nimages": None,
+    "startimagenumber": None,
+    "npasses": None,
+    "exptime": None,
+    "imgdir": None,
+    "imgprefix": None,
+    "imgsuffix": None,
+    "imgcontainersubpath": None,
+    "filetemplate": None,
+    "wavelength": None,
+    "resolution": None,
+    "detectordistance": None,
+    "xbeam": None,
+    "ybeam": None,
+    "comments": None,
+    "slitgapvertical": None,
+    "slitgaphorizontal": None,
+    "transmission": None,
+    "synchrotronmode": None,
+    "xtalsnapshot1": None,
+    "xtalsnapshot2": None,
+    "xtalsnapshot3": None,
+    "xtalsnapshot4": None,
+    "rotationaxis": None,
+    "phistart": None,
+    "kappastart": None,
+    "omegastart": None,
+    "resolutionatcorner": None,
+    "detector2theta": None,
+    "undulatorgap1": None,
+    "undulatorgap2": None,
+    "undulatorgap3": None,
+    "beamsizeatsamplex": None,
+    "beamsizeatsampley": None,
+    "avgtemperature": None,
+    "actualcenteringposition": None,
+    "beamshape": None,
+    "focalspotsizeatsamplex": None,
+    "focalspotsizeatsampley": None,
+    "polarisation": None,
+    "flux": None,
+    "processeddatafile": None,
+    "datfile": None,
+    "magnification": None,
+    "totalabsorbeddose": None,
+    "binning": None,
+    "particlediameter": None,
+    "boxsizectf": None,
+    "minresolution": None,
+    "mindefocus": None,
+    "maxdefocus": None,
+    "defocusstepsize": None,
+    "amountastigmatism": None,
+    "extractsize": None,
+    "bgradius": None,
+    "voltage": None,
+    "objaperture": None,
+    "c1aperture": None,
+    "c2aperture": None,
+    "c3aperture": None,
+    "c1lens": None,
+    "c2lens": None,
+    "c3lens": None,
+}
 
 
 @pytest.fixture
@@ -87,6 +170,35 @@ def test_get_current_time_string(dummy_ispyb):
 def test_regex_string(dummy_ispyb, visit_path: str, expected_match: str):
     test_visit_path = dummy_ispyb.get_visit_string_from_path(visit_path)
     assert test_visit_path == expected_match
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_mutate_params(
+    ispyb_conn,
+    dummy_rotation_ispyb: StoreRotationInIspyb,
+    dummy_ispyb_3d: Store3DGridscanInIspyb,
+    dummy_params: FGSInternalParameters,
+    dummy_rotation_params: RotationInternalParameters,
+):
+    rotation_dict = deepcopy(EMPTY_DATA_COLLECTION_PARAMS)
+    fgs_dict = deepcopy(EMPTY_DATA_COLLECTION_PARAMS)
+
+    dummy_ispyb_3d.y_steps = 5
+
+    rotation_transformed = (
+        dummy_rotation_ispyb._mutate_data_collection_params_for_experiment(
+            rotation_dict
+        )
+    )
+    assert rotation_transformed["axis_range"] == 180.0
+    assert rotation_transformed["axis_end"] == 180.0
+    assert rotation_transformed["n_images"] == 1800
+
+    fgs_transformed = dummy_ispyb_3d._mutate_data_collection_params_for_experiment(
+        fgs_dict
+    )
+    assert fgs_transformed["axis_range"] == 0
+    assert fgs_transformed["n_images"] == 200
 
 
 @patch("ispyb.open", new_callable=mock_open)
