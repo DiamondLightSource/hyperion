@@ -24,6 +24,9 @@ from artemis.parameters.plan_specific.fgs_internal_params import (
     FGSInternalParameters,
     GridscanArtemisParameters,
 )
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 
 @pytest.fixture
@@ -31,6 +34,23 @@ def raw_params():
     return external_parameters.from_file(
         "src/artemis/parameters/tests/test_data/good_test_parameters.json"
     )
+
+
+@pytest.fixture
+def rotation_raw_params():
+    return external_parameters.from_file(
+        "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+    )
+
+
+@pytest.fixture
+def gridscan_params(raw_params):
+    return FGSInternalParameters(**raw_params)
+
+
+@pytest.fixture
+def rotation_params(rotation_raw_params):
+    return RotationInternalParameters(**rotation_raw_params)
 
 
 TEST_PARAM_DICT = {
@@ -173,6 +193,38 @@ def test_fetch_subdict(raw_params):
     assert len(subdict) == 3
     subdict_2 = fetch_subdict_from_bucket(keys_not_all_in, flat_params)
     assert len(subdict_2) == 3
+
+
+def test_param_fields_match_components_they_should_use(
+    gridscan_params: FGSInternalParameters,
+    rotation_params: RotationInternalParameters,
+):
+    r_params = rotation_params.artemis_params.ispyb_params
+    g_params = gridscan_params.artemis_params.ispyb_params
+
+    r_calculated_ispyb_param_keys = list(
+        rotation_params._artemis_param_key_definitions()[2]
+    )
+    g_calculated_ispyb_param_keys = list(
+        gridscan_params._artemis_param_key_definitions()[2]
+    )
+
+    from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
+
+    base_ispyb_annotation_keys = list(IspybParams.__annotations__.keys())
+    r_ispyb_annotation_keys = list(r_params.__class__.__annotations__.keys())
+    g_ispyb_annotation_keys = list(g_params.__class__.__annotations__.keys())
+
+    assert (
+        r_calculated_ispyb_param_keys
+        == base_ispyb_annotation_keys + r_ispyb_annotation_keys
+    )
+    assert (
+        g_calculated_ispyb_param_keys
+        == base_ispyb_annotation_keys + g_ispyb_annotation_keys
+    )
+    assert "upper_left" in g_ispyb_annotation_keys
+    assert "upper_left" not in r_ispyb_annotation_keys
 
 
 def test_internal_params_eq():
