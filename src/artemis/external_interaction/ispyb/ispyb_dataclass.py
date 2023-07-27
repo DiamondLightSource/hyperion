@@ -77,6 +77,9 @@ class IspybParams(BaseModel):
 
     sample_id: Optional[int] = None
     sample_barcode: Optional[str] = None
+    sample_container: Optional[int] = None
+    sample_location: Optional[int] = None
+    sample_name: Optional[str] = None
 
     # Optional from GDA as populated by Ophyd
     flux: Optional[float] = None

@@ -129,7 +129,7 @@ class FGSZocaloCallback(CallbackBase):
 
             create_new_ECRs(
                 motor_position_centres,
-                self.ispyb.ispyb.ispyb_params.visit_path + "/xml",
+                self.ispyb.ispyb.ispyb_params,
             )
 
             bbox_size: list[int] | None = bboxes[0]

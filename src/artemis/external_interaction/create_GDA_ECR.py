@@ -1,46 +1,55 @@
 import copy
+import json
+import os
 import time
-import xml.etree.ElementTree as ET
 from os.path import join
 
-from artemis.log import LOGGER
+from jinja2 import Environment, FileSystemLoader
 
-ECR_to_copy = "exptTableParams.xml"
+from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
+
+ECR_to_copy = "template_ecr.xml"
+other_parameter_file = "exp_params.json"
+
+this_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-def create_new_ECRs(positions, ECR_folder):
-    ECR_path = join(ECR_folder, ECR_to_copy)
+def create_new_ECRs(positions, ispyb_params: IspybParams):
+    out_folder = ispyb_params.visit_path + "/xml"
 
-    tree = ET.parse(ECR_path)
-    root = tree.getroot()
+    with open(join(this_file_dir, other_parameter_file)) as f:
+        other_params = json.load(f)
+        sample_template = {
+            "sample_name": ispyb_params.sample_name,
+            "visit_folder": ispyb_params.visit_path,
+            "sample_container": ispyb_params.sample_container,
+            "sample_location": ispyb_params.sample_location,
+            "sample_id": ispyb_params.sample_id,
+            "transmission": other_params["transmission"],
+            "exposure_time": other_params["exposure_time"],
+        }
+        samples = {"samples": []}
 
-    original_ecr = tree.find("extendedCollectRequest")
-    root.remove(original_ecr)
+    for pos in positions[1:]:
+        new_sample = copy.deepcopy(sample_template)
+        new_sample["x"] = pos[0] * 1000
+        new_sample["y"] = pos[1] * 1000
+        new_sample["z"] = pos[2] * 1000
+        samples["samples"].append(new_sample)
 
-    sample_position_template = (
-        """<samplePosition><x>{0}</x><y>{1}</y><z>{2}</z></samplePosition>"""
-    )
+    print(f"Using samples: {samples}")
 
-    sample_name = original_ecr.find("sampleName").text
+    environment = Environment(loader=FileSystemLoader(this_file_dir))
+    template = environment.get_template("template_ecr.xml")
 
-    for position in positions:
-        new_ecr = copy.deepcopy(original_ecr)
-
-        sample_pos = ET.fromstring(sample_position_template.format(*position))
-        new_ecr.find("centringMode").text = "DISABLE"
-        new_ecr.append(sample_pos)
-        root.append(new_ecr)
-
-    ET.indent(root)
-
-    out_file_path = join(ECR_folder, f"{sample_name}_full_multipin_{time.time()}.xml")
-    LOGGER.info(
-        f"Creating XML in {out_file_path}: {ET.tostring(root, encoding='unicode')}"
-    )
-
-    tree.write(out_file_path)
+    with open(
+        join(out_folder, f"{ispyb_params.sample_name}_multipin_{time.time()}.xml"),
+        mode="w",
+        encoding="utf-8",
+    ) as results:
+        results.write(template.render(samples))
 
 
 if __name__ == "__main__":
     positions = [(1, 2, 3), (2, 3, 4)]
-    create_new_ECRs(positions, "/tmp/gda/i03/data/2023/cm33866-3/xml")
+    # create_new_ECRs("sample_1", positions, Magic".")
