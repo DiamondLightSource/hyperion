@@ -58,7 +58,13 @@ def smargon() -> Smargon:
         smargon.omega.user_readback.sim_put(val)
         return Status(done=True, success=True)
 
-    with patch.object(smargon.omega, "set", mock_omega_set):
+    def mock_x_set(val):
+        smargon.x.user_readback.sim_put(val)
+        return Status(done=True, success=True)
+
+    with patch.object(smargon.omega, "set", mock_omega_set), patch.object(
+        smargon.x, "set", mock_x_set
+    ):
         yield smargon
 
 
@@ -90,6 +96,11 @@ def s4_slit_gaps():
 @pytest.fixture
 def synchrotron():
     return i03.synchrotron(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def oav():
+    return i03.oav(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
