@@ -64,7 +64,7 @@ def test_move_to_end(smargon: Smargon, RE):
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
-@patch("artemis.experiment_plans.rotation_scan_plan.rotation_scan_plan")
+@patch("artemis.experiment_plans.rotation_scan_plan.rotation_scan_plan", autospec=True)
 def test_get_plan(
     plan: MagicMock,
     RE,
@@ -99,7 +99,7 @@ def test_get_plan(
     eiger.unstage.assert_called()
 
 
-@patch("bluesky.plan_stubs.wait")
+@patch("bluesky.plan_stubs.wait", autospec=True)
 def test_rotation_plan(
     bps_wait: MagicMock,
     RE,
@@ -138,8 +138,8 @@ def test_rotation_plan(
     assert mock_omega_sets.call_count == 4
 
 
-@patch("artemis.experiment_plans.rotation_scan_plan.cleanup_plan")
-@patch("bluesky.plan_stubs.wait")
+@patch("artemis.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)
+@patch("bluesky.plan_stubs.wait", autospec=True)
 def test_cleanup_happens(
     bps_wait: MagicMock,
     cleanup_plan: MagicMock,

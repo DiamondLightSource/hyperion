@@ -121,8 +121,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
 @patch(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
-@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
 def test_results_adjusted_and_passed_to_move_xyz(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
@@ -178,7 +178,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     )
 
 
-@patch("bluesky.plan_stubs.mv")
+@patch("bluesky.plan_stubs.mv", autospec=True)
 def test_results_passed_to_move_motors(
     bps_mv: MagicMock,
     test_fgs_params: FGSInternalParameters,
@@ -199,17 +199,15 @@ def test_results_passed_to_move_motors(
 
 
 @patch(
-    "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+    "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
 )
-@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     rd: MagicMock,
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
-    do_fgs: MagicMock,
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
@@ -234,17 +232,16 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
 
 
 @patch(
-    "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+    "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
+    autospec=True,
 )
-@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan.do_fgs")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_logging_within_plan(
     rd: MagicMock,
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
-    do_fgs: MagicMock,
     move_aperture: MagicMock,
     mock_subscriptions: FGSCallbackCollection,
     fake_fgs_composite: FGSComposite,
@@ -268,7 +265,7 @@ def test_logging_within_plan(
     move_xyz.assert_called_once()
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep", autospec=True)
 def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     patch_sleep: MagicMock, RE: RunEngine
 ):
@@ -282,7 +279,7 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     patch_sleep.assert_not_called()
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.sleep", autospec=True)
 def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
     patch_sleep: MagicMock, RE: RunEngine
 ):
@@ -296,12 +293,16 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
     patch_sleep.assert_called()
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.abs_set")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid")
-@patch("artemis.external_interaction.nexus.write_nexus.NexusWriter")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.abs_set", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.kickoff", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.mv", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid", autospec=True)
+@patch(
+    "artemis.external_interaction.nexus.write_nexus.NexusWriter",
+    autospec=True,
+    spec_set=True,
+)
 def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     nexuswriter,
     wait_for_valid,
@@ -334,17 +335,19 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
         "artemis.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
         lambda _: mock_subscriptions,
     ), patch(
-        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.create_nexus_file"
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.create_nexus_file",
+        autospec=True,
     ), patch(
-        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.update_nexus_file_timestamp"
+        "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.update_nexus_file_timestamp",
+        autospec=True,
     ):
         RE(get_plan(test_fgs_params))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.wait")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.wait", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
 def test_fgs_arms_eiger_without_grid_detect(
     mock_complete,
     mock_wait,
@@ -360,8 +363,8 @@ def test_fgs_arms_eiger_without_grid_detect(
     fake_fgs_composite.eiger.unstage.assert_called_once()
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.wait")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete")
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.wait", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
 def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_returned(
     mock_complete,
     mock_wait,
