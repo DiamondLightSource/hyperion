@@ -43,7 +43,7 @@ def test_good_params_artemisparams_validates():
     jsonschema.validate(params["artemis_params"], artemis_schema, resolver=resolver)
 
 
-def test_good_params_ispybparams_validates():
+def test_good_params_GridscanIspybParams_validates():
     jsonschema.validate(
         params["artemis_params"]["ispyb_params"], ispyb_schema, resolver=resolver
     )

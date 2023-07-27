@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.utils import Msg
+from dodal.beamlines import i03
 from ophyd.status import Status
 
 from artemis.experiment_plans.rotation_scan_plan import (
@@ -17,6 +18,14 @@ from artemis.experiment_plans.rotation_scan_plan import (
 )
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
+)
+from artemis.external_interaction.system_tests.conftest import (  # noqa
+    fetch_comment,
+    fetch_datacollection_attribute,
+)
+from artemis.parameters.constants import DEV_ISPYB_DATABASE_CFG
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
 )
 
 if TYPE_CHECKING:
@@ -100,6 +109,11 @@ def test_rotation_plan(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     mock_rotation_subscriptions: RotationCallbackCollection,
+    synchrotron,
+    s4_slit_gaps,
+    undulator,
+    flux,
+    attenuator,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
@@ -111,16 +125,26 @@ def test_rotation_plan(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    with patch("bluesky.preprocessors.__read_and_stash_a_motor", __fake_read,), patch(
-        "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-        lambda _: mock_rotation_subscriptions,
+    with (
+        patch(
+            "bluesky.preprocessors.__read_and_stash_a_motor",
+            __fake_read,
+        ),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: mock_rotation_subscriptions,
+        ),
+        patch("dodal.beamlines.i03.undulator", lambda: undulator),
+        patch("dodal.beamlines.i03.synchrotron", lambda: synchrotron),
+        patch("dodal.beamlines.i03.s4_slit_gaps", lambda: s4_slit_gaps),
+        patch("dodal.beamlines.i03.flux", lambda: flux),
+        patch("dodal.beamlines.i03.attenuator", lambda: attenuator),
     ):
         RE(
             rotation_scan_plan(
                 test_rotation_params, eiger, smargon, zebra, backlight, detector_motion
             )
         )
-
     # once for each velocity set and once for each position set for a total of 4 calls
     assert mock_omega_sets.call_count == 4
 
@@ -173,3 +197,98 @@ def test_cleanup_happens(
             )
         assert "Experiment fails because this is a test" in exc.value.args[0]
         cleanup_plan.assert_called_once()
+
+
+@pytest.fixture()
+def fake_create_devices(
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+):
+    eiger.stage = MagicMock()
+    eiger.unstage = MagicMock()
+    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+
+    mock_arm_disarm = MagicMock(
+        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
+    )
+    zebra.pc.arm.set = mock_arm_disarm
+    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.set = mock_omega_sets
+
+    devices = {
+        "eiger": i03.eiger(fake_with_ophyd_sim=True),
+        "smargon": smargon,
+        "zebra": zebra,
+        "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),
+        "backlight": i03.backlight(fake_with_ophyd_sim=True),
+    }
+    return devices
+
+
+@pytest.mark.s03
+@patch("bluesky.plan_stubs.wait")
+@patch("artemis.external_interaction.nexus.write_nexus.NexusWriter")
+def test_ispyb_deposition_in_plan(
+    bps_wait,
+    nexus_writer,
+    fake_create_devices,
+    RE,
+    test_rotation_params: RotationInternalParameters,
+    fetch_comment,
+    fetch_datacollection_attribute,
+    undulator,
+    synchrotron,
+    s4_slit_gaps,
+    flux,
+):
+    test_wl = 0.71
+    test_bs_x = 0.023
+    test_bs_y = 0.047
+    test_exp_time = 0.023
+    test_img_wid = 0.27
+
+    test_rotation_params.experiment_params.image_width = test_img_wid
+    test_rotation_params.artemis_params.ispyb_params.beam_size_x = test_bs_x
+    test_rotation_params.artemis_params.ispyb_params.beam_size_y = test_bs_y
+    test_rotation_params.artemis_params.detector_params.exposure_time = test_exp_time
+    test_rotation_params.artemis_params.ispyb_params.wavelength = test_wl
+    callbacks = RotationCallbackCollection.from_params(test_rotation_params)
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = DEV_ISPYB_DATABASE_CFG
+
+    with (
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.create_devices",
+            lambda: fake_create_devices,
+        ),
+        patch("dodal.beamlines.i03.undulator", return_value=undulator),
+        patch("dodal.beamlines.i03.synchrotron", return_value=synchrotron),
+        patch("dodal.beamlines.i03.s4_slit_gaps", return_value=s4_slit_gaps),
+        patch("dodal.beamlines.i03.flux", return_value=flux),
+        patch(
+            "bluesky.preprocessors.__read_and_stash_a_motor",
+            __fake_read,
+        ),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: callbacks,
+        ),
+    ):
+        RE(
+            get_plan(
+                test_rotation_params,
+            )
+        )
+
+    dcid = callbacks.ispyb_handler.ispyb_ids[0]
+    comment = fetch_comment(dcid)
+    assert comment == "Hyperion rotation scan"
+    wavelength = fetch_datacollection_attribute(dcid, "wavelength")
+    beamsize_x = fetch_datacollection_attribute(dcid, "beamSizeAtSampleX")
+    beamsize_y = fetch_datacollection_attribute(dcid, "beamSizeAtSampleY")
+    exposure = fetch_datacollection_attribute(dcid, "exposureTime")
+
+    assert wavelength == test_wl
+    assert beamsize_x == test_bs_x
+    assert beamsize_y == test_bs_y
+    assert exposure == test_exp_time

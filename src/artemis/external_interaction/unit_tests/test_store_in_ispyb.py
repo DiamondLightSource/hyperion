@@ -1,4 +1,5 @@
 import re
+from copy import deepcopy
 from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import numpy as np
@@ -7,12 +8,16 @@ from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
 from artemis.external_interaction.ispyb.store_in_ispyb import (
-    StoreInIspyb2D,
-    StoreInIspyb3D,
+    Store2DGridscanInIspyb,
+    Store3DGridscanInIspyb,
+    StoreRotationInIspyb,
 )
 from artemis.parameters.constants import SIM_ISPYB_CONFIG
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from artemis.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 TEST_DATA_COLLECTION_IDS = [12, 13]
 TEST_DATA_COLLECTION_GROUP_ID = 34
@@ -21,6 +26,87 @@ TEST_POSITION_ID = 78
 TEST_SESSION_ID = 90
 
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
+
+EMPTY_DATA_COLLECTION_PARAMS = {
+    "id": None,
+    "parentid": None,
+    "visitid": None,
+    "sampleid": None,
+    "detectorid": None,
+    "positionid": None,
+    "apertureid": None,
+    "datacollectionnumber": None,
+    "starttime": None,
+    "endtime": None,
+    "runstatus": None,
+    "axisstart": None,
+    "axisend": None,
+    "axisrange": None,
+    "overlap": None,
+    "nimages": None,
+    "startimagenumber": None,
+    "npasses": None,
+    "exptime": None,
+    "imgdir": None,
+    "imgprefix": None,
+    "imgsuffix": None,
+    "imgcontainersubpath": None,
+    "filetemplate": None,
+    "wavelength": None,
+    "resolution": None,
+    "detectordistance": None,
+    "xbeam": None,
+    "ybeam": None,
+    "comments": None,
+    "slitgapvertical": None,
+    "slitgaphorizontal": None,
+    "transmission": None,
+    "synchrotronmode": None,
+    "xtalsnapshot1": None,
+    "xtalsnapshot2": None,
+    "xtalsnapshot3": None,
+    "xtalsnapshot4": None,
+    "rotationaxis": None,
+    "phistart": None,
+    "kappastart": None,
+    "omegastart": None,
+    "resolutionatcorner": None,
+    "detector2theta": None,
+    "undulatorgap1": None,
+    "undulatorgap2": None,
+    "undulatorgap3": None,
+    "beamsizeatsamplex": None,
+    "beamsizeatsampley": None,
+    "avgtemperature": None,
+    "actualcenteringposition": None,
+    "beamshape": None,
+    "focalspotsizeatsamplex": None,
+    "focalspotsizeatsampley": None,
+    "polarisation": None,
+    "flux": None,
+    "processeddatafile": None,
+    "datfile": None,
+    "magnification": None,
+    "totalabsorbeddose": None,
+    "binning": None,
+    "particlediameter": None,
+    "boxsizectf": None,
+    "minresolution": None,
+    "mindefocus": None,
+    "maxdefocus": None,
+    "defocusstepsize": None,
+    "amountastigmatism": None,
+    "extractsize": None,
+    "bgradius": None,
+    "voltage": None,
+    "objaperture": None,
+    "c1aperture": None,
+    "c2aperture": None,
+    "c3aperture": None,
+    "c1lens": None,
+    "c2lens": None,
+    "c3lens": None,
+}
 
 
 @pytest.fixture
@@ -33,18 +119,30 @@ def dummy_params():
 
 
 @pytest.fixture
+def dummy_rotation_params():
+    dummy_params = RotationInternalParameters(
+        **default_raw_params(
+            "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+        )
+    )
+    return dummy_params
+
+
+@pytest.fixture
 def dummy_ispyb(dummy_params):
-    store_in_ispyb_2d = StoreInIspyb2D(SIM_ISPYB_CONFIG, dummy_params)
-    store_in_ispyb_2d.get_current_datacollection_comment = MagicMock()
-    store_in_ispyb_2d.get_current_datacollection_comment.return_value = ""
+    store_in_ispyb_2d = Store2DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
     return store_in_ispyb_2d
 
 
 @pytest.fixture
+def dummy_rotation_ispyb(dummy_rotation_params):
+    store_in_ispyb = StoreRotationInIspyb(SIM_ISPYB_CONFIG, dummy_rotation_params)
+    return store_in_ispyb
+
+
+@pytest.fixture
 def dummy_ispyb_3d(dummy_params):
-    store_in_ispyb_3d = StoreInIspyb3D(SIM_ISPYB_CONFIG, dummy_params)
-    store_in_ispyb_3d.get_current_datacollection_comment = MagicMock()
-    store_in_ispyb_3d.get_current_datacollection_comment.return_value = ""
+    store_in_ispyb_3d = Store3DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
     return store_in_ispyb_3d
 
 
@@ -59,13 +157,103 @@ def test_get_current_time_string(dummy_ispyb):
     "visit_path, expected_match",
     [
         ("/dls/i03/data/2022/cm6477-45/", "cm6477-45"),
+        ("/dls/i03/data/2022/cm6477-45", "cm6477-45"),
         ("/dls/i03/data/2022/mx54663-1/", "mx54663-1"),
+        ("/dls/i03/data/2022/mx54663-1", "mx54663-1"),
         ("/dls/i03/data/2022/mx53-1/", None),
+        ("/dls/i03/data/2022/mx53-1", None),
         ("/dls/i03/data/2022/mx5563-1565/", None),
+        ("/dls/i03/data/2022/mx5563-1565", None),
     ],
 )
 def test_regex_string(dummy_ispyb, visit_path: str, expected_match: str):
-    assert dummy_ispyb.get_visit_string_from_path(visit_path) == expected_match
+    test_visit_path = dummy_ispyb.get_visit_string_from_path(visit_path)
+    assert test_visit_path == expected_match
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_mutate_params(
+    ispyb_conn,
+    dummy_rotation_ispyb: StoreRotationInIspyb,
+    dummy_ispyb_3d: Store3DGridscanInIspyb,
+    dummy_params: FGSInternalParameters,
+    dummy_rotation_params: RotationInternalParameters,
+):
+    rotation_dict = deepcopy(EMPTY_DATA_COLLECTION_PARAMS)
+    fgs_dict = deepcopy(EMPTY_DATA_COLLECTION_PARAMS)
+
+    dummy_ispyb_3d.y_steps = 5
+
+    rotation_transformed = (
+        dummy_rotation_ispyb._mutate_data_collection_params_for_experiment(
+            rotation_dict
+        )
+    )
+    assert rotation_transformed["axis_range"] == 180.0
+    assert rotation_transformed["axis_end"] == 180.0
+    assert rotation_transformed["n_images"] == 1800
+
+    fgs_transformed = dummy_ispyb_3d._mutate_data_collection_params_for_experiment(
+        fgs_dict
+    )
+    assert fgs_transformed["axis_range"] == 0
+    assert fgs_transformed["n_images"] == 200
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_store_rotation_scan(
+    ispyb_conn, dummy_rotation_ispyb: StoreRotationInIspyb, dummy_rotation_params
+):
+    ispyb_conn.return_value.mx_acquisition = mock()
+    ispyb_conn.return_value.core = mock()
+
+    when(dummy_rotation_ispyb)._store_position_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_POSITION_ID)
+
+    when(dummy_rotation_ispyb)._store_data_collection_group_table(
+        ispyb_conn()
+    ).thenReturn(TEST_DATA_COLLECTION_GROUP_ID)
+
+    when(dummy_rotation_ispyb)._store_data_collection_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_GROUP_ID
+    ).thenReturn(TEST_DATA_COLLECTION_IDS[0])
+
+    assert dummy_rotation_ispyb.experiment_type == "SAD"
+
+    assert dummy_rotation_ispyb._store_scan_data(ispyb_conn()) == (
+        TEST_DATA_COLLECTION_IDS[0],
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
+
+    assert dummy_rotation_ispyb.begin_deposition() == (
+        TEST_DATA_COLLECTION_IDS[0],
+        TEST_DATA_COLLECTION_GROUP_ID,
+    )
+
+
+@patch("ispyb.open", new_callable=mock_open)
+def test_store_rotation_scan_failures(
+    ispyb_conn,
+    dummy_rotation_ispyb: StoreRotationInIspyb,
+    dummy_rotation_params: RotationInternalParameters,
+):
+    ispyb_conn.return_value.mx_acquisition = mock()
+    ispyb_conn.return_value.core = mock()
+
+    dummy_rotation_ispyb.data_collection_id = None
+
+    with pytest.raises(AssertionError):
+        dummy_rotation_ispyb.end_deposition("", "")
+
+    with patch("artemis.log.LOGGER.warning", autospec=True) as warning:
+        dummy_rotation_params.artemis_params.ispyb_params.xtal_snapshots_omega_start = (
+            None
+        )
+        ispyb_no_snapshots = StoreRotationInIspyb(  # noqa
+            SIM_ISPYB_CONFIG, dummy_rotation_params
+        )
+        warning.assert_called_once_with("No xtal snapshot paths sent to ISPyB!")
 
 
 @patch("ispyb.open", new_callable=mock_open)
@@ -73,18 +261,18 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
-    when(dummy_ispyb)._store_position_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
-        TEST_POSITION_ID
-    )
-    when(dummy_ispyb)._store_data_collection_group_table().thenReturn(
+    when(dummy_ispyb)._store_position_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_POSITION_ID)
+    when(dummy_ispyb)._store_data_collection_group_table(ispyb_conn()).thenReturn(
         TEST_DATA_COLLECTION_GROUP_ID
     )
     when(dummy_ispyb)._store_data_collection_table(
-        TEST_DATA_COLLECTION_GROUP_ID
+        ispyb_conn(), TEST_DATA_COLLECTION_GROUP_ID
     ).thenReturn(TEST_DATA_COLLECTION_IDS[0])
-    when(dummy_ispyb)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
-        TEST_GRID_INFO_ID
-    )
+    when(dummy_ispyb)._store_grid_info_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_GRID_INFO_ID)
 
     assert dummy_ispyb.experiment_type == "mesh"
 
@@ -97,27 +285,29 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
 
 @patch("ispyb.open", new_callable=mock_open)
 def test_store_3d_grid_scan(
-    ispyb_conn, dummy_ispyb_3d: StoreInIspyb3D, dummy_params: FGSInternalParameters
+    ispyb_conn,
+    dummy_ispyb_3d: Store3DGridscanInIspyb,
+    dummy_params: FGSInternalParameters,
 ):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
-    when(dummy_ispyb_3d)._store_position_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
-        TEST_POSITION_ID
-    )
-    when(dummy_ispyb_3d)._store_position_table(TEST_DATA_COLLECTION_IDS[1]).thenReturn(
-        TEST_POSITION_ID
-    )
-    when(dummy_ispyb_3d)._store_data_collection_group_table().thenReturn(
+    when(dummy_ispyb_3d)._store_position_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_POSITION_ID)
+    when(dummy_ispyb_3d)._store_position_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[1]
+    ).thenReturn(TEST_POSITION_ID)
+    when(dummy_ispyb_3d)._store_data_collection_group_table(ispyb_conn()).thenReturn(
         TEST_DATA_COLLECTION_GROUP_ID
     )
 
-    when(dummy_ispyb_3d)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[0]).thenReturn(
-        TEST_GRID_INFO_ID
-    )
-    when(dummy_ispyb_3d)._store_grid_info_table(TEST_DATA_COLLECTION_IDS[1]).thenReturn(
-        TEST_GRID_INFO_ID
-    )
+    when(dummy_ispyb_3d)._store_grid_info_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+    ).thenReturn(TEST_GRID_INFO_ID)
+    when(dummy_ispyb_3d)._store_grid_info_table(
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[1]
+    ).thenReturn(TEST_GRID_INFO_ID)
 
     dummy_ispyb_3d._store_data_collection_table = Mock(
         side_effect=TEST_DATA_COLLECTION_IDS
@@ -225,7 +415,7 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
 
 @patch("ispyb.open", autospec=True)
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
-    ispyb_conn, dummy_ispyb: StoreInIspyb2D, dummy_params: FGSInternalParameters
+    ispyb_conn, dummy_ispyb: Store2DGridscanInIspyb, dummy_params: FGSInternalParameters
 ):
     expected_sample_id = "0001"
     dummy_params.artemis_params.ispyb_params.sample_id = expected_sample_id
@@ -242,7 +432,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
 @patch("ispyb.open", autospec=True)
 def test_fail_result_run_results_in_bad_run_status(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: Store2DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -265,7 +455,7 @@ def test_fail_result_run_results_in_bad_run_status(
 @patch("ispyb.open", autospec=True)
 def test_no_exception_during_run_results_in_good_run_status(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: Store2DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -286,7 +476,7 @@ def test_no_exception_during_run_results_in_good_run_status(
 @patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_comment_correct(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: Store2DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -306,7 +496,7 @@ def test_ispyb_deposition_comment_correct(
 @patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_rounds_to_int(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb: StoreInIspyb2D,
+    dummy_ispyb: Store2DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -329,7 +519,7 @@ def test_ispyb_deposition_rounds_to_int(
 @patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_comment_for_3D_correct(
     mock_ispyb_conn: MagicMock,
-    dummy_ispyb_3d: StoreInIspyb3D,
+    dummy_ispyb_3d: Store3DGridscanInIspyb,
 ):
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
@@ -351,7 +541,7 @@ def test_ispyb_deposition_comment_for_3D_correct(
 
 @patch("ispyb.open", autospec=True)
 def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
-    ispyb_conn, dummy_ispyb: StoreInIspyb2D, dummy_params: FGSInternalParameters
+    ispyb_conn, dummy_ispyb: Store2DGridscanInIspyb, dummy_params: FGSInternalParameters
 ):
     expected_number_of_steps = 200 * 3
     dummy_params.experiment_params.x_steps = 200

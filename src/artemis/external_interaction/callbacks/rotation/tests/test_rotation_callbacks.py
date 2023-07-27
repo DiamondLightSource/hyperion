@@ -6,9 +6,6 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
-from artemis.external_interaction.callbacks.rotation.nexus_callback import (
-    RotationNexusFileHandlerCallback,
-)
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
 )
@@ -25,11 +22,6 @@ def params():
             "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
         )
     )
-
-
-def test_callback_collection_init(params):
-    callbacks = RotationCallbackCollection()
-    assert isinstance(callbacks.nexus_handler, RotationNexusFileHandlerCallback)
 
 
 def fake_get_plan(
@@ -55,6 +47,8 @@ def test_nexus_handler_gets_documents_in_mock_plan(params: RotationInternalParam
     cb = RotationCallbackCollection.from_params(params)
     cb.nexus_handler.start = MagicMock()
     cb.nexus_handler.stop = MagicMock()
+    cb.ispyb_handler.start = MagicMock()
+    cb.ispyb_handler.stop = MagicMock()
 
     RE(fake_get_plan(params, cb))
 
@@ -75,6 +69,9 @@ def test_nexus_handler_triggers_write_file_when_told(
     RE = RunEngine({})
 
     cb = RotationCallbackCollection.from_params(params)
+
+    cb.ispyb_handler.start = MagicMock()
+    cb.ispyb_handler.stop = MagicMock()
 
     RE(fake_get_plan(params, cb))
 

@@ -10,8 +10,10 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import RotationDirection, Zebra
+from ophyd.device import Device
 from ophyd.epics_motor import EpicsMotor
 
+from artemis.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from artemis.device_setup_plans.setup_zebra import (
     arm_zebra,
     disarm_zebra,
@@ -34,17 +36,14 @@ if TYPE_CHECKING:
 
 
 def create_devices() -> dict[str, Device]:
-    eiger = i03.eiger(wait_for_connection=False)
-    smargon = i03.smargon()
-    zebra = i03.zebra()
-    detector_motion = i03.detector_motion()
-    backlight = i03.backlight()
+    """Ensures necessary devices have been instantiated and returns a dict with
+    references to them"""
     return {
-        "eiger": eiger,
-        "smargon": smargon,
-        "zebra": zebra,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
+        "eiger": i03.eiger(),
+        "smargon": i03.smargon(),
+        "zebra": i03.zebra(),
+        "detector_motion": i03.detector_motion(),
+        "backlight": i03.backlight(),
     }
 
 
@@ -97,11 +96,14 @@ def move_to_end_w_buffer(axis: EpicsMotor, scan_width: float, wait: float = True
 
 
 def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
+    speed_for_rotation = image_width / exposure_time
     yield from bps.abs_set(
-        axis.velocity, image_width / exposure_time, group="set_speed", wait=True
+        axis.velocity, speed_for_rotation, group="set_speed", wait=wait
     )
 
 
+@bpp.set_run_key_decorator("rotation_scan_main")
+@bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
 def rotation_scan_plan(
     params: RotationInternalParameters,
     eiger: EigerDetector,
@@ -125,7 +127,16 @@ def rotation_scan_plan(
     yield from setup_sample_environment(detector_motion, backlight)
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle}")
     yield from move_to_start_w_buffer(smargon.omega, start_angle)
-    LOGGER.info("wait for any previous moves...")
+
+    # get some information for the ispyb deposition and trigger the callback
+    yield from read_hardware_for_ispyb(
+        i03.undulator(),
+        i03.synchrotron(),
+        i03.s4_slit_gaps(),
+        i03.attenuator(),
+        i03.flux(),
+    )
+
     LOGGER.info(
         f"setting up zebra w: start_angle={start_angle}, scan_width={scan_width}"
     )
@@ -140,6 +151,8 @@ def rotation_scan_plan(
         ),
         group="setup_zebra",
     )
+
+    LOGGER.info("wait for any previous moves...")
     # wait for all the setup tasks at once
     yield from bps.wait("setup_senv")
     yield from bps.wait("move_to_start")
