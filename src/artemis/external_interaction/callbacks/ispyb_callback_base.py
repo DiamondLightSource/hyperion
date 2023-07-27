@@ -69,10 +69,7 @@ class BaseISPyBHandlerCallback(CallbackBase):
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
-            LOGGER.info(
-                f"Recieved ISPYB dcids: {self.ispyb_ids[0]}, grid ids: "
-                f"{self.ispyb_ids[1]}, dc group id: {self.ispyb_ids[2]}"
-            )
+            LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
     def stop(self, doc: dict):
         """Subclasses must check that they are recieving a stop document for the correct
