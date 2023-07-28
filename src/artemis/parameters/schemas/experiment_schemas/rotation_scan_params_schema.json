@@ -54,7 +54,6 @@
     "required": [
         "rotation_axis",
         "rotation_angle",
-        "omega_start",
-        "rotation_increment"
+        "omega_start"
     ]
 }
