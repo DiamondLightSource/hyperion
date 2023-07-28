@@ -102,7 +102,7 @@ def move_to_end_w_buffer(
     axis: EpicsMotor,
     scan_width: float,
     offset: float,
-    shutter_opening_degrees: float = 2.5,  # default for 100 deg/s
+    shutter_opening_degrees: float,
     wait: bool = True,
     direction: RotationDirection = DIRECTION,
 ):
@@ -139,12 +139,13 @@ def rotation_scan_plan(
     detector_params: DetectorParams = params.artemis_params.detector_params
     expt_params: RotationScanParams = params.experiment_params
 
-    start_angle = detector_params.omega_start
-    scan_width = expt_params.get_num_images() * detector_params.omega_increment
-    image_width = detector_params.omega_increment
-    exposure_time = detector_params.exposure_time
+    start_angle_deg = detector_params.omega_start
+    scan_width_deg = expt_params.get_num_images() * detector_params.omega_increment
+    image_width_deg = detector_params.omega_increment
+    exposure_time_s = detector_params.exposure_time
+    shutter_time_s = expt_params.shutter_opening_time_s
 
-    speed_for_rotation_deg_s = image_width / exposure_time
+    speed_for_rotation_deg_s = image_width_deg / exposure_time_s
     LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
 
     # TODO get this from epics instead of hardcoded - time to velocity
@@ -159,7 +160,7 @@ def rotation_scan_plan(
     )
     LOGGER.info(
         f"calculated degrees rotation needed for shutter: {shutter_opening_degrees} deg"
-        f" for {expt_params.shutter_opening_time_s} at {speed_for_rotation_deg_s} deg/s"
+        f" for {shutter_time_s} s at {speed_for_rotation_deg_s} deg/s"
     )
 
     LOGGER.info("setting up and staging eiger")
@@ -168,8 +169,10 @@ def rotation_scan_plan(
     yield from setup_sample_environment(
         detector_motion, backlight, attenuator, transmission
     )
-    LOGGER.info(f"moving omega to beginning, start_angle={start_angle}")
-    yield from move_to_start_w_buffer(smargon.omega, start_angle, acceleration_offset)
+    LOGGER.info(f"moving omega to beginning, start_angle={start_angle_deg}")
+    yield from move_to_start_w_buffer(
+        smargon.omega, start_angle_deg, acceleration_offset
+    )
 
     # get some information for the ispyb deposition and trigger the callback
     yield from read_hardware_for_ispyb(
@@ -181,14 +184,15 @@ def rotation_scan_plan(
     )
 
     LOGGER.info(
-        f"setting up zebra w: start_angle={start_angle}, scan_width={scan_width}"
+        f"setting up zebra w: start_angle={start_angle_deg}, scan_width={scan_width_deg}"
     )
     yield from setup_zebra_for_rotation(
         zebra,
-        start_angle=start_angle,
-        scan_width=scan_width,
+        start_angle=start_angle_deg,
+        scan_width=scan_width_deg,
         direction=DIRECTION,
         shutter_opening_deg=shutter_opening_degrees,
+        shutter_opening_s=expt_params.shutter_opening_time_s,
         group="setup_zebra",
     )
 
@@ -199,16 +203,18 @@ def rotation_scan_plan(
     yield from bps.wait("setup_zebra")
 
     LOGGER.info(
-        f"setting rotation speed for image_width, exposure_time {image_width, exposure_time} to {image_width/exposure_time}"
+        f"setting rotation speed for image_width, exposure_time {image_width_deg, exposure_time_s} to {image_width_deg/exposure_time_s}"
     )
-    yield from set_speed(smargon.omega, image_width, exposure_time, wait=True)
+    yield from set_speed(smargon.omega, image_width_deg, exposure_time_s, wait=True)
 
     yield from arm_zebra(zebra)
 
     LOGGER.info(
-        f"{'increase' if DIRECTION > 0 else 'decrease'} omega through {scan_width}, to be modified by adjustments for shutter speed and acceleration"
+        f"{'increase' if DIRECTION > 0 else 'decrease'} omega through {scan_width_deg}, to be modified by adjustments for shutter speed and acceleration"
     )
-    yield from move_to_end_w_buffer(smargon.omega, scan_width, acceleration_offset)
+    yield from move_to_end_w_buffer(
+        smargon.omega, scan_width_deg, shutter_opening_degrees, acceleration_offset
+    )
 
 
 def cleanup_plan(

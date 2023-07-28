@@ -31,6 +31,7 @@ def setup_zebra_for_rotation(
     start_angle: float = 0,
     scan_width: float = 360,
     shutter_opening_deg: float = 2.5,
+    shutter_opening_s: float = 0.04,
     direction: RotationDirection = RotationDirection.POSITIVE,
     group: str = "setup_zebra_for_rotation",
     wait: bool = False,
@@ -66,6 +67,10 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.pc.gate_start, start_angle, group=group)
     # set gate width to total width
     yield from bps.abs_set(zebra.pc.gate_width, scan_width, group=group)
+    LOGGER.info(
+        f"Pulse start set to shutter open time, set to: {abs(shutter_opening_s)}"
+    )
+    yield from bps.abs_set(zebra.pc.pulse_start, abs(shutter_opening_s), group=group)
     # Set gate position to be angle of interest
     yield from bps.abs_set(zebra.pc.gate_trigger, axis.value, group=group)
     # Trigger the shutter with the gate (from PC_GATE & SOFTIN1 -> OR1)
