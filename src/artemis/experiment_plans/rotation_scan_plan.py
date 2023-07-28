@@ -75,6 +75,25 @@ def cleanup_sample_environment(
     yield from bps.abs_set(detector_motion.shutter, 0, group=group)
 
 
+def move_x_y_z(
+    smargon: Smargon,
+    x: float | None,
+    y: float | None,
+    z: float | None,
+    wait=False,
+    group="move_x_y_z",
+):
+    if x:
+        LOGGER.info(f"x: {x}, y: {y}, z: {z}")
+        yield from bps.abs_set(smargon.x, x, group=group)
+    if y:
+        yield from bps.abs_set(smargon.y, y, group=group)
+    if z:
+        yield from bps.abs_set(smargon.z, z, group=group)
+    if wait:
+        yield from bps.wait(group)
+
+
 def move_to_start_w_buffer(
     axis: EpicsMotor,
     start_angle: float,
@@ -145,6 +164,11 @@ def rotation_scan_plan(
     image_width_deg = detector_params.omega_increment
     exposure_time_s = detector_params.exposure_time
     shutter_time_s = expt_params.shutter_opening_time_s
+
+    LOGGER.info("moving to start x, y, z if necessary")
+    yield from move_x_y_z(
+        smargon, expt_params.x, expt_params.y, expt_params.z, wait=True
+    )
 
     speed_for_rotation_deg_s = image_width_deg / exposure_time_s
     LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")

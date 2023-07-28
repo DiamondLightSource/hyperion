@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import DEFAULT, MagicMock, patch
 
 import pytest
+from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import i03
+from dodal.devices.flux import Flux
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 from ophyd.status import Status
 
 from artemis.experiment_plans.rotation_scan_plan import (
@@ -114,33 +119,20 @@ def test_get_plan(
     eiger.unstage.assert_called()
 
 
-@patch("bluesky.plan_stubs.wait", autospec=True)
-def test_rotation_plan(
-    bps_wait: MagicMock,
-    RE,
-    test_rotation_params,
-    smargon: Smargon,
-    zebra: Zebra,
-    eiger: EigerDetector,
-    attenuator: Attenuator,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    mock_rotation_subscriptions: RotationCallbackCollection,
-    synchrotron,
-    s4_slit_gaps,
-    undulator,
-    flux,
+def do_rotation_plan_for_tests(
+    run_engine,
+    callbacks,
+    sim_und,
+    sim_synch,
+    sim_slits,
+    sim_flux,
+    sim_att,
+    expt_params,
+    sim_sgon,
+    sim_zeb,
+    sim_bl,
+    sim_det,
 ):
-    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
-
-    mock_arm = MagicMock(
-        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
-    )
-    zebra.pc.arm.arm_set.set = mock_arm
-
-    smargon.omega.velocity.set = mock_omega_sets
-    smargon.omega.set = mock_omega_sets
-
     with (
         patch(
             "bluesky.preprocessors.__read_and_stash_a_motor",
@@ -148,26 +140,137 @@ def test_rotation_plan(
         ),
         patch(
             "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-            lambda _: mock_rotation_subscriptions,
+            lambda _: callbacks,
         ),
-        patch("dodal.beamlines.i03.undulator", lambda: undulator),
-        patch("dodal.beamlines.i03.synchrotron", lambda: synchrotron),
-        patch("dodal.beamlines.i03.s4_slit_gaps", lambda: s4_slit_gaps),
-        patch("dodal.beamlines.i03.flux", lambda: flux),
-        patch("dodal.beamlines.i03.attenuator", lambda: attenuator),
+        patch("dodal.beamlines.i03.undulator", lambda: sim_und),
+        patch("dodal.beamlines.i03.synchrotron", lambda: sim_synch),
+        patch("dodal.beamlines.i03.s4_slit_gaps", lambda: sim_slits),
+        patch("dodal.beamlines.i03.flux", lambda: sim_flux),
+        patch("dodal.beamlines.i03.attenuator", lambda: sim_att),
     ):
-        RE(
+        run_engine(
             rotation_scan_plan(
-                test_rotation_params,
-                smargon,
-                zebra,
-                backlight,
-                attenuator,
-                detector_motion,
+                expt_params,
+                sim_sgon,
+                sim_zeb,
+                sim_bl,
+                sim_att,
+                sim_det,
             )
         )
-    # once for each velocity set and once for each position set for a total of 4 calls
-    assert mock_omega_sets.call_count == 4
+
+
+@pytest.fixture
+def setup_and_run_rotation_plan_for_tests(
+    RE: RunEngine,
+    test_rotation_params: RotationInternalParameters,
+    smargon: Smargon,
+    zebra: Zebra,
+    eiger: EigerDetector,
+    attenuator: Attenuator,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    mock_rotation_subscriptions: RotationCallbackCollection,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    undulator: Undulator,
+    flux: Flux,
+):
+    from functools import partial
+
+    def side_set_w_return(obj, *args):
+        obj.sim_put(*args)
+        return DEFAULT
+
+    mock_omega_sets = MagicMock(
+        return_value=Status(done=True, success=True),
+        side_effect=partial(side_set_w_return, smargon.omega.user_readback),
+    )
+    mock_x = MagicMock(
+        return_value=Status(done=True, success=True),
+        side_effect=partial(side_set_w_return, smargon.x.user_readback),
+    )
+    mock_y = MagicMock(
+        return_value=Status(done=True, success=True),
+        side_effect=partial(side_set_w_return, smargon.y.user_readback),
+    )
+    mock_z = MagicMock(
+        return_value=Status(done=True, success=True),
+        side_effect=partial(side_set_w_return, smargon.z.user_readback),
+    )
+    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.set = mock_omega_sets
+    smargon.x.set = mock_x
+    smargon.y.set = mock_y
+    smargon.z.set = mock_z
+
+    mock_arm = MagicMock(
+        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
+    )
+    zebra.pc.arm.arm_set.set = mock_arm
+
+    with patch("bluesky.plan_stubs.wait", autospec=True):
+        do_rotation_plan_for_tests(
+            RE,
+            mock_rotation_subscriptions,
+            undulator,
+            synchrotron,
+            s4_slit_gaps,
+            flux,
+            attenuator,
+            test_rotation_params,
+            smargon,
+            zebra,
+            backlight,
+            detector_motion,
+        )
+
+    return {
+        "RE": RE,
+        "test_rotation_params": test_rotation_params,
+        "smargon": smargon,
+        "zebra": zebra,
+        "eiger": eiger,
+        "attenuator": attenuator,
+        "detector_motion": detector_motion,
+        "backlight": backlight,
+        "mock_rotation_subscriptions": mock_rotation_subscriptions,
+        "synchrotron": synchrotron,
+        "s4_slit_gaps": s4_slit_gaps,
+        "undulator": undulator,
+        "flux": flux,
+    }
+
+
+def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests):
+    RE: RunEngine = setup_and_run_rotation_plan_for_tests["RE"]
+    assert RE._exit_status == "success"
+
+
+def test_rotation_plan_zebra_settings(setup_and_run_rotation_plan_for_tests):
+    zebra: Zebra = setup_and_run_rotation_plan_for_tests["zebra"]
+    params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests[
+        "test_rotation_params"
+    ]
+    expt_params = params.experiment_params
+
+    assert zebra.pc.gate_start.get() == expt_params.omega_start
+    assert zebra.pc.gate_start.get() == expt_params.omega_start
+    assert zebra.pc.pulse_start.get() == expt_params.shutter_opening_time_s
+
+
+def test_rotation_plan_smargon_settings(setup_and_run_rotation_plan_for_tests):
+    smargon: Smargon = setup_and_run_rotation_plan_for_tests["smargon"]
+    params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests[
+        "test_rotation_params"
+    ]
+    expt_params = params.experiment_params
+
+    assert smargon.phi.user_readback.get() == expt_params.phi_start
+    assert smargon.chi.user_readback.get() == expt_params.chi_start
+    assert smargon.x.user_readback.get() == expt_params.x
+    assert smargon.y.user_readback.get() == expt_params.y
+    assert smargon.z.user_readback.get() == expt_params.z
 
 
 @patch("artemis.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)

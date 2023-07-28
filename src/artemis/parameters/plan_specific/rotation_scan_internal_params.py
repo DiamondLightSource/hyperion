@@ -48,9 +48,9 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     phi_start: float = 0.0
     chi_start: float | None = None
     kappa_start: float | None = None
-    x: float = 0.0
-    y: float = 0.0
-    z: float = 0.0
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
     rotation_direction: RotationDirection = RotationDirection.NEGATIVE
     shutter_opening_time_s: float = 0.6
 
