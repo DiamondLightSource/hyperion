@@ -1,9 +1,17 @@
+from functools import partial
+from unittest.mock import patch
+
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.smargon import Smargon
+from ophyd.status import Status
 
-from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
+from artemis.device_setup_plans.setup_oav import (
+    get_move_required_so_that_beam_is_at_pixel,
+    pre_centring_setup_oav,
+)
 
 ZOOM_LEVELS_XML = (
     "src/artemis/experiment_plans/tests/test_data/jCameraManZoomLevels.xml"
@@ -19,6 +27,27 @@ def mock_parameters():
     return OAVParameters(
         "loopCentring", ZOOM_LEVELS_XML, OAV_CENTRING_JSON, DISPLAY_CONFIGURATION
     )
+
+
+@pytest.fixture
+def smargon() -> Smargon:
+    smargon = i03.smargon(fake_with_ophyd_sim=True)
+    smargon.x.user_setpoint._use_limits = False
+    smargon.y.user_setpoint._use_limits = False
+    smargon.z.user_setpoint._use_limits = False
+    smargon.omega.user_setpoint._use_limits = False
+
+    def mock_set(motor, val):
+        motor.user_readback.sim_put(val)
+        return Status(done=True, success=True)
+
+    def patch_motor(motor):
+        return patch.object(motor, "set", partial(mock_set, motor))
+
+    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
+        smargon.y
+    ), patch_motor(smargon.z):
+        yield smargon
 
 
 @pytest.mark.parametrize(
@@ -49,3 +78,44 @@ def test_when_set_up_oav_with_different_zoom_levels_then_flat_field_applied_corr
     RE(pre_centring_setup_oav(oav, mock_parameters))
     assert oav.mxsc.input_plugin.get() == expected_plugin
     assert oav.snapshot.input_plugin.get() == "OAV.MXSC"
+
+
+@pytest.mark.parametrize(
+    "px_per_um, beam_centre, angle, pixel_to_move_to, expected_xyz",
+    [
+        # Simple case of beam being in the top left and each pixel being 1 mm
+        ([1000, 1000], [0, 0], 0, [100, 190], [100, 190, 0]),
+        ([1000, 1000], [0, 0], -90, [50, 250], [50, 0, 250]),
+        ([1000, 1000], [0, 0], 90, [-60, 450], [-60, 0, -450]),
+        # Beam offset
+        ([1000, 1000], [100, 100], 0, [100, 100], [0, 0, 0]),
+        ([1000, 1000], [100, 100], -90, [50, 250], [-50, 0, 150]),
+        # Pixels_per_micron different
+        ([10, 50], [0, 0], 0, [100, 190], [1, 9.5, 0]),
+        ([60, 80], [0, 0], -90, [50, 250], [3, 0, 20]),
+    ],
+)
+def test_values_for_move_so_that_beam_is_at_pixel(
+    smargon: Smargon,
+    mock_parameters,
+    px_per_um,
+    beam_centre,
+    angle,
+    pixel_to_move_to,
+    expected_xyz,
+):
+    mock_parameters.micronsPerXPixel = px_per_um[0]
+    mock_parameters.micronsPerYPixel = px_per_um[1]
+    mock_parameters.beam_centre_i = beam_centre[0]
+    mock_parameters.beam_centre_j = beam_centre[1]
+
+    smargon.omega.user_readback.sim_put(angle)
+
+    RE = RunEngine(call_returns_result=True)
+    pos = RE(
+        get_move_required_so_that_beam_is_at_pixel(
+            smargon, pixel_to_move_to, mock_parameters
+        )
+    ).plan_result
+
+    assert pos == pytest.approx(expected_xyz)

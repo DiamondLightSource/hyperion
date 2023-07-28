@@ -5,7 +5,6 @@ import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from ophyd.sim import make_fake_device
 
@@ -14,7 +13,6 @@ from artemis.experiment_plans.pin_tip_centring_plan import (
     create_devices,
     move_pin_into_view,
     move_smargon_warn_on_out_of_range,
-    move_so_that_beam_is_at_pixel,
     pin_tip_centre_plan,
 )
 
@@ -104,46 +102,6 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
         RE(move_smargon_warn_on_out_of_range(fake_smargon, (100, 0, 0)))
 
 
-@pytest.mark.parametrize(
-    "px_per_um, beam_centre, angle, pixel_to_move_to, expected_xyz",
-    [
-        # Simple case of beam being in the top left and each pixel being 1 mm
-        ([1000, 1000], [0, 0], 0, [100, 190], [100, 190, 0]),
-        ([1000, 1000], [0, 0], -90, [50, 250], [50, 0, 250]),
-        ([1000, 1000], [0, 0], 90, [-60, 450], [-60, 0, -450]),
-        # Beam offset
-        ([1000, 1000], [100, 100], 0, [100, 100], [0, 0, 0]),
-        ([1000, 1000], [100, 100], -90, [50, 250], [-50, 0, 150]),
-        # Pixels_per_micron different
-        ([10, 50], [0, 0], 0, [100, 190], [1, 9.5, 0]),
-        ([60, 80], [0, 0], -90, [50, 250], [3, 0, 20]),
-    ],
-)
-def test_values_for_move_so_that_beam_is_at_pixel(
-    smargon: Smargon,
-    test_config_files,
-    RE,
-    px_per_um,
-    beam_centre,
-    angle,
-    pixel_to_move_to,
-    expected_xyz,
-):
-    params = OAVParameters(context="loopCentring", **test_config_files)
-    params.micronsPerXPixel = px_per_um[0]
-    params.micronsPerYPixel = px_per_um[1]
-    params.beam_centre_i = beam_centre[0]
-    params.beam_centre_j = beam_centre[1]
-
-    smargon.omega.user_readback.sim_put(angle)
-
-    RE(move_so_that_beam_is_at_pixel(smargon, pixel_to_move_to, params))
-
-    assert smargon.x.user_readback.get() == pytest.approx(expected_xyz[0])
-    assert smargon.y.user_readback.get() == pytest.approx(expected_xyz[1])
-    assert smargon.z.user_readback.get() == pytest.approx(expected_xyz[2])
-
-
 @patch("artemis.experiment_plans.pin_tip_centring_plan.i03", autospec=True)
 def test_when_create_devices_called_then_devices_created(mock_i03):
     create_devices()
@@ -162,7 +120,7 @@ def return_pixel(pixel, *args):
     new=partial(return_pixel, (200, 200)),
 )
 @patch(
-    "artemis.experiment_plans.pin_tip_centring_plan.move_so_that_beam_is_at_pixel",
+    "artemis.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
     autospec=True,
 )
 @patch(
@@ -175,11 +133,16 @@ def return_pixel(pixel, *args):
 )
 @patch("artemis.experiment_plans.pin_tip_centring_plan.i03", autospec=True)
 @patch("artemis.experiment_plans.pin_tip_centring_plan.bps.sleep", autospec=True)
+@patch(
+    "artemis.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
+    autospec=True,
+)
 def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
+    move_smargon,
     mock_sleep,
     mock_i03,
     mock_setup_oav,
-    mock_move_to_px: MagicMock,
+    get_move: MagicMock,
     smargon: Smargon,
     test_config_files,
     RE,
@@ -190,12 +153,12 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
 
     mock_setup_oav.assert_called_once()
 
-    assert len(mock_move_to_px.call_args_list) == 2
+    assert len(get_move.call_args_list) == 2
 
-    args, _ = mock_move_to_px.call_args_list[0]
+    args, _ = get_move.call_args_list[0]
     assert args[1] == (117, 100)
 
     assert smargon.omega.user_readback.get() == 90
 
-    args, _ = mock_move_to_px.call_args_list[1]
+    args, _ = get_move.call_args_list[1]
     assert args[1] == (217, 200)

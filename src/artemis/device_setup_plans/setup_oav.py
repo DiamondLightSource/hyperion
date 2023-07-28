@@ -1,10 +1,18 @@
+from typing import Generator, Tuple
+
 import bluesky.plan_stubs as bps
+import numpy as np
+from bluesky.utils import Msg
+from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.utils import ColorMode, EdgeOutputArrayImageType
+from dodal.devices.smargon import Smargon
 
 from artemis.log import LOGGER
+
+Pixel = Tuple[int, int]
 
 
 def start_mxsc(oav: OAV, min_callback_time, filename):
@@ -102,3 +110,28 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
     """
     TODO: We require setting the backlight brightness to that in the json, we can't do this currently without a PV.
     """
+
+
+def get_move_required_so_that_beam_is_at_pixel(
+    smargon: Smargon, pixel: Pixel, oav_params: OAVParameters
+) -> Generator[Msg, None, np.ndarray]:
+    """Calculate the required move so that the given pixel is in the centre of the beam."""
+    beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
+
+    current_motor_xyz = np.array(
+        [
+            (yield from bps.rd(smargon.x)),
+            (yield from bps.rd(smargon.y)),
+            (yield from bps.rd(smargon.z)),
+        ],
+        dtype=np.float64,
+    )
+    current_angle = yield from bps.rd(smargon.omega)
+
+    return current_motor_xyz + camera_coordinates_to_xyz(
+        beam_distance_px[0],
+        beam_distance_px[1],
+        current_angle,
+        oav_params.micronsPerXPixel,
+        oav_params.micronsPerYPixel,
+    )

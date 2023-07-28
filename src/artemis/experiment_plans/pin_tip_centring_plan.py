@@ -2,16 +2,18 @@ from typing import Dict, Generator, Tuple
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import numpy as np
 from bluesky.utils import Msg
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 from dodal.devices.smargon import Smargon
 from ophyd.utils.errors import LimitError
 
-from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
+from artemis.device_setup_plans.setup_oav import (
+    Pixel,
+    get_move_required_so_that_beam_is_at_pixel,
+    pre_centring_setup_oav,
+)
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.oav_grid_detection_plan import wait_for_tip_to_be_found
 from artemis.log import LOGGER
@@ -25,7 +27,7 @@ def create_devices():
 
 def move_pin_into_view(
     oav: OAV, smargon: Smargon, step_size: float = 1, max_steps: int = 1
-) -> Generator[Msg, None, Tuple[int, int]]:
+) -> Generator[Msg, None, Pixel]:
     """Attempt to move the pin into view and return the tip location in pixels if found.
     The gonio is moved in a number of discrete steps to find the pin.
 
@@ -73,6 +75,9 @@ def move_pin_into_view(
 def move_smargon_warn_on_out_of_range(
     smargon: Smargon, position: Tuple[float, float, float]
 ):
+    """Moves the smargon and throws a WarningException rather than an error if the
+    position is out of range"""
+
     def warn_if_limit_error(exception: Exception):
         if isinstance(exception, LimitError):
             raise WarningException(
@@ -93,34 +98,6 @@ def move_smargon_warn_on_out_of_range(
     )
 
 
-def move_so_that_beam_is_at_pixel(
-    smargon: Smargon, pixel: Tuple[int, int], oav_params: OAVParameters
-):
-    """Move so that the given pixel is in the centre of the beam."""
-    beam_distance_px: Tuple[int, int] = oav_params.calculate_beam_distance(*pixel)
-
-    current_motor_xyz = np.array(
-        [
-            (yield from bps.rd(smargon.x)),
-            (yield from bps.rd(smargon.y)),
-            (yield from bps.rd(smargon.z)),
-        ],
-        dtype=np.float64,
-    )
-    current_angle = yield from bps.rd(smargon.omega)
-
-    position_mm = current_motor_xyz + camera_coordinates_to_xyz(
-        beam_distance_px[0],
-        beam_distance_px[1],
-        current_angle,
-        oav_params.micronsPerXPixel,
-        oav_params.micronsPerYPixel,
-    )
-
-    LOGGER.info(f"Tip centring moving to : {position_mm}")
-    yield from move_smargon_warn_on_out_of_range(smargon, position_mm)
-
-
 def pin_tip_centre_plan(
     tip_offset_microns: float = 900,
     oav_config_files: Dict[str, str] = OAV_CONFIG_FILE_DEFAULTS,
@@ -138,13 +115,21 @@ def pin_tip_centre_plan(
     oav_params = OAVParameters("pinTipCentring", **oav_config_files)
 
     tip_offset_px = int(tip_offset_microns / oav_params.micronsPerXPixel)
+
+    def offset_and_move(tip: Pixel):
+        pixel_to_move_to = (tip[0] + tip_offset_px, tip[1])
+        position_mm = yield from get_move_required_so_that_beam_is_at_pixel(
+            smargon, pixel_to_move_to, oav_params
+        )
+        LOGGER.info(f"Tip centring moving to : {position_mm}")
+        yield from move_smargon_warn_on_out_of_range(smargon, position_mm)
+
     LOGGER.info(f"Tip offset in pixels: {tip_offset_px}")
 
     yield from pre_centring_setup_oav(oav, oav_params)
 
-    tip_x_px, tip_y_px = yield from move_pin_into_view(oav, smargon)
-    pixel_to_move_to = (tip_x_px + tip_offset_px, tip_y_px)
-    yield from move_so_that_beam_is_at_pixel(smargon, pixel_to_move_to, oav_params)
+    tip = yield from move_pin_into_view(oav, smargon)
+    yield from offset_and_move(tip)
 
     yield from bps.mvr(smargon.omega, 90)
 
@@ -152,6 +137,5 @@ def pin_tip_centre_plan(
     # See #673 for improvements
     yield from bps.sleep(0.3)
 
-    tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc)
-    pixel_to_move_to = (tip_x_px + tip_offset_px, tip_y_px)
-    yield from move_so_that_beam_is_at_pixel(smargon, pixel_to_move_to, oav_params)
+    tip = yield from wait_for_tip_to_be_found(oav.mxsc)
+    yield from offset_and_move(tip)
