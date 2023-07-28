@@ -7,7 +7,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 
 from artemis.experiment_plans.rotation_scan_plan import (
-    DIRECTION,
+    DEFAULT_DIRECTION,
     create_devices,
     move_to_end_w_buffer,
     move_to_start_w_buffer,
@@ -51,7 +51,7 @@ def test_move_to_start(devices, RE):
     omega_position = smargon.omega.user_setpoint.get()
 
     assert velocity == 120
-    assert omega_position == (start_angle - TEST_OFFSET * DIRECTION)
+    assert omega_position == (start_angle - TEST_OFFSET * DEFAULT_DIRECTION)
 
 
 @pytest.mark.s03()
@@ -61,4 +61,4 @@ def test_move_to_end(devices, RE):
     RE(move_to_end_w_buffer(smargon.omega, scan_width, TEST_OFFSET))
     omega_position = smargon.omega.user_setpoint.get()
 
-    assert omega_position == ((scan_width + 0.1 + TEST_OFFSET) * DIRECTION)
+    assert omega_position == ((scan_width + 0.1 + TEST_OFFSET) * DEFAULT_DIRECTION)

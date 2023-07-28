@@ -9,7 +9,7 @@ from dodal.beamlines import i03
 from ophyd.status import Status
 
 from artemis.experiment_plans.rotation_scan_plan import (
-    DIRECTION,
+    DEFAULT_DIRECTION,
     get_plan,
     move_to_end_w_buffer,
     move_to_start_w_buffer,
@@ -46,7 +46,10 @@ def test_move_to_start(smargon: Smargon, RE):
         RE(move_to_start_w_buffer(smargon.omega, start_angle, TEST_OFFSET))
 
     mock_velocity_set.assert_called_with(120)
-    assert smargon.omega.user_readback.get() == start_angle - TEST_OFFSET * DIRECTION
+    assert (
+        smargon.omega.user_readback.get()
+        == start_angle - TEST_OFFSET * DEFAULT_DIRECTION
+    )
 
 
 def __fake_read(obj, initial_positions, _):
@@ -68,7 +71,7 @@ def test_move_to_end(smargon: Smargon, RE):
 
     distance_to_move = (
         scan_width + TEST_SHUTTER_OPENING_DEGREES + TEST_OFFSET * 2 + 0.1
-    ) * DIRECTION
+    ) * DEFAULT_DIRECTION
 
     assert smargon.omega.user_readback.get() == distance_to_move
 

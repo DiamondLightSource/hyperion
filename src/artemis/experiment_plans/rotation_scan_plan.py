@@ -50,8 +50,8 @@ def create_devices() -> dict[str, Device]:
     }
 
 
-DIRECTION = RotationDirection.NEGATIVE
-MAX_VELOCITY = 120
+DEFAULT_DIRECTION = RotationDirection.NEGATIVE
+DEFAULT_MAX_VELOCITY = 120
 
 
 def setup_sample_environment(
@@ -81,13 +81,14 @@ def move_to_start_w_buffer(
     offset: float,
     wait_for_velocity_set: bool = True,
     wait_for_move: bool = False,
-    direction: RotationDirection = DIRECTION,
+    direction: RotationDirection = DEFAULT_DIRECTION,
+    max_velocity: float = DEFAULT_MAX_VELOCITY,
 ):
     """Move an EpicsMotor 'axis' to angle 'start_angle', modified by an offset and
     against the direction of rotation. Status for the move has group 'move_to_start'."""
     # can move to start as fast as possible
     # TODO get VMAX
-    yield from bps.abs_set(axis.velocity, MAX_VELOCITY, wait=wait_for_velocity_set)
+    yield from bps.abs_set(axis.velocity, max_velocity, wait=wait_for_velocity_set)
     start_position = start_angle - (offset * direction)
     LOGGER.info(
         "moving to_start_w_buffer doing: start_angle-(offset*direction)"
@@ -104,7 +105,7 @@ def move_to_end_w_buffer(
     offset: float,
     shutter_opening_degrees: float,
     wait: bool = True,
-    direction: RotationDirection = DIRECTION,
+    direction: RotationDirection = DEFAULT_DIRECTION,
 ):
     distance_to_move = (
         scan_width + shutter_opening_degrees + offset * 2 + 0.1
@@ -127,12 +128,12 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
 @bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
 def rotation_scan_plan(
     params: RotationInternalParameters,
-    eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
     backlight: Backlight,
     attenuator: Attenuator,
     detector_motion: DetectorMotion,
+    **kwargs,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
     a fixed axis - for now this axis is limited to omega."""
@@ -163,8 +164,6 @@ def rotation_scan_plan(
         f" for {shutter_time_s} s at {speed_for_rotation_deg_s} deg/s"
     )
 
-    LOGGER.info("setting up and staging eiger")
-
     transmission = params.artemis_params.ispyb_params.transmission
     yield from setup_sample_environment(
         detector_motion, backlight, attenuator, transmission
@@ -184,13 +183,14 @@ def rotation_scan_plan(
     )
 
     LOGGER.info(
-        f"setting up zebra w: start_angle={start_angle_deg}, scan_width={scan_width_deg}"
+        f"setting up zebra w: start_angle = {start_angle_deg} deg, "
+        f"scan_width = {scan_width_deg} deg"
     )
     yield from setup_zebra_for_rotation(
         zebra,
         start_angle=start_angle_deg,
         scan_width=scan_width_deg,
-        direction=DIRECTION,
+        direction=expt_params.rotation_direction,
         shutter_opening_deg=shutter_opening_degrees,
         shutter_opening_s=expt_params.shutter_opening_time_s,
         group="setup_zebra",
@@ -203,14 +203,16 @@ def rotation_scan_plan(
     yield from bps.wait("setup_zebra")
 
     LOGGER.info(
-        f"setting rotation speed for image_width, exposure_time {image_width_deg, exposure_time_s} to {image_width_deg/exposure_time_s}"
+        f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
+        f" s, setting rotation speed to {image_width_deg/exposure_time_s} deg/s"
     )
     yield from set_speed(smargon.omega, image_width_deg, exposure_time_s, wait=True)
 
     yield from arm_zebra(zebra)
 
     LOGGER.info(
-        f"{'increase' if DIRECTION > 0 else 'decrease'} omega through {scan_width_deg}, to be modified by adjustments for shutter speed and acceleration"
+        f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
+        f"through {scan_width_deg}, (before shutter and acceleration adjustment)"
     )
     yield from move_to_end_w_buffer(
         smargon.omega, scan_width_deg, shutter_opening_degrees, acceleration_offset
@@ -222,7 +224,7 @@ def cleanup_plan(
 ):
     yield from cleanup_sample_environment(zebra, detector_motion)
     # TODO get the real axis used
-    yield from bps.abs_set(smargon.omega.velocity, MAX_VELOCITY)
+    yield from bps.abs_set(smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
     yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
 
@@ -241,11 +243,13 @@ def get_plan(parameters: RotationInternalParameters):
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
-        devices["eiger"].set_detector_parameters(params.artemis_params.detector_params)
+        eiger: EigerDetector = devices["eiger"]
+        eiger.set_detector_parameters(params.artemis_params.detector_params)
 
-        @bpp.stage_decorator([devices["eiger"]])
+        @bpp.stage_decorator(eiger)
         @bpp.finalize_decorator(lambda: cleanup_plan(**devices))
         def rotation_with_cleanup_and_stage(params):
+            LOGGER.info("setting up and staging eiger...")
             yield from rotation_scan_plan(params, **devices)
 
         yield from rotation_with_cleanup_and_stage(params)
