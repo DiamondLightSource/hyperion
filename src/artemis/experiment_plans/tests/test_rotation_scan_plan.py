@@ -19,6 +19,7 @@ from artemis.external_interaction.callbacks.rotation.rotation_callback_collectio
 )
 
 if TYPE_CHECKING:
+    from dodal.devices.attenuator import Attenuator
     from dodal.devices.backlight import Backlight
     from dodal.devices.detector_motion import DetectorMotion
     from dodal.devices.eiger import EigerDetector
@@ -107,6 +108,7 @@ def test_rotation_plan(
     smargon: Smargon,
     zebra: Zebra,
     eiger: EigerDetector,
+    attenuator: Attenuator,
     detector_motion: DetectorMotion,
     backlight: Backlight,
     mock_rotation_subscriptions: RotationCallbackCollection,
@@ -130,7 +132,13 @@ def test_rotation_plan(
     ):
         RE(
             rotation_scan_plan(
-                test_rotation_params, eiger, smargon, zebra, backlight, detector_motion
+                test_rotation_params,
+                eiger,
+                smargon,
+                zebra,
+                backlight,
+                attenuator,
+                detector_motion,
             )
         )
 

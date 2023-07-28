@@ -77,6 +77,11 @@ def detector_motion():
 
 
 @pytest.fixture
+def attenuator():
+    return i03.attenuator(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
 def aperture_scatterguard():
     return i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,

@@ -197,7 +197,7 @@ def rotation_scan_plan(
 
 
 def cleanup_plan(
-    eiger, zebra: Zebra, smargon: Smargon, detector_motion: DetectorMotion, backlight
+    zebra: Zebra, smargon: Smargon, detector_motion: DetectorMotion, **kwargs
 ):
     yield from cleanup_sample_environment(zebra, detector_motion)
     # TODO get the real axis used
