@@ -1,6 +1,8 @@
-from unittest.mock import MagicMock
+from functools import partial
+from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -9,9 +11,11 @@ from ophyd.sim import make_fake_device
 
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.pin_tip_centring_plan import (
+    create_devices,
     move_pin_into_view,
     move_smargon_warn_on_out_of_range,
     move_so_that_beam_is_at_pixel,
+    pin_tip_centre_plan,
 )
 
 
@@ -138,3 +142,60 @@ def test_values_for_move_so_that_beam_is_at_pixel(
     assert smargon.x.user_readback.get() == pytest.approx(expected_xyz[0])
     assert smargon.y.user_readback.get() == pytest.approx(expected_xyz[1])
     assert smargon.z.user_readback.get() == pytest.approx(expected_xyz[2])
+
+
+@patch("artemis.experiment_plans.pin_tip_centring_plan.i03", autospec=True)
+def test_when_create_devices_called_then_devices_created(mock_i03):
+    create_devices()
+    mock_i03.oav.assert_called_once()
+    mock_i03.smargon.assert_called_once()
+    mock_i03.backlight.assert_called_once()
+
+
+def return_pixel(pixel, *args):
+    yield from null()
+    return pixel
+
+
+@patch(
+    "artemis.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
+    new=partial(return_pixel, (200, 200)),
+)
+@patch(
+    "artemis.experiment_plans.pin_tip_centring_plan.move_so_that_beam_is_at_pixel",
+    autospec=True,
+)
+@patch(
+    "artemis.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
+    new=partial(return_pixel, (100, 100)),
+)
+@patch(
+    "artemis.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
+    autospec=True,
+)
+@patch("artemis.experiment_plans.pin_tip_centring_plan.i03", autospec=True)
+@patch("artemis.experiment_plans.pin_tip_centring_plan.bps.sleep", autospec=True)
+def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
+    mock_sleep,
+    mock_i03,
+    mock_setup_oav,
+    mock_move_to_px: MagicMock,
+    smargon: Smargon,
+    test_config_files,
+    RE,
+):
+    mock_i03.smargon.return_value = smargon
+    smargon.omega.user_readback.sim_put(0)
+    RE(pin_tip_centre_plan(50, test_config_files))
+
+    mock_setup_oav.assert_called_once()
+
+    assert len(mock_move_to_px.call_args_list) == 2
+
+    args, _ = mock_move_to_px.call_args_list[0]
+    assert args[1] == (117, 100)
+
+    assert smargon.omega.user_readback.get() == 90
+
+    args, _ = mock_move_to_px.call_args_list[1]
+    assert args[1] == (217, 200)

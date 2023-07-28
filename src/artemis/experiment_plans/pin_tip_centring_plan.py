@@ -1,17 +1,26 @@
-from typing import Generator, Tuple
+from typing import Dict, Generator, Tuple
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.utils import Msg
+from dodal.beamlines import i03
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 from dodal.devices.smargon import Smargon
 from ophyd.utils.errors import LimitError
 
+from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
 from artemis.exceptions import WarningException
+from artemis.experiment_plans.oav_grid_detection_plan import wait_for_tip_to_be_found
 from artemis.log import LOGGER
+
+
+def create_devices():
+    i03.oav()
+    i03.smargon()
+    i03.backlight()
 
 
 def move_pin_into_view(
@@ -110,3 +119,39 @@ def move_so_that_beam_is_at_pixel(
 
     LOGGER.info(f"Tip centring moving to : {position_mm}")
     yield from move_smargon_warn_on_out_of_range(smargon, position_mm)
+
+
+def pin_tip_centre_plan(
+    tip_offset_microns: float = 900,
+    oav_config_files: Dict[str, str] = OAV_CONFIG_FILE_DEFAULTS,
+):
+    """Finds the tip of the pin and moves to roughly the centre based on this tip. Does
+    this at both the current omega angle and +90 deg from this angle so as to get a
+    centre in 3D.
+
+    Args:
+        tip_offset_microns (float): The x offset from the tip where the centre is assumed
+                                    to be.
+    """
+    oav: OAV = i03.oav()
+    smargon: Smargon = i03.smargon()
+    oav_params = OAVParameters("pinTipCentring", **oav_config_files)
+
+    tip_offset_px = int(tip_offset_microns / oav_params.micronsPerXPixel)
+    LOGGER.info(f"Tip offset in pixels: {tip_offset_px}")
+
+    yield from pre_centring_setup_oav(oav, oav_params)
+
+    tip_x_px, tip_y_px = yield from move_pin_into_view(oav, smargon)
+    pixel_to_move_to = (tip_x_px + tip_offset_px, tip_y_px)
+    yield from move_so_that_beam_is_at_pixel(smargon, pixel_to_move_to, oav_params)
+
+    yield from bps.mvr(smargon.omega, 90)
+
+    # need to wait for the OAV image to update
+    # See #673 for improvements
+    yield from bps.sleep(0.3)
+
+    tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc)
+    pixel_to_move_to = (tip_x_px + tip_offset_px, tip_y_px)
+    yield from move_so_that_beam_is_at_pixel(smargon, pixel_to_move_to, oav_params)
