@@ -60,7 +60,7 @@ def setup_zebra_for_rotation(
     # must be on for shutter trigger to be enabled
     yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
     # Set gate start, adjust for shutter opening time if necessary
-    LOGGER.info(f"ZEBRA SETUP: degreed to adjust for shutter = {shutter_opening_deg}")
+    LOGGER.info(f"ZEBRA SETUP: degrees to adjust for shutter = {shutter_opening_deg}")
     LOGGER.info(f"ZEBRA SETUP: start angle start: {start_angle}")
     LOGGER.info(f"ZEBRA SETUP: start angle adjusted, gate start set to: {start_angle}")
     yield from bps.abs_set(zebra.pc.gate_start, start_angle, group=group)
