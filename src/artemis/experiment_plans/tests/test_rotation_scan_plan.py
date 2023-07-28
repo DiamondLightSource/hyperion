@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -9,6 +9,7 @@ from ophyd.status import Status
 
 from artemis.experiment_plans.rotation_scan_plan import (
     DEFAULT_DIRECTION,
+    DEFAULT_MAX_VELOCITY,
     get_plan,
     move_to_end_w_buffer,
     move_to_start_w_buffer,
@@ -133,11 +134,48 @@ def test_rotation_plan_smargon_settings(setup_and_run_rotation_plan_for_tests_st
     ]
     expt_params = params.experiment_params
 
+    omega_vel_set: MagicMock = smargon.omega.velocity.set
+    omega_set: MagicMock = smargon.omega.set
+    rotation_speed = (
+        expt_params.image_width / params.artemis_params.detector_params.exposure_time
+    )
+
     assert smargon.phi.user_readback.get() == expt_params.phi_start
     assert smargon.chi.user_readback.get() == expt_params.chi_start
     assert smargon.x.user_readback.get() == expt_params.x
     assert smargon.y.user_readback.get() == expt_params.y
     assert smargon.z.user_readback.get() == expt_params.z
+    assert omega_vel_set.call_count == 3
+    omega_vel_set.assert_has_calls(
+        [call(DEFAULT_MAX_VELOCITY), call(rotation_speed), call(DEFAULT_MAX_VELOCITY)]
+    )
+    assert omega_set.call_count == 2
+
+
+def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
+    setup_and_run_rotation_plan_for_tests_nomove,
+):
+    smargon: Smargon = setup_and_run_rotation_plan_for_tests_nomove["smargon"]
+    params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests_nomove[
+        "test_rotation_params"
+    ]
+    expt_params = params.experiment_params
+
+    assert expt_params.phi_start is None
+    assert expt_params.chi_start is None
+    assert expt_params.x is None
+    assert expt_params.y is None
+    assert expt_params.z is None
+    assert smargon.phi.user_readback.get() == 0
+    assert smargon.chi.user_readback.get() == 0
+    assert smargon.x.user_readback.get() == 0
+    assert smargon.y.user_readback.get() == 0
+    assert smargon.z.user_readback.get() == 0
+    smargon.phi.set.assert_not_called()
+    smargon.chi.set.assert_not_called()
+    smargon.x.set.assert_not_called()
+    smargon.y.set.assert_not_called()
+    smargon.z.set.assert_not_called()
 
 
 @patch("artemis.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)

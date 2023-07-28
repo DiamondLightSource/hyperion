@@ -55,9 +55,6 @@
         "rotation_axis",
         "rotation_angle",
         "omega_start",
-        "phi_start",
-        "x",
-        "y",
-        "z"
+        "rotation_increment"
     ]
 }

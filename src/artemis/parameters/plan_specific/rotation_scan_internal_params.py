@@ -45,7 +45,7 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     rotation_angle: float = 360.0
     image_width: float = 0.1
     omega_start: float = 0.0
-    phi_start: float = 0.0
+    phi_start: float | None = None
     chi_start: float | None = None
     kappa_start: float | None = None
     x: float | None = None

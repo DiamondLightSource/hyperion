@@ -53,6 +53,15 @@ def test_rotation_params():
 
 
 @pytest.fixture
+def test_rotation_params_nomove():
+    return RotationInternalParameters(
+        **raw_params_from_file(
+            "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters_nomove.json"
+        )
+    )
+
+
+@pytest.fixture
 def eiger():
     return i03.eiger(fake_with_ophyd_sim=True)
 
@@ -298,27 +307,34 @@ def setup_and_run_rotation_plan_for_tests(
         obj.sim_put(*args)
         return DEFAULT
 
-    mock_omega_sets = MagicMock(
+    smargon.omega.velocity.set = MagicMock(
+        return_value=Status(done=True, success=True),
+        side_effect=partial(side_set_w_return, smargon.omega.velocity),
+    )
+    smargon.omega.set = MagicMock(
         return_value=Status(done=True, success=True),
         side_effect=partial(side_set_w_return, smargon.omega.user_readback),
     )
-    mock_x = MagicMock(
+    smargon.x.set = MagicMock(
         return_value=Status(done=True, success=True),
         side_effect=partial(side_set_w_return, smargon.x.user_readback),
     )
-    mock_y = MagicMock(
+    smargon.y.set = MagicMock(
         return_value=Status(done=True, success=True),
         side_effect=partial(side_set_w_return, smargon.y.user_readback),
     )
-    mock_z = MagicMock(
+    smargon.z.set = MagicMock(
         return_value=Status(done=True, success=True),
         side_effect=partial(side_set_w_return, smargon.z.user_readback),
     )
-    smargon.omega.velocity.set = mock_omega_sets
-    smargon.omega.set = mock_omega_sets
-    smargon.x.set = mock_x
-    smargon.y.set = mock_y
-    smargon.z.set = mock_z
+    smargon.chi.set = MagicMock(
+        return_value=Status(done=True, success=True),
+        side_effect=partial(side_set_w_return, smargon.chi.user_readback),
+    )
+    smargon.phi.set = MagicMock(
+        return_value=Status(done=True, success=True),
+        side_effect=partial(side_set_w_return, smargon.phi.user_readback),
+    )
 
     mock_arm = MagicMock(
         side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
@@ -374,7 +390,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
     undulator: Undulator,
     flux: Flux,
 ):
-    return setup_and_run_rotation_plan_for_tests_standard(
+    return setup_and_run_rotation_plan_for_tests(
         RE,
         test_rotation_params,
         smargon,
@@ -407,7 +423,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     undulator: Undulator,
     flux: Flux,
 ):
-    return setup_and_run_rotation_plan_for_tests_standard(
+    return setup_and_run_rotation_plan_for_tests(
         RE,
         test_rotation_params_nomove,
         smargon,

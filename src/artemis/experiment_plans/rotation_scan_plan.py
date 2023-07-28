@@ -242,6 +242,9 @@ def rotation_scan_plan(
         smargon.omega, scan_width_deg, shutter_opening_degrees, acceleration_offset
     )
 
+    LOGGER.info(f"resetting omega velocity to {DEFAULT_MAX_VELOCITY}")
+    yield from bps.abs_set(smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
+
 
 def cleanup_plan(
     zebra: Zebra, smargon: Smargon, detector_motion: DetectorMotion, **kwargs
