@@ -1,9 +1,14 @@
 from typing import Generator, Tuple
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
+import numpy as np
 from bluesky.utils import Msg
+from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
+from ophyd.utils.errors import LimitError
 
 from artemis.exceptions import WarningException
 from artemis.log import LOGGER
@@ -54,3 +59,54 @@ def move_pin_into_view(
         )
     else:
         return (tip_x_px, tip_y_px)
+
+
+def move_smargon_warn_on_out_of_range(
+    smargon: Smargon, position: Tuple[float, float, float]
+):
+    def warn_if_limit_error(exception: Exception):
+        if isinstance(exception, LimitError):
+            raise WarningException(
+                "Pin tip centring failed - pin too long/short/bent and out of range"
+            )
+        yield bps.null()
+
+    yield from bpp.contingency_wrapper(
+        bps.mv(
+            smargon.x,
+            position[0],
+            smargon.y,
+            position[1],
+            smargon.z,
+            position[2],
+        ),
+        except_plan=warn_if_limit_error,
+    )
+
+
+def move_so_that_beam_is_at_pixel(
+    smargon: Smargon, pixel: Tuple[int, int], oav_params: OAVParameters
+):
+    """Move so that the given pixel is in the centre of the beam."""
+    beam_distance_px: Tuple[int, int] = oav_params.calculate_beam_distance(*pixel)
+
+    current_motor_xyz = np.array(
+        [
+            (yield from bps.rd(smargon.x)),
+            (yield from bps.rd(smargon.y)),
+            (yield from bps.rd(smargon.z)),
+        ],
+        dtype=np.float64,
+    )
+    current_angle = yield from bps.rd(smargon.omega)
+
+    position_mm = current_motor_xyz + camera_coordinates_to_xyz(
+        beam_distance_px[0],
+        beam_distance_px[1],
+        current_angle,
+        oav_params.micronsPerXPixel,
+        oav_params.micronsPerYPixel,
+    )
+
+    LOGGER.info(f"Tip centring moving to : {position_mm}")
+    yield from move_smargon_warn_on_out_of_range(smargon, position_mm)
