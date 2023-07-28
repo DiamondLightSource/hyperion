@@ -158,6 +158,7 @@ def test_cleanup_happens(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    attenuator: Attenuator,
     mock_rotation_subscriptions: RotationCallbackCollection,
 ):
     eiger.stage = MagicMock()
@@ -181,6 +182,7 @@ def test_cleanup_happens(
         patch("dodal.beamlines.i03.zebra", return_value=zebra),
         patch("dodal.beamlines.i03.backlight", return_value=backlight),
         patch("dodal.beamlines.i03.detector_motion", return_value=detector_motion),
+        patch("dodal.beamlines.i03.attenuator", return_value=attenuator),
         patch(
             "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
             lambda _: mock_rotation_subscriptions,
