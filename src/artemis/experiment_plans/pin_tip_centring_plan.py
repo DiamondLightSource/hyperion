@@ -13,9 +13,9 @@ from artemis.device_setup_plans.setup_oav import (
     Pixel,
     get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
+    wait_for_tip_to_be_found,
 )
 from artemis.exceptions import WarningException
-from artemis.experiment_plans.oav_grid_detection_plan import wait_for_tip_to_be_found
 from artemis.log import LOGGER
 
 

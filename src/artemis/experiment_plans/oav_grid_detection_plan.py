@@ -9,14 +9,14 @@ import numpy as np
 from bluesky.preprocessors import finalize_wrapper
 from dodal.beamlines import i03
 from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.oav.oav_detector import MXSC, OAV
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
 from artemis.device_setup_plans.setup_oav import (
     get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
+    wait_for_tip_to_be_found,
 )
-from artemis.exceptions import WarningException
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
@@ -48,22 +48,6 @@ def grid_detection_plan(
         ),
         reset_oav(),
     )
-
-
-def wait_for_tip_to_be_found(mxsc: MXSC):
-    pin_tip = mxsc.pin_tip
-    yield from bps.trigger(pin_tip, wait=True)
-    found_tip = yield from bps.rd(pin_tip)
-    if found_tip == pin_tip.INVALID_POSITION:
-        top_edge = yield from bps.rd(mxsc.top)
-        bottom_edge = yield from bps.rd(mxsc.bottom)
-        LOGGER.info(
-            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
-        )
-        raise WarningException(
-            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
-        )
-    return found_tip
 
 
 @bpp.run_decorator()
