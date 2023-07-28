@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from pydantic import BaseModel, validator
 
-ISPYB_PARAM_DEFAULTS = {
+GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
     "sample_barcode": None,
     "visit_path": "",
@@ -35,7 +35,6 @@ class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
-    upper_left: np.ndarray
     position: np.ndarray
 
     class Config:
@@ -44,18 +43,8 @@ class IspybParams(BaseModel):
 
     def dict(self, **kwargs):
         as_dict = super().dict(**kwargs)
-        as_dict["upper_left"] = as_dict["upper_left"].tolist()
         as_dict["position"] = as_dict["position"].tolist()
         return as_dict
-
-    @validator("upper_left", pre=True)
-    def _parse_upper_left(
-        cls, upper_left: list[int | float] | np.ndarray, values: Dict[str, Any]
-    ) -> np.ndarray:
-        assert len(upper_left) == 3
-        if isinstance(upper_left, np.ndarray):
-            return upper_left
-        return np.array(upper_left)
 
     @validator("position", pre=True)
     def _parse_position(
@@ -87,11 +76,27 @@ class IspybParams(BaseModel):
     xtal_snapshots_omega_start: Optional[List[str]] = None
     xtal_snapshots_omega_end: Optional[List[str]] = None
 
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, IspybParams):
-            return NotImplemented
-        else:
-            return self.json() == other.json()
+
+class RotationIspybParams(IspybParams):
+    ...
+
+
+class GridscanIspybParams(IspybParams):
+    upper_left: np.ndarray
+
+    def dict(self, **kwargs):
+        as_dict = super().dict(**kwargs)
+        as_dict["upper_left"] = as_dict["upper_left"].tolist()
+        return as_dict
+
+    @validator("upper_left", pre=True)
+    def _parse_upper_left(
+        cls, upper_left: list[int | float] | np.ndarray, values: Dict[str, Any]
+    ) -> np.ndarray:
+        assert len(upper_left) == 3
+        if isinstance(upper_left, np.ndarray):
+            return upper_left
+        return np.array(upper_left)
 
 
 class Orientation(Enum):

@@ -14,7 +14,7 @@
             "det_dist_to_beam_converter_path": "src/artemis/unit_tests/test_lookup_table.txt"
         },
         "ispyb_params": {
-            "visit_path": "",
+            "visit_path": "/tmp/cm31105-4",
             "microns_per_pixel_x": 0.0,
             "microns_per_pixel_y": 0.0,
             "upper_left": [

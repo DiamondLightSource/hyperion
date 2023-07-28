@@ -32,6 +32,7 @@ from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
 from artemis.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from artemis.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
 from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
@@ -39,6 +40,7 @@ from artemis.external_interaction.system_tests.conftest import (
 )
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import external_parameters
+from artemis.parameters.constants import ISPYB_PLAN_NAME
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
@@ -91,7 +93,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
 
     test_ispyb_callback = FGSISPyBHandlerCallback(test_fgs_params)
-    test_ispyb_callback.ispyb = MagicMock()
+    test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     RE.subscribe(test_ispyb_callback)
 
     def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
@@ -134,6 +136,22 @@ def test_results_adjusted_and_passed_to_move_xyz(
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
+
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+                "attenuator_actual_transmission": 0,
+            },
+        }
+    )
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_LARGE
@@ -214,6 +232,21 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     test_fgs_params: FGSInternalParameters,
     RE: RunEngine,
 ):
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+                "attenuator_actual_transmission": 0,
+            },
+        }
+    )
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -248,6 +281,21 @@ def test_logging_within_plan(
     test_fgs_params: FGSInternalParameters,
     RE: RunEngine,
 ):
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+                "attenuator_actual_transmission": 0,
+            },
+        }
+    )
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 

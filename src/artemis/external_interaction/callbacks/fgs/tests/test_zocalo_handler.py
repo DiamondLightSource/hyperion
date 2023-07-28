@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -75,12 +75,21 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_not_called()
 
 
+@patch(
+    "artemis.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb",
+    autospec=True,
+)
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
+    store_3d_grid_scan,
     dummy_params: FGSInternalParameters,
 ):
     callbacks = FGSCallbackCollection.from_params(dummy_params)
+    callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
+    callbacks.ispyb_handler.descriptor(td.test_descriptor_document)
+    callbacks.ispyb_handler.event(td.test_event_document)
+
     mock_zocalo_functions(callbacks)
-    callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
+    callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
     expected_centre_grid_coords = np.array([1, 2, 3])
     single_crystal_result = [
         {
@@ -93,8 +102,9 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         single_crystal_result
     )
+    results = callbacks.zocalo_handler.wait_for_results(np.array([0, 0, 0]))
 
-    found_centre = callbacks.zocalo_handler.wait_for_results(np.array([0, 0, 0]))[0]
+    found_centre = results[0]
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
         100
     )
@@ -106,12 +116,17 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
 
 
+@patch(
+    "artemis.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb",
+    autospec=True,
+)
 def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
+    store_3d_grid_scan,
     dummy_params,
 ):
     callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
-    callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
+    callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
         NoDiffractionFound()
     )
@@ -125,7 +140,12 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
     np.testing.assert_array_equal(found_centre, fallback_position)
 
 
+@patch(
+    "artemis.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb",
+    autospec=True,
+)
 def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception(
+    store_3d_grid_scan,
     dummy_params,
 ):
     callbacks = FGSCallbackCollection.from_params(dummy_params)
@@ -135,12 +155,17 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
         callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
 
 
+@patch(
+    "artemis.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb",
+    autospec=True,
+)
 def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_bbox_from_first(
+    store_3d_grid_scan,
     dummy_params: FGSInternalParameters,
 ):
     callbacks = FGSCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
-    callbacks.ispyb_handler.ispyb_ids = (0, 0, 100)
+    callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
     expected_centre_grid_coords = np.array([4, 6, 2])
     multi_crystal_result = [
         {

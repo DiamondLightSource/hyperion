@@ -27,6 +27,7 @@ from dodal.devices.eiger import DetectorParams
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
 
 import artemis.log
+from artemis.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from artemis.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
@@ -40,7 +41,7 @@ from artemis.parameters.beamline_parameters import (
     get_beamline_parameters,
     get_beamline_prefixes,
 )
-from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
+from artemis.parameters.constants import SIM_BEAMLINE
 from artemis.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -74,9 +75,7 @@ class FGSComposite:
             fake_with_ophyd_sim=fake, aperture_positions=aperture_positions
         )
         self.backlight = i03.backlight(fake_with_ophyd_sim=fake)
-        self.eiger = i03.eiger(
-            wait_for_connection=False, fake_with_ophyd_sim=fake, params=detector_params
-        )
+        self.eiger = i03.eiger(fake_with_ophyd_sim=fake, params=detector_params)
         self.fast_grid_scan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
         self.flux = i03.flux(fake_with_ophyd_sim=fake)
         self.s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
@@ -128,28 +127,6 @@ def set_aperture_for_bbox_size(
         yield from bps.abs_set(aperture_device, aperture_size_positions)
 
     yield from set_aperture()
-
-
-def read_hardware_for_ispyb(
-    undulator: Undulator,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    attenuator: Attenuator,
-    flux: Flux,
-):
-    artemis.log.LOGGER.info(
-        "Reading status of beamline parameters for ispyb deposition."
-    )
-    yield from bps.create(
-        name=ISPYB_PLAN_NAME
-    )  # gives name to event *descriptor* document
-    yield from bps.read(undulator.gap)
-    yield from bps.read(synchrotron.machine_status.synchrotron_mode)
-    yield from bps.read(s4_slit_gaps.xgap)
-    yield from bps.read(s4_slit_gaps.ygap)
-    yield from bps.read(attenuator.actual_transmission)
-    yield from bps.read(flux.flux_reading)
-    yield from bps.save()
 
 
 @bpp.set_run_key_decorator("move_xyz")
