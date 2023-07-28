@@ -87,6 +87,7 @@ def test_get_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
     backlight: Backlight,
+    attenuator: Attenuator,
     mock_rotation_subscriptions: RotationCallbackCollection,
 ):
     eiger.stage = MagicMock()
@@ -96,6 +97,7 @@ def test_get_plan(
         patch("dodal.beamlines.i03.smargon", return_value=smargon),
         patch("dodal.beamlines.i03.eiger", return_value=eiger),
         patch("dodal.beamlines.i03.zebra", return_value=zebra),
+        patch("dodal.beamlines.i03.attenuator", return_value=attenuator),
         patch("dodal.beamlines.i03.backlight", return_value=backlight),
         patch(
             "artemis.experiment_plans.rotation_scan_plan.DetectorMotion",
@@ -157,7 +159,6 @@ def test_rotation_plan(
         RE(
             rotation_scan_plan(
                 test_rotation_params,
-                eiger,
                 smargon,
                 zebra,
                 backlight,
@@ -194,7 +195,7 @@ def test_cleanup_happens(
     with pytest.raises(Exception):
         RE(
             rotation_scan_plan(
-                test_rotation_params, eiger, smargon, zebra, backlight, detector_motion
+                test_rotation_params, smargon, zebra, backlight, detector_motion
             )
         )
         cleanup_plan.assert_not_called()

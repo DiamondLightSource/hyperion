@@ -246,7 +246,7 @@ def get_plan(parameters: RotationInternalParameters):
         eiger: EigerDetector = devices["eiger"]
         eiger.set_detector_parameters(params.artemis_params.detector_params)
 
-        @bpp.stage_decorator(eiger)
+        @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: cleanup_plan(**devices))
         def rotation_with_cleanup_and_stage(params):
             LOGGER.info("setting up and staging eiger...")
