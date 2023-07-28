@@ -1,3 +1,4 @@
+from functools import partial
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -54,17 +55,16 @@ def smargon() -> Smargon:
     smargon.z.user_setpoint._use_limits = False
     smargon.omega.user_setpoint._use_limits = False
 
-    def mock_omega_set(val):
-        smargon.omega.user_readback.sim_put(val)
+    def mock_set(motor, val):
+        motor.user_readback.sim_put(val)
         return Status(done=True, success=True)
 
-    def mock_x_set(val):
-        smargon.x.user_readback.sim_put(val)
-        return Status(done=True, success=True)
+    def patch_motor(motor):
+        return patch.object(motor, "set", partial(mock_set, motor))
 
-    with patch.object(smargon.omega, "set", mock_omega_set), patch.object(
-        smargon.x, "set", mock_x_set
-    ):
+    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
+        smargon.y
+    ), patch_motor(smargon.z):
         yield smargon
 
 
