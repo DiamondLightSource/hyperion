@@ -1,5 +1,5 @@
 {
-    "zocalo_environment": "devrmq",
+    "zocalo_environment": "dev_artemis",
     "beamline": "BL03S",
     "insertion_prefix": "SR03S",
     "experiment_type": "fast_grid_scan",
