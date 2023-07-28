@@ -13,7 +13,7 @@ from artemis.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileHandlerCallback,
 )
 from artemis.external_interaction.callbacks.rotation.zocalo_callback import (
-    RotationZocaloCallback,
+    RotationZocaloHandlerCallback,
 )
 
 if TYPE_CHECKING:
@@ -29,13 +29,13 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
 
     nexus_handler: RotationNexusFileHandlerCallback
     ispyb_handler: RotationISPyBHandlerCallback
-    zocalo_handler: RotationZocaloCallback
+    zocalo_handler: RotationZocaloHandlerCallback
 
     @classmethod
     def from_params(cls, parameters: RotationInternalParameters):
         nexus_handler = RotationNexusFileHandlerCallback()
         ispyb_handler = RotationISPyBHandlerCallback(parameters)
-        zocalo_handler = RotationZocaloCallback(
+        zocalo_handler = RotationZocaloHandlerCallback(
             parameters.artemis_params.zocalo_environment, ispyb_handler
         )
         callback_collection = cls(
