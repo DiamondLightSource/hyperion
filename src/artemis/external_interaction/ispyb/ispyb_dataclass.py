@@ -76,6 +76,14 @@ class IspybParams(BaseModel):
     xtal_snapshots_omega_start: Optional[List[str]] = None
     xtal_snapshots_omega_end: Optional[List[str]] = None
 
+    @validator("transmission_fraction")
+    def transmission_not_percentage(cls, transmission_fraction: float):
+        if transmission_fraction > 1:
+            raise ValueError(
+                "Transmission_fraction of >1 given. Did you give a percentage instead of a fraction?"
+            )
+        return transmission_fraction
+
 
 class RotationIspybParams(IspybParams):
     ...
