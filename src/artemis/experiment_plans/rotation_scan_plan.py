@@ -106,7 +106,7 @@ def move_to_start_w_buffer(
     """Move an EpicsMotor 'axis' to angle 'start_angle', modified by an offset and
     against the direction of rotation. Status for the move has group 'move_to_start'."""
     # can move to start as fast as possible
-    # TODO get VMAX
+    # TODO get VMAX, see https://github.com/bluesky/ophyd/issues/1122
     yield from bps.abs_set(axis.velocity, max_velocity, wait=wait_for_velocity_set)
     start_position = start_angle - (offset * direction)
     LOGGER.info(
@@ -126,9 +126,15 @@ def move_to_end_w_buffer(
     wait: bool = True,
     direction: RotationDirection = DEFAULT_DIRECTION,
 ):
-    distance_to_move = (
-        scan_width + shutter_opening_degrees + offset * 2 + 0.1
-    ) * direction
+    """Excecutes a rotation scan by moving the rotation axis from the beginning to
+    the end; The Zebra should have been set up to trigger the detector for this to work.
+    Rotates through 'scan width' plus twice an "offset" to take into account
+    acceleration at the start and deceleration at the end, plus the number of extra
+    degrees of rotation needed to make sure the fast shutter has fully opened before the
+    detector trigger is sent.
+    See https://github.com/DiamondLightSource/python-artemis/wiki/rotation-scan-geometry
+    for a simple pictorial explanation."""
+    distance_to_move = (scan_width + shutter_opening_degrees + offset * 2) * direction
     LOGGER.info(
         f"Given scan width of {scan_width}, acceleration offset of {offset}, direction"
         f" {direction}, apply a relative set to omega of: {distance_to_move}"
