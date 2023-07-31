@@ -66,7 +66,9 @@ def setup_zebra_for_rotation(
     LOGGER.info(f"ZEBRA SETUP: start angle adjusted, gate start set to: {start_angle}")
     yield from bps.abs_set(zebra.pc.gate_start, start_angle, group=group)
     # set gate width to total width
-    yield from bps.abs_set(zebra.pc.gate_width, scan_width, group=group)
+    yield from bps.abs_set(
+        zebra.pc.gate_width, scan_width + shutter_opening_deg, group=group
+    )
     LOGGER.info(
         f"Pulse start set to shutter open time, set to: {abs(shutter_opening_s)}"
     )

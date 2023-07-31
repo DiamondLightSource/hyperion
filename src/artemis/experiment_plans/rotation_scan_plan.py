@@ -52,6 +52,7 @@ def create_devices() -> dict[str, Device]:
 
 DEFAULT_DIRECTION = RotationDirection.NEGATIVE
 DEFAULT_MAX_VELOCITY = 120
+TIME_TO_VELOCITY_S = 0.15
 
 
 def setup_sample_environment(
@@ -180,10 +181,10 @@ def rotation_scan_plan(
     LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
 
     # TODO get this from epics instead of hardcoded - time to velocity
-    acceleration_offset = 0.15 * speed_for_rotation_deg_s
+    acceleration_offset = TIME_TO_VELOCITY_S * speed_for_rotation_deg_s
     LOGGER.info(
         f"calculated rotation offset for acceleration: at {speed_for_rotation_deg_s} "
-        f"deg/s, to take 0.15s = {acceleration_offset}"
+        f"deg/s, to take {TIME_TO_VELOCITY_S} s = {acceleration_offset}"
     )
 
     shutter_opening_degrees = (
