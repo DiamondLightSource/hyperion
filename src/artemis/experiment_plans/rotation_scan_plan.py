@@ -258,7 +258,6 @@ def cleanup_plan(
     zebra: Zebra, smargon: Smargon, detector_motion: DetectorMotion, **kwargs
 ):
     yield from cleanup_sample_environment(zebra, detector_motion)
-    # TODO get the real axis used
     yield from bps.abs_set(smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
     yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
 
