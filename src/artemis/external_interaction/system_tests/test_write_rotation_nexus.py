@@ -38,7 +38,7 @@ def test_params():
     params.experiment_params.z = 0
     params.artemis_params.detector_params.exposure_time = 0.004
     params.artemis_params.detector_params.current_energy_ev = 12700
-    params.artemis_params.ispyb_params.transmission = 0.49118047952
+    params.artemis_params.ispyb_params.transmission_fraction = 0.49118047952
     params.artemis_params.ispyb_params.wavelength = 0.9762535433
     return params
 

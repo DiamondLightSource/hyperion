@@ -60,7 +60,7 @@ EMPTY_DATA_COLLECTION_PARAMS = {
     "comments": None,
     "slitgapvertical": None,
     "slitgaphorizontal": None,
-    "transmission": None,
+    "transmission_fraction": None,
     "synchrotronmode": None,
     "xtalsnapshot1": None,
     "xtalsnapshot2": None,

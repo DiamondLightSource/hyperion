@@ -1,5 +1,5 @@
 {
-    "params_version": "2.0.0",
+    "params_version": "2.1.0",
     "artemis_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",
@@ -37,7 +37,7 @@
                 "test_2_z",
                 "test_3_z"
             ],
-            "transmission": 1.0,
+            "transmission_fraction": 1.0,
             "flux": 10.0,
             "wavelength": 0.01,
             "beam_size_x": 0.1,

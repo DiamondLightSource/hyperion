@@ -36,7 +36,7 @@
             20.0,
             30.0
         ],
-        "transmission": 1.0,
+        "transmission_fraction": 1.0,
         "flux": 10.0,
         "wavelength": 0.01,
         "beam_size_x": 1.0,

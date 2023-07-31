@@ -111,5 +111,5 @@ def create_beam_and_attenuator_parameters(
     """
     return (
         Beam(ispyb_params.wavelength, ispyb_params.flux),
-        Attenuator(ispyb_params.transmission),
+        Attenuator(ispyb_params.transmission_fraction),
     )

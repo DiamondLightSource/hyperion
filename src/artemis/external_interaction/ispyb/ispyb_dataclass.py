@@ -15,7 +15,7 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "position": [0, 0, 0],
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
-    "transmission": 1.0,
+    "transmission_fraction": 1.0,
     "flux": 10.0,
     "wavelength": 0.01,
     "beam_size_x": 0.1,
@@ -55,7 +55,7 @@ class IspybParams(BaseModel):
             return position
         return np.array(position)
 
-    transmission: float
+    transmission_fraction: float
     wavelength: float
     beam_size_x: float
     beam_size_y: float
