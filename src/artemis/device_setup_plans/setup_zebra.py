@@ -41,16 +41,19 @@ def setup_zebra_for_rotation(
     image width is achieved with the exposure time given here.
 
     Parameters:
+        zebra:              The zebra device to use
         axis:               I03 axes enum representing which axis to use for position
                             compare. Currently always omega.
         start_angle:        Position at which the scan should begin, in degrees.
         scan_width:         Total angle through which to collect, in degrees.
-        direction:          RotationDirection enum for representing the direction of
-                            rotation of the axis. Used for adjusting the start angle
-                            based on shutter time.
-        shutter_time_and_velocity: tuple[float, float] representing the time it takes
-                        (in seconds) for the shutter to open and the velocity of the
-                        scan (in deg/s). Used to ajust the gate start so that
+        shutter_opening_deg:How many degrees of rotation it takes for the fast shutter
+                            to open. Increases the gate width.
+        shutter_opening_s:  How many seconds it takes for the fast shutter to open. The
+                            detector pulse is delayed after the shutter signal by this
+                            amount.
+        direction:          RotationDirection enum for positive or negative
+        group:              A name for the group of statuses generated
+        wait:               Block until all the settings have completed
     """
     if not isinstance(direction, RotationDirection):
         raise ValueError(

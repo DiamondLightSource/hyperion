@@ -181,10 +181,11 @@ def rotation_scan_plan(
     LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
 
     # TODO get this from epics instead of hardcoded - time to velocity
+    # https://github.com/DiamondLightSource/python-artemis/issues/836
     acceleration_offset = TIME_TO_VELOCITY_S * speed_for_rotation_deg_s
     LOGGER.info(
         f"calculated rotation offset for acceleration: at {speed_for_rotation_deg_s} "
-        f"deg/s, to take {TIME_TO_VELOCITY_S} s = {acceleration_offset}"
+        f"deg/s, to take {TIME_TO_VELOCITY_S} s = {acceleration_offset} deg"
     )
 
     shutter_opening_degrees = (
@@ -202,15 +203,6 @@ def rotation_scan_plan(
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle_deg}")
     yield from move_to_start_w_buffer(
         smargon.omega, start_angle_deg, acceleration_offset
-    )
-
-    # get some information for the ispyb deposition and trigger the callback
-    yield from read_hardware_for_ispyb(
-        i03.undulator(),
-        i03.synchrotron(),
-        i03.s4_slit_gaps(),
-        i03.attenuator(),
-        i03.flux(),
     )
 
     LOGGER.info(
@@ -232,6 +224,15 @@ def rotation_scan_plan(
     yield from bps.wait("setup_senv")
     yield from bps.wait("move_to_start")
     yield from bps.wait("setup_zebra")
+
+    # get some information for the ispyb deposition and trigger the callback
+    yield from read_hardware_for_ispyb(
+        i03.undulator(),
+        i03.synchrotron(),
+        i03.s4_slit_gaps(),
+        i03.attenuator(),
+        i03.flux(),
+    )
 
     LOGGER.info(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
