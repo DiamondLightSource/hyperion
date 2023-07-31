@@ -66,7 +66,7 @@ def test_move_to_end(smargon: Smargon, RE):
         )
 
     distance_to_move = (
-        scan_width + TEST_SHUTTER_OPENING_DEGREES + TEST_OFFSET * 2 + 0.1
+        scan_width + TEST_SHUTTER_OPENING_DEGREES + TEST_OFFSET * 2
     ) * DEFAULT_DIRECTION
 
     assert smargon.omega.user_readback.get() == distance_to_move
