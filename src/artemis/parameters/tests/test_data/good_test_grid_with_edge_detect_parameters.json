@@ -41,6 +41,7 @@
         "snapshot_dir": "/tmp",
         "exposure_time": 0.1,
         "detector_distance": 100.0,
-        "omega_start": 0.0
+        "omega_start": 0.0,
+        "grid_width_microns": 151
     }
 }

@@ -34,7 +34,7 @@ def grid_detection_plan(
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
-    width=600,
+    grid_width_microns: float,
     box_size_microns=20,
 ):
     yield from finalize_wrapper(
@@ -43,7 +43,7 @@ def grid_detection_plan(
             out_parameters,
             snapshot_template,
             snapshot_dir,
-            width,
+            grid_width_microns,
             box_size_microns,
         ),
         reset_oav(),
@@ -56,7 +56,7 @@ def grid_detection_main_plan(
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
-    grid_width_px: int,
+    grid_width_microns: int,
     box_size_um: float,
 ):
     """
@@ -68,7 +68,7 @@ def grid_detection_main_plan(
         out_parameters (GridScanParams): The returned parameters for the gridscan
         snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
         snapshot_dir (str): The location to save snapshots
-        grid_width_px (int): The width of the grid to scan in pixels
+        grid_width_microns (int): The width of the grid to scan in microns
         box_size_um (float): The size of each box of the grid in microns
     """
     oav: OAV = i03.oav()
@@ -88,6 +88,8 @@ def grid_detection_main_plan(
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
+    grid_width_pixels = int(grid_width_microns / parameters.micronsPerXPixel)
+
     # The FGS uses -90 so we need to match it
     for angle in [0, -90]:
         yield from bps.mv(smargon.omega, angle)
@@ -105,8 +107,8 @@ def grid_detection_main_plan(
         full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
         # only use the area from the start of the pin onwards
-        top_edge = top_edge[tip_x_px : tip_x_px + grid_width_px]
-        bottom_edge = bottom_edge[tip_x_px : tip_x_px + grid_width_px]
+        top_edge = top_edge[tip_x_px : tip_x_px + grid_width_pixels]
+        bottom_edge = bottom_edge[tip_x_px : tip_x_px + grid_width_pixels]
 
         # the edge detection line can jump to the edge of the image sometimes, filter
         # those points out, and if empty after filter use the whole image
@@ -118,10 +120,10 @@ def grid_detection_main_plan(
         max_y = max(filtered_bottom)
         grid_height_px = max_y - min_y
 
-        LOGGER.info(f"Drawing snapshot {grid_width_px} by {grid_height_px}")
+        LOGGER.info(f"Drawing snapshot {grid_width_pixels} by {grid_height_px}")
 
         boxes = (
-            math.ceil(grid_width_px / box_size_x_pixels),
+            math.ceil(grid_width_pixels / box_size_x_pixels),
             math.ceil(grid_height_px / box_size_y_pixels),
         )
         box_numbers.append(boxes)

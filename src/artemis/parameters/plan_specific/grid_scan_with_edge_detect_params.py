@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 from dodal.devices.detector import TriggerMode
@@ -30,6 +30,9 @@ class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
     snapshot_dir: str
     detector_distance: float
     omega_start: float
+
+    # This is the correct grid size for single pin
+    grid_width_microns: Optional[float] = 161
 
     def get_num_images(self):
         return 0
