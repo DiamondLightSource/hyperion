@@ -30,8 +30,9 @@ def setup_zebra_for_rotation(
     axis: I03Axes = I03Axes.OMEGA,
     start_angle: float = 0,
     scan_width: float = 360,
+    shutter_opening_deg: float = 2.5,
+    shutter_opening_s: float = 0.04,
     direction: RotationDirection = RotationDirection.POSITIVE,
-    shutter_time_and_velocity: tuple[float, float] = (0, 0),
     group: str = "setup_zebra_for_rotation",
     wait: bool = False,
 ):
@@ -40,16 +41,19 @@ def setup_zebra_for_rotation(
     image width is achieved with the exposure time given here.
 
     Parameters:
+        zebra:              The zebra device to use
         axis:               I03 axes enum representing which axis to use for position
                             compare. Currently always omega.
         start_angle:        Position at which the scan should begin, in degrees.
         scan_width:         Total angle through which to collect, in degrees.
-        direction:          RotationDirection enum for representing the direction of
-                            rotation of the axis. Used for adjusting the start angle
-                            based on shutter time.
-        shutter_time_and_velocity: tuple[float, float] representing the time it takes
-                        (in seconds) for the shutter to open and the velocity of the
-                        scan (in deg/s). Used to ajust the gate start so that
+        shutter_opening_deg:How many degrees of rotation it takes for the fast shutter
+                            to open. Increases the gate width.
+        shutter_opening_s:  How many seconds it takes for the fast shutter to open. The
+                            detector pulse is delayed after the shutter signal by this
+                            amount.
+        direction:          RotationDirection enum for positive or negative
+        group:              A name for the group of statuses generated
+        wait:               Block until all the settings have completed
     """
     if not isinstance(direction, RotationDirection):
         raise ValueError(
@@ -60,12 +64,18 @@ def setup_zebra_for_rotation(
     # must be on for shutter trigger to be enabled
     yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
     # Set gate start, adjust for shutter opening time if necessary
-    LOGGER.info(f"ZEBRA SETUP: shutter_time_and_velocity = {shutter_time_and_velocity}")
+    LOGGER.info(f"ZEBRA SETUP: degrees to adjust for shutter = {shutter_opening_deg}")
     LOGGER.info(f"ZEBRA SETUP: start angle start: {start_angle}")
     LOGGER.info(f"ZEBRA SETUP: start angle adjusted, gate start set to: {start_angle}")
     yield from bps.abs_set(zebra.pc.gate_start, start_angle, group=group)
     # set gate width to total width
-    yield from bps.abs_set(zebra.pc.gate_width, scan_width, group=group)
+    yield from bps.abs_set(
+        zebra.pc.gate_width, scan_width + shutter_opening_deg, group=group
+    )
+    LOGGER.info(
+        f"Pulse start set to shutter open time, set to: {abs(shutter_opening_s)}"
+    )
+    yield from bps.abs_set(zebra.pc.pulse_start, abs(shutter_opening_s), group=group)
     # Set gate position to be angle of interest
     yield from bps.abs_set(zebra.pc.gate_trigger, axis.value, group=group)
     # Trigger the shutter with the gate (from PC_GATE & SOFTIN1 -> OR1)

@@ -45,14 +45,13 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     rotation_angle: float = 360.0
     image_width: float = 0.1
     omega_start: float = 0.0
-    phi_start: float = 0.0
+    phi_start: float | None = None
     chi_start: float | None = None
     kappa_start: float | None = None
-    x: float = 0.0
-    y: float = 0.0
-    z: float = 0.0
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
     rotation_direction: RotationDirection = RotationDirection.NEGATIVE
-    offset_deg: float = 1.0
     shutter_opening_time_s: float = 0.6
 
     @validator("rotation_direction", pre=True)

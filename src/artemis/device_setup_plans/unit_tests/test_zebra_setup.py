@@ -1,5 +1,5 @@
 from functools import partial
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -35,15 +35,13 @@ def zebra():
     return i03.zebra(fake_with_ophyd_sim=True)
 
 
-@patch("bluesky.plan_stubs.wait", autospec=True)
-def test_zebra_set_up_for_fgs(bps_wait, RE, zebra: Zebra):
+def test_zebra_set_up_for_fgs(RE, zebra: Zebra):
     RE(setup_zebra_for_fgs(zebra, wait=True))
     assert zebra.output.out_pvs[TTL_DETECTOR].get() == IN3_TTL
     assert zebra.output.out_pvs[TTL_SHUTTER].get() == IN4_TTL
 
 
-@patch("bluesky.plan_stubs.wait", autospec=True)
-def test_zebra_set_up_for_rotation(bps_wait, RE, zebra: Zebra):
+def test_zebra_set_up_for_rotation(RE, zebra: Zebra):
     RE(setup_zebra_for_rotation(zebra, wait=True))
     assert zebra.pc.gate_trigger.get(as_string=True) == I03Axes.OMEGA.value
     assert zebra.pc.gate_width.get() == pytest.approx(360, 0.01)
@@ -51,8 +49,7 @@ def test_zebra_set_up_for_rotation(bps_wait, RE, zebra: Zebra):
         RE(setup_zebra_for_rotation(zebra, direction=25))
 
 
-@patch("bluesky.plan_stubs.wait", autospec=True)
-def test_zebra_cleanup(bps_wait, RE, zebra: Zebra):
+def test_zebra_cleanup(RE, zebra: Zebra):
     RE(set_zebra_shutter_to_manual(zebra, wait=True))
     assert zebra.output.out_pvs[TTL_DETECTOR].get() == PC_PULSE
     assert zebra.output.out_pvs[TTL_SHUTTER].get() == OR1
