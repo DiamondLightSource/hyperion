@@ -1,13 +1,20 @@
 from functools import partial
+from typing import Generator, Tuple
 
 import bluesky.plan_stubs as bps
-from dodal.devices.oav.oav_detector import OAV
+import numpy as np
+from bluesky.utils import Msg
+from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
+from dodal.devices.oav.oav_detector import MXSC, OAV
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.utils import ColorMode, EdgeOutputArrayImageType
+from dodal.devices.smargon import Smargon
 
+from artemis.exceptions import WarningException
 from artemis.log import LOGGER
 
+Pixel = Tuple[int, int]
 oav_group = "oav_setup"
 # Helper function to make sure we set the waiting groups correctly
 set_using_group = partial(bps.abs_set, group=oav_group)
@@ -108,3 +115,44 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
     """
     TODO: We require setting the backlight brightness to that in the json, we can't do this currently without a PV.
     """
+
+
+def get_move_required_so_that_beam_is_at_pixel(
+    smargon: Smargon, pixel: Pixel, oav_params: OAVParameters
+) -> Generator[Msg, None, np.ndarray]:
+    """Calculate the required move so that the given pixel is in the centre of the beam."""
+    beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
+
+    current_motor_xyz = np.array(
+        [
+            (yield from bps.rd(smargon.x)),
+            (yield from bps.rd(smargon.y)),
+            (yield from bps.rd(smargon.z)),
+        ],
+        dtype=np.float64,
+    )
+    current_angle = yield from bps.rd(smargon.omega)
+
+    return current_motor_xyz + camera_coordinates_to_xyz(
+        beam_distance_px[0],
+        beam_distance_px[1],
+        current_angle,
+        oav_params.micronsPerXPixel,
+        oav_params.micronsPerYPixel,
+    )
+
+
+def wait_for_tip_to_be_found(mxsc: MXSC):
+    pin_tip = mxsc.pin_tip
+    yield from bps.trigger(pin_tip, wait=True)
+    found_tip = yield from bps.rd(pin_tip)
+    if found_tip == pin_tip.INVALID_POSITION:
+        top_edge = yield from bps.rd(mxsc.top)
+        bottom_edge = yield from bps.rd(mxsc.bottom)
+        LOGGER.info(
+            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
+        )
+        raise WarningException(
+            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
+        )
+    return found_tip

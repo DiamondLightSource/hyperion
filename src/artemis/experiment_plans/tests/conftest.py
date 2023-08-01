@@ -1,3 +1,4 @@
+from functools import partial
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -66,11 +67,16 @@ def smargon() -> Smargon:
     smargon.z.user_setpoint._use_limits = False
     smargon.omega.user_setpoint._use_limits = False
 
-    def mock_omega_set(val):
-        smargon.omega.user_readback.sim_put(val)
+    def mock_set(motor, val):
+        motor.user_readback.sim_put(val)
         return Status(done=True, success=True)
 
-    with patch.object(smargon.omega, "set", mock_omega_set):
+    def patch_motor(motor):
+        return patch.object(motor, "set", partial(mock_set, motor))
+
+    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
+        smargon.y
+    ), patch_motor(smargon.z):
         yield smargon
 
 
@@ -102,6 +108,11 @@ def s4_slit_gaps():
 @pytest.fixture
 def synchrotron():
     return i03.synchrotron(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def oav():
+    return i03.oav(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
