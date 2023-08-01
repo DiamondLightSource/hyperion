@@ -6,7 +6,6 @@ from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
-from ophyd.sim import make_fake_device
 
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.pin_tip_centring_plan import (
@@ -93,13 +92,12 @@ def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_posit
 
 
 def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_exception(
-    RE: RunEngine,
+    RE: RunEngine, smargon: Smargon
 ):
-    fake_smargon = make_fake_device(Smargon)(name="")
-    fake_smargon.x.user_setpoint.sim_set_limits([0, 10])
+    smargon.x.high_limit_travel.sim_put(10)
 
     with pytest.raises(WarningException):
-        RE(move_smargon_warn_on_out_of_range(fake_smargon, (100, 0, 0)))
+        RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
 
 
 @patch("artemis.experiment_plans.pin_tip_centring_plan.i03", autospec=True)

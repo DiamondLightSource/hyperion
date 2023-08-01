@@ -1,13 +1,12 @@
-from typing import Dict, Generator, Tuple
+from typing import Dict, Generator
 
 import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
+import numpy as np
 from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 from dodal.devices.smargon import Smargon
-from ophyd.utils.errors import LimitError
 
 from artemis.device_setup_plans.setup_oav import (
     Pixel,
@@ -72,29 +71,20 @@ def move_pin_into_view(
         return (tip_x_px, tip_y_px)
 
 
-def move_smargon_warn_on_out_of_range(
-    smargon: Smargon, position: Tuple[float, float, float]
-):
-    """Moves the smargon and throws a WarningException rather than an error if the
-    position is out of range"""
-
-    def warn_if_limit_error(exception: Exception):
-        if isinstance(exception, LimitError):
-            raise WarningException(
-                "Pin tip centring failed - pin too long/short/bent and out of range"
-            )
-        yield bps.null()
-
-    yield from bpp.contingency_wrapper(
-        bps.mv(
-            smargon.x,
-            position[0],
-            smargon.y,
-            position[1],
-            smargon.z,
-            position[2],
-        ),
-        except_plan=warn_if_limit_error,
+def move_smargon_warn_on_out_of_range(smargon: Smargon, position: np.ndarray):
+    """Throws a WarningException if the specified position is out of range for the
+    smargon. Otherwise moves to that position."""
+    if not smargon.get_xyz_limits().position_valid(position):
+        raise WarningException(
+            "Pin tip centring failed - pin too long/short/bent and out of range"
+        )
+    yield from bps.mv(
+        smargon.x,
+        position[0],
+        smargon.y,
+        position[1],
+        smargon.z,
+        position[2],
     )
 
 
