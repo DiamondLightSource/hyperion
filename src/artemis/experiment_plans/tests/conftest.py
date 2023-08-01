@@ -2,9 +2,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
+from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
@@ -37,6 +40,15 @@ def test_rotation_params():
     return RotationInternalParameters(
         **raw_params_from_file(
             "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+        )
+    )
+
+
+@pytest.fixture
+def test_rotation_params_nomove():
+    return RotationInternalParameters(
+        **raw_params_from_file(
+            "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters_nomove.json"
         )
     )
 
@@ -137,6 +149,33 @@ def test_full_grid_scan_params():
     return GridScanWithEdgeDetectInternalParameters(**params)
 
 
+@pytest.fixture()
+def fake_create_devices(
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+):
+    eiger.stage = MagicMock()
+    eiger.unstage = MagicMock()
+    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+
+    mock_arm_disarm = MagicMock(
+        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
+    )
+    zebra.pc.arm.set = mock_arm_disarm
+    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.set = mock_omega_sets
+
+    devices = {
+        "eiger": i03.eiger(fake_with_ophyd_sim=True),
+        "smargon": smargon,
+        "zebra": zebra,
+        "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),
+        "backlight": i03.backlight(fake_with_ophyd_sim=True),
+    }
+    return devices
+
+
 @pytest.fixture
 def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
     fake_composite = FGSComposite(
@@ -191,3 +230,8 @@ def mock_rotation_subscriptions(test_rotation_params):
     ):
         subscriptions = RotationCallbackCollection.from_params(test_rotation_params)
     return subscriptions
+
+
+def fake_read(obj, initial_positions, _):
+    initial_positions[obj] = 0
+    yield Msg("null", obj)
