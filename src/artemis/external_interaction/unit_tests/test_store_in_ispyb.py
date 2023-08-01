@@ -149,7 +149,7 @@ def dummy_ispyb_3d(dummy_params):
 def test_get_current_time_string(dummy_ispyb):
     current_time = dummy_ispyb.get_current_time_string()
 
-    assert type(current_time) == str
+    assert type(current_time) is str
     assert re.match(TIME_FORMAT_REGEX, current_time) is not None
 
 
