@@ -11,6 +11,10 @@ from artemis.log import LOGGER
 
 
 class RotationZocaloHandlerCallback(CallbackBase):
+    """Simple callback which sends the ISPyB IDs for a rotation data collection to
+    zocalo. Both run_start() and run_end() are sent when the collection is done.
+    Triggers on the 'stop' document for 'rotation_scan_main'."""
+
     def __init__(
         self,
         zocalo_environment: str,
