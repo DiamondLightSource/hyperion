@@ -63,7 +63,7 @@ class BaseISPyBHandlerCallback(CallbackBase):
             self.params.artemis_params.ispyb_params.slit_gap_size_y = doc["data"][
                 "s4_slit_gaps_ygap"
             ]
-            self.params.artemis_params.ispyb_params.transmission = doc["data"][
+            self.params.artemis_params.ispyb_params.transmission_fraction = doc["data"][
                 "attenuator_actual_transmission"
             ]
 

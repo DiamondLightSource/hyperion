@@ -284,5 +284,5 @@ def test_when_start_arming_then_transmission_set(
 
     # Check transmission set
     attenuator.set.assert_called_once_with(
-        test_full_grid_scan_params.artemis_params.ispyb_params.transmission
+        test_full_grid_scan_params.artemis_params.ispyb_params.transmission_fraction
     )

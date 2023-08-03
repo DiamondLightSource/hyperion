@@ -1,5 +1,5 @@
 {
-    "params_version": "2.0.0",
+    "params_version": "2.1.0",
     "artemis_params": {
         "beamline": "BL03S",
         "insertion_prefix": "SR03S",
@@ -43,7 +43,7 @@
                 "test_2",
                 "test_3"
             ],
-            "transmission": 1.0,
+            "transmission_fraction": 1.0,
             "flux": 10.0,
             "wavelength": 0.01,
             "beam_size_x": 1.0,

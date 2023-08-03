@@ -116,7 +116,10 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     assert params.artemis_params.ispyb_params.synchrotron_mode == synchrotron_test_value
     assert params.artemis_params.ispyb_params.slit_gap_size_x == xgap_test_value
     assert params.artemis_params.ispyb_params.slit_gap_size_y == ygap_test_value
-    assert params.artemis_params.ispyb_params.transmission == transmission_test_value
+    assert (
+        params.artemis_params.ispyb_params.transmission_fraction
+        == transmission_test_value
+    )
     assert params.artemis_params.ispyb_params.flux == flux_test_value
 
 
