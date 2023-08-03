@@ -7,6 +7,7 @@ from dodal.devices.fast_grid_scan import GridScanParams
 from artemis.experiment_plans import (
     fast_grid_scan_plan,
     full_grid_scan,
+    pin_centre_then_xray_centre_plan,
     rotation_scan_plan,
 )
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
@@ -22,6 +23,10 @@ from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalPara
 from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
     GridScanWithEdgeDetectParams,
+)
+from artemis.parameters.plan_specific.pin_centre_then_xray_centre_params import (
+    PinCentreThenXrayCentreInternalParameters,
+    PinCentreThenXrayCentreParams,
 )
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -58,6 +63,13 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
         "internal_param_type": RotationInternalParameters,
         "experiment_param_type": RotationScanParams,
         "callback_collection_type": RotationCallbackCollection,
+    },
+    "pin_tip_centre_then_xray_centre": {
+        "setup": pin_centre_then_xray_centre_plan.create_devices,
+        "run": pin_centre_then_xray_centre_plan.get_plan,
+        "internal_param_type": PinCentreThenXrayCentreInternalParameters,
+        "experiment_param_type": PinCentreThenXrayCentreParams,
+        "callback_collection_type": NullPlanCallbackCollection,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())
