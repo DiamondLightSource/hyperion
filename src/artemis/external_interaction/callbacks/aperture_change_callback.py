@@ -4,7 +4,9 @@ from artemis.log import LOGGER
 
 
 class ApertureChangeCallback(CallbackBase):
-    last_selected_aperture: str = "NONE"
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.last_selected_aperture: str = "NONE"
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == "change_aperture":
