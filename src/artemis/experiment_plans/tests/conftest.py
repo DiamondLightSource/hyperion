@@ -235,9 +235,14 @@ def mock_subscriptions(test_fgs_params):
 @pytest.fixture
 def mock_rotation_subscriptions(test_rotation_params):
     with patch(
-        "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationNexusFileHandlerCallback"
+        "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationNexusFileHandlerCallback",
+        autospec=True,
     ), patch(
-        "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationISPyBHandlerCallback"
+        "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationISPyBHandlerCallback",
+        autospec=True,
+    ), patch(
+        "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloHandlerCallback",
+        autospec=True,
     ):
         subscriptions = RotationCallbackCollection.from_params(test_rotation_params)
     return subscriptions
