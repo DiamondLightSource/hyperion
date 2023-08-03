@@ -15,7 +15,6 @@ from artemis.experiment_plans.full_grid_scan import (
     create_devices,
     detect_grid_and_do_gridscan,
     get_plan,
-    start_arming_then_do_grid,
     wait_for_det_to_finish_moving,
 )
 from artemis.external_interaction.callbacks.oav_snapshot_callback import (
@@ -213,76 +212,3 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
         # Parameters can be serialized
         params.json()
-
-
-@patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True)
-@patch(
-    "artemis.experiment_plans.full_grid_scan.OavSnapshotCallback",
-    autospec=True,
-    spec_set=True,
-)
-def test_grid_detection_running_when_exception_raised_then_eiger_disarmed_and_correct_exception_returned(
-    mock_oav_callback: MagicMock,
-    mock_grid_detection_plan: MagicMock,
-    eiger: EigerDetector,
-    RE: RunEngine,
-    test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
-    mock_subscriptions: MagicMock,
-    test_config_files: Dict,
-):
-    class DetectException(Exception):
-        pass
-
-    mock_grid_detection_plan.side_effect = DetectException()
-    eiger.detector_params = MagicMock()
-    eiger.async_stage = MagicMock()
-    eiger.disarm_detector = MagicMock()
-
-    with patch(
-        "artemis.external_interaction.callbacks.fgs.fgs_callback_collection.FGSCallbackCollection.from_params",
-        return_value=mock_subscriptions,
-        autospec=True,
-    ):
-        with pytest.raises(DetectException):
-            RE(
-                start_arming_then_do_grid(
-                    parameters=test_full_grid_scan_params,
-                    attenuator=MagicMock(),
-                    backlight=MagicMock(),
-                    eiger=eiger,
-                    aperture_scatterguard=MagicMock(),
-                    detector_motion=MagicMock(),
-                    oav_params=OAVParameters("xrayCentring", **test_config_files),
-                )
-            )
-
-        # Check detector was armed
-        eiger.async_stage.assert_called_once()
-
-        eiger.disarm_detector.assert_called_once()
-
-
-@patch("artemis.experiment_plans.full_grid_scan.detect_grid_and_do_gridscan")
-def test_when_start_arming_then_transmission_set(
-    mock_grid_detection_plan: MagicMock,
-    RE: RunEngine,
-    test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
-    test_config_files: Dict,
-):
-    attenuator = MagicMock()
-    RE(
-        start_arming_then_do_grid(
-            parameters=test_full_grid_scan_params,
-            attenuator=attenuator,
-            backlight=MagicMock(),
-            eiger=MagicMock(),
-            aperture_scatterguard=MagicMock(),
-            detector_motion=MagicMock(),
-            oav_params=OAVParameters("xrayCentring", **test_config_files),
-        )
-    )
-
-    # Check transmission set
-    attenuator.set.assert_called_once_with(
-        test_full_grid_scan_params.artemis_params.ispyb_params.transmission_fraction
-    )
