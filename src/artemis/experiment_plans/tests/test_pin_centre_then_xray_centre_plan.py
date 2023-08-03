@@ -5,7 +5,7 @@ from bluesky.run_engine import RunEngine
 
 from artemis.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
-    get_plan,
+    pin_centre_then_xray_centre_plan,
 )
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
 from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -45,13 +45,13 @@ def test_when_create_parameters_for_grid_detection_thne_parameters_created(
     "artemis.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
     autospec=True,
 )
-def test_when_pin_centre_xray_centre_get_plan_called_then_plan_runs_correctly(
+def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
 ):
     RE = RunEngine()
-    RE(get_plan(test_pin_centre_then_xray_centre_params))
+    RE(pin_centre_then_xray_centre_plan(test_pin_centre_then_xray_centre_params))
 
     mock_detect_and_do_gridscan.assert_called_once()
     mock_pin_tip_centre.assert_called_once()

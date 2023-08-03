@@ -1,6 +1,13 @@
 import json
 from typing import Callable
 
+from dodal.beamlines import i03
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.eiger import EigerDetector
+
+from artemis.device_setup_plans.utils import (
+    start_preparing_data_collection_then_do_plan,
+)
 from artemis.experiment_plans.full_grid_scan import (
     create_devices as full_grid_create_devices,
 )
@@ -54,4 +61,12 @@ def get_plan(
     """Plan that perfoms a pin tip centre followed by an xray centre to completely
     centre the sample"""
 
-    return pin_centre_then_xray_centre_plan(parameters)
+    eiger: EigerDetector = i03.eiger()
+    attenuator: Attenuator = i03.attenuator()
+
+    return start_preparing_data_collection_then_do_plan(
+        eiger,
+        attenuator,
+        parameters.artemis_params.ispyb_params.transmission_fraction,
+        pin_centre_then_xray_centre_plan(parameters),
+    )
