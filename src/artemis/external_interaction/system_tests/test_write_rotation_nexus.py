@@ -60,7 +60,12 @@ def fake_get_plan(
     return plan()
 
 
+@patch(
+    "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloHandlerCallback",
+    autospec=True,
+)
 def test_rotation_scan_nexus_output_compared_to_existing_file(
+    zocalo,
     test_params: RotationInternalParameters,
 ):
     run_number = test_params.artemis_params.detector_params.run_number
