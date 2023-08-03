@@ -1,10 +1,14 @@
+from functools import partial
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
+from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
@@ -14,6 +18,7 @@ from artemis.external_interaction.callbacks.fgs.fgs_callback_collection import (
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
 )
+from artemis.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
 from artemis.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from artemis.parameters.external_parameters import from_file as raw_params_from_file
 from artemis.parameters.internal_parameters import InternalParameters
@@ -41,6 +46,15 @@ def test_rotation_params():
 
 
 @pytest.fixture
+def test_rotation_params_nomove():
+    return RotationInternalParameters(
+        **raw_params_from_file(
+            "src/artemis/parameters/tests/test_data/good_test_rotation_scan_parameters_nomove.json"
+        )
+    )
+
+
+@pytest.fixture
 def eiger():
     return i03.eiger(fake_with_ophyd_sim=True)
 
@@ -53,11 +67,16 @@ def smargon() -> Smargon:
     smargon.z.user_setpoint._use_limits = False
     smargon.omega.user_setpoint._use_limits = False
 
-    def mock_omega_set(val):
-        smargon.omega.user_readback.sim_put(val)
+    def mock_set(motor, val):
+        motor.user_readback.sim_put(val)
         return Status(done=True, success=True)
 
-    with patch.object(smargon.omega, "set", mock_omega_set):
+    def patch_motor(motor):
+        return patch.object(motor, "set", partial(mock_set, motor))
+
+    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
+        smargon.y
+    ), patch_motor(smargon.z):
         yield smargon
 
 
@@ -74,6 +93,36 @@ def backlight():
 @pytest.fixture
 def detector_motion():
     return i03.detector_motion(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def undulator():
+    return i03.undulator(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def s4_slit_gaps():
+    return i03.s4_slit_gaps(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def synchrotron():
+    return i03.synchrotron(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def oav():
+    return i03.oav(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def flux():
+    return i03.flux(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def attenuator():
+    return i03.attenuator(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -109,6 +158,33 @@ def test_full_grid_scan_params():
         "src/artemis/parameters/tests/test_data/good_test_grid_with_edge_detect_parameters.json"
     )
     return GridScanWithEdgeDetectInternalParameters(**params)
+
+
+@pytest.fixture()
+def fake_create_devices(
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+):
+    eiger.stage = MagicMock()
+    eiger.unstage = MagicMock()
+    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+
+    mock_arm_disarm = MagicMock(
+        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
+    )
+    zebra.pc.arm.set = mock_arm_disarm
+    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.set = mock_omega_sets
+
+    devices = {
+        "eiger": i03.eiger(fake_with_ophyd_sim=True),
+        "smargon": smargon,
+        "zebra": zebra,
+        "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),
+        "backlight": i03.backlight(fake_with_ophyd_sim=True),
+    }
+    return devices
 
 
 @pytest.fixture
@@ -150,7 +226,7 @@ def mock_subscriptions(test_fgs_params):
     subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_LARGE
     )
-    subscriptions.ispyb_handler.ispyb = MagicMock()
+    subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: [[0, 0], 0, 0]
 
     return subscriptions
@@ -160,6 +236,13 @@ def mock_subscriptions(test_fgs_params):
 def mock_rotation_subscriptions(test_rotation_params):
     with patch(
         "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationNexusFileHandlerCallback"
+    ), patch(
+        "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationISPyBHandlerCallback"
     ):
         subscriptions = RotationCallbackCollection.from_params(test_rotation_params)
     return subscriptions
+
+
+def fake_read(obj, initial_positions, _):
+    initial_positions[obj] = 0
+    yield Msg("null", obj)

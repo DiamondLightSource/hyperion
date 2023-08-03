@@ -1,15 +1,15 @@
 {
-    "params_version": "2.1.0",
+    "params_version": "2.0.0",
     "artemis_params": {
-        "beamline": "BL03S",
-        "insertion_prefix": "SR03S",
+        "beamline": "BL03I",
+        "insertion_prefix": "SR03I",
         "detector": "EIGER2_X_16M",
         "zocalo_environment": "dev_artemis",
         "experiment_type": "rotation_scan",
         "detector_params": {
-            "current_energy_ev": 100,
-            "directory": "/tmp",
-            "prefix": "file_name",
+            "current_energy_ev": 12700,
+            "directory": "/dls/i03/data/2023/cm33866-3/rotation_scan_test",
+            "prefix": "rotation_scan_test",
             "run_number": 0,
             "use_roi_mode": false,
             "det_dist_to_beam_converter_path": "src/artemis/unit_tests/test_lookup_table.txt"
@@ -43,7 +43,7 @@
                 "test_2",
                 "test_3"
             ],
-            "transmission_fraction": 1.0,
+            "transmission": 1.0,
             "flux": 10.0,
             "wavelength": 0.01,
             "beam_size_x": 1.0,
@@ -62,14 +62,13 @@
         "omega_start": 0.0,
         "phi_start": 0.0,
         "chi_start": 0,
-        "x": 1.0,
-        "y": 2.0,
-        "z": 3.0,
-        "exposure_time": 0.1,
-        "detector_distance": 100.0,
+        "x": 0.1,
+        "y": 0.2,
+        "z": 0.3,
+        "exposure_time": 0.01,
+        "detector_distance": 300.0,
         "rotation_increment": 0.1,
         "rotation_direction": "NEGATIVE",
-        "offset_deg": 1.0,
         "shutter_opening_time_s": 0.6
     }
 }

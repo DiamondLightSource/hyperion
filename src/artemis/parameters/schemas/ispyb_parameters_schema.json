@@ -45,7 +45,7 @@
                 "type": "string"
             }
         },
-        "transmission": {
+        "transmission_fraction": {
             "type": "number"
         },
         "flux": {
@@ -84,7 +84,7 @@
         "microns_per_pixel_x",
         "microns_per_pixel_y",
         "position",
-        "transmission",
+        "transmission_fraction",
         "flux",
         "wavelength",
         "beam_size_x",

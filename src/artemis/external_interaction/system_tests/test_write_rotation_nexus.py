@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -38,7 +38,7 @@ def test_params():
     params.experiment_params.z = 0
     params.artemis_params.detector_params.exposure_time = 0.004
     params.artemis_params.detector_params.current_energy_ev = 12700
-    params.artemis_params.ispyb_params.transmission = 0.49118047952
+    params.artemis_params.ispyb_params.transmission_fraction = 0.49118047952
     params.artemis_params.ispyb_params.wavelength = 0.9762535433
     return params
 
@@ -75,6 +75,9 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     RE = RunEngine({})
 
     cb = RotationCallbackCollection.from_params(test_params)
+    cb.ispyb_handler.start = MagicMock()
+    cb.ispyb_handler.stop = MagicMock()
+    cb.ispyb_handler.event = MagicMock()
     with patch(
         "artemis.external_interaction.nexus.write_nexus.get_current_time",
         return_value="test_time",

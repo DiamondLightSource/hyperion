@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from pydantic import BaseModel, validator
 
-ISPYB_PARAM_DEFAULTS = {
+GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
     "sample_barcode": None,
     "visit_path": "",
@@ -15,7 +15,7 @@ ISPYB_PARAM_DEFAULTS = {
     "position": [0, 0, 0],
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
-    "transmission": 1.0,
+    "transmission_fraction": 1.0,
     "flux": 10.0,
     "wavelength": 0.01,
     "beam_size_x": 0.1,
@@ -35,7 +35,6 @@ class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
-    upper_left: np.ndarray
     position: np.ndarray
 
     class Config:
@@ -44,18 +43,8 @@ class IspybParams(BaseModel):
 
     def dict(self, **kwargs):
         as_dict = super().dict(**kwargs)
-        as_dict["upper_left"] = as_dict["upper_left"].tolist()
         as_dict["position"] = as_dict["position"].tolist()
         return as_dict
-
-    @validator("upper_left", pre=True)
-    def _parse_upper_left(
-        cls, upper_left: list[int | float] | np.ndarray, values: Dict[str, Any]
-    ) -> np.ndarray:
-        assert len(upper_left) == 3
-        if isinstance(upper_left, np.ndarray):
-            return upper_left
-        return np.array(upper_left)
 
     @validator("position", pre=True)
     def _parse_position(
@@ -66,7 +55,7 @@ class IspybParams(BaseModel):
             return position
         return np.array(position)
 
-    transmission: float
+    transmission_fraction: float
     wavelength: float
     beam_size_x: float
     beam_size_y: float
@@ -87,11 +76,35 @@ class IspybParams(BaseModel):
     xtal_snapshots_omega_start: Optional[List[str]] = None
     xtal_snapshots_omega_end: Optional[List[str]] = None
 
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, IspybParams):
-            return NotImplemented
-        else:
-            return self.json() == other.json()
+    @validator("transmission_fraction")
+    def transmission_not_percentage(cls, transmission_fraction: float):
+        if transmission_fraction > 1:
+            raise ValueError(
+                "Transmission_fraction of >1 given. Did you give a percentage instead of a fraction?"
+            )
+        return transmission_fraction
+
+
+class RotationIspybParams(IspybParams):
+    ...
+
+
+class GridscanIspybParams(IspybParams):
+    upper_left: np.ndarray
+
+    def dict(self, **kwargs):
+        as_dict = super().dict(**kwargs)
+        as_dict["upper_left"] = as_dict["upper_left"].tolist()
+        return as_dict
+
+    @validator("upper_left", pre=True)
+    def _parse_upper_left(
+        cls, upper_left: list[int | float] | np.ndarray, values: Dict[str, Any]
+    ) -> np.ndarray:
+        assert len(upper_left) == 3
+        if isinstance(upper_left, np.ndarray):
+            return upper_left
+        return np.array(upper_left)
 
 
 class Orientation(Enum):

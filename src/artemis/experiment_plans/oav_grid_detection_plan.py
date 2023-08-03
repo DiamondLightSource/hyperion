@@ -9,12 +9,14 @@ import numpy as np
 from bluesky.preprocessors import finalize_wrapper
 from dodal.beamlines import i03
 from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
-from dodal.devices.oav.oav_detector import MXSC, OAV
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
-from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
-from artemis.exceptions import WarningException
+from artemis.device_setup_plans.setup_oav import (
+    get_move_required_so_that_beam_is_at_pixel,
+    pre_centring_setup_oav,
+    wait_for_tip_to_be_found,
+)
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
@@ -46,22 +48,6 @@ def grid_detection_plan(
         ),
         reset_oav(),
     )
-
-
-def wait_for_tip_to_be_found(mxsc: MXSC):
-    pin_tip = mxsc.pin_tip
-    yield from bps.trigger(pin_tip, wait=True)
-    found_tip = yield from bps.rd(pin_tip)
-    if found_tip == pin_tip.INVALID_POSITION:
-        top_edge = yield from bps.rd(mxsc.top)
-        bottom_edge = yield from bps.rd(mxsc.bottom)
-        LOGGER.info(
-            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
-        )
-        raise WarningException(
-            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
-        )
-    return found_tip
 
 
 @bpp.run_decorator()
@@ -167,30 +153,11 @@ def grid_detection_main_plan(
             upper_left[0] + box_size_x_pixels / 2,
             upper_left[1] + box_size_y_pixels / 2,
         )
-        (
-            beam_distance_i_pixels,
-            beam_distance_j_pixels,
-        ) = parameters.calculate_beam_distance(*centre_of_first_box)
 
-        current_motor_xyz = np.array(
-            [
-                (yield from bps.rd(smargon.x)),
-                (yield from bps.rd(smargon.y)),
-                (yield from bps.rd(smargon.z)),
-            ],
-            dtype=np.float64,
+        position = yield from get_move_required_so_that_beam_is_at_pixel(
+            smargon, centre_of_first_box, parameters
         )
-
-        # Add the beam distance to the current motor position (adjusting for the changes in coordinate system
-        # and the from the angle).
-        start_position = current_motor_xyz + camera_coordinates_to_xyz(
-            beam_distance_i_pixels,
-            beam_distance_j_pixels,
-            angle,
-            parameters.micronsPerXPixel,
-            parameters.micronsPerYPixel,
-        )
-        start_positions.append(start_position)
+        start_positions.append(position)
 
     LOGGER.info(
         f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][2]}"

@@ -1,10 +1,23 @@
+from functools import partial
+from typing import Generator, Tuple
+
 import bluesky.plan_stubs as bps
-from dodal.devices.oav.oav_detector import OAV
+import numpy as np
+from bluesky.utils import Msg
+from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
+from dodal.devices.oav.oav_detector import MXSC, OAV
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.utils import ColorMode, EdgeOutputArrayImageType
+from dodal.devices.smargon import Smargon
 
+from artemis.exceptions import WarningException
 from artemis.log import LOGGER
+
+Pixel = Tuple[int, int]
+oav_group = "oav_setup"
+# Helper function to make sure we set the waiting groups correctly
+set_using_group = partial(bps.abs_set, group=oav_group)
 
 
 def start_mxsc(oav: OAV, min_callback_time, filename):
@@ -17,13 +30,13 @@ def start_mxsc(oav: OAV, min_callback_time, filename):
     Returns: None
     """
     # Turns the area detector plugin on
-    yield from bps.abs_set(oav.mxsc.enable_callbacks, 1)
+    yield from set_using_group(oav.mxsc.enable_callbacks, 1)
 
     # Set the minimum time between updates of the plugin
-    yield from bps.abs_set(oav.mxsc.min_callback_time, min_callback_time)
+    yield from set_using_group(oav.mxsc.min_callback_time, min_callback_time)
 
     # Stop the plugin from blocking the IOC and hogging all the CPU
-    yield from bps.abs_set(oav.mxsc.blocking_callbacks, 0)
+    yield from set_using_group(oav.mxsc.blocking_callbacks, 0)
 
     # Set the python file to use for calculating the edge waveforms
     current_filename = yield from bps.rd(oav.mxsc.filename)
@@ -31,47 +44,47 @@ def start_mxsc(oav: OAV, min_callback_time, filename):
         LOGGER.info(
             f"Current OAV MXSC plugin python file is {current_filename}, setting to {filename}"
         )
-        yield from bps.abs_set(oav.mxsc.filename, filename)
-        yield from bps.abs_set(oav.mxsc.read_file, 1)
+        yield from set_using_group(oav.mxsc.filename, filename)
+        yield from set_using_group(oav.mxsc.read_file, 1)
 
     # Image annotations
-    yield from bps.abs_set(oav.mxsc.draw_tip, True)
-    yield from bps.abs_set(oav.mxsc.draw_edges, True)
+    yield from set_using_group(oav.mxsc.draw_tip, True)
+    yield from set_using_group(oav.mxsc.draw_edges, True)
 
     # Use the original image type for the edge output array
-    yield from bps.abs_set(oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL)
+    yield from set_using_group(oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL)
 
 
 def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
     """Setup OAV PVs with required values."""
-    yield from bps.abs_set(oav.cam.color_mode, ColorMode.RGB1)
-    yield from bps.abs_set(oav.cam.acquire_period, parameters.acquire_period)
-    yield from bps.abs_set(oav.cam.acquire_time, parameters.exposure)
-    yield from bps.abs_set(oav.cam.gain, parameters.gain)
+    yield from set_using_group(oav.cam.color_mode, ColorMode.RGB1)
+    yield from set_using_group(oav.cam.acquire_period, parameters.acquire_period)
+    yield from set_using_group(oav.cam.acquire_time, parameters.exposure)
+    yield from set_using_group(oav.cam.gain, parameters.gain)
 
     # select which blur to apply to image
-    yield from bps.abs_set(oav.mxsc.preprocess_operation, parameters.preprocess)
+    yield from set_using_group(oav.mxsc.preprocess_operation, parameters.preprocess)
 
     # sets length scale for blurring
-    yield from bps.abs_set(oav.mxsc.preprocess_ksize, parameters.preprocess_K_size)
+    yield from set_using_group(oav.mxsc.preprocess_ksize, parameters.preprocess_K_size)
 
     # Canny edge detect
-    yield from bps.abs_set(
+    yield from set_using_group(
         oav.mxsc.canny_lower_threshold,
         parameters.canny_edge_lower_threshold,
     )
-    yield from bps.abs_set(
+    yield from set_using_group(
         oav.mxsc.canny_upper_threshold,
         parameters.canny_edge_upper_threshold,
     )
     # "Close" morphological operation
-    yield from bps.abs_set(oav.mxsc.close_ksize, parameters.close_ksize)
+    yield from set_using_group(oav.mxsc.close_ksize, parameters.close_ksize)
 
     # Sample detection
-    yield from bps.abs_set(
+    yield from set_using_group(
         oav.mxsc.sample_detection_scan_direction, parameters.direction
     )
-    yield from bps.abs_set(
+    yield from set_using_group(
         oav.mxsc.sample_detection_min_tip_height,
         parameters.minimum_height,
     )
@@ -82,9 +95,6 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         parameters.detection_script_filename,
     )
 
-    # Connect MXSC output to MJPG input for debugging
-    yield from bps.abs_set(oav.snapshot.input_plugin, "OAV.MXSC")
-
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
         raise OAVError_ZoomLevelNotFound(
@@ -92,12 +102,57 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         )
 
     yield from bps.abs_set(
-        oav.zoom_controller.level,
+        oav.zoom_controller,
         zoom_level_str,
         wait=True,
     )
-    yield from bps.wait()
+
+    # Connect MXSC output to MJPG input for debugging
+    yield from set_using_group(oav.snapshot.input_plugin, "OAV.MXSC")
+
+    yield from bps.wait(oav_group)
 
     """
     TODO: We require setting the backlight brightness to that in the json, we can't do this currently without a PV.
     """
+
+
+def get_move_required_so_that_beam_is_at_pixel(
+    smargon: Smargon, pixel: Pixel, oav_params: OAVParameters
+) -> Generator[Msg, None, np.ndarray]:
+    """Calculate the required move so that the given pixel is in the centre of the beam."""
+    beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
+
+    current_motor_xyz = np.array(
+        [
+            (yield from bps.rd(smargon.x)),
+            (yield from bps.rd(smargon.y)),
+            (yield from bps.rd(smargon.z)),
+        ],
+        dtype=np.float64,
+    )
+    current_angle = yield from bps.rd(smargon.omega)
+
+    return current_motor_xyz + camera_coordinates_to_xyz(
+        beam_distance_px[0],
+        beam_distance_px[1],
+        current_angle,
+        oav_params.micronsPerXPixel,
+        oav_params.micronsPerYPixel,
+    )
+
+
+def wait_for_tip_to_be_found(mxsc: MXSC):
+    pin_tip = mxsc.pin_tip
+    yield from bps.trigger(pin_tip, wait=True)
+    found_tip = yield from bps.rd(pin_tip)
+    if found_tip == pin_tip.INVALID_POSITION:
+        top_edge = yield from bps.rd(mxsc.top)
+        bottom_edge = yield from bps.rd(mxsc.bottom)
+        LOGGER.info(
+            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
+        )
+        raise WarningException(
+            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
+        )
+    return found_tip
