@@ -4,6 +4,7 @@ from typing import Callable
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS
 
 from artemis.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -50,9 +51,14 @@ def pin_centre_then_xray_centre_plan(
 ):
     """Plan that perfoms a pin tip centre followed by an xray centre to completely
     centre the sample"""
-    yield from pin_tip_centre_plan(parameters.experiment_params.tip_offset_microns)
+    oav_config_files = OAV_CONFIG_FILE_DEFAULTS
+    oav_config_files["oav_config_json"] = parameters.experiment_params.oav_centring_file
+
+    yield from pin_tip_centre_plan(
+        parameters.experiment_params.tip_offset_microns, oav_config_files
+    )
     grid_detect_params = create_parameters_for_grid_detection(parameters)
-    yield from detect_grid_and_do_gridscan(grid_detect_params)
+    yield from detect_grid_and_do_gridscan(grid_detect_params, oav_config_files)
 
 
 def get_plan(

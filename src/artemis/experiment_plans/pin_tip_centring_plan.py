@@ -89,7 +89,7 @@ def move_smargon_warn_on_out_of_range(smargon: Smargon, position: np.ndarray):
 
 
 def pin_tip_centre_plan(
-    tip_offset_microns: float = 900,
+    tip_offset_microns: float,
     oav_config_files: Dict[str, str] = OAV_CONFIG_FILE_DEFAULTS,
 ):
     """Finds the tip of the pin and moves to roughly the centre based on this tip. Does
