@@ -58,11 +58,12 @@ def pin_centre_then_xray_centre_plan(
 def get_plan(
     parameters: PinCentreThenXrayCentreInternalParameters,
 ) -> Callable:
-    """Plan that perfoms a pin tip centre followed by an xray centre to completely
-    centre the sample"""
+    """Starts preparing for collection then performs the pin tip centre and xray centre"""
 
     eiger: EigerDetector = i03.eiger()
     attenuator: Attenuator = i03.attenuator()
+
+    eiger.set_detector_parameters(parameters.artemis_params.detector_params)
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
