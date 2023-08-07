@@ -92,9 +92,6 @@ def do_rotation_main_plan_for_tests(
                 expt_params,
                 sim_sgon,
                 sim_zeb,
-                sim_bl,
-                sim_att,
-                sim_det,
             )
         )
 
@@ -482,15 +479,20 @@ def test_cleanup_happens(
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait")
 @patch("artemis.external_interaction.callbacks.rotation.nexus_callback.NexusWriter")
+@patch(
+    "artemis.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloHandlerCallback"
+)
 def test_ispyb_deposition_in_plan(
     bps_wait,
     nexus_writer,
-    fake_create_devices,
+    zocalo_callback,
+    fake_create_rotation_devices,
     RE,
     test_rotation_params: RotationInternalParameters,
     fetch_comment,
     fetch_datacollection_attribute,
     undulator,
+    attenuator,
     synchrotron,
     s4_slit_gaps,
     flux,
@@ -512,12 +514,13 @@ def test_ispyb_deposition_in_plan(
     with (
         patch(
             "artemis.experiment_plans.rotation_scan_plan.create_devices",
-            lambda: fake_create_devices,
+            lambda: fake_create_rotation_devices,
         ),
         patch("dodal.beamlines.i03.undulator", return_value=undulator),
         patch("dodal.beamlines.i03.synchrotron", return_value=synchrotron),
         patch("dodal.beamlines.i03.s4_slit_gaps", return_value=s4_slit_gaps),
         patch("dodal.beamlines.i03.flux", return_value=flux),
+        patch("dodal.beamlines.i03.attenuator", return_value=attenuator),
         patch(
             "bluesky.preprocessors.__read_and_stash_a_motor",
             fake_read,

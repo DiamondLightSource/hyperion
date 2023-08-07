@@ -180,7 +180,7 @@ def fake_create_devices(
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
-    detetctor_motion: DetectorMotion,
+    detector_motion: DetectorMotion,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -197,7 +197,7 @@ def fake_create_devices(
         "eiger": eiger,
         "smargon": smargon,
         "zebra": zebra,
-        "detector_motion": detetctor_motion,
+        "detector_motion": detector_motion,
         "backlight": i03.backlight(fake_with_ophyd_sim=True),
     }
     return devices
