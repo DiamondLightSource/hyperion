@@ -406,17 +406,25 @@ def test_cleanup_happens(
     attenuator: Attenuator,
     mock_rotation_subscriptions: RotationCallbackCollection,
 ):
+    class MyTestException(Exception):
+        pass
+
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
     smargon.omega.set = MagicMock(
-        side_effect=Exception("Experiment fails because this is a test")
+        side_effect=MyTestException("Experiment fails because this is a test")
     )
 
     # check main subplan part fails
-    with pytest.raises(Exception):
+    with pytest.raises(MyTestException):
         RE(
             rotation_scan_plan(
-                test_rotation_params, smargon, zebra, backlight, detector_motion
+                test_rotation_params,
+                smargon,
+                zebra,
+                backlight,
+                attenuator,
+                detector_motion,
             )
         )
         cleanup_plan.assert_not_called()
@@ -433,7 +441,7 @@ def test_cleanup_happens(
             lambda _: mock_rotation_subscriptions,
         ),
     ):
-        with pytest.raises(Exception) as exc:
+        with pytest.raises(MyTestException) as exc:
             RE(
                 get_plan(
                     test_rotation_params,
