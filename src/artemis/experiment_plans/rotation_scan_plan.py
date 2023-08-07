@@ -116,29 +116,6 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
     )
 
 
-@bpp.set_run_key_decorator("rotation_scan_setup")
-@bpp.run_decorator(md={"subplan_name": "rotation_scan_setup"})
-def rotation_scan_experiment_setup(
-    params: RotationInternalParameters,
-    smargon: Smargon,
-    backlight: Backlight,
-    attenuator: Attenuator,
-    detector_motion: DetectorMotion,
-    **kwargs,
-):
-    expt_params: RotationScanParams = params.experiment_params
-
-    LOGGER.info("moving to start x, y, z if necessary")
-    yield from move_x_y_z(
-        smargon, expt_params.x, expt_params.y, expt_params.z, wait=True
-    )
-
-    transmission = params.artemis_params.ispyb_params.transmission_fraction
-    yield from setup_sample_environment(
-        detector_motion, backlight, attenuator, transmission
-    )
-
-
 @bpp.set_run_key_decorator("rotation_scan_main")
 @bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
 def rotation_scan_plan(
