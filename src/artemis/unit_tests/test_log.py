@@ -22,8 +22,8 @@ def clear_loggers():
     [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
 
 
-@patch("dodal.log.config_bluesky_logging")
-@patch("dodal.log.config_ophyd_logging")
+@patch("dodal.log.config_bluesky_logging", autospec=True)
+@patch("dodal.log.config_ophyd_logging", autospec=True)
 def test_no_env_variable_sets_correct_file_handler(
     mock_config_ophyd,
     mock_config_bluesky,
@@ -37,7 +37,7 @@ def test_no_env_variable_sets_correct_file_handler(
     assert file_handlers.baseFilename.endswith("/tmp/dev/artemis.txt")
 
 
-@patch("artemis.log.Path.mkdir")
+@patch("artemis.log.Path.mkdir", autospec=True)
 @patch.dict(
     os.environ, {"ARTEMIS_LOG_DIR": "./dls_sw/s03/logs/bluesky"}
 )  # Note we use a relative path here so it works in CI

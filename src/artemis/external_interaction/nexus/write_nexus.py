@@ -10,7 +10,7 @@ from pathlib import Path
 
 import h5py
 import numpy as np
-from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
+from nexgen.nxs_utils import Detector, Goniometer, Source
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
 
 from artemis.external_interaction.nexus.nexus_utils import (
@@ -23,21 +23,6 @@ from artemis.parameters.internal_parameters import InternalParameters
 
 
 class NexusWriter:
-    detector: Detector
-    source: Source
-    beam: Beam
-    attenuator: Attenuator
-    goniometer: Goniometer
-    directory: Path
-    start_index: int
-    full_num_of_images: int
-    nexus_file: Path
-    master_file: Path
-    scan_points: dict
-    data_shape: tuple[int, int, int]
-    omega_start: float
-    run_number: int
-
     def __init__(
         self,
         parameters: InternalParameters,
@@ -47,38 +32,44 @@ class NexusWriter:
         run_number: int | None = None,
         vds_start_index: int = 0,
     ) -> None:
-        self.scan_points = scan_points
-        self.data_shape = data_shape
-        self.omega_start = (
+        self.scan_points: dict = scan_points
+        self.data_shape: tuple[int, int, int] = data_shape
+        self.omega_start: float = (
             omega_start
             if omega_start
             else parameters.artemis_params.detector_params.omega_start
         )
-        self.run_number = (
+        self.run_number: int = (
             run_number
             if run_number
             else parameters.artemis_params.detector_params.run_number
         )
-        self.detector = create_detector_parameters(
+        self.detector: Detector = create_detector_parameters(
             parameters.artemis_params.detector_params
         )
         self.beam, self.attenuator = create_beam_and_attenuator_parameters(
             parameters.artemis_params.ispyb_params
         )
-        self.source = Source(parameters.artemis_params.beamline)
-        self.directory = Path(parameters.artemis_params.detector_params.directory)
-        self.filename = parameters.artemis_params.detector_params.prefix
-        self.start_index = vds_start_index
-        self.full_num_of_images = (
+        self.source: Source = Source(parameters.artemis_params.beamline)
+        self.directory: Path = Path(parameters.artemis_params.detector_params.directory)
+        self.filename: str = parameters.artemis_params.detector_params.prefix
+        self.start_index: int = vds_start_index
+        self.full_num_of_images: int = (
             parameters.artemis_params.detector_params.num_triggers
             * parameters.artemis_params.detector_params.num_images_per_trigger
         )
-        self.full_filename = parameters.artemis_params.detector_params.full_filename
-        self.nexus_file = self.directory / f"{self.filename}_{self.run_number}.nxs"
-        self.master_file = (
+        self.full_filename: str = (
+            parameters.artemis_params.detector_params.full_filename
+        )
+        self.nexus_file: Path = (
+            self.directory / f"{self.filename}_{self.run_number}.nxs"
+        )
+        self.master_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}_master.h5"
         )
-        self.goniometer = create_goniometer_axes(self.omega_start, self.scan_points)
+        self.goniometer: Goniometer = create_goniometer_axes(
+            self.omega_start, self.scan_points
+        )
 
     def create_nexus_file(self):
         """

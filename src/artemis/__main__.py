@@ -1,15 +1,15 @@
 import argparse
 import atexit
 import threading
-from dataclasses import dataclass
+from dataclasses import asdict
 from queue import Queue
 from traceback import format_exception
 from typing import Callable, Optional, Tuple
 
 from bluesky import RunEngine
-from dataclasses_json import dataclass_json
 from flask import Flask, request
 from flask_restful import Api, Resource
+from pydantic.dataclasses import dataclass
 
 import artemis.log
 from artemis.exceptions import WarningException
@@ -34,7 +34,6 @@ class Command:
     parameters: Optional[InternalParameters] = None
 
 
-@dataclass_json
 @dataclass
 class StatusAndMessage:
     status: str
@@ -45,7 +44,6 @@ class StatusAndMessage:
         self.message = message
 
 
-@dataclass_json
 @dataclass
 class ErrorStatusAndMessage(StatusAndMessage):
     exception_type: str = ""
@@ -60,6 +58,8 @@ class BlueskyRunner:
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
     aperture_change_callback = ApertureChangeCallback()
+    RE: RunEngine
+    skip_startup_connection: bool
 
     def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
         self.RE = RE
@@ -147,7 +147,7 @@ class BlueskyRunner:
 class RunExperiment(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
         super().__init__()
-        self.runner = runner
+        self.runner: BlueskyRunner = runner
 
     def put(self, plan_name: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
@@ -189,26 +189,26 @@ class RunExperiment(Resource):
             status_and_message = self.runner.stop()
         # no idea why mypy gives an attribute error here but nowhere else for this
         # exact same situation...
-        return status_and_message.to_dict()  # type: ignore
+        return asdict(status_and_message)  # type: ignore
 
 
 class StopOrStatus(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
         super().__init__()
-        self.runner = runner
+        self.runner: BlueskyRunner = runner
 
     def put(self, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STOP.value:
             status_and_message = self.runner.stop()
-        return status_and_message.to_dict()
+        return asdict(status_and_message)
 
     def get(self, **kwargs):
         action = kwargs.get("action")
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STATUS.value:
             status_and_message = self.runner.current_status
-        return status_and_message.to_dict()
+        return asdict(status_and_message)
 
 
 def create_app(

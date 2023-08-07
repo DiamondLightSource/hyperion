@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+from dodal.devices.detector import DetectorParams
 from dodal.devices.motors import XYZLimitBundle
 from dodal.devices.zebra import RotationDirection
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
@@ -10,12 +11,29 @@ from pydantic import BaseModel, validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from artemis.external_interaction.ispyb.ispyb_dataclass import (
+    GRIDSCAN_ISPYB_PARAM_DEFAULTS,
+    RotationIspybParams,
+)
 from artemis.parameters.internal_parameters import (
     ArtemisParameters,
     InternalParameters,
     extract_artemis_params_from_flat_dict,
     extract_experiment_params_from_flat_dict,
 )
+
+
+class RotationArtemisParameters(ArtemisParameters):
+    ispyb_params: RotationIspybParams = RotationIspybParams(
+        **GRIDSCAN_ISPYB_PARAM_DEFAULTS
+    )
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            **DetectorParams.Config.json_encoders,
+            **RotationIspybParams.Config.json_encoders,
+        }
 
 
 class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
@@ -27,14 +45,13 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     rotation_angle: float = 360.0
     image_width: float = 0.1
     omega_start: float = 0.0
-    phi_start: float = 0.0
+    phi_start: float | None = None
     chi_start: float | None = None
     kappa_start: float | None = None
-    x: float = 0.0
-    y: float = 0.0
-    z: float = 0.0
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
     rotation_direction: RotationDirection = RotationDirection.NEGATIVE
-    offset_deg: float = 1.0
     shutter_opening_time_s: float = 0.6
 
     @validator("rotation_direction", pre=True)
@@ -66,7 +83,24 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
 
 class RotationInternalParameters(InternalParameters):
     experiment_params: RotationScanParams
-    artemis_params: ArtemisParameters
+    artemis_params: RotationArtemisParameters
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            **RotationArtemisParameters.Config.json_encoders,
+        }
+
+    @staticmethod
+    def _artemis_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
+        (
+            artemis_param_field_keys,
+            detector_field_keys,
+            ispyb_field_keys,
+        ) = InternalParameters._artemis_param_key_definitions()
+        ispyb_field_keys += list(RotationIspybParams.__annotations__.keys())
+
+        return artemis_param_field_keys, detector_field_keys, ispyb_field_keys
 
     @validator("experiment_params", pre=True)
     def _preprocess_experiment_params(
@@ -95,8 +129,11 @@ class RotationInternalParameters(InternalParameters):
             all_params["omega_increment"] = 0
         all_params["num_triggers"] = 1
         all_params["num_images_per_trigger"] = all_params["num_images"]
-        all_params["upper_left"] = np.array(all_params["upper_left"])
-        return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))
+        return RotationArtemisParameters(
+            **extract_artemis_params_from_flat_dict(
+                all_params, cls._artemis_param_key_definitions()
+            )
+        )
 
     def get_scan_points(self):
         scan_spec = Line(

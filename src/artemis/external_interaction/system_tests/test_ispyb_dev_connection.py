@@ -1,14 +1,13 @@
 import pytest
 
 from artemis.external_interaction.ispyb.store_in_ispyb import (
-    StoreInIspyb,
-    StoreInIspyb2D,
-    StoreInIspyb3D,
+    Store2DGridscanInIspyb,
+    Store3DGridscanInIspyb,
+    StoreGridscanInIspyb,
 )
+from artemis.parameters.constants import DEV_ISPYB_DATABASE_CFG
 from artemis.parameters.external_parameters import from_file as default_raw_params
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-
-ISPYB_CONFIG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
 
 @pytest.mark.s03
@@ -26,7 +25,7 @@ def test_ispyb_get_comment_from_collection_correctly(fetch_comment):
 
 @pytest.mark.s03
 def test_ispyb_deposition_comment_correct_on_failure(
-    dummy_ispyb: StoreInIspyb2D, fetch_comment
+    dummy_ispyb: Store2DGridscanInIspyb, fetch_comment
 ):
     dcid = dummy_ispyb.begin_deposition()
     dummy_ispyb.end_deposition("fail", "could not connect to devices")
@@ -38,7 +37,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
 
 @pytest.mark.s03
 def test_ispyb_deposition_comment_correct_for_3D_on_failure(
-    dummy_ispyb_3d: StoreInIspyb3D, fetch_comment
+    dummy_ispyb_3d: Store3DGridscanInIspyb, fetch_comment
 ):
     dcid = dummy_ispyb_3d.begin_deposition()
     dcid1 = dcid[0][0]
@@ -58,10 +57,10 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
 @pytest.mark.parametrize(
     "StoreClass, exp_num_of_grids, success",
     [
-        (StoreInIspyb2D, 1, False),
-        (StoreInIspyb2D, 1, True),
-        (StoreInIspyb3D, 2, False),
-        (StoreInIspyb3D, 2, True),
+        (Store2DGridscanInIspyb, 1, False),
+        (Store2DGridscanInIspyb, 1, True),
+        (Store3DGridscanInIspyb, 2, False),
+        (Store3DGridscanInIspyb, 2, True),
     ],
 )
 def test_can_store_2D_ispyb_data_correctly_when_in_error(
@@ -69,7 +68,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 ):
     test_params = FGSInternalParameters(**default_raw_params())
     test_params.artemis_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
-    ispyb: StoreInIspyb = StoreClass(ISPYB_CONFIG, test_params)
+    ispyb: StoreGridscanInIspyb = StoreClass(DEV_ISPYB_DATABASE_CFG, test_params)
     dc_ids, grid_ids, dcg_id = ispyb.begin_deposition()
 
     assert len(dc_ids) == exp_num_of_grids

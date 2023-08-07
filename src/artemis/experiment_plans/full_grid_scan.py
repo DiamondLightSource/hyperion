@@ -92,7 +92,7 @@ def start_arming_then_do_grid(
     yield from bps.abs_set(eiger.do_arm, 1, group="ready_for_data_collection")
     yield from bps.abs_set(
         attenuator,
-        parameters.artemis_params.ispyb_params.transmission,
+        parameters.artemis_params.ispyb_params.transmission_fraction,
         group="ready_for_data_collection",
     )
 

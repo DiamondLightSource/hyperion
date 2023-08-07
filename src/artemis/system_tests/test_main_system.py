@@ -300,21 +300,24 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
-@patch("dodal.beamlines.i03.Attenuator")
-@patch("dodal.beamlines.i03.Flux")
-@patch("dodal.beamlines.i03.DetectorMotion")
-@patch("dodal.beamlines.i03.OAV")
-@patch("dodal.beamlines.i03.ApertureScatterguard")
-@patch("dodal.beamlines.i03.Backlight")
-@patch("dodal.beamlines.i03.EigerDetector")
-@patch("dodal.beamlines.i03.FastGridScan")
-@patch("dodal.beamlines.i03.S4SlitGaps")
-@patch("dodal.beamlines.i03.Smargon")
-@patch("dodal.beamlines.i03.Synchrotron")
-@patch("dodal.beamlines.i03.Undulator")
-@patch("dodal.beamlines.i03.Zebra")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type")
+@patch("dodal.beamlines.i03.Attenuator", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.Flux", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.DetectorMotion", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.OAV", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.ApertureScatterguard", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.Backlight", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.EigerDetector", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.FastGridScan", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.S4SlitGaps", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.Smargon", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.Synchrotron", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.Undulator", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.Zebra", autospec=True, spec_set=True)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters",
+    autospec=True,
+)
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", autospec=True)
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
     type_comparison,
     mock_get_beamline_params,
@@ -340,7 +343,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     smargon.return_value.wait_for_connection.assert_called()
     s4_slits.return_value.wait_for_connection.assert_called()
     fast_grid_scan.return_value.wait_for_connection.assert_called()
-    eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
+    eiger.return_value.wait_for_connection.assert_called()
     backlight.return_value.wait_for_connection.assert_called()
     aperture_scatterguard.return_value.wait_for_connection.assert_called()
     oav.return_value.wait_for_connection.assert_called()
@@ -349,20 +352,21 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     flux.return_value.wait_for_connection.assert_called()
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_plans_are_setup_and_devices_are_not_connected(
-    mock_get_beamline_params, mock_fgs, mock_eiger
-):
-    BlueskyRunner(MagicMock(), skip_startup_connection=True)
-    mock_fgs.return_value.wait_for_connection.assert_not_called()
-
-
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices")
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.EigerDetector",
+    autospec=True,
+    spec_set=True,
+)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.FGSComposite",
+    autospec=True,
+    spec_set=True,
+)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters",
+    autospec=True,
+)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.create_devices", autospec=True)
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
     mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
 ):
@@ -380,13 +384,24 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
+        runner.start(None, None, "fast_grid_scan")
         mock_setup.assert_called_once()
 
 
-@patch("artemis.experiment_plans.fast_grid_scan_plan.EigerDetector")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.FGSComposite")
-@patch("artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters")
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.EigerDetector",
+    autospec=True,
+    spec_set=True,
+)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.FGSComposite",
+    autospec=True,
+    spec_set=True,
+)
+@patch(
+    "artemis.experiment_plans.fast_grid_scan_plan.get_beamline_parameters",
+    autospec=True,
+)
 def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
     mock_get_beamline_params,
     mock_fgs,

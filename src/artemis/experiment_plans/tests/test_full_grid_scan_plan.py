@@ -49,7 +49,7 @@ def _fake_grid_detection(
     return []
 
 
-@patch("artemis.experiment_plans.full_grid_scan.get_beamline_parameters")
+@patch("artemis.experiment_plans.full_grid_scan.get_beamline_parameters", autospec=True)
 def test_create_devices(mock_beamline_params):
     with (
         patch("artemis.experiment_plans.full_grid_scan.i03") as i03,
@@ -215,8 +215,12 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         params.json()
 
 
-@patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan")
-@patch("artemis.experiment_plans.full_grid_scan.OavSnapshotCallback")
+@patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True)
+@patch(
+    "artemis.experiment_plans.full_grid_scan.OavSnapshotCallback",
+    autospec=True,
+    spec_set=True,
+)
 def test_grid_detection_running_when_exception_raised_then_eiger_disarmed_and_correct_exception_returned(
     mock_oav_callback: MagicMock,
     mock_grid_detection_plan: MagicMock,
@@ -237,6 +241,7 @@ def test_grid_detection_running_when_exception_raised_then_eiger_disarmed_and_co
     with patch(
         "artemis.external_interaction.callbacks.fgs.fgs_callback_collection.FGSCallbackCollection.from_params",
         return_value=mock_subscriptions,
+        autospec=True,
     ):
         with pytest.raises(DetectException):
             RE(
@@ -279,5 +284,5 @@ def test_when_start_arming_then_transmission_set(
 
     # Check transmission set
     attenuator.set.assert_called_once_with(
-        test_full_grid_scan_params.artemis_params.ispyb_params.transmission
+        test_full_grid_scan_params.artemis_params.ispyb_params.transmission_fraction
     )
