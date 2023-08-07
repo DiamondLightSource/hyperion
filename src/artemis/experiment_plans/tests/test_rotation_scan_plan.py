@@ -58,7 +58,7 @@ TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
 
 
-def do_rotation_plan_for_tests(
+def do_rotation_main_plan_for_tests(
     run_engine,
     callbacks,
     sim_und,
@@ -97,6 +97,43 @@ def do_rotation_plan_for_tests(
                 sim_det,
             )
         )
+
+
+@pytest.fixture
+def run_full_rotation_plan(
+    RE: RunEngine,
+    test_rotation_params: RotationInternalParameters,
+    fake_create_rotation_devices,
+    attenuator: Attenuator,
+    mock_rotation_subscriptions: RotationCallbackCollection,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    undulator: Undulator,
+    flux: Flux,
+):
+    with (
+        patch(
+            "bluesky.preprocessors.__read_and_stash_a_motor",
+            fake_read,
+        ),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.create_devices",
+            lambda: fake_create_rotation_devices,
+        ),
+        patch(
+            "artemis.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            lambda _: mock_rotation_subscriptions,
+        ),
+        patch("dodal.beamlines.i03.undulator", lambda: undulator),
+        patch("dodal.beamlines.i03.synchrotron", lambda: synchrotron),
+        patch("dodal.beamlines.i03.s4_slit_gaps", lambda: s4_slit_gaps),
+        patch("dodal.beamlines.i03.flux", lambda: flux),
+        patch("dodal.beamlines.i03.attenuator", lambda: attenuator),
+    ):
+        RE(get_plan(test_rotation_params))
+
+    fake_create_rotation_devices["test_rotation_params"] = test_rotation_params
+    return fake_create_rotation_devices
 
 
 def setup_and_run_rotation_plan_for_tests(
@@ -155,7 +192,7 @@ def setup_and_run_rotation_plan_for_tests(
     zebra.pc.arm.arm_set.set = mock_arm
 
     with patch("bluesky.plan_stubs.wait", autospec=True):
-        do_rotation_plan_for_tests(
+        do_rotation_main_plan_for_tests(
             RE,
             mock_rotation_subscriptions,
             undulator,
@@ -340,14 +377,13 @@ def test_rotation_plan_zebra_settings(setup_and_run_rotation_plan_for_tests_stan
     assert zebra.pc.pulse_start.get() == expt_params.shutter_opening_time_s
 
 
-def test_rotation_plan_smargon_settings(setup_and_run_rotation_plan_for_tests_standard):
-    smargon: Smargon = setup_and_run_rotation_plan_for_tests_standard["smargon"]
-    params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests_standard[
-        "test_rotation_params"
-    ]
+def test_full_rotation_plan_smargon_settings(
+    run_full_rotation_plan,
+):
+    smargon: Smargon = run_full_rotation_plan["smargon"]
+    params: RotationInternalParameters = run_full_rotation_plan["test_rotation_params"]
     expt_params = params.experiment_params
 
-    omega_vel_set: MagicMock = smargon.omega.velocity.set
     omega_set: MagicMock = smargon.omega.set
     rotation_speed = (
         expt_params.image_width / params.artemis_params.detector_params.exposure_time
@@ -358,11 +394,11 @@ def test_rotation_plan_smargon_settings(setup_and_run_rotation_plan_for_tests_st
     assert smargon.x.user_readback.get() == expt_params.x
     assert smargon.y.user_readback.get() == expt_params.y
     assert smargon.z.user_readback.get() == expt_params.z
-    assert omega_vel_set.call_count == 3
-    omega_vel_set.assert_has_calls(
-        [call(DEFAULT_MAX_VELOCITY), call(rotation_speed), call(DEFAULT_MAX_VELOCITY)]
+    assert omega_set.call_count == 6
+    omega_set.assert_has_calls(
+        [call(DEFAULT_MAX_VELOCITY), call(rotation_speed), call(DEFAULT_MAX_VELOCITY)],
+        any_order=True,
     )
-    assert omega_set.call_count == 2
 
 
 def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
