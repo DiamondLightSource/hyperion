@@ -204,7 +204,8 @@ class StoreInIspyb(ABC):
         params["slitgap_horizontal"] = self.ispyb_params.slit_gap_size_x
         params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x
         params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
-        params["transmission"] = self.ispyb_params.transmission
+        # Ispyb wants the transmission in a percentage, we use fractions
+        params["transmission"] = self.ispyb_params.transmission_fraction * 100
         params["comments"] = self._construct_comment()
         params["data_collection_number"] = self.run_number
         params["detector_distance"] = self.detector_params.detector_distance

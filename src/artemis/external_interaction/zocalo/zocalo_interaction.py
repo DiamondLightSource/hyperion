@@ -22,10 +22,8 @@ class NoDiffractionFound(WarningException):
 
 
 class ZocaloInteractor:
-    zocalo_environment: str = "artemis"
-
     def __init__(self, environment: str = "artemis"):
-        self.zocalo_environment = environment
+        self.zocalo_environment: str = environment
 
     def _get_zocalo_connection(self):
         zc = zocalo.configuration.from_file()
@@ -52,7 +50,7 @@ class ZocaloInteractor:
             transport.disconnect()
 
     def run_start(self, data_collection_id: int):
-        """Tells the data analysis pipeline we have started a grid scan.
+        """Tells the data analysis pipeline we have started a run.
         Assumes that appropriate data has already been put into ISPyB
 
         Args:
@@ -65,7 +63,7 @@ class ZocaloInteractor:
         self._send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
 
     def run_end(self, data_collection_id: int):
-        """Tells the data analysis pipeline we have finished a grid scan.
+        """Tells the data analysis pipeline we have finished a run.
         Assumes that appropriate data has already been put into ISPyB
 
         Args:
@@ -81,7 +79,7 @@ class ZocaloInteractor:
         )
 
     def wait_for_result(
-        self, data_collection_group_id: int, timeout: int = None
+        self, data_collection_group_id: int, timeout: int | None = None
     ) -> ndarray:
         """Block until a result is received from Zocalo.
         Args:

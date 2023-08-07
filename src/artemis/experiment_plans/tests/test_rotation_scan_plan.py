@@ -445,7 +445,7 @@ def test_cleanup_happens(
 
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait")
-@patch("artemis.external_interaction.nexus.write_nexus.NexusWriter")
+@patch("artemis.external_interaction.callbacks.rotation.nexus_callback.NexusWriter")
 def test_ispyb_deposition_in_plan(
     bps_wait,
     nexus_writer,

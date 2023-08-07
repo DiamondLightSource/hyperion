@@ -196,7 +196,7 @@ def rotation_scan_plan(
         f" for {shutter_time_s} s at {speed_for_rotation_deg_s} deg/s"
     )
 
-    transmission = params.artemis_params.ispyb_params.transmission
+    transmission = params.artemis_params.ispyb_params.transmission_fraction
     yield from setup_sample_environment(
         detector_motion, backlight, attenuator, transmission
     )

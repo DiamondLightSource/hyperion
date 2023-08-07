@@ -53,37 +53,27 @@ if TYPE_CHECKING:
 class FGSComposite:
     """A container for all the Devices required for a fast gridscan."""
 
-    aperture_scatterguard: ApertureScatterguard
-    backlight: Backlight
-    eiger: EigerDetector
-    fast_grid_scan: FastGridScan
-    flux: Flux
-    s4_slit_gaps: S4SlitGaps
-    sample_motors: Smargon
-    synchrotron: Synchrotron
-    undulator: Undulator
-    zebra: Zebra
-    attenuator: Attenuator
-
     def __init__(
         self,
         aperture_positions: AperturePositions = None,
         detector_params: DetectorParams = None,
         fake: bool = False,
     ):
-        self.aperture_scatterguard = i03.aperture_scatterguard(
+        self.aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard(
             fake_with_ophyd_sim=fake, aperture_positions=aperture_positions
         )
-        self.backlight = i03.backlight(fake_with_ophyd_sim=fake)
-        self.eiger = i03.eiger(fake_with_ophyd_sim=fake, params=detector_params)
-        self.fast_grid_scan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
-        self.flux = i03.flux(fake_with_ophyd_sim=fake)
-        self.s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
-        self.sample_motors = i03.smargon(fake_with_ophyd_sim=fake)
-        self.undulator = i03.undulator(fake_with_ophyd_sim=fake)
-        self.synchrotron = i03.synchrotron(fake_with_ophyd_sim=fake)
-        self.zebra = i03.zebra(fake_with_ophyd_sim=fake)
-        self.attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
+        self.backlight: Backlight = i03.backlight(fake_with_ophyd_sim=fake)
+        self.eiger: EigerDetector = i03.eiger(
+            fake_with_ophyd_sim=fake, params=detector_params
+        )
+        self.fast_grid_scan: FastGridScan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
+        self.flux: Flux = i03.flux(fake_with_ophyd_sim=fake)
+        self.s4_slit_gaps: S4SlitGaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
+        self.sample_motors: Smargon = i03.smargon(fake_with_ophyd_sim=fake)
+        self.undulator: Synchrotron = i03.undulator(fake_with_ophyd_sim=fake)
+        self.synchrotron: Undulator = i03.synchrotron(fake_with_ophyd_sim=fake)
+        self.zebra: Zebra = i03.zebra(fake_with_ophyd_sim=fake)
+        self.attenuator: Attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
 
 
 fast_grid_scan_composite: FGSComposite | None = None
