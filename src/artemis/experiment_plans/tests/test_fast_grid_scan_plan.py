@@ -199,10 +199,10 @@ def test_results_adjusted_and_passed_to_move_xyz(
     )
 
     mv_call_large = call(
-        fake_fgs_composite.sample_motors, 0.05, 0.15000000000000002, 0.25
+        fake_fgs_composite.sample_motors, 0.05, pytest.approx(0.15), 0.25
     )
     mv_call_medium = call(
-        fake_fgs_composite.sample_motors, 0.05, 0.15000000000000002, 0.25
+        fake_fgs_composite.sample_motors, 0.05, pytest.approx(0.15), 0.25
     )
     move_x_y_z.assert_has_calls(
         [mv_call_large, mv_call_large, mv_call_medium], any_order=True

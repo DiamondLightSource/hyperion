@@ -176,6 +176,7 @@ def rotation_scan_plan(
     LOGGER.info("wait for any previous moves...")
     # wait for all the setup tasks at once
     yield from bps.wait("setup_senv")
+    yield from bps.wait("move_x_y_z")
     yield from bps.wait("move_to_start")
     yield from bps.wait("setup_zebra")
 
@@ -254,10 +255,12 @@ def get_plan(parameters: RotationInternalParameters):
                 params.experiment_params.x,
                 params.experiment_params.y,
                 params.experiment_params.z,
+                group="move_x_y_z",
             )
-            LOGGER.info("setting up and staging eiger...")
+
             yield from rotation_scan_plan(params, **devices)
 
+        LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
 
     yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
