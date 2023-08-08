@@ -52,7 +52,8 @@ def create_devices() -> dict[str, Device]:
 
 DEFAULT_DIRECTION = RotationDirection.NEGATIVE
 DEFAULT_MAX_VELOCITY = 120
-TIME_TO_VELOCITY_S = 0.15
+# Use a slightly larger time to accceleration than EPICS as it's better to be cautious
+ACCELERATION_MARGIN = 1.5
 
 
 def setup_sample_environment(
@@ -180,12 +181,12 @@ def rotation_scan_plan(
     speed_for_rotation_deg_s = image_width_deg / exposure_time_s
     LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
 
-    # TODO get this from epics instead of hardcoded - time to velocity
-    # https://github.com/DiamondLightSource/python-artemis/issues/836
-    acceleration_offset = TIME_TO_VELOCITY_S * speed_for_rotation_deg_s
+    motor_time_to_speed = yield from bps.rd(smargon.omega.acceleration)
+    motor_time_to_speed *= ACCELERATION_MARGIN
+    acceleration_offset = motor_time_to_speed * speed_for_rotation_deg_s
     LOGGER.info(
         f"calculated rotation offset for acceleration: at {speed_for_rotation_deg_s} "
-        f"deg/s, to take {TIME_TO_VELOCITY_S} s = {acceleration_offset} deg"
+        f"deg/s, to take {motor_time_to_speed} s = {acceleration_offset} deg"
     )
 
     shutter_opening_degrees = (
