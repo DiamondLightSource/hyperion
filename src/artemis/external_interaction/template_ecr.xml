@@ -1,0 +1,56 @@
+<ExtendedCollectRequests>
+  <usingDna>false</usingDna>{% for sample in samples %}
+  <extendedCollectRequest>
+    <collect_request>
+      <fileinfo>
+        <directory>{{ sample.visit_folder }}/multipin/{{ sample.sample_name }}</directory>
+        <prefix>{{ sample.sample_name }}</prefix>
+      </fileinfo>
+      <oscillation_sequence>
+        <start>0.0</start>
+        <range>0.1</range>
+        <number_of_images>3600</number_of_images>
+        <overlap>0.0</overlap>
+        <exposure_time>{{ sample.exposure_time }}</exposure_time>
+        <start_image_number>1</start_image_number>
+        <number_of_passes>1</number_of_passes>
+      </oscillation_sequence>
+      <wavelength>0.976253430978787</wavelength>
+      <resolution>
+        <upper>1.7990850569532917</upper>
+      </resolution>
+      <sample_reference>
+        <code></code>
+        <container_reference>{{ sample.sample_container }}</container_reference>
+        <sample_location>{{ sample.sample_location }}</sample_location>
+        <blSampleId>{{ sample.sample_id }}</blSampleId>
+      </sample_reference>
+    </collect_request>
+    <runNumber>0</runNumber>
+    <sampleDetectorDistanceInMM>340.0</sampleDetectorDistanceInMM>
+    <transmissionInPerCent>{{ sample.transmission }}</transmissionInPerCent>
+    <sampleName>{{ sample.sample_name }}</sampleName>
+    <visitPath>{{ sample.visit_folder }}</visitPath>
+    <comment />
+    <centringMode>DISABLE</centringMode>
+    <experimentType>SAD</experimentType>
+    <doseProtocol>target_exposure</doseProtocol>
+    <totalNumberOfImages>3600</totalNumberOfImages>
+    <fileNameTemplate>{{ sample.visit_folder }}/multipin/{{ sample.sample_name }}/{{ sample.sample_name }}_0_%05d.%s</fileNameTemplate>
+    <dnaFileNameTemplate>{{ sample.sample_name }}_0_#####.%s</dnaFileNameTemplate>
+    <dnaFilePrefix>{{ sample.sample_name }}_0_</dnaFilePrefix>
+    <dnaFileDir>{{ sample.visit_folder }}/multipin/{{ sample.sample_name }}</dnaFileDir>
+    <hasTransmission>true</hasTransmission>
+    <beamstopPosition>0</beamstopPosition>
+    <chi>0.0</chi>
+    <phi>0.0</phi>
+    <omegaDelta>0.0</omegaDelta>
+    <axisChoice>Omega</axisChoice>
+    <beamProfile />
+    <samplePosition>
+      <x>{{ sample.x }}</x>
+      <y>{{ sample.y }}</y>
+      <z>{{ sample.z }}</z>
+    </samplePosition>
+  </extendedCollectRequest>{% endfor %}
+</ExtendedCollectRequests>
