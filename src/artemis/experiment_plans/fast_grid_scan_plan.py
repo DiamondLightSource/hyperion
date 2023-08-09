@@ -27,6 +27,7 @@ from dodal.devices.eiger import DetectorParams
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
 
 import artemis.log
+from artemis.device_setup_plans.manipulate_sample import move_x_y_z
 from artemis.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from artemis.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
@@ -117,28 +118,6 @@ def set_aperture_for_bbox_size(
         yield from bps.abs_set(aperture_device, aperture_size_positions)
 
     yield from set_aperture()
-
-
-@bpp.set_run_key_decorator("move_xyz")
-@bpp.run_decorator(md={"subplan_name": "move_xyz"})
-def move_xyz(
-    sample_motors,
-    xray_centre_motor_position: np.ndarray,
-    md={
-        "plan_name": "move_xyz",
-    },
-):
-    """Move 'sample motors' to a specific motor position (e.g. a position obtained
-    from gridscan processing results)"""
-    artemis.log.LOGGER.info(f"Moving Smargon x, y, z to: {xray_centre_motor_position}")
-    yield from bps.mv(
-        sample_motors.x,
-        xray_centre_motor_position[0],
-        sample_motors.y,
-        xray_centre_motor_position[1],
-        sample_motors.z,
-        xray_centre_motor_position[2],
-    )
 
 
 def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
@@ -254,10 +233,7 @@ def run_gridscan_and_move(
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
-        yield from move_xyz(
-            fgs_composite.sample_motors,
-            xray_centre,
-        )
+        yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
 
 def get_plan(

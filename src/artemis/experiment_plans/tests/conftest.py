@@ -6,9 +6,13 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.backlight import Backlight
+from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import Zebra
+from ophyd.epics_motor import EpicsMotor
 from ophyd.status import Status
 
 from artemis.experiment_plans.fast_grid_scan_plan import FGSComposite
@@ -29,6 +33,15 @@ from artemis.parameters.plan_specific.grid_scan_with_edge_detect_params import (
 from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+
+
+def mock_set(motor: EpicsMotor, val):
+    motor.user_readback.sim_put(val)
+    return Status(done=True, success=True)
+
+
+def patch_motor(motor):
+    return patch.object(motor, "set", partial(mock_set, motor))
 
 
 @pytest.fixture
@@ -67,13 +80,6 @@ def smargon() -> Smargon:
     smargon.z.user_setpoint._use_limits = False
     smargon.omega.user_setpoint._use_limits = False
 
-    def mock_set(motor, val):
-        motor.user_readback.sim_put(val)
-        return Status(done=True, success=True)
-
-    def patch_motor(motor):
-        return patch.object(motor, "set", partial(mock_set, motor))
-
     with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
         smargon.y
     ), patch_motor(smargon.z):
@@ -92,7 +98,11 @@ def backlight():
 
 @pytest.fixture
 def detector_motion():
-    return i03.detector_motion(fake_with_ophyd_sim=True)
+    det = i03.detector_motion(fake_with_ophyd_sim=True)
+    det.z.user_setpoint._use_limits = False
+
+    with patch_motor(det.z):
+        yield det
 
 
 @pytest.fixture
@@ -122,7 +132,12 @@ def flux():
 
 @pytest.fixture
 def attenuator():
-    return i03.attenuator(fake_with_ophyd_sim=True)
+    with patch(
+        "dodal.devices.attenuator.await_value",
+        return_value=Status(done=True, success=True),
+        autospec=True,
+    ):
+        yield i03.attenuator(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -165,6 +180,7 @@ def fake_create_devices(
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
+    detector_motion: DetectorMotion,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -178,13 +194,43 @@ def fake_create_devices(
     smargon.omega.set = mock_omega_sets
 
     devices = {
-        "eiger": i03.eiger(fake_with_ophyd_sim=True),
+        "eiger": eiger,
         "smargon": smargon,
         "zebra": zebra,
-        "detector_motion": i03.detector_motion(fake_with_ophyd_sim=True),
+        "detector_motion": detector_motion,
         "backlight": i03.backlight(fake_with_ophyd_sim=True),
     }
     return devices
+
+
+@pytest.fixture()
+def fake_create_rotation_devices(
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    attenuator: Attenuator,
+):
+    eiger.stage = MagicMock()
+    eiger.unstage = MagicMock()
+    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+
+    mock_arm_disarm = MagicMock(
+        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
+    )
+    zebra.pc.arm.set = mock_arm_disarm
+    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.set = mock_omega_sets
+
+    return {
+        "eiger": eiger,
+        "smargon": smargon,
+        "zebra": zebra,
+        "detector_motion": detector_motion,
+        "backlight": backlight,
+        "attenuator": attenuator,
+    }
 
 
 @pytest.fixture

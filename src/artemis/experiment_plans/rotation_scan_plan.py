@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from dodal.beamlines import i03
-from dodal.devices.attenuator import Attenuator
-from dodal.devices.backlight import Backlight
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
@@ -15,10 +13,16 @@ from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.device import Device
 from ophyd.epics_motor import EpicsMotor
 
+from artemis.device_setup_plans.manipulate_sample import (
+    cleanup_sample_environment,
+    move_x_y_z,
+    setup_sample_environment,
+)
 from artemis.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from artemis.device_setup_plans.setup_zebra import (
     arm_zebra,
     disarm_zebra,
+    make_trigger_safe,
     setup_zebra_for_rotation,
 )
 from artemis.external_interaction.callbacks.rotation.rotation_callback_collection import (
@@ -54,46 +58,6 @@ DEFAULT_DIRECTION = RotationDirection.NEGATIVE
 DEFAULT_MAX_VELOCITY = 120
 # Use a slightly larger time to accceleration than EPICS as it's better to be cautious
 ACCELERATION_MARGIN = 1.5
-
-
-def setup_sample_environment(
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    attenuator: Attenuator,
-    transmission: float,
-    group="setup_senv",
-):
-    yield from bps.abs_set(detector_motion.shutter, 1, group=group)
-    yield from bps.abs_set(backlight.pos, backlight.OUT, group=group)
-    yield from bps.abs_set(attenuator, transmission, group=group)
-
-
-def cleanup_sample_environment(
-    zebra: Zebra,
-    detector_motion: DetectorMotion,
-    group="cleanup_senv",
-):
-    yield from bps.abs_set(zebra.inputs.soft_in_1, 0, group=group)
-    yield from bps.abs_set(detector_motion.shutter, 0, group=group)
-
-
-def move_x_y_z(
-    smargon: Smargon,
-    x: float | None,
-    y: float | None,
-    z: float | None,
-    wait=False,
-    group="move_x_y_z",
-):
-    if x:
-        LOGGER.info(f"x: {x}, y: {y}, z: {z}")
-        yield from bps.abs_set(smargon.x, x, group=group)
-    if y:
-        yield from bps.abs_set(smargon.y, y, group=group)
-    if z:
-        yield from bps.abs_set(smargon.z, z, group=group)
-    if wait:
-        yield from bps.wait(group)
 
 
 def move_to_start_w_buffer(
@@ -157,13 +121,12 @@ def rotation_scan_plan(
     params: RotationInternalParameters,
     smargon: Smargon,
     zebra: Zebra,
-    backlight: Backlight,
-    attenuator: Attenuator,
-    detector_motion: DetectorMotion,
     **kwargs,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
-    a fixed axis - for now this axis is limited to omega."""
+    a fixed axis - for now this axis is limited to omega. Only does the scan itself, no
+    setup tasks."""
+
     detector_params: DetectorParams = params.artemis_params.detector_params
     expt_params: RotationScanParams = params.experiment_params
 
@@ -172,11 +135,6 @@ def rotation_scan_plan(
     image_width_deg = detector_params.omega_increment
     exposure_time_s = detector_params.exposure_time
     shutter_time_s = expt_params.shutter_opening_time_s
-
-    LOGGER.info("moving to start x, y, z if necessary")
-    yield from move_x_y_z(
-        smargon, expt_params.x, expt_params.y, expt_params.z, wait=True
-    )
 
     speed_for_rotation_deg_s = image_width_deg / exposure_time_s
     LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
@@ -197,10 +155,6 @@ def rotation_scan_plan(
         f" for {shutter_time_s} s at {speed_for_rotation_deg_s} deg/s"
     )
 
-    transmission = params.artemis_params.ispyb_params.transmission_fraction
-    yield from setup_sample_environment(
-        detector_motion, backlight, attenuator, transmission
-    )
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle_deg}")
     yield from move_to_start_w_buffer(
         smargon.omega, start_angle_deg, acceleration_offset
@@ -223,6 +177,7 @@ def rotation_scan_plan(
     LOGGER.info("wait for any previous moves...")
     # wait for all the setup tasks at once
     yield from bps.wait("setup_senv")
+    yield from bps.wait("move_x_y_z")
     yield from bps.wait("move_to_start")
     yield from bps.wait("setup_zebra")
 
@@ -258,9 +213,12 @@ def rotation_scan_plan(
 def cleanup_plan(
     zebra: Zebra, smargon: Smargon, detector_motion: DetectorMotion, **kwargs
 ):
-    yield from cleanup_sample_environment(zebra, detector_motion)
-    yield from bps.abs_set(smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
-    yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup_senv"))
+    yield from cleanup_sample_environment(detector_motion, group="cleanup")
+    yield from bps.abs_set(
+        smargon.omega.velocity, DEFAULT_MAX_VELOCITY, group="cleanup"
+    )
+    yield from make_trigger_safe(zebra, group="cleanup")
+    yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup"))
 
 
 def get_plan(parameters: RotationInternalParameters):
@@ -283,10 +241,27 @@ def get_plan(parameters: RotationInternalParameters):
 
         @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: cleanup_plan(**devices))
-        def rotation_with_cleanup_and_stage(params):
-            LOGGER.info("setting up and staging eiger...")
+        def rotation_with_cleanup_and_stage(params: RotationInternalParameters):
+            LOGGER.info("setting up sample environment...")
+            yield from setup_sample_environment(
+                devices["detector_motion"],
+                devices["backlight"],
+                devices["attenuator"],
+                params.artemis_params.ispyb_params.transmission_fraction,
+                params.artemis_params.detector_params.detector_distance,
+            )
+            LOGGER.info("moving to position (if specified)")
+            yield from move_x_y_z(
+                devices["smargon"],
+                params.experiment_params.x,
+                params.experiment_params.y,
+                params.experiment_params.z,
+                group="move_x_y_z",
+            )
+
             yield from rotation_scan_plan(params, **devices)
 
+        LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
 
     yield from rotation_scan_plan_with_stage_and_cleanup(parameters)

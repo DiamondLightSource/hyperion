@@ -22,6 +22,7 @@ class RotationZocaloHandlerCallback(CallbackBase):
     ):
         self.ispyb: RotationISPyBHandlerCallback = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
+        self.run_uid = None
 
     def start(self, doc: dict):
         LOGGER.info("Zocalo handler received start document.")
@@ -29,7 +30,7 @@ class RotationZocaloHandlerCallback(CallbackBase):
             self.run_uid = doc.get("uid")
 
     def stop(self, doc: dict):
-        if doc.get("run_start") == self.run_uid:
+        if self.run_uid and doc.get("run_start") == self.run_uid:
             LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )

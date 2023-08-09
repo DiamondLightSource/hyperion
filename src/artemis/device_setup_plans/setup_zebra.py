@@ -108,3 +108,7 @@ def set_zebra_shutter_to_manual(
 
     if wait:
         yield from bps.wait(group)
+
+
+def make_trigger_safe(zebra: Zebra, group="make_zebra_safe", wait=False):
+    yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=wait)
