@@ -43,6 +43,7 @@
         "detector_distance": 100.0,
         "omega_start": 0.0,
         "tip_offset_microns": 108.9,
-        "grid_width_microns": 290.6
+        "grid_width_microns": 290.6,
+        "oav_centring_file": "src/artemis/experiment_plans/tests/test_data/OAVCentring.json"
     }
 }
