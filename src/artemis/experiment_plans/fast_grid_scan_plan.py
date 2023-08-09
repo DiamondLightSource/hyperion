@@ -233,7 +233,7 @@ def run_gridscan_and_move(
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
-        yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre)
+        yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
 
 def get_plan(
