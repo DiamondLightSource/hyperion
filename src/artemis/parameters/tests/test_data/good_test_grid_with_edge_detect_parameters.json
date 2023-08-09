@@ -1,5 +1,5 @@
 {
-    "params_version": "2.1.0",
+    "params_version": "2.2.0",
     "artemis_params": {
         "beamline": "BL03S",
         "insertion_prefix": "SR03S",
@@ -41,6 +41,7 @@
         "snapshot_dir": "/tmp",
         "exposure_time": 0.1,
         "detector_distance": 100.0,
-        "omega_start": 0.0
+        "omega_start": 0.0,
+        "grid_width_microns": 151
     }
 }
