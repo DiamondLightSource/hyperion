@@ -46,10 +46,10 @@ def create_parameters_for_grid_detection(
 
 def pin_centre_then_xray_centre_plan(
     parameters: PinCentreThenXrayCentreInternalParameters,
+    oav_config_files=OAV_CONFIG_FILE_DEFAULTS,
 ):
     """Plan that perfoms a pin tip centre followed by an xray centre to completely
     centre the sample"""
-    oav_config_files = OAV_CONFIG_FILE_DEFAULTS
     oav_config_files["oav_config_json"] = parameters.experiment_params.oav_centring_file
 
     yield from pin_tip_centre_plan(

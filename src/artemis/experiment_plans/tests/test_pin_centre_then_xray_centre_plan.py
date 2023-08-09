@@ -54,9 +54,14 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
+    test_config_files,
 ):
     RE = RunEngine()
-    RE(pin_centre_then_xray_centre_plan(test_pin_centre_then_xray_centre_params))
+    RE(
+        pin_centre_then_xray_centre_plan(
+            test_pin_centre_then_xray_centre_params, test_config_files
+        )
+    )
 
     mock_detect_and_do_gridscan.assert_called_once()
     mock_pin_tip_centre.assert_called_once()
