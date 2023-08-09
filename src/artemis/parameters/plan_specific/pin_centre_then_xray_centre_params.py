@@ -31,10 +31,13 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
     detector_distance: float
     omega_start: float
 
-    tip_offset_microns: Optional[float] = 900
+    tip_offset_microns: Optional[float] = 0
     oav_centring_file: Optional[
         str
     ] = "/dls_sw/i03/software/gda/configurations/i03-config/etc/OAVCentring_hyperion.json"
+
+    # Width for single pin
+    grid_width_microns: Optional[float] = 600
 
     def get_num_images(self):
         return 0

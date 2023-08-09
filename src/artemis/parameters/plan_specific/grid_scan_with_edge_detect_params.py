@@ -32,7 +32,7 @@ class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
     omega_start: float
 
     # This is the correct grid size for single pin
-    grid_width_microns: Optional[float] = 161
+    grid_width_microns: Optional[float] = 600
 
     def get_num_images(self):
         return 0
