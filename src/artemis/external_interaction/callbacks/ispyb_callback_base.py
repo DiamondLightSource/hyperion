@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 from bluesky.callbacks import CallbackBase
 
@@ -24,7 +24,7 @@ class BaseISPyBHandlerCallback(CallbackBase):
                 "Using dev ISPyB database. If you want to use the real database, please"
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
-        self.uid_to_finalize_on = None
+        self.uid_to_finalize_on: Optional[str] = None
 
     def _append_to_comment(self, id: int, comment: str):
         assert isinstance(self.ispyb, StoreInIspyb)

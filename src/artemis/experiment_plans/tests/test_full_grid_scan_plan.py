@@ -31,7 +31,7 @@ def _fake_grid_detection(
     out_parameters,
     snapshot_template: str,
     snapshot_dir: str,
-    grid_width_px: int = 0,
+    grid_width_microns: float = 0,
     box_size_um: float = 0.0,
 ):
     out_parameters.x_start = 0

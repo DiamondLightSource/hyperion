@@ -67,6 +67,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
             out_parameters=gridscan_params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
+            grid_width_microns=161.2,
         )
     )
     assert fake_devices[3].save.call_count == 6
@@ -99,6 +100,7 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
                 out_parameters=gridscan_params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
+                grid_width_microns=161.2,
             )
         )
     assert "No pin found" in excinfo.value.args[0]
@@ -148,6 +150,7 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             box_size_microns=0.2,
+            grid_width_microns=161.2,
         )
     )
 
@@ -181,6 +184,7 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
                 out_parameters=gridscan_params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
+                grid_width_microns=161.2,
             )
         )
     assert len(cb.snapshot_filenames) == 2

@@ -406,17 +406,25 @@ def test_cleanup_happens(
     attenuator: Attenuator,
     mock_rotation_subscriptions: RotationCallbackCollection,
 ):
+    class MyTestException(Exception):
+        pass
+
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
     smargon.omega.set = MagicMock(
-        side_effect=Exception("Experiment fails because this is a test")
+        side_effect=MyTestException("Experiment fails because this is a test")
     )
 
     # check main subplan part fails
-    with pytest.raises(Exception):
+    with pytest.raises(MyTestException):
         RE(
             rotation_scan_plan(
-                test_rotation_params, smargon, zebra, backlight, detector_motion
+                test_rotation_params,
+                smargon,
+                zebra,
+                backlight,
+                attenuator,
+                detector_motion,
             )
         )
         cleanup_plan.assert_not_called()
@@ -433,7 +441,7 @@ def test_cleanup_happens(
             lambda _: mock_rotation_subscriptions,
         ),
     ):
-        with pytest.raises(Exception) as exc:
+        with pytest.raises(MyTestException) as exc:
             RE(
                 get_plan(
                     test_rotation_params,
@@ -509,3 +517,48 @@ def test_ispyb_deposition_in_plan(
     assert beamsize_x == test_bs_x
     assert beamsize_y == test_bs_y
     assert exposure == test_exp_time
+
+
+@patch(
+    "artemis.experiment_plans.rotation_scan_plan.move_to_start_w_buffer", autospec=True
+)
+def test_acceleration_offset_calculated_correctly(
+    mock_move_to_start: MagicMock,
+    RE: RunEngine,
+    test_rotation_params: RotationInternalParameters,
+    smargon: Smargon,
+    zebra: Zebra,
+    eiger: EigerDetector,
+    attenuator: Attenuator,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    mock_rotation_subscriptions: RotationCallbackCollection,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    undulator: Undulator,
+    flux: Flux,
+):
+    smargon.omega.acceleration.sim_put(0.2)
+    setup_and_run_rotation_plan_for_tests(
+        RE,
+        test_rotation_params,
+        smargon,
+        zebra,
+        eiger,
+        attenuator,
+        detector_motion,
+        backlight,
+        mock_rotation_subscriptions,
+        synchrotron,
+        s4_slit_gaps,
+        undulator,
+        flux,
+    )
+
+    expected_start_angle = (
+        test_rotation_params.artemis_params.detector_params.omega_start
+    )
+
+    mock_move_to_start.assert_called_once_with(
+        smargon.omega, expected_start_angle, pytest.approx(0.3)
+    )

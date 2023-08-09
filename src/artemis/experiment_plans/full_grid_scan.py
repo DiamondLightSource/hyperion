@@ -111,6 +111,7 @@ def detect_grid_and_do_gridscan(
             fgs_params,
             snapshot_template,
             snapshot_dir,
+            grid_width_microns=experiment_params.grid_width_microns,
         )
 
     yield from run_grid_detection_plan(

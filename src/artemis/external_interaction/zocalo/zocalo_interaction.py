@@ -22,10 +22,8 @@ class NoDiffractionFound(WarningException):
 
 
 class ZocaloInteractor:
-    zocalo_environment: str = "artemis"
-
     def __init__(self, environment: str = "artemis"):
-        self.zocalo_environment = environment
+        self.zocalo_environment: str = environment
 
     def _get_zocalo_connection(self):
         zc = zocalo.configuration.from_file()

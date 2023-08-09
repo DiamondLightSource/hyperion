@@ -58,6 +58,8 @@ class BlueskyRunner:
     current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
     last_run_aborted: bool = False
     aperture_change_callback = ApertureChangeCallback()
+    RE: RunEngine
+    skip_startup_connection: bool
 
     def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
         self.RE = RE
@@ -145,7 +147,7 @@ class BlueskyRunner:
 class RunExperiment(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
         super().__init__()
-        self.runner = runner
+        self.runner: BlueskyRunner = runner
 
     def put(self, plan_name: str, action: Actions):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
@@ -193,7 +195,7 @@ class RunExperiment(Resource):
 class StopOrStatus(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
         super().__init__()
-        self.runner = runner
+        self.runner: BlueskyRunner = runner
 
     def put(self, action):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
