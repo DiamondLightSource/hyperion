@@ -4,7 +4,7 @@ from typing import Callable
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 
 from artemis.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -12,9 +12,7 @@ from artemis.device_setup_plans.utils import (
 from artemis.experiment_plans.full_grid_scan import (
     create_devices as full_grid_create_devices,
 )
-from artemis.experiment_plans.full_grid_scan import (
-    get_plan as detect_grid_and_do_gridscan,
-)
+from artemis.experiment_plans.full_grid_scan import detect_grid_and_do_gridscan
 from artemis.experiment_plans.pin_tip_centring_plan import (
     create_devices as pin_tip_create_devices,
 )
@@ -58,7 +56,19 @@ def pin_centre_then_xray_centre_plan(
         parameters.experiment_params.tip_offset_microns, oav_config_files
     )
     grid_detect_params = create_parameters_for_grid_detection(parameters)
-    yield from detect_grid_and_do_gridscan(grid_detect_params, oav_config_files)
+
+    backlight = i03.backlight()
+    aperture_scattergaurd = i03.aperture_scatterguard()
+    detector_motion = i03.detector_motion()
+    oav_params = OAVParameters("xrayCentring", **oav_config_files)
+
+    yield from detect_grid_and_do_gridscan(
+        grid_detect_params,
+        backlight,
+        aperture_scattergaurd,
+        detector_motion,
+        oav_params,
+    )
 
 
 def get_plan(

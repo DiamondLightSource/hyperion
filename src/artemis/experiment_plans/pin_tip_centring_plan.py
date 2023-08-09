@@ -116,6 +116,10 @@ def pin_tip_centre_plan(
 
     LOGGER.info(f"Tip offset in pixels: {tip_offset_px}")
 
+    # need to wait for the OAV image to update
+    # See #673 for improvements
+    yield from bps.sleep(0.3)
+
     yield from pre_centring_setup_oav(oav, oav_params)
 
     tip = yield from move_pin_into_view(oav, smargon)
