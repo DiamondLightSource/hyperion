@@ -28,6 +28,8 @@ from dodal.devices.eiger import DetectorParams
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
 
 import artemis.log
+from artemis.device_setup_plans.manipulate_sample import move_x_y_z
+from artemis.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from artemis.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_fgs,
@@ -41,7 +43,7 @@ from artemis.parameters.beamline_parameters import (
     get_beamline_parameters,
     get_beamline_prefixes,
 )
-from artemis.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
+from artemis.parameters.constants import SIM_BEAMLINE
 from artemis.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -53,39 +55,27 @@ if TYPE_CHECKING:
 class FGSComposite:
     """A container for all the Devices required for a fast gridscan."""
 
-    aperture_scatterguard: ApertureScatterguard
-    backlight: Backlight
-    eiger: EigerDetector
-    fast_grid_scan: FastGridScan
-    flux: Flux
-    s4_slit_gaps: S4SlitGaps
-    sample_motors: Smargon
-    synchrotron: Synchrotron
-    undulator: Undulator
-    zebra: Zebra
-    attenuator: Attenuator
-
     def __init__(
         self,
         aperture_positions: AperturePositions = None,
         detector_params: DetectorParams = None,
         fake: bool = False,
     ):
-        self.aperture_scatterguard = i03.aperture_scatterguard(
+        self.aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard(
             fake_with_ophyd_sim=fake, aperture_positions=aperture_positions
         )
-        self.backlight = i03.backlight(fake_with_ophyd_sim=fake)
-        self.eiger = i03.eiger(
-            wait_for_connection=False, fake_with_ophyd_sim=fake, params=detector_params
+        self.backlight: Backlight = i03.backlight(fake_with_ophyd_sim=fake)
+        self.eiger: EigerDetector = i03.eiger(
+            fake_with_ophyd_sim=fake, params=detector_params
         )
-        self.fast_grid_scan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
-        self.flux = i03.flux(fake_with_ophyd_sim=fake)
-        self.s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
-        self.sample_motors = i03.smargon(fake_with_ophyd_sim=fake)
-        self.undulator = i03.undulator(fake_with_ophyd_sim=fake)
-        self.synchrotron = i03.synchrotron(fake_with_ophyd_sim=fake)
-        self.zebra = i03.zebra(fake_with_ophyd_sim=fake)
-        self.attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
+        self.fast_grid_scan: FastGridScan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
+        self.flux: Flux = i03.flux(fake_with_ophyd_sim=fake)
+        self.s4_slit_gaps: S4SlitGaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
+        self.sample_motors: Smargon = i03.smargon(fake_with_ophyd_sim=fake)
+        self.undulator: Synchrotron = i03.undulator(fake_with_ophyd_sim=fake)
+        self.synchrotron: Undulator = i03.synchrotron(fake_with_ophyd_sim=fake)
+        self.zebra: Zebra = i03.zebra(fake_with_ophyd_sim=fake)
+        self.attenuator: Attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
 
 
 fast_grid_scan_composite: FGSComposite | None = None
@@ -129,50 +119,6 @@ def set_aperture_for_bbox_size(
         yield from bps.abs_set(aperture_device, aperture_size_positions)
 
     yield from set_aperture()
-
-
-def read_hardware_for_ispyb(
-    undulator: Undulator,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    attenuator: Attenuator,
-    flux: Flux,
-):
-    artemis.log.LOGGER.info(
-        "Reading status of beamline parameters for ispyb deposition."
-    )
-    yield from bps.create(
-        name=ISPYB_PLAN_NAME
-    )  # gives name to event *descriptor* document
-    yield from bps.read(undulator.gap)
-    yield from bps.read(synchrotron.machine_status.synchrotron_mode)
-    yield from bps.read(s4_slit_gaps.xgap)
-    yield from bps.read(s4_slit_gaps.ygap)
-    yield from bps.read(attenuator.actual_transmission)
-    yield from bps.read(flux.flux_reading)
-    yield from bps.save()
-
-
-@bpp.set_run_key_decorator("move_xyz")
-@bpp.run_decorator(md={"subplan_name": "move_xyz"})
-def move_xyz(
-    sample_motors,
-    xray_centre_motor_position: np.ndarray,
-    md={
-        "plan_name": "move_xyz",
-    },
-):
-    """Move 'sample motors' to a specific motor position (e.g. a position obtained
-    from gridscan processing results)"""
-    artemis.log.LOGGER.info(f"Moving Smargon x, y, z to: {xray_centre_motor_position}")
-    yield from bps.mv(
-        sample_motors.x,
-        xray_centre_motor_position[0],
-        sample_motors.y,
-        xray_centre_motor_position[1],
-        sample_motors.z,
-        xray_centre_motor_position[2],
-    )
 
 
 def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
@@ -288,10 +234,7 @@ def run_gridscan_and_move(
     # once we have the results, go to the appropriate position
     artemis.log.LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
-        yield from move_xyz(
-            fgs_composite.sample_motors,
-            xray_centre,
-        )
+        yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
 
 def fast_grid_scan(

@@ -26,7 +26,7 @@ def test_rotation_params():
     params.experiment_params.z = 0
     params.artemis_params.detector_params.exposure_time = 0.004
     params.artemis_params.detector_params.current_energy_ev = 12700
-    params.artemis_params.ispyb_params.transmission = 0.49118047952
+    params.artemis_params.ispyb_params.transmission_fraction = 0.49118047952
     params.artemis_params.ispyb_params.wavelength = 0.9762535433
     return params
 
@@ -36,7 +36,7 @@ def test_fgs_params(request):
     params = FGSInternalParameters(**default_raw_params())
     params.artemis_params.ispyb_params.wavelength = 1.0
     params.artemis_params.ispyb_params.flux = 9.0
-    params.artemis_params.ispyb_params.transmission = 0.5
+    params.artemis_params.ispyb_params.transmission_fraction = 0.5
     params.artemis_params.detector_params.use_roi_mode = True
     params.artemis_params.detector_params.num_triggers = request.param
     params.artemis_params.detector_params.directory = (

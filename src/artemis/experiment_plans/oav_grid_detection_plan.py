@@ -9,12 +9,14 @@ import numpy as np
 from bluesky.preprocessors import finalize_wrapper
 from dodal.beamlines import i03
 from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
-from dodal.devices.oav.oav_detector import MXSC, OAV
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
-from artemis.device_setup_plans.setup_oav import pre_centring_setup_oav
-from artemis.exceptions import WarningException
+from artemis.device_setup_plans.setup_oav import (
+    get_move_required_so_that_beam_is_at_pixel,
+    pre_centring_setup_oav,
+    wait_for_tip_to_be_found,
+)
 from artemis.log import LOGGER
 
 if TYPE_CHECKING:
@@ -32,7 +34,7 @@ def grid_detection_plan(
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
-    width=600,
+    grid_width_microns: float,
     box_size_microns=20,
 ):
     yield from finalize_wrapper(
@@ -41,27 +43,11 @@ def grid_detection_plan(
             out_parameters,
             snapshot_template,
             snapshot_dir,
-            width,
+            grid_width_microns,
             box_size_microns,
         ),
         reset_oav(),
     )
-
-
-def wait_for_tip_to_be_found(mxsc: MXSC):
-    pin_tip = mxsc.pin_tip
-    yield from bps.trigger(pin_tip, wait=True)
-    found_tip = yield from bps.rd(pin_tip)
-    if found_tip == pin_tip.INVALID_POSITION:
-        top_edge = yield from bps.rd(mxsc.top)
-        bottom_edge = yield from bps.rd(mxsc.bottom)
-        LOGGER.info(
-            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
-        )
-        raise WarningException(
-            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
-        )
-    return found_tip
 
 
 @bpp.run_decorator()
@@ -70,7 +56,7 @@ def grid_detection_main_plan(
     out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
-    grid_width_px: int,
+    grid_width_microns: int,
     box_size_um: float,
 ):
     """
@@ -82,7 +68,7 @@ def grid_detection_main_plan(
         out_parameters (GridScanParams): The returned parameters for the gridscan
         snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
         snapshot_dir (str): The location to save snapshots
-        grid_width_px (int): The width of the grid to scan in pixels
+        grid_width_microns (int): The width of the grid to scan in microns
         box_size_um (float): The size of each box of the grid in microns
     """
     oav: OAV = i03.oav()
@@ -102,6 +88,8 @@ def grid_detection_main_plan(
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
+    grid_width_pixels = int(grid_width_microns / parameters.micronsPerXPixel)
+
     # The FGS uses -90 so we need to match it
     for angle in [0, -90]:
         yield from bps.mv(smargon.omega, angle)
@@ -119,8 +107,8 @@ def grid_detection_main_plan(
         full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
         # only use the area from the start of the pin onwards
-        top_edge = top_edge[tip_x_px : tip_x_px + grid_width_px]
-        bottom_edge = bottom_edge[tip_x_px : tip_x_px + grid_width_px]
+        top_edge = top_edge[tip_x_px : tip_x_px + grid_width_pixels]
+        bottom_edge = bottom_edge[tip_x_px : tip_x_px + grid_width_pixels]
 
         # the edge detection line can jump to the edge of the image sometimes, filter
         # those points out, and if empty after filter use the whole image
@@ -132,10 +120,10 @@ def grid_detection_main_plan(
         max_y = max(filtered_bottom)
         grid_height_px = max_y - min_y
 
-        LOGGER.info(f"Drawing snapshot {grid_width_px} by {grid_height_px}")
+        LOGGER.info(f"Drawing snapshot {grid_width_pixels} by {grid_height_px}")
 
         boxes = (
-            math.ceil(grid_width_px / box_size_x_pixels),
+            math.ceil(grid_width_pixels / box_size_x_pixels),
             math.ceil(grid_height_px / box_size_y_pixels),
         )
         box_numbers.append(boxes)
@@ -167,30 +155,11 @@ def grid_detection_main_plan(
             upper_left[0] + box_size_x_pixels / 2,
             upper_left[1] + box_size_y_pixels / 2,
         )
-        (
-            beam_distance_i_pixels,
-            beam_distance_j_pixels,
-        ) = parameters.calculate_beam_distance(*centre_of_first_box)
 
-        current_motor_xyz = np.array(
-            [
-                (yield from bps.rd(smargon.x)),
-                (yield from bps.rd(smargon.y)),
-                (yield from bps.rd(smargon.z)),
-            ],
-            dtype=np.float64,
+        position = yield from get_move_required_so_that_beam_is_at_pixel(
+            smargon, centre_of_first_box, parameters
         )
-
-        # Add the beam distance to the current motor position (adjusting for the changes in coordinate system
-        # and the from the angle).
-        start_position = current_motor_xyz + camera_coordinates_to_xyz(
-            beam_distance_i_pixels,
-            beam_distance_j_pixels,
-            angle,
-            parameters.micronsPerXPixel,
-            parameters.micronsPerYPixel,
-        )
-        start_positions.append(start_position)
+        start_positions.append(position)
 
     LOGGER.info(
         f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][2]}"

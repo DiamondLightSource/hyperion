@@ -5,6 +5,7 @@ from datetime import datetime
 
 from dodal.devices.detector import DetectorParams
 from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Goniometer
+from nexgen.nxs_utils.Axes import TransformationType
 
 from artemis.external_interaction.ispyb.ispyb_dataclass import IspybParams
 
@@ -29,11 +30,11 @@ def create_goniometer_axes(
                              is provided.
     """
     gonio_axes = [
-        Axis("omega", ".", "rotation", (-1.0, 0.0, 0.0), omega_start),
+        Axis("omega", ".", TransformationType.ROTATION, (-1.0, 0.0, 0.0), omega_start),
         Axis(
             name="sam_z",
             depends="omega",
-            transformation_type="translation",
+            transformation_type=TransformationType.TRANSLATION,
             vector=(0.0, 0.0, 1.0),
             start_pos=0.0,
             increment=x_y_z_increments[2],
@@ -41,7 +42,7 @@ def create_goniometer_axes(
         Axis(
             name="sam_y",
             depends="sam_z",
-            transformation_type="translation",
+            transformation_type=TransformationType.TRANSLATION,
             vector=(0.0, 1.0, 0.0),
             start_pos=0.0,
             increment=x_y_z_increments[1],
@@ -49,13 +50,15 @@ def create_goniometer_axes(
         Axis(
             name="sam_x",
             depends="sam_y",
-            transformation_type="translation",
+            transformation_type=TransformationType.TRANSLATION,
             vector=(1.0, 0.0, 0.0),
             start_pos=0.0,
             increment=x_y_z_increments[0],
         ),
-        Axis("chi", "sam_x", "rotation", (0.006, -0.0264, 0.9996), 0.0),
-        Axis("phi", "chi", "rotation", (-1, -0.0025, -0.0056), 0.0),
+        Axis(
+            "chi", "sam_x", TransformationType.ROTATION, (0.006, -0.0264, 0.9996), 0.0
+        ),
+        Axis("phi", "chi", TransformationType.ROTATION, (-1, -0.0025, -0.0056), 0.0),
     ]
     return Goniometer(gonio_axes, scan_points)
 
@@ -83,7 +86,7 @@ def create_detector_parameters(detector_params: DetectorParams) -> Detector:
         Axis(
             "det_z",
             ".",
-            "translation",
+            TransformationType.TRANSLATION,
             (0.0, 0.0, 1.0),
             detector_params.detector_distance,
         )
@@ -111,5 +114,5 @@ def create_beam_and_attenuator_parameters(
     """
     return (
         Beam(ispyb_params.wavelength, ispyb_params.flux),
-        Attenuator(ispyb_params.transmission),
+        Attenuator(ispyb_params.transmission_fraction),
     )

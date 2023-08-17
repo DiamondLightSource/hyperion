@@ -1,5 +1,5 @@
 import types
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -32,6 +32,7 @@ from artemis.external_interaction.callbacks.fgs.ispyb_callback import (
 from artemis.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from artemis.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
 from artemis.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
@@ -39,6 +40,7 @@ from artemis.external_interaction.system_tests.conftest import (
 )
 from artemis.log import set_up_logging_handlers
 from artemis.parameters import external_parameters
+from artemis.parameters.constants import ISPYB_PLAN_NAME
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
@@ -91,7 +93,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
 
     test_ispyb_callback = FGSISPyBHandlerCallback(test_fgs_params)
-    test_ispyb_callback.ispyb = MagicMock()
+    test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     RE.subscribe(test_ispyb_callback)
 
     def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
@@ -114,7 +116,10 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     assert params.artemis_params.ispyb_params.synchrotron_mode == synchrotron_test_value
     assert params.artemis_params.ispyb_params.slit_gap_size_x == xgap_test_value
     assert params.artemis_params.ispyb_params.slit_gap_size_y == ygap_test_value
-    assert params.artemis_params.ispyb_params.transmission == transmission_test_value
+    assert (
+        params.artemis_params.ispyb_params.transmission_fraction
+        == transmission_test_value
+    )
     assert params.artemis_params.ispyb_params.flux == flux_test_value
 
 
@@ -122,9 +127,9 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
 def test_results_adjusted_and_passed_to_move_xyz(
-    move_xyz: MagicMock,
+    move_x_y_z: MagicMock,
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
@@ -134,6 +139,22 @@ def test_results_adjusted_and_passed_to_move_xyz(
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
+
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+                "attenuator_actual_transmission": 0,
+            },
+        }
+    )
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
         TEST_RESULT_LARGE
@@ -166,35 +187,62 @@ def test_results_adjusted_and_passed_to_move_xyz(
         )
     )
 
-    call_large = call(
+    ap_call_large = call(
         *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
     )
-    call_medium = call(
+    ap_call_medium = call(
         *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
     )
 
     move_aperture.assert_has_calls(
-        [call_large, call_large, call_medium], any_order=True
+        [ap_call_large, ap_call_large, ap_call_medium], any_order=True
+    )
+
+    mv_call_large = call(
+        fake_fgs_composite.sample_motors, 0.05, pytest.approx(0.15), 0.25, wait=True
+    )
+    mv_call_medium = call(
+        fake_fgs_composite.sample_motors, 0.05, pytest.approx(0.15), 0.25, wait=True
+    )
+    move_x_y_z.assert_has_calls(
+        [mv_call_large, mv_call_large, mv_call_medium], any_order=True
     )
 
 
-@patch("bluesky.plan_stubs.mv", autospec=True)
+@patch("bluesky.plan_stubs.abs_set", autospec=True)
 def test_results_passed_to_move_motors(
-    bps_mv: MagicMock,
+    bps_abs_set: MagicMock,
     test_fgs_params: FGSInternalParameters,
     fake_fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
-    from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
+    from artemis.device_setup_plans.manipulate_sample import move_x_y_z
 
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
     motor_position = test_fgs_params.experiment_params.grid_position_to_motor_position(
         np.array([1, 2, 3])
     )
-    RE(move_xyz(fake_fgs_composite.sample_motors, motor_position))
-    bps_mv.assert_called_once_with(
-        ANY, motor_position[0], ANY, motor_position[1], ANY, motor_position[2]
+    RE(move_x_y_z(fake_fgs_composite.sample_motors, *motor_position))
+    bps_abs_set.assert_has_calls(
+        [
+            call(
+                fake_fgs_composite.sample_motors.x,
+                motor_position[0],
+                group="move_x_y_z",
+            ),
+            call(
+                fake_fgs_composite.sample_motors.y,
+                motor_position[1],
+                group="move_x_y_z",
+            ),
+            call(
+                fake_fgs_composite.sample_motors.z,
+                motor_position[2],
+                group="move_x_y_z",
+            ),
+        ],
+        any_order=True,
     )
 
 
@@ -202,7 +250,7 @@ def test_results_passed_to_move_motors(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     rd: MagicMock,
@@ -214,6 +262,21 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     test_fgs_params: FGSInternalParameters,
     RE: RunEngine,
 ):
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+                "attenuator_actual_transmission": 0,
+            },
+        }
+    )
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -226,7 +289,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_fgs_params)
-    array_arg = move_xyz.call_args.args[1]
+    array_arg = move_xyz.call_args.args[1:4]
     np.testing.assert_allclose(array_arg, np.array([0.05, 0.15, 0.25]))
     move_xyz.assert_called_once()
 
@@ -236,7 +299,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     autospec=True,
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_logging_within_plan(
     rd: MagicMock,
@@ -248,6 +311,21 @@ def test_logging_within_plan(
     test_fgs_params: FGSInternalParameters,
     RE: RunEngine,
 ):
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+                "attenuator_actual_transmission": 0,
+            },
+        }
+    )
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -260,7 +338,7 @@ def test_logging_within_plan(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_fgs_params)
-    array_arg = move_xyz.call_args.args[1]
+    array_arg = move_xyz.call_args.args[1:4]
     np.testing.assert_array_almost_equal(array_arg, np.array([0.05, 0.15, 0.25]))
     move_xyz.assert_called_once()
 

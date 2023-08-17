@@ -117,12 +117,10 @@ class FGSZocaloCallback(CallbackBase):
             self.ispyb.append_to_comment(crystal_summary)
 
             raw_centre = np.array([*(raw_results[0]["centre_of_mass"])])
+            adjusted_centre = raw_centre - np.array([0.5, 0.5, 0.5])
 
             # _wait_for_result returns the centre of the grid box, but we want the corner
-            results = np.array(
-                [raw_centre[0] - 0.5, raw_centre[1] - 0.5, raw_centre[2] - 0.5]
-            )
-            xray_centre = self.grid_position_to_motor_position(results)
+            xray_centre = self.grid_position_to_motor_position(adjusted_centre)
 
             bbox_size: list[int] | None = bboxes[0]
 

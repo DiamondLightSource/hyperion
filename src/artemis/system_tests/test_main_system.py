@@ -339,7 +339,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     smargon.return_value.wait_for_connection.assert_called()
     s4_slits.return_value.wait_for_connection.assert_called()
     fast_grid_scan.return_value.wait_for_connection.assert_called()
-    eiger.return_value.wait_for_connection.assert_not_called()  # can't wait on eiger
+    eiger.return_value.wait_for_connection.assert_called()
     backlight.return_value.wait_for_connection.assert_called()
     aperture_scatterguard.return_value.wait_for_connection.assert_called()
     oav.return_value.wait_for_connection.assert_called()
@@ -380,7 +380,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(MagicMock(), MagicMock(), "fast_grid_scan")
+        runner.start(None, None, "fast_grid_scan")
         mock_setup.assert_called_once()
 
 

@@ -3,7 +3,7 @@
     "type": "object",
     "properties": {
         "params_version": {
-            "const": "2.0.0"
+            "const": "2.2.0"
         },
         "artemis_params": {
             "type": "object",

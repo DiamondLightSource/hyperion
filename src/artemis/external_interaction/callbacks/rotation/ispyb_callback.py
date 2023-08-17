@@ -3,17 +3,12 @@ from __future__ import annotations
 from artemis.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBHandlerCallback,
 )
-from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
-from artemis.external_interaction.ispyb.store_in_ispyb import (
-    Store2DGridscanInIspyb,
-    Store3DGridscanInIspyb,
-    StoreGridscanInIspyb,
-)
+from artemis.external_interaction.ispyb.store_in_ispyb import StoreRotationInIspyb
 from artemis.log import set_dcgid_tag
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
 
 
-class FGSISPyBHandlerCallback(BaseISPyBHandlerCallback):
+class RotationISPyBHandlerCallback(BaseISPyBHandlerCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
     recieving an 'event' document for the 'ispyb_readings' event, and updates the
@@ -21,34 +16,29 @@ class FGSISPyBHandlerCallback(BaseISPyBHandlerCallback):
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
-        ispyb_handler_callback = FGSISPyBHandlerCallback(parameters)
+        ispyb_handler_callback = RotationISPyBHandlerCallback(parameters)
         RE.subscribe(ispyb_handler_callback)
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
 
-    Usually used as part of an FGSCallbackCollection.
+    Usually used as part of a RotationCallbackCollection.
     """
 
     def __init__(self, parameters: FGSInternalParameters):
         super().__init__(parameters)
-        self.ispyb: StoreGridscanInIspyb = (
-            Store3DGridscanInIspyb(self.ispyb_config, self.params)
-            if self.params.experiment_params.is_3d_grid_scan
-            else Store2DGridscanInIspyb(self.ispyb_config, self.params)
+        self.ispyb: StoreRotationInIspyb = StoreRotationInIspyb(
+            self.ispyb_config, self.params
         )
-        self.ispyb_ids: tuple = (None, None, None)
+        self.ispyb_ids: tuple[int, int] | tuple[None, None] = (None, None)
 
     def append_to_comment(self, comment: str):
-        for id in self.ispyb_ids[0]:
-            self._append_to_comment(id, comment)
+        self._append_to_comment(self.ispyb_ids[0], comment)
 
     def event(self, doc: dict):
         super().event(doc)
-        set_dcgid_tag(self.ispyb_ids[2])
+        set_dcgid_tag(self.ispyb_ids[1])
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
-            if self.ispyb_ids == (None, None, None):
-                raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             super().stop(doc)

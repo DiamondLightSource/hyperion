@@ -32,7 +32,7 @@ def _fake_grid_detection(
     out_parameters,
     snapshot_template: str,
     snapshot_dir: str,
-    grid_width_px: int = 0,
+    grid_width_microns: float = 0,
     box_size_um: float = 0.0,
 ):
     out_parameters.x_start = 0
@@ -295,5 +295,5 @@ def test_when_start_arming_then_transmission_set(
 
     # Check transmission set
     attenuator.set.assert_called_once_with(
-        test_full_grid_scan_params.artemis_params.ispyb_params.transmission
+        test_full_grid_scan_params.artemis_params.ispyb_params.transmission_fraction
     )
