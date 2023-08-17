@@ -13,7 +13,7 @@ def start_preparing_data_collection_then_do_plan(
     transmission_fraction: float,
     plan_to_run: Generator[Msg, None, None],
     group="ready_for_data_collection",
-):
+) -> Generator[Msg, None, None]:
     """Starts preparing for the next data collection by arming the eiger and setting the
     transmission. Then runs the given plan. If the plan fails it will stop disarm the eiger.
     """
