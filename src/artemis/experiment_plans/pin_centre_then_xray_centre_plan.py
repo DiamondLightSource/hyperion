@@ -1,6 +1,7 @@
 import json
-from typing import Callable
+from typing import Generator
 
+from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.eiger import EigerDetector
@@ -73,7 +74,7 @@ def pin_centre_then_xray_centre_plan(
 
 def get_plan(
     parameters: PinCentreThenXrayCentreInternalParameters,
-) -> Callable:
+) -> Generator[Msg, None, None]:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
 
     eiger: EigerDetector = i03.eiger()

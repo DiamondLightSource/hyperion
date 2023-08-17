@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from dodal.devices.detector import TriggerMode
@@ -32,7 +32,7 @@ class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
     omega_start: float
 
     # This is the correct grid size for single pin
-    grid_width_microns: Optional[float] = 600
+    grid_width_microns: float = 600
 
     def get_num_images(self):
         return 0
@@ -83,7 +83,7 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
         all_params["num_triggers"] = all_params["num_images"]
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
-        all_params["upper_left"] = np.array([0, 0, 0])
+        all_params["upper_left"] = np.zeros(3, dtype=np.int32)
         return GridscanArtemisParameters(
             **extract_artemis_params_from_flat_dict(
                 all_params, cls._artemis_param_key_definitions()
@@ -91,7 +91,7 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
         )
 
     def get_data_shape(self):
-        raise Exception("Data shape does not apply to this type of experiment!")
+        raise TypeError("Data shape does not apply to this type of experiment!")
 
-    def get_scan_points(cls):
-        raise Exception("Scan points do not apply to this type of experiment!")
+    def get_scan_points(self):
+        raise TypeError("Scan points do not apply to this type of experiment!")

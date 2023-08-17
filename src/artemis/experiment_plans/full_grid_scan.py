@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Generator
 
 import numpy as np
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
+from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
@@ -154,7 +155,7 @@ def detect_grid_and_do_gridscan(
 def get_plan(
     parameters: GridScanWithEdgeDetectInternalParameters,
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
-) -> Callable:
+) -> Generator[Msg, None, None]:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
@@ -169,11 +170,13 @@ def get_plan(
 
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
 
+    plan_to_perform = detect_grid_and_do_gridscan(
+        parameters, backlight, aperture_scatterguard, detector_motion, oav_params
+    )
+
     return start_preparing_data_collection_then_do_plan(
         eiger,
         attenuator,
         parameters.artemis_params.ispyb_params.transmission_fraction,
-        detect_grid_and_do_gridscan(
-            parameters, backlight, aperture_scatterguard, detector_motion, oav_params
-        ),
+        plan_to_perform,
     )
