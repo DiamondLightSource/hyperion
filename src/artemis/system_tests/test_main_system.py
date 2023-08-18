@@ -468,4 +468,7 @@ def test_warn_exception_during_plan_causes_warning_in_log(
 def test_when_context_created_then_contains_expected_number_of_plans():
     context = setup_context()
 
-    assert len(context.plan_functions) == 3
+    plan_names = context.plans.keys()
+
+    assert "rotation_scan" in plan_names
+    assert "fast_grid_scan" in plan_names

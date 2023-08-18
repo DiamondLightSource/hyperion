@@ -7,11 +7,12 @@ from traceback import format_exception
 from typing import Callable, Optional, Tuple
 
 from blueapi.core import BlueskyContext
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine
 from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
+import artemis.experiment_plans as artemis_plans
 import artemis.log
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
@@ -194,9 +195,6 @@ class RunExperiment(Resource):
 
 def setup_context() -> BlueskyContext:
     context = BlueskyContext()
-
-    import artemis.experiment_plans as artemis_plans
-
     context.with_plan_module(artemis_plans)
     return context
 
