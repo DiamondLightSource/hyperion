@@ -455,9 +455,6 @@ def test_cleanup_happens(
                 test_rotation_params,
                 smargon,
                 zebra,
-                backlight,
-                attenuator,
-                detector_motion,
             )
         )
         cleanup_plan.assert_not_called()
