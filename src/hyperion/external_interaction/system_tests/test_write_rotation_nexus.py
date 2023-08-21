@@ -61,7 +61,7 @@ def fake_rotation_scan(
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloCallback",
+    "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
     autospec=True,
 )
 def test_rotation_scan_nexus_output_compared_to_existing_file(

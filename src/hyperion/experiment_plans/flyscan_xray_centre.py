@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     )
 
 
-class FGSComposite:
+class GridscanComposite:
     """A container for all the Devices required for a fast gridscan."""
 
     def __init__(
@@ -78,7 +78,7 @@ class FGSComposite:
         self.attenuator: Attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
 
 
-flyscan_xray_centre_composite: FGSComposite | None = None
+flyscan_xray_centre_composite: GridscanComposite | None = None
 
 
 def create_devices():
@@ -92,7 +92,9 @@ def create_devices():
         get_beamline_parameters()
     )
     hyperion.log.LOGGER.info("Connecting to EPICS devices...")
-    flyscan_xray_centre_composite = FGSComposite(aperture_positions=aperture_positions)
+    flyscan_xray_centre_composite = GridscanComposite(
+        aperture_positions=aperture_positions
+    )
     hyperion.log.LOGGER.info("Connected.")
 
 
@@ -137,7 +139,7 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
     raise WarningException("Scan invalid - pin too long/short/bent and out of range")
 
 
-def tidy_up_plans(fgs_composite: FGSComposite):
+def tidy_up_plans(fgs_composite: GridscanComposite):
     hyperion.log.LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
@@ -145,7 +147,7 @@ def tidy_up_plans(fgs_composite: FGSComposite):
 @bpp.set_run_key_decorator("run_gridscan")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
-    fgs_composite: FGSComposite,
+    fgs_composite: GridscanComposite,
     parameters: GridscanInternalParameters,
     md={
         "plan_name": "run_gridscan",
@@ -199,7 +201,7 @@ def run_gridscan(
 @bpp.set_run_key_decorator("run_gridscan_and_move")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
-    fgs_composite: FGSComposite,
+    fgs_composite: GridscanComposite,
     parameters: GridscanInternalParameters,
     subscriptions: XrayCentreCallbackCollection,
 ):

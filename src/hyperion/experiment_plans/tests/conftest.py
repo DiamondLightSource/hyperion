@@ -25,7 +25,7 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-from src.hyperion.experiment_plans.flyscan_xray_centre import FGSComposite
+from src.hyperion.experiment_plans.flyscan_xray_centre import GridscanComposite
 from src.hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
@@ -237,7 +237,7 @@ def fake_create_rotation_devices(
 
 @pytest.fixture
 def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
-    fake_composite = FGSComposite(
+    fake_composite = GridscanComposite(
         aperture_positions=AperturePositions(
             LARGE=(1, 2, 3, 4, 5),
             MEDIUM=(2, 3, 3, 5, 6),
@@ -283,13 +283,13 @@ def mock_subscriptions(test_fgs_params):
 @pytest.fixture
 def mock_rotation_subscriptions(test_rotation_params):
     with patch(
-        "hyperion.external_interaction.callbacks.rotation.rotation_callback_collection.RotationNexusFileCallback",
+        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationNexusFileCallback",
         autospec=True,
     ), patch(
-        "hyperion.external_interaction.callbacks.rotation.rotation_callback_collection.RotationISPyBCallback",
+        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationISPyBCallback",
         autospec=True,
     ), patch(
-        "hyperion.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloCallback",
+        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
         autospec=True,
     ):
         subscriptions = RotationCallbackCollection.from_params(test_rotation_params)

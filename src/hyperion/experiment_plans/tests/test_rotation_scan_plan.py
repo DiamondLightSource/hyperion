@@ -78,7 +78,7 @@ def do_rotation_main_plan_for_tests(
             fake_read,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            "hyperion.experiment_plans.rotation_scan.RotationCallbackCollection.from_params",
             lambda _: callbacks,
         ),
         patch("dodal.beamlines.i03.undulator", lambda: sim_und),
@@ -114,11 +114,11 @@ def run_full_rotation_plan(
             fake_read,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.create_devices",
+            "hyperion.experiment_plans.rotation_scan.create_devices",
             lambda: fake_create_rotation_devices,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            "hyperion.experiment_plans.rotation_scan.RotationCallbackCollection.from_params",
             lambda _: mock_rotation_subscriptions,
         ),
         patch("dodal.beamlines.i03.undulator", lambda: undulator),
@@ -320,7 +320,7 @@ def test_move_to_end(smargon: Smargon, RE):
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
-@patch("hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan", autospec=True)
+@patch("hyperion.experiment_plans.rotation_scan.rotation_scan_plan", autospec=True)
 def test_rotation_scan(
     plan: MagicMock,
     RE,
@@ -343,11 +343,11 @@ def test_rotation_scan(
         patch("dodal.beamlines.i03.attenuator", return_value=attenuator),
         patch("dodal.beamlines.i03.backlight", return_value=backlight),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.DetectorMotion",
+            "hyperion.experiment_plans.rotation_scan.DetectorMotion",
             return_value=detector_motion,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            "hyperion.experiment_plans.rotation_scan.RotationCallbackCollection.from_params",
             lambda _: mock_rotation_subscriptions,
         ),
     ):
@@ -424,7 +424,7 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     smargon.z.set.assert_not_called()
 
 
-@patch("hyperion.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)
+@patch("hyperion.experiment_plans.rotation_scan.cleanup_plan", autospec=True)
 @patch("bluesky.plan_stubs.wait", autospec=True)
 def test_cleanup_happens(
     bps_wait: MagicMock,
@@ -457,7 +457,7 @@ def test_cleanup_happens(
                 zebra,
             )
         )
-        cleanup_plan.assert_not_called()
+        cleanup.assert_not_called()
     # check that failure is handled in composite plan
     with (
         patch("dodal.beamlines.i03.smargon", return_value=smargon),
@@ -467,7 +467,7 @@ def test_cleanup_happens(
         patch("dodal.beamlines.i03.detector_motion", return_value=detector_motion),
         patch("dodal.beamlines.i03.attenuator", return_value=attenuator),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            "hyperion.experiment_plans.rotation_scan.RotationCallbackCollection.from_params",
             lambda _: mock_rotation_subscriptions,
         ),
     ):
@@ -478,14 +478,14 @@ def test_cleanup_happens(
                 )
             )
         assert "Experiment fails because this is a test" in exc.value.args[0]
-        cleanup_plan.assert_called_once()
+        cleanup.assert_called_once()
 
 
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait")
 @patch("hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter")
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloCallback"
+    "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback"
 )
 def test_ispyb_deposition_in_plan(
     bps_wait,
@@ -518,7 +518,7 @@ def test_ispyb_deposition_in_plan(
 
     with (
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.create_devices",
+            "hyperion.experiment_plans.rotation_scan.create_devices",
             lambda: fake_create_rotation_devices,
         ),
         patch("dodal.beamlines.i03.undulator", return_value=undulator),
@@ -531,7 +531,7 @@ def test_ispyb_deposition_in_plan(
             fake_read,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
+            "hyperion.experiment_plans.rotation_scan.RotationCallbackCollection.from_params",
             lambda _: callbacks,
         ),
     ):
@@ -555,9 +555,7 @@ def test_ispyb_deposition_in_plan(
     assert exposure == test_exp_time
 
 
-@patch(
-    "hyperion.experiment_plans.rotation_scan_plan.move_to_start_w_buffer", autospec=True
-)
+@patch("hyperion.experiment_plans.rotation_scan.move_to_start_w_buffer", autospec=True)
 def test_acceleration_offset_calculated_correctly(
     mock_move_to_start: MagicMock,
     RE: RunEngine,

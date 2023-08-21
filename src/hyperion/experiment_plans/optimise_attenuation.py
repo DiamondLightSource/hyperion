@@ -290,8 +290,8 @@ def total_counts_optimisation(
     upper_count_limit: float,
     target_count: float,
     max_cycles: int,
-    upper_transmission_limit: int,
-    lower_transmission_limit: int,
+    upper_transmission_limit: float,
+    lower_transmission_limit: float,
 ):
     """Optimises the attenuation for the Xspress3Mini based on the total counts
 
@@ -326,10 +326,10 @@ def total_counts_optimisation(
         max_cycles: (int)
         The maximum number of iterations before an error is thrown
 
-        upper_transmission_limit: (int)
+        upper_transmission_limit: (float)
         The maximum allowed value for the transmission
 
-        lower_transmission_limit: (int)
+        lower_transmission_limit: (float)
         The minimum allowed value for the transmission
 
     Returns:

@@ -22,8 +22,8 @@ if TYPE_CHECKING:
 
 @pytest.fixture()
 def devices():
-    with patch("hyperion.experiment_plans.rotation_scan_plan.i03.backlight"), patch(
-        "hyperion.experiment_plans.rotation_scan_plan.i03.detector_motion"
+    with patch("hyperion.experiment_plans.rotation_scan.i03.backlight"), patch(
+        "hyperion.experiment_plans.rotation_scan.i03.detector_motion"
     ):
         return create_devices()
 

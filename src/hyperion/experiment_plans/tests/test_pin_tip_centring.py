@@ -100,7 +100,7 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
 
 
-@patch("hyperion.experiment_plans.pin_tip_centring_plan.i03", autospec=True)
+@patch("hyperion.experiment_plans.pin_tip_centring.i03", autospec=True)
 def test_when_create_devices_called_then_devices_created(mock_i03):
     create_devices()
     mock_i03.oav.assert_called_once()
@@ -114,25 +114,25 @@ def return_pixel(pixel, *args):
 
 
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
+    "hyperion.experiment_plans.pin_tip_centring.wait_for_tip_to_be_found",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
+    "hyperion.experiment_plans.pin_tip_centring.get_move_required_so_that_beam_is_at_pixel",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
+    "hyperion.experiment_plans.pin_tip_centring.move_pin_into_view",
     new=partial(return_pixel, (100, 100)),
 )
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
+    "hyperion.experiment_plans.pin_tip_centring.pre_centring_setup_oav",
     autospec=True,
 )
-@patch("hyperion.experiment_plans.pin_tip_centring_plan.i03", autospec=True)
-@patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", autospec=True)
+@patch("hyperion.experiment_plans.pin_tip_centring.i03", autospec=True)
+@patch("hyperion.experiment_plans.pin_tip_centring.bps.sleep", autospec=True)
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
+    "hyperion.experiment_plans.pin_tip_centring.move_smargon_warn_on_out_of_range",
     autospec=True,
 )
 def test_when_pin_tip_centre_plan_called_then_expected_plans_called(

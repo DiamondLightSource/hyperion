@@ -61,7 +61,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     RE: RunEngine, params: RotationInternalParameters
 ):
     with patch(
-        "hyperion.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloCallback",
+        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
         autospec=True,
     ):
         cb = RotationCallbackCollection.from_params(params)
@@ -88,7 +88,7 @@ def test_nexus_handler_only_writes_once(
     nexus_writer, RE: RunEngine, params: RotationInternalParameters
 ):
     with patch(
-        "hyperion.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloCallback",
+        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
         autospec=True,
     ):
         cb = RotationCallbackCollection.from_params(params)
@@ -110,7 +110,7 @@ def test_nexus_handler_triggers_write_file_when_told(
         os.remove("/tmp/file_name_0_master.h5")
 
     with patch(
-        "hyperion.external_interaction.callbacks.rotation.rotation_callback_collection.RotationZocaloCallback",
+        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
         autospec=True,
     ):
         cb = RotationCallbackCollection.from_params(params)

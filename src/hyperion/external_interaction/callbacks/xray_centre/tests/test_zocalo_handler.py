@@ -78,7 +78,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
     autospec=True,
 )
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
@@ -119,7 +119,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
     autospec=True,
 )
 def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
@@ -143,7 +143,7 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
     autospec=True,
 )
 def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception(
@@ -158,7 +158,7 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.fgs.ispyb_callback.Store3DGridscanInIspyb",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
     autospec=True,
 )
 def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_bbox_from_first(

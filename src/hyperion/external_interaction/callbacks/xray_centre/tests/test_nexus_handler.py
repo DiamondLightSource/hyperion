@@ -69,7 +69,7 @@ def test_writers_dont_create_on_init_but_do_on_ispyb_event(
     mock_writer = MagicMock()
 
     with patch(
-        "hyperion.external_interaction.callbacks.fgs.nexus_callback.NexusWriter",
+        "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter",
         mock_writer,
     ):
         nexus_handler.descriptor({"name": ISPYB_PLAN_NAME})
@@ -98,7 +98,7 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
         }
     )
     with patch(
-        "hyperion.external_interaction.callbacks.fgs.nexus_callback.NexusWriter"
+        "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
     ):
         nexus_handler.descriptor(
             {
