@@ -15,8 +15,19 @@ from ophyd.sim import make_fake_device
 from ophyd.status import Status
 
 from hyperion.exceptions import WarningException
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    GridscanComposite,
+    flyscan_xray_centre,
+    read_hardware_for_ispyb,
+    run_gridscan,
+    run_gridscan_and_move,
+    wait_for_gridscan_valid,
+)
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
+)
+from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
+    XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -30,18 +41,7 @@ from hyperion.external_interaction.system_tests.conftest import (
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import ISPYB_PLAN_NAME
-from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    GridscanComposite,
-    flyscan_xray_centre,
-    read_hardware_for_ispyb,
-    run_gridscan,
-    run_gridscan_and_move,
-    wait_for_gridscan_valid,
-)
-from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
-)
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

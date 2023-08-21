@@ -7,7 +7,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
 )
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

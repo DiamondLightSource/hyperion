@@ -17,16 +17,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
-from hyperion.experiment_plans.tests.conftest import fake_read
-from hyperion.external_interaction.system_tests.conftest import (  # noqa
-    fetch_comment,
-    fetch_datacollection_attribute,
-)
-from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
-from src.hyperion.experiment_plans.rotation_scan_plan import (
+from hyperion.experiment_plans.rotation_scan_plan import (
     DEFAULT_DIRECTION,
     DEFAULT_MAX_VELOCITY,
     move_to_end_w_buffer,
@@ -34,8 +25,17 @@ from src.hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
     rotation_scan_plan,
 )
-from src.hyperion.external_interaction.callbacks.rotation.callback_collection import (
+from hyperion.experiment_plans.tests.conftest import fake_read
+from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
+)
+from hyperion.external_interaction.system_tests.conftest import (  # noqa
+    fetch_comment,
+    fetch_datacollection_attribute,
+)
+from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
 )
 
 if TYPE_CHECKING:
@@ -457,7 +457,7 @@ def test_cleanup_happens(
                 zebra,
             )
         )
-        cleanup.assert_not_called()
+        cleanup_plan.assert_not_called()
     # check that failure is handled in composite plan
     with (
         patch("dodal.beamlines.i03.smargon", return_value=smargon),
@@ -478,7 +478,7 @@ def test_cleanup_happens(
                 )
             )
         assert "Experiment fails because this is a test" in exc.value.args[0]
-        cleanup.assert_called_once()
+        cleanup_plan.assert_called_once()
 
 
 @pytest.mark.s03

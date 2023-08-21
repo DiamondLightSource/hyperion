@@ -10,7 +10,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     StoreGridscanInIspyb,
 )
 from hyperion.log import set_dcgid_tag
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

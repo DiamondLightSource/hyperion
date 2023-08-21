@@ -9,6 +9,16 @@ from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParame
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
+from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    create_devices as full_grid_create_devices,
+)
+from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    detect_grid_and_do_gridscan,
+)
+from hyperion.experiment_plans.pin_tip_centring_plan import (
+    create_devices as pin_tip_create_devices,
+)
+from hyperion.experiment_plans.pin_tip_centring_plan import pin_tip_centre_plan
 from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
@@ -16,16 +26,6 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
-from src.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    create_devices as full_grid_create_devices,
-)
-from src.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    detect_grid_and_do_gridscan,
-)
-from src.hyperion.experiment_plans.pin_tip_centring_plan import (
-    create_devices as pin_tip_create_devices,
-)
-from src.hyperion.experiment_plans.pin_tip_centring_plan import pin_tip_centre_plan
 
 
 def create_devices():

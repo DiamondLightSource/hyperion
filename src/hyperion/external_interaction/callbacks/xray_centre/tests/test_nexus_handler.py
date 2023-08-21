@@ -7,7 +7,7 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
 )
 from hyperion.parameters.constants import ISPYB_PLAN_NAME
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

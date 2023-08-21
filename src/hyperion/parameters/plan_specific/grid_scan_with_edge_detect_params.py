@@ -15,7 +15,7 @@ from hyperion.parameters.internal_parameters import (
     extract_experiment_params_from_flat_dict,
     extract_hyperion_params_from_flat_dict,
 )
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
 )
 

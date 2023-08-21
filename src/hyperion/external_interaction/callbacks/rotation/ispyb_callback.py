@@ -5,7 +5,7 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
 )
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreRotationInIspyb
 from hyperion.log import set_dcgid_tag
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

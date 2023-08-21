@@ -35,6 +35,9 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
 )
 from hyperion.exceptions import WarningException
+from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
+    XrayCentreCallbackCollection,
+)
 from hyperion.parameters import external_parameters
 from hyperion.parameters.beamline_parameters import (
     get_beamline_parameters,
@@ -42,12 +45,9 @@ from hyperion.parameters.beamline_parameters import (
 )
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.tracing import TRACER
-from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
-)
 
 if TYPE_CHECKING:
-    from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+    from hyperion.parameters.plan_specific.gridscan_internal_params import (
         GridscanInternalParameters,
     )
 
@@ -290,7 +290,7 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
-    from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+    from hyperion.parameters.plan_specific.gridscan_internal_params import (
         GridscanInternalParameters,
     )
 

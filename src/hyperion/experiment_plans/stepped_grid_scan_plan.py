@@ -4,8 +4,8 @@ import argparse
 from typing import TYPE_CHECKING, Callable
 
 import bluesky.plan_stubs as bps
+import bluesky.plans as bluesky_plans
 from bluesky import RunEngine
-from bluesky.plans import grid_scan
 from bluesky.utils import ProgressBarManager
 from dodal.beamlines import i03
 from dodal.beamlines.i03 import Smargon
@@ -20,9 +20,6 @@ from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.tracing import TRACER
 
 if TYPE_CHECKING:
-    from hyperion.external_interaction.callbacks.stepped_grid_scan.stepped_grid_scan_callback_collection import (
-        SteppedGridScanCallbackCollection,
-    )
     from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
         SteppedGridScanInternalParameters,
     )
@@ -75,7 +72,7 @@ def run_gridscan(
         LOGGER.info("About to yield from grid_scan")
         detectors = []
         grid_args = [sample_motors.x, 0, 40, 5, sample_motors.y, 0, 40, 5]
-        yield from grid_scan(
+        yield from bluesky_plans.grid_scan(
             detectors, *grid_args, snake_axes=True, per_step=do_at_each_step, md={}
         )
 
@@ -83,10 +80,7 @@ def run_gridscan(
         yield from do_stepped_grid_scan()
 
 
-def get_plan(
-    parameters: SteppedGridScanInternalParameters,
-    subscriptions: SteppedGridScanCallbackCollection,
-) -> Callable:
+def get_plan(parameters: SteppedGridScanInternalParameters) -> Callable:
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
@@ -98,7 +92,7 @@ def get_plan(
 
     assert stepped_grid_scan_composite is not None
 
-    return run_gridscan(parameters, subscriptions)
+    return run_gridscan(parameters)
 
 
 def take_reading(dets, name="primary"):
@@ -133,8 +127,7 @@ if __name__ == "__main__":
     )
 
     parameters = SteppedGridScanInternalParameters(external_parameters.from_file())
-    subscriptions = SteppedGridScanCallbackCollection.from_params(parameters)
 
     create_devices()
 
-    RE(get_plan(parameters, subscriptions))
+    RE(get_plan(parameters))

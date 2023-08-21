@@ -4,8 +4,13 @@ from typing import Callable, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 
-import src.hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
-import src.hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
+import hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
+import hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
+from hyperion.experiment_plans import (
+    grid_detect_then_xray_centre_plan,
+    pin_centre_then_xray_centre_plan,
+    stepped_grid_scan_plan,
+)
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     NullPlanCallbackCollection,
 )
@@ -33,11 +38,6 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
     SteppedGridScanInternalParameters,
     SteppedGridScanParams,
-)
-from src.hyperion.experiment_plans import (
-    grid_detect_then_xray_centre_plan,
-    pin_centre_then_xray_centre_plan,
-    stepped_grid_scan_plan,
 )
 
 

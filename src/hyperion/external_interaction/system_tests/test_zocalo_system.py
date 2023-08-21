@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
 
+from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
+    XrayCentreCallbackCollection,
+)
 from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
     XrayCentreZocaloCallback,
 )
@@ -9,10 +12,7 @@ from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
-)
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

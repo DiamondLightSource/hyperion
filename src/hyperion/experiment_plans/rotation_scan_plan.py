@@ -26,12 +26,12 @@ from hyperion.device_setup_plans.setup_zebra import (
     make_trigger_safe,
     setup_zebra_for_rotation,
 )
+from hyperion.external_interaction.callbacks.rotation.callback_collection import (
+    RotationCallbackCollection,
+)
 from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
-)
-from src.hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
 )
 
 if TYPE_CHECKING:

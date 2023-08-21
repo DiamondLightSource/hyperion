@@ -5,7 +5,7 @@ from bluesky.callbacks import CallbackBase
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import ISPYB_PLAN_NAME
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

@@ -21,9 +21,9 @@ from hyperion.__main__ import (
     setup_context,
 )
 from hyperion.exceptions import WarningException
+from hyperion.experiment_plans.experiment_registry_plan import PLAN_REGISTRY
 from hyperion.parameters import external_parameters
-from src.hyperion.experiment_plans.experiment_registry_plan import PLAN_REGISTRY
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
@@ -356,7 +356,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.FGSComposite",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.GridscanComposite",
     autospec=True,
     spec_set=True,
 )
@@ -394,7 +394,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.FGSComposite",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.GridscanComposite",
     autospec=True,
     spec_set=True,
 )

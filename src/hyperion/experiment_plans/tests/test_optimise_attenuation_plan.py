@@ -8,9 +8,8 @@ from dodal.devices.sample_shutter import SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 from ophyd.status import Status
 
-from hyperion.log import LOGGER
-from src.hyperion.experiment_plans import optimise_attenuation_plan
-from src.hyperion.experiment_plans.optimise_attenuation_plan import (
+from hyperion.experiment_plans import optimise_attenuation_plan
+from hyperion.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
     Direction,
     arm_devices,
@@ -23,6 +22,7 @@ from src.hyperion.experiment_plans.optimise_attenuation_plan import (
     is_deadtime_optimised,
     total_counts_optimisation,
 )
+from hyperion.log import LOGGER
 
 
 @pytest.fixture
@@ -120,7 +120,6 @@ def test_calculate_new_direction_gives_correct_value(
     )
 
 
-@pytest.mark.skip(reason="errors introduced with renaming, to be investigated")
 @patch(
     "hyperion.experiment_plans.optimise_attenuation_plan.do_device_optimise_iteration",
     autospec=True,
@@ -289,7 +288,6 @@ def test_create_new_devices():
         i03.attenuator.assert_called()
 
 
-@pytest.mark.skip(reason="errors introduced with renaming, to be investigated")
 @patch("hyperion.experiment_plans.optimise_attenuation_plan.arm_devices", autospec=True)
 def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
     sample_shutter, xspress3mini, attenuator = fake_create_devices()
@@ -324,7 +322,6 @@ def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
     )
 
 
-@pytest.mark.skip(reason="errors introduced with renaming, to be investigated")
 @pytest.mark.parametrize(
     "optimisation_type",
     [("total_counts"), ("deadtime")],

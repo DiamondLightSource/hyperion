@@ -18,20 +18,20 @@ from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParame
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    create_devices as fgs_create_devices,
+)
+from hyperion.experiment_plans.flyscan_xray_centre_plan import flyscan_xray_centre
+from hyperion.experiment_plans.oav_grid_detection_plan import (
+    create_devices as oav_create_devices,
+)
+from hyperion.experiment_plans.oav_grid_detection_plan import grid_detection_plan
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.beamline_parameters import get_beamline_parameters
-from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    create_devices as fgs_create_devices,
-)
-from src.hyperion.experiment_plans.flyscan_xray_centre_plan import flyscan_xray_centre
-from src.hyperion.experiment_plans.oav_grid_detection_plan import (
-    create_devices as oav_create_devices,
-)
-from src.hyperion.experiment_plans.oav_grid_detection_plan import grid_detection_plan
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,
 )

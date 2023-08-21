@@ -16,7 +16,7 @@ from hyperion.external_interaction.zocalo.zocalo_interaction import (
     ZocaloInteractor,
 )
 from hyperion.log import LOGGER
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

@@ -7,8 +7,17 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
 
-import src.hyperion.experiment_plans.flyscan_xray_centre_plan as fgs_plan
+import hyperion.experiment_plans.flyscan_xray_centre_plan as fgs_plan
 from hyperion.exceptions import WarningException
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    GridscanComposite,
+    flyscan_xray_centre,
+    read_hardware_for_ispyb,
+    run_gridscan,
+)
+from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
+    XrayCentreCallbackCollection,
+)
 from hyperion.external_interaction.system_tests.conftest import (  # noqa
     fetch_comment,
     zocalo_env,
@@ -18,16 +27,7 @@ from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    GridscanComposite,
-    flyscan_xray_centre,
-    read_hardware_for_ispyb,
-    run_gridscan,
-)
-from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
-)
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

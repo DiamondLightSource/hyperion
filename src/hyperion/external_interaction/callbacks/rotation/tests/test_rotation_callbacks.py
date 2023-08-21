@@ -6,13 +6,13 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 
+from hyperion.external_interaction.callbacks.rotation.callback_collection import (
+    RotationCallbackCollection,
+)
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
-)
-from src.hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
 )
 
 

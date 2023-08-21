@@ -11,19 +11,19 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
 
+from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    create_devices,
+    detect_grid_and_do_gridscan,
+    full_grid_scan,
+    wait_for_det_to_finish_moving,
+)
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
-from src.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
-    create_devices,
-    detect_grid_and_do_gridscan,
-    full_grid_scan,
-    wait_for_det_to_finish_moving,
-)
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

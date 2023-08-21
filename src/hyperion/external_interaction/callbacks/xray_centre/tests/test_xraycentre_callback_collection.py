@@ -7,16 +7,16 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import DetectorParams, EigerDetector
 
-from hyperion.parameters.constants import SIM_BEAMLINE
-from hyperion.parameters.external_parameters import from_file as default_raw_params
-from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     GridscanComposite,
     run_gridscan_and_move,
 )
-from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
+from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+from hyperion.parameters.constants import SIM_BEAMLINE
+from hyperion.parameters.external_parameters import from_file as default_raw_params
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

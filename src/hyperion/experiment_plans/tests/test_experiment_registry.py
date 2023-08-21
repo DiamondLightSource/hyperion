@@ -1,10 +1,7 @@
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
+from hyperion.experiment_plans.experiment_registry_plan import PLAN_REGISTRY, do_nothing
 from hyperion.parameters.internal_parameters import InternalParameters
-from src.hyperion.experiment_plans.experiment_registry_plan import (
-    PLAN_REGISTRY,
-    do_nothing,
-)
 
 
 def test_experiment_registry_param_types():

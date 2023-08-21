@@ -8,7 +8,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
-from src.hyperion.experiment_plans.pin_tip_centring_plan import (
+from hyperion.experiment_plans.pin_tip_centring_plan import (
     create_devices,
     move_pin_into_view,
     move_smargon_warn_on_out_of_range,

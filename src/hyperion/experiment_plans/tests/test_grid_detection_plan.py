@@ -10,12 +10,12 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
-from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
-    OavSnapshotCallback,
-)
-from src.hyperion.experiment_plans.oav_grid_detection_plan import (
+from hyperion.experiment_plans.oav_grid_detection_plan import (
     create_devices,
     grid_detection_plan,
+)
+from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
+    OavSnapshotCallback,
 )
 
 
