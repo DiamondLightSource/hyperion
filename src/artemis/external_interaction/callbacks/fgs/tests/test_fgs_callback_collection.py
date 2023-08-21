@@ -98,7 +98,7 @@ def test_communicator_in_composite_run(
     # this is where it's currently getting stuck:
     # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
     # but this is not a solution
-    # Would be better to use get_plan instead but eiger doesn't work well in S03
+    # Would be better to use fast_grid_scan instead but eiger doesn't work well in S03
     RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, callbacks))
 
     # nexus writing

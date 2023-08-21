@@ -11,7 +11,7 @@ import artemis.experiment_plans.fast_grid_scan_plan as fgs_plan
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     FGSComposite,
-    get_plan,
+    fast_grid_scan,
     read_hardware_for_ispyb,
     run_gridscan,
 )
@@ -84,7 +84,7 @@ def test_run_gridscan(
     fgs_composite: FGSComposite,
 ):
     fgs_composite.eiger.unstage = lambda: True
-    # Would be better to use get_plan instead but eiger doesn't work well in S03
+    # Would be better to use fast_grid_scan instead but eiger doesn't work well in S03
     RE(run_gridscan(fgs_composite, params))
 
 
@@ -134,7 +134,7 @@ def test_full_plan_tidies_at_end(
     callbacks.nexus_handler.nexus_writer_2 = MagicMock()
     callbacks.ispyb_handler.ispyb_ids = MagicMock()
     callbacks.ispyb_handler.ispyb.datacollection_ids = MagicMock()
-    RE(get_plan(params, callbacks))
+    RE(fast_grid_scan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -166,7 +166,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     callbacks = FGSCallbackCollection.from_params(params)
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
-        RE(get_plan(params, callbacks))
+        RE(fast_grid_scan(params, callbacks))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -190,7 +190,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
 
     with pytest.raises(WarningException):
-        RE(get_plan(params, callbacks))
+        RE(fast_grid_scan(params, callbacks))
 
     dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
 
@@ -227,7 +227,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     callbacks = FGSCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
-    RE(get_plan(params, callbacks))
+    RE(fast_grid_scan(params, callbacks))
 
     # The following numbers are derived from the centre returned in fake_zocalo
     assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(-0.05)

@@ -10,6 +10,10 @@
 	"settings": {
 		"python.languageServer": "Pylance",
 		"terminal.integrated.gpuAcceleration": "off",
-		"esbonio.sphinx.confDir": ""
+		"esbonio.sphinx.confDir": "",
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter"
+		},
+		"python.formatting.provider": "none"
 	}
 }

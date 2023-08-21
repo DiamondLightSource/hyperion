@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from blueapi.core import MsgGenerator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
-from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
@@ -21,7 +21,7 @@ from artemis.device_setup_plans.utils import (
 from artemis.experiment_plans.fast_grid_scan_plan import (
     create_devices as fgs_create_devices,
 )
-from artemis.experiment_plans.fast_grid_scan_plan import get_plan as fgs_get_plan
+from artemis.experiment_plans.fast_grid_scan_plan import fast_grid_scan
 from artemis.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
@@ -149,13 +149,13 @@ def detect_grid_and_do_gridscan(
     )
     yield from wait_for_det_to_finish_moving(detector_motion)
 
-    yield from fgs_get_plan(fast_grid_scan_parameters)
+    yield from fast_grid_scan(fast_grid_scan_parameters)
 
 
-def get_plan(
-    parameters: GridScanWithEdgeDetectInternalParameters,
+def full_grid_scan(
+    parameters: Any,
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
-) -> Generator[Msg, None, None]:
+) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.

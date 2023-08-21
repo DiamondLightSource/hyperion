@@ -1,7 +1,6 @@
 import json
-from typing import Generator
 
-from bluesky.utils import Msg
+from blueapi.core import MsgGenerator
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.eiger import EigerDetector
@@ -10,10 +9,10 @@ from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParame
 from artemis.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
-from artemis.experiment_plans.full_grid_scan import (
+from artemis.experiment_plans.full_grid_scan_plan import (
     create_devices as full_grid_create_devices,
 )
-from artemis.experiment_plans.full_grid_scan import detect_grid_and_do_gridscan
+from artemis.experiment_plans.full_grid_scan_plan import detect_grid_and_do_gridscan
 from artemis.experiment_plans.pin_tip_centring_plan import (
     create_devices as pin_tip_create_devices,
 )
@@ -72,9 +71,9 @@ def pin_centre_then_xray_centre_plan(
     )
 
 
-def get_plan(
+def pin_tip_centre_then_xray_centre(
     parameters: PinCentreThenXrayCentreInternalParameters,
-) -> Generator[Msg, None, None]:
+) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
 
     eiger: EigerDetector = i03.eiger()

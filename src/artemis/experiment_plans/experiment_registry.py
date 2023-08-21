@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 
 from artemis.experiment_plans import (
     fast_grid_scan_plan,
-    full_grid_scan,
+    full_grid_scan_plan,
     pin_centre_then_xray_centre_plan,
     rotation_scan_plan,
+    stepped_grid_scan_plan,
 )
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
     NullPlanCallbackCollection,
@@ -32,6 +33,10 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
 )
+from artemis.parameters.plan_specific.stepped_grid_scan_internal_params import (
+    SteppedGridScanInternalParameters,
+    SteppedGridScanParams,
+)
 
 
 def not_implemented():
@@ -42,34 +47,37 @@ def do_nothing():
     pass
 
 
+EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
 PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
-        "run": fast_grid_scan_plan.get_plan,
         "internal_param_type": FGSInternalParameters,
         "experiment_param_type": GridScanParams,
         "callback_collection_type": FGSCallbackCollection,
     },
     "full_grid_scan": {
-        "setup": full_grid_scan.create_devices,
-        "run": full_grid_scan.get_plan,
+        "setup": full_grid_scan_plan.create_devices,
         "internal_param_type": GridScanWithEdgeDetectInternalParameters,
         "experiment_param_type": GridScanWithEdgeDetectParams,
         "callback_collection_type": NullPlanCallbackCollection,
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
-        "run": rotation_scan_plan.get_plan,
         "internal_param_type": RotationInternalParameters,
         "experiment_param_type": RotationScanParams,
         "callback_collection_type": RotationCallbackCollection,
     },
     "pin_tip_centre_then_xray_centre": {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
-        "run": pin_centre_then_xray_centre_plan.get_plan,
         "internal_param_type": PinCentreThenXrayCentreInternalParameters,
         "experiment_param_type": PinCentreThenXrayCentreParams,
         "callback_collection_type": NullPlanCallbackCollection,
+    },
+    "stepped_grid_scan": {
+        "setup": stepped_grid_scan_plan.create_devices,
+        "run": stepped_grid_scan_plan.get_plan,
+        "internal_param_type": SteppedGridScanInternalParameters,
+        "experiment_param_type": SteppedGridScanParams,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())

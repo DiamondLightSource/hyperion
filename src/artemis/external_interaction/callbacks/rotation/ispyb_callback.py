@@ -3,7 +3,6 @@ from __future__ import annotations
 from artemis.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBHandlerCallback,
 )
-from artemis.external_interaction.exceptions import ISPyBDepositionNotMade
 from artemis.external_interaction.ispyb.store_in_ispyb import StoreRotationInIspyb
 from artemis.log import set_dcgid_tag
 from artemis.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
@@ -42,8 +41,4 @@ class RotationISPyBHandlerCallback(BaseISPyBHandlerCallback):
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
-            if self.ispyb_ids == (None, None):
-                raise ISPyBDepositionNotMade(
-                    "ISPyB deposition was not initialised at run start!"
-                )
             super().stop(doc)

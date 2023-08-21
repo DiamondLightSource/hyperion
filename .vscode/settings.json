@@ -7,6 +7,7 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.formatting.provider": "black",
+    "python.analysis.autoImportCompletions": true,
     "python.languageServer": "Pylance",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
@@ -23,4 +24,5 @@
         ]
     },
     "terminal.integrated.gpuAcceleration": "off",
+    "python.analysis.typeCheckingMode": "basic",
 }

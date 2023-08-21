@@ -7,6 +7,7 @@ from typing import Any
 
 import jsonschema
 
+from artemis.log import LOGGER
 from artemis.parameters.constants import PARAMETER_SCHEMA_DIRECTORY
 
 
@@ -21,6 +22,7 @@ def validate_raw_parameters_from_dict(dict_params: dict[str, Any]):
         base_uri=f"{path.as_uri()}/",
         referrer=True,
     )
+    LOGGER.debug(f"Raw JSON recieved: {dict_params}")
     jsonschema.validate(dict_params, full_schema, resolver=resolver)
     return dict_params
 

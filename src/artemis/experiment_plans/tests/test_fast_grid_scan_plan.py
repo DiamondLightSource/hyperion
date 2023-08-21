@@ -1,5 +1,5 @@
 import types
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -17,7 +17,7 @@ from ophyd.status import Status
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.fast_grid_scan_plan import (
     FGSComposite,
-    get_plan,
+    fast_grid_scan,
     read_hardware_for_ispyb,
     run_gridscan,
     run_gridscan_and_move,
@@ -127,9 +127,9 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
 def test_results_adjusted_and_passed_to_move_xyz(
-    move_xyz: MagicMock,
+    move_x_y_z: MagicMock,
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
@@ -187,35 +187,62 @@ def test_results_adjusted_and_passed_to_move_xyz(
         )
     )
 
-    call_large = call(
+    ap_call_large = call(
         *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
     )
-    call_medium = call(
+    ap_call_medium = call(
         *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
     )
 
     move_aperture.assert_has_calls(
-        [call_large, call_large, call_medium], any_order=True
+        [ap_call_large, ap_call_large, ap_call_medium], any_order=True
+    )
+
+    mv_call_large = call(
+        fake_fgs_composite.sample_motors, 0.05, pytest.approx(0.15), 0.25, wait=True
+    )
+    mv_call_medium = call(
+        fake_fgs_composite.sample_motors, 0.05, pytest.approx(0.15), 0.25, wait=True
+    )
+    move_x_y_z.assert_has_calls(
+        [mv_call_large, mv_call_large, mv_call_medium], any_order=True
     )
 
 
-@patch("bluesky.plan_stubs.mv", autospec=True)
+@patch("bluesky.plan_stubs.abs_set", autospec=True)
 def test_results_passed_to_move_motors(
-    bps_mv: MagicMock,
+    bps_abs_set: MagicMock,
     test_fgs_params: FGSInternalParameters,
     fake_fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
-    from artemis.experiment_plans.fast_grid_scan_plan import move_xyz
+    from artemis.device_setup_plans.manipulate_sample import move_x_y_z
 
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
     motor_position = test_fgs_params.experiment_params.grid_position_to_motor_position(
         np.array([1, 2, 3])
     )
-    RE(move_xyz(fake_fgs_composite.sample_motors, motor_position))
-    bps_mv.assert_called_once_with(
-        ANY, motor_position[0], ANY, motor_position[1], ANY, motor_position[2]
+    RE(move_x_y_z(fake_fgs_composite.sample_motors, *motor_position))
+    bps_abs_set.assert_has_calls(
+        [
+            call(
+                fake_fgs_composite.sample_motors.x,
+                motor_position[0],
+                group="move_x_y_z",
+            ),
+            call(
+                fake_fgs_composite.sample_motors.y,
+                motor_position[1],
+                group="move_x_y_z",
+            ),
+            call(
+                fake_fgs_composite.sample_motors.z,
+                motor_position[2],
+                group="move_x_y_z",
+            ),
+        ],
+        any_order=True,
     )
 
 
@@ -223,7 +250,7 @@ def test_results_passed_to_move_motors(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     rd: MagicMock,
@@ -262,7 +289,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_fgs_params)
-    array_arg = move_xyz.call_args.args[1]
+    array_arg = move_xyz.call_args.args[1:4]
     np.testing.assert_allclose(array_arg, np.array([0.05, 0.15, 0.25]))
     move_xyz.assert_called_once()
 
@@ -272,7 +299,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     autospec=True,
 )
 @patch("artemis.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("artemis.experiment_plans.fast_grid_scan_plan.move_xyz", autospec=True)
+@patch("artemis.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_logging_within_plan(
     rd: MagicMock,
@@ -311,7 +338,7 @@ def test_logging_within_plan(
     )
 
     run_gridscan.assert_called_once_with(fake_fgs_composite, test_fgs_params)
-    array_arg = move_xyz.call_args.args[1]
+    array_arg = move_xyz.call_args.args[1:4]
     np.testing.assert_array_almost_equal(array_arg, np.array([0.05, 0.15, 0.25]))
     move_xyz.assert_called_once()
 
@@ -392,7 +419,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
         "artemis.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.update_nexus_file_timestamp",
         autospec=True,
     ):
-        RE(get_plan(test_fgs_params))
+        RE(fast_grid_scan(test_fgs_params))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 

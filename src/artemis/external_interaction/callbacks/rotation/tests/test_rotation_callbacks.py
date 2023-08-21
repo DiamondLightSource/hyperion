@@ -30,7 +30,7 @@ def RE():
     return RunEngine({})
 
 
-def fake_get_plan(
+def fake_rotation_scan(
     parameters: RotationInternalParameters,
     subscriptions: RotationCallbackCollection,
 ):
@@ -70,7 +70,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
 
-    RE(fake_get_plan(params, cb))
+    RE(fake_rotation_scan(params, cb))
 
     assert cb.nexus_handler.start.call_count == 2
     call_content_outer = cb.nexus_handler.start.call_args_list[0].args[0]
@@ -95,7 +95,7 @@ def test_nexus_handler_only_writes_once(
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
 
-    RE(fake_get_plan(params, cb))
+    RE(fake_rotation_scan(params, cb))
     nexus_writer.assert_called_once()
     cb.nexus_handler.writer.create_nexus_file.assert_called_once()
 
@@ -118,7 +118,7 @@ def test_nexus_handler_triggers_write_file_when_told(
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
 
-    RE(fake_get_plan(params, cb))
+    RE(fake_rotation_scan(params, cb))
 
     assert os.path.isfile("/tmp/file_name_0.nxs")
     assert os.path.isfile("/tmp/file_name_0_master.h5")
@@ -143,7 +143,7 @@ def test_zocalo_start_and_end_triggered_once(
     cb.ispyb_handler.stop = MagicMock(autospec=True)
     cb.ispyb_handler.ispyb_ids = [0]
 
-    RE(fake_get_plan(params, cb))
+    RE(fake_rotation_scan(params, cb))
 
     zocalo.assert_called_once()
     cb.zocalo_handler.zocalo_interactor.run_start.assert_called_once()
@@ -166,4 +166,4 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
     with pytest.raises(ISPyBDepositionNotMade):
-        RE(fake_get_plan(params, cb))
+        RE(fake_rotation_scan(params, cb))

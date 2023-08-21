@@ -114,7 +114,7 @@ def test_create_devices(create_device: MagicMock):
             call(Smargon, "smargon", "-MO-SGON-01:", True, False),
             call(OAV, "oav", "", True, False),
             call(
-                device=Backlight,
+                device_factory=Backlight,
                 name="backlight",
                 prefix="-EA-BL-01:",
                 wait=True,
