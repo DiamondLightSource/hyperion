@@ -90,7 +90,9 @@ def setup_zebra_for_rotation(
         yield from bps.wait(group)
 
 
-def setup_zebra_for_fgs(zebra: Zebra, group="setup_zebra_for_fgs", wait=False):
+def setup_zebra_for_gridscan(
+    zebra: Zebra, group="setup_zebra_for_gridscan", wait=False
+):
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)

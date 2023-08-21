@@ -4,11 +4,11 @@ import pytest
 
 from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import (
-    GridscanInternalParameters,
-)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
+)
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
 )
 
 

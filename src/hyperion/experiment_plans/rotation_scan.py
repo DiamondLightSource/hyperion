@@ -11,6 +11,9 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import RotationDirection, Zebra
+from ophyd.device import Device
+from ophyd.epics_motor import EpicsMotor
+
 from hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_x_y_z,
@@ -23,21 +26,20 @@ from hyperion.device_setup_plans.setup_zebra import (
     make_trigger_safe,
     setup_zebra_for_rotation,
 )
-from hyperion.external_interaction.callbacks.rotation.rotation_callback_collection import (
-    RotationCallbackCollection,
-)
 from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
-from ophyd.device import Device
-from ophyd.epics_motor import EpicsMotor
+from src.hyperion.external_interaction.callbacks.rotation.callback_collection import (
+    RotationCallbackCollection,
+)
 
 if TYPE_CHECKING:
+    from ophyd.device import Device
+
     from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
-    from ophyd.device import Device
 
 
 def create_devices() -> dict[str, Device]:

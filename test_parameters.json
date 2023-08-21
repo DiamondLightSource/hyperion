@@ -5,7 +5,7 @@
         "insertion_prefix": "SR03S",
         "detector": "EIGER2_X_16M",
         "zocalo_environment": "dev_hyperion",
-        "experiment_type": "fast_grid_scan",
+        "experiment_type": "flyscan_xray_centre",
         "detector_params": {
             "current_energy_ev": 100,
             "directory": "/tmp",

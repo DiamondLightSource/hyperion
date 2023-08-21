@@ -7,17 +7,17 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import DetectorParams, EigerDetector
 
-from hyperion.experiment_plans.fast_grid_scan_plan import (
+from hyperion.parameters.constants import SIM_BEAMLINE
+from hyperion.parameters.external_parameters import from_file as default_raw_params
+from src.hyperion.experiment_plans.flyscan_xray_centre import (
     FGSComposite,
     run_gridscan_and_move,
 )
-from hyperion.parameters.constants import SIM_BEAMLINE
-from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import (
-    GridscanInternalParameters,
-)
-from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
+)
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
 )
 
 
@@ -97,12 +97,12 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._run_start = MagicMock()
     callbacks.zocalo_handler.xray_centre_motor_position = np.array([1, 2, 3])
 
-    fast_grid_scan_composite = FGSComposite()
+    flyscan_xray_centre_composite = FGSComposite()
     # this is where it's currently getting stuck:
-    # fast_grid_scan_composite.fast_grid_scan.is_invalid = lambda: False
+    # flyscan_xray_centre_composite.fast_grid_scan.is_invalid = lambda: False
     # but this is not a solution
-    # Would be better to use fast_grid_scan instead but eiger doesn't work well in S03
-    RE(run_gridscan_and_move(fast_grid_scan_composite, eiger, params, callbacks))
+    # Would be better to use flyscan_xray_centre instead but eiger doesn't work well in S03
+    RE(run_gridscan_and_move(flyscan_xray_centre_composite, eiger, params, callbacks))
 
     # nexus writing
     callbacks.nexus_handler.nexus_writer_1.assert_called_once()

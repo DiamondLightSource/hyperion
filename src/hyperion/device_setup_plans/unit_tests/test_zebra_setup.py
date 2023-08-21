@@ -20,7 +20,7 @@ from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     disarm_zebra,
     set_zebra_shutter_to_manual,
-    setup_zebra_for_fgs,
+    setup_zebra_for_gridscan,
     setup_zebra_for_rotation,
 )
 
@@ -35,8 +35,8 @@ def zebra():
     return i03.zebra(fake_with_ophyd_sim=True)
 
 
-def test_zebra_set_up_for_fgs(RE, zebra: Zebra):
-    RE(setup_zebra_for_fgs(zebra, wait=True))
+def test_zebra_set_up_for_gridscan(RE, zebra: Zebra):
+    RE(setup_zebra_for_gridscan(zebra, wait=True))
     assert zebra.output.out_pvs[TTL_DETECTOR].get() == IN3_TTL
     assert zebra.output.out_pvs[TTL_SHUTTER].get() == IN4_TTL
 

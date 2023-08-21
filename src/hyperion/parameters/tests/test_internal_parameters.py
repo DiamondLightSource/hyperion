@@ -20,12 +20,12 @@ from hyperion.parameters.internal_parameters import (
     flatten_dict,
     get_extracted_experiment_and_flat_hyperion_params,
 )
-from hyperion.parameters.plan_specific.fgs_internal_params import (
-    GridscanHyperionParameters,
-    GridscanInternalParameters,
-)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
+)
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanHyperionParameters,
+    GridscanInternalParameters,
 )
 
 

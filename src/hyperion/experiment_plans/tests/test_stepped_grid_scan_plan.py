@@ -5,10 +5,7 @@ from unittest.mock import MagicMock
 
 from bluesky import RunEngine
 
-from hyperion.experiment_plans.stepped_grid_scan_plan import (
-    create_devices,
-    run_gridscan,
-)
+from src.hyperion.experiment_plans.stepped_grid_scan import create_devices, run_gridscan
 
 patch = functools.partial(unittest.mock.patch, autospec=True)
 

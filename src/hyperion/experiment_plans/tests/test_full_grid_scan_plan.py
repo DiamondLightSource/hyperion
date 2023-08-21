@@ -11,20 +11,20 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
 
-from hyperion.experiment_plans.full_grid_scan_plan import (
+from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
+    OavSnapshotCallback,
+)
+from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
+    GridScanWithEdgeDetectInternalParameters,
+)
+from src.hyperion.experiment_plans.grid_detect_then_xray_centre import (
     create_devices,
     detect_grid_and_do_gridscan,
     full_grid_scan,
     wait_for_det_to_finish_moving,
 )
-from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
-    OavSnapshotCallback,
-)
-from hyperion.parameters.plan_specific.fgs_internal_params import (
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
 )
 
 
@@ -98,14 +98,16 @@ def test_full_grid_scan(test_fgs_params, test_config_files):
 @patch(
     "hyperion.experiment_plans.full_grid_scan_plan.grid_detection_plan", autospec=True
 )
-@patch("hyperion.experiment_plans.full_grid_scan_plan.fast_grid_scan", autospec=True)
+@patch(
+    "hyperion.experiment_plans.full_grid_scan_plan.flyscan_xray_centre", autospec=True
+)
 @patch(
     "hyperion.experiment_plans.full_grid_scan_plan.OavSnapshotCallback",
     autospec=True,
 )
 def test_detect_grid_and_do_gridscan(
     mock_oav_callback_init: MagicMock,
-    mock_fast_grid_scan_plan: MagicMock,
+    mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     mock_wait_for_detector: MagicMock,
     backlight: Backlight,
@@ -151,7 +153,7 @@ def test_detect_grid_and_do_gridscan(
         mock_wait_for_detector.assert_called_once()
 
         # Check we called out to underlying fast grid scan plan
-        mock_fast_grid_scan_plan.assert_called_once_with(ANY)
+        mock_flyscan_xray_centre_plan.assert_called_once_with(ANY)
 
 
 @patch(
@@ -161,13 +163,15 @@ def test_detect_grid_and_do_gridscan(
 @patch(
     "hyperion.experiment_plans.full_grid_scan_plan.grid_detection_plan", autospec=True
 )
-@patch("hyperion.experiment_plans.full_grid_scan_plan.fast_grid_scan", autospec=True)
+@patch(
+    "hyperion.experiment_plans.full_grid_scan_plan.flyscan_xray_centre", autospec=True
+)
 @patch(
     "hyperion.experiment_plans.full_grid_scan_plan.OavSnapshotCallback", autospec=True
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_oav_callback_init: MagicMock,
-    mock_fast_grid_scan_plan: MagicMock,
+    mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     _: MagicMock,
     eiger: EigerDetector,
@@ -199,7 +203,9 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
             )
         )
 
-        params: GridscanInternalParameters = mock_fast_grid_scan_plan.call_args[0][0]
+        params: GridscanInternalParameters = mock_flyscan_xray_centre_plan.call_args[0][
+            0
+        ]
 
         assert isinstance(params, GridscanInternalParameters)
 

@@ -25,14 +25,14 @@ from dodal.beamlines.i03 import (
 )
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import DetectorParams
-from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
+from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 
 import hyperion.log
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
-    setup_zebra_for_fgs,
+    setup_zebra_for_gridscan,
 )
 from hyperion.exceptions import WarningException
 from hyperion.parameters import external_parameters
@@ -42,12 +42,12 @@ from hyperion.parameters.beamline_parameters import (
 )
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.tracing import TRACER
-from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
 
 if TYPE_CHECKING:
-    from hyperion.parameters.plan_specific.fgs_internal_params import (
+    from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
         GridscanInternalParameters,
     )
 
@@ -78,12 +78,12 @@ class FGSComposite:
         self.attenuator: Attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
 
 
-fast_grid_scan_composite: FGSComposite | None = None
+flyscan_xray_centre_composite: FGSComposite | None = None
 
 
 def create_devices():
     """Creates the devices required for the plan and connect to them"""
-    global fast_grid_scan_composite
+    global flyscan_xray_centre_composite
     prefixes = get_beamline_prefixes()
     hyperion.log.LOGGER.info(
         f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
@@ -92,7 +92,7 @@ def create_devices():
         get_beamline_parameters()
     )
     hyperion.log.LOGGER.info("Connecting to EPICS devices...")
-    fast_grid_scan_composite = FGSComposite(aperture_positions=aperture_positions)
+    flyscan_xray_centre_composite = FGSComposite(aperture_positions=aperture_positions)
     hyperion.log.LOGGER.info("Connected.")
 
 
@@ -121,7 +121,7 @@ def set_aperture_for_bbox_size(
     yield from set_aperture()
 
 
-def wait_for_fgs_valid(fgs_motors: FastGridScan, timeout=0.5):
+def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
     hyperion.log.LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -172,8 +172,8 @@ def run_gridscan(
     fgs_motors = fgs_composite.fast_grid_scan
 
     # TODO: Check topup gate
-    yield from set_fast_grid_scan_params(fgs_motors, parameters.experiment_params)
-    yield from wait_for_fgs_valid(fgs_motors)
+    yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
+    yield from wait_for_gridscan_valid(fgs_motors)
 
     @bpp.set_run_key_decorator("do_fgs")
     @bpp.run_decorator(md={"subplan_name": "do_fgs"})
@@ -215,7 +215,7 @@ def run_gridscan_and_move(
         ]
     )
 
-    yield from setup_zebra_for_fgs(fgs_composite.zebra)
+    yield from setup_zebra_for_gridscan(fgs_composite.zebra)
 
     hyperion.log.LOGGER.info("Starting grid scan")
     yield from run_gridscan(fgs_composite, parameters)
@@ -237,7 +237,7 @@ def run_gridscan_and_move(
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
 
-def fast_grid_scan(
+def flyscan_xray_centre(
     parameters: Any,
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
@@ -251,8 +251,8 @@ def fast_grid_scan(
     Returns:
         Generator: The plan for the gridscan
     """
-    assert fast_grid_scan_composite is not None
-    fast_grid_scan_composite.eiger.set_detector_parameters(
+    assert flyscan_xray_centre_composite is not None
+    flyscan_xray_centre_composite.eiger.set_detector_parameters(
         parameters.hyperion_params.detector_params
     )
 
@@ -268,12 +268,12 @@ def fast_grid_scan(
             "hyperion_internal_parameters": parameters.json(),
         }
     )
-    @bpp.finalize_decorator(lambda: tidy_up_plans(fast_grid_scan_composite))
+    @bpp.finalize_decorator(lambda: tidy_up_plans(flyscan_xray_centre_composite))
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
     return run_gridscan_and_move_and_tidy(
-        fast_grid_scan_composite, parameters, subscriptions
+        flyscan_xray_centre_composite, parameters, subscriptions
     )
 
 
@@ -288,7 +288,7 @@ if __name__ == "__main__":
 
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
-    from hyperion.parameters.plan_specific.fgs_internal_params import (
+    from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
         GridscanInternalParameters,
     )
 
@@ -297,4 +297,4 @@ if __name__ == "__main__":
 
     create_devices()
 
-    RE(fast_grid_scan(parameters))
+    RE(flyscan_xray_centre(parameters))

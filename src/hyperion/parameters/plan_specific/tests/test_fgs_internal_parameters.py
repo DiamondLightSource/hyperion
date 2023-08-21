@@ -3,7 +3,7 @@ from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.fast_grid_scan import GridScanParams
 
 from hyperion.parameters import external_parameters
-from hyperion.parameters.plan_specific.fgs_internal_params import (
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

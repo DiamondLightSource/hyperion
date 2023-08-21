@@ -23,11 +23,11 @@ from hyperion.__main__ import (
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.parameters import external_parameters
-from hyperion.parameters.plan_specific.fgs_internal_params import (
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-FGS_ENDPOINT = "/fast_grid_scan/"
+FGS_ENDPOINT = "/flyscan_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
@@ -312,7 +312,7 @@ def test_cli_args_parse():
 @patch("dodal.beamlines.i03.Undulator", autospec=True, spec_set=True)
 @patch("dodal.beamlines.i03.Zebra", autospec=True, spec_set=True)
 @patch(
-    "hyperion.experiment_plans.fast_grid_scan_plan.get_beamline_parameters",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
     autospec=True,
 )
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", autospec=True)
@@ -324,7 +324,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     synchrotron,
     smargon,
     s4_slits,
-    fast_grid_scan,
+    flyscan_xray_centre,
     eiger,
     backlight,
     aperture_scatterguard,
@@ -340,7 +340,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     synchrotron.return_value.wait_for_connection.assert_called()
     smargon.return_value.wait_for_connection.assert_called()
     s4_slits.return_value.wait_for_connection.assert_called()
-    fast_grid_scan.return_value.wait_for_connection.assert_called()
+    flyscan_xray_centre.return_value.wait_for_connection.assert_called()
     eiger.return_value.wait_for_connection.assert_called()
     backlight.return_value.wait_for_connection.assert_called()
     aperture_scatterguard.return_value.wait_for_connection.assert_called()
@@ -351,20 +351,22 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
 
 
 @patch(
-    "hyperion.experiment_plans.fast_grid_scan_plan.EigerDetector",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.EigerDetector",
     autospec=True,
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.fast_grid_scan_plan.FGSComposite",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.FGSComposite",
     autospec=True,
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.fast_grid_scan_plan.get_beamline_parameters",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
     autospec=True,
 )
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.create_devices", autospec=True)
+@patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.create_devices", autospec=True
+)
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
     mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
 ):
@@ -372,7 +374,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     with patch.dict(
         "hyperion.__main__.PLAN_REGISTRY",
         {
-            "fast_grid_scan": {
+            "flyscan_xray_centre": {
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
@@ -382,22 +384,22 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(None, None, "fast_grid_scan")
+        runner.start(None, None, "flyscan_xray_centre")
         mock_setup.assert_called_once()
 
 
 @patch(
-    "hyperion.experiment_plans.fast_grid_scan_plan.EigerDetector",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.EigerDetector",
     autospec=True,
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.fast_grid_scan_plan.FGSComposite",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.FGSComposite",
     autospec=True,
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.fast_grid_scan_plan.get_beamline_parameters",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
     autospec=True,
 )
 def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
@@ -409,7 +411,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
     with patch.dict(
         "hyperion.__main__.PLAN_REGISTRY",
         {
-            "fast_grid_scan": {
+            "flyscan_xray_centre": {
                 "setup": mock_setup,
                 "run": MagicMock(),
                 "param_type": MagicMock(),
@@ -473,4 +475,4 @@ def test_when_context_created_then_contains_expected_number_of_plans():
     plan_names = context.plans.keys()
 
     assert "rotation_scan" in plan_names
-    assert "fast_grid_scan" in plan_names
+    assert "flyscan_xray_centre" in plan_names

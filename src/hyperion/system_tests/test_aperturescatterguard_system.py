@@ -20,9 +20,11 @@ def ap_sg():
 def test_aperture_change_callback(ap_sg: ApertureScatterguard):
     from bluesky.run_engine import RunEngine
 
-    from hyperion.experiment_plans.fast_grid_scan_plan import set_aperture_for_bbox_size
     from hyperion.external_interaction.callbacks.aperture_change_callback import (
         ApertureChangeCallback,
+    )
+    from src.hyperion.experiment_plans.flyscan_xray_centre import (
+        set_aperture_for_bbox_size,
     )
 
     ap_sg.wait_for_connection()

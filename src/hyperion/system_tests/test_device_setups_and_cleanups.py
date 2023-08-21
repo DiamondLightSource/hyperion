@@ -13,7 +13,7 @@ from dodal.devices.zebra import (
 
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
-    setup_zebra_for_fgs,
+    setup_zebra_for_gridscan,
     setup_zebra_for_rotation,
 )
 
@@ -31,8 +31,8 @@ def connected_zebra():
 
 
 @pytest.mark.s03
-def test_zebra_set_up_for_fgs(RE, connected_zebra: Zebra):
-    RE(setup_zebra_for_fgs(connected_zebra, wait=True))
+def test_zebra_set_up_for_gridscan(RE, connected_zebra: Zebra):
+    RE(setup_zebra_for_gridscan(connected_zebra, wait=True))
     assert connected_zebra.output.out_pvs[TTL_DETECTOR].get() == IN3_TTL
     assert connected_zebra.output.out_pvs[TTL_SHUTTER].get() == IN4_TTL
 

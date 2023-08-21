@@ -8,12 +8,13 @@ import h5py
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
-from hyperion.external_interaction.callbacks.rotation.rotation_callback_collection import (
-    RotationCallbackCollection,
-)
+
 from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
+)
+from src.hyperion.external_interaction.callbacks.rotation.callback_collection import (
+    RotationCallbackCollection,
 )
 
 TEST_EXAMPLE_NEXUS_FILE = Path("ins_8_5.nxs")

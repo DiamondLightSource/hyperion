@@ -8,7 +8,7 @@ from bluesky.callbacks import CallbackBase
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 from hyperion.log import LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
-from hyperion.parameters.plan_specific.fgs_internal_params import (
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

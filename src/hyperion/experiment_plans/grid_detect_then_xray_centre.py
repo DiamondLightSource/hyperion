@@ -18,20 +18,20 @@ from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParame
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
-from hyperion.experiment_plans.fast_grid_scan_plan import (
-    create_devices as fgs_create_devices,
-)
-from hyperion.experiment_plans.fast_grid_scan_plan import fast_grid_scan
-from hyperion.experiment_plans.oav_grid_detection_plan import (
-    create_devices as oav_create_devices,
-)
-from hyperion.experiment_plans.oav_grid_detection_plan import grid_detection_plan
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.beamline_parameters import get_beamline_parameters
-from hyperion.parameters.plan_specific.fgs_internal_params import (
+from src.hyperion.experiment_plans.flyscan_xray_centre import (
+    create_devices as fgs_create_devices,
+)
+from src.hyperion.experiment_plans.flyscan_xray_centre import flyscan_xray_centre
+from src.hyperion.experiment_plans.oav_grid_detection import (
+    create_devices as oav_create_devices,
+)
+from src.hyperion.experiment_plans.oav_grid_detection import grid_detection_plan
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,
 )
@@ -72,15 +72,15 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
     raise TimeoutError("Detector not finished moving")
 
 
-def create_parameters_for_fast_grid_scan(
+def create_parameters_for_flyscan_xray_centre(
     grid_scan_with_edge_params: GridScanWithEdgeDetectInternalParameters,
     grid_parameters: GridScanParams,
 ) -> GridscanInternalParameters:
     params_json = json.loads(grid_scan_with_edge_params.json())
     params_json["experiment_params"] = json.loads(grid_parameters.json())
-    fast_grid_scan_parameters = GridscanInternalParameters(**params_json)
-    LOGGER.info(f"Parameters for FGS: {fast_grid_scan_parameters}")
-    return fast_grid_scan_parameters
+    flyscan_xray_centre_parameters = GridscanInternalParameters(**params_json)
+    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
+    return flyscan_xray_centre_parameters
 
 
 def detect_grid_and_do_gridscan(
@@ -136,7 +136,7 @@ def detect_grid_and_do_gridscan(
     )
     parameters.hyperion_params.ispyb_params.upper_left = out_upper_left
 
-    fast_grid_scan_parameters = create_parameters_for_fast_grid_scan(
+    flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
         parameters, grid_params
     )
 
@@ -149,7 +149,7 @@ def detect_grid_and_do_gridscan(
     )
     yield from wait_for_det_to_finish_moving(detector_motion)
 
-    yield from fast_grid_scan(fast_grid_scan_parameters)
+    yield from flyscan_xray_centre(flyscan_xray_centre_parameters)
 
 
 def full_grid_scan(

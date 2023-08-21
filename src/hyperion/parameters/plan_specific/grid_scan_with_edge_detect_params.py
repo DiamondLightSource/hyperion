@@ -12,10 +12,10 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybPar
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
-    extract_hyperion_params_from_flat_dict,
     extract_experiment_params_from_flat_dict,
+    extract_hyperion_params_from_flat_dict,
 )
-from hyperion.parameters.plan_specific.fgs_internal_params import (
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
 )
 

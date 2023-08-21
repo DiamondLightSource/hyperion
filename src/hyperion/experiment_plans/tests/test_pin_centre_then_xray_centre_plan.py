@@ -3,16 +3,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 
-from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
-    create_parameters_for_grid_detection,
-    pin_centre_then_xray_centre_plan,
-)
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectParams,
 )
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
+)
+from src.hyperion.experiment_plans.pin_centre_then_xray_centre import (
+    create_parameters_for_grid_detection,
+    pin_centre_then_xray_centre_plan,
 )
 
 

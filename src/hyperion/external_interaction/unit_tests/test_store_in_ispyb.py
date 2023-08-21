@@ -14,11 +14,11 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
 )
 from hyperion.parameters.constants import SIM_ISPYB_CONFIG
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import (
-    GridscanInternalParameters,
-)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
+)
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
 )
 
 TEST_DATA_COLLECTION_IDS = [12, 13]

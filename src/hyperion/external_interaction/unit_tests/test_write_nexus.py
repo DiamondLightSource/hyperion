@@ -10,7 +10,7 @@ import pytest
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
-from hyperion.parameters.plan_specific.fgs_internal_params import (
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

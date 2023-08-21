@@ -5,8 +5,8 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
-from hyperion.experiment_plans.fast_grid_scan_plan import read_hardware_for_ispyb
 from hyperion.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
+from src.hyperion.experiment_plans.flyscan_xray_centre import read_hardware_for_ispyb
 
 
 @pytest.mark.s03

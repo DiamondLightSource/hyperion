@@ -9,11 +9,11 @@ from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import (
-    GridscanInternalParameters,
-)
-from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
+)
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
 )
 
 

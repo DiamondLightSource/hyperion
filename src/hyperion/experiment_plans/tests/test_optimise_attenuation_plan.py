@@ -8,8 +8,9 @@ from dodal.devices.sample_shutter import SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 from ophyd.status import Status
 
-from hyperion.experiment_plans import optimise_attenuation_plan
-from hyperion.experiment_plans.optimise_attenuation_plan import (
+from hyperion.log import LOGGER
+from src.hyperion.experiment_plans import optimise_attenuation
+from src.hyperion.experiment_plans.optimise_attenuation import (
     AttenuationOptimisationFailedException,
     Direction,
     arm_devices,
@@ -22,7 +23,6 @@ from hyperion.experiment_plans.optimise_attenuation_plan import (
     is_deadtime_optimised,
     total_counts_optimisation,
 )
-from hyperion.log import LOGGER
 
 
 @pytest.fixture
@@ -211,7 +211,7 @@ def test_is_counts_within_target_is_false(total_count, lower_limit, upper_limit)
 def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
     sample_shutter, xspress3mini, attenuator = fake_create_devices()
     sample_shutter.set = MagicMock(return_value=get_good_status())
-    optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
+    optimise_attenuation.is_counts_within_target = MagicMock(return_value=False)
     xspress3mini.arm = MagicMock(return_value=get_good_status())
     xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
     with pytest.raises(AttenuationOptimisationFailedException):
@@ -350,7 +350,7 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     xspress3mini.acquire_time.set = MagicMock(return_value=get_good_status())
 
     RE(
-        optimise_attenuation_plan.optimise_attenuation_plan(
+        optimise_attenuation.optimise_attenuation_plan(
             xspress3mini,
             attenuator,
             sample_shutter,

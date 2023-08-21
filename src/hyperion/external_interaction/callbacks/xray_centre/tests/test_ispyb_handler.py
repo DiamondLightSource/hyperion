@@ -10,7 +10,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.log import LOGGER, set_up_logging_handlers
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import (
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 

@@ -15,14 +15,6 @@ from ophyd.sim import make_fake_device
 from ophyd.status import Status
 
 from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.fast_grid_scan_plan import (
-    FGSComposite,
-    fast_grid_scan,
-    read_hardware_for_ispyb,
-    run_gridscan,
-    run_gridscan_and_move,
-    wait_for_fgs_valid,
-)
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -38,11 +30,19 @@ from hyperion.external_interaction.system_tests.conftest import (
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import ISPYB_PLAN_NAME
-from hyperion.parameters.plan_specific.fgs_internal_params import (
-    GridscanInternalParameters,
+from src.hyperion.experiment_plans.flyscan_xray_centre import (
+    FGSComposite,
+    flyscan_xray_centre,
+    read_hardware_for_ispyb,
+    run_gridscan,
+    run_gridscan_and_move,
+    wait_for_gridscan_valid,
 )
-from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+from src.hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
+)
+from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
 )
 
 
@@ -130,8 +130,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
 @patch(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
 def test_results_adjusted_and_passed_to_move_xyz(
     move_x_y_z: MagicMock,
     run_gridscan: MagicMock,
@@ -253,8 +253,8 @@ def test_results_passed_to_move_motors(
 @patch(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
 )
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     rd: MagicMock,
@@ -302,8 +302,8 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
     autospec=True,
 )
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.run_gridscan", autospec=True)
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.move_x_y_z", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_logging_within_plan(
     rd: MagicMock,
@@ -347,8 +347,8 @@ def test_logging_within_plan(
     move_xyz.assert_called_once()
 
 
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.sleep", autospec=True)
-def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.sleep", autospec=True)
+def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
     patch_sleep: MagicMock, RE: RunEngine
 ):
     test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
@@ -356,13 +356,13 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_FGS_returns_immediately(
     test_fgs.scan_invalid.sim_put(False)
     test_fgs.position_counter.sim_put(0)
 
-    RE(wait_for_fgs_valid(test_fgs))
+    RE(wait_for_gridscan_valid(test_fgs))
 
     patch_sleep.assert_not_called()
 
 
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.sleep", autospec=True)
-def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.sleep", autospec=True)
+def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
     patch_sleep: MagicMock, RE: RunEngine
 ):
     test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
@@ -370,17 +370,18 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_FGS_raises_and_sleeps_called(
     test_fgs.scan_invalid.sim_put(True)
     test_fgs.position_counter.sim_put(0)
     with pytest.raises(WarningException):
-        RE(wait_for_fgs_valid(test_fgs))
+        RE(wait_for_gridscan_valid(test_fgs))
 
     patch_sleep.assert_called()
 
 
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.abs_set", autospec=True)
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.kickoff", autospec=True)
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.mv", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.abs_set", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.mv", autospec=True)
 @patch(
-    "hyperion.experiment_plans.fast_grid_scan_plan.wait_for_fgs_valid", autospec=True
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.wait_for_gridscan_valid",
+    autospec=True,
 )
 @patch(
     "hyperion.external_interaction.nexus.write_nexus.NexusWriter",
@@ -413,10 +414,10 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
     with patch(
-        "hyperion.experiment_plans.fast_grid_scan_plan.fast_grid_scan_composite",
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_composite",
         fake_fgs_composite,
     ), patch(
-        "hyperion.experiment_plans.fast_grid_scan_plan.FGSCallbackCollection.from_params",
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.FGSCallbackCollection.from_params",
         lambda _: mock_subscriptions,
     ), patch(
         "hyperion.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.create_nexus_file",
@@ -425,13 +426,13 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
         "hyperion.external_interaction.callbacks.fgs.nexus_callback.NexusWriter.update_nexus_file_timestamp",
         autospec=True,
     ):
-        RE(fast_grid_scan(test_fgs_params))
+        RE(flyscan_xray_centre(test_fgs_params))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
 
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.wait", autospec=True)
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
 def test_fgs_arms_eiger_without_grid_detect(
     mock_complete,
     mock_wait,
@@ -447,8 +448,8 @@ def test_fgs_arms_eiger_without_grid_detect(
     fake_fgs_composite.eiger.unstage.assert_called_once()
 
 
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.wait", autospec=True)
-@patch("hyperion.experiment_plans.fast_grid_scan_plan.bps.complete", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
 def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_returned(
     mock_complete,
     mock_wait,
