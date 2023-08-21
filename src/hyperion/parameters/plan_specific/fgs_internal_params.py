@@ -16,8 +16,8 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
-    extract_hyperion_params_from_flat_dict,
     extract_experiment_params_from_flat_dict,
+    extract_hyperion_params_from_flat_dict,
 )
 
 
@@ -34,7 +34,7 @@ class GridscanHyperionParameters(HyperionParameters):
         }
 
 
-class FGSInternalParameters(InternalParameters):
+class GridscanInternalParameters(InternalParameters):
     experiment_params: GridScanParams
     hyperion_params: GridscanHyperionParameters
 

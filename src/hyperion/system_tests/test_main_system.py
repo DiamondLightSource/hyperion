@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from blueapi.core import BlueskyContext
 from flask.testing import FlaskClient
+
 from hyperion.__main__ import (
     Actions,
     BlueskyRunner,
@@ -22,7 +23,9 @@ from hyperion.__main__ import (
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.parameters import external_parameters
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 
 FGS_ENDPOINT = "/fast_grid_scan/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -99,7 +102,7 @@ TEST_EXPTS = {
     "fgs_real_params": {
         "setup": MagicMock(),
         "run": MagicMock(),
-        "internal_param_type": FGSInternalParameters,
+        "internal_param_type": GridscanInternalParameters,
         "experiment_param_type": MagicMock(),
     },
 }

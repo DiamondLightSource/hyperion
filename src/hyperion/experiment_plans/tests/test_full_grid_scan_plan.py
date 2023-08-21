@@ -20,7 +20,9 @@ from hyperion.experiment_plans.full_grid_scan_plan import (
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
@@ -197,9 +199,9 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
             )
         )
 
-        params: FGSInternalParameters = mock_fast_grid_scan_plan.call_args[0][0]
+        params: GridscanInternalParameters = mock_fast_grid_scan_plan.call_args[0][0]
 
-        assert isinstance(params, FGSInternalParameters)
+        assert isinstance(params, GridscanInternalParameters)
 
         ispyb_params = params.hyperion_params.ispyb_params
         assert_array_equal(ispyb_params.upper_left, [1, 2, 3])

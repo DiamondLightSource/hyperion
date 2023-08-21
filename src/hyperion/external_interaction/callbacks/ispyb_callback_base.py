@@ -8,11 +8,13 @@ from bluesky.callbacks import CallbackBase
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 from hyperion.log import LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 
 
 class BaseISPyBCallback(CallbackBase):
-    def __init__(self, parameters: FGSInternalParameters):
+    def __init__(self, parameters: GridscanInternalParameters):
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""

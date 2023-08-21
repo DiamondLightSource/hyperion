@@ -11,6 +11,9 @@ from dodal.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.fast_grid_scan import FastGridScan
+from ophyd.sim import make_fake_device
+from ophyd.status import Status
+
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.fast_grid_scan_plan import (
     FGSComposite,
@@ -20,12 +23,11 @@ from hyperion.experiment_plans.fast_grid_scan_plan import (
     run_gridscan_and_move,
     wait_for_fgs_valid,
 )
-from hyperion.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
-from hyperion.external_interaction.callbacks.fgs.ispyb_callback import FGSISPyBCallback
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
+)
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
 )
 from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
 from hyperion.external_interaction.system_tests.conftest import (
@@ -36,13 +38,16 @@ from hyperion.external_interaction.system_tests.conftest import (
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import ISPYB_PLAN_NAME
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-from ophyd.sim import make_fake_device
-from ophyd.status import Status
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
+from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+    XrayCentreCallbackCollection,
+)
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
-    test_fgs_params: FGSInternalParameters,
+    test_fgs_params: GridscanInternalParameters,
 ):
     assert (
         test_fgs_params.hyperion_params.detector_params.detector_size_constants.det_type_string
@@ -52,7 +57,7 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
     raw_params_dict["hyperion_params"]["detector_params"][
         "detector_size_constants"
     ] = EIGER_TYPE_EIGER2_X_4M
-    params: FGSInternalParameters = FGSInternalParameters(**raw_params_dict)
+    params: GridscanInternalParameters = GridscanInternalParameters(**raw_params_dict)
     det_dimension = (
         params.hyperion_params.detector_params.detector_size_constants.det_dimension
     )
@@ -66,7 +71,7 @@ def test_when_run_gridscan_called_then_generator_returned():
 
 def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite: FGSComposite,
-    test_fgs_params: FGSInternalParameters,
+    test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
     undulator_test_value = 1.234
@@ -89,7 +94,7 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     flux_test_value = 10.0
     fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
 
-    test_ispyb_callback = FGSISPyBCallback(test_fgs_params)
+    test_ispyb_callback = GridscanISPyBCallback(test_fgs_params)
     test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     RE.subscribe(test_ispyb_callback)
 
@@ -132,8 +137,8 @@ def test_results_adjusted_and_passed_to_move_xyz(
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
     fake_fgs_composite: FGSComposite,
-    mock_subscriptions: FGSCallbackCollection,
-    test_fgs_params: FGSInternalParameters,
+    mock_subscriptions: XrayCentreCallbackCollection,
+    test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -211,7 +216,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 @patch("bluesky.plan_stubs.abs_set", autospec=True)
 def test_results_passed_to_move_motors(
     bps_abs_set: MagicMock,
-    test_fgs_params: FGSInternalParameters,
+    test_fgs_params: GridscanInternalParameters,
     fake_fgs_composite: FGSComposite,
     RE: RunEngine,
 ):
@@ -256,9 +261,9 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
-    mock_subscriptions: FGSCallbackCollection,
+    mock_subscriptions: XrayCentreCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_fgs_params: FGSInternalParameters,
+    test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
     mock_subscriptions.ispyb_handler.descriptor(
@@ -305,9 +310,9 @@ def test_logging_within_plan(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
-    mock_subscriptions: FGSCallbackCollection,
+    mock_subscriptions: XrayCentreCallbackCollection,
     fake_fgs_composite: FGSComposite,
-    test_fgs_params: FGSInternalParameters,
+    test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
     mock_subscriptions.ispyb_handler.descriptor(
@@ -390,8 +395,8 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_kickoff,
     mock_abs_set,
     fake_fgs_composite: FGSComposite,
-    test_fgs_params: FGSInternalParameters,
-    mock_subscriptions: FGSCallbackCollection,
+    test_fgs_params: GridscanInternalParameters,
+    mock_subscriptions: XrayCentreCallbackCollection,
     RE: RunEngine,
 ):
     # Put both mocks in a parent to easily capture order
@@ -431,7 +436,7 @@ def test_fgs_arms_eiger_without_grid_detect(
     mock_complete,
     mock_wait,
     fake_fgs_composite: FGSComposite,
-    test_fgs_params: FGSInternalParameters,
+    test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
     fake_fgs_composite.eiger.stage = MagicMock()
@@ -448,7 +453,7 @@ def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_retur
     mock_complete,
     mock_wait,
     fake_fgs_composite: FGSComposite,
-    test_fgs_params: FGSInternalParameters,
+    test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
     class CompleteException(Exception):

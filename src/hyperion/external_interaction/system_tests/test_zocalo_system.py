@@ -1,24 +1,28 @@
 import numpy as np
 import pytest
 
-from hyperion.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
-from hyperion.external_interaction.callbacks.fgs.zocalo_callback import (
-    FGSZocaloCallback,
+from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
+    XrayCentreZocaloCallback,
 )
 from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_SMALL,
 )
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
+from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+    XrayCentreCallbackCollection,
+)
 
 
 @pytest.mark.s03
 def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
-    params = FGSInternalParameters(**default_raw_params())
-    zc: FGSZocaloCallback = FGSCallbackCollection.from_params(params).zocalo_handler
+    params = GridscanInternalParameters(**default_raw_params())
+    zc: XrayCentreZocaloCallback = XrayCentreCallbackCollection.from_params(
+        params
+    ).zocalo_handler
     dcids = [1, 2]
     zc.ispyb.ispyb_ids = (dcids, 0, 4)
     for dcid in dcids:
@@ -30,10 +34,10 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
 
 
 @pytest.fixture
-def run_zocalo_with_dev_ispyb(dummy_params: FGSInternalParameters, dummy_ispyb_3d):
+def run_zocalo_with_dev_ispyb(dummy_params: GridscanInternalParameters, dummy_ispyb_3d):
     def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.hyperion_params.detector_params.prefix = sample_name
-        zc: FGSZocaloCallback = FGSCallbackCollection.from_params(
+        zc: XrayCentreZocaloCallback = XrayCentreCallbackCollection.from_params(
             dummy_params
         ).zocalo_handler
         zc.ispyb.ispyb.ISPYB_CONFIG_PATH = dummy_ispyb_3d.ISPYB_CONFIG_PATH

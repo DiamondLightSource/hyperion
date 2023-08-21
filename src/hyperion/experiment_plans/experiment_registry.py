@@ -14,13 +14,12 @@ from hyperion.experiment_plans import (
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     NullPlanCallbackCollection,
 )
-from hyperion.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
 from hyperion.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
 )
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
     GridScanWithEdgeDetectParams,
@@ -37,6 +36,9 @@ from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import 
     SteppedGridScanInternalParameters,
     SteppedGridScanParams,
 )
+from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+    XrayCentreCallbackCollection,
+)
 
 
 def not_implemented():
@@ -51,9 +53,9 @@ EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanPara
 PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
-        "internal_param_type": FGSInternalParameters,
+        "internal_param_type": GridscanInternalParameters,
         "experiment_param_type": GridScanParams,
-        "callback_collection_type": FGSCallbackCollection,
+        "callback_collection_type": XrayCentreCallbackCollection,
     },
     "full_grid_scan": {
         "setup": full_grid_scan_plan.create_devices,

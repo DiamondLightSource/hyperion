@@ -3,14 +3,16 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
-from hyperion.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
-from hyperion.external_interaction.callbacks.fgs.tests.conftest import TestData
+from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
+from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+    XrayCentreCallbackCollection,
+)
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
@@ -25,10 +27,10 @@ td = TestData()
 
 @pytest.fixture
 def dummy_params():
-    return FGSInternalParameters(**default_raw_params())
+    return GridscanInternalParameters(**default_raw_params())
 
 
-def mock_zocalo_functions(callbacks: FGSCallbackCollection):
+def mock_zocalo_functions(callbacks: XrayCentreCallbackCollection):
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
@@ -48,7 +50,7 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    callbacks = FGSCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
 
     callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
@@ -81,9 +83,9 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
 )
 def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
     store_3d_grid_scan,
-    dummy_params: FGSInternalParameters,
+    dummy_params: GridscanInternalParameters,
 ):
-    callbacks = FGSCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
     callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document)
     callbacks.ispyb_handler.event(td.test_event_document)
@@ -124,7 +126,7 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
     store_3d_grid_scan,
     dummy_params,
 ):
-    callbacks = FGSCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
@@ -148,7 +150,7 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
     store_3d_grid_scan,
     dummy_params,
 ):
-    callbacks = FGSCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
 
     with pytest.raises(ISPyBDepositionNotMade):
@@ -161,9 +163,9 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
 )
 def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_bbox_from_first(
     store_3d_grid_scan,
-    dummy_params: FGSInternalParameters,
+    dummy_params: GridscanInternalParameters,
 ):
-    callbacks = FGSCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
     expected_centre_grid_coords = np.array([4, 6, 2])

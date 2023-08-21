@@ -7,7 +7,9 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
 )
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 
 
 @pytest.mark.s03
@@ -66,7 +68,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
 def test_can_store_2D_ispyb_data_correctly_when_in_error(
     StoreClass, exp_num_of_grids, success, fetch_comment
 ):
-    test_params = FGSInternalParameters(**default_raw_params())
+    test_params = GridscanInternalParameters(**default_raw_params())
     test_params.hyperion_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
     ispyb: StoreGridscanInIspyb = StoreClass(DEV_ISPYB_DATABASE_CFG, test_params)
     dc_ids, grid_ids, dcg_id = ispyb.begin_deposition()

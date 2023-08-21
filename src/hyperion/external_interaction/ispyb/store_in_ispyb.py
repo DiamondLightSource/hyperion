@@ -24,7 +24,7 @@ from hyperion.tracing import TRACER
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.fgs_internal_params import (
-        FGSInternalParameters,
+        GridscanInternalParameters,
     )
     from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
@@ -305,10 +305,10 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self,
         ispyb_config: str,
         experiment_type: str,
-        parameters: FGSInternalParameters = None,
+        parameters: GridscanInternalParameters = None,
     ) -> None:
         super().__init__(ispyb_config, experiment_type)
-        self.full_params: FGSInternalParameters | None = parameters
+        self.full_params: GridscanInternalParameters | None = parameters
         self.ispyb_params: GridscanIspybParams | None = None
         self.data_collection_ids: tuple[int, ...] | None = None
         self.upper_left: list[int] | None = None
@@ -331,7 +331,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         for id in self.data_collection_ids:
             self._end_deposition(id, success, reason)
 
-    def store_grid_scan(self, full_params: FGSInternalParameters):
+    def store_grid_scan(self, full_params: GridscanInternalParameters):
         self.full_params = full_params
         self.ispyb_params = full_params.hyperion_params.ispyb_params
         self.detector_params = full_params.hyperion_params.detector_params

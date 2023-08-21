@@ -4,7 +4,9 @@ import pytest
 
 from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -33,7 +35,7 @@ def test_rotation_params():
 
 @pytest.fixture(params=[1044])
 def test_fgs_params(request):
-    params = FGSInternalParameters(**default_raw_params())
+    params = GridscanInternalParameters(**default_raw_params())
     params.hyperion_params.ispyb_params.wavelength = 1.0
     params.hyperion_params.ispyb_params.flux = 9.0
     params.hyperion_params.ispyb_params.transmission_fraction = 0.5

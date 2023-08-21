@@ -12,10 +12,10 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import Zebra
+from ophyd.epics_motor import EpicsMotor
+from ophyd.status import Status
+
 from hyperion.experiment_plans.fast_grid_scan_plan import FGSComposite
-from hyperion.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
 from hyperion.external_interaction.callbacks.rotation.rotation_callback_collection import (
     RotationCallbackCollection,
 )
@@ -23,15 +23,18 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanIn
 from hyperion.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.internal_parameters import InternalParameters
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-from ophyd.epics_motor import EpicsMotor
-from ophyd.status import Status
+from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+    XrayCentreCallbackCollection,
+)
 
 
 def mock_set(motor: EpicsMotor, val):
@@ -45,7 +48,7 @@ def patch_motor(motor):
 
 @pytest.fixture
 def test_fgs_params():
-    return FGSInternalParameters(**raw_params_from_file())
+    return GridscanInternalParameters(**raw_params_from_file())
 
 
 @pytest.fixture
@@ -264,7 +267,7 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
 
 @pytest.fixture
 def mock_subscriptions(test_fgs_params):
-    subscriptions = FGSCallbackCollection.from_params(test_fgs_params)
+    subscriptions = XrayCentreCallbackCollection.from_params(test_fgs_params)
     subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()

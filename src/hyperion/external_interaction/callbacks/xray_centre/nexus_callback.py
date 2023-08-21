@@ -5,10 +5,12 @@ from bluesky.callbacks import CallbackBase
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import ISPYB_PLAN_NAME
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 
 
-class FGSNexusFileCallback(CallbackBase):
+class GridscanNexusFileCallback(CallbackBase):
     """Callback class to handle the creation of Nexus files based on experiment \
     parameters. Initialises on recieving a 'start' document for the \
     'run_gridscan_move_and_tidy' sub plan, which must also contain the run parameters, \
@@ -28,7 +30,7 @@ class FGSNexusFileCallback(CallbackBase):
     """
 
     def __init__(self) -> None:
-        self.parameters: FGSInternalParameters | None = None
+        self.parameters: GridscanInternalParameters | None = None
         self.run_start_uid: str | None = None
         self.nexus_writer_1: NexusWriter | None = None
         self.nexus_writer_2: NexusWriter | None = None
@@ -39,7 +41,7 @@ class FGSNexusFileCallback(CallbackBase):
                 "Nexus writer recieved start document with experiment parameters."
             )
             json_params = doc.get("hyperion_internal_parameters")
-            self.parameters = FGSInternalParameters.from_json(json_params)
+            self.parameters = GridscanInternalParameters.from_json(json_params)
             self.run_start_uid = doc.get("uid")
 
     def descriptor(self, doc):

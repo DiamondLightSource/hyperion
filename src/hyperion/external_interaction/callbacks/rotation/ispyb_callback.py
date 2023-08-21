@@ -5,7 +5,9 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
 )
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreRotationInIspyb
 from hyperion.log import set_dcgid_tag
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -25,7 +27,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
     Usually used as part of a RotationCallbackCollection.
     """
 
-    def __init__(self, parameters: FGSInternalParameters):
+    def __init__(self, parameters: GridscanInternalParameters):
         super().__init__(parameters)
         self.ispyb: StoreRotationInIspyb = StoreRotationInIspyb(
             self.ispyb_config, self.params

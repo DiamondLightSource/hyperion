@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import hyperion.log
 import numpy as np
 from blueapi.core import MsgGenerator
 from bluesky import RunEngine
@@ -27,6 +26,8 @@ from dodal.beamlines.i03 import (
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import DetectorParams
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params
+
+import hyperion.log
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from hyperion.device_setup_plans.setup_zebra import (
@@ -34,9 +35,6 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_fgs,
 )
 from hyperion.exceptions import WarningException
-from hyperion.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
 from hyperion.parameters import external_parameters
 from hyperion.parameters.beamline_parameters import (
     get_beamline_parameters,
@@ -44,10 +42,13 @@ from hyperion.parameters.beamline_parameters import (
 )
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.tracing import TRACER
+from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+    XrayCentreCallbackCollection,
+)
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.fgs_internal_params import (
-        FGSInternalParameters,
+        GridscanInternalParameters,
     )
 
 
@@ -145,7 +146,7 @@ def tidy_up_plans(fgs_composite: FGSComposite):
 @bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
     fgs_composite: FGSComposite,
-    parameters: FGSInternalParameters,
+    parameters: GridscanInternalParameters,
     md={
         "plan_name": "run_gridscan",
     },
@@ -199,8 +200,8 @@ def run_gridscan(
 @bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
     fgs_composite: FGSComposite,
-    parameters: FGSInternalParameters,
-    subscriptions: FGSCallbackCollection,
+    parameters: GridscanInternalParameters,
+    subscriptions: XrayCentreCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
@@ -255,7 +256,7 @@ def fast_grid_scan(
         parameters.hyperion_params.detector_params
     )
 
-    subscriptions = FGSCallbackCollection.from_params(parameters)
+    subscriptions = XrayCentreCallbackCollection.from_params(parameters)
 
     @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
         list(subscriptions)  # must be the outermost decorator to receive the metadata
@@ -288,11 +289,11 @@ if __name__ == "__main__":
     RE = RunEngine({})
     RE.waiting_hook = ProgressBarManager()
     from hyperion.parameters.plan_specific.fgs_internal_params import (
-        FGSInternalParameters,
+        GridscanInternalParameters,
     )
 
-    parameters = FGSInternalParameters(**external_parameters.from_file())
-    subscriptions = FGSCallbackCollection.from_params(parameters)
+    parameters = GridscanInternalParameters(**external_parameters.from_file())
+    subscriptions = XrayCentreCallbackCollection.from_params(parameters)
 
     create_devices()
 

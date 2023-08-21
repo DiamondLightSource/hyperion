@@ -15,9 +15,6 @@ from hyperion.experiment_plans.fast_grid_scan_plan import (
     read_hardware_for_ispyb,
     run_gridscan,
 )
-from hyperion.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
 from hyperion.external_interaction.system_tests.conftest import (  # noqa
     fetch_comment,
     zocalo_env,
@@ -27,12 +24,17 @@ from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
+from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+    XrayCentreCallbackCollection,
+)
 
 
 @pytest.fixture
 def params():
-    params = FGSInternalParameters(**default_raw_params())
+    params = GridscanInternalParameters(**default_raw_params())
     params.hyperion_params.beamline = SIM_BEAMLINE
     return params
 
@@ -79,7 +81,7 @@ def test_run_gridscan(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    params: FGSInternalParameters,
+    params: GridscanInternalParameters,
     RE: RunEngine,
     fgs_composite: FGSComposite,
 ):
@@ -126,10 +128,10 @@ def test_full_plan_tidies_at_end(
     kickoff: MagicMock,
     wait: MagicMock,
     fgs_composite: FGSComposite,
-    params: FGSInternalParameters,
+    params: GridscanInternalParameters,
     RE: RunEngine,
 ):
-    callbacks = FGSCallbackCollection.from_params(params)
+    callbacks = XrayCentreCallbackCollection.from_params(params)
     callbacks.nexus_handler.nexus_writer_1 = MagicMock()
     callbacks.nexus_handler.nexus_writer_2 = MagicMock()
     callbacks.ispyb_handler.ispyb_ids = MagicMock()
@@ -160,10 +162,10 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     kickoff: MagicMock,
     wait: MagicMock,
     fgs_composite: FGSComposite,
-    params: FGSInternalParameters,
+    params: GridscanInternalParameters,
     RE: RunEngine,
 ):
-    callbacks = FGSCallbackCollection.from_params(params)
+    callbacks = XrayCentreCallbackCollection.from_params(params)
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
         RE(fast_grid_scan(params, callbacks))
@@ -175,7 +177,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     RE: RunEngine,
     fgs_composite: FGSComposite,
     fetch_comment: Callable,
-    params: FGSInternalParameters,
+    params: GridscanInternalParameters,
 ):
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
@@ -184,7 +186,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 100
 
-    callbacks = FGSCallbackCollection.from_params(params)
+    callbacks = XrayCentreCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
     mock_start_zocalo = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
@@ -209,7 +211,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     RE: RunEngine,
     fgs_composite: FGSComposite,
     zocalo_env: None,
-    params: FGSInternalParameters,
+    params: GridscanInternalParameters,
 ):
     """This test currently avoids hardware interaction and is mostly confirming
     interaction with dev_ispyb and dev_zocalo"""
@@ -224,7 +226,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     fgs_composite.eiger.stage = MagicMock()
     fgs_composite.eiger.unstage = MagicMock()
 
-    callbacks = FGSCallbackCollection.from_params(params)
+    callbacks = XrayCentreCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
     RE(fast_grid_scan(params, callbacks))

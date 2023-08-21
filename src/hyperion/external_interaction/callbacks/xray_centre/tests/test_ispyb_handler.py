@@ -4,11 +4,15 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from dodal.log import LOGGER as dodal_logger
 
-from hyperion.external_interaction.callbacks.fgs.ispyb_callback import FGSISPyBCallback
-from hyperion.external_interaction.callbacks.fgs.tests.conftest import TestData
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.log import LOGGER, set_up_logging_handlers
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 
 DC_IDS = [1, 2]
 DCG_ID = 4
@@ -17,7 +21,7 @@ td = TestData()
 
 @pytest.fixture
 def dummy_params():
-    return FGSInternalParameters(**default_raw_params())
+    return GridscanInternalParameters(**default_raw_params())
 
 
 def test_fgs_failing_results_in_bad_run_status_in_ispyb(
@@ -30,7 +34,7 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    ispyb_handler = FGSISPyBCallback(dummy_params)
+    ispyb_handler = GridscanISPyBCallback(dummy_params)
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document)
     ispyb_handler.event(td.test_event_document)
@@ -60,7 +64,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    ispyb_handler = FGSISPyBCallback(dummy_params)
+    ispyb_handler = GridscanISPyBCallback(dummy_params)
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document)
     ispyb_handler.event(td.test_event_document)
@@ -95,7 +99,7 @@ def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then
 ):
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
 
-    ispyb_handler = FGSISPyBCallback(dummy_params)
+    ispyb_handler = GridscanISPyBCallback(dummy_params)
 
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document)
@@ -119,7 +123,7 @@ def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_the
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    ispyb_handler = FGSISPyBCallback(dummy_params)
+    ispyb_handler = GridscanISPyBCallback(dummy_params)
 
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document)

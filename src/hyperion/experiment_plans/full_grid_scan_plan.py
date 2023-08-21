@@ -32,7 +32,7 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
 from hyperion.log import LOGGER
 from hyperion.parameters.beamline_parameters import get_beamline_parameters
 from hyperion.parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
+    GridscanInternalParameters,
     GridScanParams,
 )
 
@@ -75,10 +75,10 @@ def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
 def create_parameters_for_fast_grid_scan(
     grid_scan_with_edge_params: GridScanWithEdgeDetectInternalParameters,
     grid_parameters: GridScanParams,
-) -> FGSInternalParameters:
+) -> GridscanInternalParameters:
     params_json = json.loads(grid_scan_with_edge_params.json())
     params_json["experiment_params"] = json.loads(grid_parameters.json())
-    fast_grid_scan_parameters = FGSInternalParameters(**params_json)
+    fast_grid_scan_parameters = GridscanInternalParameters(**params_json)
     LOGGER.info(f"Parameters for FGS: {fast_grid_scan_parameters}")
     return fast_grid_scan_parameters
 

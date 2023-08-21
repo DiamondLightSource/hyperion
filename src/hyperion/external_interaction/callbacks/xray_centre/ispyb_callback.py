@@ -10,10 +10,12 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     StoreGridscanInIspyb,
 )
 from hyperion.log import set_dcgid_tag
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 
 
-class FGSISPyBCallback(BaseISPyBCallback):
+class GridscanISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
     recieving an 'event' document for the 'ispyb_readings' event, and updates the
@@ -30,7 +32,7 @@ class FGSISPyBCallback(BaseISPyBCallback):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self, parameters: FGSInternalParameters):
+    def __init__(self, parameters: GridscanInternalParameters):
         super().__init__(parameters)
         self.ispyb: StoreGridscanInIspyb = (
             Store3DGridscanInIspyb(self.ispyb_config, self.params)

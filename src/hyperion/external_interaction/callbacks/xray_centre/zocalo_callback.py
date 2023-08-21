@@ -5,18 +5,23 @@ from typing import Callable, Optional
 
 import numpy as np
 from bluesky.callbacks import CallbackBase
-from hyperion.external_interaction.callbacks.fgs.ispyb_callback import FGSISPyBCallback
+from numpy import ndarray
+
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.zocalo.zocalo_interaction import (
     NoDiffractionFound,
     ZocaloInteractor,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
-from numpy import ndarray
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 
 
-class FGSZocaloCallback(CallbackBase):
+class XrayCentreZocaloCallback(CallbackBase):
     """Callback class to handle the triggering of Zocalo processing.
     Sends zocalo a run_start signal on recieving a start document for the 'do_fgs'
     sub-plan, and sends a run_end signal on recieving a stop document for the#
@@ -37,7 +42,9 @@ class FGSZocaloCallback(CallbackBase):
     """
 
     def __init__(
-        self, parameters: FGSInternalParameters, ispyb_handler: FGSISPyBCallback
+        self,
+        parameters: GridscanInternalParameters,
+        ispyb_handler: GridscanISPyBCallback,
     ):
         self.grid_position_to_motor_position: Callable[
             [ndarray], ndarray
@@ -45,7 +52,7 @@ class FGSZocaloCallback(CallbackBase):
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.do_fgs_uid: Optional[str] = None
-        self.ispyb: FGSISPyBCallback = ispyb_handler
+        self.ispyb: GridscanISPyBCallback = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(
             parameters.hyperion_params.zocalo_environment
         )

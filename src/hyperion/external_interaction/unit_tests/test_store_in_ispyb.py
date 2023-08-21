@@ -14,7 +14,9 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
 )
 from hyperion.parameters.constants import SIM_ISPYB_CONFIG
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -111,7 +113,7 @@ EMPTY_DATA_COLLECTION_PARAMS = {
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = FGSInternalParameters(**default_raw_params())
+    dummy_params = GridscanInternalParameters(**default_raw_params())
     dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 0.8
     dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 0.8
@@ -176,7 +178,7 @@ def test_mutate_params(
     ispyb_conn,
     dummy_rotation_ispyb: StoreRotationInIspyb,
     dummy_ispyb_3d: Store3DGridscanInIspyb,
-    dummy_params: FGSInternalParameters,
+    dummy_params: GridscanInternalParameters,
     dummy_rotation_params: RotationInternalParameters,
 ):
     rotation_dict = deepcopy(EMPTY_DATA_COLLECTION_PARAMS)
@@ -287,7 +289,7 @@ def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
 def test_store_3d_grid_scan(
     ispyb_conn,
     dummy_ispyb_3d: Store3DGridscanInIspyb,
-    dummy_params: FGSInternalParameters,
+    dummy_params: GridscanInternalParameters,
 ):
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
@@ -415,7 +417,9 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
 
 @patch("ispyb.open", autospec=True)
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
-    ispyb_conn, dummy_ispyb: Store2DGridscanInIspyb, dummy_params: FGSInternalParameters
+    ispyb_conn,
+    dummy_ispyb: Store2DGridscanInIspyb,
+    dummy_params: GridscanInternalParameters,
 ):
     expected_sample_id = "0001"
     dummy_params.hyperion_params.ispyb_params.sample_id = expected_sample_id
@@ -541,7 +545,9 @@ def test_ispyb_deposition_comment_for_3D_correct(
 
 @patch("ispyb.open", autospec=True)
 def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
-    ispyb_conn, dummy_ispyb: Store2DGridscanInIspyb, dummy_params: FGSInternalParameters
+    ispyb_conn,
+    dummy_ispyb: Store2DGridscanInIspyb,
+    dummy_params: GridscanInternalParameters,
 ):
     expected_number_of_steps = 200 * 3
     dummy_params.experiment_params.x_steps = 200

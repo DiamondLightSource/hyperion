@@ -11,17 +11,19 @@ from hyperion.experiment_plans.fast_grid_scan_plan import (
     FGSComposite,
     run_gridscan_and_move,
 )
-from hyperion.external_interaction.callbacks.fgs.fgs_callback_collection import (
-    FGSCallbackCollection,
-)
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.fgs_internal_params import FGSInternalParameters
+from hyperion.parameters.plan_specific.fgs_internal_params import (
+    GridscanInternalParameters,
+)
+from src.hyperion.external_interaction.callbacks.xray_centre.xray_centre_callback_collection import (
+    XrayCentreCallbackCollection,
+)
 
 
 def test_callback_collection_init():
-    test_parameters = FGSInternalParameters(**default_raw_params())
-    callbacks = FGSCallbackCollection.from_params(test_parameters)
+    test_parameters = GridscanInternalParameters(**default_raw_params())
+    callbacks = XrayCentreCallbackCollection.from_params(test_parameters)
     assert (
         callbacks.ispyb_handler.params.experiment_params
         == test_parameters.experiment_params
@@ -85,11 +87,11 @@ def test_communicator_in_composite_run(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
 
-    params = FGSInternalParameters(**default_raw_params())
+    params = GridscanInternalParameters(**default_raw_params())
     params.hyperion_params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
-    callbacks = FGSCallbackCollection.from_params(params)
+    callbacks = XrayCentreCallbackCollection.from_params(params)
     callbacks.zocalo_handler._wait_for_result = MagicMock()
     callbacks.zocalo_handler._run_end = MagicMock()
     callbacks.zocalo_handler._run_start = MagicMock()
@@ -115,8 +117,8 @@ def test_communicator_in_composite_run(
 
 
 def test_callback_collection_list():
-    test_parameters = FGSInternalParameters(**default_raw_params())
-    callbacks = FGSCallbackCollection.from_params(test_parameters)
+    test_parameters = GridscanInternalParameters(**default_raw_params())
+    callbacks = XrayCentreCallbackCollection.from_params(test_parameters)
     callback_list = list(callbacks)
     assert len(callback_list) == 3
     assert callbacks.ispyb_handler in callback_list
@@ -125,8 +127,8 @@ def test_callback_collection_list():
 
 
 def test_subscribe_in_plan():
-    test_parameters = FGSInternalParameters(**default_raw_params())
-    callbacks = FGSCallbackCollection.from_params(test_parameters)
+    test_parameters = GridscanInternalParameters(**default_raw_params())
+    callbacks = XrayCentreCallbackCollection.from_params(test_parameters)
     document_event_mock = MagicMock()
     callbacks.ispyb_handler.start = document_event_mock
     callbacks.ispyb_handler.stop = document_event_mock

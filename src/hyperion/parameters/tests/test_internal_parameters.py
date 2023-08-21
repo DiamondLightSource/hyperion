@@ -21,8 +21,8 @@ from hyperion.parameters.internal_parameters import (
     get_extracted_experiment_and_flat_hyperion_params,
 )
 from hyperion.parameters.plan_specific.fgs_internal_params import (
-    FGSInternalParameters,
     GridscanHyperionParameters,
+    GridscanInternalParameters,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -45,7 +45,7 @@ def rotation_raw_params():
 
 @pytest.fixture
 def gridscan_params(raw_params):
-    return FGSInternalParameters(**raw_params)
+    return GridscanInternalParameters(**raw_params)
 
 
 @pytest.fixture
@@ -86,12 +86,12 @@ def test_ispyb_param_dict():
 
 def test_internal_param_serialisation_deserialisation():
     data = from_file()
-    internal_parameters = FGSInternalParameters(**data)
+    internal_parameters = GridscanInternalParameters(**data)
 
     serialised = internal_parameters.json(indent=2)
     reloaded = json.loads(serialised)
 
-    deserialised = FGSInternalParameters(**reloaded)
+    deserialised = GridscanInternalParameters(**reloaded)
 
     assert deserialised == internal_parameters
 
@@ -115,7 +115,7 @@ def test_flatten():
 def test_hyperion_params_needs_values_from_experiment(raw_params):
     extracted_hyperion_param_dict = extract_hyperion_params_from_flat_dict(
         flatten_dict(raw_params),
-        FGSInternalParameters._hyperion_param_key_definitions(),
+        GridscanInternalParameters._hyperion_param_key_definitions(),
     )
     with pytest.raises(ValidationError):
         hyperion_params = GridscanHyperionParameters(**extracted_hyperion_param_dict)
@@ -134,7 +134,7 @@ def test_hyperion_parameters_only_from_file():
 
 
 def test_hyperion_params_can_be_deserialised_from_internal_representation(raw_params):
-    internal_params = FGSInternalParameters(**raw_params)
+    internal_params = GridscanInternalParameters(**raw_params)
     hyperion_param_json = internal_params.hyperion_params.json()
     hyperion_param_dict = json.loads(hyperion_param_json)
     assert hyperion_param_dict.get("ispyb_params") is not None
@@ -148,7 +148,7 @@ def test_hyperion_params_can_be_deserialised_from_internal_representation(raw_pa
 
 
 def test_hyperion_params_eq(raw_params):
-    internal_params = FGSInternalParameters(**raw_params)
+    internal_params = GridscanInternalParameters(**raw_params)
 
     hyperion_params_1 = internal_params.hyperion_params
     hyperion_params_2 = copy.deepcopy(hyperion_params_1)
@@ -197,7 +197,7 @@ def test_fetch_subdict(raw_params):
 
 
 def test_param_fields_match_components_they_should_use(
-    gridscan_params: FGSInternalParameters,
+    gridscan_params: GridscanInternalParameters,
     rotation_params: RotationInternalParameters,
 ):
     r_params = rotation_params.hyperion_params.ispyb_params
@@ -232,7 +232,7 @@ def test_internal_params_eq():
     params = external_parameters.from_file(
         "src/hyperion/parameters/tests/test_data/good_test_parameters.json"
     )
-    internal_params = FGSInternalParameters(**params)
+    internal_params = GridscanInternalParameters(**params)
     internal_params_2 = copy.deepcopy(internal_params)
 
     assert internal_params == internal_params_2
