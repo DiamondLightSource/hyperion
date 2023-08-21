@@ -138,7 +138,11 @@ class SteppedGridScanInternalParameters(InternalParameters):
         all_params["omega_increment"] = 0
         all_params["num_images_per_trigger"] = 1
 
-        return ArtemisParameters(**extract_artemis_params_from_flat_dict(all_params))
+        return ArtemisParameters(
+            **extract_artemis_params_from_flat_dict(
+                all_params, cls._artemis_param_key_definitions()
+            )
+        )
 
     def get_scan_points(self, scan_number: int) -> dict:
         """Get the scan points for the first or second gridscan: scan number must be
