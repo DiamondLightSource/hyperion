@@ -78,6 +78,7 @@ if [[ $STOP == 1 ]]; then
         fi
     fi
     pkill -f "python -m hyperion"
+    pkill -f "python -m artemis"
 
     echo "Hyperion stopped"
     exit 0
@@ -97,6 +98,7 @@ if [[ $START == 1 ]]; then
     fi
 
     pkill -f "python -m hyperion"
+    pkill -f "python -m artemis"
 
     module unload controls_dev
     module load python/3.10

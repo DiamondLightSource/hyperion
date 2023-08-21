@@ -15,10 +15,7 @@ from pydantic.dataclasses import dataclass
 import hyperion.experiment_plans as hyperion_plans
 import hyperion.log
 from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.experiment_registry_plan import (
-    PLAN_REGISTRY,
-    PlanNotFound,
-)
+from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
 )

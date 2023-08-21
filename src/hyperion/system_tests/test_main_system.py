@@ -21,7 +21,7 @@ from hyperion.__main__ import (
     setup_context,
 )
 from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.experiment_registry_plan import PLAN_REGISTRY
+from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.parameters import external_parameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,

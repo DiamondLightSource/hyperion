@@ -22,7 +22,7 @@ class NoDiffractionFound(WarningException):
 
 
 class ZocaloInteractor:
-    def __init__(self, environment: str = "hyperion"):
+    def __init__(self, environment: str = "artemis"):
         self.zocalo_environment: str = environment
 
     def _get_zocalo_connection(self):

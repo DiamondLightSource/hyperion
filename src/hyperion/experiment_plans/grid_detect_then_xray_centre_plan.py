@@ -152,7 +152,7 @@ def detect_grid_and_do_gridscan(
     yield from flyscan_xray_centre(flyscan_xray_centre_parameters)
 
 
-def full_grid_scan(
+def grid_detect_then_xray_centre(
     parameters: Any,
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
 ) -> MsgGenerator:

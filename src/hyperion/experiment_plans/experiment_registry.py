@@ -57,7 +57,7 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
         "experiment_param_type": GridScanParams,
         "callback_collection_type": XrayCentreCallbackCollection,
     },
-    "full_grid_scan": {
+    "grid_detect_then_xray_centre": {
         "setup": grid_detect_then_xray_centre_plan.create_devices,
         "internal_param_type": GridScanWithEdgeDetectInternalParameters,
         "experiment_param_type": GridScanWithEdgeDetectParams,

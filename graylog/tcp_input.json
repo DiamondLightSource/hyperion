@@ -2,8 +2,8 @@
     "id": "c7c601fc-5090-4a0c-a4f3-e757968eeca2",
     "rev": 1,
     "v": "1",
-    "name": "Hyperion TCP Input",
-    "summary": "Hyperion GELF TCP input.",
+    "name": "Artemis TCP Input",
+    "summary": "Artemis GELF TCP input.",
     "description": "",
     "vendor": "DLS",
     "url": "",
@@ -21,7 +21,7 @@
             "data": {
                 "title": {
                     "@type": "string",
-                    "@value": "Hyperion GELF TCP"
+                    "@value": "Artemis GELF TCP"
                 },
                 "configuration": {
                     "tls_key_file": {

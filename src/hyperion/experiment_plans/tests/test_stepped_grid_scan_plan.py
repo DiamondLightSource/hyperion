@@ -12,7 +12,6 @@ from hyperion.experiment_plans.stepped_grid_scan_plan import (
 )
 
 patch = functools.partial(unittest.mock.patch, autospec=True)
-DONE_STATUS = Status(done=True, success=True)
 
 
 def test_when_run_stepped_grid_scan_called_then_generator_returned():
