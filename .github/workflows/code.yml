@@ -21,7 +21,7 @@ jobs:
             architecture: x64
 
 
-        - name: Checkout Artemis
+        - name: Checkout Hyperion
           uses: actions/checkout@v3
 
 

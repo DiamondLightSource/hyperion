@@ -1,7 +1,7 @@
 {
     "params_version": "2.2.0",
-    "artemis_params": {
-        "zocalo_environment": "dev_artemis",
+    "hyperion_params": {
+        "zocalo_environment": "dev_hyperion",
         "beamline": "BL03S",
         "insertion_prefix": "SR03S",
         "experiment_type": "fast_grid_scan",
@@ -11,7 +11,7 @@
             "prefix": "file_name",
             "run_number": 0,
             "use_roi_mode": false,
-            "det_dist_to_beam_converter_path": "src/artemis/unit_tests/test_lookup_table.txt"
+            "det_dist_to_beam_converter_path": "src/hyperion/unit_tests/test_lookup_table.txt"
         },
         "ispyb_params": {
             "visit_path": "/tmp/cm31105-4",

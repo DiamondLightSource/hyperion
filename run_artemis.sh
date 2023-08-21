@@ -33,18 +33,18 @@ for option in "$@"; do
 
         --help|--info|--h)
         
-        #Combine help from here and help from artemis
+        #Combine help from here and help from hyperion
             source .venv/bin/activate
-            python -m artemis --help
+            python -m hyperion --help
             echo "  -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline"
             echo " "
             echo "Operations"
-            echo "  --stop                  Used to stop a currently running instance of Artemis. Will override any other operations"
+            echo "  --stop                  Used to stop a currently running instance of Hyperion. Will override any other operations"
             echo "                          options"
 
             echo "  --no-start              Used to specify that the script should be run without starting the server."
             echo " "
-            echo "By default this script will start an Artemis server unless the --no-start flag is specified."
+            echo "By default this script will start an Hyperion server unless the --no-start flag is specified."
             exit 0
             ;;
         -*|--*)
@@ -77,9 +77,9 @@ if [[ $STOP == 1 ]]; then
             exit 1
         fi
     fi
-    pkill -f "python -m artemis"
+    pkill -f "python -m hyperion"
 
-    echo "Artemis stopped"
+    echo "Hyperion stopped"
     exit 0
 fi
 
@@ -91,12 +91,12 @@ if [[ $START == 1 ]]; then
             exit 1
         fi
 
-        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
+        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-${BEAMLINE}.cfg"
         export ISPYB_CONFIG_PATH
 
     fi
 
-    pkill -f "python -m artemis"
+    pkill -f "python -m hyperion"
 
     module unload controls_dev
     module load python/3.10
@@ -105,17 +105,17 @@ if [[ $START == 1 ]]; then
     RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
     cd ${RELATIVE_SCRIPT_DIR}
 
-    if [ -z "$ARTEMIS_LOG_DIR" ]; then
+    if [ -z "$HYPERION_LOG_DIR" ]; then
         if [ $IN_DEV == true ]; then
-            ARTEMIS_LOG_DIR=$RELATIVE_SCRIPT_DIR/tmp/dev
+            HYPERION_LOG_DIR=$RELATIVE_SCRIPT_DIR/tmp/dev
         else
-            ARTEMIS_LOG_DIR=/dls_sw/$BEAMLINE/logs/bluesky
+            HYPERION_LOG_DIR=/dls_sw/$BEAMLINE/logs/bluesky
         fi
     fi
-    echo "$(date) Logging to $ARTEMIS_LOG_DIR"
-    export ARTEMIS_LOG_DIR
-    mkdir -p $ARTEMIS_LOG_DIR
-    start_log_path=$ARTEMIS_LOG_DIR/start_log.txt
+    echo "$(date) Logging to $HYPERION_LOG_DIR"
+    export HYPERION_LOG_DIR
+    mkdir -p $HYPERION_LOG_DIR
+    start_log_path=$HYPERION_LOG_DIR/start_log.txt
 
     source .venv/bin/activate
 
@@ -131,9 +131,9 @@ if [[ $START == 1 ]]; then
         if [ "${args[$i]}" != false ]; then commands+="${arg_strings[$i]} "; fi;
     done
     
-    python -m artemis `echo $commands;`>$start_log_path 2>&1 &
+    python -m hyperion `echo $commands;`>$start_log_path 2>&1 &
 
-    echo "$(date) Waiting for Artemis to boot"
+    echo "$(date) Waiting for Hyperion to boot"
 
     for i in {1..30}
     do
@@ -148,10 +148,10 @@ if [[ $START == 1 ]]; then
     done
 
     if [ $ret_value -ne 0 ]; then
-        echo "$(date) Artemis Failed to start!!!!"
+        echo "$(date) Hyperion Failed to start!!!!"
         exit 1
     else
-        echo "$(date) Artemis started"
+        echo "$(date) Hyperion started"
     fi
 fi
 
