@@ -15,6 +15,9 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 
+from artemis.device_setup_plans.utils import (
+    start_preparing_data_collection_then_do_plan,
+)
 from artemis.experiment_plans.fast_grid_scan_plan import (
     create_devices as fgs_create_devices,
 )
@@ -78,35 +81,6 @@ def create_parameters_for_fast_grid_scan(
     fast_grid_scan_parameters = FGSInternalParameters(**params_json)
     LOGGER.info(f"Parameters for FGS: {fast_grid_scan_parameters}")
     return fast_grid_scan_parameters
-
-
-def start_arming_then_do_grid(
-    parameters: GridScanWithEdgeDetectInternalParameters,
-    attenuator: Attenuator,
-    backlight: Backlight,
-    eiger: EigerDetector,
-    aperture_scatterguard: ApertureScatterguard,
-    detector_motion: DetectorMotion,
-    oav_params: OAVParameters,
-):
-    # Start stage with asynchronous arming here
-    yield from bps.abs_set(eiger.do_arm, 1, group="ready_for_data_collection")
-    yield from bps.abs_set(
-        attenuator,
-        parameters.artemis_params.ispyb_params.transmission_fraction,
-        group="ready_for_data_collection",
-    )
-
-    yield from bpp.contingency_wrapper(
-        detect_grid_and_do_gridscan(
-            parameters,
-            backlight,
-            aperture_scatterguard,
-            detector_motion,
-            oav_params,
-        ),
-        except_plan=lambda e: (yield from bps.stop(eiger)),
-    )
 
 
 def detect_grid_and_do_gridscan(
@@ -196,12 +170,13 @@ def full_grid_scan(
 
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
 
-    return start_arming_then_do_grid(
-        parameters,
-        attenuator,
-        backlight,
+    plan_to_perform = detect_grid_and_do_gridscan(
+        parameters, backlight, aperture_scatterguard, detector_motion, oav_params
+    )
+
+    return start_preparing_data_collection_then_do_plan(
         eiger,
-        aperture_scatterguard,
-        detector_motion,
-        oav_params,
+        attenuator,
+        parameters.artemis_params.ispyb_params.transmission_fraction,
+        plan_to_perform,
     )
