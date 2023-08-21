@@ -9,8 +9,8 @@ from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 from ophyd.status import Status
 
 from hyperion.log import LOGGER
-from src.hyperion.experiment_plans import optimise_attenuation
-from src.hyperion.experiment_plans.optimise_attenuation import (
+from src.hyperion.experiment_plans import optimise_attenuation_plan
+from src.hyperion.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
     Direction,
     arm_devices,
@@ -122,7 +122,7 @@ def test_calculate_new_direction_gives_correct_value(
 
 @pytest.mark.skip(reason="errors introduced with renaming, to be investigated")
 @patch(
-    "hyperion.experiment_plans.optimise_attenuation.do_device_optimise_iteration",
+    "hyperion.experiment_plans.optimise_attenuation_plan.do_device_optimise_iteration",
     autospec=True,
 )
 def test_deadtime_optimisation_calculates_deadtime_correctly(
@@ -135,7 +135,7 @@ def test_deadtime_optimisation_calculates_deadtime_correctly(
     is_deadtime_optimised.return_value = True
 
     with patch(
-        "hyperion.experiment_plans.optimise_attenuation.is_deadtime_optimised",
+        "hyperion.experiment_plans.optimise_attenuation_plan.is_deadtime_optimised",
         autospec=True,
     ) as mock_is_deadtime_optimised:
         RE(
@@ -212,7 +212,7 @@ def test_is_counts_within_target_is_false(total_count, lower_limit, upper_limit)
 def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
     sample_shutter, xspress3mini, attenuator = fake_create_devices()
     sample_shutter.set = MagicMock(return_value=get_good_status())
-    optimise_attenuation.is_counts_within_target = MagicMock(return_value=False)
+    optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
     xspress3mini.arm = MagicMock(return_value=get_good_status())
     xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
     with pytest.raises(AttenuationOptimisationFailedException):
@@ -282,7 +282,7 @@ def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
 
 
 def test_create_new_devices():
-    with patch("hyperion.experiment_plans.optimise_attenuation.i03") as i03:
+    with patch("hyperion.experiment_plans.optimise_attenuation_plan.i03") as i03:
         create_devices()
         i03.sample_shutter.assert_called()
         i03.xspress3mini.assert_called()
@@ -290,7 +290,7 @@ def test_create_new_devices():
 
 
 @pytest.mark.skip(reason="errors introduced with renaming, to be investigated")
-@patch("hyperion.experiment_plans.optimise_attenuation.arm_devices", autospec=True)
+@patch("hyperion.experiment_plans.optimise_attenuation_plan.arm_devices", autospec=True)
 def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
     sample_shutter, xspress3mini, attenuator = fake_create_devices()
 
@@ -330,15 +330,15 @@ def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
     [("total_counts"), ("deadtime")],
 )
 @patch(
-    "hyperion.experiment_plans.optimise_attenuation.total_counts_optimisation",
+    "hyperion.experiment_plans.optimise_attenuation_plan.total_counts_optimisation",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.optimise_attenuation.deadtime_optimisation",
+    "hyperion.experiment_plans.optimise_attenuation_plan.deadtime_optimisation",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.optimise_attenuation.check_parameters",
+    "hyperion.experiment_plans.optimise_attenuation_plan.check_parameters",
     autospec=True,
 )
 def test_optimisation_attenuation_plan_runs_correct_functions(
@@ -353,7 +353,7 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     xspress3mini.acquire_time.set = MagicMock(return_value=get_good_status())
 
     RE(
-        optimise_attenuation.optimise_attenuation_plan(
+        optimise_attenuation_plan.optimise_attenuation_plan(
             xspress3mini,
             attenuator,
             sample_shutter,

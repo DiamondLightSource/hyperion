@@ -13,7 +13,7 @@ from hyperion.exceptions import WarningException
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
-from src.hyperion.experiment_plans.oav_grid_detection import (
+from src.hyperion.experiment_plans.oav_grid_detection_plan import (
     create_devices,
     grid_detection_plan,
 )

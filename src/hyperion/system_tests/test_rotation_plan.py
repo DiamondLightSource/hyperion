@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.hyperion.experiment_plans.rotation_scan import (
+from src.hyperion.experiment_plans.rotation_scan_plan import (
     DEFAULT_DIRECTION,
     create_devices,
     move_to_end_w_buffer,

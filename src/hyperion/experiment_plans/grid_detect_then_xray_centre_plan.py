@@ -23,14 +23,14 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.beamline_parameters import get_beamline_parameters
-from src.hyperion.experiment_plans.flyscan_xray_centre import (
+from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     create_devices as fgs_create_devices,
 )
-from src.hyperion.experiment_plans.flyscan_xray_centre import flyscan_xray_centre
-from src.hyperion.experiment_plans.oav_grid_detection import (
+from src.hyperion.experiment_plans.flyscan_xray_centre_plan import flyscan_xray_centre
+from src.hyperion.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
-from src.hyperion.experiment_plans.oav_grid_detection import grid_detection_plan
+from src.hyperion.experiment_plans.oav_grid_detection_plan import grid_detection_plan
 from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,

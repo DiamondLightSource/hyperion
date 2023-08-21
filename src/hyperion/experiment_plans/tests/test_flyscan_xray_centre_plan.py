@@ -30,7 +30,7 @@ from hyperion.external_interaction.system_tests.conftest import (
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import ISPYB_PLAN_NAME
-from src.hyperion.experiment_plans.flyscan_xray_centre import (
+from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     GridscanComposite,
     flyscan_xray_centre,
     read_hardware_for_ispyb,
@@ -130,8 +130,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
 @patch(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
 )
-@patch("hyperion.experiment_plans.flyscan_xray_centre.run_gridscan", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.move_x_y_z", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
 def test_results_adjusted_and_passed_to_move_xyz(
     move_x_y_z: MagicMock,
     run_gridscan: MagicMock,
@@ -253,8 +253,8 @@ def test_results_passed_to_move_motors(
 @patch(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
 )
-@patch("hyperion.experiment_plans.flyscan_xray_centre.run_gridscan", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.move_x_y_z", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     rd: MagicMock,
@@ -302,8 +302,8 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
     autospec=True,
 )
-@patch("hyperion.experiment_plans.flyscan_xray_centre.run_gridscan", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.move_x_y_z", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
 def test_logging_within_plan(
     rd: MagicMock,
@@ -347,7 +347,7 @@ def test_logging_within_plan(
     move_xyz.assert_called_once()
 
 
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.sleep", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.sleep", autospec=True)
 def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
     patch_sleep: MagicMock, RE: RunEngine
 ):
@@ -361,7 +361,7 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
     patch_sleep.assert_not_called()
 
 
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.sleep", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.sleep", autospec=True)
 def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
     patch_sleep: MagicMock, RE: RunEngine
 ):
@@ -375,12 +375,12 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
     patch_sleep.assert_called()
 
 
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.abs_set", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.kickoff", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.complete", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.mv", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.abs_set", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.mv", autospec=True)
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.wait_for_gridscan_valid",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.wait_for_gridscan_valid",
     autospec=True,
 )
 @patch(
@@ -414,10 +414,10 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
     with patch(
-        "hyperion.experiment_plans.flyscan_xray_centre.flyscan_xray_centre_composite",
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_composite",
         fake_fgs_composite,
     ), patch(
-        "hyperion.experiment_plans.flyscan_xray_centre.callback_collection.XrayCentreCallbackCollection.from_params",
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
         lambda _: mock_subscriptions,
     ), patch(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
@@ -431,8 +431,8 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
 
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.wait", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.complete", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
 def test_fgs_arms_eiger_without_grid_detect(
     mock_complete,
     mock_wait,
@@ -448,8 +448,8 @@ def test_fgs_arms_eiger_without_grid_detect(
     fake_fgs_composite.eiger.unstage.assert_called_once()
 
 
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.wait", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.complete", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.wait", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
 def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_returned(
     mock_complete,
     mock_wait,

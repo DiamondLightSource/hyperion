@@ -10,7 +10,7 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
-from src.hyperion.experiment_plans.pin_centre_then_xray_centre import (
+from src.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
     pin_centre_then_xray_centre_plan,
 )
@@ -38,15 +38,15 @@ def test_when_create_parameters_for_grid_detection_thne_parameters_created(
 
 
 @patch(
-    "hyperion.experiment_plans.pin_centre_then_xray_centre.pin_tip_centre_plan",
+    "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.pin_centre_then_xray_centre.detect_grid_and_do_gridscan",
+    "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.pin_centre_then_xray_centre.i03",
+    "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.i03",
     autospec=True,
 )
 def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(

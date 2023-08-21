@@ -23,7 +23,7 @@ def test_aperture_change_callback(ap_sg: ApertureScatterguard):
     from hyperion.external_interaction.callbacks.aperture_change_callback import (
         ApertureChangeCallback,
     )
-    from src.hyperion.experiment_plans.flyscan_xray_centre import (
+    from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
         set_aperture_for_bbox_size,
     )
 

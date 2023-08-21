@@ -16,16 +16,16 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
-from src.hyperion.experiment_plans.grid_detect_then_xray_centre import (
+from src.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     create_devices as full_grid_create_devices,
 )
-from src.hyperion.experiment_plans.grid_detect_then_xray_centre import (
+from src.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
 )
-from src.hyperion.experiment_plans.pin_tip_centring import (
+from src.hyperion.experiment_plans.pin_tip_centring_plan import (
     create_devices as pin_tip_create_devices,
 )
-from src.hyperion.experiment_plans.pin_tip_centring import pin_tip_centre_plan
+from src.hyperion.experiment_plans.pin_tip_centring_plan import pin_tip_centre_plan
 
 
 def create_devices():

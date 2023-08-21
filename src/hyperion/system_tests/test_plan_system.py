@@ -6,7 +6,9 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
 from hyperion.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
-from src.hyperion.experiment_plans.flyscan_xray_centre import read_hardware_for_ispyb
+from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    read_hardware_for_ispyb,
+)
 
 
 @pytest.mark.s03

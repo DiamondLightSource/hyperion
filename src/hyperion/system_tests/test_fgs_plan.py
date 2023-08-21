@@ -7,7 +7,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions
 
-import src.hyperion.experiment_plans.flyscan_xray_centre as fgs_plan
+import src.hyperion.experiment_plans.flyscan_xray_centre_plan as fgs_plan
 from hyperion.exceptions import WarningException
 from hyperion.external_interaction.system_tests.conftest import (  # noqa
     fetch_comment,
@@ -18,7 +18,7 @@ from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params
-from src.hyperion.experiment_plans.flyscan_xray_centre import (
+from src.hyperion.experiment_plans.flyscan_xray_centre_plan import (
     GridscanComposite,
     flyscan_xray_centre,
     read_hardware_for_ispyb,
@@ -110,18 +110,18 @@ def test_read_hardware_for_ispyb(
 
 @pytest.mark.s03
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.flyscan_xray_centre_composite",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_composite",
     autospec=True,
 )
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.run_gridscan_and_move",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan_and_move",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.set_zebra_shutter_to_manual",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.set_zebra_shutter_to_manual",
     autospec=True,
 )
 def test_full_plan_tidies_at_end(
@@ -145,18 +145,18 @@ def test_full_plan_tidies_at_end(
 
 @pytest.mark.s03
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.flyscan_xray_centre_composite",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_composite",
     autospec=True,
 )
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.run_gridscan_and_move",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan_and_move",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.set_zebra_shutter_to_manual",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.set_zebra_shutter_to_manual",
     autospec=True,
 )
 def test_full_plan_tidies_at_end_when_plan_fails(
@@ -207,8 +207,8 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 
 
 @pytest.mark.s03
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.kickoff", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.complete", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
 def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     complete: MagicMock,
     kickoff: MagicMock,

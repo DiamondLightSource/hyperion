@@ -17,7 +17,7 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
-from src.hyperion.experiment_plans.grid_detect_then_xray_centre import (
+from src.hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     create_devices,
     detect_grid_and_do_gridscan,
     full_grid_scan,
@@ -51,17 +51,17 @@ def _fake_grid_detection(
 
 
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.get_beamline_parameters",
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.get_beamline_parameters",
     autospec=True,
 )
 def test_create_devices(mock_beamline_params):
     with (
-        patch("hyperion.experiment_plans.full_grid_scan.i03") as i03,
+        patch("hyperion.experiment_plans.grid_detect_then_xray_centre_plan.i03") as i03,
         patch(
-            "hyperion.experiment_plans.full_grid_scan.fgs_create_devices"
+            "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.fgs_create_devices"
         ) as fgs_create_devices,
         patch(
-            "hyperion.experiment_plans.full_grid_scan.oav_create_devices"
+            "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.oav_create_devices"
         ) as oav_create_devices,
     ):
         create_devices()
@@ -85,24 +85,26 @@ def test_wait_for_detector(RE):
 
 
 def test_full_grid_scan(test_fgs_params, test_config_files):
-    with patch("hyperion.experiment_plans.full_grid_scan.i03"):
+    with patch("hyperion.experiment_plans.grid_detect_then_xray_centre_plan.i03"):
         plan = full_grid_scan(test_fgs_params, test_config_files)
 
     assert isinstance(plan, Generator)
 
 
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.wait_for_det_to_finish_moving",
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.wait_for_det_to_finish_moving",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.flyscan_xray_centre", autospec=True
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
+    autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.OavSnapshotCallback",
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.OavSnapshotCallback",
     autospec=True,
 )
 def test_detect_grid_and_do_gridscan(
@@ -157,17 +159,20 @@ def test_detect_grid_and_do_gridscan(
 
 
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.wait_for_det_to_finish_moving",
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.wait_for_det_to_finish_moving",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.flyscan_xray_centre", autospec=True
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
+    autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.full_grid_scan.OavSnapshotCallback", autospec=True
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.OavSnapshotCallback",
+    autospec=True,
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_oav_callback_init: MagicMock,

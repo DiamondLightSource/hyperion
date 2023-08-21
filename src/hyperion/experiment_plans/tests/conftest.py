@@ -25,7 +25,7 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-from src.hyperion.experiment_plans.flyscan_xray_centre import GridscanComposite
+from src.hyperion.experiment_plans.flyscan_xray_centre_plan import GridscanComposite
 from src.hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )

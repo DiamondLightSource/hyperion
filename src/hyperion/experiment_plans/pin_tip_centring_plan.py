@@ -71,7 +71,9 @@ def move_pin_into_view(
         return (tip_x_px, tip_y_px)
 
 
-def move_smargon_warn_on_out_of_range(smargon: Smargon, position: np.ndarray):
+def move_smargon_warn_on_out_of_range(
+    smargon: Smargon, position: np.ndarray | list[float] | tuple[float, float, float]
+):
     """Throws a WarningException if the specified position is out of range for the
     smargon. Otherwise moves to that position."""
     if not smargon.get_xyz_limits().position_valid(position):

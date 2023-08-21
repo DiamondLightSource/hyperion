@@ -15,7 +15,6 @@ from pydantic.dataclasses import dataclass
 import hyperion.experiment_plans as hyperion_plans
 import hyperion.log
 from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
 )
@@ -25,6 +24,10 @@ from hyperion.external_interaction.callbacks.logging_callback import (
 from hyperion.parameters.constants import Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
+from src.hyperion.experiment_plans.experiment_registry_plan import (
+    PLAN_REGISTRY,
+    PlanNotFound,
+)
 
 VERBOSE_EVENT_LOGGING: Optional[bool] = None
 

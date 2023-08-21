@@ -21,8 +21,8 @@ from hyperion.__main__ import (
     setup_context,
 )
 from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.parameters import external_parameters
+from src.hyperion.experiment_plans.experiment_registry_plan import PLAN_REGISTRY
 from src.hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -312,7 +312,7 @@ def test_cli_args_parse():
 @patch("dodal.beamlines.i03.Undulator", autospec=True, spec_set=True)
 @patch("dodal.beamlines.i03.Zebra", autospec=True, spec_set=True)
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.get_beamline_parameters",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
     autospec=True,
 )
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", autospec=True)
@@ -351,20 +351,22 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
 
 
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.EigerDetector",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.EigerDetector",
     autospec=True,
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.FGSComposite",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.FGSComposite",
     autospec=True,
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.get_beamline_parameters",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
     autospec=True,
 )
-@patch("hyperion.experiment_plans.flyscan_xray_centre.create_devices", autospec=True)
+@patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.create_devices", autospec=True
+)
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
     mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
 ):
@@ -387,17 +389,17 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
 
 
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.EigerDetector",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.EigerDetector",
     autospec=True,
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.FGSComposite",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.FGSComposite",
     autospec=True,
     spec_set=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre.get_beamline_parameters",
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
     autospec=True,
 )
 def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
