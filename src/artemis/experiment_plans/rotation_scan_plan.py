@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from blueapi.core import MsgGenerator
 from dodal.beamlines import i03
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector_motion import DetectorMotion
@@ -221,7 +222,7 @@ def cleanup_plan(
     yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup"))
 
 
-def get_plan(parameters: RotationInternalParameters):
+def rotation_scan(parameters: Any) -> MsgGenerator:
     devices = create_devices()
     subscriptions = RotationCallbackCollection.from_params(parameters)
 

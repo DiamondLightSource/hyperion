@@ -9,9 +9,17 @@ from typing import Any, Callable, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
+from blueapi.core import BlueskyContext
 from flask.testing import FlaskClient
 
-from artemis.__main__ import Actions, BlueskyRunner, Status, cli_arg_parse, create_app
+from artemis.__main__ import (
+    Actions,
+    BlueskyRunner,
+    Status,
+    cli_arg_parse,
+    create_app,
+    setup_context,
+)
 from artemis.exceptions import WarningException
 from artemis.experiment_plans.experiment_registry import PLAN_REGISTRY
 from artemis.parameters import external_parameters
@@ -84,11 +92,6 @@ TEST_EXPTS = {
         "internal_param_type": MagicMock(),
         "experiment_param_type": MagicMock(),
     },
-    "test_experiment_no_run": {
-        "setup": MagicMock(),
-        "internal_param_type": MagicMock(),
-        "experiment_param_type": MagicMock(),
-    },
     "test_experiment_no_internal_param_type": {
         "setup": MagicMock(),
         "run": MagicMock(),
@@ -106,22 +109,27 @@ TEST_EXPTS = {
 @pytest.fixture
 def test_env():
     mock_run_engine = MockRunEngine()
+    mock_context = BlueskyContext()
+    real_plans_and_test_exps = dict(
+        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
+    )
+    mock_context.plan_functions = {
+        k: MagicMock() for k in real_plans_and_test_exps.keys()
+    }
+
     with patch.dict(
         "artemis.__main__.PLAN_REGISTRY",
-        dict({k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS),
-    ):
+        real_plans_and_test_exps,
+    ), patch("artemis.__main__.setup_context", MagicMock(return_value=mock_context)):
         app, runner = create_app({"TESTING": True}, mock_run_engine)
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
-    with app.test_client() as client:
-        with patch.dict(
-            "artemis.__main__.PLAN_REGISTRY",
-            dict(
-                {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
-            ),
-        ):
-            yield ClientAndRunEngine(client, mock_run_engine)
+    with app.test_client() as client, patch.dict(
+        "artemis.__main__.PLAN_REGISTRY",
+        real_plans_and_test_exps,
+    ):
+        yield ClientAndRunEngine(client, mock_run_engine)
 
     runner.shutdown()
     runner_thread.join(timeout=3)
@@ -187,18 +195,6 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
     assert (
         response.get("message")
         == "PlanNotFound(\"Corresponding internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
-    )
-
-
-def test_plan_with_no_run_fails(test_env: ClientAndRunEngine):
-    response = test_env.client.put(
-        "/test_experiment_no_run/start", data=TEST_PARAMS
-    ).json
-    assert isinstance(response, dict)
-    assert response.get("status") == Status.FAILED.value
-    assert (
-        response.get("message")
-        == "PlanNotFound(\"Experiment plan 'test_experiment_no_run' has no 'run' method.\")"
     )
 
 
@@ -467,3 +463,12 @@ def test_warn_exception_during_plan_causes_warning_in_log(
     assert response_json["message"] == 'WarningException("D\'Oh")'
     assert response_json["exception_type"] == "WarningException"
     assert caplog.records[-1].levelname == "WARNING"
+
+
+def test_when_context_created_then_contains_expected_number_of_plans():
+    context = setup_context()
+
+    plan_names = context.plans.keys()
+
+    assert "rotation_scan" in plan_names
+    assert "fast_grid_scan" in plan_names

@@ -43,7 +43,7 @@ def test_params():
     return params
 
 
-def fake_get_plan(
+def fake_rotation_scan(
     parameters: RotationInternalParameters, subscriptions: RotationCallbackCollection
 ):
     @bpp.subs_decorator(list(subscriptions))
@@ -87,7 +87,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         "artemis.external_interaction.nexus.write_nexus.get_current_time",
         return_value="test_time",
     ):
-        RE(fake_get_plan(test_params, cb))
+        RE(fake_rotation_scan(test_params, cb))
 
     assert os.path.isfile(nexus_filename)
     assert os.path.isfile(master_filename)

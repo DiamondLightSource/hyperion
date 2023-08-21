@@ -11,10 +11,10 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
 
-from artemis.experiment_plans.full_grid_scan import (
+from artemis.experiment_plans.full_grid_scan_plan import (
     create_devices,
     detect_grid_and_do_gridscan,
-    get_plan,
+    full_grid_scan,
     start_arming_then_do_grid,
     wait_for_det_to_finish_moving,
 )
@@ -49,15 +49,18 @@ def _fake_grid_detection(
     return []
 
 
-@patch("artemis.experiment_plans.full_grid_scan.get_beamline_parameters", autospec=True)
+@patch(
+    "artemis.experiment_plans.full_grid_scan_plan.get_beamline_parameters",
+    autospec=True,
+)
 def test_create_devices(mock_beamline_params):
     with (
-        patch("artemis.experiment_plans.full_grid_scan.i03") as i03,
+        patch("artemis.experiment_plans.full_grid_scan_plan.i03") as i03,
         patch(
-            "artemis.experiment_plans.full_grid_scan.fgs_create_devices"
+            "artemis.experiment_plans.full_grid_scan_plan.fgs_create_devices"
         ) as fgs_create_devices,
         patch(
-            "artemis.experiment_plans.full_grid_scan.oav_create_devices"
+            "artemis.experiment_plans.full_grid_scan_plan.oav_create_devices"
         ) as oav_create_devices,
     ):
         create_devices()
@@ -80,21 +83,23 @@ def test_wait_for_detector(RE):
     RE(wait_for_det_to_finish_moving(d_m, 0.5))
 
 
-def test_get_plan(test_fgs_params, test_config_files):
-    with patch("artemis.experiment_plans.full_grid_scan.i03"):
-        plan = get_plan(test_fgs_params, test_config_files)
+def test_full_grid_scan(test_fgs_params, test_config_files):
+    with patch("artemis.experiment_plans.full_grid_scan_plan.i03"):
+        plan = full_grid_scan(test_fgs_params, test_config_files)
 
     assert isinstance(plan, Generator)
 
 
 @patch(
-    "artemis.experiment_plans.full_grid_scan.wait_for_det_to_finish_moving",
+    "artemis.experiment_plans.full_grid_scan_plan.wait_for_det_to_finish_moving",
     autospec=True,
 )
-@patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True)
-@patch("artemis.experiment_plans.full_grid_scan.fgs_get_plan", autospec=True)
 @patch(
-    "artemis.experiment_plans.full_grid_scan.OavSnapshotCallback",
+    "artemis.experiment_plans.full_grid_scan_plan.grid_detection_plan", autospec=True
+)
+@patch("artemis.experiment_plans.full_grid_scan_plan.fast_grid_scan", autospec=True)
+@patch(
+    "artemis.experiment_plans.full_grid_scan_plan.OavSnapshotCallback",
     autospec=True,
 )
 def test_detect_grid_and_do_gridscan(
@@ -149,12 +154,16 @@ def test_detect_grid_and_do_gridscan(
 
 
 @patch(
-    "artemis.experiment_plans.full_grid_scan.wait_for_det_to_finish_moving",
+    "artemis.experiment_plans.full_grid_scan_plan.wait_for_det_to_finish_moving",
     autospec=True,
 )
-@patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True)
-@patch("artemis.experiment_plans.full_grid_scan.fgs_get_plan", autospec=True)
-@patch("artemis.experiment_plans.full_grid_scan.OavSnapshotCallback", autospec=True)
+@patch(
+    "artemis.experiment_plans.full_grid_scan_plan.grid_detection_plan", autospec=True
+)
+@patch("artemis.experiment_plans.full_grid_scan_plan.fast_grid_scan", autospec=True)
+@patch(
+    "artemis.experiment_plans.full_grid_scan_plan.OavSnapshotCallback", autospec=True
+)
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_oav_callback_init: MagicMock,
     mock_fast_grid_scan_plan: MagicMock,
@@ -215,9 +224,11 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         params.json()
 
 
-@patch("artemis.experiment_plans.full_grid_scan.grid_detection_plan", autospec=True)
 @patch(
-    "artemis.experiment_plans.full_grid_scan.OavSnapshotCallback",
+    "artemis.experiment_plans.full_grid_scan_plan.grid_detection_plan", autospec=True
+)
+@patch(
+    "artemis.experiment_plans.full_grid_scan_plan.OavSnapshotCallback",
     autospec=True,
     spec_set=True,
 )
@@ -262,7 +273,7 @@ def test_grid_detection_running_when_exception_raised_then_eiger_disarmed_and_co
         eiger.disarm_detector.assert_called_once()
 
 
-@patch("artemis.experiment_plans.full_grid_scan.detect_grid_and_do_gridscan")
+@patch("artemis.experiment_plans.full_grid_scan_plan.detect_grid_and_do_gridscan")
 def test_when_start_arming_then_transmission_set(
     mock_grid_detection_plan: MagicMock,
     RE: RunEngine,

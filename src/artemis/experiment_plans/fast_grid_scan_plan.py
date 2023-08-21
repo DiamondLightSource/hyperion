@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import argparse
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
+from blueapi.core import MsgGenerator
 from bluesky import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal.beamlines import i03
@@ -236,9 +237,9 @@ def run_gridscan_and_move(
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
 
-def get_plan(
-    parameters: FGSInternalParameters,
-) -> Callable:
+def fast_grid_scan(
+    parameters: Any,
+) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
 
     The ispyb handler should be added to the whole gridscan as we want to capture errors
@@ -296,4 +297,4 @@ if __name__ == "__main__":
 
     create_devices()
 
-    RE(get_plan(parameters))
+    RE(fast_grid_scan(parameters))
