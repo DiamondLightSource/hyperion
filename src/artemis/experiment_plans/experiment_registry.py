@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 
@@ -8,6 +8,7 @@ from artemis.experiment_plans import (
     fast_grid_scan_plan,
     full_grid_scan,
     rotation_scan_plan,
+    stepped_grid_scan_plan,
 )
 from artemis.external_interaction.callbacks.abstract_plan_callback_collection import (
     NullPlanCallbackCollection,
@@ -27,6 +28,10 @@ from artemis.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
 )
+from artemis.parameters.plan_specific.stepped_grid_scan_internal_params import (
+    SteppedGridScanInternalParameters,
+    SteppedGridScanParams,
+)
 
 
 def not_implemented():
@@ -37,6 +42,7 @@ def do_nothing():
     pass
 
 
+EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
 PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     "fast_grid_scan": {
         "setup": fast_grid_scan_plan.create_devices,
@@ -58,6 +64,12 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
         "internal_param_type": RotationInternalParameters,
         "experiment_param_type": RotationScanParams,
         "callback_collection_type": RotationCallbackCollection,
+    },
+    "stepped_grid_scan": {
+        "setup": stepped_grid_scan_plan.create_devices,
+        "run": stepped_grid_scan_plan.get_plan,
+        "internal_param_type": SteppedGridScanInternalParameters,
+        "experiment_param_type": SteppedGridScanParams,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())
