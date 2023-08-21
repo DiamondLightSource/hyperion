@@ -19,7 +19,7 @@ from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from src.hyperion.experiment_plans.flyscan_xray_centre import (
-    FGSComposite,
+    GridscanComposite,
     flyscan_xray_centre,
     read_hardware_for_ispyb,
     run_gridscan,
@@ -46,7 +46,7 @@ def RE():
 
 @pytest.fixture
 def fgs_composite():
-    flyscan_xray_centre_composite = FGSComposite()
+    flyscan_xray_centre_composite = GridscanComposite()
     fgs_plan.flyscan_xray_centre_composite = flyscan_xray_centre_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         BEAMLINE_PARAMETER_PATHS["i03"]
@@ -77,7 +77,7 @@ def fgs_composite():
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
-@patch("hyperion.flyscan_xray_centre_plan.wait_for_gridscan_valid", autospec=True)
+@patch("hyperion.flyscan_xray_centre.wait_for_gridscan_valid", autospec=True)
 def test_run_gridscan(
     wait_for_gridscan_valid: MagicMock,
     complete: MagicMock,
@@ -85,7 +85,7 @@ def test_run_gridscan(
     wait: MagicMock,
     params: GridscanInternalParameters,
     RE: RunEngine,
-    fgs_composite: FGSComposite,
+    fgs_composite: GridscanComposite,
 ):
     fgs_composite.eiger.unstage = lambda: True
     # Would be better to use flyscan_xray_centre instead but eiger doesn't work well in S03
@@ -95,7 +95,7 @@ def test_run_gridscan(
 @pytest.mark.s03
 def test_read_hardware_for_ispyb(
     RE: RunEngine,
-    fgs_composite: FGSComposite,
+    fgs_composite: GridscanComposite,
 ):
     undulator = fgs_composite.undulator
     synchrotron = fgs_composite.synchrotron
@@ -110,18 +110,18 @@ def test_read_hardware_for_ispyb(
 
 @pytest.mark.s03
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_composite",
+    "hyperion.experiment_plans.flyscan_xray_centre.flyscan_xray_centre_composite",
     autospec=True,
 )
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan_and_move",
+    "hyperion.experiment_plans.flyscan_xray_centre.run_gridscan_and_move",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.set_zebra_shutter_to_manual",
+    "hyperion.experiment_plans.flyscan_xray_centre.set_zebra_shutter_to_manual",
     autospec=True,
 )
 def test_full_plan_tidies_at_end(
@@ -130,7 +130,7 @@ def test_full_plan_tidies_at_end(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fgs_composite: FGSComposite,
+    fgs_composite: GridscanComposite,
     params: GridscanInternalParameters,
     RE: RunEngine,
 ):
@@ -145,18 +145,18 @@ def test_full_plan_tidies_at_end(
 
 @pytest.mark.s03
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_composite",
+    "hyperion.experiment_plans.flyscan_xray_centre.flyscan_xray_centre_composite",
     autospec=True,
 )
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan_and_move",
+    "hyperion.experiment_plans.flyscan_xray_centre.run_gridscan_and_move",
     autospec=True,
 )
 @patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.set_zebra_shutter_to_manual",
+    "hyperion.experiment_plans.flyscan_xray_centre.set_zebra_shutter_to_manual",
     autospec=True,
 )
 def test_full_plan_tidies_at_end_when_plan_fails(
@@ -165,7 +165,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fgs_composite: FGSComposite,
+    fgs_composite: GridscanComposite,
     params: GridscanInternalParameters,
     RE: RunEngine,
 ):
@@ -179,7 +179,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 @pytest.mark.s03
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
     RE: RunEngine,
-    fgs_composite: FGSComposite,
+    fgs_composite: GridscanComposite,
     fetch_comment: Callable,
     params: GridscanInternalParameters,
 ):
@@ -207,13 +207,13 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 
 
 @pytest.mark.s03
-@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.kickoff", autospec=True)
+@patch("hyperion.experiment_plans.flyscan_xray_centre.bps.complete", autospec=True)
 def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     complete: MagicMock,
     kickoff: MagicMock,
     RE: RunEngine,
-    fgs_composite: FGSComposite,
+    fgs_composite: GridscanComposite,
     zocalo_env: None,
     params: GridscanInternalParameters,
 ):
