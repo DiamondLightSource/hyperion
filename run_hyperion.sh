@@ -91,7 +91,7 @@ if [[ $START == 1 ]]; then
             exit 1
         fi
 
-        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-${BEAMLINE}.cfg"
+        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
         export ISPYB_CONFIG_PATH
 
     fi
