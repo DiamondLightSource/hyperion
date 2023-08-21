@@ -80,5 +80,8 @@ class BaseISPyBHandlerCallback(CallbackBase):
         LOGGER.debug("ISPyB handler received stop document.")
         exit_status = doc.get("exit_status")
         reason = doc.get("reason")
-        self.ispyb.end_deposition(exit_status, reason)
         set_dcgid_tag(None)
+        try:
+            self.ispyb.end_deposition(exit_status, reason)
+        except Exception:
+            LOGGER.info(f"Failed to finalise ISPyB deposition on stop document: {doc}")
