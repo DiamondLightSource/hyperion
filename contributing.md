@@ -1,6 +1,6 @@
-# How to contribute to Artemis
+# How to contribute to Hyperion
 
-Artemis should prioritise working, agile code over strict standards, particularly for contributors that are not full time developers. The standards below are thus guidelines that developers should try to follow as much as possible (apart from when something is specified in bold, which is required).
+Hyperion should prioritise working, agile code over strict standards, particularly for contributors that are not full time developers. The standards below are thus guidelines that developers should try to follow as much as possible (apart from when something is specified in bold, which is required).
 
 General Workflow
 ----------------

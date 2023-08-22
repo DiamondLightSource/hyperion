@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "params_version": {
+            "const": "3.0.0"
+        },
+        "hyperion_params": {
+            "type": "object",
+            "$ref": "hyperion_parameters_schema.json"
+        },
+        "experiment_params": {
+            "oneOf": [
+                {
+                    "$ref": "experiment_schemas/grid_scan_params_schema.json"
+                },
+                {
+                    "$ref": "experiment_schemas/rotation_scan_params_schema.json"
+                },
+                {
+                    "$ref": "experiment_schemas/grid_scan_with_edge_detect_params_schema.json"
+                }
+            ]
+        }
+    },
+    "minProperties": 3
+}

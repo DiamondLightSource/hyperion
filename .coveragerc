@@ -2,7 +2,7 @@
 omit = 
     */test_*
     **/conftest.py
-data_file = /tmp/python-artemis.coverage
+data_file = /tmp/hyperion.coverage
 
 [report]
 exclude_also = 

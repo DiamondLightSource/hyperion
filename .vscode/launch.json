@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Run Artemis in dev mode",
+            "name": "Python: Run Hyperion in dev mode",
             "type": "python",
             "request": "launch",
-            "module": "artemis",
+            "module": "hyperion",
             "args": [
                 "--dev",
                 "--verbose-event-logging",
