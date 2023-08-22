@@ -10,11 +10,12 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
+from ophyd.sim import FakeEpicsSignal, FakeEpicsSignalRO
 
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     create_devices,
     detect_grid_and_do_gridscan,
-    full_grid_scan,
+    grid_detect_then_xray_centre,
     wait_for_det_to_finish_moving,
 )
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
@@ -79,14 +80,14 @@ def test_wait_for_detector(RE):
     d_m = detector_motion(fake_with_ophyd_sim=True)
     with pytest.raises(TimeoutError):
         RE(wait_for_det_to_finish_moving(d_m, 0.2))
-    d_m.shutter.sim_put(1)
-    d_m.z.motor_done_move.sim_put(1)
+    d_m.shutter.sim_put(1)  # type: ignore
+    d_m.z.motor_done_move.sim_put(1)  # type: ignore
     RE(wait_for_det_to_finish_moving(d_m, 0.5))
 
 
 def test_full_grid_scan(test_fgs_params, test_config_files):
     with patch("hyperion.experiment_plans.grid_detect_then_xray_centre_plan.i03"):
-        plan = full_grid_scan(test_fgs_params, test_config_files)
+        plan = grid_detect_then_xray_centre(test_fgs_params, test_config_files)
 
     assert isinstance(plan, Generator)
 

@@ -54,10 +54,10 @@ def create_devices():
     i03.detector_motion()
 
     i03.backlight()
-    i03.aperture_scatterguard(aperture_positions)
+    i03.aperture_scatterguard(aperture_positions=aperture_positions)
 
 
-def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120):
+def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120.0):
     LOGGER.info("Waiting for detector to finish moving")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)

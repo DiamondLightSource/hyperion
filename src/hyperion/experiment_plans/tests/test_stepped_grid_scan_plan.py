@@ -3,11 +3,14 @@ import types
 import unittest.mock
 from unittest.mock import MagicMock
 
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine
 
 from hyperion.experiment_plans.stepped_grid_scan_plan import (
     create_devices,
     run_gridscan,
+)
+from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
+    SteppedGridScanInternalParameters,
 )
 
 patch = functools.partial(unittest.mock.patch, autospec=True)
@@ -33,7 +36,7 @@ def test_create_devices(smargon, get_beamline_prefixes):
 def test_run_plan_sets_omega_to_zero_and_then_calls_gridscan(
     smargon, grid_scan, abs_set, RE: RunEngine
 ):
-    RE(run_gridscan(MagicMock()))
+    RE(run_gridscan(MagicMock(spec=SteppedGridScanInternalParameters)))
 
     abs_set.assert_called_once_with(smargon().omega, 0)
     grid_scan.assert_called_once()
