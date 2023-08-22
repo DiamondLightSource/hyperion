@@ -90,6 +90,7 @@ def detect_grid_and_do_gridscan(
     detector_motion: DetectorMotion,
     oav_params: OAVParameters,
 ):
+    assert aperture_scatterguard.aperture_positions is not None
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
     grid_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 

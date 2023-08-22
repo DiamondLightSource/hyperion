@@ -10,7 +10,6 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
-from ophyd.sim import FakeEpicsSignal, FakeEpicsSignalRO
 
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     create_devices,
@@ -72,7 +71,8 @@ def test_create_devices(mock_beamline_params):
         i03.detector_motion.assert_called()
         i03.backlight.assert_called()
         assert isinstance(
-            i03.aperture_scatterguard.call_args.args[-1], AperturePositions
+            i03.aperture_scatterguard.call_args.kwargs["aperture_positions"],
+            AperturePositions,
         )
 
 
@@ -125,6 +125,7 @@ def test_detect_grid_and_do_gridscan(
     mock_oav_callback.snapshot_filenames = [["test"], ["test3"]]
     mock_oav_callback_init.return_value = mock_oav_callback
     mock_grid_detection_plan.side_effect = _fake_grid_detection
+    assert aperture_scatterguard.aperture_positions is not None
 
     with patch.object(
         aperture_scatterguard, "set", MagicMock()
