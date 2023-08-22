@@ -4,7 +4,6 @@ import unittest.mock
 from unittest.mock import MagicMock
 
 from bluesky import RunEngine
-from ophyd.status import Status
 
 from hyperion.experiment_plans.stepped_grid_scan_plan import (
     create_devices,
