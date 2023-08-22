@@ -1,9 +1,10 @@
 from functools import partial
-from typing import Generator, Tuple
+from typing import Generator, Tuple, Optional
 
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import Msg
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import MXSC, OAV
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
@@ -55,13 +56,7 @@ def start_mxsc(oav: OAV, min_callback_time, filename):
     yield from set_using_group(oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL)
 
 
-def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
-    """Setup OAV PVs with required values."""
-    yield from set_using_group(oav.cam.color_mode, ColorMode.RGB1)
-    yield from set_using_group(oav.cam.acquire_period, parameters.acquire_period)
-    yield from set_using_group(oav.cam.acquire_time, parameters.exposure)
-    yield from set_using_group(oav.cam.gain, parameters.gain)
-
+def set_parameters_mxsc_plugin(oav: OAV, parameters: OAVParameters):
     # select which blur to apply to image
     yield from set_using_group(oav.mxsc.preprocess_operation, parameters.preprocess)
 
@@ -89,11 +84,36 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         parameters.minimum_height,
     )
 
-    yield from start_mxsc(
-        oav,
-        parameters.min_callback_time,
-        parameters.detection_script_filename,
-    )
+
+def set_parameters_mxsc_ophyd(pin_tip_detection: PinTipDetection, parameters: OAVParameters):
+    yield from set_using_group(pin_tip_detection.preprocess, parameters.preprocess)
+    yield from set_using_group(pin_tip_detection.preprocess_ksize, parameters.preprocess_K_size)
+    yield from set_using_group(pin_tip_detection.canny_lower, parameters.canny_edge_lower_threshold)
+    yield from set_using_group(pin_tip_detection.canny_upper, parameters.canny_edge_upper_threshold)
+    yield from set_using_group(pin_tip_detection.close_ksize, parameters.close_ksize)
+    yield from set_using_group(pin_tip_detection.scan_direction, parameters.direction)
+    yield from set_using_group(pin_tip_detection.min_tip_height, parameters.minimum_height)
+
+
+def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters, pin_tip_detection: Optional[PinTipDetection] = None):
+    """Setup OAV PVs with required values."""
+    yield from set_using_group(oav.cam.color_mode, ColorMode.RGB1)
+    yield from set_using_group(oav.cam.acquire_period, parameters.acquire_period)
+    yield from set_using_group(oav.cam.acquire_time, parameters.exposure)
+    yield from set_using_group(oav.cam.gain, parameters.gain)
+
+    using_ophyd_pin_tip_detection = pin_tip_detection is not None
+
+    if using_ophyd_pin_tip_detection:
+        set_parameters_mxsc_ophyd(pin_tip_detection=pin_tip_detection, parameters=parameters)
+    else:
+        set_parameters_mxsc_plugin(oav=oav, parameters=parameters)
+
+        yield from start_mxsc(
+            oav,
+            parameters.min_callback_time,
+            parameters.detection_script_filename,
+        )
 
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
@@ -107,8 +127,9 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
         wait=True,
     )
 
-    # Connect MXSC output to MJPG input for debugging
-    yield from set_using_group(oav.snapshot.input_plugin, "OAV.MXSC")
+    if not using_ophyd_pin_tip_detection:
+        # Connect MXSC output to MJPG input for debugging
+        yield from set_using_group(oav.snapshot.input_plugin, "OAV.MXSC")
 
     yield from bps.wait(oav_group)
 
