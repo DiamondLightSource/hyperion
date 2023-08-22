@@ -9,7 +9,6 @@ BEAMLINE_PARAMETER_PATHS = {
     "s03": "src/hyperion/parameters/tests/test_data/test_beamline_parameters.txt",
 }
 
-PARAMETER_VERSION = 0.2
 # this one is for reading
 SIM_ISPYB_CONFIG = "src/hyperion/external_interaction/unit_tests/test_config.cfg"
 # this one is for making depositions:
