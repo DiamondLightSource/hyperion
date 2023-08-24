@@ -38,7 +38,7 @@ from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
-from hyperion.utils.utils import initialise_devices_in_composite
+from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
@@ -65,7 +65,7 @@ class RotationScanComposite:
 def create_devices(context: BlueskyContext) -> RotationScanComposite:
     """Ensures necessary devices have been instantiated"""
 
-    return initialise_devices_in_composite(context, RotationScanComposite)
+    return device_composite_from_context(context, RotationScanComposite)
 
 
 DEFAULT_DIRECTION = RotationDirection.NEGATIVE

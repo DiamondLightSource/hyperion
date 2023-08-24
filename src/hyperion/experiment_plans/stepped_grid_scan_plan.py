@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bluesky_plans
@@ -10,13 +10,14 @@ from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal.devices.smargon import Smargon
+from dodal.utils import get_beamline_name
 
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
 from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.tracing import TRACER
-from hyperion.utils.utils import initialise_devices_in_composite
+from hyperion.utils.context import device_composite_from_context, setup_context
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
@@ -32,12 +33,14 @@ class SteppedGridScanComposite:
 
 
 def get_beamline_parameters():
-    return GDABeamlineParameters.from_file(BEAMLINE_PARAMETER_PATHS["i03"])
+    return GDABeamlineParameters.from_file(
+        BEAMLINE_PARAMETER_PATHS[get_beamline_name(SIM_BEAMLINE)]
+    )
 
 
 def create_devices(context: BlueskyContext) -> SteppedGridScanComposite:
     """Creates the devices required for the plan and connect to them"""
-    return initialise_devices_in_composite(context, SteppedGridScanComposite)
+    return device_composite_from_context(context, SteppedGridScanComposite)
 
 
 def run_gridscan(
@@ -112,6 +115,7 @@ if __name__ == "__main__":
 
     parameters = SteppedGridScanInternalParameters(external_parameters.from_file())
 
-    create_devices()
+    context = setup_context(wait_for_connection=True)
+    composite = create_devices(context)
 
-    RE(get_plan(parameters))
+    RE(get_plan(composite, parameters))

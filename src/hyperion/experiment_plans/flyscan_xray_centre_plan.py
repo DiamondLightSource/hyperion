@@ -41,7 +41,7 @@ from hyperion.parameters.beamline_parameters import (
 )
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.tracing import TRACER
-from hyperion.utils.utils import initialise_devices_in_composite
+from hyperion.utils.context import device_composite_from_context, setup_context
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -73,20 +73,14 @@ class FlyScanXRayCentreComposite:
 
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
-    # prefixes = get_beamline_prefixes()
-    # hyperion.log.LOGGER.info(
-    #     f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
-    # )
-    # aperture_positions = AperturePositions.from_gda_beamline_params(
-    #     get_beamline_parameters()
-    # )
-    # hyperion.log.LOGGER.info("Connecting to EPICS devices...")
-    # flyscan_xray_centre_composite = initialise_devices_in_composite(
-    #     context, FlyScanXRayCentreComposite
-    # )
-    # TODO set aperture positions
+    composite = device_composite_from_context(context, FlyScanXRayCentreComposite)
 
-    return initialise_devices_in_composite(context, FlyScanXRayCentreComposite)
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        get_beamline_parameters()
+    )
+    composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
+
+    return composite
 
 
 def set_aperture_for_bbox_size(
@@ -284,6 +278,7 @@ if __name__ == "__main__":
     parameters = GridscanInternalParameters(**external_parameters.from_file())
     subscriptions = XrayCentreCallbackCollection.from_params(parameters)
 
-    create_devices()
+    context = setup_context(wait_for_connection=True)
+    composite = create_devices(context)
 
-    RE(flyscan_xray_centre(parameters))
+    RE(flyscan_xray_centre(composite, parameters))

@@ -18,7 +18,7 @@ from hyperion.device_setup_plans.setup_oav import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
-from hyperion.utils.utils import initialise_devices_in_composite
+from hyperion.utils.context import device_composite_from_context
 
 
 @dataclasses.dataclass
@@ -31,7 +31,7 @@ class PinTipCentringComposite:
 
 
 def create_devices(context: BlueskyContext) -> PinTipCentringComposite:
-    return initialise_devices_in_composite(context, PinTipCentringComposite)
+    return device_composite_from_context(context, PinTipCentringComposite)
 
 
 def move_pin_into_view(

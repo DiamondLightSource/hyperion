@@ -29,20 +29,21 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
-from hyperion.utils.utils import initialise_devices_in_composite
+from hyperion.utils.context import device_composite_from_context
 
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
     """
     GridDetectThenXRayCentreComposite contains all the devices we need, reuse that.
     """
-    return initialise_devices_in_composite(context, GridDetectThenXRayCentreComposite)
+    return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
 
 
 def create_parameters_for_grid_detection(
     pin_centre_parameters: PinCentreThenXrayCentreInternalParameters,
 ) -> GridScanWithEdgeDetectInternalParameters:
     params_json = json.loads(pin_centre_parameters.json())
+
     grid_detect_and_xray_centre = GridScanWithEdgeDetectInternalParameters(
         **params_json
     )

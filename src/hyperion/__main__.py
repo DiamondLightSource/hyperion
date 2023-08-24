@@ -1,8 +1,6 @@
 import argparse
 import atexit
-import importlib
 import os
-import string
 import threading
 from dataclasses import asdict
 from queue import Queue
@@ -16,7 +14,6 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
-import hyperion.experiment_plans as hyperion_plans
 import hyperion.log
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
@@ -29,6 +26,7 @@ from hyperion.external_interaction.callbacks.logging_callback import (
 from hyperion.parameters.constants import Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
+from hyperion.utils.context import setup_context
 
 VERBOSE_EVENT_LOGGING: Optional[bool] = None
 
@@ -211,55 +209,6 @@ class RunExperiment(Resource):
         return asdict(status_and_message)  # type: ignore
 
 
-def _get_beamline_specific_device_module() -> ModuleType:
-    beamline = os.environ.get("BEAMLINE")
-
-    if beamline is None:
-        raise ValueError(
-            "Cannot determine beamline - BEAMLINE environment variable not set."
-        )
-
-    beamline = beamline.replace("-", "_")
-    valid_characters = string.ascii_letters + string.digits + "_"
-
-    if not all(c in valid_characters for c in beamline):
-        raise ValueError(
-            "Invalid BEAMLINE variable - expected alphanumeric or underscores only, got '{}'".format(
-                beamline
-            )
-        )
-
-    if len(beamline) == 0 or beamline[0] not in string.ascii_letters:
-        raise ValueError(
-            "Invalid BEAMLINE variable - module name is not a permissible python module name, got '{}'".format(
-                beamline
-            )
-        )
-
-    try:
-        return importlib.import_module("dodal.beamlines.{}".format(beamline))
-    except ImportError as e:
-        raise ValueError(
-            "Hyperion failed to import beamline-specific dodal module 'dodal.beamlines.{}'".format(
-                beamline
-            )
-        ) from e
-
-
-def setup_context(connect_immediately: bool) -> BlueskyContext:
-    context = BlueskyContext()
-    context.with_plan_module(hyperion_plans)
-
-    from dodal.utils import make_all_devices
-
-    for device in make_all_devices(
-        _get_beamline_specific_device_module(), wait_for_connection=connect_immediately
-    ).values():
-        context.device(device)
-
-    return context
-
-
 class StopOrStatus(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
         super().__init__()
@@ -280,9 +229,13 @@ class StopOrStatus(Resource):
 
 
 def create_app(
-    test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
+    test_config=None,
+    RE: RunEngine = RunEngine({}),
+    skip_startup_connection: bool = False,
 ) -> Tuple[Flask, BlueskyRunner]:
-    context = setup_context(connect_immediately=not skip_startup_connection)
+    context = setup_context(
+        wait_for_connection=not skip_startup_connection,
+    )
 
     runner = BlueskyRunner(
         RE, context=context, skip_startup_connection=skip_startup_connection

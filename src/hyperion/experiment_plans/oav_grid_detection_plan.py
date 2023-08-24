@@ -20,7 +20,7 @@ from hyperion.device_setup_plans.setup_oav import (
     wait_for_tip_to_be_found,
 )
 from hyperion.log import LOGGER
-from hyperion.utils.utils import initialise_devices_in_composite
+from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
@@ -36,7 +36,7 @@ class OavGridDetectionComposite:
 
 
 def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:
-    return initialise_devices_in_composite(context, OavGridDetectionComposite)
+    return device_composite_from_context(context, OavGridDetectionComposite)
 
 
 def grid_detection_plan(

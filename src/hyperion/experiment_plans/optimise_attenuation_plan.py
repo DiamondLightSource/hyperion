@@ -11,7 +11,7 @@ from dodal.devices.sample_shutter import OpenState, SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 
 from hyperion.log import LOGGER
-from hyperion.utils.utils import initialise_devices_in_composite
+from hyperion.utils.context import device_composite_from_context
 
 
 class AttenuationOptimisationFailedException(Exception):
@@ -33,7 +33,7 @@ class OptimizeAttenuationComposite:
 
 
 def create_devices(context: BlueskyContext) -> OptimizeAttenuationComposite:
-    return initialise_devices_in_composite(context, OptimizeAttenuationComposite)
+    return device_composite_from_context(context, OptimizeAttenuationComposite)
 
 
 def check_parameters(

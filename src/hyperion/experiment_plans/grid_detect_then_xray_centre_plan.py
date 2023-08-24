@@ -38,11 +38,12 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.beamline_parameters import get_beamline_parameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,
 )
-from hyperion.utils.utils import initialise_devices_in_composite
+from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -71,28 +72,16 @@ class GridDetectThenXRayCentreComposite:
 
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
-    # fgs_create_devices(context)
-    # oav_create_devices(context)
+    composite = device_composite_from_context(
+        context, GridDetectThenXRayCentreComposite
+    )
 
-    # find_device_or_error(context, "detector_motion", DetectorMotion)
-    # find_device_or_error(context, "backlight", Backlight)
-    # find_device_or_error(context, "aperture_scatterguard", ApertureScatterguard)
+    aperture_positions = AperturePositions.from_gda_beamline_params(
+        get_beamline_parameters()
+    )
+    composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
 
-    # # TODO: positions?
-    # # aperture_positions = AperturePositions.from_gda_beamline_params(
-    # #    get_beamline_parameters()
-    # # )
-    # # i03.aperture_scatterguard(aperture_positions=aperture_positions)
-    # find_device_or_error(context, "aperture_scatterguard", ApertureScatterguard)
-
-    # grid_scan_composite = FlyScanXRayCentreComposite(
-    #     context,
-    #     aperture_positions=AperturePositions.from_gda_beamline_params(
-    #         get_beamline_parameters()
-    #     ),
-    # )
-
-    return initialise_devices_in_composite(context, GridDetectThenXRayCentreComposite)
+    return composite
 
 
 def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120.0):
