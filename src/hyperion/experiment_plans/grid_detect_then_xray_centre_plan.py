@@ -1,40 +1,48 @@
 from __future__ import annotations
 
+import dataclasses
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
-from blueapi.core import MsgGenerator
+from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
-from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
+from dodal.devices.zebra import Zebra
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    create_devices as fgs_create_devices,
+    FlyScanXRayCentreComposite,
+    flyscan_xray_centre,
 )
-from hyperion.experiment_plans.flyscan_xray_centre_plan import flyscan_xray_centre
 from hyperion.experiment_plans.oav_grid_detection_plan import (
-    create_devices as oav_create_devices,
+    OavGridDetectionComposite,
+    grid_detection_plan,
 )
-from hyperion.experiment_plans.oav_grid_detection_plan import grid_detection_plan
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.beamline_parameters import get_beamline_parameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,
 )
+from hyperion.utils.utils import initialise_devices_in_composite
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -43,18 +51,48 @@ if TYPE_CHECKING:
     )
 
 
-def create_devices():
-    fgs_create_devices()
-    oav_create_devices()
+@dataclasses.dataclass
+class GridDetectThenXRayCentreComposite:
+    """All devices which are directly or indirectly required by this plan"""
 
-    aperture_positions = AperturePositions.from_gda_beamline_params(
-        get_beamline_parameters()
-    )
+    aperture_scatterguard: ApertureScatterguard
+    attenuator: Attenuator
+    backlight: Backlight
+    detector_motion: DetectorMotion
+    eiger: EigerDetector
+    fast_grid_scan: FastGridScan
+    flux: Flux
+    oav: OAV
+    smargon: Smargon
+    synchrotron: Synchrotron
+    s4_slit_gaps: S4SlitGaps
+    undulator: Undulator
+    zebra: Zebra
 
-    i03.detector_motion()
 
-    i03.backlight()
-    i03.aperture_scatterguard(aperture_positions=aperture_positions)
+def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
+    # fgs_create_devices(context)
+    # oav_create_devices(context)
+
+    # find_device_or_error(context, "detector_motion", DetectorMotion)
+    # find_device_or_error(context, "backlight", Backlight)
+    # find_device_or_error(context, "aperture_scatterguard", ApertureScatterguard)
+
+    # # TODO: positions?
+    # # aperture_positions = AperturePositions.from_gda_beamline_params(
+    # #    get_beamline_parameters()
+    # # )
+    # # i03.aperture_scatterguard(aperture_positions=aperture_positions)
+    # find_device_or_error(context, "aperture_scatterguard", ApertureScatterguard)
+
+    # grid_scan_composite = FlyScanXRayCentreComposite(
+    #     context,
+    #     aperture_positions=AperturePositions.from_gda_beamline_params(
+    #         get_beamline_parameters()
+    #     ),
+    # )
+
+    return initialise_devices_in_composite(context, GridDetectThenXRayCentreComposite)
 
 
 def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120.0):
@@ -84,6 +122,7 @@ def create_parameters_for_flyscan_xray_centre(
 
 
 def detect_grid_and_do_gridscan(
+    composite: GridDetectThenXRayCentreComposite,
     parameters: GridScanWithEdgeDetectInternalParameters,
     backlight: Backlight,
     aperture_scatterguard: ApertureScatterguard,
@@ -109,6 +148,11 @@ def detect_grid_and_do_gridscan(
         snapshot_dir,
     ):
         yield from grid_detection_plan(
+            OavGridDetectionComposite(
+                backlight=composite.backlight,
+                oav=composite.oav,
+                smargon=composite.smargon,
+            ),
             oav_params,
             fgs_params,
             snapshot_template,
@@ -150,10 +194,26 @@ def detect_grid_and_do_gridscan(
     )
     yield from wait_for_det_to_finish_moving(detector_motion)
 
-    yield from flyscan_xray_centre(flyscan_xray_centre_parameters)
+    yield from flyscan_xray_centre(
+        FlyScanXRayCentreComposite(
+            aperture_scatterguard=composite.aperture_scatterguard,
+            attenuator=composite.attenuator,
+            backlight=composite.backlight,
+            eiger=composite.eiger,
+            fast_grid_scan=composite.fast_grid_scan,
+            flux=composite.flux,
+            s4_slit_gaps=composite.s4_slit_gaps,
+            smargon=composite.smargon,
+            undulator=composite.undulator,
+            synchrotron=composite.synchrotron,
+            zebra=composite.zebra,
+        ),
+        flyscan_xray_centre_parameters,
+    )
 
 
 def grid_detect_then_xray_centre(
+    composite: GridDetectThenXRayCentreComposite,
     parameters: Any,
     oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
 ) -> MsgGenerator:
@@ -161,18 +221,23 @@ def grid_detect_then_xray_centre(
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
-    backlight: Backlight = i03.backlight()
-    eiger: EigerDetector = i03.eiger()
-    aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
-    detector_motion: DetectorMotion = i03.detector_motion()
-    attenuator: Attenuator = i03.attenuator()
+    backlight: Backlight = composite.backlight
+    eiger: EigerDetector = composite.eiger
+    aperture_scatterguard: ApertureScatterguard = composite.aperture_scatterguard
+    detector_motion: DetectorMotion = composite.detector_motion
+    attenuator: Attenuator = composite.attenuator
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
 
     plan_to_perform = detect_grid_and_do_gridscan(
-        parameters, backlight, aperture_scatterguard, detector_motion, oav_params
+        composite,
+        parameters,
+        backlight,
+        aperture_scatterguard,
+        detector_motion,
+        oav_params,
     )
 
     return start_preparing_data_collection_then_do_plan(

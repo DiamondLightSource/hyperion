@@ -1,14 +1,17 @@
+import dataclasses
 from enum import Enum
+from typing import Optional
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from dodal.beamlines import i03
+from blueapi.core import BlueskyContext
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.sample_shutter import OpenState, SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 
 from hyperion.log import LOGGER
+from hyperion.utils.utils import initialise_devices_in_composite
 
 
 class AttenuationOptimisationFailedException(Exception):
@@ -20,10 +23,17 @@ class Direction(Enum):
     NEGATIVE = "negative"
 
 
-def create_devices():
-    i03.xspress3mini()
-    i03.attenuator()
-    i03.sample_shutter()
+@dataclasses.dataclass
+class OptimizeAttenuationComposite:
+    """All devices which are directly or indirectly required by this plan"""
+
+    attenuator: Attenuator
+    sample_shutter: SampleShutter
+    xspress3mini: Xspress3Mini
+
+
+def create_devices(context: BlueskyContext) -> OptimizeAttenuationComposite:
+    return initialise_devices_in_composite(context, OptimizeAttenuationComposite)
 
 
 def check_parameters(

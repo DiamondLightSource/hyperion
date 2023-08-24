@@ -16,7 +16,7 @@ from ophyd.status import Status
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    GridscanComposite,
+    FlyScanXRayCentreComposite,
     flyscan_xray_centre,
     read_hardware_for_ispyb,
     run_gridscan,
@@ -70,7 +70,7 @@ def test_when_run_gridscan_called_then_generator_returned():
 
 
 def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
-    fake_fgs_composite: GridscanComposite,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
@@ -136,7 +136,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     move_x_y_z: MagicMock,
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
-    fake_fgs_composite: GridscanComposite,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     mock_subscriptions: XrayCentreCallbackCollection,
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
@@ -217,7 +217,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
 def test_results_passed_to_move_motors(
     bps_abs_set: MagicMock,
     test_fgs_params: GridscanInternalParameters,
-    fake_fgs_composite: GridscanComposite,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     RE: RunEngine,
 ):
     from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
@@ -262,7 +262,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
     mock_subscriptions: XrayCentreCallbackCollection,
-    fake_fgs_composite: GridscanComposite,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
@@ -311,7 +311,7 @@ def test_logging_within_plan(
     run_gridscan: MagicMock,
     move_aperture: MagicMock,
     mock_subscriptions: XrayCentreCallbackCollection,
-    fake_fgs_composite: GridscanComposite,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
@@ -395,7 +395,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_complete,
     mock_kickoff,
     mock_abs_set,
-    fake_fgs_composite: GridscanComposite,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     test_fgs_params: GridscanInternalParameters,
     mock_subscriptions: XrayCentreCallbackCollection,
     RE: RunEngine,
@@ -436,7 +436,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
 def test_fgs_arms_eiger_without_grid_detect(
     mock_complete,
     mock_wait,
-    fake_fgs_composite: GridscanComposite,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
@@ -453,7 +453,7 @@ def test_fgs_arms_eiger_without_grid_detect(
 def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_returned(
     mock_complete,
     mock_wait,
-    fake_fgs_composite: GridscanComposite,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):

@@ -15,7 +15,9 @@ from dodal.devices.zebra import Zebra
 from ophyd.epics_motor import EpicsMotor
 from ophyd.status import Status
 
-from hyperion.experiment_plans.flyscan_xray_centre_plan import GridscanComposite
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    FlyScanXRayCentreComposite,
+)
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
@@ -237,7 +239,7 @@ def fake_create_rotation_devices(
 
 @pytest.fixture
 def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
-    fake_composite = GridscanComposite(
+    fake_composite = FlyScanXRayCentreComposite(
         aperture_positions=AperturePositions(
             LARGE=(1, 2, 3, 4, 5),
             MEDIUM=(2, 3, 3, 5, 6),

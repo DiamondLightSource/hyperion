@@ -1,12 +1,16 @@
 import argparse
 import atexit
+import importlib
+import os
+import string
 import threading
 from dataclasses import asdict
 from queue import Queue
 from traceback import format_exception
-from typing import Callable, Optional, Tuple
+from types import ModuleType
+from typing import Any, Callable, Optional, Tuple
 
-from blueapi.core import BlueskyContext
+from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from flask import Flask, request
 from flask_restful import Api, Resource
@@ -32,7 +36,8 @@ VERBOSE_EVENT_LOGGING: Optional[bool] = None
 @dataclass
 class Command:
     action: Actions
-    experiment: Optional[Callable] = None
+    devices: Optional[Any] = None
+    experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
     parameters: Optional[InternalParameters] = None
 
 
@@ -62,25 +67,32 @@ class BlueskyRunner:
     aperture_change_callback = ApertureChangeCallback()
     RE: RunEngine
     skip_startup_connection: bool
+    context: BlueskyContext
 
-    def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
+    def __init__(
+        self, RE: RunEngine, context: BlueskyContext, skip_startup_connection=False
+    ) -> None:
         self.RE = RE
         self.skip_startup_connection = skip_startup_connection
+        self.context = context
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
         RE.subscribe(self.aperture_change_callback)
 
         if not self.skip_startup_connection:
             for plan_name in PLAN_REGISTRY:
-                PLAN_REGISTRY[plan_name]["setup"]()
+                PLAN_REGISTRY[plan_name]["setup"](context)
 
     def start(
-        self, experiment: Callable, parameters: InternalParameters, plan_name: str
+        self,
+        experiment: Callable,
+        parameters: InternalParameters,
+        plan_name: str,
     ) -> StatusAndMessage:
         hyperion.log.LOGGER.info(f"Started with parameters: {parameters}")
 
-        if self.skip_startup_connection:
-            PLAN_REGISTRY[plan_name]["setup"]()
+        # TODO - skip_startup_connection at blueapi level?
+        devices: Any = PLAN_REGISTRY[plan_name]["setup"](self.context)
 
         if (
             self.current_status.status == Status.BUSY.value
@@ -89,7 +101,9 @@ class BlueskyRunner:
             return StatusAndMessage(Status.FAILED, "Bluesky already running")
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
-            self.command_queue.put(Command(Actions.START, experiment, parameters))
+            self.command_queue.put(
+                Command(Actions.START, devices, experiment, parameters)
+            )
             return StatusAndMessage(Status.SUCCESS)
 
     def stopping_thread(self):
@@ -123,9 +137,11 @@ class BlueskyRunner:
             if command.action == Actions.SHUTDOWN:
                 return
             elif command.action == Actions.START:
+                if command.experiment is None:
+                    raise ValueError("No experiment provided for START")
                 try:
                     with TRACER.start_span("do_run"):
-                        self.RE(command.experiment(command.parameters))
+                        self.RE(command.experiment(command.devices, command.parameters))
 
                     self.current_status = StatusAndMessage(
                         Status.IDLE,
@@ -195,9 +211,52 @@ class RunExperiment(Resource):
         return asdict(status_and_message)  # type: ignore
 
 
-def setup_context() -> BlueskyContext:
+def _get_beamline_specific_device_module() -> ModuleType:
+    beamline = os.environ.get("BEAMLINE")
+
+    if beamline is None:
+        raise ValueError(
+            "Cannot determine beamline - BEAMLINE environment variable not set."
+        )
+
+    beamline = beamline.replace("-", "_")
+    valid_characters = string.ascii_letters + string.digits + "_"
+
+    if not all(c in valid_characters for c in beamline):
+        raise ValueError(
+            "Invalid BEAMLINE variable - expected alphanumeric or underscores only, got '{}'".format(
+                beamline
+            )
+        )
+
+    if len(beamline) == 0 or beamline[0] not in string.ascii_letters:
+        raise ValueError(
+            "Invalid BEAMLINE variable - module name is not a permissible python module name, got '{}'".format(
+                beamline
+            )
+        )
+
+    try:
+        return importlib.import_module("dodal.beamlines.{}".format(beamline))
+    except ImportError as e:
+        raise ValueError(
+            "Hyperion failed to import beamline-specific dodal module 'dodal.beamlines.{}'".format(
+                beamline
+            )
+        ) from e
+
+
+def setup_context(connect_immediately: bool) -> BlueskyContext:
     context = BlueskyContext()
     context.with_plan_module(hyperion_plans)
+
+    from dodal.utils import make_all_devices
+
+    for device in make_all_devices(
+        _get_beamline_specific_device_module(), wait_for_connection=connect_immediately
+    ).values():
+        context.device(device)
+
     return context
 
 
@@ -223,8 +282,11 @@ class StopOrStatus(Resource):
 def create_app(
     test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
 ) -> Tuple[Flask, BlueskyRunner]:
-    runner = BlueskyRunner(RE, skip_startup_connection=skip_startup_connection)
-    context = setup_context()
+    context = setup_context(connect_immediately=not skip_startup_connection)
+
+    runner = BlueskyRunner(
+        RE, context=context, skip_startup_connection=skip_startup_connection
+    )
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
@@ -284,6 +346,9 @@ if __name__ == "__main__":
         dev_mode,
         skip_startup_connection,
     ) = cli_arg_parse()
+
+    # TODO: FIXME!!!
+    os.environ["BEAMLINE"] = "i03"
 
     hyperion.log.set_up_logging_handlers(logging_level, dev_mode)
     app, runner = create_app(skip_startup_connection=skip_startup_connection)

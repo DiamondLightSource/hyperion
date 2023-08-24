@@ -77,9 +77,9 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
     },
     "stepped_grid_scan": {
         "setup": stepped_grid_scan_plan.create_devices,
-        "run": stepped_grid_scan_plan.get_plan,
         "internal_param_type": SteppedGridScanInternalParameters,
         "experiment_param_type": SteppedGridScanParams,
+        "callback_collection_type": NullPlanCallbackCollection,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())

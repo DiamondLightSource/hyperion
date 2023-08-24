@@ -1,31 +1,27 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from blueapi.core import MsgGenerator
-from bluesky import RunEngine
+from blueapi.core import BlueskyContext, MsgGenerator
+from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal.beamlines import i03
-from dodal.beamlines.i03 import (
-    ApertureScatterguard,
-    Attenuator,
-    Backlight,
-    EigerDetector,
-    FastGridScan,
-    Flux,
-    S4SlitGaps,
-    Smargon,
-    Synchrotron,
-    Undulator,
-    Zebra,
-)
-from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.devices.eiger import DetectorParams
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.backlight import Backlight
+from dodal.devices.eiger import DetectorParams, EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
+from dodal.devices.flux import Flux
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
+from dodal.devices.zebra import Zebra
 
 import hyperion.log
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
@@ -45,6 +41,7 @@ from hyperion.parameters.beamline_parameters import (
 )
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.tracing import TRACER
+from hyperion.utils.utils import initialise_devices_in_composite
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -52,50 +49,44 @@ if TYPE_CHECKING:
     )
 
 
-class GridscanComposite:
-    """A container for all the Devices required for a fast gridscan."""
+@dataclasses.dataclass
+class FlyScanXRayCentreComposite:
+    """All devices which are directly or indirectly required by this plan"""
 
-    def __init__(
-        self,
-        aperture_positions: AperturePositions = None,
-        detector_params: DetectorParams = None,
-        fake: bool = False,
-    ):
-        self.aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard(
-            fake_with_ophyd_sim=fake, aperture_positions=aperture_positions
-        )
-        self.backlight: Backlight = i03.backlight(fake_with_ophyd_sim=fake)
-        self.eiger: EigerDetector = i03.eiger(
-            fake_with_ophyd_sim=fake, params=detector_params
-        )
-        self.fast_grid_scan: FastGridScan = i03.fast_grid_scan(fake_with_ophyd_sim=fake)
-        self.flux: Flux = i03.flux(fake_with_ophyd_sim=fake)
-        self.s4_slit_gaps: S4SlitGaps = i03.s4_slit_gaps(fake_with_ophyd_sim=fake)
-        self.sample_motors: Smargon = i03.smargon(fake_with_ophyd_sim=fake)
-        self.undulator: Synchrotron = i03.undulator(fake_with_ophyd_sim=fake)
-        self.synchrotron: Undulator = i03.synchrotron(fake_with_ophyd_sim=fake)
-        self.zebra: Zebra = i03.zebra(fake_with_ophyd_sim=fake)
-        self.attenuator: Attenuator = i03.attenuator(fake_with_ophyd_sim=fake)
+    aperture_scatterguard: ApertureScatterguard
+    attenuator: Attenuator
+    backlight: Backlight
+    eiger: EigerDetector
+    fast_grid_scan: FastGridScan
+    flux: Flux
+    s4_slit_gaps: S4SlitGaps
+    smargon: Smargon
+    undulator: Undulator
+    synchrotron: Synchrotron
+    zebra: Zebra
+
+    @property
+    def sample_motors(self) -> Smargon:
+        """Convenience alias with a more user-friendly name"""
+        return self.smargon
 
 
-flyscan_xray_centre_composite: GridscanComposite | None = None
-
-
-def create_devices():
+def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
-    global flyscan_xray_centre_composite
-    prefixes = get_beamline_prefixes()
-    hyperion.log.LOGGER.info(
-        f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
-    )
-    aperture_positions = AperturePositions.from_gda_beamline_params(
-        get_beamline_parameters()
-    )
-    hyperion.log.LOGGER.info("Connecting to EPICS devices...")
-    flyscan_xray_centre_composite = GridscanComposite(
-        aperture_positions=aperture_positions
-    )
-    hyperion.log.LOGGER.info("Connected.")
+    # prefixes = get_beamline_prefixes()
+    # hyperion.log.LOGGER.info(
+    #     f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
+    # )
+    # aperture_positions = AperturePositions.from_gda_beamline_params(
+    #     get_beamline_parameters()
+    # )
+    # hyperion.log.LOGGER.info("Connecting to EPICS devices...")
+    # flyscan_xray_centre_composite = initialise_devices_in_composite(
+    #     context, FlyScanXRayCentreComposite
+    # )
+    # TODO set aperture positions
+
+    return initialise_devices_in_composite(context, FlyScanXRayCentreComposite)
 
 
 def set_aperture_for_bbox_size(
@@ -139,7 +130,7 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
     raise WarningException("Scan invalid - pin too long/short/bent and out of range")
 
 
-def tidy_up_plans(fgs_composite: GridscanComposite):
+def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     hyperion.log.LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
@@ -147,7 +138,7 @@ def tidy_up_plans(fgs_composite: GridscanComposite):
 @bpp.set_run_key_decorator("run_gridscan")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
-    fgs_composite: GridscanComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
     md={
         "plan_name": "run_gridscan",
@@ -201,7 +192,7 @@ def run_gridscan(
 @bpp.set_run_key_decorator("run_gridscan_and_move")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
-    fgs_composite: GridscanComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
     subscriptions: XrayCentreCallbackCollection,
 ):
@@ -240,6 +231,7 @@ def run_gridscan_and_move(
 
 
 def flyscan_xray_centre(
+    composite: FlyScanXRayCentreComposite,
     parameters: Any,
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
@@ -253,10 +245,7 @@ def flyscan_xray_centre(
     Returns:
         Generator: The plan for the gridscan
     """
-    assert flyscan_xray_centre_composite is not None
-    flyscan_xray_centre_composite.eiger.set_detector_parameters(
-        parameters.hyperion_params.detector_params
-    )
+    composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
     subscriptions = XrayCentreCallbackCollection.from_params(parameters)
 
@@ -270,13 +259,11 @@ def flyscan_xray_centre(
             "hyperion_internal_parameters": parameters.json(),
         }
     )
-    @bpp.finalize_decorator(lambda: tidy_up_plans(flyscan_xray_centre_composite))
+    @bpp.finalize_decorator(lambda: tidy_up_plans(composite))
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
-    return run_gridscan_and_move_and_tidy(
-        flyscan_xray_centre_composite, parameters, subscriptions
-    )
+    return run_gridscan_and_move_and_tidy(composite, parameters, subscriptions)
 
 
 if __name__ == "__main__":

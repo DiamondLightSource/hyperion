@@ -1,23 +1,22 @@
 from __future__ import annotations
 
 import argparse
-from typing import TYPE_CHECKING, Callable
+import dataclasses
+from typing import TYPE_CHECKING, Callable, Optional
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bluesky_plans
-from bluesky import RunEngine
+from blueapi.core import BlueskyContext, MsgGenerator
+from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal.beamlines import i03
-from dodal.beamlines.i03 import Smargon
+from dodal.devices.smargon import Smargon
 
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
-from hyperion.parameters.beamline_parameters import (
-    GDABeamlineParameters,
-    get_beamline_prefixes,
-)
+from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.tracing import TRACER
+from hyperion.utils.utils import initialise_devices_in_composite
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
@@ -25,44 +24,30 @@ if TYPE_CHECKING:
     )
 
 
+@dataclasses.dataclass
 class SteppedGridScanComposite:
-    """A device consisting of all the Devices required for a stepped grid scan."""
+    """All devices which are directly or indirectly required by this plan"""
 
-    sample_motors: Smargon
-
-    def __init__(
-        self,
-        fake: bool = False,
-    ):
-        self.sample_motors = i03.smargon(fake_with_ophyd_sim=fake)
-
-
-stepped_grid_scan_composite: SteppedGridScanComposite | None = None
+    smargon: Smargon
 
 
 def get_beamline_parameters():
     return GDABeamlineParameters.from_file(BEAMLINE_PARAMETER_PATHS["i03"])
 
 
-def create_devices():
+def create_devices(context: BlueskyContext) -> SteppedGridScanComposite:
     """Creates the devices required for the plan and connect to them"""
-    global stepped_grid_scan_composite
-    prefixes = get_beamline_prefixes()
-    LOGGER.info(
-        f"Creating devices for {prefixes.beamline_prefix} and {prefixes.insertion_prefix}"
-    )
-    LOGGER.info("Connecting to EPICS devices...")
-    stepped_grid_scan_composite = SteppedGridScanComposite()
-    LOGGER.info("Connected.")
+    return initialise_devices_in_composite(context, SteppedGridScanComposite)
 
 
 def run_gridscan(
+    composite: SteppedGridScanComposite,
     parameters: SteppedGridScanInternalParameters,
     md={
         "plan_name": "run_gridscan",
     },
 ):
-    sample_motors = i03.smargon()
+    sample_motors: Smargon = composite.smargon
 
     # Currently gridscan only works for omega 0, see #
     with TRACER.start_span("moving_omega_to_0"):
@@ -80,7 +65,9 @@ def run_gridscan(
         yield from do_stepped_grid_scan()
 
 
-def get_plan(parameters: SteppedGridScanInternalParameters) -> Callable:
+def get_plan(
+    composite: SteppedGridScanComposite, parameters: SteppedGridScanInternalParameters
+) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
 
     Args:
@@ -89,10 +76,7 @@ def get_plan(parameters: SteppedGridScanInternalParameters) -> Callable:
     Returns:
         Generator: The plan for the gridscan
     """
-
-    assert stepped_grid_scan_composite is not None
-
-    return run_gridscan(parameters)
+    return run_gridscan(composite, parameters)
 
 
 def take_reading(dets, name="primary"):

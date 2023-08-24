@@ -10,7 +10,7 @@ from dodal.devices.aperturescatterguard import AperturePositions
 import hyperion.experiment_plans.flyscan_xray_centre_plan as fgs_plan
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    GridscanComposite,
+    FlyScanXRayCentreComposite,
     flyscan_xray_centre,
     read_hardware_for_ispyb,
     run_gridscan,
@@ -46,7 +46,7 @@ def RE():
 
 @pytest.fixture
 def fgs_composite():
-    flyscan_xray_centre_composite = GridscanComposite()
+    flyscan_xray_centre_composite = FlyScanXRayCentreComposite()
     fgs_plan.flyscan_xray_centre_composite = flyscan_xray_centre_composite
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         BEAMLINE_PARAMETER_PATHS["i03"]
@@ -85,7 +85,7 @@ def test_run_gridscan(
     wait: MagicMock,
     params: GridscanInternalParameters,
     RE: RunEngine,
-    fgs_composite: GridscanComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
 ):
     fgs_composite.eiger.unstage = lambda: True
     # Would be better to use flyscan_xray_centre instead but eiger doesn't work well in S03
@@ -95,7 +95,7 @@ def test_run_gridscan(
 @pytest.mark.s03
 def test_read_hardware_for_ispyb(
     RE: RunEngine,
-    fgs_composite: GridscanComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
 ):
     undulator = fgs_composite.undulator
     synchrotron = fgs_composite.synchrotron
@@ -130,7 +130,7 @@ def test_full_plan_tidies_at_end(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fgs_composite: GridscanComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
     params: GridscanInternalParameters,
     RE: RunEngine,
 ):
@@ -165,7 +165,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fgs_composite: GridscanComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
     params: GridscanInternalParameters,
     RE: RunEngine,
 ):
@@ -179,7 +179,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 @pytest.mark.s03
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
     RE: RunEngine,
-    fgs_composite: GridscanComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
     fetch_comment: Callable,
     params: GridscanInternalParameters,
 ):
@@ -213,7 +213,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     complete: MagicMock,
     kickoff: MagicMock,
     RE: RunEngine,
-    fgs_composite: GridscanComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,
     params: GridscanInternalParameters,
 ):

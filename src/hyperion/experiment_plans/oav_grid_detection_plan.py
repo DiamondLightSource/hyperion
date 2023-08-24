@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import dataclasses
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
+from blueapi.core import BlueskyContext
 from bluesky.preprocessors import finalize_wrapper
-from dodal.beamlines import i03
+from dodal.devices.backlight import Backlight
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
@@ -18,18 +20,27 @@ from hyperion.device_setup_plans.setup_oav import (
     wait_for_tip_to_be_found,
 )
 from hyperion.log import LOGGER
+from hyperion.utils.utils import initialise_devices_in_composite
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
 
 
-def create_devices():
-    i03.oav()
-    i03.smargon()
-    i03.backlight()
+@dataclasses.dataclass
+class OavGridDetectionComposite:
+    """All devices which are directly or indirectly required by this plan"""
+
+    backlight: Backlight
+    oav: OAV
+    smargon: Smargon
+
+
+def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:
+    return initialise_devices_in_composite(context, OavGridDetectionComposite)
 
 
 def grid_detection_plan(
+    composite: OavGridDetectionComposite,
     parameters: OAVParameters,
     out_parameters: GridScanParams,
     snapshot_template: str,
@@ -39,6 +50,7 @@ def grid_detection_plan(
 ):
     yield from finalize_wrapper(
         grid_detection_main_plan(
+            composite,
             parameters,
             out_parameters,
             snapshot_template,
@@ -46,12 +58,13 @@ def grid_detection_plan(
             grid_width_microns,
             box_size_microns,
         ),
-        reset_oav(),
+        reset_oav(composite.oav),
     )
 
 
 @bpp.run_decorator()
 def grid_detection_main_plan(
+    composite: OavGridDetectionComposite,
     parameters: OAVParameters,
     out_parameters: GridScanParams,
     snapshot_template: str,
@@ -71,8 +84,8 @@ def grid_detection_main_plan(
         grid_width_microns (int): The width of the grid to scan in microns
         box_size_um (float): The size of each box of the grid in microns
     """
-    oav: OAV = i03.oav()
-    smargon: Smargon = i03.smargon()
+    oav: OAV = composite.oav
+    smargon: Smargon = composite.smargon
     LOGGER.info("OAV Centring: Starting grid detection centring")
 
     yield from bps.wait()
@@ -185,8 +198,7 @@ def grid_detection_main_plan(
     out_parameters.z_step_size = box_size_um / 1000
 
 
-def reset_oav():
+def reset_oav(oav: OAV):
     """Changes the MJPG stream to look at the camera without the edge detection and turns off the edge detcetion plugin."""
-    oav = i03.oav()
     yield from bps.abs_set(oav.snapshot.input_plugin, "OAV.CAM")
     yield from bps.abs_set(oav.mxsc.enable_callbacks, 0)

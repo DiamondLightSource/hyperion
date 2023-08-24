@@ -1,17 +1,22 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import dataclasses
+from typing import TYPE_CHECKING, Any, Optional
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from blueapi.core import MsgGenerator
-from dodal.beamlines import i03
+from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.backlight import Backlight
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
+from dodal.devices.flux import Flux
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
-from ophyd.device import Device
 from ophyd.epics_motor import EpicsMotor
 
 from hyperion.device_setup_plans.manipulate_sample import (
@@ -33,26 +38,34 @@ from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
+from hyperion.utils.utils import initialise_devices_in_composite
 
 if TYPE_CHECKING:
-    from ophyd.device import Device
-
     from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
 
 
-def create_devices() -> dict[str, Device]:
-    """Ensures necessary devices have been instantiated and returns a dict with
-    references to them"""
-    return {
-        "eiger": i03.eiger(),
-        "smargon": i03.smargon(),
-        "zebra": i03.zebra(),
-        "detector_motion": i03.detector_motion(),
-        "backlight": i03.backlight(),
-        "attenuator": i03.attenuator(),
-    }
+@dataclasses.dataclass
+class RotationScanComposite:
+    """All devices which are directly or indirectly required by this plan"""
+
+    attenuator: Attenuator
+    backlight: Backlight
+    detector_motion: DetectorMotion
+    eiger: EigerDetector
+    flux: Flux
+    smargon: Smargon
+    undulator: Undulator
+    synchrotron: Synchrotron
+    s4_slit_gaps: S4SlitGaps
+    zebra: Zebra
+
+
+def create_devices(context: BlueskyContext) -> RotationScanComposite:
+    """Ensures necessary devices have been instantiated"""
+
+    return initialise_devices_in_composite(context, RotationScanComposite)
 
 
 DEFAULT_DIRECTION = RotationDirection.NEGATIVE
@@ -119,6 +132,7 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
 @bpp.set_run_key_decorator("rotation_scan_main")
 @bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
 def rotation_scan_plan(
+    composite: RotationScanComposite,
     params: RotationInternalParameters,
     smargon: Smargon,
     zebra: Zebra,
@@ -184,11 +198,11 @@ def rotation_scan_plan(
 
     # get some information for the ispyb deposition and trigger the callback
     yield from read_hardware_for_ispyb(
-        i03.undulator(),
-        i03.synchrotron(),
-        i03.s4_slit_gaps(),
-        i03.attenuator(),
-        i03.flux(),
+        composite.undulator,
+        composite.synchrotron,
+        composite.s4_slit_gaps,
+        composite.attenuator,
+        composite.flux,
     )
 
     LOGGER.info(
@@ -222,8 +236,7 @@ def cleanup_plan(
     yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup"))
 
 
-def rotation_scan(parameters: Any) -> MsgGenerator:
-    devices = create_devices()
+def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGenerator:
     subscriptions = RotationCallbackCollection.from_params(parameters)
 
     @bpp.subs_decorator(list(subscriptions))
@@ -237,30 +250,41 @@ def rotation_scan(parameters: Any) -> MsgGenerator:
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
-        eiger: EigerDetector = devices["eiger"]
+        eiger: EigerDetector = composite.eiger
         eiger.set_detector_parameters(params.hyperion_params.detector_params)
 
         @bpp.stage_decorator([eiger])
-        @bpp.finalize_decorator(lambda: cleanup_plan(**devices))
+        @bpp.finalize_decorator(
+            lambda: cleanup_plan(
+                zebra=composite.zebra,
+                smargon=composite.smargon,
+                detector_motion=composite.detector_motion,
+            )
+        )
         def rotation_with_cleanup_and_stage(params: RotationInternalParameters):
             LOGGER.info("setting up sample environment...")
             yield from setup_sample_environment(
-                devices["detector_motion"],
-                devices["backlight"],
-                devices["attenuator"],
+                composite.detector_motion,
+                composite.backlight,
+                composite.attenuator,
                 params.hyperion_params.ispyb_params.transmission_fraction,
                 params.hyperion_params.detector_params.detector_distance,
             )
             LOGGER.info("moving to position (if specified)")
             yield from move_x_y_z(
-                devices["smargon"],
+                composite.smargon,
                 params.experiment_params.x,
                 params.experiment_params.y,
                 params.experiment_params.z,
                 group="move_x_y_z",
             )
 
-            yield from rotation_scan_plan(params, **devices)
+            yield from rotation_scan_plan(
+                composite,
+                params,
+                smargon=composite.smargon,
+                zebra=composite.zebra,
+            )
 
         LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
