@@ -35,12 +35,11 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.parameters import external_parameters
-from hyperion.parameters.beamline_parameters import (
-    get_beamline_parameters,
-    get_beamline_prefixes,
-)
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.tracing import TRACER
+from hyperion.utils.aperturescatterguard import (
+    load_default_aperture_scatterguard_positions_if_unset,
+)
 from hyperion.utils.context import device_composite_from_context, setup_context
 
 if TYPE_CHECKING:
@@ -70,17 +69,16 @@ class FlyScanXRayCentreComposite:
         """Convenience alias with a more user-friendly name"""
         return self.smargon
 
+    def __post_init__(self):
+        """Ensure that aperture positions are loaded whenever this class is created."""
+        load_default_aperture_scatterguard_positions_if_unset(
+            self.aperture_scatterguard
+        )
+
 
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
-    composite = device_composite_from_context(context, FlyScanXRayCentreComposite)
-
-    aperture_positions = AperturePositions.from_gda_beamline_params(
-        get_beamline_parameters()
-    )
-    composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
-
-    return composite
+    return device_composite_from_context(context, FlyScanXRayCentreComposite)
 
 
 def set_aperture_for_bbox_size(

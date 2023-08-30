@@ -1,15 +1,9 @@
-import dataclasses
 import json
 
 from blueapi.core import BlueskyContext, MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.backlight import Backlight
-from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
-from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -62,17 +56,19 @@ def pin_centre_then_xray_centre_plan(
     centre the sample"""
     oav_config_files["oav_config_json"] = parameters.experiment_params.oav_centring_file
 
+    pin_tip_centring_composite = PinTipCentringComposite(
+        oav=composite.oav, smargon=composite.smargon, backlight=composite.backlight
+    )
+
     yield from pin_tip_centre_plan(
-        PinTipCentringComposite(
-            oav=composite.oav, smargon=composite.smargon, backlight=composite.backlight
-        ),
+        pin_tip_centring_composite,
         parameters.experiment_params.tip_offset_microns,
         oav_config_files,
     )
     grid_detect_params = create_parameters_for_grid_detection(parameters)
 
     backlight = composite.backlight
-    aperture_scattergaurd = composite.aperture_scatterguard
+    aperture_scatterguard = composite.aperture_scatterguard
     detector_motion = composite.detector_motion
 
     oav_params = OAVParameters("xrayCentring", **oav_config_files)
@@ -81,7 +77,7 @@ def pin_centre_then_xray_centre_plan(
         composite,
         grid_detect_params,
         backlight,
-        aperture_scattergaurd,
+        aperture_scatterguard,
         detector_motion,
         oav_params,
     )

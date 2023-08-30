@@ -89,7 +89,6 @@ class BlueskyRunner:
     ) -> StatusAndMessage:
         hyperion.log.LOGGER.info(f"Started with parameters: {parameters}")
 
-        # TODO - skip_startup_connection at blueapi level?
         devices: Any = PLAN_REGISTRY[plan_name]["setup"](self.context)
 
         if (
@@ -237,9 +236,7 @@ def create_app(
         wait_for_connection=not skip_startup_connection,
     )
 
-    runner = BlueskyRunner(
-        RE, context=context, skip_startup_connection=skip_startup_connection
-    )
+    runner = BlueskyRunner(RE, context=context)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)

@@ -7,7 +7,11 @@ from typing import Any, ClassVar, Dict, Protocol, Type, TypeVar, get_type_hints
 
 from blueapi.core import BlueskyContext
 from blueapi.core.bluesky_types import Device
-from dodal.utils import get_beamline_name
+from dodal.utils import get_beamline_name, make_all_devices
+
+# Ideally wouldn't import a 'private' method from dodal - but this will likely go
+# away once we fully use blueapi's plan management components.
+from dodal.beamlines.beamline_utils import _wait_for_connection
 
 import hyperion.experiment_plans as hyperion_plans
 from hyperion.log import LOGGER
@@ -47,6 +51,8 @@ def device_composite_from_context(context: BlueskyContext, dc: Type[DT]) -> DT:
     Initializes all of the devices referenced in a given dataclass from a provided
     context, checking that the types of devices returned by the context are compatible
     with the type annotations of the dataclass.
+
+    Will ensure that devices referenced by this composite are connected.
     """
     LOGGER.debug(
         f"Attempting to initialize devices referenced in dataclass {dc} from blueapi context"
@@ -56,9 +62,15 @@ def device_composite_from_context(context: BlueskyContext, dc: Type[DT]) -> DT:
     dc_type_hints: Dict[str, Any] = get_type_hints(dc)
 
     for field in dataclasses.fields(dc):
-        devices[field.name] = find_device_in_context(
-            context, field.name, dc_type_hints.get(field.name, Device)
+        device = find_device_in_context(
+            context, field.name, expected_type=dc_type_hints.get(field.name, Device)
         )
+
+        # At the point where we're actually making a device composite, i.e. starting a plan with these devices,
+        # we need all the referenced devices to be connected.
+        _wait_for_connection(device=device)
+
+        devices[field.name] = device
 
     return dc(**devices)
 
@@ -95,17 +107,20 @@ def _get_beamline_specific_device_module() -> ModuleType:
         ) from e
 
 
-def setup_context(wait_for_connection: bool = True) -> BlueskyContext:
+def setup_context(
+    wait_for_connection: bool = True, fake_with_ophyd_sim: bool = False
+) -> BlueskyContext:
     context = BlueskyContext()
     context.with_plan_module(hyperion_plans)
 
-    # Ideally would use context.with_dodal_device_module, but it doesn't yet support
-    # passing through wait_for_connection
-    from dodal.utils import make_all_devices
-
-    for device in make_all_devices(
-        _get_beamline_specific_device_module(), wait_for_connection=wait_for_connection
-    ).values():
-        context.device(device)
+    # Ideally would use context.with_dodal_device_module, but it doesn't support
+    # passing through wait_for_connection or fake_with_ophyd_sim
+    # TODO: create blueapi issue/PR
+    for name, device in make_all_devices(
+        _get_beamline_specific_device_module(),
+        wait_for_connection=wait_for_connection,
+        fake_with_ophyd_sim=fake_with_ophyd_sim,
+    ).items():
+        context.device(device, name=name)
 
     return context

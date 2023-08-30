@@ -39,12 +39,11 @@ def mock_emit():
 
 
 def fake_create_devices() -> tuple[SampleShutter, Xspress3Mini, Attenuator]:
-    sample_shutter = i03.sample_shutter(fake_with_ophyd_sim=True)
-    sample_shutter.wait_for_connection()
-    xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True)
-    xspress3mini.wait_for_connection()
-    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
-    attenuator.wait_for_connection()
+    sample_shutter = i03.sample_shutter(
+        fake_with_ophyd_sim=True, wait_for_connection=True
+    )
+    xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True, wait_for_connection=True)
+    attenuator = i03.attenuator(fake_with_ophyd_sim=True, wait_for_connection=True)
     return sample_shutter, xspress3mini, attenuator
 
 
@@ -278,14 +277,6 @@ def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
                 0.1,
             )
         )
-
-
-def test_create_new_devices():
-    with patch("hyperion.experiment_plans.optimise_attenuation_plan.i03") as i03:
-        create_devices()
-        i03.sample_shutter.assert_called()
-        i03.xspress3mini.assert_called()
-        i03.attenuator.assert_called()
 
 
 @patch("hyperion.experiment_plans.optimise_attenuation_plan.arm_devices", autospec=True)

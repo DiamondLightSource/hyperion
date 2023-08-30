@@ -9,6 +9,7 @@ from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
+    PinTipCentringComposite,
     create_devices,
     move_pin_into_view,
     move_smargon_warn_on_out_of_range,
@@ -100,14 +101,6 @@ def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_excep
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
 
 
-@patch("hyperion.experiment_plans.pin_tip_centring_plan.i03", autospec=True)
-def test_when_create_devices_called_then_devices_created(mock_i03):
-    create_devices()
-    mock_i03.oav.assert_called_once()
-    mock_i03.smargon.assert_called_once()
-    mock_i03.backlight.assert_called_once()
-
-
 def return_pixel(pixel, *args):
     yield from null()
     return pixel
@@ -129,7 +122,6 @@ def return_pixel(pixel, *args):
     "hyperion.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
     autospec=True,
 )
-@patch("hyperion.experiment_plans.pin_tip_centring_plan.i03", autospec=True)
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", autospec=True)
 @patch(
     "hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
@@ -138,16 +130,17 @@ def return_pixel(pixel, *args):
 def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     move_smargon,
     mock_sleep,
-    mock_i03,
     mock_setup_oav,
     get_move: MagicMock,
     smargon: Smargon,
     test_config_files,
     RE,
 ):
-    mock_i03.smargon.return_value = smargon
     smargon.omega.user_readback.sim_put(0)
-    RE(pin_tip_centre_plan(50, test_config_files))
+    composite = PinTipCentringComposite(
+        backlight=MagicMock(), oav=MagicMock(), smargon=smargon
+    )
+    RE(pin_tip_centre_plan(composite, 50, test_config_files))
 
     mock_setup_oav.assert_called_once()
 

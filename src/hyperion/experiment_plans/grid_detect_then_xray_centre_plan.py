@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
-from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
@@ -38,10 +38,12 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.beamline_parameters import get_beamline_parameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,
+)
+from hyperion.utils.aperturescatterguard import (
+    load_default_aperture_scatterguard_positions_if_unset,
 )
 from hyperion.utils.context import device_composite_from_context
 
@@ -70,18 +72,15 @@ class GridDetectThenXRayCentreComposite:
     undulator: Undulator
     zebra: Zebra
 
+    def __post_init__(self):
+        """Ensure that aperture positions are loaded whenever this class is created."""
+        load_default_aperture_scatterguard_positions_if_unset(
+            self.aperture_scatterguard
+        )
+
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
-    composite = device_composite_from_context(
-        context, GridDetectThenXRayCentreComposite
-    )
-
-    aperture_positions = AperturePositions.from_gda_beamline_params(
-        get_beamline_parameters()
-    )
-    composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
-
-    return composite
+    return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
 
 
 def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120.0):
@@ -136,12 +135,14 @@ def detect_grid_and_do_gridscan(
         snapshot_template,
         snapshot_dir,
     ):
+        grid_detect_composite = OavGridDetectionComposite(
+            backlight=composite.backlight,
+            oav=composite.oav,
+            smargon=composite.smargon,
+        )
+
         yield from grid_detection_plan(
-            OavGridDetectionComposite(
-                backlight=composite.backlight,
-                oav=composite.oav,
-                smargon=composite.smargon,
-            ),
+            grid_detect_composite,
             oav_params,
             fgs_params,
             snapshot_template,
@@ -183,20 +184,22 @@ def detect_grid_and_do_gridscan(
     )
     yield from wait_for_det_to_finish_moving(detector_motion)
 
+    flyscan_composite = FlyScanXRayCentreComposite(
+        aperture_scatterguard=composite.aperture_scatterguard,
+        attenuator=composite.attenuator,
+        backlight=composite.backlight,
+        eiger=composite.eiger,
+        fast_grid_scan=composite.fast_grid_scan,
+        flux=composite.flux,
+        s4_slit_gaps=composite.s4_slit_gaps,
+        smargon=composite.smargon,
+        undulator=composite.undulator,
+        synchrotron=composite.synchrotron,
+        zebra=composite.zebra,
+    )
+
     yield from flyscan_xray_centre(
-        FlyScanXRayCentreComposite(
-            aperture_scatterguard=composite.aperture_scatterguard,
-            attenuator=composite.attenuator,
-            backlight=composite.backlight,
-            eiger=composite.eiger,
-            fast_grid_scan=composite.fast_grid_scan,
-            flux=composite.flux,
-            s4_slit_gaps=composite.s4_slit_gaps,
-            smargon=composite.smargon,
-            undulator=composite.undulator,
-            synchrotron=composite.synchrotron,
-            zebra=composite.zebra,
-        ),
+        flyscan_composite,
         flyscan_xray_centre_parameters,
     )
 
