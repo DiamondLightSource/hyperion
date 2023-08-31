@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
 
-import hyperion.experiment_plans.flyscan_xray_centre_plan as fgs_plan
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
@@ -46,30 +46,40 @@ def RE():
 
 @pytest.fixture
 def fgs_composite():
-    flyscan_xray_centre_composite = FlyScanXRayCentreComposite()
-    fgs_plan.flyscan_xray_centre_composite = flyscan_xray_centre_composite
+    composite = FlyScanXRayCentreComposite(
+        attenuator=i03.attenuator(),
+        aperture_scatterguard=i03.aperture_scatterguard(),
+        backlight=i03.backlight(),
+        eiger=i03.eiger(),
+        fast_grid_scan=i03.fast_grid_scan(),
+        flux=i03.flux(fake_with_ophyd_sim=True),
+        s4_slit_gaps=i03.s4_slit_gaps(),
+        smargon=i03.smargon(),
+        undulator=i03.undulator(),
+        synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
+        zebra=i03.zebra(),
+    )
+
     gda_beamline_parameters = GDABeamlineParameters.from_file(
         BEAMLINE_PARAMETER_PATHS["i03"]
     )
+
     aperture_positions = AperturePositions.from_gda_beamline_params(
         gda_beamline_parameters
     )
-    flyscan_xray_centre_composite.aperture_scatterguard.load_aperture_positions(
-        aperture_positions
-    )
-    flyscan_xray_centre_composite.aperture_scatterguard.aperture.z.move(
+    composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
+    composite.aperture_scatterguard.aperture.z.move(
         aperture_positions.LARGE[2], wait=True
     )
-    flyscan_xray_centre_composite.eiger.cam.manual_trigger.put("Yes")
+    composite.eiger.cam.manual_trigger.put("Yes")
 
     # S03 currently does not have StaleParameters_RBV
-    flyscan_xray_centre_composite.eiger.wait_for_stale_parameters = lambda: None
-    flyscan_xray_centre_composite.eiger.odin.check_odin_initialised = lambda: (True, "")
+    composite.eiger.wait_for_stale_parameters = lambda: None
+    composite.eiger.odin.check_odin_initialised = lambda: (True, "")
 
-    flyscan_xray_centre_composite.aperture_scatterguard.scatterguard.x.set_lim(
-        -4.8, 5.7
-    )
-    return flyscan_xray_centre_composite
+    composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
+
+    return composite
 
 
 @pytest.mark.skip(reason="Broken due to eiger issues in s03")
@@ -100,19 +110,17 @@ def test_read_hardware_for_ispyb(
     undulator = fgs_composite.undulator
     synchrotron = fgs_composite.synchrotron
     slit_gaps = fgs_composite.s4_slit_gaps
+    attenuator = fgs_composite.attenuator
+    flux = fgs_composite.flux
 
     @bpp.run_decorator()
-    def read_run(u, s, g):
-        yield from read_hardware_for_ispyb(u, s, g)
+    def read_run(u, s, g, a, f):
+        yield from read_hardware_for_ispyb(u, s, g, a, f)
 
-    RE(read_run(undulator, synchrotron, slit_gaps))
+    RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux))
 
 
 @pytest.mark.s03
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_composite",
-    autospec=True,
-)
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
@@ -139,15 +147,15 @@ def test_full_plan_tidies_at_end(
     callbacks.nexus_handler.nexus_writer_2 = MagicMock()
     callbacks.ispyb_handler.ispyb_ids = MagicMock()
     callbacks.ispyb_handler.ispyb.datacollection_ids = MagicMock()
-    RE(flyscan_xray_centre(params, callbacks))
+    with patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
+        return_value=callbacks,
+    ):
+        RE(flyscan_xray_centre(fgs_composite, params))
     set_shutter_to_manual.assert_called_once()
 
 
 @pytest.mark.s03
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.flyscan_xray_centre_composite",
-    autospec=True,
-)
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
@@ -169,10 +177,9 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     params: GridscanInternalParameters,
     RE: RunEngine,
 ):
-    callbacks = XrayCentreCallbackCollection.from_params(params)
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
-        RE(flyscan_xray_centre(params, callbacks))
+        RE(flyscan_xray_centre(fgs_composite, params))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -196,7 +203,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
 
     with pytest.raises(WarningException):
-        RE(flyscan_xray_centre(params, callbacks))
+        RE(flyscan_xray_centre(fgs_composite, params))
 
     dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
 
@@ -233,7 +240,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     callbacks = XrayCentreCallbackCollection.from_params(params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
-    RE(flyscan_xray_centre(params, callbacks))
+    RE(flyscan_xray_centre(fgs_composite, params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
     assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(-0.05)
