@@ -15,7 +15,6 @@ from hyperion.experiment_plans.optimise_attenuation_plan import (
     arm_devices,
     calculate_new_direction,
     check_parameters,
-    create_devices,
     deadtime_calc_new_transmission,
     deadtime_optimisation,
     is_counts_within_target,

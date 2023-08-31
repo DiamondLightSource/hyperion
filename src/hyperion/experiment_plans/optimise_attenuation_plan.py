@@ -1,6 +1,5 @@
 import dataclasses
 from enum import Enum
-from typing import Optional
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp

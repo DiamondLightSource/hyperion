@@ -6,12 +6,12 @@ from typing import Any, ClassVar, Dict, Protocol, Type, TypeVar, get_type_hints
 
 from blueapi.core import BlueskyContext
 from blueapi.core.bluesky_types import Device
-from dodal.utils import get_beamline_name, make_all_devices
 
 # Ideally wouldn't import a 'private' method from dodal - but this will likely go
 # away once we fully use blueapi's plan management components.
 # https://github.com/DiamondLightSource/hyperion/issues/868
 from dodal.beamlines.beamline_utils import _wait_for_connection
+from dodal.utils import get_beamline_name, make_all_devices
 
 import hyperion.experiment_plans as hyperion_plans
 from hyperion.log import LOGGER

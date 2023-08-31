@@ -1,8 +1,10 @@
-import pytest
 import dataclasses
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
+
+import pytest
 from ophyd.device import Device
-from hyperion.utils.context import find_device_in_context, device_composite_from_context
+
+from hyperion.utils.context import device_composite_from_context, find_device_in_context
 
 
 class _DeviceType1(Device):
@@ -48,14 +50,17 @@ def test_device_composite_from_context():
     context = MagicMock()
 
     @dataclasses.dataclass
-    class _Composite():
+    class _Composite:
         device1: _DeviceType1
         device2: _DeviceType2
 
     device1_instance = MagicMock(spec=_DeviceType1)
     device2_instance = MagicMock(spec=_DeviceType2)
 
-    context.find_device = lambda name: {"device1": device1_instance, "device2": device2_instance}.get(name)
+    context.find_device = lambda name: {
+        "device1": device1_instance,
+        "device2": device2_instance,
+    }.get(name)
 
     composite = device_composite_from_context(context, _Composite)
 

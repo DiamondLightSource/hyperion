@@ -1,5 +1,4 @@
-from calendar import c
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -13,7 +12,6 @@ from dodal.devices.smargon import Smargon
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
-    create_devices,
     grid_detection_plan,
 )
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (

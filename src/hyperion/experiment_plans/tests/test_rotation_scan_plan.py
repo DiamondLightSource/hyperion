@@ -26,16 +26,9 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
     rotation_scan_plan,
 )
-from hyperion.experiment_plans.tests.conftest import (
-    fake_create_rotation_devices,
-    fake_read,
-)
+from hyperion.experiment_plans.tests.conftest import fake_read
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
-)
-from hyperion.external_interaction.system_tests.conftest import (  # noqa
-    fetch_comment,
-    fetch_datacollection_attribute,
 )
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (

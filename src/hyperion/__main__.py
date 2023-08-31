@@ -1,11 +1,9 @@
 import argparse
 import atexit
-import os
 import threading
 from dataclasses import asdict
 from queue import Queue
 from traceback import format_exception
-from types import ModuleType
 from typing import Any, Callable, Optional, Tuple
 
 from blueapi.core import BlueskyContext, MsgGenerator

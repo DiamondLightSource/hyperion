@@ -10,7 +10,6 @@ from dodal.devices.smargon import Smargon
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
     PinTipCentringComposite,
-    create_devices,
     move_pin_into_view,
     move_smargon_warn_on_out_of_range,
     pin_tip_centre_plan,

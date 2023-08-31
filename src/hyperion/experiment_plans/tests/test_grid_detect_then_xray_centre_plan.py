@@ -4,7 +4,7 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines.i03 import detector_motion
-from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -13,7 +13,6 @@ from numpy.testing import assert_array_equal
 
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
-    create_devices,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
     wait_for_det_to_finish_moving,
