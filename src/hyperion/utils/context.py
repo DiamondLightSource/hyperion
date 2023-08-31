@@ -1,6 +1,5 @@
 import dataclasses
 import importlib
-import os
 import string
 from types import ModuleType
 from typing import Any, ClassVar, Dict, Protocol, Type, TypeVar, get_type_hints
@@ -11,6 +10,7 @@ from dodal.utils import get_beamline_name, make_all_devices
 
 # Ideally wouldn't import a 'private' method from dodal - but this will likely go
 # away once we fully use blueapi's plan management components.
+# https://github.com/DiamondLightSource/hyperion/issues/868
 from dodal.beamlines.beamline_utils import _wait_for_connection
 
 import hyperion.experiment_plans as hyperion_plans
@@ -113,9 +113,9 @@ def setup_context(
     context = BlueskyContext()
     context.with_plan_module(hyperion_plans)
 
-    # Ideally would use context.with_dodal_device_module, but it doesn't support
+    # Ideally would use context.with_dodal_module, but it doesn't support
     # passing through wait_for_connection or fake_with_ophyd_sim
-    # TODO: create blueapi issue/PR
+    # See https://github.com/DiamondLightSource/blueapi/pull/304
     for name, device in make_all_devices(
         _get_beamline_specific_device_module(),
         wait_for_connection=wait_for_connection,
