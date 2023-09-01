@@ -13,8 +13,8 @@ from scanspec.specs import Line
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
-    extract_hyperion_params_from_flat_dict,
     extract_experiment_params_from_flat_dict,
+    extract_hyperion_params_from_flat_dict,
 )
 
 
