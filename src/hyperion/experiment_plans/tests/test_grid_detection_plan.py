@@ -116,7 +116,7 @@ def test_create_devices(create_device: MagicMock):
             call(
                 device=Backlight,
                 name="backlight",
-                prefix="-EA-BL-01:",
+                prefix="",
                 wait=True,
                 fake=False,
             ),
