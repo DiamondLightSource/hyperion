@@ -198,6 +198,7 @@ class RunExperiment(Resource):
 def setup_context() -> BlueskyContext:
     context = BlueskyContext()
     context.with_plan_module(hyperion_plans)
+    hyperion.log.LOGGER.info(f"Found plans: {context.plan_functions}")
     return context
 
 
