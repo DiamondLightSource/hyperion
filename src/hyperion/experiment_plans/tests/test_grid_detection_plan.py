@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, call, patch
 
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
@@ -205,7 +206,7 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
 
-    cb = GridDetectionCallback()
+    cb = GridDetectionCallback(params)
     RE.subscribe(cb)
 
     RE(
@@ -219,3 +220,8 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     )
 
     assert cb.x_of_centre_of_first_box_px == pytest.approx(14.329113924)
+    assert cb.y_of_centre_of_first_box_px == pytest.approx(8.329113924)
+    assert np.allclose(cb.start_positions[0], [-0.79422, -0.53984, 0.0])
+    assert np.allclose(
+        cb.start_positions[1], [-7.94220000e-01, -3.30556664e-17, -5.39840000e-01]
+    )
