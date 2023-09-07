@@ -148,6 +148,7 @@ def grid_detection_main_plan(
         yield from bps.read(oav.snapshot.last_path_full_overlay)
         yield from bps.read(oav.snapshot.top_left_x)
         yield from bps.read(oav.snapshot.top_left_y)
+        yield from bps.read(oav.snapshot.box_width)
         yield from bps.save()
 
         # The first frame is taken at the centre of the first box

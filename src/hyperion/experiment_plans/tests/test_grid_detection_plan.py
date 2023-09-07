@@ -14,6 +14,9 @@ from hyperion.experiment_plans.oav_grid_detection_plan import (
     create_devices,
     grid_detection_plan,
 )
+from hyperion.external_interaction.callbacks.grid_detection_callback import (
+    GridDetectionCallback,
+)
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
@@ -189,3 +192,30 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
         )
     assert len(cb.snapshot_filenames) == 2
     assert len(cb.out_upper_left) == 2
+
+
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch("bluesky.plan_stubs.wait")
+def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct_values(
+    bps_wait: MagicMock,
+    fake_devices,
+    RE: RunEngine,
+    test_config_files,
+):
+    params = OAVParameters(context="loopCentring", **test_config_files)
+    gridscan_params = GridScanParams()
+
+    cb = GridDetectionCallback()
+    RE.subscribe(cb)
+
+    RE(
+        grid_detection_plan(
+            parameters=params,
+            out_parameters=gridscan_params,
+            snapshot_dir="tmp",
+            snapshot_template="test_{angle}",
+            grid_width_microns=161.2,
+        )
+    )
+
+    assert cb.x_of_centre_of_first_box_px == pytest.approx(14.329113924)
