@@ -93,8 +93,6 @@ def do_rotation_main_plan_for_tests(
             rotation_scan_plan(
                 devices,
                 expt_params,
-                sim_sgon,
-                sim_zeb,
             ),
         )
 
@@ -111,19 +109,6 @@ def run_full_rotation_plan(
     undulator: Undulator,
     flux: Flux,
 ):
-    devices = RotationScanComposite(
-        attenuator=attenuator,
-        backlight=fake_create_rotation_devices["backlight"],
-        detector_motion=fake_create_rotation_devices["detector_motion"],
-        eiger=fake_create_rotation_devices["eiger"],
-        flux=flux,
-        smargon=fake_create_rotation_devices["smargon"],
-        undulator=undulator,
-        synchrotron=synchrotron,
-        s4_slit_gaps=s4_slit_gaps,
-        zebra=fake_create_rotation_devices["zebra"],
-    )
-
     with (
         patch(
             "bluesky.preprocessors.__read_and_stash_a_motor",
@@ -134,9 +119,9 @@ def run_full_rotation_plan(
             lambda _: mock_rotation_subscriptions,
         ),
     ):
-        RE(rotation_scan(devices, test_rotation_params))
+        RE(rotation_scan(fake_create_rotation_devices, test_rotation_params))
 
-    return devices
+    return fake_create_rotation_devices
 
 
 def setup_and_run_rotation_plan_for_tests(
@@ -486,8 +471,6 @@ def test_cleanup_happens(
             rotation_scan_plan(
                 composite,
                 test_rotation_params,
-                smargon,
-                zebra,
             )
         )
         cleanup_plan.assert_not_called()

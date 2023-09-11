@@ -10,7 +10,11 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.flux import Flux
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from ophyd.epics_motor import EpicsMotor
 from ophyd.status import Status
@@ -18,6 +22,7 @@ from ophyd.status import Status
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
+from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
@@ -215,6 +220,10 @@ def fake_create_rotation_devices(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
+    flux: Flux,
+    undulator: Undulator,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -227,14 +236,18 @@ def fake_create_rotation_devices(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    return {
-        "eiger": eiger,
-        "smargon": smargon,
-        "zebra": zebra,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
-        "attenuator": attenuator,
-    }
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        smargon=smargon,
+        undulator=undulator,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+    )
 
 
 @pytest.fixture

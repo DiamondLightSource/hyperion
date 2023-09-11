@@ -134,8 +134,6 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
 def rotation_scan_plan(
     composite: RotationScanComposite,
     params: RotationInternalParameters,
-    smargon: Smargon,
-    zebra: Zebra,
     **kwargs,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
@@ -154,7 +152,7 @@ def rotation_scan_plan(
     speed_for_rotation_deg_s = image_width_deg / exposure_time_s
     LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
 
-    motor_time_to_speed = yield from bps.rd(smargon.omega.acceleration)
+    motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
     motor_time_to_speed *= ACCELERATION_MARGIN
     acceleration_offset = motor_time_to_speed * speed_for_rotation_deg_s
     LOGGER.info(
@@ -172,7 +170,7 @@ def rotation_scan_plan(
 
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle_deg}")
     yield from move_to_start_w_buffer(
-        smargon.omega, start_angle_deg, acceleration_offset
+        composite.smargon.omega, start_angle_deg, acceleration_offset
     )
 
     LOGGER.info(
@@ -180,7 +178,7 @@ def rotation_scan_plan(
         f"scan_width = {scan_width_deg} deg"
     )
     yield from setup_zebra_for_rotation(
-        zebra,
+        composite.zebra,
         start_angle=start_angle_deg,
         scan_width=scan_width_deg,
         direction=expt_params.rotation_direction,
@@ -209,31 +207,34 @@ def rotation_scan_plan(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
         f" s, setting rotation speed to {image_width_deg/exposure_time_s} deg/s"
     )
-    yield from set_speed(smargon.omega, image_width_deg, exposure_time_s, wait=True)
+    yield from set_speed(
+        composite.smargon.omega, image_width_deg, exposure_time_s, wait=True
+    )
 
-    yield from arm_zebra(zebra)
+    yield from arm_zebra(composite.zebra)
 
     LOGGER.info(
         f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
         f"through {scan_width_deg}, (before shutter and acceleration adjustment)"
     )
     yield from move_to_end_w_buffer(
-        smargon.omega, scan_width_deg, shutter_opening_degrees, acceleration_offset
+        composite.smargon.omega,
+        scan_width_deg,
+        shutter_opening_degrees,
+        acceleration_offset,
     )
 
     LOGGER.info(f"resetting omega velocity to {DEFAULT_MAX_VELOCITY}")
-    yield from bps.abs_set(smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
+    yield from bps.abs_set(composite.smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
 
 
-def cleanup_plan(
-    zebra: Zebra, smargon: Smargon, detector_motion: DetectorMotion, **kwargs
-):
-    yield from cleanup_sample_environment(detector_motion, group="cleanup")
+def cleanup_plan(composite: RotationScanComposite, **kwargs):
+    yield from cleanup_sample_environment(composite.detector_motion, group="cleanup")
     yield from bps.abs_set(
-        smargon.omega.velocity, DEFAULT_MAX_VELOCITY, group="cleanup"
+        composite.smargon.omega.velocity, DEFAULT_MAX_VELOCITY, group="cleanup"
     )
-    yield from make_trigger_safe(zebra, group="cleanup")
-    yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup"))
+    yield from make_trigger_safe(composite.zebra, group="cleanup")
+    yield from bpp.finalize_wrapper(disarm_zebra(composite.zebra), bps.wait("cleanup"))
 
 
 def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGenerator:
@@ -254,13 +255,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
         eiger.set_detector_parameters(params.hyperion_params.detector_params)
 
         @bpp.stage_decorator([eiger])
-        @bpp.finalize_decorator(
-            lambda: cleanup_plan(
-                zebra=composite.zebra,
-                smargon=composite.smargon,
-                detector_motion=composite.detector_motion,
-            )
-        )
+        @bpp.finalize_decorator(lambda: cleanup_plan(composite=composite))
         def rotation_with_cleanup_and_stage(params: RotationInternalParameters):
             LOGGER.info("setting up sample environment...")
             yield from setup_sample_environment(
@@ -282,8 +277,6 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
             yield from rotation_scan_plan(
                 composite,
                 params,
-                smargon=composite.smargon,
-                zebra=composite.zebra,
             )
 
         LOGGER.info("setting up and staging eiger...")

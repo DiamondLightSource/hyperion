@@ -112,12 +112,9 @@ def create_parameters_for_flyscan_xray_centre(
 def detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: GridScanWithEdgeDetectInternalParameters,
-    backlight: Backlight,
-    aperture_scatterguard: ApertureScatterguard,
-    detector_motion: DetectorMotion,
     oav_params: OAVParameters,
 ):
-    assert aperture_scatterguard.aperture_positions is not None
+    assert composite.aperture_scatterguard.aperture_positions is not None
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
     grid_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
@@ -175,14 +172,15 @@ def detect_grid_and_do_gridscan(
         parameters, grid_params
     )
 
-    yield from bps.abs_set(backlight.pos, Backlight.OUT)
+    yield from bps.abs_set(composite.backlight.pos, Backlight.OUT)
     LOGGER.info(
-        f"Setting aperture position to {aperture_scatterguard.aperture_positions.SMALL}"
+        f"Setting aperture position to {composite.aperture_scatterguard.aperture_positions.SMALL}"
     )
     yield from bps.abs_set(
-        aperture_scatterguard, aperture_scatterguard.aperture_positions.SMALL
+        composite.aperture_scatterguard,
+        composite.aperture_scatterguard.aperture_positions.SMALL,
     )
-    yield from wait_for_det_to_finish_moving(detector_motion)
+    yield from wait_for_det_to_finish_moving(composite.detector_motion)
 
     flyscan_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=composite.aperture_scatterguard,
@@ -213,10 +211,7 @@ def grid_detect_then_xray_centre(
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
-    backlight: Backlight = composite.backlight
     eiger: EigerDetector = composite.eiger
-    aperture_scatterguard: ApertureScatterguard = composite.aperture_scatterguard
-    detector_motion: DetectorMotion = composite.detector_motion
     attenuator: Attenuator = composite.attenuator
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
@@ -226,9 +221,6 @@ def grid_detect_then_xray_centre(
     plan_to_perform = detect_grid_and_do_gridscan(
         composite,
         parameters,
-        backlight,
-        aperture_scatterguard,
-        detector_motion,
         oav_params,
     )
 

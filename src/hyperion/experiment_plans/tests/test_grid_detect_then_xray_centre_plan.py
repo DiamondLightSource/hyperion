@@ -4,9 +4,7 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines.i03 import detector_motion
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
-from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
@@ -51,30 +49,23 @@ def _fake_grid_detection(
     return []
 
 
-# @patch(
-#     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.get_beamline_parameters",
-#     autospec=True,
-# )
-# def test_create_devices(mock_beamline_params):
-#     with (
-#         patch("hyperion.experiment_plans.grid_detect_then_xray_centre_plan.i03") as i03,
-#         patch(
-#             "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.fgs_create_devices"
-#         ) as fgs_create_devices,
-#         patch(
-#             "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.oav_create_devices"
-#         ) as oav_create_devices,
-#     ):
-#         create_devices()
-#         fgs_create_devices.assert_called()
-#         oav_create_devices.assert_called()
-
-#         i03.detector_motion.assert_called()
-#         i03.backlight.assert_called()
-#         assert isinstance(
-#             i03.aperture_scatterguard.call_args.kwargs["aperture_positions"],
-#             AperturePositions,
-#         )
+@pytest.fixture
+def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
+    return GridDetectThenXRayCentreComposite(
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=MagicMock(),
+        backlight=backlight,
+        detector_motion=detector_motion,
+        eiger=MagicMock(),
+        fast_grid_scan=MagicMock(),
+        flux=MagicMock(),
+        oav=MagicMock(),
+        smargon=MagicMock(),
+        synchrotron=MagicMock(),
+        s4_slit_gaps=MagicMock(),
+        undulator=MagicMock(),
+        zebra=MagicMock(),
+    )
 
 
 def test_wait_for_detector(RE):
@@ -113,9 +104,7 @@ def test_detect_grid_and_do_gridscan(
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     mock_wait_for_detector: MagicMock,
-    backlight: Backlight,
-    detector_motion: DetectorMotion,
-    aperture_scatterguard: ApertureScatterguard,
+    grid_detect_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
     test_config_files: Dict,
@@ -125,34 +114,15 @@ def test_detect_grid_and_do_gridscan(
     mock_oav_callback.snapshot_filenames = [["test"], ["test3"]]
     mock_oav_callback_init.return_value = mock_oav_callback
     mock_grid_detection_plan.side_effect = _fake_grid_detection
-    assert aperture_scatterguard.aperture_positions is not None
+    assert grid_detect_devices.aperture_scatterguard.aperture_positions is not None
 
     with patch.object(
-        aperture_scatterguard, "set", MagicMock()
+        grid_detect_devices.aperture_scatterguard, "set", MagicMock()
     ) as mock_aperture_scatterguard:
-        devices = GridDetectThenXRayCentreComposite(
-            aperture_scatterguard=aperture_scatterguard,
-            attenuator=MagicMock(),
-            backlight=backlight,
-            detector_motion=detector_motion,
-            eiger=MagicMock(),
-            fast_grid_scan=MagicMock(),
-            flux=MagicMock(),
-            oav=MagicMock(),
-            smargon=MagicMock(),
-            synchrotron=MagicMock(),
-            s4_slit_gaps=MagicMock(),
-            undulator=MagicMock(),
-            zebra=MagicMock(),
-        )
-
         RE(
             detect_grid_and_do_gridscan(
-                devices,
+                grid_detect_devices,
                 parameters=test_full_grid_scan_params,
-                backlight=backlight,
-                aperture_scatterguard=aperture_scatterguard,
-                detector_motion=detector_motion,
                 oav_params=OAVParameters("xrayCentring", **test_config_files),
             )
         )
@@ -163,11 +133,11 @@ def test_detect_grid_and_do_gridscan(
         mock_oav_callback_init.assert_called_once()
 
         # Check backlight was moved OUT
-        assert backlight.pos.get() == Backlight.OUT
+        assert grid_detect_devices.backlight.pos.get() == Backlight.OUT
 
         # Check aperture was changed to SMALL
         mock_aperture_scatterguard.assert_called_once_with(
-            aperture_scatterguard.aperture_positions.SMALL
+            grid_detect_devices.aperture_scatterguard.aperture_positions.SMALL
         )
 
         # Check we wait for detector to finish moving
@@ -199,9 +169,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_grid_detection_plan: MagicMock,
     _: MagicMock,
     eiger: EigerDetector,
-    backlight: Backlight,
-    detector_motion: DetectorMotion,
-    aperture_scatterguard: ApertureScatterguard,
+    grid_detect_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
     test_config_files: Dict,
@@ -214,32 +182,13 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     mock_grid_detection_plan.side_effect = _fake_grid_detection
 
-    devices = GridDetectThenXRayCentreComposite(
-        aperture_scatterguard=aperture_scatterguard,
-        attenuator=MagicMock(),
-        backlight=backlight,
-        detector_motion=detector_motion,
-        eiger=MagicMock(),
-        fast_grid_scan=MagicMock(),
-        flux=MagicMock(),
-        oav=MagicMock(),
-        smargon=MagicMock(),
-        synchrotron=MagicMock(),
-        s4_slit_gaps=MagicMock(),
-        undulator=MagicMock(),
-        zebra=MagicMock(),
-    )
-
     with patch.object(eiger.do_arm, "set", MagicMock()), patch.object(
-        aperture_scatterguard, "set", MagicMock()
+        grid_detect_devices.aperture_scatterguard, "set", MagicMock()
     ):
         RE(
             detect_grid_and_do_gridscan(
-                devices,
+                grid_detect_devices,
                 parameters=test_full_grid_scan_params,
-                backlight=backlight,
-                aperture_scatterguard=aperture_scatterguard,
-                detector_motion=detector_motion,
                 oav_params=OAVParameters("xrayCentring", **test_config_files),
             )
         )

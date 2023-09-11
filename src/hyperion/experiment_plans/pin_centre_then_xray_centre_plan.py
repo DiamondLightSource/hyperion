@@ -67,18 +67,11 @@ def pin_centre_then_xray_centre_plan(
     )
     grid_detect_params = create_parameters_for_grid_detection(parameters)
 
-    backlight = composite.backlight
-    aperture_scatterguard = composite.aperture_scatterguard
-    detector_motion = composite.detector_motion
-
     oav_params = OAVParameters("xrayCentring", **oav_config_files)
 
     yield from detect_grid_and_do_gridscan(
         composite,
         grid_detect_params,
-        backlight,
-        aperture_scatterguard,
-        detector_motion,
         oav_params,
     )
 

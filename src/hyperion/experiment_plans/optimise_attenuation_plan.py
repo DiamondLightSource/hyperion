@@ -75,7 +75,7 @@ def is_counts_within_target(total_count, lower_count_limit, upper_count_limit) -
         return False
 
 
-def arm_devices(xspress3mini):
+def arm_devices(xspress3mini: Xspress3Mini):
     yield from bps.abs_set(xspress3mini.do_arm, 1, wait=True)
     LOGGER.info("Arming Xspress3Mini complete")
 
@@ -136,21 +136,21 @@ def deadtime_calc_new_transmission(
 
 
 def do_device_optimise_iteration(
-    attenuator: Attenuator,
-    xspress3mini: Xspress3Mini,
-    sample_shutter: SampleShutter,
+    composite: OptimizeAttenuationComposite,
     transmission,
 ):
     def close_shutter():
-        yield from bps.abs_set(sample_shutter, OpenState.CLOSE, wait=True)
+        yield from bps.abs_set(composite.sample_shutter, OpenState.CLOSE, wait=True)
 
     @bpp.finalize_decorator(close_shutter)
     def open_and_run():
         """Set transmission, set number of images on xspress3mini, arm xspress3mini"""
-        yield from bps.abs_set(attenuator, transmission, group="set_transmission")
-        yield from bps.abs_set(xspress3mini.set_num_images, 1, wait=True)
-        yield from bps.abs_set(sample_shutter, OpenState.OPEN, wait=True)
-        yield from bps.abs_set(xspress3mini.do_arm, 1, wait=True)
+        yield from bps.abs_set(
+            composite.attenuator, transmission, group="set_transmission"
+        )
+        yield from bps.abs_set(composite.xspress3mini.set_num_images, 1, wait=True)
+        yield from bps.abs_set(composite.sample_shutter, OpenState.OPEN, wait=True)
+        yield from bps.abs_set(composite.xspress3mini.do_arm, 1, wait=True)
 
     yield from open_and_run()
 
@@ -177,9 +177,7 @@ def is_deadtime_optimised(
 
 
 def deadtime_optimisation(
-    attenuator: Attenuator,
-    xspress3mini: Xspress3Mini,
-    sample_shutter: SampleShutter,
+    composite: OptimizeAttenuationComposite,
     transmission: float,
     increment: float,
     deadtime_threshold: float,
@@ -236,12 +234,10 @@ def deadtime_optimisation(
     LOGGER.info(f"Target deadtime is {deadtime_threshold}")
 
     for cycle in range(0, max_cycles):
-        yield from do_device_optimise_iteration(
-            attenuator, xspress3mini, sample_shutter, transmission
-        )
+        yield from do_device_optimise_iteration(composite, transmission)
 
-        total_time = xspress3mini.channel_1.total_time.get()
-        reset_ticks = xspress3mini.channel_1.reset_ticks.get()
+        total_time = composite.xspress3mini.channel_1.total_time.get()
+        reset_ticks = composite.xspress3mini.channel_1.reset_ticks.get()
 
         LOGGER.info(f"Current total time = {total_time}")
         LOGGER.info(f"Current reset ticks = {reset_ticks}")
@@ -289,9 +285,7 @@ def deadtime_optimisation(
 
 
 def total_counts_optimisation(
-    attenuator: Attenuator,
-    xspress3mini: Xspress3Mini,
-    sample_shutter: SampleShutter,
+    composite: OptimizeAttenuationComposite,
     transmission: float,
     low_roi: int,
     high_roi: int,
@@ -353,11 +347,11 @@ def total_counts_optimisation(
             f"Setting transmission to {transmission} for attenuation optimisation cycle {cycle}"
         )
 
-        yield from do_device_optimise_iteration(
-            attenuator, xspress3mini, sample_shutter, transmission
-        )
+        yield from do_device_optimise_iteration(composite, transmission)
 
-        data = np.array((yield from bps.rd(xspress3mini.dt_corrected_latest_mca)))
+        data = np.array(
+            (yield from bps.rd(composite.xspress3mini.dt_corrected_latest_mca))
+        )
         total_count = sum(data[int(low_roi) : int(high_roi)])
         LOGGER.info(f"Total count is {total_count}")
 
@@ -396,9 +390,7 @@ def total_counts_optimisation(
 
 
 def optimise_attenuation_plan(
-    xspress3mini: Xspress3Mini,
-    attenuator: Attenuator,
-    sample_shutter: SampleShutter,
+    composite: OptimizeAttenuationComposite,
     collection_time=1,  # Comes from self.parameters.acquisitionTime in fluorescence_spectrum.py
     optimisation_type="deadtime",
     low_roi=100,
@@ -425,7 +417,7 @@ def optimise_attenuation_plan(
     )
 
     yield from bps.abs_set(
-        xspress3mini.acquire_time, collection_time, wait=True
+        composite.xspress3mini.acquire_time, collection_time, wait=True
     )  # Don't necessarily need to wait here
 
     # Do the attenuation optimisation using count threshold
@@ -435,9 +427,7 @@ def optimise_attenuation_plan(
         )
 
         optimised_transmission = yield from total_counts_optimisation(
-            attenuator,
-            xspress3mini,
-            sample_shutter,
+            composite,
             initial_transmission,
             low_roi,
             high_roi,
@@ -454,9 +444,7 @@ def optimise_attenuation_plan(
             f"Starting Xspress3Mini deadtime optimisation routine \nOptimisation will be performed across ROI channels {low_roi} - {high_roi}"
         )
         optimised_transmission = yield from deadtime_optimisation(
-            attenuator,
-            xspress3mini,
-            sample_shutter,
+            composite,
             initial_transmission,
             upper_transmission_limit,
             lower_transmission_limit,
@@ -466,7 +454,10 @@ def optimise_attenuation_plan(
         )
 
     yield from bps.abs_set(
-        attenuator, optimised_transmission, group="set_transmission", wait=True
+        composite.attenuator,
+        optimised_transmission,
+        group="set_transmission",
+        wait=True,
     )
 
     return optimised_transmission
