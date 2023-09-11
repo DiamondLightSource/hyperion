@@ -206,7 +206,7 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
 
-    cb = GridDetectionCallback(params)
+    cb = GridDetectionCallback(params, None)
     RE.subscribe(cb)
 
     RE(
@@ -219,9 +219,15 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
         )
     )
 
+    my_grid_params = cb.get_grid_parameters()
+
     assert cb.x_of_centre_of_first_box_px == pytest.approx(14.329113924)
     assert cb.y_of_centre_of_first_box_px == pytest.approx(8.329113924)
     assert np.allclose(cb.start_positions[0], [-0.79422, -0.53984, 0.0])
     assert np.allclose(
         cb.start_positions[1], [-7.94220000e-01, -3.30556664e-17, -5.39840000e-01]
     )
+    assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
+    assert my_grid_params.x_steps == 9
+    assert my_grid_params.y_steps == 1
+    assert my_grid_params.z_steps == 1
