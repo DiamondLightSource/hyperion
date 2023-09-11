@@ -140,7 +140,7 @@ def detect_grid_and_do_gridscan(
         parameters, grid_params
     )
 
-    yield from bps.abs_set(backlight.pos, Backlight.OUT)
+    yield from bps.abs_set(backlight, Backlight.OUT)
     LOGGER.info(
         f"Setting aperture position to {aperture_scatterguard.aperture_positions.SMALL}"
     )

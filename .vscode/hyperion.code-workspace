@@ -5,16 +5,12 @@
 		},
 		{
 			"path": "../../dodal"
-		},
-		{
-			"path": "../../nexgen"
 		}
 	],
 	"settings": {
 		"python.languageServer": "Pylance",
 		"terminal.integrated.gpuAcceleration": "off",
 		"esbonio.sphinx.confDir": "",
-		"search.useIgnoreFiles": false,
 		"[python]": {
 			"editor.defaultFormatter": "ms-python.black-formatter"
 		},
