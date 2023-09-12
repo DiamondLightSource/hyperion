@@ -1,7 +1,4 @@
 import dataclasses
-import importlib
-import string
-from types import ModuleType
 from typing import Any, ClassVar, Dict, Protocol, Type, TypeVar, get_type_hints
 
 from blueapi.core import BlueskyContext
@@ -11,7 +8,7 @@ from blueapi.core.bluesky_types import Device
 # away once we fully use blueapi's plan management components.
 # https://github.com/DiamondLightSource/hyperion/issues/868
 from dodal.beamlines.beamline_utils import _wait_for_connection
-from dodal.utils import get_beamline_name, make_all_devices
+from dodal.utils import make_all_devices, get_beamline_based_on_environment_variable
 
 import hyperion.experiment_plans as hyperion_plans
 from hyperion.log import LOGGER
@@ -75,38 +72,6 @@ def device_composite_from_context(context: BlueskyContext, dc: Type[DT]) -> DT:
     return dc(**devices)
 
 
-def _get_beamline_specific_device_module() -> ModuleType:
-    beamline = get_beamline_name("")
-
-    if beamline == "":
-        raise ValueError(
-            "Cannot determine beamline - BEAMLINE environment variable not set."
-        )
-
-    beamline = beamline.replace("-", "_")
-    valid_characters = string.ascii_letters + string.digits + "_"
-
-    if (
-        len(beamline) == 0
-        or beamline[0] not in string.ascii_letters
-        or not all(c in valid_characters for c in beamline)
-    ):
-        raise ValueError(
-            "Invalid BEAMLINE variable - module name is not a permissible python module name, got '{}'".format(
-                beamline
-            )
-        )
-
-    try:
-        return importlib.import_module("dodal.beamlines.{}".format(beamline))
-    except ImportError as e:
-        raise ValueError(
-            "Hyperion failed to import beamline-specific dodal module 'dodal.beamlines.{}'".format(
-                beamline
-            )
-        ) from e
-
-
 def setup_context(
     wait_for_connection: bool = True, fake_with_ophyd_sim: bool = False
 ) -> BlueskyContext:
@@ -117,7 +82,7 @@ def setup_context(
     # passing through wait_for_connection or fake_with_ophyd_sim
     # See https://github.com/DiamondLightSource/blueapi/pull/304
     for name, device in make_all_devices(
-        _get_beamline_specific_device_module(),
+        get_beamline_based_on_environment_variable(),
         wait_for_connection=wait_for_connection,
         fake_with_ophyd_sim=fake_with_ophyd_sim,
     ).items():
