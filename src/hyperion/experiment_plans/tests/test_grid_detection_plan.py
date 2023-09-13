@@ -49,8 +49,8 @@ def fake_devices(smargon: Smargon, backlight: Backlight):
         mock_image = MagicMock()
         mock_image_class.open.return_value = mock_image
         yield oav, smargon, backlight, mock_image
-
-
+        
+        
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
 def test_grid_detection_plan_runs_and_triggers_snapshots(
@@ -206,7 +206,7 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     params = OAVParameters(context="loopCentring", **test_config_files)
     gridscan_params = GridScanParams()
 
-    cb = GridDetectionCallback(params, None)
+    cb = GridDetectionCallback(params, exposure_time=0.5)
     RE.subscribe(cb)
 
     RE(
@@ -221,13 +221,17 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
 
     my_grid_params = cb.get_grid_parameters()
 
-    assert cb.x_of_centre_of_first_box_px == pytest.approx(14.329113924)
-    assert cb.y_of_centre_of_first_box_px == pytest.approx(8.329113924)
-    assert np.allclose(cb.start_positions[0], [-0.79422, -0.53984, 0.0])
-    assert np.allclose(
-        cb.start_positions[1], [-7.94220000e-01, -3.30556664e-17, -5.39840000e-01]
-    )
+    assert my_grid_params.x_start == pytest.approx(-0.7942199999999999)
+    assert my_grid_params.y1_start == pytest.approx(-0.53984)
+    assert my_grid_params.y2_start == pytest.approx(-0.53984)
+    assert my_grid_params.z1_start == pytest.approx(-0.53984)
+    assert my_grid_params.z2_start == pytest.approx(-0.53984)
+    assert my_grid_params.x_step_size == pytest.approx(0.02)
+    assert my_grid_params.y_step_size == pytest.approx(0.02)
+    assert my_grid_params.z_step_size == pytest.approx(0.02)
+    assert my_grid_params.x_steps == pytest.approx(9)
+    assert my_grid_params.y_steps == pytest.approx(1)
+    assert my_grid_params.z_steps == pytest.approx(1)
     assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
-    assert my_grid_params.x_steps == 9
-    assert my_grid_params.y_steps == 1
-    assert my_grid_params.z_steps == 1
+    assert my_grid_params.dwell_time == pytest.approx(500)
+

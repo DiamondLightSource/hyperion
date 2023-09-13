@@ -49,7 +49,6 @@ def grid_detection_plan(
         reset_oav(),
     )
 
-
 @bpp.run_decorator()
 def grid_detection_main_plan(
     parameters: OAVParameters,
@@ -143,7 +142,16 @@ def grid_detection_main_plan(
         yield from bps.trigger(oav.snapshot, wait=True)
 
         yield from bps.create("snapshot_to_ispyb")
-        yield from bps.read(oav.snapshot)
+        yield from bps.read(oav.snapshot.last_saved_path)
+        yield from bps.read(oav.snapshot.last_path_outer)
+        yield from bps.read(oav.snapshot.last_path_full_overlay)
+        yield from bps.read(oav.snapshot.top_left_x)
+        yield from bps.read(oav.snapshot.top_left_y)
+        yield from bps.read(oav.snapshot.box_width)
+        yield from bps.read(oav.snapshot.num_boxes_x)
+        yield from bps.read(oav.snapshot.num_boxes_y)
+
+        # yield from bps.read(oav.snapshot)
         yield from bps.read(smargon)
         yield from bps.save()
 

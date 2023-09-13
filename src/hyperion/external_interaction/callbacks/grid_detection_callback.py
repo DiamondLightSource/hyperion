@@ -8,55 +8,30 @@ from hyperion.log import LOGGER
 
 
 class GridDetectionCallback(CallbackBase):
-    def __init__(
-        self, oav_params: OAVParameters, out_parameters: GridScanParams, *args
-    ) -> None:
+    def __init__(self, oav_params: OAVParameters, exposure_time: float, *args) -> None:
         super().__init__(*args)
-        self.x_of_centre_of_first_box_px: float = 0
-        self.y_of_centre_of_first_box_px: float = 0
+        self.exposure_time = exposure_time
         self.oav_params = oav_params
-        self.out_parameters = out_parameters
         self.start_positions: list = []
         self.box_numbers: list = []
-
-        self.micronsPerXPixel = oav_params.micronsPerXPixel
-        self.micronsPerYPixel = oav_params.micronsPerYPixel
-
-        self.x_start: float = 0
-        self.y1_start: float = 0
-        self.y2_start: float = 0
-        self.z1_start: float = 0
-        self.z2_start: float = 0
-
-        self.x_steps: float = 0
-        self.y_steps: float = 0
-        self.z_steps: float = 0
-
-        self.x_step_size_mm: float = 0
-        self.y_step_size_mm: float = 0
-        self.z_step_size_mm: float = 0
-
-        self.box_size_um: float = 0
 
     def event(self, doc):
         data = doc.get("data")
         top_left_x_px = data["oav_snapshot_top_left_x"]
         box_width_px = data["oav_snapshot_box_width"]
-        self.x_of_centre_of_first_box_px = top_left_x_px + box_width_px / 2
+        x_of_centre_of_first_box_px = top_left_x_px + box_width_px / 2
 
         top_left_y_px = data["oav_snapshot_top_left_y"]
-        self.y_of_centre_of_first_box_px = top_left_y_px + box_width_px / 2
+        y_of_centre_of_first_box_px = top_left_y_px + box_width_px / 2
 
-        smargon_x = data["smargon_x"]
-        smargon_y = data["smargon_y"]
-        smargon_z = data["smargon_z"]
         smargon_omega = data["smargon_omega"]
-
-        current_xyz = np.array([smargon_x, smargon_y, smargon_z])
+        current_xyz = np.array(
+            [data["smargon_x"], data["smargon_y"], data["smargon_z"]]
+        )
 
         centre_of_first_box = (
-            self.x_of_centre_of_first_box_px,
-            self.y_of_centre_of_first_box_px,
+            x_of_centre_of_first_box_px,
+            y_of_centre_of_first_box_px,
         )
 
         position_grid_start = calculate_x_y_z_of_pixel(
@@ -76,6 +51,7 @@ class GridDetectionCallback(CallbackBase):
 
     def get_grid_parameters(self) -> GridScanParams:
         return GridScanParams(
+            dwell_time=self.exposure_time * 1000,
             x_start=self.start_positions[0][0],
             y1_start=self.start_positions[0][1],
             y2_start=self.start_positions[0][1],

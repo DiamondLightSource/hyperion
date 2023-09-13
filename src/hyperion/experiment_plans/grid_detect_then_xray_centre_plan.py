@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING, Any
+from hyperion.external_interaction.callbacks.grid_detection_callback import GridDetectionCallback
 
 import numpy as np
 from blueapi.core import MsgGenerator
@@ -92,6 +93,7 @@ def detect_grid_and_do_gridscan(
 ):
     assert aperture_scatterguard.aperture_positions is not None
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
+    # Delete this line and remove all places here and in oav_grid_detection_plan that use it
     grid_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
     detector_params = parameters.hyperion_params.detector_params
@@ -100,8 +102,9 @@ def detect_grid_and_do_gridscan(
     )
 
     oav_callback = OavSnapshotCallback()
+    grid_params_callback = GridDetectionCallback(oav_params, experiment_params.exposure_time)
 
-    @bpp.subs_decorator([oav_callback])
+    @bpp.subs_decorator([oav_callback, grid_params_callback])
     def run_grid_detection_plan(
         oav_params,
         fgs_params,
@@ -136,6 +139,8 @@ def detect_grid_and_do_gridscan(
         oav_callback.snapshot_filenames[1][::-1]
     )
     parameters.hyperion_params.ispyb_params.upper_left = out_upper_left
+
+    grid_params = grid_params_callback.get_grid_parameters()
 
     flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
         parameters, grid_params
