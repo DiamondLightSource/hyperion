@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, call, patch
 
-import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
@@ -49,8 +48,8 @@ def fake_devices(smargon: Smargon, backlight: Backlight):
         mock_image = MagicMock()
         mock_image_class.open.return_value = mock_image
         yield oav, smargon, backlight, mock_image
-        
-        
+
+
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.wait")
 def test_grid_detection_plan_runs_and_triggers_snapshots(
@@ -146,7 +145,6 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
 
     cb = OavSnapshotCallback()
     RE.subscribe(cb)
-
     RE(
         grid_detection_plan(
             parameters=params,
@@ -234,4 +232,3 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     assert my_grid_params.z_steps == pytest.approx(1)
     assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
     assert my_grid_params.dwell_time == pytest.approx(500)
-

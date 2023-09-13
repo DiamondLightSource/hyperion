@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING, Any
-from hyperion.external_interaction.callbacks.grid_detection_callback import GridDetectionCallback
 
 import numpy as np
 from blueapi.core import MsgGenerator
@@ -27,6 +26,9 @@ from hyperion.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
 from hyperion.experiment_plans.oav_grid_detection_plan import grid_detection_plan
+from hyperion.external_interaction.callbacks.grid_detection_callback import (
+    GridDetectionCallback,
+)
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
@@ -102,7 +104,9 @@ def detect_grid_and_do_gridscan(
     )
 
     oav_callback = OavSnapshotCallback()
-    grid_params_callback = GridDetectionCallback(oav_params, experiment_params.exposure_time)
+    grid_params_callback = GridDetectionCallback(
+        oav_params, experiment_params.exposure_time
+    )
 
     @bpp.subs_decorator([oav_callback, grid_params_callback])
     def run_grid_detection_plan(

@@ -49,6 +49,7 @@ def grid_detection_plan(
         reset_oav(),
     )
 
+
 @bpp.run_decorator()
 def grid_detection_main_plan(
     parameters: OAVParameters,
