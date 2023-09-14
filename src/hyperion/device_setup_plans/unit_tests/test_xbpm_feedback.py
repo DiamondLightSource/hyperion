@@ -43,7 +43,7 @@ def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expecte
         assert xbpm_feedback.pause_feedback.get() == 1
         yield from bps.null()
 
-    xbpm_feedback.pos_ok.sim_put(1)
+    xbpm_feedback.pos_stable.sim_put(1)
 
     RE = RunEngine()
     RE(my_collection_plan())
@@ -83,7 +83,7 @@ def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then
     xbpm_feedback: XBPMFeedback = fake_devices[0]
     attenuator: Attenuator = fake_devices[1]
 
-    xbpm_feedback.pos_ok.sim_put(1)
+    xbpm_feedback.pos_stable.sim_put(1)
 
     class MyException(Exception):
         pass
