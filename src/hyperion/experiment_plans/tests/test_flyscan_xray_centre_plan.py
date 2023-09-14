@@ -411,7 +411,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     fake_fgs_composite.eiger.stage = MagicMock(
         return_value=Status(None, None, 0, True, True)
     )
-    fake_fgs_composite.xbpm_feedback.pos_ok.sim_put(1)
+    fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
     with patch(
