@@ -9,7 +9,6 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -165,7 +164,6 @@ def grid_detect_then_xray_centre(
     eiger: EigerDetector = i03.eiger()
     aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
     detector_motion: DetectorMotion = i03.detector_motion()
-    attenuator: Attenuator = i03.attenuator()
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
@@ -177,7 +175,5 @@ def grid_detect_then_xray_centre(
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
-        attenuator,
-        parameters.hyperion_params.ispyb_params.transmission_fraction,
         plan_to_perform,
     )

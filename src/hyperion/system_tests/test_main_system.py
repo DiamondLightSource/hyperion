@@ -311,6 +311,7 @@ def test_cli_args_parse():
 @patch("dodal.beamlines.i03.Synchrotron", autospec=True, spec_set=True)
 @patch("dodal.beamlines.i03.Undulator", autospec=True, spec_set=True)
 @patch("dodal.beamlines.i03.Zebra", autospec=True, spec_set=True)
+@patch("dodal.beamlines.i03.XBPMFeedback", autospec=True, spec_set=True)
 @patch(
     "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
     autospec=True,
@@ -319,6 +320,7 @@ def test_cli_args_parse():
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
     type_comparison,
     mock_get_beamline_params,
+    xbpm_feedback,
     zebra,
     undulator,
     synchrotron,
