@@ -36,7 +36,7 @@ def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expecte
     expected_transmission = 0.3
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
-        *fake_devices, expected_transmission
+        xbpm_feedback, attenuator, expected_transmission
     )
     def my_collection_plan():
         assert attenuator.actual_transmission.get() == expected_transmission
@@ -59,7 +59,9 @@ def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
     attenuator: Attenuator = fake_devices[1]
     mock = MagicMock()
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(*fake_devices, 0.1)
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        xbpm_feedback, attenuator, 0.1
+    )
     def my_collection_plan():
         mock()
         yield from bps.null()
@@ -88,7 +90,9 @@ def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then
     class MyException(Exception):
         pass
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(*fake_devices, 0.1)
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        xbpm_feedback, attenuator, 0.1
+    )
     def my_collection_plan():
         yield from bps.null()
         raise MyException()
