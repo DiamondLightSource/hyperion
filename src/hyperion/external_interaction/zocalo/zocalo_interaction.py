@@ -14,7 +14,7 @@ from workflows.transport import lookup
 import hyperion.log
 from hyperion.exceptions import WarningException
 
-TIMEOUT = 90
+TIMEOUT = 180
 
 
 class NoDiffractionFound(WarningException):
