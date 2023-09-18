@@ -4,7 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
@@ -219,6 +219,18 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
 
     my_grid_params = cb.get_grid_parameters()
 
+    test_x_grid_axis = GridAxis(
+        my_grid_params.x_start, my_grid_params.x_step_size, my_grid_params.x_steps
+    )
+
+    test_y_grid_axis = GridAxis(
+        my_grid_params.y1_start, my_grid_params.y_step_size, my_grid_params.y_steps
+    )
+
+    test_z_grid_axis = GridAxis(
+        my_grid_params.z1_start, my_grid_params.z_step_size, my_grid_params.z_steps
+    )
+
     assert my_grid_params.x_start == pytest.approx(-0.7942199999999999)
     assert my_grid_params.y1_start == pytest.approx(-0.53984)
     assert my_grid_params.y2_start == pytest.approx(-0.53984)
@@ -231,4 +243,9 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     assert my_grid_params.y_steps == pytest.approx(1)
     assert my_grid_params.z_steps == pytest.approx(1)
     assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
+
     assert my_grid_params.dwell_time == pytest.approx(500)
+
+    assert my_grid_params.x_axis == test_x_grid_axis
+    assert my_grid_params.y_axis == test_y_grid_axis
+    assert my_grid_params.z_axis == test_z_grid_axis
