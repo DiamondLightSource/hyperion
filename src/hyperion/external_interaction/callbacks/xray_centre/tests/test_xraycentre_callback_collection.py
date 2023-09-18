@@ -97,7 +97,7 @@ def test_communicator_in_composite_run(
     callbacks.zocalo_handler._run_start = MagicMock()
     callbacks.zocalo_handler.xray_centre_motor_position = np.array([1, 2, 3])
 
-    flyscan_xray_centre_composite = FlyScanXRayCentreComposite()
+    flyscan_xray_centre_composite = MagicMock(spec=FlyScanXRayCentreComposite)
     # this is where it's currently getting stuck:
     # flyscan_xray_centre_composite.fast_grid_scan.is_invalid = lambda: False
     # but this is not a solution

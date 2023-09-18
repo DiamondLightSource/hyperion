@@ -27,30 +27,9 @@ def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct
     RE = RunEngine()
 
     with pytest.raises(TestException):
-        RE(
-            start_preparing_data_collection_then_do_plan(
-                eiger, MagicMock(), 0.2, my_plan()
-            )
-        )
+        RE(start_preparing_data_collection_then_do_plan(eiger, my_plan()))
 
     # Check detector was armed
     eiger.async_stage.assert_called_once()
 
     eiger.disarm_detector.assert_called_once()
-
-
-def test_when_preparing_data_collection_then_transmission_set():
-    def my_plan():
-        yield from bps.null()
-
-    attenuator = MagicMock()
-    RE = RunEngine()
-
-    RE(
-        start_preparing_data_collection_then_do_plan(
-            MagicMock(), attenuator, 0.2, my_plan()
-        )
-    )
-
-    # Check transmission set
-    attenuator.set.assert_called_once_with(0.2)

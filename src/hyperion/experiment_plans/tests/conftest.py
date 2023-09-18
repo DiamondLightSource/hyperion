@@ -263,6 +263,7 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
         smargon=smargon,
         undulator=i03.undulator(fake_with_ophyd_sim=True),
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
+        xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(fake_with_ophyd_sim=True),
     )
 

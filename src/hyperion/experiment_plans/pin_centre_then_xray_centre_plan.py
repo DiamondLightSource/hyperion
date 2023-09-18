@@ -1,7 +1,6 @@
 import json
 
 from blueapi.core import BlueskyContext, MsgGenerator
-from dodal.devices.attenuator import Attenuator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 
@@ -83,13 +82,10 @@ def pin_tip_centre_then_xray_centre(
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
 
     eiger: EigerDetector = composite.eiger
-    attenuator: Attenuator = composite.attenuator
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
-        attenuator,
-        parameters.hyperion_params.ispyb_params.transmission_fraction,
         pin_centre_then_xray_centre_plan(composite, parameters),
     )

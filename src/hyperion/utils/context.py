@@ -8,7 +8,7 @@ from blueapi.core.bluesky_types import Device
 # away once we fully use blueapi's plan management components.
 # https://github.com/DiamondLightSource/hyperion/issues/868
 from dodal.beamlines.beamline_utils import _wait_for_connection
-from dodal.utils import make_all_devices, get_beamline_based_on_environment_variable
+from dodal.utils import get_beamline_based_on_environment_variable, make_all_devices
 
 import hyperion.experiment_plans as hyperion_plans
 from hyperion.log import LOGGER

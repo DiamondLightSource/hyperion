@@ -21,6 +21,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
+from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 
 from hyperion.device_setup_plans.utils import (
@@ -70,6 +71,7 @@ class GridDetectThenXRayCentreComposite:
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     undulator: Undulator
+    xbpm_feedback: XBPMFeedback
     zebra: Zebra
 
     def __post_init__(self):
@@ -172,7 +174,8 @@ def detect_grid_and_do_gridscan(
         parameters, grid_params
     )
 
-    yield from bps.abs_set(composite.backlight.pos, Backlight.OUT)
+    yield from bps.abs_set(composite.backlight, Backlight.OUT)
+
     LOGGER.info(
         f"Setting aperture position to {composite.aperture_scatterguard.aperture_positions.SMALL}"
     )
@@ -193,6 +196,7 @@ def detect_grid_and_do_gridscan(
         smargon=composite.smargon,
         undulator=composite.undulator,
         synchrotron=composite.synchrotron,
+        xbpm_feedback=composite.xbpm_feedback,
         zebra=composite.zebra,
     )
 
@@ -212,7 +216,6 @@ def grid_detect_then_xray_centre(
     of the grid dimensions to use for the following grid scan.
     """
     eiger: EigerDetector = composite.eiger
-    attenuator: Attenuator = composite.attenuator
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
@@ -226,7 +229,5 @@ def grid_detect_then_xray_centre(
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
-        attenuator,
-        parameters.hyperion_params.ispyb_params.transmission_fraction,
         plan_to_perform,
     )

@@ -57,6 +57,7 @@ def fgs_composite():
         smargon=i03.smargon(),
         undulator=i03.undulator(),
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
+        xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(),
     )
 

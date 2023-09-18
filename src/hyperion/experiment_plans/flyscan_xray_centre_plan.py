@@ -21,6 +21,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
+from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 
 import hyperion.log
@@ -29,6 +30,9 @@ from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_fo
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_gridscan,
+)
+from hyperion.device_setup_plans.xbpm_feedback import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
@@ -62,6 +66,7 @@ class FlyScanXRayCentreComposite:
     smargon: Smargon
     undulator: Undulator
     synchrotron: Synchrotron
+    xbpm_feedback: XBPMFeedback
     zebra: Zebra
 
     @property
@@ -203,6 +208,7 @@ def run_gridscan_and_move(
     yield from setup_zebra_for_gridscan(fgs_composite.zebra)
 
     hyperion.log.LOGGER.info("Starting grid scan")
+
     yield from run_gridscan(fgs_composite, parameters)
 
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
@@ -252,6 +258,11 @@ def flyscan_xray_centre(
         }
     )
     @bpp.finalize_decorator(lambda: tidy_up_plans(composite))
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.xbpm_feedback,
+        composite.attenuator,
+        parameters.hyperion_params.ispyb_params.transmission_fraction,
+    )
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
