@@ -59,7 +59,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     fake_devices,
 ):
     params = OAVParameters(context="loopCentring", **test_config_files)
-    gridscan_params = GridScanParams()
 
     cb = OavSnapshotCallback()
     RE.subscribe(cb)
@@ -67,7 +66,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     RE(
         grid_detection_plan(
             parameters=params,
-            out_parameters=gridscan_params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
@@ -95,12 +93,11 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     oav.mxsc.pin_tip.tip_y.sim_put(-1)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
     params = OAVParameters(context="loopCentring", **test_config_files)
-    gridscan_params = GridScanParams()
+
     with pytest.raises(WarningException) as excinfo:
         RE(
             grid_detection_plan(
                 parameters=params,
-                out_parameters=gridscan_params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
                 grid_width_microns=161.2,
@@ -148,7 +145,6 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     RE(
         grid_detection_plan(
             parameters=params,
-            out_parameters=gridscan_params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             box_size_microns=0.2,
@@ -174,7 +170,6 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     test_config_files,
 ):
     params = OAVParameters(context="loopCentring", **test_config_files)
-    gridscan_params = GridScanParams()
 
     for _ in range(2):
         cb = OavSnapshotCallback()
@@ -183,7 +178,6 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
         RE(
             grid_detection_plan(
                 parameters=params,
-                out_parameters=gridscan_params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
                 grid_width_microns=161.2,
@@ -202,7 +196,6 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     test_config_files,
 ):
     params = OAVParameters(context="loopCentring", **test_config_files)
-    gridscan_params = GridScanParams()
 
     cb = GridDetectionCallback(params, exposure_time=0.5)
     RE.subscribe(cb)
@@ -210,7 +203,6 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     RE(
         grid_detection_plan(
             parameters=params,
-            out_parameters=gridscan_params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
@@ -228,7 +220,7 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     )
 
     test_z_grid_axis = GridAxis(
-        my_grid_params.z1_start, my_grid_params.z_step_size, my_grid_params.z_steps
+        my_grid_params.z2_start, my_grid_params.z_step_size, my_grid_params.z_steps
     )
 
     assert my_grid_params.x_start == pytest.approx(-0.7942199999999999)
