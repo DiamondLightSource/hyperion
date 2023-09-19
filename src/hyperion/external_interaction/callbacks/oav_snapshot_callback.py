@@ -16,7 +16,7 @@ class OavSnapshotCallback(CallbackBase):
             [
                 data.get("oav_snapshot_last_saved_path"),
                 data.get("oav_snapshot_last_path_outer"),
-                data.get("oav.snapshot.last_path_full_overlay"),
+                data.get("oav_snapshot_last_path_full_overlay"),
             ]
         )
 
