@@ -23,9 +23,3 @@ class OavSnapshotCallback(CallbackBase):
         self.out_upper_left.append(
             [data.get("oav_snapshot_top_left_x"), data.get("oav_snapshot_top_left_y")]
         )
-
-        self.box_widths.append([data.get("oav.snapshot.box_width")])
-
-        self.no_of_boxes.append(
-            [data.get("oav.snapshot.num_boxes_x"), data.get("oav.snapshot.num_boxes_y")]
-        )
