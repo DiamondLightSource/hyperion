@@ -156,9 +156,9 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     assert cb.out_upper_left[0] == [8, 2]
     assert cb.out_upper_left[1] == [8, 2]
 
-    assert gridscan_params.x_start == 0.0005
-    assert gridscan_params.y1_start == -0.0001
-    assert gridscan_params.z1_start == -0.0001
+    assert gridscan_params.x_start == 0.1
+    assert gridscan_params.y1_start == 0.1
+    assert gridscan_params.z1_start == 0.1
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
