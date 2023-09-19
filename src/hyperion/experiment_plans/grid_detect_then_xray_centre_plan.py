@@ -95,8 +95,6 @@ def detect_grid_and_do_gridscan(
 ):
     assert aperture_scatterguard.aperture_positions is not None
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
-    # Delete this line and remove all places here and in oav_grid_detection_plan that use it
-    grid_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
     detector_params = parameters.hyperion_params.detector_params
     snapshot_template = (
@@ -111,13 +109,11 @@ def detect_grid_and_do_gridscan(
     @bpp.subs_decorator([oav_callback, grid_params_callback])
     def run_grid_detection_plan(
         oav_params,
-        fgs_params,
         snapshot_template,
         snapshot_dir,
     ):
         yield from grid_detection_plan(
             oav_params,
-            fgs_params,
             snapshot_template,
             snapshot_dir,
             grid_width_microns=experiment_params.grid_width_microns,
@@ -125,7 +121,6 @@ def detect_grid_and_do_gridscan(
 
     yield from run_grid_detection_plan(
         oav_params,
-        grid_params,
         snapshot_template,
         experiment_params.snapshot_dir,
     )
