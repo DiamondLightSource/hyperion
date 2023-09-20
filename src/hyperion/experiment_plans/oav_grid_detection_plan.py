@@ -81,7 +81,9 @@ def grid_detection_main_plan(
     start_positions = []
     box_numbers = []
 
+    assert isinstance(parameters.micronsPerXPixel, float)
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
+    assert isinstance(parameters.micronsPerYPixel, float)
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
     grid_width_pixels = int(grid_width_microns / parameters.micronsPerXPixel)
