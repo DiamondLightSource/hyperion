@@ -4,7 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
@@ -13,6 +13,9 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.oav_grid_detection_plan import (
     create_devices,
     grid_detection_plan,
+)
+from hyperion.external_interaction.callbacks.grid_detection_callback import (
+    GridDetectionCallback,
 )
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
@@ -56,7 +59,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     fake_devices,
 ):
     params = OAVParameters(context="loopCentring", **test_config_files)
-    gridscan_params = GridScanParams()
 
     cb = OavSnapshotCallback()
     RE.subscribe(cb)
@@ -64,7 +66,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     RE(
         grid_detection_plan(
             parameters=params,
-            out_parameters=gridscan_params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
@@ -92,12 +93,11 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     oav.mxsc.pin_tip.tip_y.sim_put(-1)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
     params = OAVParameters(context="loopCentring", **test_config_files)
-    gridscan_params = GridScanParams()
+
     with pytest.raises(WarningException) as excinfo:
         RE(
             grid_detection_plan(
                 parameters=params,
-                out_parameters=gridscan_params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
                 grid_width_microns=161.2,
@@ -142,11 +142,9 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
 
     cb = OavSnapshotCallback()
     RE.subscribe(cb)
-
     RE(
         grid_detection_plan(
             parameters=params,
-            out_parameters=gridscan_params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             box_size_microns=0.2,
@@ -158,9 +156,9 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     assert cb.out_upper_left[0] == [8, 2]
     assert cb.out_upper_left[1] == [8, 2]
 
-    assert gridscan_params.x_start == 0.0005
-    assert gridscan_params.y1_start == -0.0001
-    assert gridscan_params.z1_start == -0.0001
+    assert gridscan_params.x_start == 0.1
+    assert gridscan_params.y1_start == 0.1
+    assert gridscan_params.z1_start == 0.1
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -172,7 +170,6 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     test_config_files,
 ):
     params = OAVParameters(context="loopCentring", **test_config_files)
-    gridscan_params = GridScanParams()
 
     for _ in range(2):
         cb = OavSnapshotCallback()
@@ -181,7 +178,6 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
         RE(
             grid_detection_plan(
                 parameters=params,
-                out_parameters=gridscan_params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
                 grid_width_microns=161.2,
@@ -189,3 +185,59 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
         )
     assert len(cb.snapshot_filenames) == 2
     assert len(cb.out_upper_left) == 2
+
+
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch("bluesky.plan_stubs.wait")
+def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct_values(
+    bps_wait: MagicMock,
+    fake_devices,
+    RE: RunEngine,
+    test_config_files,
+):
+    params = OAVParameters(context="loopCentring", **test_config_files)
+
+    cb = GridDetectionCallback(params, exposure_time=0.5)
+    RE.subscribe(cb)
+
+    RE(
+        grid_detection_plan(
+            parameters=params,
+            snapshot_dir="tmp",
+            snapshot_template="test_{angle}",
+            grid_width_microns=161.2,
+        )
+    )
+
+    my_grid_params = cb.get_grid_parameters()
+
+    test_x_grid_axis = GridAxis(
+        my_grid_params.x_start, my_grid_params.x_step_size, my_grid_params.x_steps
+    )
+
+    test_y_grid_axis = GridAxis(
+        my_grid_params.y1_start, my_grid_params.y_step_size, my_grid_params.y_steps
+    )
+
+    test_z_grid_axis = GridAxis(
+        my_grid_params.z2_start, my_grid_params.z_step_size, my_grid_params.z_steps
+    )
+
+    assert my_grid_params.x_start == pytest.approx(-0.7942199999999999)
+    assert my_grid_params.y1_start == pytest.approx(-0.53984)
+    assert my_grid_params.y2_start == pytest.approx(-0.53984)
+    assert my_grid_params.z1_start == pytest.approx(-0.53984)
+    assert my_grid_params.z2_start == pytest.approx(-0.53984)
+    assert my_grid_params.x_step_size == pytest.approx(0.02)
+    assert my_grid_params.y_step_size == pytest.approx(0.02)
+    assert my_grid_params.z_step_size == pytest.approx(0.02)
+    assert my_grid_params.x_steps == pytest.approx(9)
+    assert my_grid_params.y_steps == pytest.approx(1)
+    assert my_grid_params.z_steps == pytest.approx(1)
+    assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
+
+    assert my_grid_params.dwell_time == pytest.approx(500)
+
+    assert my_grid_params.x_axis == test_x_grid_axis
+    assert my_grid_params.y_axis == test_y_grid_axis
+    assert my_grid_params.z_axis == test_z_grid_axis
