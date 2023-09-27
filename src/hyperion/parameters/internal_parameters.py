@@ -7,6 +7,7 @@ from semver import Version
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from hyperion.parameters.external_parameters import from_json
+from hyperion.utils.utils import convert_eV_to_angstrom
 
 
 class ParameterVersion(Version):
@@ -133,6 +134,9 @@ class InternalParameters(BaseModel):
     @root_validator(pre=True)
     def _preprocess_all(cls, values):
         values["hyperion_params"] = flatten_dict(values)
+        values["wavelength_angstroms"] = convert_eV_to_angstrom(
+            values["current_energy_eV"]
+        )
         return values
 
     @staticmethod
