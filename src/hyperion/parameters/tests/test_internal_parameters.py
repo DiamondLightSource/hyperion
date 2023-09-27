@@ -1,5 +1,4 @@
 import copy
-import imp
 import json
 
 import numpy as np

@@ -37,6 +37,7 @@ from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+from hyperion.utils.utils import convert_angstrom_to_eV
 
 if TYPE_CHECKING:
     from dodal.devices.attenuator import Attenuator
@@ -46,13 +47,6 @@ if TYPE_CHECKING:
     from dodal.devices.smargon import Smargon
     from dodal.devices.zebra import Zebra
 
-
-if TYPE_CHECKING:
-    from dodal.devices.backlight import Backlight  # noqa
-    from dodal.devices.detector_motion import DetectorMotion  # noqa
-    from dodal.devices.eiger import EigerDetector  # noqa
-    from dodal.devices.smargon import Smargon
-    from dodal.devices.zebra import Zebra  # noqa
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
@@ -479,9 +473,6 @@ def test_cleanup_happens(
             )
         assert "Experiment fails because this is a test" in exc.value.args[0]
         cleanup_plan.assert_called_once()
-
-
-from hyperion.utils.utils import convert_angstrom_to_eV
 
 
 @pytest.mark.s03
