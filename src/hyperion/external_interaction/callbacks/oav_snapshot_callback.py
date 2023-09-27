@@ -6,8 +6,6 @@ class OavSnapshotCallback(CallbackBase):
         super().__init__(*args)
         self.snapshot_filenames: list = []
         self.out_upper_left: list = []
-        self.box_widths: list = []
-        self.no_of_boxes: list = []
 
     def event(self, doc):
         data = doc.get("data")
