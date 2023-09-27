@@ -1,5 +1,5 @@
 {
-    "params_version": "3.0.0",
+    "params_version": "4.0.0",
     "hyperion_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",
@@ -39,7 +39,6 @@
             ],
             "transmission_fraction": 1.0,
             "flux": 10.0,
-            "wavelength": 0.01,
             "beam_size_x": 0.1,
             "beam_size_y": 0.1,
             "focal_spot_size_x": 0.0,

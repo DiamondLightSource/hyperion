@@ -51,9 +51,6 @@
         "flux": {
             "type": "number"
         },
-        "wavelength": {
-            "type": "number"
-        },
         "beam_size_x": {
             "type": "number"
         },
@@ -86,7 +83,6 @@
         "position",
         "transmission_fraction",
         "flux",
-        "wavelength",
         "beam_size_x",
         "beam_size_y",
         "focal_spot_size_x",

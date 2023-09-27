@@ -7,7 +7,6 @@ from semver import Version
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from hyperion.parameters.external_parameters import from_json
-from hyperion.utils.utils import convert_eV_to_angstrom
 
 
 class ParameterVersion(Version):

@@ -20,7 +20,6 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission_fraction": 1.0,
     "flux": 10.0,
-    "wavelength": 0.01,
     "beam_size_x": 0.1,
     "beam_size_y": 0.1,
     "focal_spot_size_x": 0.0,
