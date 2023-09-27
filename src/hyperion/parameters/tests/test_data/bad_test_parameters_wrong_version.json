@@ -7,7 +7,7 @@
         "zocalo_environment": "dev_artemis",
         "experiment_type": "grid_scan",
         "detector_params": {
-            "current_energy_ev": 100,
+            "energy_eV": 100,
             "exposure_time": 0.1,
             "directory": "/tmp",
             "prefix": "file_name",

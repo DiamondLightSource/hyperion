@@ -7,7 +7,7 @@
         "zocalo_environment": "devrmq",
         "experiment_type": "pin_tip_centre_then_xray_centre",
         "detector_params": {
-            "current_energy_ev": 100,
+            "energy_eV": 100,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,

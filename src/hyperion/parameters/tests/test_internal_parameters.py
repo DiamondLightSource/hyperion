@@ -1,4 +1,5 @@
 import copy
+import imp
 import json
 
 import numpy as np
@@ -69,6 +70,15 @@ def test_cant_initialise_abstract_internalparams():
         internal_parameters = InternalParameters(  # noqa
             **external_parameters.from_file()
         )
+
+
+def test_ispyb_param_wavelength():
+    from hyperion.utils.utils import convert_eV_to_angstrom
+
+    ispyb_params = GridscanIspybParams(**GRIDSCAN_ISPYB_PARAM_DEFAULTS)
+    assert ispyb_params.wavelength_angstroms == pytest.approx(
+        convert_eV_to_angstrom(GRIDSCAN_ISPYB_PARAM_DEFAULTS["energy_eV"])
+    )
 
 
 def test_ispyb_param_dict():
@@ -166,7 +176,7 @@ def test_hyperion_params_eq(raw_params):
     assert hyperion_params_1 != hyperion_params_2
 
     hyperion_params_2 = copy.deepcopy(hyperion_params_1)
-    hyperion_params_2.detector_params.current_energy_ev = 99999
+    hyperion_params_2.detector_params.energy_eV = 99999
     assert hyperion_params_1 != hyperion_params_2
 
     hyperion_params_2 = copy.deepcopy(hyperion_params_1)

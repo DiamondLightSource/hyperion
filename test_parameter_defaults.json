@@ -6,7 +6,7 @@
         "insertion_prefix": "SR03S",
         "experiment_type": "flyscan_xray_centre",
         "detector_params": {
-            "current_energy_ev": 100,
+            "energy_eV": 100,
             "directory": "/tmp/",
             "prefix": "file_name",
             "run_number": 0,

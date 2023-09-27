@@ -223,7 +223,7 @@ class StoreInIspyb(ABC):
         params["omegastart"] = self.omega_start
         params["start_image_number"] = 1
         params["resolution"] = self.ispyb_params.resolution
-        params["wavelength"] = self.ispyb_params.wavelength
+        params["wavelength"] = self.ispyb_params.wavelength_angstroms
         beam_position = self.detector_params.get_beam_position_mm(
             self.detector_params.detector_distance
         )

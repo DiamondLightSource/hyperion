@@ -7,7 +7,7 @@
         "zocalo_environment": "dev_artemis",
         "experiment_type": "rotation_scan",
         "detector_params": {
-            "current_energy_ev": 12700,
+            "energy_eV": 12700,
             "directory": "/dls/i03/data/2023/cm33866-3/rotation_scan_test",
             "prefix": "rotation_scan_test",
             "run_number": 0,

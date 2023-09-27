@@ -134,9 +134,6 @@ class InternalParameters(BaseModel):
     @root_validator(pre=True)
     def _preprocess_all(cls, values):
         values["hyperion_params"] = flatten_dict(values)
-        values["wavelength_angstroms"] = convert_eV_to_angstrom(
-            values["current_energy_eV"]
-        )
         return values
 
     @staticmethod

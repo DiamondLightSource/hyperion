@@ -113,6 +113,6 @@ def create_beam_and_attenuator_parameters(
         tuple[Beam, Attenuator]: Descriptions of the beam and attenuator for nexgen.
     """
     return (
-        Beam(ispyb_params.wavelength, ispyb_params.flux),
+        Beam(ispyb_params.wavelength_angstroms, ispyb_params.flux),
         Attenuator(ispyb_params.transmission_fraction),
     )
