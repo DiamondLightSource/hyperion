@@ -32,14 +32,15 @@ def test_params():
     ] = "src/hyperion/external_interaction/unit_tests/test_data"
     param_dict["hyperion_params"]["detector_params"]["prefix"] = TEST_FILENAME
     param_dict["experiment_params"]["rotation_angle"] = 360.0
+    param_dict["hyperion_params"]["detector_params"]["energy_eV"] = 12700
+    param_dict["hyperion_params"]["ispyb_params"]["energy_eV"] = 12700
+    param_dict["experiment_params"]["rotation_angle"] = 360.0
     params = RotationInternalParameters(**param_dict)
     params.experiment_params.x = 0
     params.experiment_params.y = 0
     params.experiment_params.z = 0
     params.hyperion_params.detector_params.exposure_time = 0.004
-    params.hyperion_params.detector_params.energy_eV = 12700
     params.hyperion_params.ispyb_params.transmission_fraction = 0.49118047952
-    params.hyperion_params.ispyb_params.wavelength_angstroms = 0.9762535433
     return params
 
 
