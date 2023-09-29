@@ -9,10 +9,6 @@ import dodal.devices.oav.utils as oav_utils
 import ispyb
 import ispyb.sqlalchemy
 from dodal.devices.detector import DetectorParams
-from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
-from ispyb.sp.core import Core
-from ispyb.sp.mxacquisition import MXAcquisition
-
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
     IspybParams,
@@ -21,6 +17,9 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
 )
 from hyperion.log import LOGGER
 from hyperion.tracing import TRACER
+from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
+from ispyb.sp.core import Core
+from ispyb.sp.mxacquisition import MXAcquisition
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -254,6 +253,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         self.full_params: RotationInternalParameters = parameters
         self.ispyb_params: RotationIspybParams = parameters.hyperion_params.ispyb_params
         self.detector_params = parameters.hyperion_params.detector_params
+        self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.data_collection_id: int | None = None
 
@@ -267,7 +267,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         assert self.full_params is not None
-        params["axis_range"] = self.full_params.experiment_params.rotation_angle
+        params["axis_range"] = self.full_params.experiment_params.image_width
         params["axis_end"] = (
             self.full_params.experiment_params.omega_start
             + self.full_params.experiment_params.rotation_angle
