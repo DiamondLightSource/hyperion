@@ -4,7 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
+from dodal.devices.fast_grid_scan import GridAxis
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
@@ -138,10 +138,11 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     params.micronsPerYPixel = 0.1
     params.beam_centre_i = 4
     params.beam_centre_j = 4
-    gridscan_params = GridScanParams()
 
-    cb = OavSnapshotCallback()
-    RE.subscribe(cb)
+    oav_cb = OavSnapshotCallback()
+    grid_param_cb = GridDetectionCallback(params, 0.004)
+    RE.subscribe(oav_cb)
+    RE.subscribe(grid_param_cb)
     RE(
         grid_detection_plan(
             parameters=params,
@@ -153,12 +154,14 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     )
 
     # 8, 2 based on tip x, and lowest value in the top array
-    assert cb.out_upper_left[0] == [8, 2]
-    assert cb.out_upper_left[1] == [8, 2]
+    assert oav_cb.out_upper_left[0] == [8, 2]
+    assert oav_cb.out_upper_left[1] == [8, 2]
 
-    assert gridscan_params.x_start == 0.1
-    assert gridscan_params.y1_start == 0.1
-    assert gridscan_params.z1_start == 0.1
+    gridscan_params = grid_param_cb.get_grid_parameters()
+
+    assert gridscan_params.x_start == pytest.approx(0.0005)
+    assert gridscan_params.y1_start == pytest.approx(-0.0001)
+    assert gridscan_params.z1_start == pytest.approx(-0.0001)
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)

@@ -179,7 +179,10 @@ def run_gridscan(
     fgs_motors = fgs_composite.fast_grid_scan
 
     # TODO: Check topup gate
+    hyperion.log.LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
+    hyperion.log.LOGGER.info("Set params")
+
     yield from wait_for_gridscan_valid(fgs_motors)
 
     @bpp.set_run_key_decorator("do_fgs")

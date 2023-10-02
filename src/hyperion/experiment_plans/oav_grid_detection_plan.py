@@ -17,6 +17,7 @@ from hyperion.device_setup_plans.setup_oav import (
     wait_for_tip_to_be_found,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import OAV_REFRESH_DELAY
 
 if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
@@ -93,7 +94,7 @@ def grid_detection_main_plan(
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # See #673 for improvements
-        yield from bps.sleep(0.3)
+        yield from bps.sleep(OAV_REFRESH_DELAY)
 
         tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc)
 
