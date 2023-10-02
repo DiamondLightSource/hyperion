@@ -9,3 +9,16 @@ markers = [
 ]
 addopts = "--cov=src/hyperion --cov-report term --cov-report xml:cov.xml"
 testpaths = "src"
+
+
+[tool.ruff]
+src = ["src", "tests"]
+line-length = 88
+ignore = ["C408", "E501", "F811"]
+select = [
+    "C4",   # flake8-comprehensions - https://beta.ruff.rs/docs/rules/#flake8-comprehensions-c4
+    "E",    # pycodestyle errors - https://beta.ruff.rs/docs/rules/#error-e
+    "F",    # pyflakes rules - https://beta.ruff.rs/docs/rules/#pyflakes-f
+    "W",    # pycodestyle warnings - https://beta.ruff.rs/docs/rules/#warning-w
+    "I001", # isort
+]

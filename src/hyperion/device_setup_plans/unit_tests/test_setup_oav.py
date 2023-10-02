@@ -48,8 +48,7 @@ def mock_parameters():
     )
 
 
-@pytest.fixture
-def smargon() -> Smargon:
+def fake_smargon() -> Smargon:
     smargon = i03.smargon(fake_with_ophyd_sim=True)
     smargon.x.user_setpoint._use_limits = False
     smargon.y.user_setpoint._use_limits = False
@@ -66,7 +65,12 @@ def smargon() -> Smargon:
     with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
         smargon.y
     ), patch_motor(smargon.z):
-        yield smargon
+        return smargon
+
+
+@pytest.fixture
+def smargon():
+    yield fake_smargon()
 
 
 @pytest.mark.parametrize(

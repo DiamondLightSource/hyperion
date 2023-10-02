@@ -23,9 +23,8 @@ from hyperion.external_interaction.system_tests.conftest import (  # noqa
     zocalo_env,
 )
 from hyperion.parameters.beamline_parameters import GDABeamlineParameters
-from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
+from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
-from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
