@@ -259,9 +259,11 @@ class StoreRotationInIspyb(StoreInIspyb):
         self.omega_start = self.detector_params.omega_start
         self.data_collection_id: int | None = None
 
-        if self.ispyb_params.xtal_snapshots_omega_start != []:
+        if self.ispyb_params.xtal_snapshots_omega_start:
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start[:3]
-            LOGGER.info(f"Using rotation scan snapshots {self.xtal_snapshots} for ISPyB deposition")
+            LOGGER.info(
+                f"Using rotation scan snapshots {self.xtal_snapshots} for ISPyB deposition"
+            )
         else:
             self.xtal_snapshots = []
             LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
