@@ -8,7 +8,6 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.preprocessors import finalize_wrapper
 from dodal.beamlines import i03
-from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
@@ -32,7 +31,6 @@ def create_devices():
 
 def grid_detection_plan(
     parameters: OAVParameters,
-    out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: float,
@@ -41,7 +39,6 @@ def grid_detection_plan(
     yield from finalize_wrapper(
         grid_detection_main_plan(
             parameters,
-            out_parameters,
             snapshot_template,
             snapshot_dir,
             grid_width_microns,
@@ -54,7 +51,6 @@ def grid_detection_plan(
 @bpp.run_decorator()
 def grid_detection_main_plan(
     parameters: OAVParameters,
-    out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: int,
@@ -86,7 +82,9 @@ def grid_detection_main_plan(
     start_positions = []
     box_numbers = []
 
+    assert isinstance(parameters.micronsPerXPixel, float)
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
+    assert isinstance(parameters.micronsPerYPixel, float)
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
     grid_width_pixels = int(grid_width_microns / parameters.micronsPerXPixel)
@@ -144,11 +142,9 @@ def grid_detection_main_plan(
         yield from bps.trigger(oav.snapshot, wait=True)
 
         yield from bps.create("snapshot_to_ispyb")
-        yield from bps.read(oav.snapshot.last_saved_path)
-        yield from bps.read(oav.snapshot.last_path_outer)
-        yield from bps.read(oav.snapshot.last_path_full_overlay)
-        yield from bps.read(oav.snapshot.top_left_x)
-        yield from bps.read(oav.snapshot.top_left_y)
+
+        yield from bps.read(oav.snapshot)
+        yield from bps.read(smargon)
         yield from bps.save()
 
         # The first frame is taken at the centre of the first box
@@ -165,25 +161,12 @@ def grid_detection_main_plan(
     LOGGER.info(
         f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][2]}"
     )
-    out_parameters.x_start = start_positions[0][0]
-
-    out_parameters.y1_start = start_positions[0][1]
-    out_parameters.y2_start = start_positions[0][1]
-
-    out_parameters.z1_start = start_positions[1][2]
-    out_parameters.z2_start = start_positions[1][2]
 
     LOGGER.info(
         f"Calculated number of steps {box_numbers[0][0], box_numbers[0][1], box_numbers[1][1]}"
     )
-    out_parameters.x_steps = box_numbers[0][0]
-    out_parameters.y_steps = box_numbers[0][1]
-    out_parameters.z_steps = box_numbers[1][1]
 
     LOGGER.info(f"Step sizes: {box_size_um, box_size_um, box_size_um}")
-    out_parameters.x_step_size = box_size_um / 1000
-    out_parameters.y_step_size = box_size_um / 1000
-    out_parameters.z_step_size = box_size_um / 1000
 
 
 def reset_oav():

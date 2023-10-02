@@ -117,11 +117,24 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
     """
 
 
+def calculate_x_y_z_of_pixel(
+    current_x_y_z, current_omega, pixel: Pixel, oav_params: OAVParameters
+) -> np.ndarray:
+    beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
+
+    return current_x_y_z + camera_coordinates_to_xyz(
+        beam_distance_px[0],
+        beam_distance_px[1],
+        current_omega,
+        oav_params.micronsPerXPixel,
+        oav_params.micronsPerYPixel,
+    )
+
+
 def get_move_required_so_that_beam_is_at_pixel(
     smargon: Smargon, pixel: Pixel, oav_params: OAVParameters
 ) -> Generator[Msg, None, np.ndarray]:
     """Calculate the required move so that the given pixel is in the centre of the beam."""
-    beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
 
     current_motor_xyz = np.array(
         [
@@ -133,13 +146,7 @@ def get_move_required_so_that_beam_is_at_pixel(
     )
     current_angle = yield from bps.rd(smargon.omega)
 
-    return current_motor_xyz + camera_coordinates_to_xyz(
-        beam_distance_px[0],
-        beam_distance_px[1],
-        current_angle,
-        oav_params.micronsPerXPixel,
-        oav_params.micronsPerYPixel,
-    )
+    return calculate_x_y_z_of_pixel(current_motor_xyz, current_angle, pixel, oav_params)
 
 
 def wait_for_tip_to_be_found(mxsc: MXSC):

@@ -9,7 +9,6 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -26,6 +25,9 @@ from hyperion.experiment_plans.oav_grid_detection_plan import (
     create_devices as oav_create_devices,
 )
 from hyperion.experiment_plans.oav_grid_detection_plan import grid_detection_plan
+from hyperion.external_interaction.callbacks.grid_detection_callback import (
+    GridDetectionCallback,
+)
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
@@ -92,7 +94,6 @@ def detect_grid_and_do_gridscan(
 ):
     assert aperture_scatterguard.aperture_positions is not None
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
-    grid_params = GridScanParams(dwell_time=experiment_params.exposure_time * 1000)
 
     detector_params = parameters.hyperion_params.detector_params
     snapshot_template = (
@@ -100,17 +101,18 @@ def detect_grid_and_do_gridscan(
     )
 
     oav_callback = OavSnapshotCallback()
+    grid_params_callback = GridDetectionCallback(
+        oav_params, experiment_params.exposure_time
+    )
 
-    @bpp.subs_decorator([oav_callback])
+    @bpp.subs_decorator([oav_callback, grid_params_callback])
     def run_grid_detection_plan(
         oav_params,
-        fgs_params,
         snapshot_template,
         snapshot_dir,
     ):
         yield from grid_detection_plan(
             oav_params,
-            fgs_params,
             snapshot_template,
             snapshot_dir,
             grid_width_microns=experiment_params.grid_width_microns,
@@ -118,7 +120,6 @@ def detect_grid_and_do_gridscan(
 
     yield from run_grid_detection_plan(
         oav_params,
-        grid_params,
         snapshot_template,
         experiment_params.snapshot_dir,
     )
@@ -137,11 +138,13 @@ def detect_grid_and_do_gridscan(
     )
     parameters.hyperion_params.ispyb_params.upper_left = out_upper_left
 
+    grid_params = grid_params_callback.get_grid_parameters()
+
     flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
         parameters, grid_params
     )
 
-    yield from bps.abs_set(backlight.pos, Backlight.OUT)
+    yield from bps.abs_set(backlight, Backlight.OUT)
     LOGGER.info(
         f"Setting aperture position to {aperture_scatterguard.aperture_positions.SMALL}"
     )
@@ -165,7 +168,6 @@ def grid_detect_then_xray_centre(
     eiger: EigerDetector = i03.eiger()
     aperture_scatterguard: ApertureScatterguard = i03.aperture_scatterguard()
     detector_motion: DetectorMotion = i03.detector_motion()
-    attenuator: Attenuator = i03.attenuator()
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
@@ -177,7 +179,5 @@ def grid_detect_then_xray_centre(
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
-        attenuator,
-        parameters.hyperion_params.ispyb_params.transmission_fraction,
         plan_to_perform,
     )
