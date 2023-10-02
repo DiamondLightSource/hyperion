@@ -12,7 +12,7 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "visit_path": "",
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
-    "energy_eV": 12700,
+    "current_energy_ev": 12700,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     "upper_left": [0, 0, 0],
     "position": [0, 0, 0],
@@ -58,7 +58,7 @@ class IspybParams(BaseModel):
         return np.array(position)
 
     transmission_fraction: float
-    energy_eV: float
+    current_energy_ev: float
     beam_size_x: float
     beam_size_y: float
     focal_spot_size_x: float
@@ -88,7 +88,7 @@ class IspybParams(BaseModel):
 
     @property
     def wavelength_angstroms(self):
-        return convert_eV_to_angstrom(self.energy_eV)
+        return convert_eV_to_angstrom(self.current_energy_ev)
 
 
 class RotationIspybParams(IspybParams):

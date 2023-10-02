@@ -7,7 +7,7 @@
         "zocalo_environment": "dev_artemis",
         "experiment_type": "flyscan_xray_centre",
         "detector_params": {
-            "energy_eV": 100,
+            "current_energy_ev": 100,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,

@@ -22,8 +22,8 @@ def test_rotation_params():
         "directory"
     ] = "src/hyperion/external_interaction/unit_tests/test_data"
     param_dict["hyperion_params"]["detector_params"]["prefix"] = "TEST_FILENAME"
-    param_dict["hyperion_params"]["detector_params"]["energy_eV"] = 12700
-    param_dict["hyperion_params"]["ispyb_params"]["energy_eV"] = 12700
+    param_dict["hyperion_params"]["detector_params"]["current_energy_ev"] = 12700
+    param_dict["hyperion_params"]["ispyb_params"]["current_energy_ev"] = 12700
     param_dict["experiment_params"]["rotation_angle"] = 360.0
     params = RotationInternalParameters(**param_dict)
     params.experiment_params.x = 0
@@ -37,10 +37,12 @@ def test_rotation_params():
 @pytest.fixture(params=[1044])
 def test_fgs_params(request):
     params = GridscanInternalParameters(**default_raw_params())
-    params.hyperion_params.ispyb_params.energy_eV = convert_angstrom_to_eV(1.0)
+    params.hyperion_params.ispyb_params.current_energy_ev = convert_angstrom_to_eV(1.0)
     params.hyperion_params.ispyb_params.flux = 9.0
     params.hyperion_params.ispyb_params.transmission_fraction = 0.5
-    params.hyperion_params.detector_params.energy_eV = convert_angstrom_to_eV(1.0)
+    params.hyperion_params.detector_params.current_energy_ev = convert_angstrom_to_eV(
+        1.0
+    )
     params.hyperion_params.detector_params.use_roi_mode = True
     params.hyperion_params.detector_params.num_triggers = request.param
     params.hyperion_params.detector_params.directory = (
