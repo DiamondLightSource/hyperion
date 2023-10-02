@@ -139,6 +139,7 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
             f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
         )
         if not scan_invalid and pos_counter == 0:
+            hyperion.log.LOGGER.info(f"Scan invalid check: SUCCESSFUL")
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
     raise WarningException("Scan invalid - pin too long/short/bent and out of range")
@@ -193,7 +194,7 @@ def run_gridscan(
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
-    # Wait for arming to finish
+    hyperion.log.LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
     yield from bps.stage(fgs_composite.eiger)
 
