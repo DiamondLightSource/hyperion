@@ -9,6 +9,10 @@ import dodal.devices.oav.utils as oav_utils
 import ispyb
 import ispyb.sqlalchemy
 from dodal.devices.detector import DetectorParams
+from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
+from ispyb.sp.core import Core
+from ispyb.sp.mxacquisition import MXAcquisition
+
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
     IspybParams,
@@ -17,9 +21,6 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
 )
 from hyperion.log import LOGGER
 from hyperion.tracing import TRACER
-from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
-from ispyb.sp.core import Core
-from ispyb.sp.mxacquisition import MXAcquisition
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
