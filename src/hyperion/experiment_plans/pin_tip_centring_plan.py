@@ -16,9 +16,6 @@ from hyperion.device_setup_plans.setup_oav import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import OAV_REFRESH_DELAY
-
-DEFAULT_STEP_SIZE = 0.5
 
 
 def create_devices():
@@ -28,21 +25,17 @@ def create_devices():
 
 
 def move_pin_into_view(
-    oav: OAV,
-    smargon: Smargon,
-    step_size_mm: float = DEFAULT_STEP_SIZE,
-    max_steps: int = 2,
+    oav: OAV, smargon: Smargon, step_size: float = 1, max_steps: int = 1
 ) -> Generator[Msg, None, Pixel]:
     """Attempt to move the pin into view and return the tip location in pixels if found.
-    The gonio x is moved in a number of discrete steps to find the pin. If the move
-    would take it past its limit, it moves to the limit instead.
+    The gonio is moved in a number of discrete steps to find the pin.
 
     Args:
         oav (OAV): The OAV to detect the tip with
         smargon (Smargon): The gonio to move the tip
         step_size (float, optional): Distance to move the gonio (in mm) for each
-                                    step of the search. Defaults to 0.5.
-        max_steps (int, optional): The number of steps to search with. Defaults to 2.
+                                    step of the search. Defaults to 1.
+        max_steps (int, optional): The number of steps to search with. Defaults to 1.
 
     Raises:
         WarningException: Error if the pin tip is never found
@@ -56,34 +49,16 @@ def move_pin_into_view(
         tip_x_px, tip_y_px = yield from bps.rd(oav.mxsc.pin_tip)
 
         if tip_x_px == 0:
-            min_limit = min(smargon.x.limits)
-            if float(smargon.x.user_readback.get()) - step_size_mm < min_limit:
-                LOGGER.warning(
-                    f"Pin is too long, moving -{step_size_mm} mm would cross limits, "
-                    f"moving to minimum limit {min_limit}"
-                )
-                yield from bps.mv(smargon.x, min_limit)
-                yield from bps.sleep(OAV_REFRESH_DELAY)
-                break
-            LOGGER.warning(f"Pin is too long, moving -{step_size_mm}mm")
-            yield from bps.mvr(smargon.x, -step_size_mm)
+            LOGGER.warning(f"Pin is too long, moving -{step_size}mm")
+            yield from bps.mvr(smargon.x, -step_size)
         elif tip_x_px == oav.mxsc.pin_tip.INVALID_POSITION[0]:
-            max_limit = max(smargon.x.limits)
-            if float(smargon.x.user_readback.get()) - step_size_mm > max_limit:
-                LOGGER.warning(
-                    f"Pin is too short; moving {step_size_mm} mm would cross limits, "
-                    f"moving to maximum limit {max_limit}"
-                )
-                yield from bps.mv(smargon.x, max_limit)
-                yield from bps.sleep(OAV_REFRESH_DELAY)
-                break
-            LOGGER.warning(f"Pin is too short, moving {step_size_mm}mm")
-            yield from bps.mvr(smargon.x, step_size_mm)
+            LOGGER.warning(f"Pin is too short, moving {step_size}mm")
+            yield from bps.mvr(smargon.x, step_size)
         else:
             return (tip_x_px, tip_y_px)
 
         # Some time for the view to settle after the move
-        yield from bps.sleep(OAV_REFRESH_DELAY)
+        yield from bps.sleep(0.3)
 
     yield from bps.trigger(oav.mxsc.pin_tip, wait=True)
     tip_x_px, tip_y_px = yield from bps.rd(oav.mxsc.pin_tip)

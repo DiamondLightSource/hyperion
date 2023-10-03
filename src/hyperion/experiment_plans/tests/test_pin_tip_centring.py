@@ -9,7 +9,6 @@ from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
-    DEFAULT_STEP_SIZE,
     create_devices,
     move_pin_into_view,
     move_smargon_warn_on_out_of_range,
@@ -37,7 +36,6 @@ def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_re
 def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargon_moved_positive_and_tip_returned(
     smargon: Smargon, oav: OAV
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
     oav.mxsc.pin_tip.triggered_tip.put(oav.mxsc.pin_tip.INVALID_POSITION)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
 
@@ -52,14 +50,13 @@ def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargo
     RE = RunEngine(call_returns_result=True)
     result = RE(move_pin_into_view(oav, smargon))
 
-    assert smargon.x.user_readback.get() == DEFAULT_STEP_SIZE
+    assert smargon.x.user_readback.get() == 1
     assert result.plan_result == (100, 200)
 
 
 def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon_moved_negative_and_tip_returned(
     smargon: Smargon, oav: OAV
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
     oav.mxsc.pin_tip.tip_x.sim_put(0)
     oav.mxsc.pin_tip.tip_y.sim_put(100)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
@@ -75,14 +72,13 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
     RE = RunEngine(call_returns_result=True)
     result = RE(move_pin_into_view(oav, smargon))
 
-    assert smargon.x.user_readback.get() == -DEFAULT_STEP_SIZE
+    assert smargon.x.user_readback.get() == -1
     assert result.plan_result == (100, 200)
 
 
 def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_positive_and_exception_thrown(
     smargon: Smargon, oav: OAV
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
     oav.mxsc.pin_tip.triggered_tip.put(oav.mxsc.pin_tip.INVALID_POSITION)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
 
