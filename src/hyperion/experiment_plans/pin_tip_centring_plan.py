@@ -57,27 +57,29 @@ def move_pin_into_view(
 
         if tip_x_px == 0:
             min_limit = min(smargon.x.limits)
-            if float(smargon.x.user_readback.get()) - step_size_mm < min_limit:
+            smargon_x = yield from bps.rd(smargon.x.user_readback)
+            if float(smargon_x) - step_size_mm < min_limit:
                 LOGGER.warning(
-                    f"Pin is too long, moving -{step_size_mm} mm would cross limits, "
+                    f"Pin tip is off screen, and moving -{step_size_mm} mm would cross limits, "
                     f"moving to minimum limit {min_limit}"
                 )
                 yield from bps.mv(smargon.x, min_limit)
                 yield from bps.sleep(OAV_REFRESH_DELAY)
                 break
-            LOGGER.warning(f"Pin is too long, moving -{step_size_mm}mm")
+            LOGGER.warning(f"Pin tip is off screen, moving -{step_size_mm} mm")
             yield from bps.mvr(smargon.x, -step_size_mm)
         elif tip_x_px == oav.mxsc.pin_tip.INVALID_POSITION[0]:
+            smargon_x = yield from bps.rd(smargon.x.user_readback)
             max_limit = max(smargon.x.limits)
-            if float(smargon.x.user_readback.get()) - step_size_mm > max_limit:
+            if float(smargon_x) + step_size_mm > max_limit:
                 LOGGER.warning(
-                    f"Pin is too short; moving {step_size_mm} mm would cross limits, "
+                    f"Pin tip is off screen, and moving {step_size_mm} mm would cross limits, "
                     f"moving to maximum limit {max_limit}"
                 )
                 yield from bps.mv(smargon.x, max_limit)
                 yield from bps.sleep(OAV_REFRESH_DELAY)
                 break
-            LOGGER.warning(f"Pin is too short, moving {step_size_mm}mm")
+            LOGGER.warning(f"Pin tip is off screen, moving {step_size_mm}mm")
             yield from bps.mvr(smargon.x, step_size_mm)
         else:
             return (tip_x_px, tip_y_px)
