@@ -34,6 +34,89 @@ I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
 VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})(/?$)"
 
+#  All MX collection fields:
+# [
+#     "id",
+#     "parentid",
+#     "visitid",
+#     "sampleid",
+#     "detectorid",
+#     "positionid",
+#     "apertureid",
+#     "datacollectionnumber",
+#     "starttime",
+#     "endtime",
+#     "runstatus",
+#     "axisstart",
+#     "axisend",
+#     "axisrange",
+#     "overlap",
+#     "nimages",
+#     "startimagenumber",
+#     "npasses",
+#     "exptime",
+#     "imgdir",
+#     "imgprefix",
+#     "imgsuffix",
+#     "imgcontainersubpath",
+#     "filetemplate",
+#     "wavelength",
+#     "resolution",
+#     "detectordistance",
+#     "xbeam",
+#     "ybeam",
+#     "comments",
+#     "slitgapvertical",
+#     "slitgaphorizontal",
+#     "transmission",
+#     "synchrotronmode",
+#     "xtalsnapshot1",
+#     "xtalsnapshot2",
+#     "xtalsnapshot3",
+#     "xtalsnapshot4",
+#     "rotationaxis",
+#     "phistart",
+#     "kappastart",
+#     "omegastart",
+#     "resolutionatcorner",
+#     "detector2theta",
+#     "undulatorgap1",
+#     "undulatorgap2",
+#     "undulatorgap3",
+#     "beamsizeatsamplex",
+#     "beamsizeatsampley",
+#     "avgtemperature",
+#     "actualcenteringposition",
+#     "beamshape",
+#     "focalspotsizeatsamplex",
+#     "focalspotsizeatsampley",
+#     "polarisation",
+#     "flux",
+#     "processeddatafile",
+#     "datfile",
+#     "magnification",
+#     "totalabsorbeddose",
+#     "binning",
+#     "particlediameter",
+#     "boxsizectf",
+#     "minresolution",
+#     "mindefocus",
+#     "maxdefocus",
+#     "defocusstepsize",
+#     "amountastigmatism",
+#     "extractsize",
+#     "bgradius",
+#     "voltage",
+#     "objaperture",
+#     "c1aperture",
+#     "c2aperture",
+#     "c3aperture",
+#     "c1lens",
+#     "c2lens",
+#     "c3lens",
+# ]
+#
+
 
 class StoreInIspyb(ABC):
     def __init__(self, ispyb_config: str, experiment_type: str) -> None:
@@ -278,6 +361,7 @@ class StoreRotationInIspyb(StoreInIspyb):
             + self.full_params.experiment_params.rotation_angle
         )
         params["n_images"] = self.full_params.experiment_params.get_num_images()
+        params["kappastart"] = self.full_params.experiment_params.chi_start
         return params
 
     def _store_scan_data(self, conn: Connector):

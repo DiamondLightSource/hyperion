@@ -14,6 +14,8 @@ def create_goniometer_axes(
     omega_start: float,
     scan_points: dict | None,
     x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    chi: float = 0.0,
+    phi: float = 0.0,
 ):
     """Returns a Nexgen 'Goniometer' object with the dependency chain of I03's Smargon
     goniometer. If scan points is provided these values will be used in preference to
@@ -56,9 +58,9 @@ def create_goniometer_axes(
             increment=x_y_z_increments[0],
         ),
         Axis(
-            "chi", "sam_x", TransformationType.ROTATION, (0.006, -0.0264, 0.9996), 0.0
+            "chi", "sam_x", TransformationType.ROTATION, (0.006, -0.0264, 0.9996), chi
         ),
-        Axis("phi", "chi", TransformationType.ROTATION, (-1, -0.0025, -0.0056), 0.0),
+        Axis("phi", "chi", TransformationType.ROTATION, (-1, -0.0025, -0.0056), phi),
     ]
     return Goniometer(gonio_axes, scan_points)
 
