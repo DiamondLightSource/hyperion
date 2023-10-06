@@ -156,6 +156,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
                 "s4_slit_gaps_xgap": 0,
                 "s4_slit_gaps_ygap": 0,
                 "attenuator_actual_transmission": 0,
+                "flux_flux_reading": 10,
             },
         }
     )
@@ -278,6 +279,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
                 "s4_slit_gaps_xgap": 0,
                 "s4_slit_gaps_ygap": 0,
                 "attenuator_actual_transmission": 0,
+                "flux_flux_reading": 10,
             },
         }
     )
@@ -327,6 +329,7 @@ def test_logging_within_plan(
                 "s4_slit_gaps_xgap": 0,
                 "s4_slit_gaps_ygap": 0,
                 "attenuator_actual_transmission": 0,
+                "flux_flux_reading": 10,
             },
         }
     )
