@@ -14,6 +14,7 @@ SIM_ISPYB_CONFIG = "src/hyperion/external_interaction/unit_tests/test_config.cfg
 # this one is for making depositions:
 DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
+OAV_REFRESH_DELAY = 0.3
 
 
 class Actions(Enum):
