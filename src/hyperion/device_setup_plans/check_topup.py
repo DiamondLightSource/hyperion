@@ -9,14 +9,14 @@ ALLOWED_MODES = [SynchrotronMode.USER, SynchrotronMode.SPECIAL]
 
 def _in_decay_mode(time_to_topup):
     if time_to_topup == -1:
-        LOGGER.info("Decay mode, gating disabled")
+        LOGGER.info("Machine in decay mode, gating disabled")
         return True
     return False
 
 
 def _gating_permitted(machine_mode):
     if machine_mode not in ALLOWED_MODES:
-        LOGGER.info("Machne mode not in alowed list, gating top up.")
+        LOGGER.info("Machine not in allowed mode, gating top up enabled.")
         return False
     return True
 
@@ -41,6 +41,7 @@ def _delay_to_avoid_topup(total_exposure_time, time_to_topup):
 def check_topup_and_wait_if_before_collection_done(
     synchrotron: Synchrotron,
     params: DetectorParams,
+    xrc_time: float = 30.0,
 ):
     if _in_decay_mode(
         synchrotron.top_up.start_countdown.get()
@@ -48,7 +49,9 @@ def check_topup_and_wait_if_before_collection_done(
         time_to_wait = 0
         # yield from bps.null()
     else:
-        tot_exposure_time = params.exposure_time * params.full_number_of_images
+        tot_exposure_time = (
+            params.exposure_time * params.full_number_of_images + xrc_time
+        )
         time_to_topup = synchrotron.top_up.start_countdown.get()
         # Need to also consider time for xray centering ?
         time_to_wait = (
