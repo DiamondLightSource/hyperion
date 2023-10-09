@@ -29,6 +29,7 @@ from dodal.devices.eiger import DetectorParams
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 
 import hyperion.log
+from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
 from hyperion.device_setup_plans.setup_zebra import (
@@ -180,6 +181,11 @@ def run_gridscan(
     fgs_motors = fgs_composite.fast_grid_scan
 
     # TODO: Check topup gate
+    yield from check_topup_and_wait_if_necessary(
+        fgs_composite.synchrotron,
+        parameters.hyperion_params.detector_params,
+    )
+
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
     yield from wait_for_gridscan_valid(fgs_motors)
 

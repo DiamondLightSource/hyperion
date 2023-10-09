@@ -38,10 +38,10 @@ def _delay_to_avoid_topup(total_exposure_time, time_to_topup):
     return False
 
 
-def check_topup_and_wait_if_before_collection_done(
+def check_topup_and_wait_if_necessary(
     synchrotron: Synchrotron,
     params: DetectorParams,
-    xrc_time: float = 30.0,
+    xrc_time: float = 30.0,  # Account for xray centering
 ):
     if _in_decay_mode(
         synchrotron.top_up.start_countdown.get()
@@ -53,7 +53,6 @@ def check_topup_and_wait_if_before_collection_done(
             params.exposure_time * params.full_number_of_images + xrc_time
         )
         time_to_topup = synchrotron.top_up.start_countdown.get()
-        # Need to also consider time for xray centering ?
         time_to_wait = (
             synchrotron.top_up.end_countdown.get()
             if _delay_to_avoid_topup(tot_exposure_time, time_to_topup)
