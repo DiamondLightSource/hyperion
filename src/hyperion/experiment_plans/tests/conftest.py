@@ -164,7 +164,7 @@ def aperture_scatterguard():
 
 @pytest.fixture
 def RE():
-    return RunEngine({})
+    return RunEngine({}, call_returns_result=True)
 
 
 @pytest.fixture()

@@ -97,6 +97,7 @@ class TestData:
             "synchrotron_machine_status_synchrotron_mode": "test",
             "undulator_gap": 1.234,
             "attenuator_actual_transmission": 1,
+            "flux_flux_reading": 10,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,

@@ -1,11 +1,4 @@
 repos:
-  # Automatically sort imports
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        args: ["--profile", "black"]
-
   # Automatic source code formatting
   - repo: https://github.com/psf/black
     rev: 22.3.0
@@ -14,13 +7,6 @@ repos:
         args: [--safe, --quiet]
         files: \.pyi?$|SConscript$|^libtbx_config$
         types: [file]
-
-  # Linting
-  - repo: https://github.com/PyCQA/flake8
-    rev: 3.9.2
-    hooks:
-      - id: flake8
-        additional_dependencies: ["flake8-comprehensions==3.5.0"]
 
   # Give a specific warning for added image files
   - repo: local
@@ -32,6 +18,13 @@ repos:
           https://github.com/dials/dials.github.io
         language: fail
         files: '.*\.png$'
+
+      - id: ruff
+        name: Run ruff
+        stages: [commit]
+        language: system
+        entry: ruff
+        types: [python]
 
   # Syntax validation and some basic sanity checks
   - repo: https://github.com/pre-commit/pre-commit-hooks

@@ -5,6 +5,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
+from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
@@ -18,7 +19,10 @@ from hyperion.device_setup_plans.setup_oav import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import OAV_REFRESH_DELAY
 from hyperion.utils.context import device_composite_from_context
+
+DEFAULT_STEP_SIZE = 0.5
 
 
 @dataclasses.dataclass
@@ -34,18 +38,29 @@ def create_devices(context: BlueskyContext) -> PinTipCentringComposite:
     return device_composite_from_context(context, PinTipCentringComposite)
 
 
+def trigger_and_return_pin_tip(pin_tip: PinTipDetect) -> Generator[Msg, None, Pixel]:
+    yield from bps.trigger(pin_tip, wait=True)
+    tip_x_y_px = yield from bps.rd(pin_tip)
+    LOGGER.info(f"Pin tip found at {tip_x_y_px}")
+    return tip_x_y_px
+
+
 def move_pin_into_view(
-    oav: OAV, smargon: Smargon, step_size: float = 1, max_steps: int = 1
+    oav: OAV,
+    smargon: Smargon,
+    step_size_mm: float = DEFAULT_STEP_SIZE,
+    max_steps: int = 2,
 ) -> Generator[Msg, None, Pixel]:
     """Attempt to move the pin into view and return the tip location in pixels if found.
-    The gonio is moved in a number of discrete steps to find the pin.
+    The gonio x is moved in a number of discrete steps to find the pin. If the move
+    would take it past its limit, it moves to the limit instead.
 
     Args:
         oav (OAV): The OAV to detect the tip with
         smargon (Smargon): The gonio to move the tip
         step_size (float, optional): Distance to move the gonio (in mm) for each
-                                    step of the search. Defaults to 1.
-        max_steps (int, optional): The number of steps to search with. Defaults to 1.
+                                    step of the search. Defaults to 0.5.
+        max_steps (int, optional): The number of steps to search with. Defaults to 2.
 
     Raises:
         WarningException: Error if the pin tip is never found
@@ -54,26 +69,37 @@ def move_pin_into_view(
         Tuple[int, int]: The location of the pin tip in pixels
     """
 
-    for _ in range(max_steps):
-        yield from bps.trigger(oav.mxsc.pin_tip, wait=True)
-        tip_x_px, tip_y_px = yield from bps.rd(oav.mxsc.pin_tip)
+    def pin_tip_valid(pin_x: float):
+        return pin_x != 0 and pin_x != oav.mxsc.pin_tip.INVALID_POSITION[0]
 
-        if tip_x_px == 0:
-            LOGGER.warning(f"Pin is too long, moving -{step_size}mm")
-            yield from bps.mvr(smargon.x, -step_size)
-        elif tip_x_px == oav.mxsc.pin_tip.INVALID_POSITION[0]:
-            LOGGER.warning(f"Pin is too short, moving {step_size}mm")
-            yield from bps.mvr(smargon.x, step_size)
-        else:
+    for _ in range(max_steps):
+        tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(oav.mxsc.pin_tip)
+
+        if pin_tip_valid(tip_x_px):
             return (tip_x_px, tip_y_px)
 
+        if tip_x_px == 0:
+            # Pin is off in the -ve direction
+            step_size_mm = -step_size_mm
+
+        smargon_x = yield from bps.rd(smargon.x.user_readback)
+        ideal_move_to_find_pin = float(smargon_x) + step_size_mm
+        move_within_limits = max(
+            min(ideal_move_to_find_pin, smargon.x.high_limit), smargon.x.low_limit
+        )
+        if move_within_limits != ideal_move_to_find_pin:
+            LOGGER.warning(
+                f"Pin tip is off screen, and moving {step_size_mm} mm would cross limits, "
+                f"moving to {move_within_limits} instead"
+            )
+        yield from bps.mv(smargon.x, move_within_limits)
+
         # Some time for the view to settle after the move
-        yield from bps.sleep(0.3)
+        yield from bps.sleep(OAV_REFRESH_DELAY)
 
-    yield from bps.trigger(oav.mxsc.pin_tip, wait=True)
-    tip_x_px, tip_y_px = yield from bps.rd(oav.mxsc.pin_tip)
+    tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(oav.mxsc.pin_tip)
 
-    if tip_x_px == 0 or tip_x_px == oav.mxsc.pin_tip.INVALID_POSITION[0]:
+    if not pin_tip_valid(tip_x_px):
         raise WarningException(
             "Pin tip centring failed - pin too long/short/bent and out of range"
         )

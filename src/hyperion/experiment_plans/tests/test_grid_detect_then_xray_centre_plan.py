@@ -1,14 +1,17 @@
 from typing import Any, Dict, Generator
 from unittest.mock import ANY, MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.beamlines import i03
 from dodal.beamlines.i03 import detector_motion
 from dodal.devices.backlight import Backlight
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
 
+from hyperion.device_setup_plans.unit_tests.test_setup_oav import fake_smargon
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     detect_grid_and_do_gridscan,
@@ -29,24 +32,33 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 def _fake_grid_detection(
     devices: Any,
     parameters: OAVParameters,
-    out_parameters,
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: float = 0,
     box_size_um: float = 0.0,
 ):
-    out_parameters.x_start = 0
-    out_parameters.y1_start = 0
-    out_parameters.y2_start = 0
-    out_parameters.z1_start = 0
-    out_parameters.z2_start = 0
-    out_parameters.x_steps = 10
-    out_parameters.y_steps = 2
-    out_parameters.z_steps = 2
-    out_parameters.x_step_size = 1
-    out_parameters.y_step_size = 1
-    out_parameters.z_step_size = 1
-    return []
+    oav = i03.oav(fake_with_ophyd_sim=True)
+    smargon = fake_smargon()
+    yield from bps.open_run()
+    oav.snapshot.box_width.put(635.00986)
+
+    # first grid detection: x * y
+    oav.snapshot.num_boxes_x.put(10)
+    oav.snapshot.num_boxes_y.put(3)
+    yield from bps.create("snapshot_to_ispyb")
+    yield from bps.read(oav.snapshot)
+    yield from bps.read(smargon)
+    yield from bps.save()
+
+    # second grid detection: x * z, so num_boxes_y refers to smargon z
+    oav.snapshot.num_boxes_x.put(10)
+    oav.snapshot.num_boxes_y.put(1)
+    yield from bps.create("snapshot_to_ispyb")
+    yield from bps.read(oav.snapshot)
+    yield from bps.read(smargon)
+    yield from bps.save()
+
+    yield from bps.close_run()
 
 
 @pytest.fixture
@@ -216,7 +228,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         assert params.hyperion_params.detector_params.num_triggers == 40
 
         assert params.experiment_params.x_axis.full_steps == 10
-        assert params.experiment_params.y_axis.end == 1
+        assert params.experiment_params.y_axis.end == pytest.approx(1, 0.001)
 
         # Parameters can be serialized
         params.json()

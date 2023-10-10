@@ -9,5 +9,15 @@ class OavSnapshotCallback(CallbackBase):
 
     def event(self, doc):
         data = doc.get("data")
-        self.snapshot_filenames.append(list(data.values())[:3])
-        self.out_upper_left.append(list(data.values())[-2:])
+
+        self.snapshot_filenames.append(
+            [
+                data.get("oav_snapshot_last_saved_path"),
+                data.get("oav_snapshot_last_path_outer"),
+                data.get("oav_snapshot_last_path_full_overlay"),
+            ]
+        )
+
+        self.out_upper_left.append(
+            [data.get("oav_snapshot_top_left_x"), data.get("oav_snapshot_top_left_y")]
+        )

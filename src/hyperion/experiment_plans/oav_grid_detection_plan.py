@@ -10,7 +10,6 @@ import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.preprocessors import finalize_wrapper
 from dodal.devices.backlight import Backlight
-from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
 
@@ -20,6 +19,7 @@ from hyperion.device_setup_plans.setup_oav import (
     wait_for_tip_to_be_found,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import OAV_REFRESH_DELAY
 from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
@@ -42,7 +42,6 @@ def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:
 def grid_detection_plan(
     composite: OavGridDetectionComposite,
     parameters: OAVParameters,
-    out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: float,
@@ -52,7 +51,6 @@ def grid_detection_plan(
         grid_detection_main_plan(
             composite,
             parameters,
-            out_parameters,
             snapshot_template,
             snapshot_dir,
             grid_width_microns,
@@ -66,7 +64,6 @@ def grid_detection_plan(
 def grid_detection_main_plan(
     composite: OavGridDetectionComposite,
     parameters: OAVParameters,
-    out_parameters: GridScanParams,
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: int,
@@ -98,7 +95,9 @@ def grid_detection_main_plan(
     start_positions = []
     box_numbers = []
 
+    assert isinstance(parameters.micronsPerXPixel, float)
     box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
+    assert isinstance(parameters.micronsPerYPixel, float)
     box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
 
     grid_width_pixels = int(grid_width_microns / parameters.micronsPerXPixel)
@@ -108,7 +107,7 @@ def grid_detection_main_plan(
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # See #673 for improvements
-        yield from bps.sleep(0.3)
+        yield from bps.sleep(OAV_REFRESH_DELAY)
 
         tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc)
 
@@ -156,11 +155,9 @@ def grid_detection_main_plan(
         yield from bps.trigger(oav.snapshot, wait=True)
 
         yield from bps.create("snapshot_to_ispyb")
-        yield from bps.read(oav.snapshot.last_saved_path)
-        yield from bps.read(oav.snapshot.last_path_outer)
-        yield from bps.read(oav.snapshot.last_path_full_overlay)
-        yield from bps.read(oav.snapshot.top_left_x)
-        yield from bps.read(oav.snapshot.top_left_y)
+
+        yield from bps.read(oav.snapshot)
+        yield from bps.read(smargon)
         yield from bps.save()
 
         # The first frame is taken at the centre of the first box
@@ -177,25 +174,12 @@ def grid_detection_main_plan(
     LOGGER.info(
         f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][2]}"
     )
-    out_parameters.x_start = start_positions[0][0]
-
-    out_parameters.y1_start = start_positions[0][1]
-    out_parameters.y2_start = start_positions[0][1]
-
-    out_parameters.z1_start = start_positions[1][2]
-    out_parameters.z2_start = start_positions[1][2]
 
     LOGGER.info(
         f"Calculated number of steps {box_numbers[0][0], box_numbers[0][1], box_numbers[1][1]}"
     )
-    out_parameters.x_steps = box_numbers[0][0]
-    out_parameters.y_steps = box_numbers[0][1]
-    out_parameters.z_steps = box_numbers[1][1]
 
     LOGGER.info(f"Step sizes: {box_size_um, box_size_um, box_size_um}")
-    out_parameters.x_step_size = box_size_um / 1000
-    out_parameters.y_step_size = box_size_um / 1000
-    out_parameters.z_step_size = box_size_um / 1000
 
 
 def reset_oav(oav: OAV):
