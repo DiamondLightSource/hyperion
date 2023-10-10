@@ -18,6 +18,7 @@ from hyperion.external_interaction.nexus.nexus_utils import (
     create_detector_parameters,
     create_goniometer_axes,
     get_current_time,
+    get_predicted_end_time,
 )
 from hyperion.parameters.internal_parameters import InternalParameters
 
@@ -79,6 +80,9 @@ class NexusWriter:
         initialised.
         """
         start_time = get_current_time()
+        est_end_time = get_predicted_end_time(
+            start_time, self.detector.exp_time * self.full_num_of_images
+        )
 
         vds_shape = self.data_shape
 
@@ -95,6 +99,7 @@ class NexusWriter:
             NXmx_Writer.write(
                 image_filename=f"{self.full_filename}",
                 start_time=start_time,
+                est_end_time=est_end_time,
             )
             NXmx_Writer.write_vds(
                 vds_offset=self.start_index,
