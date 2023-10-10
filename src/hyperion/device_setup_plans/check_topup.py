@@ -41,8 +41,18 @@ def _delay_to_avoid_topup(total_exposure_time, time_to_topup):
 def check_topup_and_wait_if_necessary(
     synchrotron: Synchrotron,
     params: DetectorParams,
-    xrc_time: float = 30.0,  # Account for xray centering
+    ops_time: float = 30.0,  # Account for xray centering, rotation speed, etc
 ):
+    """A small plan to check if topup gating is permitted and sleep until the topup\
+        is over if it starts before the end of collection.
+
+    Args:
+        synchrotron (Synchrotron): Synchrotron device.
+        params (DetectorParams): The detector parameters, used to determine length\
+            of scan.
+        ops_time (float, optional): Additional time to account for various operations,\
+            eg. x-ray centering. In seconds. Defaults to 30.0.
+    """
     if _in_decay_mode(
         synchrotron.top_up.start_countdown.get()
     ) or not _gating_permitted(synchrotron.machine_status.synchrotron_mode.get()):
@@ -50,11 +60,9 @@ def check_topup_and_wait_if_necessary(
         # yield from bps.null()
     else:
         tot_exposure_time = (
-            params.exposure_time * params.full_number_of_images + xrc_time
+            params.exposure_time * params.full_number_of_images + ops_time
         )
-        print(tot_exposure_time)
         time_to_topup = synchrotron.top_up.start_countdown.get()
-        print(time_to_topup)
         time_to_wait = (
             synchrotron.top_up.end_countdown.get()
             if _delay_to_avoid_topup(tot_exposure_time, time_to_topup)

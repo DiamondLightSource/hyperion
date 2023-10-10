@@ -180,7 +180,7 @@ def run_gridscan(
 
     fgs_motors = fgs_composite.fast_grid_scan
 
-    # TODO: Check topup gate
+    # Check topup gate
     yield from check_topup_and_wait_if_necessary(
         fgs_composite.synchrotron,
         parameters.hyperion_params.detector_params,

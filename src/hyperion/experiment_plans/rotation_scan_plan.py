@@ -14,6 +14,7 @@ from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.device import Device
 from ophyd.epics_motor import EpicsMotor
 
+from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_x_y_z,
@@ -198,6 +199,13 @@ def rotation_scan_plan(
     yield from set_speed(smargon.omega, image_width_deg, exposure_time_s, wait=True)
 
     yield from arm_zebra(zebra)
+
+    # Check topup gate
+    yield from check_topup_and_wait_if_necessary(
+        i03.synchrotron(),
+        detector_params,
+        ops_time=10.0,  # Additional time to account for rotation, is s
+    )  # TODO figure out a correct value for opts_time
 
     LOGGER.info(
         f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
