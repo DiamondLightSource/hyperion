@@ -1,4 +1,4 @@
-# hyperion
+# TEST_DNM hyperion
 ![Tests](https://github.com/DiamondLightSource/hyperion/actions/workflows/code.yml/badge.svg) [![codecov](https://codecov.io/gh/DiamondLightSource/hyperion/branch/main/graph/badge.svg?token=00Ww81MHe8)](https://codecov.io/gh/DiamondLightSource/hyperion)
 
 Repository for the Hyperion project to implement "3D grid scans" using the BlueSky / Ophyd framework from BNL. 
