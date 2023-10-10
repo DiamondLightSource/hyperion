@@ -1,6 +1,9 @@
+from unittest.mock import patch
+
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
+from dodal.devices.synchrotron import SynchrotronMode
 
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.parameters import external_parameters
@@ -21,7 +24,10 @@ def fake_parameters():
     return parameters.detector_params
 
 
-def test_when_topup_before_end_of_collection_wait(fake_parameters, synchrotron):
+@patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
+def test_when_topup_before_end_of_collection_wait(
+    fake_sleep, fake_parameters, synchrotron
+):
     synchrotron.top_up.start_countdown.sim_put(20.0)
     synchrotron.top_up.end_countdown.sim_put(60.0)
 
@@ -32,9 +38,11 @@ def test_when_topup_before_end_of_collection_wait(fake_parameters, synchrotron):
             params=fake_parameters,
         )
     )
+    fake_sleep.assert_called_once_with(60.0)
 
 
-def test_no_waiting_if_decay_mode(fake_parameters, synchrotron):
+@patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
+def test_no_waiting_if_decay_mode(fake_sleep, fake_parameters, synchrotron):
     synchrotron.top_up.start_countdown.sim_put(-1)
 
     RE = RunEngine()
@@ -44,3 +52,20 @@ def test_no_waiting_if_decay_mode(fake_parameters, synchrotron):
             params=fake_parameters,
         )
     )
+    fake_sleep.assert_called_once_with(0.0)
+
+
+@patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
+def test_no_waiting_when_mode_does_not_allow_gating(
+    fake_sleep, fake_parameters, synchrotron
+):
+    synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN)
+
+    RE = RunEngine()
+    RE(
+        check_topup_and_wait_if_necessary(
+            synchrotron=synchrotron,
+            params=fake_parameters,
+        )
+    )
+    fake_sleep.assert_called_once_with(0.0)

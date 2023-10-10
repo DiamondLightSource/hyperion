@@ -17,8 +17,8 @@ def _in_decay_mode(time_to_topup):
 def _gating_permitted(machine_mode):
     if machine_mode not in ALLOWED_MODES:
         LOGGER.info("Machine not in allowed mode, gating top up enabled.")
-        return False
-    return True
+        return True
+    return False
 
 
 def _delay_to_avoid_topup(total_exposure_time, time_to_topup):
@@ -52,11 +52,13 @@ def check_topup_and_wait_if_necessary(
         tot_exposure_time = (
             params.exposure_time * params.full_number_of_images + xrc_time
         )
+        print(tot_exposure_time)
         time_to_topup = synchrotron.top_up.start_countdown.get()
+        print(time_to_topup)
         time_to_wait = (
             synchrotron.top_up.end_countdown.get()
             if _delay_to_avoid_topup(tot_exposure_time, time_to_topup)
-            else 0
+            else 0.0
         )
 
     yield from bps.sleep(time_to_wait)
