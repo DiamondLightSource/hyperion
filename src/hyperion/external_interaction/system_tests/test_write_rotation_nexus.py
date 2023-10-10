@@ -86,6 +86,9 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     with patch(
         "hyperion.external_interaction.nexus.write_nexus.get_current_time",
         return_value="test_time",
+    ), patch(
+        "hyperion.external_interaction.nexus.write_nexus.get_predicted_end_time",
+        return_value="test_time",
     ):
         RE(fake_rotation_scan(test_params, cb))
 
@@ -97,7 +100,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         h5py.File(nexus_filename, "r") as hyperion_nexus,
     ):
         assert hyperion_nexus["/entry/start_time"][()] == b"test_timeZ"
-        assert hyperion_nexus["/entry/end_time"][()] == b"test_time"
+        assert hyperion_nexus["/entry/end_time_estimated"][()] == b"test_timeZ"
 
         # we used to write the positions wrong...
         hyperion_omega: np.ndarray = np.array(
