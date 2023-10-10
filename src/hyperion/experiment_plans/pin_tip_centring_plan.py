@@ -4,6 +4,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import Msg
 from dodal.beamlines import i03
+from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 from dodal.devices.smargon import Smargon
@@ -25,6 +26,13 @@ def create_devices():
     i03.oav()
     i03.smargon()
     i03.backlight()
+
+
+def trigger_and_return_pin_tip(pin_tip: PinTipDetect) -> Generator[Msg, None, Pixel]:
+    yield from bps.trigger(pin_tip, wait=True)
+    tip_x_y_px = yield from bps.rd(pin_tip)
+    LOGGER.info(f"Pin tip found at {tip_x_y_px}")
+    return tip_x_y_px
 
 
 def move_pin_into_view(
@@ -51,44 +59,37 @@ def move_pin_into_view(
         Tuple[int, int]: The location of the pin tip in pixels
     """
 
+    def pin_tip_valid(pin_x: float):
+        return pin_x != 0 and pin_x != oav.mxsc.pin_tip.INVALID_POSITION[0]
+
     for _ in range(max_steps):
-        yield from bps.trigger(oav.mxsc.pin_tip, wait=True)
-        tip_x_px, tip_y_px = yield from bps.rd(oav.mxsc.pin_tip)
+        tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(oav.mxsc.pin_tip)
+
+        if pin_tip_valid(tip_x_px):
+            return (tip_x_px, tip_y_px)
 
         if tip_x_px == 0:
-            smargon_x = yield from bps.rd(smargon.x.user_readback)
-            if float(smargon_x) - step_size_mm < smargon.x.low_limit:
-                LOGGER.warning(
-                    f"Pin tip is off screen, and moving -{step_size_mm} mm would cross limits, "
-                    f"moving to minimum limit {smargon.x.low_limit}"
-                )
-                yield from bps.mv(smargon.x, smargon.x.low_limit)
-                yield from bps.sleep(OAV_REFRESH_DELAY)
-                break
-            LOGGER.warning(f"Pin tip is off screen, moving -{step_size_mm} mm")
-            yield from bps.mvr(smargon.x, -step_size_mm)
-        elif tip_x_px == oav.mxsc.pin_tip.INVALID_POSITION[0]:
-            smargon_x = yield from bps.rd(smargon.x.user_readback)
-            if float(smargon_x) + step_size_mm > smargon.x.high_limit:
-                LOGGER.warning(
-                    f"Pin tip is off screen, and moving {step_size_mm} mm would cross limits, "
-                    f"moving to maximum limit {smargon.x.high_limit}"
-                )
-                yield from bps.mv(smargon.x, smargon.x.high_limit)
-                yield from bps.sleep(OAV_REFRESH_DELAY)
-                break
-            LOGGER.warning(f"Pin tip is off screen, moving {step_size_mm}mm")
-            yield from bps.mvr(smargon.x, step_size_mm)
-        else:
-            return (tip_x_px, tip_y_px)
+            # Pin is off in the -ve direction
+            step_size_mm = -step_size_mm
+
+        smargon_x = yield from bps.rd(smargon.x.user_readback)
+        ideal_move_to_find_pin = float(smargon_x) + step_size_mm
+        move_within_limits = max(
+            min(ideal_move_to_find_pin, smargon.x.high_limit), smargon.x.low_limit
+        )
+        if move_within_limits != ideal_move_to_find_pin:
+            LOGGER.warning(
+                f"Pin tip is off screen, and moving {step_size_mm} mm would cross limits, "
+                f"moving to {move_within_limits} instead"
+            )
+        yield from bps.mv(smargon.x, move_within_limits)
 
         # Some time for the view to settle after the move
         yield from bps.sleep(OAV_REFRESH_DELAY)
 
-    yield from bps.trigger(oav.mxsc.pin_tip, wait=True)
-    tip_x_px, tip_y_px = yield from bps.rd(oav.mxsc.pin_tip)
+    tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(oav.mxsc.pin_tip)
 
-    if tip_x_px == 0 or tip_x_px == oav.mxsc.pin_tip.INVALID_POSITION[0]:
+    if not pin_tip_valid(tip_x_px):
         raise WarningException(
             "Pin tip centring failed - pin too long/short/bent and out of range"
         )
