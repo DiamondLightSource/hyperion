@@ -84,11 +84,8 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     cb.ispyb_handler.stop = MagicMock()
     cb.ispyb_handler.event = MagicMock()
     with patch(
-        "hyperion.external_interaction.nexus.write_nexus.get_current_time",
-        return_value="test_time",
-    ), patch(
-        "hyperion.external_interaction.nexus.write_nexus.get_predicted_end_time",
-        return_value="test_time",
+        "hyperion.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
+        return_value=("test_time", "test_time"),
     ):
         RE(fake_rotation_scan(test_params, cb))
 

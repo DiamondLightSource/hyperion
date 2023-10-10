@@ -14,8 +14,7 @@ from hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     create_detector_parameters,
     create_goniometer_axes,
-    get_current_time,
-    get_predicted_end_time,
+    get_start_and_predicted_end_time,
 )
 from hyperion.parameters.internal_parameters import InternalParameters
 
@@ -76,9 +75,8 @@ class NexusWriter:
         Creates a nexus file based on the parameters supplied when this obect was
         initialised.
         """
-        start_time = get_current_time()
-        est_end_time = get_predicted_end_time(
-            start_time, self.detector.exp_time * self.full_num_of_images
+        start_time, est_end_time = get_start_and_predicted_end_time(
+            self.detector.exp_time * self.full_num_of_images
         )
 
         vds_shape = self.data_shape
