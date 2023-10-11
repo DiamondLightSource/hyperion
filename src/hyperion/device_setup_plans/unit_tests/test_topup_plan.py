@@ -41,8 +41,8 @@ def test_when_topup_before_end_of_collection_wait(
     fake_sleep.assert_called_once_with(60.0)
 
 
-@patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
-def test_no_waiting_if_decay_mode(fake_sleep, fake_parameters, synchrotron):
+@patch("src.hyperion.device_setup_plans.check_topup.bps.null")
+def test_no_waiting_if_decay_mode(fake_null, fake_parameters, synchrotron):
     synchrotron.top_up.start_countdown.sim_put(-1)
 
     RE = RunEngine()
@@ -52,12 +52,12 @@ def test_no_waiting_if_decay_mode(fake_sleep, fake_parameters, synchrotron):
             params=fake_parameters,
         )
     )
-    fake_sleep.assert_called_once_with(0.0)
+    fake_null.assert_called_once()
 
 
-@patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
+@patch("src.hyperion.device_setup_plans.check_topup.bps.null")
 def test_no_waiting_when_mode_does_not_allow_gating(
-    fake_sleep, fake_parameters, synchrotron
+    fake_null, fake_parameters, synchrotron
 ):
     synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN)
 
@@ -68,4 +68,4 @@ def test_no_waiting_when_mode_does_not_allow_gating(
             params=fake_parameters,
         )
     )
-    fake_sleep.assert_called_once_with(0.0)
+    fake_null.assert_called_once()

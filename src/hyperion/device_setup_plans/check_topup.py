@@ -58,7 +58,6 @@ def check_topup_and_wait_if_necessary(
         synchrotron.top_up.start_countdown.get()
     ) or not _gating_permitted(synchrotron.machine_status.synchrotron_mode.get()):
         time_to_wait = 0
-        # yield from bps.null()
     else:
         tot_exposure_time = (
             params.exposure_time * params.full_number_of_images + ops_time
@@ -70,4 +69,4 @@ def check_topup_and_wait_if_necessary(
             else 0.0
         )
 
-    yield from bps.sleep(time_to_wait)
+    yield from bps.sleep(time_to_wait) if float(time_to_wait) > 0 else bps.null()
