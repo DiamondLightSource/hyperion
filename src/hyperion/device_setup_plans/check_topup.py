@@ -39,6 +39,13 @@ def _delay_to_avoid_topup(total_run_time, time_to_topup):
     return False
 
 
+def wait_for_topup_complete(synchrotron):
+    start = yield from bps.rd(synchrotron.top_up.start_countdown)
+    while start == 0:
+        yield from bps.sleep(0.1)
+        start = yield from bps.rd(synchrotron.top_up.start_countdown)
+
+
 def check_topup_and_wait_if_necessary(
     synchrotron: Synchrotron,
     params: DetectorParams,
@@ -57,12 +64,16 @@ def check_topup_and_wait_if_necessary(
     machine_mode = yield from bps.rd(synchrotron.machine_status.synchrotron_mode)
     time_to_topup = yield from bps.rd(synchrotron.top_up.start_countdown)
     if _in_decay_mode(time_to_topup) or not _gating_permitted(machine_mode):
-        time_to_wait = 0
-    else:
-        tot_run_time = params.exposure_time * params.full_number_of_images + ops_time
-        end_topup = yield from bps.rd(synchrotron.top_up.end_countdown)
-        time_to_wait = (
-            end_topup if _delay_to_avoid_topup(tot_run_time, time_to_topup) else 0.0
-        )
+        yield from bps.null()
+        return
+    tot_run_time = params.exposure_time * params.full_number_of_images + ops_time
+    end_topup = yield from bps.rd(synchrotron.top_up.end_countdown)
+    time_to_wait = (
+        end_topup if _delay_to_avoid_topup(tot_run_time, time_to_topup) else 0.0
+    )
 
-    yield from bps.sleep(time_to_wait) if float(time_to_wait) > 0 else bps.null()
+    yield from bps.sleep(time_to_wait)
+
+    check_start = yield from bps.rd(synchrotron.top_up.start_countdown)
+    if check_start == 0:
+        yield from wait_for_topup_complete(synchrotron)
