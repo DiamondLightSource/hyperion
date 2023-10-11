@@ -4,7 +4,7 @@ from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 
 from hyperion.log import LOGGER
 
-ALLOWED_MODES = [SynchrotronMode.USER, SynchrotronMode.SPECIAL]
+ALLOWED_MODES = [SynchrotronMode.USER.value, SynchrotronMode.SPECIAL.value]
 DECAY_MODE_CTDW = -1
 
 
@@ -15,11 +15,12 @@ def _in_decay_mode(time_to_topup):
     return False
 
 
-def _gating_not_permitted(machine_mode):
-    if machine_mode not in ALLOWED_MODES:
-        LOGGER.info("Machine not in allowed mode, gating top up enabled.")
-        return False
-    return True
+def _gating_permitted(machine_mode):
+    if machine_mode in ALLOWED_MODES:
+        LOGGER.info("Machine in allowed mode, gating top up enabled.")
+        return True
+    LOGGER.info("Machine not in allowed mode, gating disabled")
+    return False
 
 
 def _delay_to_avoid_topup(total_run_time, time_to_topup):
@@ -63,7 +64,7 @@ def check_topup_and_wait_if_necessary(
     """
     machine_mode = yield from bps.rd(synchrotron.machine_status.synchrotron_mode)
     time_to_topup = yield from bps.rd(synchrotron.top_up.start_countdown)
-    if _in_decay_mode(time_to_topup) or not _gating_not_permitted(machine_mode):
+    if _in_decay_mode(time_to_topup) or not _gating_permitted(machine_mode):
         yield from bps.null()
         return
     tot_run_time = params.exposure_time * params.full_number_of_images + ops_time

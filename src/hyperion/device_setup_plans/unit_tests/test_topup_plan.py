@@ -33,6 +33,7 @@ def fake_parameters():
 def test_when_topup_before_end_of_collection_wait(
     fake_sleep, fake_wait, fake_parameters, synchrotron
 ):
+    synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.USER.value)
     synchrotron.top_up.start_countdown.sim_put(20.0)
     synchrotron.top_up.end_countdown.sim_put(60.0)
 
@@ -90,7 +91,7 @@ def test_no_waiting_when_mode_does_not_allow_gating(
     fake_null, fake_parameters, synchrotron
 ):
     synchrotron.top_up.start_countdown.sim_put(1.0)
-    synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN)
+    synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN.value)
 
     RE = RunEngine()
     RE(
