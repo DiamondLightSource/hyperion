@@ -22,18 +22,18 @@ def _gating_permitted(machine_mode):
     return False
 
 
-def _delay_to_avoid_topup(total_exposure_time, time_to_topup):
-    if total_exposure_time > time_to_topup:
+def _delay_to_avoid_topup(total_run_time, time_to_topup):
+    if total_run_time > time_to_topup:
         LOGGER.info(
             """
-            Total exposure time + time needed for x ray centering exceeds time to
-            next top up. Collection delayed until top up done.
+            Total rum time for this collection exceeds time to next top up.
+            Collection delayed until top up done.
             """
         )
         return True
     LOGGER.info(
         """
-        Total exposure time less than time to next topup. Proceeding with collection.
+        Total run time less than time to next topup. Proceeding with collection.
         """
     )
     return False
@@ -54,19 +54,15 @@ def check_topup_and_wait_if_necessary(
         ops_time (float, optional): Additional time to account for various operations,\
             eg. x-ray centering. In seconds. Defaults to 30.0.
     """
-    if _in_decay_mode(
-        synchrotron.top_up.start_countdown.get()
-    ) or not _gating_permitted(synchrotron.machine_status.synchrotron_mode.get()):
+    machine_mode = yield from bps.rd(synchrotron.machine_status.synchrotron_mode)
+    time_to_topup = yield from bps.rd(synchrotron.top_up.start_countdown)
+    if _in_decay_mode(time_to_topup) or not _gating_permitted(machine_mode):
         time_to_wait = 0
     else:
-        tot_exposure_time = (
-            params.exposure_time * params.full_number_of_images + ops_time
-        )
-        time_to_topup = synchrotron.top_up.start_countdown.get()
+        tot_run_time = params.exposure_time * params.full_number_of_images + ops_time
+        end_topup = yield from bps.rd(synchrotron.top_up.end_countdown)
         time_to_wait = (
-            synchrotron.top_up.end_countdown.get()
-            if _delay_to_avoid_topup(tot_exposure_time, time_to_topup)
-            else 0.0
+            end_topup if _delay_to_avoid_topup(tot_run_time, time_to_topup) else 0.0
         )
 
     yield from bps.sleep(time_to_wait) if float(time_to_wait) > 0 else bps.null()
