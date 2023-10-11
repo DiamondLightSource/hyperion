@@ -5,10 +5,11 @@ from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from hyperion.log import LOGGER
 
 ALLOWED_MODES = [SynchrotronMode.USER, SynchrotronMode.SPECIAL]
+DECAY_MODE_CTDW = -1
 
 
 def _in_decay_mode(time_to_topup):
-    if time_to_topup == -1:
+    if time_to_topup == DECAY_MODE_CTDW:
         LOGGER.info("Machine in decay mode, gating disabled")
         return True
     return False
