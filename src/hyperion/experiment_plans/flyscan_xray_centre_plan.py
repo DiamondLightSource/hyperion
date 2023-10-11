@@ -180,12 +180,6 @@ def run_gridscan(
 
     fgs_motors = fgs_composite.fast_grid_scan
 
-    # Check topup gate
-    yield from check_topup_and_wait_if_necessary(
-        fgs_composite.synchrotron,
-        parameters.hyperion_params.detector_params,
-    )
-
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
     yield from wait_for_gridscan_valid(fgs_motors)
 
@@ -197,6 +191,11 @@ def run_gridscan(
     )
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
+        # Check topup gate
+        yield from check_topup_and_wait_if_necessary(
+            fgs_composite.synchrotron,
+            parameters.hyperion_params.detector_params,
+        )
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 
