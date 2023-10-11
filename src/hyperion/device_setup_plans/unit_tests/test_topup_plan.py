@@ -89,6 +89,7 @@ def test_no_waiting_if_decay_mode(fake_null, fake_sleep, fake_parameters, synchr
 def test_no_waiting_when_mode_does_not_allow_gating(
     fake_null, fake_parameters, synchrotron
 ):
+    synchrotron.top_up.start_countdown.sim_put(1.0)
     synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN)
 
     RE = RunEngine()
