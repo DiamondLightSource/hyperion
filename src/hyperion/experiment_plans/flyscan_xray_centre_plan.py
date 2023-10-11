@@ -195,6 +195,7 @@ def run_gridscan(
         yield from check_topup_and_wait_if_necessary(
             fgs_composite.synchrotron,
             parameters.hyperion_params.detector_params,
+            30.0,
         )
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)

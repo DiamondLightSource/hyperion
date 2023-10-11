@@ -42,8 +42,8 @@ def _delay_to_avoid_topup(total_run_time, time_to_topup):
 def check_topup_and_wait_if_necessary(
     synchrotron: Synchrotron,
     params: DetectorParams,
-    ops_time: float = 30.0,  # Account for xray centering, rotation speed, etc
-):
+    ops_time: float,  # Account for xray centering, rotation speed, etc
+):  # See https://github.com/DiamondLightSource/hyperion/issues/932
     """A small plan to check if topup gating is permitted and sleep until the topup\
         is over if it starts before the end of collection.
 
@@ -51,7 +51,7 @@ def check_topup_and_wait_if_necessary(
         synchrotron (Synchrotron): Synchrotron device.
         params (DetectorParams): The detector parameters, used to determine length\
             of scan.
-        ops_time (float, optional): Additional time to account for various operations,\
+        ops_time (float): Additional time to account for various operations,\
             eg. x-ray centering. In seconds. Defaults to 30.0.
     """
     machine_mode = yield from bps.rd(synchrotron.machine_status.synchrotron_mode)

@@ -205,7 +205,7 @@ def rotation_scan_plan(
         i03.synchrotron(),
         detector_params,
         ops_time=10.0,  # Additional time to account for rotation, is s
-    )  # TODO figure out a correct value for opts_time
+    )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
     LOGGER.info(
         f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "

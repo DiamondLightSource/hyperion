@@ -36,6 +36,7 @@ def test_when_topup_before_end_of_collection_wait(
         check_topup_and_wait_if_necessary(
             synchrotron=synchrotron,
             params=fake_parameters,
+            ops_time=30.0,
         )
     )
     fake_sleep.assert_called_once_with(60.0)
@@ -50,6 +51,7 @@ def test_no_waiting_if_decay_mode(fake_null, fake_parameters, synchrotron):
         check_topup_and_wait_if_necessary(
             synchrotron=synchrotron,
             params=fake_parameters,
+            ops_time=1.0,
         )
     )
     fake_null.assert_called_once()
@@ -66,6 +68,7 @@ def test_no_waiting_when_mode_does_not_allow_gating(
         check_topup_and_wait_if_necessary(
             synchrotron=synchrotron,
             params=fake_parameters,
+            ops_time=1.0,
         )
     )
     fake_null.assert_called_once()
