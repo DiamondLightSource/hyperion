@@ -40,7 +40,7 @@ def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expecte
     )
     def my_collection_plan():
         assert attenuator.actual_transmission.get() == expected_transmission
-        assert xbpm_feedback.pause_feedback.get() == 1
+        assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.PAUSE
         yield from bps.null()
 
     xbpm_feedback.pos_stable.sim_put(1)
@@ -49,7 +49,7 @@ def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expecte
     RE(my_collection_plan())
 
     assert attenuator.actual_transmission.get() == 1.0
-    assert xbpm_feedback.pause_feedback.get() == 0
+    assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.RUN
 
 
 def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
@@ -76,7 +76,7 @@ def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
 
     mock.assert_not_called()
     assert attenuator.actual_transmission.get() == 1.0
-    assert xbpm_feedback.pause_feedback.get() == 0
+    assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.RUN
 
 
 def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then_cleaned_up(
@@ -102,4 +102,4 @@ def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then
         RE(my_collection_plan())
 
     assert attenuator.actual_transmission.get() == 1.0
-    assert xbpm_feedback.pause_feedback.get() == 0
+    assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.RUN
