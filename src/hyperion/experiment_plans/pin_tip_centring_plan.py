@@ -1,10 +1,12 @@
+import dataclasses
 from typing import Dict, Generator
 
 import bluesky.plan_stubs as bps
 import numpy as np
+from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.beamlines import i03
 from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
+from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
 from dodal.devices.smargon import Smargon
@@ -18,14 +20,22 @@ from hyperion.device_setup_plans.setup_oav import (
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import OAV_REFRESH_DELAY
+from hyperion.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5
 
 
-def create_devices():
-    i03.oav()
-    i03.smargon()
-    i03.backlight()
+@dataclasses.dataclass
+class PinTipCentringComposite:
+    """All devices which are directly or indirectly required by this plan"""
+
+    backlight: Backlight
+    oav: OAV
+    smargon: Smargon
+
+
+def create_devices(context: BlueskyContext) -> PinTipCentringComposite:
+    return device_composite_from_context(context, PinTipCentringComposite)
 
 
 def trigger_and_return_pin_tip(pin_tip: PinTipDetect) -> Generator[Msg, None, Pixel]:
@@ -117,6 +127,7 @@ def move_smargon_warn_on_out_of_range(
 
 
 def pin_tip_centre_plan(
+    composite: PinTipCentringComposite,
     tip_offset_microns: float,
     oav_config_files: Dict[str, str] = OAV_CONFIG_FILE_DEFAULTS,
 ):
@@ -128,8 +139,8 @@ def pin_tip_centre_plan(
         tip_offset_microns (float): The x offset from the tip where the centre is assumed
                                     to be.
     """
-    oav: OAV = i03.oav()
-    smargon: Smargon = i03.smargon()
+    oav: OAV = composite.oav
+    smargon: Smargon = composite.smargon
     oav_params = OAVParameters("pinTipCentring", **oav_config_files)
 
     tip_offset_px = int(tip_offset_microns / oav_params.micronsPerXPixel)
