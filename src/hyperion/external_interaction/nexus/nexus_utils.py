@@ -64,11 +64,10 @@ def create_goniometer_axes(
 
 
 def get_start_and_predicted_end_time(time_expected: float) -> tuple[str, str]:
+    time_format = r"%Y-%m-%dT%H:%M:%SZ"
     start = datetime.utcfromtimestamp(time.time())
     end_est = start + timedelta(seconds=time_expected)
-    return start.strftime(r"%Y-%m-%dT%H:%M:%SZ"), end_est.strftime(
-        r"%Y-%m-%dT%H:%M:%SZ"
-    )
+    return start.strftime(time_format), end_est.strftime(time_format)
 
 
 def create_detector_parameters(detector_params: DetectorParams) -> Detector:
