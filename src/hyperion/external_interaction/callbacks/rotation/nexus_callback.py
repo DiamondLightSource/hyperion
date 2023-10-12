@@ -44,12 +44,3 @@ class RotationNexusFileCallback(CallbackBase):
                 self.parameters.get_data_shape(),
             )
             self.writer.create_nexus_file()
-
-    def stop(self, doc: dict):
-        if self.run_uid is not None and doc.get("run_start") == self.run_uid:
-            LOGGER.info("Finalising nexus file.")
-            LOGGER.info("Updating Nexus file timestamps.")
-            assert (
-                self.writer is not None
-            ), "Failed to update Nexus file timestamp, writer was not initialised."
-            self.writer.update_nexus_file_timestamp()

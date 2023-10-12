@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dodal.devices.detector import DetectorParams
 from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Goniometer
@@ -63,8 +63,11 @@ def create_goniometer_axes(
     return Goniometer(gonio_axes, scan_points)
 
 
-def get_current_time():
-    return datetime.utcfromtimestamp(time.time()).strftime(r"%Y-%m-%dT%H:%M:%SZ")
+def get_start_and_predicted_end_time(time_expected: float) -> tuple[str, str]:
+    time_format = r"%Y-%m-%dT%H:%M:%SZ"
+    start = datetime.utcfromtimestamp(time.time())
+    end_est = start + timedelta(seconds=time_expected)
+    return start.strftime(time_format), end_est.strftime(time_format)
 
 
 def create_detector_parameters(detector_params: DetectorParams) -> Detector:

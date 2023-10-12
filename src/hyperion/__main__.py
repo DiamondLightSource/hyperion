@@ -4,15 +4,14 @@ import threading
 from dataclasses import asdict
 from queue import Queue
 from traceback import format_exception
-from typing import Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple
 
-from blueapi.core import BlueskyContext
+from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
-import hyperion.experiment_plans as hyperion_plans
 import hyperion.log
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
@@ -25,6 +24,7 @@ from hyperion.external_interaction.callbacks.logging_callback import (
 from hyperion.parameters.constants import Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
+from hyperion.utils.context import setup_context
 
 VERBOSE_EVENT_LOGGING: Optional[bool] = None
 
@@ -32,7 +32,8 @@ VERBOSE_EVENT_LOGGING: Optional[bool] = None
 @dataclass
 class Command:
     action: Actions
-    experiment: Optional[Callable] = None
+    devices: Optional[Any] = None
+    experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
     parameters: Optional[InternalParameters] = None
 
 
@@ -62,25 +63,31 @@ class BlueskyRunner:
     aperture_change_callback = ApertureChangeCallback()
     RE: RunEngine
     skip_startup_connection: bool
+    context: BlueskyContext
 
-    def __init__(self, RE: RunEngine, skip_startup_connection=False) -> None:
+    def __init__(
+        self, RE: RunEngine, context: BlueskyContext, skip_startup_connection=False
+    ) -> None:
         self.RE = RE
         self.skip_startup_connection = skip_startup_connection
+        self.context = context
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
         RE.subscribe(self.aperture_change_callback)
 
         if not self.skip_startup_connection:
             for plan_name in PLAN_REGISTRY:
-                PLAN_REGISTRY[plan_name]["setup"]()
+                PLAN_REGISTRY[plan_name]["setup"](context)
 
     def start(
-        self, experiment: Callable, parameters: InternalParameters, plan_name: str
+        self,
+        experiment: Callable,
+        parameters: InternalParameters,
+        plan_name: str,
     ) -> StatusAndMessage:
         hyperion.log.LOGGER.info(f"Started with parameters: {parameters}")
 
-        if self.skip_startup_connection:
-            PLAN_REGISTRY[plan_name]["setup"]()
+        devices: Any = PLAN_REGISTRY[plan_name]["setup"](self.context)
 
         if (
             self.current_status.status == Status.BUSY.value
@@ -89,7 +96,9 @@ class BlueskyRunner:
             return StatusAndMessage(Status.FAILED, "Bluesky already running")
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
-            self.command_queue.put(Command(Actions.START, experiment, parameters))
+            self.command_queue.put(
+                Command(Actions.START, devices, experiment, parameters)
+            )
             return StatusAndMessage(Status.SUCCESS)
 
     def stopping_thread(self):
@@ -123,9 +132,11 @@ class BlueskyRunner:
             if command.action == Actions.SHUTDOWN:
                 return
             elif command.action == Actions.START:
+                if command.experiment is None:
+                    raise ValueError("No experiment provided for START")
                 try:
                     with TRACER.start_span("do_run"):
-                        self.RE(command.experiment(command.parameters))
+                        self.RE(command.experiment(command.devices, command.parameters))
 
                     self.current_status = StatusAndMessage(
                         Status.IDLE,
@@ -195,13 +206,6 @@ class RunExperiment(Resource):
         return asdict(status_and_message)  # type: ignore
 
 
-def setup_context() -> BlueskyContext:
-    context = BlueskyContext()
-    context.with_plan_module(hyperion_plans)
-    hyperion.log.LOGGER.info(f"Found plans: {context.plan_functions}")
-    return context
-
-
 class StopOrStatus(Resource):
     def __init__(self, runner: BlueskyRunner) -> None:
         super().__init__()
@@ -222,10 +226,15 @@ class StopOrStatus(Resource):
 
 
 def create_app(
-    test_config=None, RE: RunEngine = RunEngine({}), skip_startup_connection=False
+    test_config=None,
+    RE: RunEngine = RunEngine({}),
+    skip_startup_connection: bool = False,
 ) -> Tuple[Flask, BlueskyRunner]:
-    runner = BlueskyRunner(RE, skip_startup_connection=skip_startup_connection)
-    context = setup_context()
+    context = setup_context(
+        wait_for_connection=not skip_startup_connection,
+    )
+
+    runner = BlueskyRunner(RE, context=context)
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
