@@ -3,19 +3,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.attenuator import Attenuator
-from dodal.devices.sample_shutter import SampleShutter
-from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 from ophyd.status import Status
 
 from hyperion.experiment_plans import optimise_attenuation_plan
 from hyperion.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
     Direction,
+    OptimizeAttenuationComposite,
     arm_devices,
     calculate_new_direction,
     check_parameters,
-    create_devices,
     deadtime_calc_new_transmission,
     deadtime_optimisation,
     is_counts_within_target,
@@ -38,14 +35,15 @@ def mock_emit():
     LOGGER.removeHandler(test_handler)
 
 
-def fake_create_devices() -> tuple[SampleShutter, Xspress3Mini, Attenuator]:
-    sample_shutter = i03.sample_shutter(fake_with_ophyd_sim=True)
-    sample_shutter.wait_for_connection()
-    xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True)
-    xspress3mini.wait_for_connection()
-    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
-    attenuator.wait_for_connection()
-    return sample_shutter, xspress3mini, attenuator
+def fake_create_devices() -> OptimizeAttenuationComposite:
+    sample_shutter = i03.sample_shutter(
+        fake_with_ophyd_sim=True, wait_for_connection=True
+    )
+    xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True, wait_for_connection=True)
+    attenuator = i03.attenuator(fake_with_ophyd_sim=True, wait_for_connection=True)
+    return OptimizeAttenuationComposite(
+        sample_shutter=sample_shutter, xspress3mini=xspress3mini, attenuator=attenuator
+    )
 
 
 def get_good_status():
@@ -79,15 +77,13 @@ def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_
 def test_total_counts_calc_new_transmission_raises_warning_on_high_transmission(
     RE: RunEngine, mock_emit
 ):
-    sample_shutter, xspress3mini, attenuator = fake_create_devices()
-    sample_shutter.set = MagicMock(return_value=get_good_status())
-    xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
-    xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
+    composite: OptimizeAttenuationComposite = fake_create_devices()
+    composite.sample_shutter.set = MagicMock(return_value=get_good_status())
+    composite.xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
+    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
     RE(
         total_counts_optimisation(
-            attenuator,
-            xspress3mini,
-            sample_shutter,
+            composite,
             transmission=0.1,
             low_roi=0,
             high_roi=1,
@@ -127,10 +123,10 @@ def test_calculate_new_direction_gives_correct_value(
 def test_deadtime_optimisation_calculates_deadtime_correctly(
     mock_do_device_optimise_iteration, RE: RunEngine
 ):
-    sample_shutter, xspress3mini, attenuator = fake_create_devices()
+    composite: OptimizeAttenuationComposite = fake_create_devices()
 
-    xspress3mini.channel_1.total_time.sim_put(100)
-    xspress3mini.channel_1.reset_ticks.sim_put(101)
+    composite.xspress3mini.channel_1.total_time.sim_put(100)
+    composite.xspress3mini.channel_1.reset_ticks.sim_put(101)
     is_deadtime_optimised.return_value = True
 
     with patch(
@@ -139,9 +135,7 @@ def test_deadtime_optimisation_calculates_deadtime_correctly(
     ) as mock_is_deadtime_optimised:
         RE(
             deadtime_optimisation(
-                attenuator,
-                xspress3mini,
-                sample_shutter,
+                composite,
                 0.5,
                 2,
                 0.01,
@@ -209,25 +203,21 @@ def test_is_counts_within_target_is_false(total_count, lower_limit, upper_limit)
 
 
 def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
-    sample_shutter, xspress3mini, attenuator = fake_create_devices()
-    sample_shutter.set = MagicMock(return_value=get_good_status())
+    composite: OptimizeAttenuationComposite = fake_create_devices()
+    composite.sample_shutter.set = MagicMock(return_value=get_good_status())
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
-    xspress3mini.arm = MagicMock(return_value=get_good_status())
-    xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
+    composite.xspress3mini.arm = MagicMock(return_value=get_good_status())
+    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
     with pytest.raises(AttenuationOptimisationFailedException):
-        RE(
-            total_counts_optimisation(
-                attenuator, xspress3mini, sample_shutter, 1, 0, 10, 0, 5, 2, 1, 0, 0
-            )
-        )
+        RE(total_counts_optimisation(composite, 1, 0, 10, 0, 5, 2, 1, 0, 0))
 
 
 def test_arm_devices_runs_correct_functions(RE: RunEngine):
-    sample_shutter, xspress3mini, _ = fake_create_devices()
-    xspress3mini.detector_state.sim_put("Acquire")
-    xspress3mini.arm = MagicMock(return_value=get_good_status())
-    RE(arm_devices(xspress3mini))
-    xspress3mini.arm.assert_called_once()
+    composite: OptimizeAttenuationComposite = fake_create_devices()
+    composite.xspress3mini.detector_state.sim_put("Acquire")
+    composite.xspress3mini.arm = MagicMock(return_value=get_good_status())
+    RE(arm_devices(composite.xspress3mini))
+    composite.xspress3mini.arm.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -257,16 +247,14 @@ def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
 def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
     RE: RunEngine,
 ):
-    sample_shutter, xspress3mini, attenuator = fake_create_devices()
-    xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
-    sample_shutter.set = MagicMock(return_value=get_good_status())
-    xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
+    composite: OptimizeAttenuationComposite = fake_create_devices()
+    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
+    composite.sample_shutter.set = MagicMock(return_value=get_good_status())
+    composite.xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
     with pytest.raises(AttenuationOptimisationFailedException):
         RE(
             total_counts_optimisation(
-                attenuator,
-                xspress3mini,
-                sample_shutter,
+                composite,
                 1e-6,
                 0,
                 1,
@@ -280,35 +268,27 @@ def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
         )
 
 
-def test_create_new_devices():
-    with patch("hyperion.experiment_plans.optimise_attenuation_plan.i03") as i03:
-        create_devices()
-        i03.sample_shutter.assert_called()
-        i03.xspress3mini.assert_called()
-        i03.attenuator.assert_called()
-
-
 @patch("hyperion.experiment_plans.optimise_attenuation_plan.arm_devices", autospec=True)
 def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
-    sample_shutter, xspress3mini, attenuator = fake_create_devices()
+    composite: OptimizeAttenuationComposite = fake_create_devices()
 
     # For simplicity we just increase the data array each iteration. In reality it's the transmission value that affects the array
     def update_data(_):
         nonlocal iteration
         iteration += 1
-        xspress3mini.dt_corrected_latest_mca.sim_put(([50, 50, 50, 50, 50]) * iteration)
+        composite.xspress3mini.dt_corrected_latest_mca.sim_put(
+            ([50, 50, 50, 50, 50]) * iteration
+        )
         return get_good_status()
 
-    attenuator.set = update_data
+    composite.attenuator.set = update_data
     iteration = 0
-    sample_shutter.set = MagicMock(return_value=get_good_status())
-    xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
+    composite.sample_shutter.set = MagicMock(return_value=get_good_status())
+    composite.xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
 
     RE(
         total_counts_optimisation(
-            attenuator,
-            xspress3mini,
-            sample_shutter,
+            composite,
             transmission=1,
             low_roi=0,
             high_roi=4,
@@ -345,15 +325,13 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     optimisation_type,
     RE: RunEngine,
 ):
-    sample_shutter, xspress3mini, attenuator = fake_create_devices()
-    attenuator.set = MagicMock(return_value=get_good_status())
-    xspress3mini.acquire_time.set = MagicMock(return_value=get_good_status())
+    composite: OptimizeAttenuationComposite = fake_create_devices()
+    composite.attenuator.set = MagicMock(return_value=get_good_status())
+    composite.xspress3mini.acquire_time.set = MagicMock(return_value=get_good_status())
 
     RE(
         optimise_attenuation_plan.optimise_attenuation_plan(
-            xspress3mini,
-            attenuator,
-            sample_shutter,
+            composite,
             optimisation_type=optimisation_type,
         )
     )
@@ -364,6 +342,6 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     else:
         mock_total_counts_optimisation.assert_not_called()
         mock_deadtime_optimisation.assert_called_once()
-    attenuator.set.assert_called_once()
+    composite.attenuator.set.assert_called_once()
     mock_check_parameters.assert_called_once()
-    xspress3mini.acquire_time.set.assert_called_once()
+    composite.xspress3mini.acquire_time.set.assert_called_once()

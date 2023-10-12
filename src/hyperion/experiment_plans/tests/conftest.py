@@ -10,12 +10,19 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.flux import Flux
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from ophyd.epics_motor import EpicsMotor
 from ophyd.status import Status
 
-from hyperion.experiment_plans.flyscan_xray_centre_plan import GridscanComposite
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    FlyScanXRayCentreComposite,
+)
+from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
@@ -213,6 +220,10 @@ def fake_create_rotation_devices(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
+    flux: Flux,
+    undulator: Undulator,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
 ):
     eiger.stage = MagicMock()
     eiger.unstage = MagicMock()
@@ -225,28 +236,37 @@ def fake_create_rotation_devices(
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
-    return {
-        "eiger": eiger,
-        "smargon": smargon,
-        "zebra": zebra,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
-        "attenuator": attenuator,
-    }
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        smargon=smargon,
+        undulator=undulator,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+    )
 
 
 @pytest.fixture
 def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
-    fake_composite = GridscanComposite(
-        aperture_positions=AperturePositions(
-            LARGE=(1, 2, 3, 4, 5),
-            MEDIUM=(2, 3, 3, 5, 6),
-            SMALL=(3, 4, 3, 6, 7),
-            ROBOT_LOAD=(0, 0, 3, 0, 0),
-        ),
-        detector_params=test_fgs_params.hyperion_params.detector_params,
-        fake=True,
+    fake_composite = FlyScanXRayCentreComposite(
+        aperture_scatterguard=i03.aperture_scatterguard(fake_with_ophyd_sim=True),
+        attenuator=i03.attenuator(fake_with_ophyd_sim=True),
+        backlight=i03.backlight(fake_with_ophyd_sim=True),
+        eiger=i03.eiger(fake_with_ophyd_sim=True),
+        fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),
+        flux=i03.flux(fake_with_ophyd_sim=True),
+        s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
+        smargon=smargon,
+        undulator=i03.undulator(fake_with_ophyd_sim=True),
+        synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
+        xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
+        zebra=i03.zebra(fake_with_ophyd_sim=True),
     )
+
     fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.z.user_setpoint._use_limits = False
@@ -259,8 +279,6 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
 
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)
     fake_composite.fast_grid_scan.position_counter.sim_put(0)
-
-    fake_composite.sample_motors = smargon
 
     return fake_composite
 

@@ -1,8 +1,6 @@
 import os
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Literal
-from unittest.mock import call, patch
 
 import h5py
 import numpy as np
@@ -22,7 +20,7 @@ Note that the testing process does now write temporary files to disk."""
 def assert_end_data_correct(nexus_writer: NexusWriter):
     for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
-            assert "end_time" in written_nexus_file["entry"]
+            assert "end_time_estimated" in written_nexus_file["entry"]
 
 
 @pytest.fixture
@@ -148,8 +146,6 @@ def test_given_dummy_data_then_datafile_written_correctly(
             )
 
     assert_data_edge_at(nexus_writer_1.nexus_file, 799)
-
-    nexus_writer_1.update_nexus_file_timestamp()
     assert_end_data_correct(nexus_writer_1)
 
     nexus_writer_2.create_nexus_file()
@@ -225,23 +221,6 @@ def test_nexus_writer_files_are_formatted_as_expected(
         assert file_name.startswith(expected_file_name_prefix)
 
 
-def test_nexus_writer_opens_temp_file_on_exit(single_dummy_file: NexusWriter):
-    nexus_file = single_dummy_file.nexus_file
-    master_file = single_dummy_file.master_file
-    temp_nexus_file = Path(f"{str(nexus_file)}.tmp")
-    temp_master_file = Path(f"{str(master_file)}.tmp")
-    calls_with_temp = [call(temp_nexus_file, "r+"), call(temp_master_file, "r+")]
-    calls_without_temp = [call(nexus_file, "r+"), call(master_file, "r+")]
-
-    single_dummy_file.create_nexus_file()
-
-    with patch("h5py.File") as mock_h5py_file:
-        single_dummy_file.update_nexus_file_timestamp()
-        actual_mock_calls = mock_h5py_file.mock_calls
-        assert all(call in actual_mock_calls for call in calls_with_temp)
-        assert all(call not in actual_mock_calls for call in calls_without_temp)
-
-
 def test_nexus_writer_writes_width_and_height_correctly(
     single_dummy_file: NexusWriter,
 ):
@@ -301,8 +280,6 @@ def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_fi
 
     nexus_writer_1.create_nexus_file()
     nexus_writer_2.create_nexus_file()
-    nexus_writer_1.update_nexus_file_timestamp()
-    nexus_writer_2.update_nexus_file_timestamp()
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
@@ -327,8 +304,6 @@ def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_fi
     ):
         nexus_writer_1.create_nexus_file()
         nexus_writer_2.create_nexus_file()
-        nexus_writer_1.update_nexus_file_timestamp()
-        nexus_writer_2.update_nexus_file_timestamp()
 
         for filename in [
             nexus_writer_1.nexus_file,

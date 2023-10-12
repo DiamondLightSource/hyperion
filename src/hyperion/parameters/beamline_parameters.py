@@ -1,31 +1,10 @@
-from dataclasses import dataclass
 from typing import Any, Tuple, cast
 
 from dodal.utils import get_beamline_name
 
-from hyperion.parameters.constants import (
-    BEAMLINE_PARAMETER_PATHS,
-    SIM_BEAMLINE,
-    SIM_INSERTION_PREFIX,
-)
+from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
 
 BEAMLINE_PARAMETER_KEYWORDS = ["FB", "FULL", "deadtime"]
-
-
-@dataclass
-class BeamlinePrefixes:
-    beamline_prefix: str
-    insertion_prefix: str
-
-
-def get_beamline_prefixes():
-    beamline = get_beamline_name("s03")
-    if beamline == "s03":
-        return BeamlinePrefixes(SIM_BEAMLINE, SIM_INSERTION_PREFIX)
-    if beamline == "i03":
-        return BeamlinePrefixes("BL03I", "SR03I")
-    else:
-        raise Exception(f"Beamline {beamline} is not currently supported by Hyperion")
 
 
 class GDABeamlineParameters:

@@ -45,12 +45,7 @@ def test_when_create_parameters_for_grid_detection_thne_parameters_created(
     "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
     autospec=True,
 )
-@patch(
-    "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.i03",
-    autospec=True,
-)
 def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
-    mock_i03,
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
@@ -59,7 +54,7 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     RE = RunEngine()
     RE(
         pin_centre_then_xray_centre_plan(
-            test_pin_centre_then_xray_centre_params, test_config_files
+            MagicMock(), test_pin_centre_then_xray_centre_params, test_config_files
         )
     )
 
