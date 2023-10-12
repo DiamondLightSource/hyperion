@@ -27,7 +27,7 @@ def _delay_to_avoid_topup(total_run_time, time_to_topup):
     if total_run_time > time_to_topup:
         LOGGER.info(
             """
-            Total rum time for this collection exceeds time to next top up.
+            Total run time for this collection exceeds time to next top up.
             Collection delayed until top up done.
             """
         )
