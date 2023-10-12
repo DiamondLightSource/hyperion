@@ -21,7 +21,6 @@ if [ ! -d "../dodal" ]; then
   git clone git@github.com:DiamondLightSource/dodal.git ../dodal
 fi
 
-pip uninstall -y dodal
 pip install -e ../dodal[dev]
 
 # get dlstbx into our env
