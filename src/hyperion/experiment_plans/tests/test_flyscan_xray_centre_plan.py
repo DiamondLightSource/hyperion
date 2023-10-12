@@ -404,9 +404,6 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     ), patch(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
         autospec=True,
-    ), patch(
-        "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.update_nexus_file_timestamp",
-        autospec=True,
     ):
         RE(flyscan_xray_centre(test_fgs_params))
 

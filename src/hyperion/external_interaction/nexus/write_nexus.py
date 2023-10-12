@@ -5,11 +5,8 @@ gridscan.
 from __future__ import annotations
 
 import math
-import shutil
 from pathlib import Path
 
-import h5py
-import numpy as np
 from nexgen.nxs_utils import Detector, Goniometer, Source
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
 
@@ -17,7 +14,7 @@ from hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     create_detector_parameters,
     create_goniometer_axes,
-    get_current_time,
+    get_start_and_predicted_end_time,
 )
 from hyperion.parameters.internal_parameters import InternalParameters
 
@@ -78,7 +75,9 @@ class NexusWriter:
         Creates a nexus file based on the parameters supplied when this obect was
         initialised.
         """
-        start_time = get_current_time()
+        start_time, est_end_time = get_start_and_predicted_end_time(
+            self.detector.exp_time * self.full_num_of_images
+        )
 
         vds_shape = self.data_shape
 
@@ -95,26 +94,12 @@ class NexusWriter:
             NXmx_Writer.write(
                 image_filename=f"{self.full_filename}",
                 start_time=start_time,
+                est_end_time=est_end_time,
             )
             NXmx_Writer.write_vds(
                 vds_offset=self.start_index,
                 vds_shape=vds_shape,
             )
-
-    def update_nexus_file_timestamp(self):
-        """
-        Write timestamp when finishing run.
-        For the nexus file to be updated atomically, changes are written to a
-        temporary copy which then replaces the original.
-        """
-        for filename in [self.nexus_file, self.master_file]:
-            temp_filename = filename.parent / f"{filename.name}.tmp"
-            shutil.copy(filename, temp_filename)
-            with h5py.File(temp_filename, "r+") as nxsfile:
-                nxsfile["entry"].create_dataset(
-                    "end_time", data=np.string_(get_current_time())
-                )
-            shutil.move(temp_filename, filename)
 
     def get_image_datafiles(self, max_images_per_file=1000):
         return [

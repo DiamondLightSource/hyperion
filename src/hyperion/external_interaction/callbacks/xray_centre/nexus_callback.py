@@ -64,15 +64,3 @@ class GridscanNexusFileCallback(CallbackBase):
             )
             self.nexus_writer_1.create_nexus_file()
             self.nexus_writer_2.create_nexus_file()
-
-    def stop(self, doc: dict):
-        if (
-            self.run_start_uid is not None
-            and doc.get("run_start") == self.run_start_uid
-        ):
-            LOGGER.info("Updating Nexus file timestamps.")
-            assert (
-                self.nexus_writer_1 is not None and self.nexus_writer_2 is not None
-            ), "Failed to update Nexus file timestamps, writers were not initialised."
-            self.nexus_writer_1.update_nexus_file_timestamp()
-            self.nexus_writer_2.update_nexus_file_timestamp()
