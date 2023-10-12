@@ -8,7 +8,7 @@ from blueapi.core.bluesky_types import Device
 # away once we fully use blueapi's plan management components.
 # https://github.com/DiamondLightSource/hyperion/issues/868
 from dodal.beamlines.beamline_utils import _wait_for_connection
-from dodal.utils import get_beamline_based_on_environment_variable, make_all_devices
+from dodal.utils import get_beamline_based_on_environment_variable
 
 import hyperion.experiment_plans as hyperion_plans
 from hyperion.log import LOGGER
@@ -78,14 +78,10 @@ def setup_context(
     context = BlueskyContext()
     context.with_plan_module(hyperion_plans)
 
-    # Ideally would use context.with_dodal_module, but it doesn't support
-    # passing through wait_for_connection or fake_with_ophyd_sim
-    # See https://github.com/DiamondLightSource/blueapi/pull/304
-    for name, device in make_all_devices(
+    context.with_dodal_module(
         get_beamline_based_on_environment_variable(),
         wait_for_connection=wait_for_connection,
         fake_with_ophyd_sim=fake_with_ophyd_sim,
-    ).items():
-        context.device(device, name=name)
+    )
 
     return context
