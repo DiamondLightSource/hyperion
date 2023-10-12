@@ -245,6 +245,11 @@ def run_gridscan_and_move(
     with TRACER.start_span("move_to_result"):
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
+    hyperion.log.LOGGER.info("Recentring smargon co-ordinate system to this point.")
+    yield from bps.mv(
+        fgs_composite.sample_motors.stub_offsets.center_at_current_position, 1
+    )
+
 
 def flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
