@@ -5,11 +5,11 @@ from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from hyperion.log import LOGGER
 
 ALLOWED_MODES = [SynchrotronMode.USER.value, SynchrotronMode.SPECIAL.value]
-DECAY_MODE_CTDW = -1
+DECAY_MODE_COUNTDOWN = -1  # Value of the start_countdown PV when in decay mode
 
 
 def _in_decay_mode(time_to_topup):
-    if time_to_topup == DECAY_MODE_CTDW:
+    if time_to_topup == DECAY_MODE_COUNTDOWN:
         LOGGER.info("Machine in decay mode, gating disabled")
         return True
     return False
