@@ -214,10 +214,11 @@ def rotation_scan_plan(
 
     yield from arm_zebra(composite.zebra)
 
+    total_exposure = expt_params.get_num_images() * exposure_time_s
     # Check topup gate
     yield from check_topup_and_wait_if_necessary(
-        composite.synchrotron(),
-        detector_params,
+        composite.synchrotron,
+        total_exposure,
         ops_time=10.0,  # Additional time to account for rotation, is s
     )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 

@@ -175,9 +175,13 @@ def run_gridscan(
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         # Check topup gate
+        total_exposure = (
+            parameters.experiment_params.get_num_images()
+            * parameters.experiment_params.dwell_time
+        )  # Expected exposure time for full scan
         yield from check_topup_and_wait_if_necessary(
             fgs_composite.synchrotron,
-            parameters.hyperion_params.detector_params,
+            total_exposure,
             30.0,
         )
         yield from bps.kickoff(fgs_motors)

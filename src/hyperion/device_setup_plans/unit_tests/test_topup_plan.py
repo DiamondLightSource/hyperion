@@ -10,8 +10,6 @@ from hyperion.device_setup_plans.check_topup import (
     check_topup_and_wait_if_necessary,
     wait_for_topup_complete,
 )
-from hyperion.parameters import external_parameters
-from hyperion.parameters.internal_parameters import HyperionParameters
 
 
 @pytest.fixture
@@ -19,20 +17,9 @@ def synchrotron():
     return i03.synchrotron(fake_with_ophyd_sim=True)
 
 
-@pytest.fixture
-def fake_parameters():
-    params = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/hyperion_parameters.json"
-    )
-    parameters = HyperionParameters(**params)
-    return parameters.detector_params
-
-
 @patch("src.hyperion.device_setup_plans.check_topup.wait_for_topup_complete")
 @patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
-def test_when_topup_before_end_of_collection_wait(
-    fake_sleep, fake_wait, fake_parameters, synchrotron
-):
+def test_when_topup_before_end_of_collection_wait(fake_sleep, fake_wait, synchrotron):
     synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.USER.value)
     synchrotron.top_up.start_countdown.sim_put(20.0)
     synchrotron.top_up.end_countdown.sim_put(60.0)
@@ -41,7 +28,7 @@ def test_when_topup_before_end_of_collection_wait(
     RE(
         check_topup_and_wait_if_necessary(
             synchrotron=synchrotron,
-            params=fake_parameters,
+            total_exposure_time=40.0,
             ops_time=30.0,
         )
     )
@@ -71,14 +58,14 @@ def test_wait_for_topup_complete(fake_sleep, fake_rd, synchrotron):
 
 @patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
 @patch("src.hyperion.device_setup_plans.check_topup.bps.null")
-def test_no_waiting_if_decay_mode(fake_null, fake_sleep, fake_parameters, synchrotron):
+def test_no_waiting_if_decay_mode(fake_null, fake_sleep, synchrotron):
     synchrotron.top_up.start_countdown.sim_put(-1)
 
     RE = RunEngine()
     RE(
         check_topup_and_wait_if_necessary(
             synchrotron=synchrotron,
-            params=fake_parameters,
+            total_exposure_time=10.0,
             ops_time=1.0,
         )
     )
@@ -87,9 +74,7 @@ def test_no_waiting_if_decay_mode(fake_null, fake_sleep, fake_parameters, synchr
 
 
 @patch("src.hyperion.device_setup_plans.check_topup.bps.null")
-def test_no_waiting_when_mode_does_not_allow_gating(
-    fake_null, fake_parameters, synchrotron
-):
+def test_no_waiting_when_mode_does_not_allow_gating(fake_null, synchrotron):
     synchrotron.top_up.start_countdown.sim_put(1.0)
     synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN.value)
 
@@ -97,7 +82,7 @@ def test_no_waiting_when_mode_does_not_allow_gating(
     RE(
         check_topup_and_wait_if_necessary(
             synchrotron=synchrotron,
-            params=fake_parameters,
+            total_exposure_time=10.0,
             ops_time=1.0,
         )
     )

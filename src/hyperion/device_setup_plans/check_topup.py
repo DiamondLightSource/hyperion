@@ -1,5 +1,4 @@
 import bluesky.plan_stubs as bps
-from dodal.devices.detector import DetectorParams
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 
 from hyperion.log import LOGGER
@@ -50,7 +49,8 @@ def wait_for_topup_complete(synchrotron):
 
 def check_topup_and_wait_if_necessary(
     synchrotron: Synchrotron,
-    params: DetectorParams,
+    total_exposure_time: float,
+    # params: DetectorParams,
     ops_time: float,  # Account for xray centering, rotation speed, etc
 ):  # See https://github.com/DiamondLightSource/hyperion/issues/932
     """A small plan to check if topup gating is permitted and sleep until the topup\
@@ -58,8 +58,7 @@ def check_topup_and_wait_if_necessary(
 
     Args:
         synchrotron (Synchrotron): Synchrotron device.
-        params (DetectorParams): The detector parameters, used to determine length\
-            of scan.
+        total_exposure_time (float): Expected total exposure time for collection.
         ops_time (float): Additional time to account for various operations,\
             eg. x-ray centering. In seconds. Defaults to 30.0.
     """
@@ -68,7 +67,7 @@ def check_topup_and_wait_if_necessary(
     if _in_decay_mode(time_to_topup) or not _gating_permitted(machine_mode):
         yield from bps.null()
         return
-    tot_run_time = params.exposure_time * params.full_number_of_images + ops_time
+    tot_run_time = total_exposure_time + ops_time
     end_topup = yield from bps.rd(synchrotron.top_up.end_countdown)
     time_to_wait = (
         end_topup if _delay_to_avoid_topup(tot_run_time, time_to_topup) else 0.0
