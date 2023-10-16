@@ -71,7 +71,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     ispyb_handler.event(td.test_event_document_pre_data_collection)
     ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
     ispyb_handler.event(td.test_event_document_during_data_collection)
-    ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
+    ispyb_handler.stop(td.test_run_gridscan_stop_document)
 
     mock_ispyb_update_time_and_status.assert_has_calls(
         [
@@ -117,10 +117,9 @@ def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then
 
     for logger in [LOGGER, dodal_logger]:
         logger.info("test")
-
-        latest_record = mock_emit.call_args.args[-1]
+        assert mock_emit.call_count == 1
+        latest_record = mock_emit.mock_calls.args[-1]
         assert latest_record.dc_group_id == DCG_ID
-        # assert not hasattr(latest_record, "dc_group_id")
 
 
 def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
