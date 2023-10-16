@@ -5,7 +5,9 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
-from hyperion.experiment_plans.flyscan_xray_centre_plan import read_hardware_for_ispyb
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_pre_collection,
+)
 from hyperion.parameters.constants import SIM_BEAMLINE, SIM_INSERTION_PREFIX
 
 
@@ -23,6 +25,5 @@ def test_getting_data_for_ispyb():
 
     @bpp.run_decorator()
     def standalone_read_hardware_for_ispyb(und, syn, slits):
-        yield from read_hardware_for_ispyb(und, syn, slits)
-
-    RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+        RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))

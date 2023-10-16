@@ -7,7 +7,11 @@ from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 from hyperion.log import LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
+from hyperion.parameters.constants import (
+    ISPYB_PLAN_NAME,
+    ISPYB_UPDATING_COLLECTION,
+    SIM_ISPYB_CONFIG,
+)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -27,6 +31,7 @@ class BaseISPyBCallback(CallbackBase):
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
         self.uid_to_finalize_on: Optional[str] = None
+        self.ispyb_ids: tuple = (None, None, None)
 
     def _append_to_comment(self, id: int, comment: str):
         assert isinstance(self.ispyb, StoreInIspyb)
@@ -65,6 +70,8 @@ class BaseISPyBCallback(CallbackBase):
             self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"][
                 "s4_slit_gaps_ygap"
             ]
+
+        if event_descriptor.get("name") == ISPYB_UPDATING_COLLECTION:
             self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
                 "data"
             ]["attenuator_actual_transmission"]
