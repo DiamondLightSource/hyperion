@@ -109,7 +109,7 @@ class TestData:
     }
     test_event_document_during_data_collection: dict = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 2666604299.928203,  # made the first s.f. go up by one
+        "time": 2666604299.928203,
         "data": {
             "attenuator_actual_transmission": 1,
             "flux_flux_reading": 10,
