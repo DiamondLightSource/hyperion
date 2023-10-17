@@ -72,6 +72,7 @@ def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
         fast_grid_scan=MagicMock(),
         flux=MagicMock(),
         oav=MagicMock(),
+        pin_tip_detection=MagicMock(),
         smargon=MagicMock(),
         synchrotron=MagicMock(),
         s4_slit_gaps=MagicMock(),

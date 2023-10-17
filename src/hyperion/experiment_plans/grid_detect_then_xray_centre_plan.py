@@ -17,6 +17,7 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -70,6 +71,7 @@ class GridDetectThenXRayCentreComposite:
     fast_grid_scan: FastGridScan
     flux: Flux
     oav: OAV
+    pin_tip_detection: PinTipDetection
     smargon: Smargon
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps

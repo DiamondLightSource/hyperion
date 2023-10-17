@@ -56,7 +56,7 @@ def pin_centre_then_xray_centre_plan(
     oav_config_files["oav_config_json"] = parameters.experiment_params.oav_centring_file
 
     pin_tip_centring_composite = PinTipCentringComposite(
-        oav=composite.oav, smargon=composite.smargon, backlight=composite.backlight
+        oav=composite.oav, smargon=composite.smargon, backlight=composite.backlight, pin_tip_detection=composite.pin_tip_detection
     )
 
     yield from pin_tip_centre_plan(

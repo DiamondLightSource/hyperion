@@ -167,7 +167,7 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
 ):
     smargon.omega.user_readback.sim_put(0)
     composite = PinTipCentringComposite(
-        backlight=MagicMock(), oav=MagicMock(), smargon=smargon
+        backlight=MagicMock(), oav=MagicMock(), smargon=smargon, pin_tip_detection=MagicMock(),
     )
     RE(pin_tip_centre_plan(composite, 50, test_config_files))
 
