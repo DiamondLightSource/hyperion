@@ -26,4 +26,5 @@ def test_getting_data_for_ispyb():
     @bpp.run_decorator()
     def standalone_read_hardware_for_ispyb(und, syn, slits):
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
-        RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
+
+    RE(standalone_read_hardware_for_ispyb(undulator, synchrotron, slit_gaps))
