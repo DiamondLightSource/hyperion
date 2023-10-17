@@ -27,6 +27,8 @@ def fake_devices(smargon: Smargon, backlight: Backlight):
     oav = i03.oav(fake_with_ophyd_sim=True)
     oav.wait_for_connection()
 
+    pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
+
     oav.zoom_controller.zrst.set("1.0x")
     oav.zoom_controller.onst.set("2.0x")
     oav.zoom_controller.twst.set("3.0x")
@@ -52,6 +54,7 @@ def fake_devices(smargon: Smargon, backlight: Backlight):
             backlight=backlight,
             oav=oav,
             smargon=smargon,
+            pin_tip_detection=pin_tip_detection
         )
 
         yield composite, mock_image

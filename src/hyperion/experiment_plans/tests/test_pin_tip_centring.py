@@ -26,7 +26,7 @@ def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_re
 
     oav.mxsc.pin_tip.trigger = MagicMock(side_effect=oav.mxsc.pin_tip.trigger)
 
-    result = RE(move_pin_into_view(oav, smargon))
+    result = RE(move_pin_into_view(oav, smargon, MagicMock()))
 
     oav.mxsc.pin_tip.trigger.assert_called_once()
     assert smargon.x.user_readback.get() == 0
@@ -48,7 +48,7 @@ def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargo
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
-    result = RE(move_pin_into_view(oav, smargon))
+    result = RE(move_pin_into_view(oav, smargon, MagicMock()))
 
     assert smargon.x.user_readback.get() == DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)
@@ -70,7 +70,7 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
-    result = RE(move_pin_into_view(oav, smargon))
+    result = RE(move_pin_into_view(oav, smargon, MagicMock()))
 
     assert smargon.x.user_readback.get() == -DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)
@@ -86,7 +86,7 @@ def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
     oav.mxsc.pin_tip.tip_y.sim_put(100)
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon, max_steps=1))
+        RE(move_pin_into_view(oav, smargon, MagicMock(), max_steps=1))
 
     assert smargon.x.user_readback.get() == -2
 
@@ -101,7 +101,7 @@ def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     oav.mxsc.pin_tip.tip_y.sim_put(-1)
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon, max_steps=1))
+        RE(move_pin_into_view(oav, smargon, MagicMock(), max_steps=1))
 
     assert smargon.x.user_readback.get() == 2
 
@@ -116,7 +116,7 @@ def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_posit
     smargon.x.user_readback.sim_put(0)
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon))
+        RE(move_pin_into_view(oav, smargon, MagicMock()))
 
     assert smargon.x.user_readback.get() == 1
 
@@ -136,7 +136,7 @@ def return_pixel(pixel, *args):
 
 
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
+    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found_ad_mxsc",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(

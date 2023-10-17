@@ -14,6 +14,7 @@ from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import PinTipSource, PIN_TIP_SOURCE
 
 Pixel = Tuple[int, int]
 oav_group = "oav_setup"
@@ -184,6 +185,7 @@ def get_move_required_so_that_beam_is_at_pixel(
 
 
 def wait_for_tip_to_be_found_ad_mxsc(mxsc: MXSC) -> Generator[Msg, None, Tuple[int, int]]:
+    assert PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN
     pin_tip = mxsc.pin_tip
     yield from bps.trigger(pin_tip, wait=True)
     found_tip = yield from bps.rd(pin_tip)
@@ -200,7 +202,7 @@ def wait_for_tip_to_be_found_ad_mxsc(mxsc: MXSC) -> Generator[Msg, None, Tuple[i
 
 
 def wait_for_tip_to_be_found_ophyd(ophyd_pin_tip_detection: PinTipDetection) -> Generator[Msg, None, Tuple[int, int]]:
-
+    assert PIN_TIP_SOURCE == PinTipSource.OHPYD_DEVICE
     found_tip = yield from bps.rd(ophyd_pin_tip_detection)
 
     if found_tip == (None, None):

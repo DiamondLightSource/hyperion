@@ -144,6 +144,7 @@ def detect_grid_and_do_gridscan(
             backlight=composite.backlight,
             oav=composite.oav,
             smargon=composite.smargon,
+            pin_tip_detection=composite.pin_tip_detection,
         )
 
         yield from grid_detection_plan(
