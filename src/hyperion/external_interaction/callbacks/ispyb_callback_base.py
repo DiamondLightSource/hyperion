@@ -31,7 +31,6 @@ class BaseISPyBCallback(CallbackBase):
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
         self.uid_to_finalize_on: Optional[str] = None
-        self.ispyb_ids: tuple = (None, None, None)
 
     def _append_to_comment(self, id: int, comment: str):
         assert isinstance(self.ispyb, StoreInIspyb)

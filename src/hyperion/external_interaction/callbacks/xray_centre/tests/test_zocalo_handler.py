@@ -53,18 +53,13 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
 
-    # FLAG : what is the ispyb_handler vs zocalo_handler??
-
     callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
-
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
     callbacks.ispyb_handler.event(td.test_event_document_pre_data_collection)
-
     callbacks.ispyb_handler.descriptor(
         td.test_descriptor_document_during_data_collection
     )
     callbacks.ispyb_handler.event(td.test_event_document_during_data_collection)
-
     callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
     callbacks.ispyb_handler.stop(td.test_stop_document)
     callbacks.zocalo_handler.stop(td.test_stop_document)

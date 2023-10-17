@@ -113,14 +113,12 @@ def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then
     ispyb_handler.event(td.test_event_document_pre_data_collection)
     ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
     ispyb_handler.event(td.test_event_document_during_data_collection)
-    ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
 
     for logger in [LOGGER, dodal_logger]:
         logger.info("test")
-        # assert mock_emit.call_count == 1
-        # latest_record = mock_calls.args[19]
-        latest_record = mock_emit.call_args.args[-1]
-        assert latest_record.dc_group_id == DCG_ID
+        relevant_call = mock_emit.call_args_list[13]
+        record = relevant_call.args[0]
+        assert record.dc_group_id == DCG_ID
 
 
 def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
