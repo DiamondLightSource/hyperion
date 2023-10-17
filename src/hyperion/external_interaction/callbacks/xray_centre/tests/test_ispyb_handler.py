@@ -116,9 +116,8 @@ def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then
 
     for logger in [LOGGER, dodal_logger]:
         logger.info("test")
-        relevant_call = mock_emit.call_args_list[13]
-        record = relevant_call.args[0]
-        assert record.dc_group_id == DCG_ID
+        latest_record = mock_emit.call_args.args[-1]
+        assert latest_record.dc_group_id == DCG_ID
 
 
 def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
