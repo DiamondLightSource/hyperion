@@ -6,8 +6,8 @@ from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.smargon import Smargon
 from ophyd.signal import Signal
 from ophyd.status import Status

@@ -14,7 +14,7 @@ from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import PinTipSource, PIN_TIP_SOURCE
+from hyperion.parameters.constants import PIN_TIP_SOURCE, PinTipSource
 
 Pixel = Tuple[int, int]
 oav_group = "oav_setup"

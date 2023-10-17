@@ -21,7 +21,11 @@ from hyperion.device_setup_plans.setup_oav import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import OAV_REFRESH_DELAY, PIN_TIP_SOURCE, PinTipSource
+from hyperion.parameters.constants import (
+    OAV_REFRESH_DELAY,
+    PIN_TIP_SOURCE,
+    PinTipSource,
+)
 from hyperion.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5

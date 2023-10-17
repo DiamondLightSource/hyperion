@@ -21,7 +21,11 @@ from hyperion.device_setup_plans.setup_oav import (
     wait_for_tip_to_be_found_ophyd,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import OAV_REFRESH_DELAY, PinTipSource, PIN_TIP_SOURCE
+from hyperion.parameters.constants import (
+    OAV_REFRESH_DELAY,
+    PIN_TIP_SOURCE,
+    PinTipSource,
+)
 from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
