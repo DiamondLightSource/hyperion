@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -11,7 +11,7 @@ from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.oav_grid_detection_plan import (
-    create_devices,
+    OavGridDetectionComposite,
     grid_detection_plan,
 )
 from hyperion.external_interaction.callbacks.grid_detection_callback import (
@@ -47,7 +47,14 @@ def fake_devices(smargon: Smargon, backlight: Backlight):
     ) as mock_image_class:
         mock_image = MagicMock()
         mock_image_class.open.return_value = mock_image
-        yield oav, smargon, backlight, mock_image
+
+        composite = OavGridDetectionComposite(
+            backlight=backlight,
+            oav=oav,
+            smargon=smargon,
+        )
+
+        yield composite, mock_image
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -63,15 +70,18 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     cb = OavSnapshotCallback()
     RE.subscribe(cb)
 
+    composite, image = fake_devices
+
     RE(
         grid_detection_plan(
+            composite,
             parameters=params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
         )
     )
-    assert fake_devices[3].save.call_count == 6
+    assert image.save.call_count == 6
 
     assert len(cb.snapshot_filenames) == 2
     assert len(cb.snapshot_filenames[0]) == 3
@@ -88,7 +98,8 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     test_config_files,
     fake_devices,
 ):
-    oav: OAV = fake_devices[0]
+    composite, _ = fake_devices
+    oav: OAV = composite.oav
     oav.mxsc.pin_tip.tip_x.sim_put(-1)
     oav.mxsc.pin_tip.tip_y.sim_put(-1)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
@@ -97,6 +108,7 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     with pytest.raises(WarningException) as excinfo:
         RE(
             grid_detection_plan(
+                composite,
                 parameters=params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
@@ -104,25 +116,6 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
             )
         )
     assert "No pin found" in excinfo.value.args[0]
-
-
-@patch("dodal.beamlines.i03.device_instantiation", autospec=True)
-def test_create_devices(create_device: MagicMock):
-    create_devices()
-    create_device.assert_has_calls(
-        [
-            call(Smargon, "smargon", "-MO-SGON-01:", True, False),
-            call(OAV, "oav", "", True, False),
-            call(
-                Backlight,
-                name="backlight",
-                prefix="",
-                wait=True,
-                fake=False,
-            ),
-        ],
-        any_order=True,
-    )
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -139,12 +132,15 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     params.beam_centre_i = 4
     params.beam_centre_j = 4
 
+    composite, _ = fake_devices
+
     oav_cb = OavSnapshotCallback()
     grid_param_cb = GridDetectionCallback(params, 0.004)
     RE.subscribe(oav_cb)
     RE.subscribe(grid_param_cb)
     RE(
         grid_detection_plan(
+            composite,
             parameters=params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
@@ -174,12 +170,15 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
 ):
     params = OAVParameters(context="loopCentring", **test_config_files)
 
+    composite, _ = fake_devices
+
     for _ in range(2):
         cb = OavSnapshotCallback()
         RE.subscribe(cb)
 
         RE(
             grid_detection_plan(
+                composite,
                 parameters=params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
@@ -200,11 +199,14 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
 ):
     params = OAVParameters(context="loopCentring", **test_config_files)
 
+    composite, _ = fake_devices
+
     cb = GridDetectionCallback(params, exposure_time=0.5)
     RE.subscribe(cb)
 
     RE(
         grid_detection_plan(
+            composite,
             parameters=params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",

@@ -122,18 +122,3 @@ def test_sensible_error_if_writing_triggered_before_params_received(
         )
 
     assert "Nexus callback did not receive parameters" in excinfo.value.args[0]
-
-
-def test_sensible_error_stop_triggered_before_writing(
-    nexus_writer: MagicMock, dummy_params
-):
-    nexus_handler = GridscanNexusFileCallback()
-    nexus_handler.run_start_uid = "test_run"
-    with pytest.raises(AssertionError) as excinfo:
-        nexus_handler.stop(
-            {
-                "run_start": "test_run",
-            }
-        )
-
-    assert "Failed to update Nexus file timestamps" in excinfo.value.args[0]

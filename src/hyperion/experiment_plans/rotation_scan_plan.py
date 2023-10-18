@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from blueapi.core import MsgGenerator
-from dodal.beamlines import i03
+from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.backlight import Backlight
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
+from dodal.devices.flux import Flux
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
-from ophyd.device import Device
 from ophyd.epics_motor import EpicsMotor
 
 from hyperion.device_setup_plans.manipulate_sample import (
@@ -36,26 +41,34 @@ from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
+from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
-    from ophyd.device import Device
-
     from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
     )
 
 
-def create_devices() -> dict[str, Device]:
-    """Ensures necessary devices have been instantiated and returns a dict with
-    references to them"""
-    return {
-        "eiger": i03.eiger(),
-        "smargon": i03.smargon(),
-        "zebra": i03.zebra(),
-        "detector_motion": i03.detector_motion(),
-        "backlight": i03.backlight(),
-        "attenuator": i03.attenuator(),
-    }
+@dataclasses.dataclass
+class RotationScanComposite:
+    """All devices which are directly or indirectly required by this plan"""
+
+    attenuator: Attenuator
+    backlight: Backlight
+    detector_motion: DetectorMotion
+    eiger: EigerDetector
+    flux: Flux
+    smargon: Smargon
+    undulator: Undulator
+    synchrotron: Synchrotron
+    s4_slit_gaps: S4SlitGaps
+    zebra: Zebra
+
+
+def create_devices(context: BlueskyContext) -> RotationScanComposite:
+    """Ensures necessary devices have been instantiated"""
+
+    return device_composite_from_context(context, RotationScanComposite)
 
 
 DEFAULT_DIRECTION = RotationDirection.NEGATIVE
@@ -122,9 +135,8 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
 @bpp.set_run_key_decorator("rotation_scan_main")
 @bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
 def rotation_scan_plan(
+    composite: RotationScanComposite,
     params: RotationInternalParameters,
-    smargon: Smargon,
-    zebra: Zebra,
     **kwargs,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
@@ -143,7 +155,7 @@ def rotation_scan_plan(
     speed_for_rotation_deg_s = image_width_deg / exposure_time_s
     LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
 
-    motor_time_to_speed = yield from bps.rd(smargon.omega.acceleration)
+    motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
     motor_time_to_speed *= ACCELERATION_MARGIN
     acceleration_offset = motor_time_to_speed * speed_for_rotation_deg_s
     LOGGER.info(
@@ -161,7 +173,7 @@ def rotation_scan_plan(
 
     LOGGER.info(f"moving omega to beginning, start_angle={start_angle_deg}")
     yield from move_to_start_w_buffer(
-        smargon.omega, start_angle_deg, acceleration_offset
+        composite.smargon.omega, start_angle_deg, acceleration_offset
     )
 
     LOGGER.info(
@@ -169,7 +181,7 @@ def rotation_scan_plan(
         f"scan_width = {scan_width_deg} deg"
     )
     yield from setup_zebra_for_rotation(
-        zebra,
+        composite.zebra,
         start_angle=start_angle_deg,
         scan_width=scan_width_deg,
         direction=expt_params.rotation_direction,
@@ -186,48 +198,51 @@ def rotation_scan_plan(
     yield from bps.wait("setup_zebra")
 
     # get some information for the ispyb deposition and trigger the callback
+
     yield from read_hardware_for_ispyb_pre_collection(
-        i03.undulator(),
-        i03.synchrotron(),
-        i03.s4_slit_gaps(),
+        composite.undulator,
+        composite.synchrotron,
+        composite.s4_slit_gaps,
     )
     yield from read_hardware_for_ispyb_during_collection(
-        i03.attenuator(),
-        i03.flux(),
+        composite.attenuator,
+        composite.flux,
     )
     LOGGER.info(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
         f" s, setting rotation speed to {image_width_deg/exposure_time_s} deg/s"
     )
-    yield from set_speed(smargon.omega, image_width_deg, exposure_time_s, wait=True)
+    yield from set_speed(
+        composite.smargon.omega, image_width_deg, exposure_time_s, wait=True
+    )
 
-    yield from arm_zebra(zebra)
+    yield from arm_zebra(composite.zebra)
 
     LOGGER.info(
         f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
         f"through {scan_width_deg}, (before shutter and acceleration adjustment)"
     )
     yield from move_to_end_w_buffer(
-        smargon.omega, scan_width_deg, shutter_opening_degrees, acceleration_offset
+        composite.smargon.omega,
+        scan_width_deg,
+        shutter_opening_degrees,
+        acceleration_offset,
     )
 
     LOGGER.info(f"resetting omega velocity to {DEFAULT_MAX_VELOCITY}")
-    yield from bps.abs_set(smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
+    yield from bps.abs_set(composite.smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
 
 
-def cleanup_plan(
-    zebra: Zebra, smargon: Smargon, detector_motion: DetectorMotion, **kwargs
-):
-    yield from cleanup_sample_environment(detector_motion, group="cleanup")
+def cleanup_plan(composite: RotationScanComposite, **kwargs):
+    yield from cleanup_sample_environment(composite.detector_motion, group="cleanup")
     yield from bps.abs_set(
-        smargon.omega.velocity, DEFAULT_MAX_VELOCITY, group="cleanup"
+        composite.smargon.omega.velocity, DEFAULT_MAX_VELOCITY, group="cleanup"
     )
-    yield from make_trigger_safe(zebra, group="cleanup")
-    yield from bpp.finalize_wrapper(disarm_zebra(zebra), bps.wait("cleanup"))
+    yield from make_trigger_safe(composite.zebra, group="cleanup")
+    yield from bpp.finalize_wrapper(disarm_zebra(composite.zebra), bps.wait("cleanup"))
 
 
-def rotation_scan(parameters: Any) -> MsgGenerator:
-    devices = create_devices()
+def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGenerator:
     subscriptions = RotationCallbackCollection.from_params(parameters)
 
     @bpp.subs_decorator(list(subscriptions))
@@ -241,30 +256,33 @@ def rotation_scan(parameters: Any) -> MsgGenerator:
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
-        eiger: EigerDetector = devices["eiger"]
+        eiger: EigerDetector = composite.eiger
         eiger.set_detector_parameters(params.hyperion_params.detector_params)
 
         @bpp.stage_decorator([eiger])
-        @bpp.finalize_decorator(lambda: cleanup_plan(**devices))
+        @bpp.finalize_decorator(lambda: cleanup_plan(composite=composite))
         def rotation_with_cleanup_and_stage(params: RotationInternalParameters):
             LOGGER.info("setting up sample environment...")
             yield from setup_sample_environment(
-                devices["detector_motion"],
-                devices["backlight"],
-                devices["attenuator"],
+                composite.detector_motion,
+                composite.backlight,
+                composite.attenuator,
                 params.hyperion_params.ispyb_params.transmission_fraction,
                 params.hyperion_params.detector_params.detector_distance,
             )
             LOGGER.info("moving to position (if specified)")
             yield from move_x_y_z(
-                devices["smargon"],
+                composite.smargon,
                 params.experiment_params.x,
                 params.experiment_params.y,
                 params.experiment_params.z,
                 group="move_x_y_z",
             )
 
-            yield from rotation_scan_plan(params, **devices)
+            yield from rotation_scan_plan(
+                composite,
+                params,
+            )
 
         LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
