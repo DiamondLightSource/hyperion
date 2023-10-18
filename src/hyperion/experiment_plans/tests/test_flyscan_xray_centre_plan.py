@@ -49,18 +49,6 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-mock_subscriptions_dict = {
-    "descriptor": "123abc",
-    "data": {
-        "undulator_gap": 0,
-        "synchrotron_machine_status_synchrotron_mode": 0,
-        "s4_slit_gaps_xgap": 0,
-        "s4_slit_gaps_ygap": 0,
-        "attenuator_actual_transmission": 0,
-        "flux_flux_reading": 10,
-    },
-}
-
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
     test_fgs_params: GridscanInternalParameters,
@@ -382,8 +370,6 @@ def test_logging_within_plan(
             },
         }
     )
-
-    mock_subscriptions.ispyb_handler.event(mock_subscriptions_dict)
 
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
