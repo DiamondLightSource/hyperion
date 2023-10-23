@@ -180,9 +180,9 @@ def run_gridscan(
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         # Check topup gate
+        dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000.0
         total_exposure = (
-            parameters.experiment_params.get_num_images()
-            * parameters.experiment_params.dwell_time
+            parameters.experiment_params.get_num_images() * dwell_time_in_s
         )  # Expected exposure time for full scan
         yield from check_topup_and_wait_if_necessary(
             fgs_composite.synchrotron,
