@@ -1,15 +1,24 @@
 import os
+from tkinter import S
+from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.flux import Flux
+from ophyd.sim import make_fake_device
 
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
+)
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
+from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -33,7 +42,12 @@ def RE():
 def fake_rotation_scan(
     parameters: RotationInternalParameters,
     subscriptions: RotationCallbackCollection,
+    after_open_assert: Callable | None = None,
+    after_main_assert: Callable | None = None,
 ):
+    attenuator = make_fake_device(Attenuator)(name="attenuator")
+    flux = make_fake_device(Flux)(name="flux")
+
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -43,6 +57,9 @@ def fake_rotation_scan(
         }
     )
     def plan():
+        if after_open_assert:
+            after_open_assert(subscriptions)
+
         @bpp.set_run_key_decorator("rotation_scan_main")
         @bpp.run_decorator(
             md={
@@ -50,6 +67,9 @@ def fake_rotation_scan(
             }
         )
         def fake_main_plan():
+            yield from read_hardware_for_ispyb_during_collection(attenuator, flux)
+            if after_main_assert:
+                after_main_assert(subscriptions)
             yield from bps.sleep(0)
 
         yield from fake_main_plan()
@@ -138,7 +158,7 @@ def test_zocalo_start_and_end_triggered_once(
     cb.nexus_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
-    cb.ispyb_handler.ispyb_ids = [0]
+    cb.ispyb_handler.ispyb_ids = (0, 0)
 
     RE(fake_rotation_scan(params, cb))
 
@@ -163,3 +183,31 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     cb.ispyb_handler.stop = MagicMock(autospec=True)
     with pytest.raises(ISPyBDepositionNotMade):
         RE(fake_rotation_scan(params, cb))
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloInteractor",
+    autospec=True,
+)
+def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zocalo(
+    zocalo,
+    RE: RunEngine,
+    params: RotationInternalParameters,
+):
+    cb = RotationCallbackCollection.from_params(params)
+    cb.nexus_handler.start = MagicMock(autospec=True)
+    cb.ispyb_handler.ispyb = MagicMock(spec=StoreInIspyb)
+    cb.ispyb_handler.ispyb_ids = (0, 0)
+    cb.zocalo_handler.zocalo_interactor.run_start = MagicMock()
+    cb.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+
+    def after_open_assert(callbacks: RotationCallbackCollection):
+        callbacks.ispyb_handler.ispyb.begin_deposition.assert_not_called()
+
+    def after_main_assert(callbacks: RotationCallbackCollection):
+        callbacks.ispyb_handler.ispyb.begin_deposition.assert_called_once()
+        cb.zocalo_handler.zocalo_interactor.run_end.assert_not_called()
+
+    RE(fake_rotation_scan(params, cb, after_open_assert, after_main_assert))
+
+    cb.zocalo_handler.zocalo_interactor.run_end.assert_called_once()
