@@ -19,6 +19,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.epics_motor import EpicsMotor
 
+from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_x_y_z,
@@ -217,6 +218,14 @@ def rotation_scan_plan(
     )
 
     yield from arm_zebra(composite.zebra)
+
+    total_exposure = expt_params.get_num_images() * exposure_time_s
+    # Check topup gate
+    yield from check_topup_and_wait_if_necessary(
+        composite.synchrotron,
+        total_exposure,
+        ops_time=10.0,  # Additional time to account for rotation, is s
+    )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
     LOGGER.info(
         f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
