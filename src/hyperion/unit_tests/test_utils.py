@@ -6,15 +6,15 @@ test_wavelengths = [1.620709, 1.2398425, 0.9762539, 0.8265616, 0.68880138]
 test_energies = [7650, 10000, 12700, 15000, 18000]
 
 
-def test_ev_to_a_converter():
-    for i in range(len(test_energies)):
-        assert convert_eV_to_angstrom(test_energies[i]) == pytest.approx(
-            test_wavelengths[i]
-        )
+@pytest.mark.parametrize(
+    "test_wavelength, test_energy", list(zip(test_wavelengths, test_energies))
+)
+def test_ev_to_a_converter(test_wavelength, test_energy):
+    assert convert_eV_to_angstrom(test_energy) == pytest.approx(test_wavelength)
 
 
-def test_a_to_ev_converter():
-    for i in range(len(test_wavelengths)):
-        assert convert_angstrom_to_eV(test_wavelengths[i]) == pytest.approx(
-            test_energies[i]
-        )
+@pytest.mark.parametrize(
+    "test_wavelength, test_energy", list(zip(test_wavelengths, test_energies))
+)
+def test_a_to_ev_converter(test_wavelength, test_energy):
+    assert convert_angstrom_to_eV(test_wavelength) == pytest.approx(test_energy)

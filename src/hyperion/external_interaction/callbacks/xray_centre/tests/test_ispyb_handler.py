@@ -4,6 +4,9 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from dodal.log import LOGGER as dodal_logger
 
+from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
