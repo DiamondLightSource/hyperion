@@ -12,16 +12,15 @@ from hyperion.parameters.constants import (
     ISPYB_UPDATING_COLLECTION,
     SIM_ISPYB_CONFIG,
 )
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.internal_parameters import InternalParameters
 
 
 class BaseISPyBCallback(CallbackBase):
-    def __init__(self, parameters: GridscanInternalParameters):
+    def __init__(self, parameters: InternalParameters):
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
+        self.ispyb: StoreInIspyb
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)

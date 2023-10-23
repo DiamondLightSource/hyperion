@@ -4,9 +4,9 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreRotationInIspyb
-from hyperion.log import set_dcgid_tag
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
+from hyperion.log import LOGGER, set_dcgid_tag
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
 )
 
 
@@ -27,7 +27,8 @@ class RotationISPyBCallback(BaseISPyBCallback):
     Usually used as part of a RotationCallbackCollection.
     """
 
-    def __init__(self, parameters: GridscanInternalParameters):
+    def __init__(self, parameters: RotationInternalParameters):
+        self.params: RotationInternalParameters
         super().__init__(parameters)
         self.ispyb: StoreRotationInIspyb = StoreRotationInIspyb(
             self.ispyb_config, self.params
@@ -35,7 +36,13 @@ class RotationISPyBCallback(BaseISPyBCallback):
         self.ispyb_ids: tuple[int, int] | tuple[None, None] = (None, None)
 
     def append_to_comment(self, comment: str):
+        assert self.ispyb_ids[0] is not None
         self._append_to_comment(self.ispyb_ids[0], comment)
+
+    def start(self, doc: dict):
+        LOGGER.info("ISPYB handler received start document.")
+        if doc.get("subplan_name") == "rotation_scan_main":
+            self.uid_to_finalize_on = doc.get("uid")
 
     def event(self, doc: dict):
         super().event(doc)
