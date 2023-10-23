@@ -1,5 +1,4 @@
 import os
-from tkinter import S
 from typing import Callable
 from unittest.mock import MagicMock, patch
 
