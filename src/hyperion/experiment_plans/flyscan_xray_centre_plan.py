@@ -26,7 +26,10 @@ from dodal.devices.zebra import Zebra
 
 import hyperion.log
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
-from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
+    read_hardware_for_ispyb_pre_collection,
+)
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_gridscan,
@@ -152,10 +155,12 @@ def run_gridscan(
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
-        yield from read_hardware_for_ispyb(
+        yield from read_hardware_for_ispyb_pre_collection(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+        )
+        yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator,
             fgs_composite.flux,
         )

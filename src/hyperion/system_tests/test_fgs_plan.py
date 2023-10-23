@@ -8,11 +8,14 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
 
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
+    read_hardware_for_ispyb_pre_collection,
+)
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
-    read_hardware_for_ispyb,
     run_gridscan,
 )
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
@@ -103,7 +106,7 @@ def test_run_gridscan(
 
 
 @pytest.mark.s03
-def test_read_hardware_for_ispyb(
+def test_read_hardware_for_ispyb_pre_collection(
     RE: RunEngine,
     fgs_composite: FlyScanXRayCentreComposite,
 ):
@@ -115,7 +118,8 @@ def test_read_hardware_for_ispyb(
 
     @bpp.run_decorator()
     def read_run(u, s, g, a, f):
-        yield from read_hardware_for_ispyb(u, s, g, a, f)
+        yield from read_hardware_for_ispyb_pre_collection(u, s, g)
+        yield from read_hardware_for_ispyb_during_collection(a, f)
 
     RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux))
 

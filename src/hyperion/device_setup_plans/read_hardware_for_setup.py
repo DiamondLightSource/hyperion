@@ -4,15 +4,16 @@ import bluesky.plan_stubs as bps
 from dodal.beamlines.i03 import Attenuator, Flux, S4SlitGaps, Synchrotron, Undulator
 
 import hyperion.log
-from hyperion.parameters.constants import ISPYB_PLAN_NAME
+from hyperion.parameters.constants import (
+    ISPYB_PLAN_NAME,
+    ISPYB_UPDATING_COLLECTION,
+)
 
 
-def read_hardware_for_ispyb(
+def read_hardware_for_ispyb_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
-    attenuator: Attenuator,
-    flux: Flux,
 ):
     hyperion.log.LOGGER.info(
         "Reading status of beamline parameters for ispyb deposition."
@@ -24,6 +25,14 @@ def read_hardware_for_ispyb(
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
     yield from bps.read(s4_slit_gaps.xgap)
     yield from bps.read(s4_slit_gaps.ygap)
+    yield from bps.save()
+
+
+def read_hardware_for_ispyb_during_collection(attenuator: Attenuator, flux: Flux):
+    hyperion.log.LOGGER.info(
+        "Reading status of beamline parameters for ispyb deposition."
+    )
+    yield from bps.create(name=ISPYB_UPDATING_COLLECTION)
     yield from bps.read(attenuator.actual_transmission)
     yield from bps.read(flux.flux_reading)
     yield from bps.save()
