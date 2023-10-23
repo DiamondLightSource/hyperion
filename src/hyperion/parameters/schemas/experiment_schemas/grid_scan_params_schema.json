@@ -20,7 +20,7 @@
         "z_step_size": {
             "type": "number"
         },
-        "dwell_time": {
+        "dwell_time_ms": {
             "type": "number"
         },
         "x_start": {

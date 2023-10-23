@@ -25,7 +25,10 @@ from hyperion.device_setup_plans.manipulate_sample import (
     move_x_y_z,
     setup_sample_environment,
 )
-from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
+    read_hardware_for_ispyb_pre_collection,
+)
 from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     disarm_zebra,
@@ -196,14 +199,16 @@ def rotation_scan_plan(
     yield from bps.wait("setup_zebra")
 
     # get some information for the ispyb deposition and trigger the callback
-    yield from read_hardware_for_ispyb(
+
+    yield from read_hardware_for_ispyb_pre_collection(
         composite.undulator,
         composite.synchrotron,
         composite.s4_slit_gaps,
+    )
+    yield from read_hardware_for_ispyb_during_collection(
         composite.attenuator,
         composite.flux,
     )
-
     LOGGER.info(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
         f" s, setting rotation speed to {image_width_deg/exposure_time_s} deg/s"

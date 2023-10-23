@@ -14,11 +14,15 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
+    read_hardware_for_ispyb_pre_collection,
+)
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
-    read_hardware_for_ispyb,
+    read_hardware_for_ispyb_pre_collection,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_gridscan_valid,
@@ -40,22 +44,10 @@ from hyperion.external_interaction.system_tests.conftest import (
 )
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import ISPYB_PLAN_NAME
+from hyperion.parameters.constants import ISPYB_PLAN_NAME, ISPYB_UPDATING_COLLECTION
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-
-mock_subscriptions_dict = {
-    "descriptor": "123abc",
-    "data": {
-        "undulator_gap": 0,
-        "synchrotron_machine_status_synchrotron_mode": 0,
-        "s4_slit_gaps_xgap": 0,
-        "s4_slit_gaps_ygap": 0,
-        "attenuator_actual_transmission": 0,
-        "flux_flux_reading": 10,
-    },
-}
 
 
 def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
@@ -95,14 +87,13 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         synchrotron_test_value
     )
 
-    transmission_test_value = 0.5
+    transmission_test_value = 0.01
     fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)
 
     xgap_test_value = 0.1234
     ygap_test_value = 0.2345
     fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
     fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)
-
     flux_test_value = 10.0
     fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
 
@@ -112,7 +103,8 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
 
     def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
         yield from bps.open_run()
-        yield from read_hardware_for_ispyb(und, syn, slits, attn, fl)
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+        yield from read_hardware_for_ispyb_during_collection(attn, fl)
         yield from bps.close_run()
 
     RE(
@@ -160,7 +152,27 @@ def test_results_adjusted_and_passed_to_move_xyz(
         {"uid": "123abc", "name": ISPYB_PLAN_NAME}
     )
     mock_subscriptions.ispyb_handler.event(
-        mock_subscriptions_dict,
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+            },
+        }
+    )
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "abc123", "name": ISPYB_UPDATING_COLLECTION}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "abc123",
+            "data": {
+                "attenuator_actual_transmission": 0,
+                "flux_flux_reading": 10,
+            },
+        }
     )
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
@@ -272,7 +284,31 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "123abc", "name": ISPYB_PLAN_NAME}
     )
-    mock_subscriptions.ispyb_handler.event(mock_subscriptions_dict)
+
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+            },
+        }
+    )
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "abc123", "name": ISPYB_UPDATING_COLLECTION}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "abc123",
+            "data": {
+                "attenuator_actual_transmission": 0,
+                "flux_flux_reading": 10,
+            },
+        }
+    )
+
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -310,7 +346,31 @@ def test_logging_within_plan(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "123abc", "name": ISPYB_PLAN_NAME}
     )
-    mock_subscriptions.ispyb_handler.event(mock_subscriptions_dict)
+
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+            },
+        }
+    )
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "abc123", "name": ISPYB_UPDATING_COLLECTION}
+    )
+    mock_subscriptions.ispyb_handler.event(
+        {
+            "descriptor": "abc123",
+            "data": {
+                "attenuator_actual_transmission": 0,
+                "flux_flux_reading": 10,
+            },
+        }
+    )
+
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
