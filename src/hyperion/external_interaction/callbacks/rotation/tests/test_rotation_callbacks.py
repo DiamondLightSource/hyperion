@@ -91,6 +91,9 @@ def test_nexus_handler_gets_documents_in_mock_plan(
 
     RE(fake_rotation_scan(params, cb))
 
+    params.hyperion_params.ispyb_params.transmission_fraction = 1.0
+    params.hyperion_params.ispyb_params.flux = 10.0
+
     assert cb.nexus_handler.start.call_count == 2
     call_content_outer = cb.nexus_handler.start.call_args_list[0].args[0]
     assert call_content_outer["hyperion_internal_parameters"] == params.json()
