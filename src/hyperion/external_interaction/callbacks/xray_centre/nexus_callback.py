@@ -4,7 +4,7 @@ from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import ISPYB_PLAN_NAME
+from hyperion.parameters.constants import ISPYB_HARDWARE_READ_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -15,7 +15,7 @@ class GridscanNexusFileCallback(CallbackBase):
     parameters. Initialises on recieving a 'start' document for the \
     'run_gridscan_move_and_tidy' sub plan, which must also contain the run parameters, \
     as metadata under the 'hyperion_internal_parameters' key. Actually writes the \
-    nexus files on updates the timestamps on recieving the 'ispyb_readings' event \
+    nexus files on updates the timestamps on recieving the 'ispyb_reading_hardware' event \
     document, and finalises the files on getting a 'stop' document for the whole run.
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
@@ -45,7 +45,7 @@ class GridscanNexusFileCallback(CallbackBase):
             self.run_start_uid = doc.get("uid")
 
     def descriptor(self, doc):
-        if doc.get("name") == ISPYB_PLAN_NAME:
+        if doc.get("name") == ISPYB_HARDWARE_READ_PLAN:
             assert (
                 self.parameters is not None
             ), "Nexus callback did not receive parameters before being asked to write!"
