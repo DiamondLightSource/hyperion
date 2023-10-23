@@ -478,7 +478,7 @@ def test_no_exception_during_run_results_in_good_run_status(
 
 
 @patch("ispyb.open", autospec=True)
-def test_ispyb_deposition_comment_correct(
+def test_ispyb_deposition_comment_correct_for_2d_grid_scan(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb: Store2DGridscanInIspyb,
 ):
@@ -541,6 +541,26 @@ def test_ispyb_deposition_comment_for_3D_correct(
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 images "
         "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
     )
+
+
+@patch("ispyb.open", autospec=True)
+def test_ispyb_deposition_comment_correct_for_rotation_scan(
+    mock_ispyb_conn: MagicMock,
+    dummy_rotation_ispyb: StoreRotationInIspyb,
+):
+    setup_mock_return_values(mock_ispyb_conn)
+    mock_mx_aquisition = (
+        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+    )
+    mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+
+    dummy_rotation_ispyb.ispyb_params.comment = "Test comment"
+
+    dummy_rotation_ispyb.begin_deposition()
+    mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
+
+    upserted_param_value_list = mock_upsert_call_args[0]
+    assert upserted_param_value_list[29] == ("Hyperion: Test comment")
 
 
 @patch("ispyb.open", autospec=True)

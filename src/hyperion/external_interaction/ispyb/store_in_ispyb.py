@@ -303,7 +303,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         self._end_deposition(self.data_collection_id, success, reason)
 
     def _construct_comment(self) -> str:
-        return "Hyperion rotation scan"
+        return "Hyperion: " + self.ispyb_params.comment
 
 
 class StoreGridscanInIspyb(StoreInIspyb):
