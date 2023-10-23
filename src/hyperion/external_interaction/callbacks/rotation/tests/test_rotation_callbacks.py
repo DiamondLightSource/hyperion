@@ -76,8 +76,12 @@ def fake_rotation_scan(
     return plan()
 
 
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    autospec=True,
+)
 def test_nexus_handler_gets_documents_in_mock_plan(
-    RE: RunEngine, params: RotationInternalParameters
+    ispyb, RE: RunEngine, params: RotationInternalParameters
 ):
     with patch(
         "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
@@ -104,8 +108,12 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     "hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
 )
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    autospec=True,
+)
 def test_nexus_handler_only_writes_once(
-    nexus_writer, RE: RunEngine, params: RotationInternalParameters
+    ispyb, nexus_writer, RE: RunEngine, params: RotationInternalParameters
 ):
     with patch(
         "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
@@ -120,7 +128,12 @@ def test_nexus_handler_only_writes_once(
     cb.nexus_handler.writer.create_nexus_file.assert_called_once()
 
 
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    autospec=True,
+)
 def test_nexus_handler_triggers_write_file_when_told(
+    ispyb,
     RE: RunEngine,
     params: RotationInternalParameters,
 ):
@@ -150,7 +163,12 @@ def test_nexus_handler_triggers_write_file_when_told(
     "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloInteractor",
     autospec=True,
 )
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    autospec=True,
+)
 def test_zocalo_start_and_end_triggered_once(
+    ispyb,
     zocalo,
     RE: RunEngine,
     params: RotationInternalParameters,
