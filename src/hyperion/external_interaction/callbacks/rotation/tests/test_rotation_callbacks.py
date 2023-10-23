@@ -184,6 +184,8 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     cb.nexus_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
+    cb.ispyb_handler.event = MagicMock(autospec=True)
+    cb.ispyb_handler.ispyb = MagicMock(autospec=True)
     with pytest.raises(ISPyBDepositionNotMade):
         RE(fake_rotation_scan(params, cb))
 
@@ -214,3 +216,33 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
     RE(fake_rotation_scan(params, cb, after_open_assert, after_main_assert))
 
     cb.zocalo_handler.zocalo_interactor.run_end.assert_called_once()
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloInteractor",
+    autospec=True,
+)
+def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
+    zocalo,
+    RE: RunEngine,
+    params: RotationInternalParameters,
+):
+    cb = RotationCallbackCollection.from_params(params)
+    cb.nexus_handler.start = MagicMock(autospec=True)
+    cb.ispyb_handler.start = MagicMock(
+        autospec=True, side_effect=cb.ispyb_handler.start
+    )
+    cb.ispyb_handler.ispyb = MagicMock(spec=StoreInIspyb)
+    cb.ispyb_handler.ispyb_ids = (0, 0)
+    cb.zocalo_handler.zocalo_interactor.run_start = MagicMock()
+    cb.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+
+    def after_open_assert(callbacks: RotationCallbackCollection):
+        callbacks.ispyb_handler.start.assert_called_once()
+        assert callbacks.ispyb_handler.uid_to_finalize_on is None
+
+    def after_main_assert(callbacks: RotationCallbackCollection):
+        assert callbacks.ispyb_handler.start.call_count == 2
+        assert callbacks.ispyb_handler.uid_to_finalize_on is not None
+
+    RE(fake_rotation_scan(params, cb, after_open_assert, after_main_assert))
