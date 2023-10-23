@@ -30,7 +30,7 @@ def test_parameters_load_from_file():
     assert expt_params["x_step_size"] == 0.1
     assert expt_params["y_step_size"] == 0.1
     assert expt_params["z_step_size"] == 0.1
-    assert expt_params["dwell_time"] == 0.2
+    assert expt_params["dwell_time_ms"] == 0.2
     assert expt_params["x_start"] == 0.0
     assert expt_params["y1_start"] == 0.0
     assert expt_params["y2_start"] == 0.0
