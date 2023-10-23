@@ -51,7 +51,7 @@ class GridDetectionCallback(CallbackBase):
 
     def get_grid_parameters(self) -> GridScanParams:
         return GridScanParams(
-            dwell_time=self.exposure_time * 1000,
+            dwell_time_ms=self.exposure_time * 1000,
             x_start=self.start_positions[0][0],
             y1_start=self.start_positions[0][1],
             y2_start=self.start_positions[0][1],

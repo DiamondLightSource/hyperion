@@ -60,7 +60,7 @@
         "x_step_size": 0.1,
         "y_step_size": 0.1,
         "z_step_size": 0.1,
-        "dwell_time": 0.2,
+        "dwell_time_ms": 0.2,
         "x_start": 0.0,
         "y1_start": 0.0,
         "y2_start": 0.0,
