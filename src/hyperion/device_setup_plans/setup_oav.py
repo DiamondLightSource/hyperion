@@ -149,7 +149,7 @@ def get_move_required_so_that_beam_is_at_pixel(
     return calculate_x_y_z_of_pixel(current_motor_xyz, current_angle, pixel, oav_params)
 
 
-def wait_for_tip_to_be_found(mxsc: MXSC):
+def wait_for_tip_to_be_found(mxsc: MXSC) -> Generator[Msg, None, Tuple[int, int]]:
     pin_tip = mxsc.pin_tip
     yield from bps.trigger(pin_tip, wait=True)
     found_tip = yield from bps.rd(pin_tip)

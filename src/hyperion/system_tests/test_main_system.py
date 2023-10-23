@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import functools
 import json
+import os
 import threading
 from dataclasses import dataclass
 from sys import argv
@@ -10,6 +12,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from blueapi.core import BlueskyContext
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.zebra import Zebra
 from flask.testing import FlaskClient
 
 from hyperion.__main__ import (
@@ -26,6 +30,7 @@ from hyperion.parameters import external_parameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from hyperion.utils.context import device_composite_from_context
 
 FGS_ENDPOINT = "/flyscan_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
@@ -45,6 +50,9 @@ Every test in this file which uses the test_env fixture should either:
     - set an error on the mock run engine
 In order to avoid threads which get left alive forever after test completion
 """
+
+
+autospec_patch = functools.partial(patch, autospec=True, spec_set=True)
 
 
 class MockRunEngine:
@@ -298,79 +306,53 @@ def test_cli_args_parse():
     assert test_args == ("DEBUG", True, True, True)
 
 
-@patch("dodal.beamlines.i03.Attenuator", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.Flux", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.DetectorMotion", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.OAV", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.ApertureScatterguard", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.Backlight", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.EigerDetector", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.FastGridScan", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.S4SlitGaps", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.Smargon", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.Synchrotron", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.Undulator", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.Zebra", autospec=True, spec_set=True)
-@patch("dodal.beamlines.i03.XBPMFeedback", autospec=True, spec_set=True)
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
-    autospec=True,
-)
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", autospec=True)
-def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected(
-    type_comparison,
-    mock_get_beamline_params,
-    xbpm_feedback,
-    zebra,
-    undulator,
-    synchrotron,
-    smargon,
-    s4_slits,
-    flyscan_xray_centre,
-    eiger,
-    backlight,
-    aperture_scatterguard,
-    oav,
-    detector_motion,
-    attenuator,
-    flux,
-):
-    type_comparison.return_value = True
-    BlueskyRunner(MagicMock(), skip_startup_connection=False)
-    zebra.return_value.wait_for_connection.assert_called()
-    undulator.return_value.wait_for_connection.assert_called()
-    synchrotron.return_value.wait_for_connection.assert_called()
-    smargon.return_value.wait_for_connection.assert_called()
-    s4_slits.return_value.wait_for_connection.assert_called()
-    flyscan_xray_centre.return_value.wait_for_connection.assert_called()
-    eiger.return_value.wait_for_connection.assert_called()
-    backlight.return_value.wait_for_connection.assert_called()
-    aperture_scatterguard.return_value.wait_for_connection.assert_called()
-    oav.return_value.wait_for_connection.assert_called()
-    detector_motion.return_value.wait_for_connection.assert_called()
-    attenuator.return_value.wait_for_connection.assert_called()
-    flux.return_value.wait_for_connection.assert_called()
+def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected():
+    zebra = MagicMock(spec=Zebra)
+    attenuator = MagicMock(spec=Attenuator)
+
+    context = BlueskyContext()
+    context.device(zebra, "zebra")
+    context.device(attenuator, "attenuator")
+
+    @dataclass
+    class FakeComposite:
+        attenuator: Attenuator
+        zebra: Zebra
+
+    # A fake setup for a plan that uses two devices: attenuator and zebra.
+    def fake_create_devices(context) -> FakeComposite:
+        print("CREATING DEVICES")
+        return device_composite_from_context(context, FakeComposite)
+
+    with patch.dict(
+        "hyperion.__main__.PLAN_REGISTRY",
+        {
+            "flyscan_xray_centre": {
+                "setup": fake_create_devices,
+                "run": MagicMock(),
+                "param_type": MagicMock(),
+                "callback_collection_type": MagicMock(),
+            },
+        },
+        clear=True,
+    ):
+        print(PLAN_REGISTRY)
+
+        BlueskyRunner(
+            RE=MagicMock(),
+            context=context,
+            skip_startup_connection=False,
+        )
+
+    zebra.wait_for_connection.assert_called()
+    attenuator.wait_for_connection.assert_called()
 
 
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.EigerDetector",
-    autospec=True,
-    spec_set=True,
-)
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.GridscanComposite",
-    autospec=True,
-    spec_set=True,
-)
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
-    autospec=True,
-)
 @patch(
     "hyperion.experiment_plans.flyscan_xray_centre_plan.create_devices", autospec=True
 )
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_setup, mock_get_beamline_params, mock_fgs, mock_eiger
+    mock_setup,
 ):
     mock_setup = MagicMock()
     with patch.dict(
@@ -383,32 +365,15 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
                 "callback_collection_type": MagicMock(),
             },
         },
+        clear=True,
     ):
-        runner = BlueskyRunner(MagicMock(), skip_startup_connection=True)
+        runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
         runner.start(None, None, "flyscan_xray_centre")
         mock_setup.assert_called_once()
 
 
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.EigerDetector",
-    autospec=True,
-    spec_set=True,
-)
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.GridscanComposite",
-    autospec=True,
-    spec_set=True,
-)
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.get_beamline_parameters",
-    autospec=True,
-)
-def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup(
-    mock_get_beamline_params,
-    mock_fgs,
-    mock_eiger,
-):
+def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup():
     mock_setup = MagicMock()
     with patch.dict(
         "hyperion.__main__.PLAN_REGISTRY",
@@ -440,7 +405,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
         },
         clear=True,
     ):
-        BlueskyRunner(MagicMock(), skip_startup_connection=False)
+        BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=False)
         assert mock_setup.call_count == 4
 
 
@@ -472,10 +437,11 @@ def test_warn_exception_during_plan_causes_warning_in_log(
 
 
 def test_when_context_created_then_contains_expected_number_of_plans():
-    context = setup_context()
+    with patch.dict(os.environ, {"BEAMLINE": "i03"}):
+        context = setup_context(wait_for_connection=False)
 
-    plan_names = context.plans.keys()
+        plan_names = context.plans.keys()
 
-    assert "rotation_scan" in plan_names
-    assert "flyscan_xray_centre" in plan_names
-    assert "pin_tip_centre_then_xray_centre" in plan_names
+        assert "rotation_scan" in plan_names
+        assert "flyscan_xray_centre" in plan_names
+        assert "pin_tip_centre_then_xray_centre" in plan_names

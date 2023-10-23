@@ -66,7 +66,6 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     ):
         cb = RotationCallbackCollection.from_params(params)
     cb.nexus_handler.start = MagicMock(autospec=True)
-    cb.nexus_handler.stop = MagicMock(autospec=True)
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
 
@@ -77,7 +76,6 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     assert call_content_outer["hyperion_internal_parameters"] == params.json()
     call_content_inner = cb.nexus_handler.start.call_args_list[1].args[0]
     assert call_content_inner["subplan_name"] == "rotation_scan_main"
-    assert cb.nexus_handler.stop.call_count == 2
 
 
 @patch(
@@ -138,7 +136,6 @@ def test_zocalo_start_and_end_triggered_once(
     cb = RotationCallbackCollection.from_params(params)
 
     cb.nexus_handler.start = MagicMock(autospec=True)
-    cb.nexus_handler.stop = MagicMock(autospec=True)
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
     cb.ispyb_handler.ispyb_ids = [0]
@@ -162,7 +159,6 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     cb = RotationCallbackCollection.from_params(params)
 
     cb.nexus_handler.start = MagicMock(autospec=True)
-    cb.nexus_handler.stop = MagicMock(autospec=True)
     cb.ispyb_handler.start = MagicMock(autospec=True)
     cb.ispyb_handler.stop = MagicMock(autospec=True)
     with pytest.raises(ISPyBDepositionNotMade):

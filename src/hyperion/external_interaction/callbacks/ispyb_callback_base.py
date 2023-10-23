@@ -68,6 +68,9 @@ class BaseISPyBCallback(CallbackBase):
             self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
                 "data"
             ]["attenuator_actual_transmission"]
+            self.params.hyperion_params.ispyb_params.flux = doc["data"][
+                "flux_flux_reading"
+            ]
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
