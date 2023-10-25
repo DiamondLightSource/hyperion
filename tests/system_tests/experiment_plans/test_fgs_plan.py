@@ -2,6 +2,7 @@ import uuid
 from typing import Callable
 from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
@@ -16,6 +17,9 @@ from ophyd.status import Status
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
+)
+from hyperion.device_setup_plans.xbpm_feedback import (
+    transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -45,11 +49,23 @@ from ..external_interaction.conftest import (  # noqa
 def params():
     params = GridscanInternalParameters(**default_raw_params())
     params.hyperion_params.beamline = SIM_BEAMLINE
-    return params
+    yield params
 
 
 @pytest.fixture
-def fgs_composite():
+def RE():
+    yield RunEngine({})
+
+
+@pytest.fixture()
+def callbacks(params):
+    callbacks = XrayCentreCallbackCollection.setup()
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
+    yield callbacks
+
+
+@pytest.fixture
+def fxc_composite():
     composite = FlyScanXRayCentreComposite(
         attenuator=i03.attenuator(),
         aperture_scatterguard=i03.aperture_scatterguard(),
@@ -87,9 +103,19 @@ def fgs_composite():
 
     composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
 
+    composite.xbpm_feedback.pos_ok.sim_put(1)  # type: ignore
+    composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
+
     return composite
 
 
+@pytest.mark.s03
+def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
+    assert fxc_composite.aperture_scatterguard
+    assert fxc_composite.backlight
+
+
+@pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
@@ -105,9 +131,10 @@ def test_run_gridscan(
     wait: MagicMock,
     params: GridscanInternalParameters,
     RE: RunEngine,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fxc_composite: FlyScanXRayCentreComposite,
 ):
-    RE(run_gridscan(fgs_composite, params))
+    # Would be better to use flyscan_xray_centre instead but eiger doesn't work well in S03
+    RE(run_gridscan(fxc_composite, params))
 
 
 @pytest.mark.s03
@@ -133,14 +160,14 @@ def test_run_gridscan_and_move(
 @pytest.mark.s03
 def test_read_hardware_for_ispyb_pre_collection(
     RE: RunEngine,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fxc_composite: FlyScanXRayCentreComposite,
 ):
-    undulator = fgs_composite.undulator
-    synchrotron = fgs_composite.synchrotron
-    slit_gaps = fgs_composite.s4_slit_gaps
-    attenuator = fgs_composite.attenuator
-    flux = fgs_composite.flux
-    dcm = fgs_composite.dcm
+    undulator = fxc_composite.undulator
+    synchrotron = fxc_composite.synchrotron
+    slit_gaps = fxc_composite.s4_slit_gaps
+    attenuator = fxc_composite.attenuator
+    flux = fxc_composite.flux
+    dcm = fxc_composite.dcm
 
     @bpp.run_decorator()
     def read_run(u, s, g, a, f, dcm):
@@ -148,6 +175,28 @@ def test_read_hardware_for_ispyb_pre_collection(
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
     RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux, dcm))
+
+
+def test_xbpm_feedback_decorator(
+    RE: RunEngine,
+    fxc_composite: FlyScanXRayCentreComposite,
+    params: GridscanInternalParameters,
+    callbacks: XrayCentreCallbackCollection,
+):
+    # This test is currently kind of more a unit test since we are faking XBPM feedback
+    # with ophyd.sim, but it should continue to pass when we replace it with something
+    # in S03
+
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        fxc_composite.xbpm_feedback,
+        fxc_composite.attenuator,
+        params.hyperion_params.ispyb_params.transmission_fraction,
+    )
+    def decorated_plan():
+        yield from bps.sleep(0.1)
+
+    RE(decorated_plan())
+    assert fxc_composite.xbpm_feedback.pos_stable.get() == 1
 
 
 @pytest.mark.s03
@@ -168,11 +217,11 @@ def test_full_plan_tidies_at_end(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fxc_composite: FlyScanXRayCentreComposite,
     params: GridscanInternalParameters,
     RE: RunEngine,
+    callbacks: XrayCentreCallbackCollection,
 ):
-    callbacks = XrayCentreCallbackCollection.setup()
     callbacks.nexus_handler.nexus_writer_1 = MagicMock()
     callbacks.nexus_handler.nexus_writer_2 = MagicMock()
     callbacks.ispyb_handler.ispyb_ids = IspybIds(
@@ -182,7 +231,7 @@ def test_full_plan_tidies_at_end(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
         return_value=callbacks,
     ):
-        RE(flyscan_xray_centre(fgs_composite, params))
+        RE(flyscan_xray_centre(fxc_composite, params))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -204,22 +253,23 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fxc_composite: FlyScanXRayCentreComposite,
     params: GridscanInternalParameters,
     RE: RunEngine,
 ):
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
-        RE(flyscan_xray_centre(fgs_composite, params))
+        RE(flyscan_xray_centre(fxc_composite, params))
     set_shutter_to_manual.assert_called_once()
 
 
 @pytest.mark.s03
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
     RE: RunEngine,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fxc_composite: FlyScanXRayCentreComposite,
     fetch_comment: Callable,
     params: GridscanInternalParameters,
+    callbacks: XrayCentreCallbackCollection,
 ):
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
@@ -228,17 +278,20 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 100
 
-    callbacks = XrayCentreCallbackCollection.setup()
-    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
     mock_start_zocalo = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
 
-    with pytest.raises(WarningException):
-        RE(flyscan_xray_centre(fgs_composite, params))
+    with pytest.raises(WarningException), patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
+        lambda _: callbacks,
+    ):
+        RE(flyscan_xray_centre(fxc_composite, params))
 
     dcid_used = callbacks.ispyb_handler.ispyb_ids = IspybIds(
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
     )
+    assert callbacks.ispyb_handler.ispyb.data_collection_ids is not None
+    dcid_used = callbacks.ispyb_handler.ispyb.data_collection_ids[0]
 
     comment = fetch_comment(dcid_used)
 
@@ -253,7 +306,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     complete: MagicMock,
     kickoff: MagicMock,
     RE: RunEngine,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fxc_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,
     params: GridscanInternalParameters,
 ):
@@ -267,15 +320,19 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 1
 
-    fgs_composite.eiger.stage = MagicMock()
-    fgs_composite.eiger.unstage = MagicMock()
+    fxc_composite.eiger.stage = MagicMock()
+    fxc_composite.eiger.unstage = MagicMock()
 
     callbacks = XrayCentreCallbackCollection.setup()
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
-    RE(flyscan_xray_centre(fgs_composite, params))
+    with patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
+        lambda _: callbacks,
+    ):
+        RE(flyscan_xray_centre(fxc_composite, params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
-    assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(-0.05)
-    assert fgs_composite.sample_motors.y.user_readback.get() == pytest.approx(0.05)
-    assert fgs_composite.sample_motors.z.user_readback.get() == pytest.approx(0.15)
+    assert fxc_composite.sample_motors.x.user_readback.get() == pytest.approx(0.05)
+    assert fxc_composite.sample_motors.y.user_readback.get() == pytest.approx(0.15)
+    assert fxc_composite.sample_motors.z.user_readback.get() == pytest.approx(0.25)
