@@ -50,14 +50,14 @@ class VmxmFlyScanXRayCentreComposite:
     backlight: Backlight
     eiger: EigerDetector
     fast_grid_scan: FastGridScan
-    smargon: Smargon
+    # smargon: Smargon
     synchrotron: Synchrotron
     zebra: Zebra
 
-    @property
-    def sample_motors(self) -> Smargon:
-        """Convenience alias with a more user-friendly name"""
-        return self.smargon
+    # @property
+    # def sample_motors(self) -> Smargon:
+    #     """Convenience alias with a more user-friendly name"""
+    #     return self.smargon
 
 
 def create_devices(context: BlueskyContext) -> VmxmFlyScanXRayCentreComposite:
@@ -96,11 +96,11 @@ def run_gridscan(
         "plan_name": "run_gridscan",
     },
 ):
-    sample_motors = fgs_composite.sample_motors
+    # sample_motors = fgs_composite.sample_motors
 
-    # Currently gridscan only works for omega 0, see #
-    with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(sample_motors.omega, 0)
+    # # Currently gridscan only works for omega 0, see #
+    # with TRACER.start_span("moving_omega_to_0"):
+    #     yield from bps.abs_set(sample_motors.omega, 0)
 
     fgs_motors = fgs_composite.fast_grid_scan
 
@@ -116,7 +116,9 @@ def run_gridscan(
     )
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
+        hyperion.log.LOGGER.info("Kicking off")
         yield from bps.kickoff(fgs_motors)
+
         yield from bps.complete(fgs_motors, wait=True)
 
     hyperion.log.LOGGER.info("Waiting for arming to finish")
@@ -150,13 +152,13 @@ def run_gridscan_and_move(
     and moves to the centre of mass determined by zocalo"""
 
     # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = np.array(
-        [
-            (yield from bps.rd(fgs_composite.sample_motors.x)),
-            (yield from bps.rd(fgs_composite.sample_motors.y)),
-            (yield from bps.rd(fgs_composite.sample_motors.z)),
-        ]
-    )
+    # initial_xyz = np.array(
+    #     [
+    #         (yield from bps.rd(fgs_composite.sample_motors.x)),
+    #         (yield from bps.rd(fgs_composite.sample_motors.y)),
+    #         (yield from bps.rd(fgs_composite.sample_motors.z)),
+    #     ]
+    # )
 
     yield from setup_vmxm_zebra_for_gridscan(fgs_composite.zebra)
 
@@ -167,12 +169,12 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    xray_centre, _ = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
+    # xray_centre, _ = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
 
-    # once we have the results, go to the appropriate position
-    hyperion.log.LOGGER.info("Moving to centre of mass.")
-    with TRACER.start_span("move_to_result"):
-        yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
+    # # once we have the results, go to the appropriate position
+    # hyperion.log.LOGGER.info("Moving to centre of mass.")
+    # with TRACER.start_span("move_to_result"):
+    #     yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
 
 def transmission_for_collection_wrapper(
@@ -220,7 +222,7 @@ transmission_for_collection_decorator = make_decorator(
 )
 
 
-def flyscan_xray_centre(
+def vmxm_flyscan_xray_centre(
     composite: VmxmFlyScanXRayCentreComposite,
     parameters: Any,
 ) -> MsgGenerator:
@@ -239,14 +241,11 @@ def flyscan_xray_centre(
 
     subscriptions = XrayCentreCallbackCollection.from_params(parameters)
 
-    yield from bps.mv(
-        composite.attenuator,
-        parameters.hyperion_params.ispyb_params.transmission_fraction,
-    )
 
-    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
-        list(subscriptions)  # must be the outermost decorator to receive the metadata
-    )
+
+    #@bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
+    #    list(subscriptions)  # must be the outermost decorator to receive the metadata
+    #)
     @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
@@ -260,6 +259,11 @@ def flyscan_xray_centre(
         parameters.hyperion_params.ispyb_params.transmission_fraction,
     )
     def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
+        yield from bps.mv(
+            composite.attenuator,
+            parameters.hyperion_params.ispyb_params.transmission_fraction,
+        )
+
         yield from run_gridscan_and_move(fgs_composite, params, comms)
 
     return run_gridscan_and_move_and_tidy(composite, parameters, subscriptions)
