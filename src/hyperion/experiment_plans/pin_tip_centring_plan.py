@@ -82,10 +82,13 @@ def move_pin_into_view(
             # Pin is off in the -ve direction
             step_size_mm = -step_size_mm
 
-        smargon_x = yield from bps.rd(smargon.x.user_readback)
+        smargon_x = yield from bps.rd(smargon.x.readback)
+        smargon_x_low_limit = yield from bps.rd(smargon.x_low_lim)
+        smargon_x_high_limit = yield from bps.rd(smargon.x_high_lim)
+
         ideal_move_to_find_pin = float(smargon_x) + step_size_mm
         move_within_limits = max(
-            min(ideal_move_to_find_pin, smargon.x.high_limit), smargon.x.low_limit
+            min(ideal_move_to_find_pin, smargon_x_high_limit), smargon_x_low_limit
         )
         if move_within_limits != ideal_move_to_find_pin:
             LOGGER.warning(
@@ -112,7 +115,8 @@ def move_smargon_warn_on_out_of_range(
 ):
     """Throws a WarningException if the specified position is out of range for the
     smargon. Otherwise moves to that position."""
-    if not smargon.get_xyz_limits().position_valid(position):
+    yield from bps.abs_set(smargon.limit_checker, position, wait=True)
+    if not smargon.limit_checker.within_limits:
         raise WarningException(
             "Pin tip centring failed - pin too long/short/bent and out of range"
         )

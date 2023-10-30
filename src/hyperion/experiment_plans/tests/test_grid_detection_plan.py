@@ -164,8 +164,8 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
 @patch("bluesky.plan_stubs.wait")
 def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
     bps_wait: MagicMock,
-    fake_devices,
     RE: RunEngine,
+    fake_devices,
     test_config_files,
 ):
     params = OAVParameters(context="loopCentring", **test_config_files)

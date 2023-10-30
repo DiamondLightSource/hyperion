@@ -84,10 +84,6 @@ def eiger():
 @pytest.fixture
 def smargon() -> Smargon:
     smargon = i03.smargon(fake_with_ophyd_sim=True)
-    smargon.x.user_setpoint._use_limits = False
-    smargon.y.user_setpoint._use_limits = False
-    smargon.z.user_setpoint._use_limits = False
-    smargon.omega.user_setpoint._use_limits = False
 
     with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
         smargon.y

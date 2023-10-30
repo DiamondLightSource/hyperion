@@ -50,10 +50,6 @@ def mock_parameters():
 
 def fake_smargon() -> Smargon:
     smargon = i03.smargon(fake_with_ophyd_sim=True)
-    smargon.x.user_setpoint._use_limits = False
-    smargon.y.user_setpoint._use_limits = False
-    smargon.z.user_setpoint._use_limits = False
-    smargon.omega.user_setpoint._use_limits = False
 
     def mock_set(motor, val):
         motor.user_readback.sim_put(val)

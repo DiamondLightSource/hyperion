@@ -6,6 +6,7 @@ from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
+from ophyd_async.core import set_sim_value
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
@@ -17,10 +18,11 @@ from hyperion.experiment_plans.pin_tip_centring_plan import (
 )
 
 
-def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
-    smargon: Smargon, oav: OAV, RE: RunEngine
+@pytest.mark.asyncio
+async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
+    oav: OAV, RE: RunEngine, smargon: Smargon
 ):
-    smargon.x.user_readback.sim_put(0)
+    set_sim_value(smargon.x.readback, 0)
     oav.mxsc.pin_tip.tip_x.sim_put(100)
     oav.mxsc.pin_tip.tip_y.sim_put(200)
 
@@ -29,35 +31,37 @@ def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_re
     result = RE(move_pin_into_view(oav, smargon))
 
     oav.mxsc.pin_tip.trigger.assert_called_once()
-    assert smargon.x.user_readback.get() == 0
+    assert await smargon.x.readback.get_value() == 0
     assert result.plan_result == (100, 200)
 
 
-def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargon_moved_positive_and_tip_returned(
-    smargon: Smargon, oav: OAV, RE: RunEngine
+@pytest.mark.asyncio
+async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargon_moved_positive_and_tip_returned(
+    oav: OAV, RE: RunEngine, smargon: Smargon
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
     oav.mxsc.pin_tip.triggered_tip.put(oav.mxsc.pin_tip.INVALID_POSITION)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
 
-    smargon.x.user_readback.sim_put(0)
+    set_sim_value(smargon.x.readback, 0)
 
     def set_pin_tip_when_x_moved(*args, **kwargs):
         oav.mxsc.pin_tip.tip_x.sim_put(100)
         oav.mxsc.pin_tip.tip_y.sim_put(200)
 
-    smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
+    smargon.x.set = MagicMock(side_effect=set_pin_tip_when_x_moved)
 
     result = RE(move_pin_into_view(oav, smargon))
 
-    assert smargon.x.user_readback.get() == DEFAULT_STEP_SIZE
+    assert await smargon.x.readback.get_value() == DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)
 
 
 def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon_moved_negative_and_tip_returned(
-    smargon: Smargon, oav: OAV, RE: RunEngine
+    oav: OAV,
+    RE: RunEngine,
+    smargon: Smargon,
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
+    smargon.x_low_lim.user_setpoint.sim_set_limits([-2, 2])
     oav.mxsc.pin_tip.tip_x.sim_put(0)
     oav.mxsc.pin_tip.tip_y.sim_put(100)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
@@ -77,7 +81,9 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
 
 
 def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
-    smargon: Smargon, oav: OAV, RE: RunEngine
+    oav: OAV,
+    RE: RunEngine,
+    smargon: Smargon,
 ):
     smargon.x.user_setpoint.sim_set_limits([-2, 2])
     smargon.x.user_setpoint.sim_put(-1.8)
