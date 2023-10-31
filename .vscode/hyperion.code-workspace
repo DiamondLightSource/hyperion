@@ -5,7 +5,8 @@
 		},
 		{
 			"path": "../../dodal"
-		}
+		},
+
 	],
 	"settings": {
 		"python.languageServer": "Pylance",
@@ -14,6 +15,7 @@
 		"[python]": {
 			"editor.defaultFormatter": "ms-python.black-formatter"
 		},
-		"python.formatting.provider": "none"
+		"python.formatting.provider": "none",
+		"editor.formatOnSave": true
 	}
 }

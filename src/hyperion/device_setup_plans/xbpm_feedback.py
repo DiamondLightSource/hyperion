@@ -26,6 +26,7 @@ def _check_and_pause_feedback(
     LOGGER.info(
         "XPBM feedback in position, pausing and setting transmission for collection"
     )
+
     yield from bps.mv(xbpm_feedback.pause_feedback, xbpm_feedback.PAUSE)
     yield from bps.mv(attenuator, desired_transmission_fraction)
 

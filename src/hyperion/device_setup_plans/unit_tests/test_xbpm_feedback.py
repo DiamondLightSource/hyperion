@@ -1,22 +1,44 @@
+from asyncio import wait_for
 from unittest.mock import MagicMock
 
 import pytest
+import pytest_asyncio
+from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from bluesky.utils import FailedStatus
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.xbpm_feedback import XBPMFeedbackI03
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
+from ophyd_async.core import DeviceCollector, set_sim_value
 
 from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 
+# NEED TO DO TESTS USING OPHYD V2 SIM - EG OPHYD_ASYNC.CORE.SET_SIM_VALUE
+# ALSO ADD TEST FOR THE NEW SUBCLASS OF XBPM
+
+pytest_plugins = ("pytest_asyncio",)
+
+
+@pytest_asyncio.fixture
+async def fake_xbpm_feedback_i03():
+    async with DeviceCollector(sim=True):
+        xbpm_feedback = XBPMFeedbackI03(prefix="", name="xbpm")
+
+    def fake_xbpm_feedback_set(val):
+        set_sim_value(xbpm_feedback.pause_feedback, val)
+        return Status(done=True, success=True)
+
+    xbpm_feedback.pause_feedback.set = MagicMock(side_effect=fake_xbpm_feedback_set)
+
+    yield xbpm_feedback
+
 
 @pytest.fixture
-def fake_devices():
-    xbpm_feedback: XBPMFeedback = make_fake_device(XBPMFeedback)(name="xbpm")
+def fake_attenuator():
     attenuator: Attenuator = make_fake_device(Attenuator)(name="atten")
 
     def fake_attenuator_set(val):
@@ -24,38 +46,42 @@ def fake_devices():
         return Status(done=True, success=True)
 
     attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+    return attenuator
 
-    return xbpm_feedback, attenuator
 
-
-def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expected(
-    fake_devices,
+@pytest.mark.asyncio
+async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expected(
+    fake_xbpm_feedback_i03: XBPMFeedbackI03, fake_attenuator: Attenuator
 ):
-    xbpm_feedback: XBPMFeedback = fake_devices[0]
-    attenuator: Attenuator = fake_devices[1]
     expected_transmission = 0.3
 
     @transmission_and_xbpm_feedback_for_collection_decorator(
-        xbpm_feedback, attenuator, expected_transmission
+        fake_xbpm_feedback_i03, fake_attenuator, expected_transmission
     )
-    def my_collection_plan():
-        assert attenuator.actual_transmission.get() == expected_transmission
-        assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.PAUSE
-        yield from bps.null()
+    async def my_collection_plan():
+        assert fake_attenuator.actual_transmission.get() == expected_transmission
+        assert (
+            await fake_xbpm_feedback_i03.pause_feedback.get_value()
+            == fake_xbpm_feedback_i03.PAUSE
+        )
+        yield bps.null()
 
-    xbpm_feedback.pos_stable.sim_put(1)
+    set_sim_value(fake_xbpm_feedback_i03.pos_stable, 1)
 
     RE = RunEngine()
     RE(my_collection_plan())
 
-    assert attenuator.actual_transmission.get() == 1.0
-    assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.RUN
+    assert fake_attenuator.actual_transmission.get() == 1.0
+    assert (
+        fake_xbpm_feedback_i03.pause_feedback.get_value() == fake_xbpm_feedback_i03.RUN
+    )
 
 
+@pytest.mark.asyncio
 def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
     fake_devices,
 ):
-    xbpm_feedback: XBPMFeedback = fake_devices[0]
+    xbpm_feedback: XBPMFeedbackI03 = fake_devices[0]
     attenuator: Attenuator = fake_devices[1]
     mock = MagicMock()
 
@@ -82,10 +108,10 @@ def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
 def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then_cleaned_up(
     fake_devices,
 ):
-    xbpm_feedback: XBPMFeedback = fake_devices[0]
+    xbpm_feedback: XBPMFeedbackI03 = fake_devices[0]
     attenuator: Attenuator = fake_devices[1]
 
-    xbpm_feedback.pos_stable.sim_put(1)
+    xbpm_feedback.pos_ok.sim_put(1)
 
     class MyException(Exception):
         pass
