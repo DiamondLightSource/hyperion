@@ -7,7 +7,7 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
-from hyperion.log import LOGGER
+from hyperion.log import ISPYB_LOGGER
 
 
 class RotationZocaloCallback(CallbackBase):
@@ -25,13 +25,13 @@ class RotationZocaloCallback(CallbackBase):
         self.run_uid = None
 
     def start(self, doc: dict):
-        LOGGER.info("Zocalo handler received start document.")
+        ISPYB_LOGGER.info("Zocalo handler received start document.")
         if self.run_uid is None:
             self.run_uid = doc.get("uid")
 
     def stop(self, doc: dict):
         if self.run_uid and doc.get("run_start") == self.run_uid:
-            LOGGER.info(
+            ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
             if self.ispyb.ispyb_ids[0] is not None:

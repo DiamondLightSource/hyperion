@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
-from hyperion.log import LOGGER, set_dcgid_tag
+from hyperion.log import ISPYB_LOGGER, set_dcgid_tag, set_up_callback_logging_handlers
 from hyperion.parameters.constants import (
     ISPYB_PLAN_NAME,
     ISPYB_UPDATING_COLLECTION,
@@ -20,12 +20,19 @@ class BaseISPyBCallback(CallbackBase):
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
+        if ISPYB_LOGGER.handlers == []:
+            set_up_callback_logging_handlers(
+                "hyperion_ispyb_callback.txt",
+                ISPYB_LOGGER,
+                "DEBUG",
+                True,  # TODO set dev mode for tests and remove this
+            )
         self.ispyb: StoreInIspyb
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
         if self.ispyb_config == SIM_ISPYB_CONFIG:
-            LOGGER.warning(
+            ISPYB_LOGGER.warning(
                 "Using dev ISPyB database. If you want to use the real database, please"
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
@@ -36,7 +43,9 @@ class BaseISPyBCallback(CallbackBase):
         try:
             self.ispyb.append_to_comment(id, comment)
         except TypeError:
-            LOGGER.warning("ISPyB deposition not initialised, can't update comment.")
+            ISPYB_LOGGER.warning(
+                "ISPyB deposition not initialised, can't update comment."
+            )
 
     def descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
@@ -49,7 +58,7 @@ class BaseISPyBCallback(CallbackBase):
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
 
-        LOGGER.debug("ISPyB handler received event document.")
+        ISPYB_LOGGER.debug("ISPyB handler received event document.")
         assert isinstance(
             self.ispyb, StoreInIspyb
         ), "ISPyB deposition can't be initialised!"
@@ -77,9 +86,9 @@ class BaseISPyBCallback(CallbackBase):
                 "flux_flux_reading"
             ]
 
-            LOGGER.info("Creating ispyb entry.")
+            ISPYB_LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
-            LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
+            ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
     def stop(self, doc: dict):
         """Subclasses must check that they are recieving a stop document for the correct
@@ -87,11 +96,13 @@ class BaseISPyBCallback(CallbackBase):
         assert isinstance(
             self.ispyb, StoreInIspyb
         ), "ISPyB handler recieved stop document, but deposition object doesn't exist!"
-        LOGGER.debug("ISPyB handler received stop document.")
+        ISPYB_LOGGER.debug("ISPyB handler received stop document.")
         exit_status = doc.get("exit_status")
         reason = doc.get("reason")
         set_dcgid_tag(None)
         try:
             self.ispyb.end_deposition(exit_status, reason)
         except Exception:
-            LOGGER.info(f"Failed to finalise ISPyB deposition on stop document: {doc}")
+            ISPYB_LOGGER.info(
+                f"Failed to finalise ISPyB deposition on stop document: {doc}"
+            )

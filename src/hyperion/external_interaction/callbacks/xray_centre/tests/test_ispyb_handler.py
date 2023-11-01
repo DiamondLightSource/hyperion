@@ -8,7 +8,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
-from hyperion.log import LOGGER, set_up_logging_handlers
+from hyperion.log import LOGGER, set_up_hyperion_logging_handlers
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -91,7 +91,7 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
 @pytest.fixture
 def mock_emit():
     with patch("hyperion.log.setup_dodal_logging"):
-        set_up_logging_handlers(dev_mode=True)
+        set_up_hyperion_logging_handlers(dev_mode=True)
     test_handler = logging.Handler()
     test_handler.emit = MagicMock()  # type: ignore
     LOGGER.addHandler(test_handler)

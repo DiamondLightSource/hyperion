@@ -294,9 +294,10 @@ if __name__ == "__main__":
         dev_mode,
         skip_startup_connection,
     ) = cli_arg_parse()
-
-    hyperion.log.set_up_logging_handlers(logging_level, dev_mode)
-    app, runner = create_app(skip_startup_connection=skip_startup_connection)
+    hyperion.log.set_up_hyperion_logging_handlers(
+        logging_level=logging_level, dev_mode=bool(dev_mode)
+    )
+    app, runner = create_app(skip_startup_connection=bool(skip_startup_connection))
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
