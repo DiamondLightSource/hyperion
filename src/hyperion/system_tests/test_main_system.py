@@ -59,6 +59,7 @@ class MockRunEngine:
     RE_takes_time = True
     aborting_takes_time = False
     error: Optional[Exception] = None
+    test_name = "test"
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         time = 0.0
@@ -69,9 +70,9 @@ class MockRunEngine:
                 raise self.error
             if time > RUNENGINE_TAKES_TIME_TIMEOUT:
                 raise TimeoutError(
-                    "Mock RunEngine thread spun too long without an error. Most likely "
-                    "you should initialise with RE_takes_time=false, or set RE.error "
-                    "from another thread."
+                    f'Mock RunEngine thread for test "{self.test_name}" spun too long'
+                    "without an error. Most likely you should initialise with "
+                    "RE_takes_time=false, or set RE.error from another thread."
                 )
 
     def abort(self):
@@ -117,8 +118,9 @@ TEST_EXPTS = {
 
 
 @pytest.fixture
-def test_env():
+def test_env(request):
     mock_run_engine = MockRunEngine()
+    mock_run_engine.test_name = repr(request)
     mock_context = BlueskyContext()
     real_plans_and_test_exps = dict(
         {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
@@ -131,7 +133,7 @@ def test_env():
         "hyperion.__main__.PLAN_REGISTRY",
         real_plans_and_test_exps,
     ), patch("hyperion.__main__.setup_context", MagicMock(return_value=mock_context)):
-        app, runner = create_app({"TESTING": True}, mock_run_engine)
+        app, runner = create_app({"TESTING": True}, mock_run_engine)  # type: ignore
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
@@ -194,6 +196,7 @@ def test_putting_bad_plan_fails(test_env: ClientAndRunEngine):
         response.get("message")
         == "PlanNotFound(\"Experiment plan 'bad_plan' not found in registry.\")"
     )
+    test_env.mock_run_engine.abort()
 
 
 def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
@@ -371,6 +374,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
         mock_setup.assert_not_called()
         runner.start(None, None, "flyscan_xray_centre")
         mock_setup.assert_called_once()
+        runner.shutdown()
 
 
 def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_setup():
