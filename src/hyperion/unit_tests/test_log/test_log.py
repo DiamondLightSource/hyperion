@@ -22,21 +22,23 @@ def clear_loggers():
     [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
 
 
+@pytest.mark.skip_log_setup
 @patch("dodal.log.config_bluesky_logging", autospec=True)
 @patch("dodal.log.config_ophyd_logging", autospec=True)
 def test_no_env_variable_sets_correct_file_handler(
     mock_config_ophyd,
     mock_config_bluesky,
     clear_loggers,
-):
-    log.set_up_logging_handlers(None, True)
+) -> None:
+    log.set_up_hyperion_logging_handlers(logging_level=None, dev_mode=True)
     file_handlers: FileHandler = next(
-        filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)
+        filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)  # type: ignore
     )
 
     assert file_handlers.baseFilename.endswith("/tmp/dev/hyperion.txt")
 
 
+@pytest.mark.skip_log_setup
 @patch("hyperion.log.Path.mkdir", autospec=True)
 @patch.dict(
     os.environ, {"HYPERION_LOG_DIR": "./dls_sw/s03/logs/bluesky"}
@@ -44,21 +46,22 @@ def test_no_env_variable_sets_correct_file_handler(
 def test_set_env_variable_sets_correct_file_handler(
     mock_dir,
     clear_loggers,
-):
-    log.set_up_logging_handlers(None, False)
+) -> None:
+    log.set_up_hyperion_logging_handlers(logging_level=None, dev_mode=False)
 
     file_handlers: FileHandler = next(
-        filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)
+        filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)  # type: ignore
     )
 
     assert file_handlers.baseFilename.endswith("/dls_sw/s03/logs/bluesky/hyperion.txt")
 
 
+@pytest.mark.skip_log_setup
 def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
     clear_loggers,
 ):
     mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_loggers
-    log.set_up_logging_handlers()
+    log.set_up_hyperion_logging_handlers()
 
     log.set_dcgid_tag(100)
 
@@ -74,11 +77,12 @@ def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
         assert all(dc_group_id_correct)
 
 
+@pytest.mark.skip_log_setup
 def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
     clear_loggers,
 ):
     mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_loggers
-    log.set_up_logging_handlers()
+    log.set_up_hyperion_logging_handlers()
     logger = log.LOGGER
     logger.info("test_hyperion")
     dodal_logger.info("test_dodal")
