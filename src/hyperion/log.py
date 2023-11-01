@@ -71,6 +71,7 @@ def set_up_callback_logging_handlers(
     file_handler = set_up_file_handler(
         logging_level, dev_mode, _get_logging_file_path(filename), logger
     )
+    logger.addFilter(dc_group_id_filter)
     return [stream_handler, graylog_handler, file_handler]
 
 
