@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hyperion.parameters.constants import ISPYB_PLAN_NAME
+from hyperion.parameters.constants import ISPYB_PLAN_NAME, ISPYB_UPDATING_COLLECTION
 
 
 @pytest.fixture
@@ -83,12 +83,17 @@ class TestData:
         "plan_name": "run_gridscan_and_move",
         "subplan_name": "do_fgs",
     }
-    test_descriptor_document: dict = {
+    test_descriptor_document_pre_data_collection: dict = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": ISPYB_PLAN_NAME,
     }
-    test_event_document: dict = {
+    test_descriptor_document_during_data_collection: dict = {
+        "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "name": ISPYB_UPDATING_COLLECTION,
+    }
+    test_event_document_pre_data_collection: dict = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.828203,
         "data": {
@@ -96,12 +101,22 @@ class TestData:
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron_machine_status_synchrotron_mode": "test",
             "undulator_gap": 1.234,
+        },
+        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
+        "seq_num": 1,
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8173",
+        "filled": {},
+    }
+    test_event_document_during_data_collection: dict = {
+        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
+        "time": 2666604299.928203,
+        "data": {
             "attenuator_actual_transmission": 1,
             "flux_flux_reading": 10,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8173",
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "filled": {},
     }
     test_stop_document: dict = {

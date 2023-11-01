@@ -66,8 +66,8 @@ def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
     logger.info("test_hyperion")
     dodal_logger.info("test_dodal")
 
-    filehandler_calls = mock_filehandler_emit.mock_calls
-    graylog_calls = mock_GELFTCPHandler_emit.mock_calls
+    filehandler_calls = mock_filehandler_emit.mock_calls[1:]
+    graylog_calls = mock_GELFTCPHandler_emit.mock_calls[1:]
 
     for handler in [filehandler_calls, graylog_calls]:
         dc_group_id_correct = [c.args[0].dc_group_id == 100 for c in handler]

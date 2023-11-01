@@ -7,17 +7,20 @@ from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 from hyperion.log import LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
+from hyperion.parameters.constants import (
+    ISPYB_PLAN_NAME,
+    ISPYB_UPDATING_COLLECTION,
+    SIM_ISPYB_CONFIG,
 )
+from hyperion.parameters.internal_parameters import InternalParameters
 
 
 class BaseISPyBCallback(CallbackBase):
-    def __init__(self, parameters: GridscanInternalParameters):
+    def __init__(self, parameters: InternalParameters):
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
+        self.ispyb: StoreInIspyb
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
@@ -65,6 +68,8 @@ class BaseISPyBCallback(CallbackBase):
             self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"][
                 "s4_slit_gaps_ygap"
             ]
+
+        if event_descriptor.get("name") == ISPYB_UPDATING_COLLECTION:
             self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
                 "data"
             ]["attenuator_actual_transmission"]

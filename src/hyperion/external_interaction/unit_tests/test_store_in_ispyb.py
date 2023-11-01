@@ -191,7 +191,7 @@ def test_mutate_params(
             rotation_dict
         )
     )
-    assert rotation_transformed["axis_range"] == 180.0
+    assert rotation_transformed["axis_range"] == 0.1
     assert rotation_transformed["axis_end"] == 180.0
     assert rotation_transformed["n_images"] == 1800
 

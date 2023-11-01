@@ -20,12 +20,16 @@ from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.epics_motor import EpicsMotor
 from ophyd_async.epics.motion.motor import Motor
 
+from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_x_y_z,
     setup_sample_environment,
 )
-from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
+    read_hardware_for_ispyb_pre_collection,
+)
 from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     disarm_zebra,
@@ -196,14 +200,16 @@ def rotation_scan_plan(
     yield from bps.wait("setup_zebra")
 
     # get some information for the ispyb deposition and trigger the callback
-    yield from read_hardware_for_ispyb(
+
+    yield from read_hardware_for_ispyb_pre_collection(
         composite.undulator,
         composite.synchrotron,
         composite.s4_slit_gaps,
+    )
+    yield from read_hardware_for_ispyb_during_collection(
         composite.attenuator,
         composite.flux,
     )
-
     LOGGER.info(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
         f" s, setting rotation speed to {image_width_deg/exposure_time_s} deg/s"
@@ -213,6 +219,14 @@ def rotation_scan_plan(
     )
 
     yield from arm_zebra(composite.zebra)
+
+    total_exposure = expt_params.get_num_images() * exposure_time_s
+    # Check topup gate
+    yield from check_topup_and_wait_if_necessary(
+        composite.synchrotron,
+        total_exposure,
+        ops_time=10.0,  # Additional time to account for rotation, is s
+    )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
     LOGGER.info(
         f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
