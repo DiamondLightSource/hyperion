@@ -82,13 +82,8 @@ def eiger():
 
 
 @pytest.fixture
-def smargon() -> Smargon:
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
-
-    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
-        smargon.y
-    ), patch_motor(smargon.z):
-        yield smargon
+def smargon(RE) -> Smargon:
+    return i03.smargon(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture

@@ -10,6 +10,9 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from ophyd.signal import Signal
 from ophyd.status import Status
+from ophyd_async.core import (
+    set_sim_value,
+)
 
 from hyperion.device_setup_plans.setup_oav import (
     get_move_required_so_that_beam_is_at_pixel,
@@ -116,7 +119,7 @@ def test_values_for_move_so_that_beam_is_at_pixel(
     mock_parameters.beam_centre_i = beam_centre[0]
     mock_parameters.beam_centre_j = beam_centre[1]
 
-    smargon.omega.user_readback.sim_put(angle)
+    set_sim_value(smargon.omega.readback, angle)
 
     RE = RunEngine(call_returns_result=True)
     pos = RE(

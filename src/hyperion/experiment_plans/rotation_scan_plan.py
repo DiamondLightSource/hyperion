@@ -18,6 +18,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.epics_motor import EpicsMotor
+from ophyd_async.epics.motion.motor import Motor
 
 from hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
@@ -75,7 +76,7 @@ ACCELERATION_MARGIN = 1.5
 
 
 def move_to_start_w_buffer(
-    axis: EpicsMotor,
+    axis: EpicsMotor | Motor,
     start_angle: float,
     offset: float,
     wait_for_velocity_set: bool = True,
@@ -99,7 +100,7 @@ def move_to_start_w_buffer(
 
 
 def move_to_end_w_buffer(
-    axis: EpicsMotor,
+    axis: EpicsMotor | Motor,
     scan_width: float,
     offset: float,
     shutter_opening_degrees: float,

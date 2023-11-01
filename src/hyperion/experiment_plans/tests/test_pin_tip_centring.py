@@ -112,25 +112,28 @@ def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     assert smargon.x.user_readback.get() == 2
 
 
-def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_positive_and_exception_thrown(
+@pytest.mark.asyncio
+async def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_positive_and_exception_thrown(
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
+    set_sim_value(smargon.x_low_lim, -2)
+    set_sim_value(smargon.x_high_lim, 2)
+
     oav.mxsc.pin_tip.triggered_tip.put(oav.mxsc.pin_tip.INVALID_POSITION)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
 
-    smargon.x.user_readback.sim_put(0)
+    set_sim_value(smargon.x.readback, 0)
 
     with pytest.raises(WarningException):
         RE(move_pin_into_view(oav, smargon))
 
-    assert smargon.x.user_readback.get() == 1
+    assert await smargon.x.setpoint.get_value() == 1
 
 
 def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_exception(
     RE: RunEngine, smargon: Smargon
 ):
-    smargon.x.high_limit_travel.sim_put(10)
+    set_sim_value(smargon.x_high_lim, 10)
 
     with pytest.raises(WarningException):
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))

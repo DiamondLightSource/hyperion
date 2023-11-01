@@ -290,9 +290,10 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     move_xyz.assert_called_once()
 
 
+@pytest.mark.asyncio
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
-def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
+async def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     fake_fgs_composite: FlyScanXRayCentreComposite,
@@ -309,12 +310,14 @@ def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
             mock_subscriptions,
         )
     )
-    assert fake_fgs_composite.smargon.stub_offsets.center_at_current_position.get() == 1
+    stub_offsets = fake_fgs_composite.smargon.stub_offsets
+    assert await stub_offsets.center_at_current_position.proc.get_value() == 1
 
 
+@pytest.mark.asyncio
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
-def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
+async def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
     fake_fgs_composite: FlyScanXRayCentreComposite,
@@ -333,7 +336,8 @@ def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
                 mock_subscriptions,
             )
         )
-    assert fake_fgs_composite.smargon.stub_offsets.center_at_current_position.get() == 0
+    stub_offsets = fake_fgs_composite.smargon.stub_offsets
+    assert await stub_offsets.center_at_current_position.proc.get_value() == 0
 
 
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.sleep", autospec=True)
