@@ -21,7 +21,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
-from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.xbpm_feedback import XBPMFeedbackI04
 from dodal.devices.zebra import Zebra
 
 import hyperion.log
@@ -70,7 +70,7 @@ class FlyScanXRayCentreComposite:
     smargon: Smargon
     undulator: Undulator
     synchrotron: Synchrotron
-    xbpm_feedback: XBPMFeedback
+    xbpm_feedback: XBPMFeedbackI04
     zebra: Zebra
 
     @property

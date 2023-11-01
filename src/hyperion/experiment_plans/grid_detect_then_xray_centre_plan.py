@@ -21,7 +21,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
-from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.xbpm_feedback import XBPMFeedbackI04
 from dodal.devices.zebra import Zebra
 
 from hyperion.device_setup_plans.utils import (
@@ -74,7 +74,7 @@ class GridDetectThenXRayCentreComposite:
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     undulator: Undulator
-    xbpm_feedback: XBPMFeedback
+    xbpm_feedback: XBPMFeedbackI04
     zebra: Zebra
 
     def __post_init__(self):
@@ -185,7 +185,7 @@ def detect_grid_and_do_gridscan(
     )
     yield from bps.abs_set(
         composite.aperture_scatterguard,
-        composite.aperture_scatterguard.aperture_positions.SMALL,
+        composite.aperture_scatterguard.aperture_positions.LARGE,
     )
     yield from wait_for_det_to_finish_moving(composite.detector_motion)
 

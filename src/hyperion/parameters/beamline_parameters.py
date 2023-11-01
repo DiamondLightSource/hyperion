@@ -1,3 +1,4 @@
+from ast import Raise
 from typing import Any, Tuple, cast
 
 from dodal.utils import get_beamline_name
@@ -29,6 +30,8 @@ class GDABeamlineParameters:
             for param in config_lines_sep_key_and_value
             if len(param) == 2
         ]
+        
+        
         for i, (param, value) in enumerate(config_pairs):
             if value == "Yes":
                 config_pairs[i] = (config_pairs[i][0], True)
@@ -37,7 +40,12 @@ class GDABeamlineParameters:
             elif value in BEAMLINE_PARAMETER_KEYWORDS:
                 pass
             else:
-                config_pairs[i] = (config_pairs[i][0], float(config_pairs[i][1]))
+                try:
+                    config_pairs[i] = (config_pairs[i][0], float(config_pairs[i][1]))
+                    #TODO: we need a proper way to fix this
+                except ValueError:
+                    pass
+            
         ob.params = dict(config_pairs)
         return ob
 

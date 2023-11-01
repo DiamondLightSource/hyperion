@@ -6,6 +6,7 @@ ISPYB_PLAN_NAME = "ispyb_readings"
 ISPYB_UPDATING_COLLECTION = "ispyb_update_collection"
 SIM_ZOCALO_ENV = "dev_artemis"
 BEAMLINE_PARAMETER_PATHS = {
+    "i04": "/dls_sw/i04/software/gda_versions/gda_9_29/workspace_git/gda-mx.git/configurations/i04-config/scripts/beamlineParameters",
     "i03": "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters",
     "s03": "src/hyperion/parameters/tests/test_data/test_beamline_parameters.txt",
 }

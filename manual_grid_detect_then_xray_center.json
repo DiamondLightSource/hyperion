@@ -1,0 +1,48 @@
+{
+    "params_version": "4.0.0",
+    "hyperion_params": {
+        "beamline": "BL04I",
+        "insertion_prefix": "SR04I",
+        "detector": "EIGER2_X_16M",
+        "zocalo_environment": "artemis",
+        "experiment_type": "pin_tip_centre_then_xray_centre",
+        "detector_params": {
+            "current_energy_ev": 6550,
+            "directory": "/dls/i04/data/2023/cm33903-5/hyperion_tests/",
+            "prefix": "hyperion_tests",
+            "run_number": 16,
+            "use_roi_mode": false,
+            "det_dist_to_beam_converter_path": "/dls_sw/i04/software/gda_versions/gda_9_29/workspace_git/gda-mx.git/configurations/i04-config/lookupTables/DetDistToBeamXYConverter.txt"
+        },
+        "ispyb_params": {
+            "visit_path": "/dls/i04/data/2023/cm33903-5/",
+            "microns_per_pixel_x": 1.0,
+            "microns_per_pixel_y": 1.0,
+            "position": [
+                10.0,
+                20.0,
+                30.0
+            ],
+            "transmission_fraction": 1.0,
+            "flux": 10.0,
+            "beam_size_x": 1.0,
+            "beam_size_y": 1.0,
+            "slit_gap_size_x": 1.0,
+            "slit_gap_size_y": 1.0,
+            "focal_spot_size_x": 1.0,
+            "focal_spot_size_y": 1.0,
+            "comment": "test",
+            "resolution": 1.0,
+            "sample_barcode": "test"
+        }
+    },
+    "experiment_params": {
+        "snapshot_dir": "/dls/i04/data/2023/cm33903-5/hyperion_tests/",
+        "exposure_time": 0.004,
+        "detector_distance": 1000.0,
+        "omega_start": 0.0,
+        "tip_offset_microns": 0,
+        "grid_width_microns": 600.0,
+        "oav_centring_file": "/dls_sw/i04/software/gda_versions/gda_9_29/workspace_git/gda-mx.git/configurations/i04-config/etc/OAVCentring.json"
+    }
+}
