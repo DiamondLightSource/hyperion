@@ -51,7 +51,6 @@ def set_up_hyperion_logging_handlers(
         dev_mode,
         _get_logging_file_path(filename),
         file_handler_logging_level="DEBUG",
-        logger=logger,
     )
     dodal_logger.addFilter(dc_group_id_filter)
     logger.addFilter(dc_group_id_filter)
