@@ -26,6 +26,7 @@ from hyperion.__main__ import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
+from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -74,6 +75,8 @@ class MockRunEngine:
                     "without an error. Most likely you should initialise with "
                     "RE_takes_time=false, or set RE.error from another thread."
                 )
+        if self.error:
+            self.abort()
 
     def abort(self):
         while self.aborting_takes_time:
@@ -133,7 +136,7 @@ def test_env(request):
         "hyperion.__main__.PLAN_REGISTRY",
         real_plans_and_test_exps,
     ), patch("hyperion.__main__.setup_context", MagicMock(return_value=mock_context)):
-        app, runner = create_app({"TESTING": True}, mock_run_engine)  # type: ignore
+        app, runner = create_app({"TESTING": True}, mock_run_engine, True)  # type: ignore
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
@@ -155,11 +158,14 @@ def wait_for_run_engine_status(
     while attempts != 0:
         response = client.get(STATUS_ENDPOINT)
         response_json = json.loads(response.data)
+        LOGGER.debug(
+            f"Checking client status - response: {response_json}, attempts left={attempts}"
+        )
         if status_check(response_json["status"]):
             return response_json
         else:
             attempts -= 1
-            sleep(0.1)
+            sleep(0.2)
     assert False, "Run engine still busy"
 
 
@@ -248,8 +254,10 @@ def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
     caplog,
     test_env: ClientAndRunEngine,
 ):
+    LOGGER.debug(
+        f"Started flaky test - status of RE is {test_env.mock_run_engine.__dict__}"
+    )
     test_env.mock_run_engine.aborting_takes_time = True
-
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     test_env.mock_run_engine.error = Exception("D'Oh")
     response_json = wait_for_run_engine_status(test_env.client)
