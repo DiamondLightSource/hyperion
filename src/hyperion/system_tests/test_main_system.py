@@ -62,6 +62,9 @@ class MockRunEngine:
     error: Optional[Exception] = None
     test_name = "test"
 
+    def __init__(self, test_name):
+        self.test_name = test_name
+
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         time = 0.0
         while self.RE_takes_time:
@@ -122,8 +125,7 @@ TEST_EXPTS = {
 
 @pytest.fixture
 def test_env(request):
-    mock_run_engine = MockRunEngine()
-    mock_run_engine.test_name = repr(request)
+    mock_run_engine = MockRunEngine(test_name=repr(request))
     mock_context = BlueskyContext()
     real_plans_and_test_exps = dict(
         {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
