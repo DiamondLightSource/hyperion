@@ -83,8 +83,8 @@ def move_pin_into_view(
             step_size_mm = -step_size_mm
 
         smargon_x = yield from bps.rd(smargon.x.readback)
-        smargon_x_low_limit = yield from bps.rd(smargon.x_low_lim)
-        smargon_x_high_limit = yield from bps.rd(smargon.x_high_lim)
+        smargon_x_low_limit = yield from bps.rd(smargon.x.low_limit_travel)
+        smargon_x_high_limit = yield from bps.rd(smargon.x.high_limit_travel)
 
         ideal_move_to_find_pin = float(smargon_x) + step_size_mm
         move_within_limits = max(
