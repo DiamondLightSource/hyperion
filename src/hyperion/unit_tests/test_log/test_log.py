@@ -100,3 +100,34 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
         assert "Dodal" in handler_names
         assert "test_hyperion" in handler_messages
         assert "test_dodal" in handler_messages
+
+
+@pytest.mark.skip_log_setup
+def test_callback_loggers_log_to_own_files(
+    clear_loggers,
+):
+    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_loggers
+    hyperion_handlers = log.set_up_hyperion_logging_handlers()
+
+    hyperion_logger = log.LOGGER
+    ispyb_logger = log.ISPYB_LOGGER
+    nexus_logger = log.NEXUS_LOGGER
+    log.set_up_callback_logging_handlers("ispyb", log.ISPYB_LOGGER, "INFO")
+    log.set_up_callback_logging_handlers("nexus", log.NEXUS_LOGGER, "INFO")
+
+    hyperion_logger.info("test_hyperion")
+    ispyb_logger.info("test_ispyb")
+    nexus_logger.info("test_nexus")
+
+    total_filehandler_calls = mock_filehandler_emit.mock_calls
+    total_graylog_calls = mock_GELFTCPHandler_emit.mock_calls
+
+    assert len(total_filehandler_calls) == len(total_graylog_calls) == 4
+
+    hyperion_filehandler = hyperion_handlers[2]
+    ispyb_filehandler = ispyb_logger.handlers[2]
+    nexus_filehandler = nexus_logger.handlers[2]
+
+    assert nexus_filehandler.baseFilename != hyperion_filehandler.baseFilename  # type: ignore
+    assert ispyb_filehandler.baseFilename != hyperion_filehandler.baseFilename  # type: ignore
+    assert ispyb_filehandler.baseFilename != nexus_filehandler.baseFilename  # type: ignore

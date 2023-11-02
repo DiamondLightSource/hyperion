@@ -79,19 +79,12 @@ def _get_logging_file_path(filename: str) -> Path:
     """Get the path to write the hyperion log files to.
 
     If the HYPERION_LOG_DIR environment variable exists then logs will be put in here.
-
-    If no envrionment variable is found it will default it to the tmp/dev directory.
+    If no envrionment variable is found it will default it to the ./tmp/dev directory.
+    If the directories needed don't exist they will be created.
 
     Returns:
         logging_path (Path): Path to the log file for the file handler to write to.
     """
-    logging_path: Path
-
-    hyperion_log_dir = environ.get("HYPERION_LOG_DIR")
-    if hyperion_log_dir:
-        logging_path = Path(hyperion_log_dir)
-    else:
-        logging_path = Path("./tmp/dev/")
-
+    logging_path = Path(environ.get("HYPERION_LOG_DIR") or "./tmp/dev/")
     Path(logging_path).mkdir(parents=True, exist_ok=True)
     return logging_path / Path(filename)
