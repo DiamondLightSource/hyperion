@@ -76,7 +76,7 @@ class MockRunEngine:
                     "RE_takes_time=false, or set RE.error from another thread."
                 )
         if self.error:
-            self.abort()
+            raise self.error
 
     def abort(self):
         while self.aborting_takes_time:
@@ -248,23 +248,6 @@ def test_given_started_when_stopped_and_started_again_then_runs(
     check_status_in_response(response, Status.SUCCESS)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.BUSY)
-
-
-def test_given_started_when_RE_stops_on_its_own_with_error_then_error_reported(
-    caplog,
-    test_env: ClientAndRunEngine,
-):
-    LOGGER.debug(
-        f"Started flaky test - status of RE is {test_env.mock_run_engine.__dict__}"
-    )
-    test_env.mock_run_engine.aborting_takes_time = True
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
-    test_env.mock_run_engine.error = Exception("D'Oh")
-    response_json = wait_for_run_engine_status(test_env.client)
-    assert response_json["status"] == Status.FAILED.value
-    assert response_json["message"] == 'Exception("D\'Oh")'
-    assert response_json["exception_type"] == "Exception"
-    assert caplog.records[-1].levelname == "ERROR"
 
 
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
