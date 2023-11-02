@@ -2,8 +2,8 @@ from enum import Enum
 
 SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
-ISPYB_PLAN_NAME = "ispyb_readings"
-ISPYB_UPDATING_COLLECTION = "ispyb_update_collection"
+ISPYB_HARDWARE_READ_PLAN = "ispyb_reading_hardware"
+ISPYB_TRANSMISSION_FLUX_READ_PLAN = "ispyb_update_transmission_flux"
 SIM_ZOCALO_ENV = "dev_artemis"
 BEAMLINE_PARAMETER_PATHS = {
     "i03": "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters",

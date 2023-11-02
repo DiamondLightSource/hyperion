@@ -8,8 +8,8 @@ from bluesky.callbacks import CallbackBase
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 from hyperion.log import LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
-    ISPYB_PLAN_NAME,
-    ISPYB_UPDATING_COLLECTION,
+    ISPYB_HARDWARE_READ_PLAN,
+    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
     SIM_ISPYB_CONFIG,
 )
 from hyperion.parameters.internal_parameters import InternalParameters
@@ -55,7 +55,7 @@ class BaseISPyBCallback(CallbackBase):
         ), "ISPyB deposition can't be initialised!"
         event_descriptor = self.descriptors[doc["descriptor"]]
 
-        if event_descriptor.get("name") == ISPYB_PLAN_NAME:
+        if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_gap"
             ]
@@ -69,7 +69,7 @@ class BaseISPyBCallback(CallbackBase):
                 "s4_slit_gaps_ygap"
             ]
 
-        if event_descriptor.get("name") == ISPYB_UPDATING_COLLECTION:
+        if event_descriptor.get("name") == ISPYB_TRANSMISSION_FLUX_READ_PLAN:
             self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
                 "data"
             ]["attenuator_actual_transmission"]
