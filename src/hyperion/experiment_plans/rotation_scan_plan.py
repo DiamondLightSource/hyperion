@@ -39,6 +39,7 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
     RotationCallbackCollection,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
@@ -133,8 +134,8 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
     )
 
 
-@bpp.set_run_key_decorator("rotation_scan_main")
-@bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
+@bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
+@bpp.run_decorator(md={"subplan_name": ROTATION_PLAN_MAIN})
 def rotation_scan_plan(
     composite: RotationScanComposite,
     params: RotationInternalParameters,
@@ -258,7 +259,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": "rotation_scan_with_cleanup",
+            "subplan_name": ROTATION_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
         }
     )

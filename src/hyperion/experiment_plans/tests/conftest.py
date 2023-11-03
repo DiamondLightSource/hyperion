@@ -285,7 +285,7 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
 
 @pytest.fixture
 def mock_subscriptions(test_fgs_params):
-    subscriptions = XrayCentreCallbackCollection.from_params(test_fgs_params)
+    subscriptions = XrayCentreCallbackCollection.setup()
     subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()

@@ -5,7 +5,11 @@ import pytest
 from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from hyperion.parameters.constants import ISPYB_HARDWARE_READ_PLAN
+from hyperion.parameters.constants import (
+    GRIDSCAN_AND_MOVE,
+    GRIDSCAN_MAIN_PLAN,
+    ISPYB_HARDWARE_READ_PLAN,
+)
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -17,7 +21,7 @@ test_start_document = {
     "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
     "scan_id": 1,
     "plan_type": "generator",
-    "plan_name": "run_gridscan_and_move",
+    "plan_name": GRIDSCAN_AND_MOVE,
 }
 
 
@@ -94,7 +98,7 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
     )
     nexus_handler.start(
         {
-            "subplan_name": "run_gridscan",
+            "subplan_name": GRIDSCAN_MAIN_PLAN,
         }
     )
     with patch(

@@ -2,10 +2,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import fields
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from hyperion.parameters.internal_parameters import InternalParameters
 
 
 class AbstractPlanCallbackCollection(ABC):
@@ -17,15 +13,15 @@ class AbstractPlanCallbackCollection(ABC):
 
     @classmethod
     @abstractmethod
-    def from_params(cls, params: InternalParameters):
+    def setup(cls):
         ...
 
     def __iter__(self):
-        for field in fields(self):
+        for field in fields(self):  # type: ignore # subclasses must be dataclass
             yield getattr(self, field.name)
 
 
 class NullPlanCallbackCollection(AbstractPlanCallbackCollection):
     @classmethod
-    def from_params(cls, params: InternalParameters):
+    def setup(cls):
         pass

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from bluesky.callbacks import CallbackBase
 
@@ -12,16 +12,28 @@ from hyperion.parameters.constants import (
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
     SIM_ISPYB_CONFIG,
 )
-from hyperion.parameters.internal_parameters import InternalParameters
+
+if TYPE_CHECKING:
+    from hyperion.external_interaction.ispyb.store_in_ispyb import (
+        Store2DGridscanInIspyb,
+        Store3DGridscanInIspyb,
+        StoreRotationInIspyb,
+    )
+    from hyperion.parameters.plan_specific.gridscan_internal_params import (
+        GridscanInternalParameters,
+    )
+    from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+        RotationInternalParameters,
+    )
 
 
 class BaseISPyBCallback(CallbackBase):
-    def __init__(self, parameters: InternalParameters):
-        """Subclasses should run super().__init__() with parameters, then set
+    def __init__(self) -> None:
+        """Subclasses should run super().__init__(), then in their start() method set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
-        self.ispyb: StoreInIspyb
-        self.params = parameters
+        self.params: GridscanInternalParameters | RotationInternalParameters
+        self.ispyb: StoreRotationInIspyb | Store3DGridscanInIspyb | Store2DGridscanInIspyb
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
         if self.ispyb_config == SIM_ISPYB_CONFIG:
@@ -88,8 +100,10 @@ class BaseISPyBCallback(CallbackBase):
             self.ispyb, StoreInIspyb
         ), "ISPyB handler recieved stop document, but deposition object doesn't exist!"
         LOGGER.debug("ISPyB handler received stop document.")
-        exit_status = doc.get("exit_status")
-        reason = doc.get("reason")
+        exit_status = (
+            doc.get("exit_status") or "Exit status not available in stop document!"
+        )
+        reason = doc.get("reason") or "Unknown failure reason!"
         set_dcgid_tag(None)
         try:
             self.ispyb.end_deposition(exit_status, reason)

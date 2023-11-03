@@ -4,7 +4,7 @@ from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import ISPYB_HARDWARE_READ_PLAN
+from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN, ISPYB_HARDWARE_READ_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -36,7 +36,7 @@ class GridscanNexusFileCallback(CallbackBase):
         self.nexus_writer_2: NexusWriter | None = None
 
     def start(self, doc: dict):
-        if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
+        if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."
             )

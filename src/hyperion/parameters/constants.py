@@ -18,6 +18,17 @@ DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
 OAV_REFRESH_DELAY = 0.3
 
+# Plan section names ###################################################################
+# Gridscan
+GRIDSCAN_OUTER_PLAN = "run_gridscan_move_and_tidy"
+GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
+GRIDSCAN_MAIN_PLAN = "run_gridscan"
+DO_FGS = "do_fgs"
+# Rotation scan
+ROTATION_OUTER_PLAN = "rotation_scan_with_cleanup"
+ROTATION_PLAN_MAIN = "rotation_scan_main"
+########################################################################################
+
 
 class Actions(Enum):
     START = "start"

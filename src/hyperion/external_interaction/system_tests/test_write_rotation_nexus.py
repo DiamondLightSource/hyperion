@@ -51,7 +51,7 @@ def fake_rotation_scan(
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": "rotation_scan_with_cleanup",
+            "subplan_name": ROTATION_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
         }
     )

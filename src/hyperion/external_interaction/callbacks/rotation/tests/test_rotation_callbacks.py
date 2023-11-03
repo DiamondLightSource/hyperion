@@ -51,7 +51,7 @@ def fake_rotation_scan(
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": "rotation_scan_with_cleanup",
+            "subplan_name": ROTATION_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
         }
     )
@@ -59,10 +59,10 @@ def fake_rotation_scan(
         if after_open_assert:
             after_open_assert(subscriptions)
 
-        @bpp.set_run_key_decorator("rotation_scan_main")
+        @bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
         @bpp.run_decorator(
             md={
-                "subplan_name": "rotation_scan_main",
+                "subplan_name": ROTATION_PLAN_MAIN,
             }
         )
         def fake_main_plan():
@@ -101,7 +101,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     call_content_outer = cb.nexus_handler.start.call_args_list[0].args[0]
     assert call_content_outer["hyperion_internal_parameters"] == params.json()
     call_content_inner = cb.nexus_handler.start.call_args_list[1].args[0]
-    assert call_content_inner["subplan_name"] == "rotation_scan_main"
+    assert call_content_inner["subplan_name"] == ROTATION_PLAN_MAIN
 
 
 @patch(

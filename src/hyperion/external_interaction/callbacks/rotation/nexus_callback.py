@@ -30,7 +30,7 @@ class RotationNexusFileCallback(CallbackBase):
         self.writer: NexusWriter | None = None
 
     def start(self, doc: dict):
-        if doc.get("subplan_name") == "rotation_scan_with_cleanup":
+        if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             self.run_uid = doc.get("uid")
             LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."

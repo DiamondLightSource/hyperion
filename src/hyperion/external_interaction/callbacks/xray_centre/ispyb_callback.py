@@ -9,7 +9,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     Store3DGridscanInIspyb,
     StoreGridscanInIspyb,
 )
-from hyperion.log import set_dcgid_tag
+from hyperion.log import LOGGER, set_dcgid_tag
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -32,14 +32,24 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self, parameters: GridscanInternalParameters):
-        super().__init__(parameters)
-        self.ispyb: StoreGridscanInIspyb = (
-            Store3DGridscanInIspyb(self.ispyb_config, self.params)
-            if self.params.experiment_params.is_3d_grid_scan
-            else Store2DGridscanInIspyb(self.ispyb_config, self.params)
-        )
+    def __init__(self) -> None:
+        super().__init__()
+        self.ispyb: StoreGridscanInIspyb
         self.ispyb_ids: tuple = (None, None, None)
+
+    def start(self, doc: dict):
+        if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
+            LOGGER.info(
+                "Nexus writer recieved start document with experiment parameters."
+            )
+            json_params = doc.get("hyperion_internal_parameters")
+            self.params = GridscanInternalParameters.from_json(json_params)
+            self.ispyb = (
+                Store3DGridscanInIspyb(self.ispyb_config, self.params)
+                if self.params.experiment_params.is_3d_grid_scan
+                else Store2DGridscanInIspyb(self.ispyb_config, self.params)
+            )
+            self.run_start_uid = doc.get("uid")
 
     def append_to_comment(self, comment: str):
         for id in self.ispyb_ids[0]:
