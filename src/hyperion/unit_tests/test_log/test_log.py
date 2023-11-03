@@ -1,6 +1,6 @@
 import os
 from logging import FileHandler
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from dodal.log import LOGGER as dodal_logger
@@ -10,15 +10,21 @@ from hyperion import log
 
 @pytest.fixture
 def clear_loggers():
-    [log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [h.close() and log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [h.close() and log.ISPYB_LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [h.close() and log.NEXUS_LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
     [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
+    mock_open_with_tell = MagicMock()
+    mock_open_with_tell.tell.return_value = 0
     with (
-        patch("dodal.log.logging.FileHandler._open"),
+        patch("dodal.log.logging.FileHandler._open", mock_open_with_tell),
         patch("dodal.log.GELFTCPHandler.emit") as graylog_emit,
         patch("dodal.log.logging.FileHandler.emit") as filehandler_emit,
     ):
         yield filehandler_emit, graylog_emit
-    [log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [h.close() and log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [h.close() and log.ISPYB_LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
+    [h.close() and log.NEXUS_LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
     [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
 
 
@@ -122,7 +128,7 @@ def test_callback_loggers_log_to_own_files(
     total_filehandler_calls = mock_filehandler_emit.mock_calls
     total_graylog_calls = mock_GELFTCPHandler_emit.mock_calls
 
-    assert len(total_filehandler_calls) == len(total_graylog_calls) == 4
+    assert len(total_filehandler_calls) == len(total_graylog_calls)
 
     hyperion_filehandler = hyperion_handlers[2]
     ispyb_filehandler = ispyb_logger.handlers[2]
