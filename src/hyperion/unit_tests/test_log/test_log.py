@@ -10,10 +10,10 @@ from hyperion import log
 
 @pytest.fixture
 def clear_loggers():
-    [h.close() and log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
-    [h.close() and log.ISPYB_LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
-    [h.close() and log.NEXUS_LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
-    [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
+    log.LOGGER.handlers.clear()
+    log.ISPYB_LOGGER.handlers.clear()
+    log.NEXUS_LOGGER.handlers.clear()
+    dodal_logger.handlers.clear()
     mock_open_with_tell = MagicMock()
     mock_open_with_tell.tell.return_value = 0
     with (
@@ -22,10 +22,10 @@ def clear_loggers():
         patch("dodal.log.logging.FileHandler.emit") as filehandler_emit,
     ):
         yield filehandler_emit, graylog_emit
-    [h.close() and log.LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
-    [h.close() and log.ISPYB_LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
-    [h.close() and log.NEXUS_LOGGER.removeHandler(h) for h in log.LOGGER.handlers]
-    [dodal_logger.removeHandler(h) for h in dodal_logger.handlers]
+    log.LOGGER.handlers.clear()
+    log.ISPYB_LOGGER.handlers.clear()
+    log.NEXUS_LOGGER.handlers.clear()
+    dodal_logger.handlers.clear()
 
 
 @pytest.mark.skip_log_setup
