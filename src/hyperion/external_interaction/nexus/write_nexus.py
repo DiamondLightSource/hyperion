@@ -13,7 +13,7 @@ from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
 from hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     create_detector_parameters,
-    create_goniometer_axes,
+    create_vmxm_goniometer_axes,
     get_start_and_predicted_end_time,
 )
 from hyperion.parameters.internal_parameters import InternalParameters
@@ -66,7 +66,7 @@ class NexusWriter:
         self.master_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}_master.h5"
         )
-        self.goniometer: Goniometer = create_goniometer_axes(
+        self.goniometer: Goniometer = create_vmxm_goniometer_axes(
             self.omega_start, self.scan_points
         )
 

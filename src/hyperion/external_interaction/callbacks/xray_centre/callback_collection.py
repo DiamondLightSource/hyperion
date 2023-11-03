@@ -28,16 +28,16 @@ class XrayCentreCallbackCollection(AbstractPlanCallbackCollection):
 
     nexus_handler: GridscanNexusFileCallback
     ispyb_handler: GridscanISPyBCallback
-    zocalo_handler: XrayCentreZocaloCallback
+    # zocalo_handler: XrayCentreZocaloCallback
 
     @classmethod
     def from_params(cls, parameters: InternalParameters):
         nexus_handler = GridscanNexusFileCallback()
         ispyb_handler = GridscanISPyBCallback(parameters)
-        zocalo_handler = XrayCentreZocaloCallback(parameters, ispyb_handler)
+        # zocalo_handler = XrayCentreZocaloCallback(parameters, ispyb_handler)
         callback_collection = cls(
             nexus_handler=nexus_handler,
             ispyb_handler=ispyb_handler,
-            zocalo_handler=zocalo_handler,
+            # zocalo_handler=zocalo_handler,
         )
         return callback_collection

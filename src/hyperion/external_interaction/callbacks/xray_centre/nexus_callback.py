@@ -55,12 +55,13 @@ class GridscanNexusFileCallback(CallbackBase):
 
             LOGGER.info("Initialising nexus writers")
             nexus_data_1 = self.parameters.get_nexus_info(1)
-            nexus_data_2 = self.parameters.get_nexus_info(2)
+            LOGGER.info(f"Nexus data 1: {nexus_data_1}")
+            # nexus_data_2 = self.parameters.get_nexus_info(2)
             self.nexus_writer_1 = NexusWriter(self.parameters, **nexus_data_1)
-            self.nexus_writer_2 = NexusWriter(
-                self.parameters,
-                **nexus_data_2,
-                vds_start_index=nexus_data_1["data_shape"][0],
-            )
+            # self.nexus_writer_2 = NexusWriter(
+            #     self.parameters,
+            #     **nexus_data_2,
+            #     vds_start_index=nexus_data_1["data_shape"][0],
+            # )
             self.nexus_writer_1.create_nexus_file()
-            self.nexus_writer_2.create_nexus_file()
+            # self.nexus_writer_2.create_nexus_file()
