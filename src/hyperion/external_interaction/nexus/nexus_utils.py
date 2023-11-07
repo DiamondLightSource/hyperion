@@ -4,13 +4,10 @@ import time
 from datetime import datetime, timedelta
 
 from dodal.devices.detector import DetectorParams
-from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Goniometer
 from nexgen.nxs_utils.Axes import TransformationType
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
-
-BL = get_beamline_name(None)
 
 
 def create_i03_goniometer_axes(
@@ -72,7 +69,7 @@ def create_vmxm_goniometer_axes(
     omega_start: float,
     scan_points: dict | None,
     x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
-):
+) -> Goniometer:
     """Returns a Nexgen 'Goniometer' object with the dependency chain of I03's Smargon
     goniometer. If scan points is provided these values will be used in preference to
     those from the params object.
@@ -115,16 +112,6 @@ def create_vmxm_goniometer_axes(
         ),
     ]
     return Goniometer(gonio_axes, scan_points)
-
-
-if BL == "i03":
-    create_goniometer_axes = create_i03_goniometer_axes
-elif BL == "i02-1":
-    create_goniometer_axes = create_vmxm_goniometer_axes
-else:
-
-    def create_goniometer_axes(*a, **k):
-        raise ValueError("Cannot create goniometer axes on unknown beamline")
 
 
 def get_start_and_predicted_end_time(time_expected: float) -> tuple[str, str]:

@@ -22,15 +22,12 @@ from dodal.devices.zebra import (
 )
 
 import hyperion.log
-from hyperion.device_setup_plans.setup_zebra import (
-    set_zebra_shutter_to_manual,
-)
 from hyperion.exceptions import WarningException
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     VmxmFastGridScanCallbackCollection,
 )
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import ISPYB_PLAN_NAME, SIM_BEAMLINE
+from hyperion.parameters.constants import ISPYB_HARDWARE_READ_PLAN, SIM_BEAMLINE
 from hyperion.tracing import TRACER
 from hyperion.utils.context import device_composite_from_context, setup_context
 
@@ -76,7 +73,7 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScan2D, timeout=0.5):
 
 def tidy_up_plans(fgs_composite: VmxmFlyScanXRayCentreComposite):
     hyperion.log.LOGGER.info("Tidying up Zebra")
-    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
+    yield from tidyup_vmxm_zebra_after_gridscan(fgs_composite.zebra)
 
 
 @bpp.set_run_key_decorator("run_gridscan")
@@ -90,7 +87,7 @@ def run_gridscan(
 ):
     fgs_motors = fgs_composite.fast_grid_scan
 
-    yield from bps.create(name=ISPYB_PLAN_NAME)
+    yield from bps.create(name=ISPYB_HARDWARE_READ_PLAN)
     yield from bps.read(fgs_composite.synchrotron.machine_status.synchrotron_mode)
     yield from bps.save()
 
@@ -127,6 +124,19 @@ def setup_vmxm_zebra_for_gridscan(
     # note: VMXm-specific
     vmxm_zebra_input = 4
     vmxm_zebra_output = 1
+    yield from bps.abs_set(
+        zebra.output.out_pvs[vmxm_zebra_input], vmxm_zebra_output, group=group
+    )
+
+    if wait:
+        yield from bps.wait(group)
+
+
+def tidyup_vmxm_zebra_after_gridscan(
+    zebra: Zebra, group="tidyup_vmxm_zebra_after_gridscan", wait=False
+):  # note: VMXm-specific
+    vmxm_zebra_input = 4
+    vmxm_zebra_output = 36
     yield from bps.abs_set(
         zebra.output.out_pvs[vmxm_zebra_input], vmxm_zebra_output, group=group
     )

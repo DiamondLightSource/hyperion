@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from typing import Protocol
 
 from nexgen.nxs_utils import Detector, Goniometer, Source
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
@@ -13,10 +14,21 @@ from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
 from hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     create_detector_parameters,
-    create_goniometer_axes,
     get_start_and_predicted_end_time,
 )
 from hyperion.parameters.internal_parameters import InternalParameters
+
+
+class CreateGoniometerProtocol(Protocol):
+    @staticmethod
+    def __call__(
+        omega_start: float,
+        scan_points: dict | None,
+        x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
+        chi: float = 0.0,
+        phi: float = 0.0,
+    ) -> Goniometer:
+        ...
 
 
 class NexusWriter:
@@ -25,6 +37,7 @@ class NexusWriter:
         parameters: InternalParameters,
         scan_points: dict,
         data_shape: tuple[int, int, int],
+        create_goniometer_func: CreateGoniometerProtocol,
         omega_start: float | None = None,
         run_number: int | None = None,
         vds_start_index: int = 0,
@@ -66,12 +79,11 @@ class NexusWriter:
         self.master_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}_master.h5"
         )
-
         try:
             chi = parameters.experiment_params.chi_start
         except Exception:
             chi = 0.0
-        self.goniometer: Goniometer = create_goniometer_axes(
+        self.goniometer: Goniometer = create_goniometer_func(
             self.omega_start, self.scan_points, chi=chi
         )
 

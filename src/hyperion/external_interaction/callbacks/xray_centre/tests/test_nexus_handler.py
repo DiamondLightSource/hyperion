@@ -5,6 +5,7 @@ import pytest
 from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
+from hyperion.external_interaction.nexus.nexus_utils import create_i03_goniometer_axes
 from hyperion.parameters.constants import ISPYB_HARDWARE_READ_PLAN
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -36,7 +37,7 @@ def test_writers_not_setup_on_plan_start_doc(
     nexus_writer: MagicMock,
     dummy_params: GridscanInternalParameters,
 ):
-    nexus_handler = GridscanNexusFileCallback()
+    nexus_handler = GridscanNexusFileCallback(create_i03_goniometer_axes)
     nexus_writer.assert_not_called()
     nexus_handler.start(
         {
@@ -51,7 +52,7 @@ def test_writers_dont_create_on_init_but_do_on_ispyb_event(
     nexus_writer: MagicMock,
     dummy_params: GridscanInternalParameters,
 ):
-    nexus_handler = GridscanNexusFileCallback()
+    nexus_handler = GridscanNexusFileCallback(create_i03_goniometer_axes)
 
     assert nexus_handler.nexus_writer_1 is None
     assert nexus_handler.nexus_writer_2 is None
@@ -85,7 +86,7 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
 ):
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
 
-    nexus_handler = GridscanNexusFileCallback()
+    nexus_handler = GridscanNexusFileCallback(create_i03_goniometer_axes)
     nexus_handler.start(
         {
             "subplan_name": "run_gridscan_move_and_tidy",
@@ -113,7 +114,7 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
 def test_sensible_error_if_writing_triggered_before_params_received(
     nexus_writer: MagicMock, dummy_params
 ):
-    nexus_handler = GridscanNexusFileCallback()
+    nexus_handler = GridscanNexusFileCallback(create_i03_goniometer_axes)
     with pytest.raises(AssertionError) as excinfo:
         nexus_handler.descriptor(
             {

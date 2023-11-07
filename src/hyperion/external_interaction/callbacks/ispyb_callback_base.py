@@ -78,9 +78,9 @@ class BaseISPyBCallback(CallbackBase):
                 "flux_flux_reading", 0.0
             )
 
-        LOGGER.info("Creating ispyb entry.")
-        self.ispyb_ids = self.ispyb.begin_deposition()
-        LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
+            LOGGER.info("Creating ispyb entry.")
+            self.ispyb_ids = self.ispyb.begin_deposition()
+            LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
     def stop(self, doc: dict):
         """Subclasses must check that they are recieving a stop document for the correct
