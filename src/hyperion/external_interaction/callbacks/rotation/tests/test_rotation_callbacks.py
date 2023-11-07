@@ -54,8 +54,8 @@ def RE():
 def fake_rotation_scan(
     params: RotationInternalParameters,
     subscriptions: RotationCallbackCollection,
-    after_open_assert: Callable | None = None,
-    after_main_assert: Callable | None = None,
+    after_open_do: Callable | None = None,
+    after_main_do: Callable | None = None,
 ):
     attenuator = make_fake_device(Attenuator)(name="attenuator")
     flux = make_fake_device(Flux)(name="flux")
@@ -69,8 +69,8 @@ def fake_rotation_scan(
         }
     )
     def plan():
-        if after_open_assert:
-            after_open_assert(subscriptions)
+        if after_open_do:
+            after_open_do(subscriptions)
 
         @bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
         @bpp.run_decorator(
@@ -80,9 +80,8 @@ def fake_rotation_scan(
         )
         def fake_main_plan():
             yield from read_hardware_for_ispyb_during_collection(attenuator, flux)
-            subscriptions.ispyb_handler.ispyb_ids = (0, 0)
-            if after_main_assert:
-                after_main_assert(subscriptions)
+            if after_main_do:
+                after_main_do(subscriptions)
             yield from bps.sleep(0)
 
         yield from fake_main_plan()
@@ -199,9 +198,11 @@ def test_zocalo_start_and_end_triggered_once(
     cb.ispyb_handler.stop = MagicMock(autospec=True)
     cb.ispyb_handler.ispyb = MagicMock(spec=StoreRotationInIspyb)
     cb.ispyb_handler.params = params
-    cb.ispyb_handler.ispyb_ids = (0, 0)
 
-    RE(fake_rotation_scan(params, cb))
+    def set_ispyb_ids(cbs):
+        cbs.ispyb_handler.ispyb_ids = (0, 0)
+
+    RE(fake_rotation_scan(params, cb, after_open_do=set_ispyb_ids))
 
     zocalo.assert_called_once()
     cb.zocalo_handler.zocalo_interactor.run_start.assert_called_once()

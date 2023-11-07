@@ -110,7 +110,7 @@ class BaseISPyBCallback(CallbackBase):
         exit_status = (
             doc.get("exit_status") or "Exit status not available in stop document!"
         )
-        reason = doc.get("reason") or "Unknown failure reason!"
+        reason = doc.get("reason") or ""
         set_dcgid_tag(None)
         try:
             self.ispyb.end_deposition(exit_status, reason)

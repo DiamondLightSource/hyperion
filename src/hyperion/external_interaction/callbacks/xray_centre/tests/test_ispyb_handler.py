@@ -8,6 +8,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
+from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
 from hyperion.log import LOGGER, set_up_logging_handlers
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -17,77 +18,6 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 DC_IDS = [1, 2]
 DCG_ID = 4
 td = TestData()
-
-
-@pytest.fixture
-def dummy_params():
-    return GridscanInternalParameters(**default_raw_params())
-
-
-def test_fgs_failing_results_in_bad_run_status_in_ispyb(
-    mock_ispyb_update_time_and_status: MagicMock,
-    mock_ispyb_get_time: MagicMock,
-    mock_ispyb_store_grid_scan: MagicMock,
-    dummy_params,
-    ispyb_handler,
-):
-    mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
-    mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
-    mock_ispyb_update_time_and_status.return_value = None
-
-    ispyb_handler.start(td.test_start_document)
-    ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    ispyb_handler.event(td.test_event_document_pre_data_collection)
-    ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-    ispyb_handler.event(td.test_event_document_during_data_collection)
-    ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
-
-    mock_ispyb_update_time_and_status.assert_has_calls(
-        [
-            call(
-                td.DUMMY_TIME_STRING,
-                td.BAD_ISPYB_RUN_STATUS,
-                "could not connect to devices",
-                id,
-                DCG_ID,
-            )
-            for id in DC_IDS
-        ]
-    )
-    assert mock_ispyb_update_time_and_status.call_count == len(DC_IDS)
-
-
-def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
-    mock_ispyb_update_time_and_status: MagicMock,
-    mock_ispyb_get_time: MagicMock,
-    mock_ispyb_store_grid_scan: MagicMock,
-    dummy_params,
-    ispyb_handler,
-):
-    mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
-    mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
-    mock_ispyb_update_time_and_status.return_value = None
-    ispyb_handler = GridscanISPyBCallback()
-    ispyb_handler.start(td.test_start_document)
-    ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    ispyb_handler.event(td.test_event_document_pre_data_collection)
-    ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-    ispyb_handler.event(td.test_event_document_during_data_collection)
-    ispyb_handler.stop(td.test_do_fgs_gridscan_stop_document)
-
-    mock_ispyb_update_time_and_status.assert_has_calls(
-        [
-            call(
-                td.DUMMY_TIME_STRING,
-                td.GOOD_ISPYB_RUN_STATUS,
-                "",
-                id,
-                DCG_ID,
-            )
-            for id in DC_IDS
-        ]
-    )
-    assert mock_ispyb_update_time_and_status.call_count == len(DC_IDS)
 
 
 @pytest.fixture
@@ -105,44 +35,109 @@ def mock_emit():
     dodal_logger.removeHandler(test_handler)
 
 
-def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
-    mock_emit, mock_ispyb_store_grid_scan: MagicMock, dummy_params
-):
-    mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
-    ispyb_handler = GridscanISPyBCallback()
-    ispyb_handler.start(td.test_start_document)
-    ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    ispyb_handler.event(td.test_event_document_pre_data_collection)
-    ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-    ispyb_handler.event(td.test_event_document_during_data_collection)
-
-    for logger in [LOGGER, dodal_logger]:
-        logger.info("test")
-        latest_record = mock_emit.call_args.args[-1]
-        assert latest_record.dc_group_id == DCG_ID
+@pytest.fixture
+def dummy_params():
+    return GridscanInternalParameters(**default_raw_params())
 
 
-def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
-    mock_emit,
-    mock_ispyb_store_grid_scan: MagicMock,
-    mock_ispyb_update_time_and_status: MagicMock,
-    mock_ispyb_get_time: MagicMock,
-    dummy_params,
-    ispyb_handler,
-):
-    mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
-    mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
-    mock_ispyb_update_time_and_status.return_value = None
-    ispyb_handler = GridscanISPyBCallback()
-    ispyb_handler.start(td.test_start_document)
-    ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    ispyb_handler.event(td.test_event_document_pre_data_collection)
-    ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-    ispyb_handler.event(td.test_event_document_during_data_collection)
-    ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
+def mock_store_in_ispyb(dummy_params, *args, **kwargs) -> Store3DGridscanInIspyb:
+    mock = Store3DGridscanInIspyb(None, dummy_params)
+    mock.store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
+    mock.get_current_time_string = MagicMock(return_value=td.DUMMY_TIME_STRING)
+    mock.update_scan_with_end_time_and_status = MagicMock(return_value=None)
+    return mock
 
-    for logger in [LOGGER, dodal_logger]:
-        logger.info("test")
 
-        latest_record = mock_emit.call_args.args[-1]
-        assert not hasattr(latest_record, "dc_group_id")
+@patch(
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
+    mock_store_in_ispyb,
+)
+class TestXrayCentreIspybHandler:
+    def test_fgs_failing_results_in_bad_run_status_in_ispyb(
+        self,
+    ):
+        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler.start(td.test_start_document)
+        ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
+        ispyb_handler.event(td.test_event_document_pre_data_collection)
+        ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
+        ispyb_handler.event(td.test_event_document_during_data_collection)
+        ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
+
+        ispyb_handler.ispyb.update_scan_with_end_time_and_status.assert_has_calls(
+            [
+                call(
+                    td.DUMMY_TIME_STRING,
+                    td.BAD_ISPYB_RUN_STATUS,
+                    "could not connect to devices",
+                    id,
+                    DCG_ID,
+                )
+                for id in DC_IDS
+            ]
+        )
+        assert (
+            ispyb_handler.ispyb.update_scan_with_end_time_and_status.call_count
+            == len(DC_IDS)
+        )
+
+    def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
+        self,
+    ):
+        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler.start(td.test_start_document)
+        ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
+        ispyb_handler.event(td.test_event_document_pre_data_collection)
+        ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
+        ispyb_handler.event(td.test_event_document_during_data_collection)
+        ispyb_handler.stop(td.test_do_fgs_gridscan_stop_document)
+
+        ispyb_handler.ispyb.update_scan_with_end_time_and_status.assert_has_calls(
+            [
+                call(
+                    td.DUMMY_TIME_STRING,
+                    td.GOOD_ISPYB_RUN_STATUS,
+                    "",
+                    id,
+                    DCG_ID,
+                )
+                for id in DC_IDS
+            ]
+        )
+        assert (
+            ispyb_handler.ispyb.update_scan_with_end_time_and_status.call_count
+            == len(DC_IDS)
+        )
+
+    def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
+        self, mock_emit
+    ):
+        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler.start(td.test_start_document)
+        ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
+        ispyb_handler.event(td.test_event_document_pre_data_collection)
+        ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
+        ispyb_handler.event(td.test_event_document_during_data_collection)
+
+        for logger in [LOGGER, dodal_logger]:
+            logger.info("test")
+            latest_record = mock_emit.call_args.args[-1]
+            assert latest_record.dc_group_id == DCG_ID
+
+    def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
+        self,
+        mock_emit,
+    ):
+        ispyb_handler = GridscanISPyBCallback()
+        ispyb_handler.start(td.test_start_document)
+        ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
+        ispyb_handler.event(td.test_event_document_pre_data_collection)
+        ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
+        ispyb_handler.event(td.test_event_document_during_data_collection)
+        ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
+
+        for logger in [LOGGER, dodal_logger]:
+            logger.info("test")
+
+            latest_record = mock_emit.call_args.args[-1]
+            assert not hasattr(latest_record, "dc_group_id")

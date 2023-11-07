@@ -48,7 +48,7 @@ class StoreInIspyb(ABC):
         self.experiment_type = experiment_type
 
     @abstractmethod
-    def _store_scan_data(self, conn: Connector):
+    def _store_scan_data(self, conn: Connector) -> tuple:
         pass
 
     @abstractmethod
@@ -73,6 +73,7 @@ class StoreInIspyb(ABC):
         self, data_collection_id: int, comment: str, delimiter: str = " "
     ) -> None:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None, "Failed to connect to ISPyB!"
             mx_acquisition: MXAcquisition = conn.mx_acquisition
             mx_acquisition.update_data_collection_append_comments(
                 data_collection_id, comment, delimiter
@@ -83,6 +84,9 @@ class StoreInIspyb(ABC):
         return now.strftime("%Y-%m-%d %H:%M:%S")
 
     def get_visit_string(self):
+        assert (
+            self.ispyb_params and self.detector_params
+        ), "StoreInISPyB didn't acquire params"
         visit_path_match = self.get_visit_string_from_path(self.ispyb_params.visit_path)
         if visit_path_match:
             return visit_path_match
@@ -101,12 +105,13 @@ class StoreInIspyb(ABC):
         data_collection_id: int,
         data_collection_group_id: int,
     ) -> None:
-        assert self.ispyb_params is not None
-        assert self.detector_params is not None
+        assert self.ispyb_params is not None and self.detector_params is not None
         if reason is not None and reason != "":
             self.append_to_comment(data_collection_id, f"{run_status} reason: {reason}")
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None, "Failed to connect to ISPyB!"
+
             mx_acquisition: MXAcquisition = conn.mx_acquisition
 
             params = mx_acquisition.get_data_collection_params()
@@ -178,9 +183,11 @@ class StoreInIspyb(ABC):
     def _store_data_collection_table(
         self, conn: Connector, data_collection_group_id: int
     ) -> int:
-        assert self.ispyb_params is not None
-        assert self.detector_params is not None
-        assert self.xtal_snapshots is not None
+        assert (
+            self.ispyb_params is not None
+            and self.detector_params is not None
+            and self.xtal_snapshots is not None
+        )
 
         core: Core = conn.core
         mx_acquisition: MXAcquisition = conn.mx_acquisition
@@ -294,6 +301,7 @@ class StoreRotationInIspyb(StoreInIspyb):
 
     def begin_deposition(self):
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None, "Failed to connect to ISPyB"
             return self._store_scan_data(conn)
 
     def end_deposition(self, success: str, reason: str):
@@ -311,7 +319,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self,
         ispyb_config: str,
         experiment_type: str,
-        parameters: GridscanInternalParameters = None,
+        parameters: GridscanInternalParameters | None = None,
     ) -> None:
         super().__init__(ispyb_config, experiment_type)
         self.full_params: GridscanInternalParameters | None = parameters
@@ -319,10 +327,13 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self.data_collection_ids: tuple[int, ...] | None = None
         self.upper_left: list[int] | None = None
         self.y_steps: int | None = None
-        self.y_step_size: int | None = None
+        self.y_step_size: float | None = None
         self.grid_ids: tuple[int, ...] | None = None
 
     def begin_deposition(self):
+        assert (
+            self.full_params is not None
+        ), "StoreGridscanInIspyb failed to get parameters."
         (
             self.data_collection_ids,
             self.grid_ids,
@@ -352,12 +363,13 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self.y_step_size = full_params.experiment_params.y_step_size
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None, "Failed to connect to ISPyB"
             return self._store_scan_data(conn)
 
     def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
-        assert self.full_params is not None
+        assert self.full_params and self.y_steps
         params["axis_range"] = 0
         params["axis_end"] = self.omega_start
         params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
@@ -389,13 +401,16 @@ class StoreGridscanInIspyb(StoreInIspyb):
         return mx_acquisition.upsert_dc_grid(list(params.values()))
 
     def _construct_comment(self) -> str:
-        assert self.ispyb_params is not None
-        assert self.full_params is not None
-        assert self.upper_left is not None
-        assert self.y_step_size is not None
+        assert (
+            self.ispyb_params is not None
+            and self.full_params is not None
+            and self.upper_left is not None
+            and self.y_step_size is not None
+            and self.y_steps is not None
+        ), "StoreGridScanInIspyb failed to get parameters"
 
         bottom_right = oav_utils.bottom_right_from_top_left(
-            self.upper_left,
+            self.upper_left,  # type: ignore
             self.full_params.experiment_params.x_steps,
             self.y_steps,
             self.full_params.experiment_params.x_step_size,
@@ -446,6 +461,12 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         )
 
     def __prepare_second_scan_params(self):
+        assert (
+            self.omega_start is not None
+            and self.run_number is not None
+            and self.ispyb_params is not None
+            and self.full_params is not None
+        ), "StoreGridscanInIspyb failed to get parameters"
         self.omega_start += 90
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end

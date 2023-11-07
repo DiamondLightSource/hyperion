@@ -294,9 +294,9 @@ def modified_interactor_mock(assign_run_end: Callable | None = None):
     return mock
 
 
-def modified_store_grid_scan_mock(*args, **kwargs):
+def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
     mock = MagicMock(spec=Store3DGridscanInIspyb)
-    mock.begin_deposition.return_value = ((0, 0), 0, 0)
+    mock.begin_deposition.return_value = (dcids, dcgid, 0)
     return mock
 
 

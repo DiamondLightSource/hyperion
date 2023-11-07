@@ -51,6 +51,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
             self.run_start_uid = doc.get("uid")
+            self.uid_to_finalize_on = doc.get("uid")
 
     def append_to_comment(self, comment: str):
         for id in self.ispyb_ids[0]:
