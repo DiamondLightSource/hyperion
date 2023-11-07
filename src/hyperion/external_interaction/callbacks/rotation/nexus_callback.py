@@ -4,6 +4,7 @@ from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import ROTATION_OUTER_PLAN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -24,7 +25,7 @@ class RotationNexusFileCallback(CallbackBase):
     Usually used as part of a RotationCallbackCollection.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.run_uid: str | None = None
         self.parameters: RotationInternalParameters | None = None
         self.writer: NexusWriter | None = None

@@ -28,14 +28,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
     Usually used as part of a RotationCallbackCollection.
     """
 
-    def __init__(self) -> None:
-        self.params: RotationInternalParameters
-        super().__init__()
-        self.ispyb: StoreRotationInIspyb = StoreRotationInIspyb(
-            self.ispyb_config, self.params
-        )
-        self.ispyb_ids: tuple[int, int] | tuple[None, None] = (None, None)
-
     def append_to_comment(self, comment: str):
         assert self.ispyb_ids[0] is not None
         self._append_to_comment(self.ispyb_ids[0], comment)
@@ -47,7 +39,11 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 "ISPyB callback recieved start document with experiment parameters."
             )
             json_params = doc.get("hyperion_internal_parameters")
-            self.parameters = RotationInternalParameters.from_json(json_params)
+            self.params = RotationInternalParameters.from_json(json_params)
+            self.ispyb: StoreRotationInIspyb = StoreRotationInIspyb(
+                self.ispyb_config, self.params
+            )
+        self.ispyb_ids: tuple[int, int] | tuple[None, None] = (None, None)
         LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.uid_to_finalize_on = doc.get("uid")

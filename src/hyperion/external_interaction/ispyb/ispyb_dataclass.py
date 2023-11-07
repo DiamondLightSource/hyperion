@@ -66,7 +66,7 @@ class IspybParams(BaseModel):
     comment: str
     resolution: float
 
-    sample_id: Optional[int] = None
+    sample_id: Optional[str] = None
     sample_barcode: Optional[str] = None
 
     # Optional from GDA as populated by Ophyd

@@ -253,7 +253,7 @@ def cleanup_plan(composite: RotationScanComposite, **kwargs):
 
 
 def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGenerator:
-    subscriptions = RotationCallbackCollection.from_params(parameters)
+    subscriptions = RotationCallbackCollection.setup()
 
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan")

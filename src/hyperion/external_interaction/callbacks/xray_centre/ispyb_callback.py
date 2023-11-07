@@ -34,6 +34,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def __init__(self) -> None:
         super().__init__()
+        self.params: GridscanInternalParameters
         self.ispyb: StoreGridscanInIspyb
         self.ispyb_ids: tuple = (None, None, None)
 

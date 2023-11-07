@@ -12,18 +12,18 @@ from hyperion.parameters.constants import (
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
     SIM_ISPYB_CONFIG,
 )
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
+)
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 if TYPE_CHECKING:
     from hyperion.external_interaction.ispyb.store_in_ispyb import (
         Store2DGridscanInIspyb,
         Store3DGridscanInIspyb,
         StoreRotationInIspyb,
-    )
-    from hyperion.parameters.plan_specific.gridscan_internal_params import (
-        GridscanInternalParameters,
-    )
-    from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-        RotationInternalParameters,
     )
 
 
@@ -32,7 +32,9 @@ class BaseISPyBCallback(CallbackBase):
         """Subclasses should run super().__init__(), then in their start() method set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
-        self.params: GridscanInternalParameters | RotationInternalParameters
+        self.params: GridscanInternalParameters | RotationInternalParameters | None = (
+            None
+        )
         self.ispyb: StoreRotationInIspyb | Store3DGridscanInIspyb | Store2DGridscanInIspyb
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
@@ -42,6 +44,9 @@ class BaseISPyBCallback(CallbackBase):
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
         self.uid_to_finalize_on: Optional[str] = None
+        self.ispyb_ids: tuple[int, int] | tuple[int, int, int] | tuple[
+            None, None, None
+        ] = (None, None, None)
 
     def _append_to_comment(self, id: int, comment: str):
         assert isinstance(self.ispyb, StoreInIspyb)
@@ -66,7 +71,9 @@ class BaseISPyBCallback(CallbackBase):
             self.ispyb, StoreInIspyb
         ), "ISPyB deposition can't be initialised!"
         event_descriptor = self.descriptors[doc["descriptor"]]
-
+        assert isinstance(self.params, GridscanInternalParameters) or isinstance(
+            self.params, RotationInternalParameters
+        ), "ISPyB handler params set with wrong type"
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_gap"
