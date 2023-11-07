@@ -5,7 +5,7 @@ from subprocess import PIPE, CalledProcessError, Popen
 from git import Repo
 from packaging.version import Version
 
-recognised_beamlines = ["dev", "i03"]
+recognised_beamlines = ["dev", "i03", "i02-1"]
 
 
 class repo:
@@ -32,7 +32,7 @@ class repo:
         deploy_repo.git.checkout(self.latest_version_str)
 
         print("Setting permissions")
-        groups_to_give_permission = ["i03_staff", "gda2", "dls_dasc"]
+        groups_to_give_permission = ["i02-1_staff", "gda2", "dls_dasc"]
         setfacl_params = ",".join(
             [f"g:{group}:rwx" for group in groups_to_give_permission]
         )
@@ -68,6 +68,8 @@ def get_hyperion_release_dir_from_args(repo: repo) -> str:
         print("Running as dev")
         return "/tmp/hyperion_release_test/bluesky"
     elif args.beamline == "i03":
+        return f"/dls_sw/{args.beamline}/software/bluesky"
+    elif args.beamline == "i02-1":
         return f"/dls_sw/{args.beamline}/software/bluesky"
     else:
         raise Exception("not running in dev mode, exiting... (remove this)")

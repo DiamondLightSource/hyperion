@@ -47,31 +47,31 @@ class BaseISPyBCallback(CallbackBase):
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
 
-        LOGGER.info(f"ISPyB handler received event document {doc}.")
+        LOGGER.debug(f"ISPyB handler received event document {doc}.")
         assert isinstance(
             self.ispyb, StoreInIspyb
         ), "ISPyB deposition can't be initialised!"
         event_descriptor = self.descriptors[doc["descriptor"]]
 
         if event_descriptor.get("name") == ISPYB_PLAN_NAME:
-            # self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
-            #     "undulator_gap"
-            # ]
-            self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][
-                "synchrotron_machine_status_synchrotron_mode"
-            ]
-            # self.params.hyperion_params.ispyb_params.slit_gap_size_x = doc["data"][
-            #     "s4_slit_gaps_xgap"
-            # ]
-            # self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"][
-            #     "s4_slit_gaps_ygap"
-            # ]
-            # self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
-            #     "data"
-            # ]["attenuator_actual_transmission"]
-            # self.params.hyperion_params.ispyb_params.flux = doc["data"][
-            #     "flux_flux_reading"
-            # ]
+            self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"].get(
+                "undulator_gap", 0.0
+            )
+            self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"].get(
+                "synchrotron_machine_status_synchrotron_mode", None
+            )
+            self.params.hyperion_params.ispyb_params.slit_gap_size_x = doc["data"].get(
+                "s4_slit_gaps_xgap", 0.0
+            )
+            self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"].get(
+                "s4_slit_gaps_ygap", 0.0
+            )
+            self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
+                "data"
+            ].get("attenuator_actual_transmission", 0.0)
+            self.params.hyperion_params.ispyb_params.flux = doc["data"].get(
+                "flux_flux_reading", 0.0
+            )
 
             LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()

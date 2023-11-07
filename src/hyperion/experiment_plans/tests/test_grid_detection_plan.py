@@ -4,7 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.fast_grid_scan import GridAxis
+from dodal.devices.fast_grid_scan_common import GridAxis
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon

@@ -4,12 +4,13 @@ from typing import Callable, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 
-import hyperion.experiment_plans.vmxm_flyscan_xray_centre_plan as vmxm_flyscan_xray_centre_plan
 import hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
 from hyperion.experiment_plans import (
+    flyscan_xray_centre_plan,
     grid_detect_then_xray_centre_plan,
     pin_centre_then_xray_centre_plan,
     stepped_grid_scan_plan,
+    vmxm_flyscan_xray_centre_plan,
 )
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     NullPlanCallbackCollection,
@@ -18,6 +19,7 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
     RotationCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
+    VmxmFastGridScanCallbackCollection,
     XrayCentreCallbackCollection,
 )
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -51,11 +53,41 @@ def do_nothing():
 
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
 PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
+    "flyscan_xray_centre": {
+        "setup": flyscan_xray_centre_plan.create_devices,
+        "internal_param_type": GridscanInternalParameters,
+        "experiment_param_type": GridScanParams,
+        "callback_collection_type": XrayCentreCallbackCollection,
+    },
     "vmxm_flyscan_xray_centre": {
         "setup": vmxm_flyscan_xray_centre_plan.create_devices,
         "internal_param_type": GridscanInternalParameters,
         "experiment_param_type": GridScanParams,
-        "callback_collection_type": XrayCentreCallbackCollection,
+        "callback_collection_type": VmxmFastGridScanCallbackCollection,
+    },
+    "grid_detect_then_xray_centre": {
+        "setup": grid_detect_then_xray_centre_plan.create_devices,
+        "internal_param_type": GridScanWithEdgeDetectInternalParameters,
+        "experiment_param_type": GridScanWithEdgeDetectParams,
+        "callback_collection_type": NullPlanCallbackCollection,
+    },
+    "rotation_scan": {
+        "setup": rotation_scan_plan.create_devices,
+        "internal_param_type": RotationInternalParameters,
+        "experiment_param_type": RotationScanParams,
+        "callback_collection_type": RotationCallbackCollection,
+    },
+    "pin_tip_centre_then_xray_centre": {
+        "setup": pin_centre_then_xray_centre_plan.create_devices,
+        "internal_param_type": PinCentreThenXrayCentreInternalParameters,
+        "experiment_param_type": PinCentreThenXrayCentreParams,
+        "callback_collection_type": NullPlanCallbackCollection,
+    },
+    "stepped_grid_scan": {
+        "setup": stepped_grid_scan_plan.create_devices,
+        "internal_param_type": SteppedGridScanInternalParameters,
+        "experiment_param_type": SteppedGridScanParams,
+        "callback_collection_type": NullPlanCallbackCollection,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())

@@ -5,7 +5,7 @@ from typing import Literal
 import h5py
 import numpy as np
 import pytest
-from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
+from dodal.devices.fast_grid_scan_common import GridAxis, GridScanParams
 
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.parameters.plan_specific.gridscan_internal_params import (

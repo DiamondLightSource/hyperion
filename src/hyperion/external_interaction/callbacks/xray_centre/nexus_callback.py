@@ -56,12 +56,45 @@ class GridscanNexusFileCallback(CallbackBase):
             LOGGER.info("Initialising nexus writers")
             nexus_data_1 = self.parameters.get_nexus_info(1)
             LOGGER.info(f"Nexus data 1: {nexus_data_1}")
-            # nexus_data_2 = self.parameters.get_nexus_info(2)
+            nexus_data_2 = self.parameters.get_nexus_info(2)
             self.nexus_writer_1 = NexusWriter(self.parameters, **nexus_data_1)
-            # self.nexus_writer_2 = NexusWriter(
-            #     self.parameters,
-            #     **nexus_data_2,
-            #     vds_start_index=nexus_data_1["data_shape"][0],
-            # )
+            self.nexus_writer_2 = NexusWriter(
+                self.parameters,
+                **nexus_data_2,
+                vds_start_index=nexus_data_1["data_shape"][0],
+            )
             self.nexus_writer_1.create_nexus_file()
-            # self.nexus_writer_2.create_nexus_file()
+            self.nexus_writer_2.create_nexus_file()
+
+
+class Gridscan2DNexusFileCallback(CallbackBase):
+    """Similar to above, but for a 2D gridscan"""
+
+    def __init__(self) -> None:
+        self.parameters: GridscanInternalParameters | None = None
+        self.run_start_uid: str | None = None
+        self.nexus_writer: NexusWriter | None = None
+
+    def start(self, doc: dict):
+        if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
+            LOGGER.info(
+                "Nexus writer recieved start document with experiment parameters."
+            )
+            json_params = doc.get("hyperion_internal_parameters")
+            self.parameters = GridscanInternalParameters.from_json(json_params)
+            self.run_start_uid = doc.get("uid")
+
+    def descriptor(self, doc):
+        if doc.get("name") == ISPYB_PLAN_NAME:
+            assert (
+                self.parameters is not None
+            ), "Nexus callback did not receive parameters before being asked to write!"
+            # TODO instead of ispyb wait for detector parameter reading in plan
+            # https://github.com/DiamondLightSource/python-hyperion/issues/629
+            # and update parameters before creating writers
+
+            LOGGER.info("Initialising nexus writer")
+            nexus_data = self.parameters.get_nexus_info(1)
+            LOGGER.info(f"Nexus data: {nexus_data}")
+            self.nexus_writer = NexusWriter(self.parameters, **nexus_data)
+            self.nexus_writer.create_nexus_file()
