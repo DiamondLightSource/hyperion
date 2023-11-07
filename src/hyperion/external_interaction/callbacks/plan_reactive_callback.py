@@ -15,38 +15,37 @@ class PlanReactiveCallback(CallbackBase):
     def __init__(self, *, emit: Callable[..., Any] | None = None) -> None:
         super().__init__(emit=emit)
         self.active = False
+        self.activity_uid = 0
 
     def start(self, doc: RunStart) -> RunStart | None:
         callbacks_to_activate = doc.get("activate_callbacks") or []
-        if type(self) in callbacks_to_activate:
-            self.active = True
-        if self.active:
-            return self.activity_gated_start(doc)
-        return None
+        self.active = type(self) in callbacks_to_activate
+        self.activity_uid = doc.get("uid")
+        return self.activity_gated_start(doc) if self.active else doc
 
     def descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
         if self.active:
-            return self.activity_gated_descriptor(doc)
-        return None
+            self.activity_gated_descriptor(doc)
+        return self.activity_gated_descriptor(doc) if self.active else doc
 
     def event(self, doc: Event) -> Event | None:
-        if self.active:
-            return self.activity_gated_event(doc)
-        return None
+        return self.activity_gated_event(doc) if self.active else doc
 
     def stop(self, doc: RunStop) -> RunStop | None:
-        if self.active:
-            return self.activity_gated_stop(doc)
-        return None
+        do_stop = self.active
+        if doc.get("run_start") == self.activity_uid:
+            self.active = False
+            self.activity_uid = 0
+        return self.activity_gated_stop(doc) if do_stop else doc
 
     def activity_gated_start(self, doc: RunStart):
-        return NotImplemented
+        return None
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
-        return NotImplemented
+        return None
 
     def activity_gated_event(self, doc: Event):
-        return NotImplemented
+        return None
 
     def activity_gated_stop(self, doc: RunStop):
-        return NotImplemented
+        return None

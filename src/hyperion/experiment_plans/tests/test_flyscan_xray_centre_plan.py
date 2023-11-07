@@ -154,7 +154,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "123abc",
             "data": {
@@ -168,7 +168,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
     )
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "abc123",
             "data": {
@@ -288,7 +288,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
 
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "123abc",
             "data": {
@@ -302,7 +302,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
     )
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "abc123",
             "data": {
@@ -350,7 +350,7 @@ def test_logging_within_plan(
         {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
 
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "123abc",
             "data": {
@@ -364,7 +364,7 @@ def test_logging_within_plan(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
     )
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "abc123",
             "data": {

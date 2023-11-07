@@ -44,7 +44,7 @@ def run_zocalo_with_dev_ispyb(dummy_params: GridscanInternalParameters, dummy_is
         zc.ispyb.ispyb_ids = zc.ispyb.ispyb.begin_deposition()
         for dcid in zc.ispyb.ispyb_ids[0]:
             zc.zocalo_interactor.run_start(dcid)
-        zc.stop({})
+        zc.activity_gated_stop({})
         centre, bbox = zc.wait_for_results(fallback_xyz=fallback)
         return zc, centre
 

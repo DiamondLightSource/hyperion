@@ -88,19 +88,19 @@ def test_nexus_handler_gets_documents_in_mock_plan(
         autospec=True,
     ):
         cb = RotationCallbackCollection.from_params(params)
-    cb.nexus_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.stop = MagicMock(autospec=True)
+    cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
 
     RE(fake_rotation_scan(params, cb))
 
     params.hyperion_params.ispyb_params.transmission_fraction = 1.0
     params.hyperion_params.ispyb_params.flux = 10.0
 
-    assert cb.nexus_handler.start.call_count == 2
-    call_content_outer = cb.nexus_handler.start.call_args_list[0].args[0]
+    assert cb.nexus_handler.activity_gated_start.call_count == 2
+    call_content_outer = cb.nexus_handler.activity_gated_start.call_args_list[0].args[0]
     assert call_content_outer["hyperion_internal_parameters"] == params.json()
-    call_content_inner = cb.nexus_handler.start.call_args_list[1].args[0]
+    call_content_inner = cb.nexus_handler.activity_gated_start.call_args_list[1].args[0]
     assert call_content_inner["subplan_name"] == "rotation_scan_main"
 
 
@@ -120,8 +120,8 @@ def test_nexus_handler_only_writes_once(
         autospec=True,
     ):
         cb = RotationCallbackCollection.from_params(params)
-    cb.ispyb_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.stop = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
 
     RE(fake_rotation_scan(params, cb))
     nexus_writer.assert_called_once()
@@ -148,8 +148,8 @@ def test_nexus_handler_triggers_write_file_when_told(
     ):
         cb = RotationCallbackCollection.from_params(params)
 
-    cb.ispyb_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.stop = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
 
     RE(fake_rotation_scan(params, cb))
 
@@ -175,9 +175,9 @@ def test_zocalo_start_and_end_triggered_once(
 ):
     cb = RotationCallbackCollection.from_params(params)
 
-    cb.nexus_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.stop = MagicMock(autospec=True)
+    cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
     cb.ispyb_handler.ispyb_ids = (0, 0)
 
     RE(fake_rotation_scan(params, cb))
@@ -198,10 +198,10 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
 ):
     cb = RotationCallbackCollection.from_params(params)
 
-    cb.nexus_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.stop = MagicMock(autospec=True)
-    cb.ispyb_handler.event = MagicMock(autospec=True)
+    cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_event = MagicMock(autospec=True)
     cb.ispyb_handler.ispyb = MagicMock(autospec=True)
     with pytest.raises(ISPyBDepositionNotMade):
         RE(fake_rotation_scan(params, cb))
@@ -217,7 +217,7 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
     params: RotationInternalParameters,
 ):
     cb = RotationCallbackCollection.from_params(params)
-    cb.nexus_handler.start = MagicMock(autospec=True)
+    cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
     cb.ispyb_handler.ispyb = MagicMock(spec=StoreInIspyb)
     cb.ispyb_handler.ispyb_ids = (0, 0)
     cb.zocalo_handler.zocalo_interactor.run_start = MagicMock()
@@ -245,9 +245,9 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
     params: RotationInternalParameters,
 ):
     cb = RotationCallbackCollection.from_params(params)
-    cb.nexus_handler.start = MagicMock(autospec=True)
-    cb.ispyb_handler.start = MagicMock(
-        autospec=True, side_effect=cb.ispyb_handler.start
+    cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_start = MagicMock(
+        autospec=True, side_effect=cb.ispyb_handler.activity_gated_start
     )
     cb.ispyb_handler.ispyb = MagicMock(spec=StoreInIspyb)
     cb.ispyb_handler.ispyb_ids = (0, 0)
@@ -255,11 +255,11 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
     cb.zocalo_handler.zocalo_interactor.run_end = MagicMock()
 
     def after_open_assert(callbacks: RotationCallbackCollection):
-        callbacks.ispyb_handler.start.assert_called_once()
+        callbacks.ispyb_handler.activity_gated_start.assert_called_once()
         assert callbacks.ispyb_handler.uid_to_finalize_on is None
 
     def after_main_assert(callbacks: RotationCallbackCollection):
-        assert callbacks.ispyb_handler.start.call_count == 2
+        assert callbacks.ispyb_handler.activity_gated_start.call_count == 2
         assert callbacks.ispyb_handler.uid_to_finalize_on is not None
 
     RE(fake_rotation_scan(params, cb, after_open_assert, after_main_assert))

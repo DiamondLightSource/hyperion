@@ -81,9 +81,9 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     RE = RunEngine({})
 
     cb = RotationCallbackCollection.from_params(test_params)
-    cb.ispyb_handler.start = MagicMock()
-    cb.ispyb_handler.stop = MagicMock()
-    cb.ispyb_handler.event = MagicMock()
+    cb.ispyb_handler.activity_gated_start = MagicMock()
+    cb.ispyb_handler.activity_gated_stop = MagicMock()
+    cb.ispyb_handler.activity_gated_event = MagicMock()
     with patch(
         "hyperion.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
         return_value=("test_time", "test_time"),
