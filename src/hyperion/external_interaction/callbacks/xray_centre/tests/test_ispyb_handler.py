@@ -29,11 +29,12 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
     dummy_params,
+    ispyb_handler,
 ):
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
-    ispyb_handler = GridscanISPyBCallback(dummy_params)
+
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
     ispyb_handler.event(td.test_event_document_pre_data_collection)
@@ -61,11 +62,12 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_get_time: MagicMock,
     mock_ispyb_store_grid_scan: MagicMock,
     dummy_params,
+    ispyb_handler,
 ):
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
-    ispyb_handler = GridscanISPyBCallback(dummy_params)
+    ispyb_handler = GridscanISPyBCallback()
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
     ispyb_handler.event(td.test_event_document_pre_data_collection)
@@ -107,7 +109,7 @@ def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then
     mock_emit, mock_ispyb_store_grid_scan: MagicMock, dummy_params
 ):
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
-    ispyb_handler = GridscanISPyBCallback(dummy_params)
+    ispyb_handler = GridscanISPyBCallback()
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
     ispyb_handler.event(td.test_event_document_pre_data_collection)
@@ -126,11 +128,12 @@ def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_the
     mock_ispyb_update_time_and_status: MagicMock,
     mock_ispyb_get_time: MagicMock,
     dummy_params,
+    ispyb_handler,
 ):
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
-    ispyb_handler = GridscanISPyBCallback(dummy_params)
+    ispyb_handler = GridscanISPyBCallback()
     ispyb_handler.start(td.test_start_document)
     ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
     ispyb_handler.event(td.test_event_document_pre_data_collection)

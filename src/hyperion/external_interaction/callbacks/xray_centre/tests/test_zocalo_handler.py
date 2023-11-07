@@ -31,6 +31,8 @@ def dummy_params():
 
 
 def mock_zocalo_functions(callbacks: XrayCentreCallbackCollection):
+    callbacks.ispyb_handler.start(td.test_start_document)
+    callbacks.zocalo_handler.start(td.test_start_document)
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
@@ -50,10 +52,10 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
 
-    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.setup()
     mock_zocalo_functions(callbacks)
-
     callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
+    callbacks.zocalo_handler.start(td.test_run_gridscan_start_document)
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
     callbacks.ispyb_handler.event(td.test_event_document_pre_data_collection)
     callbacks.ispyb_handler.descriptor(
@@ -87,8 +89,7 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     store_3d_grid_scan,
     dummy_params: GridscanInternalParameters,
 ):
-    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
-    callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
+    callbacks = XrayCentreCallbackCollection.setup()
     callbacks.ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
     callbacks.ispyb_handler.event(td.test_event_document_pre_data_collection)
 
@@ -134,7 +135,7 @@ def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_
     store_3d_grid_scan,
     dummy_params,
 ):
-    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.setup()
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
@@ -158,7 +159,7 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
     store_3d_grid_scan,
     dummy_params,
 ):
-    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.setup()
     mock_zocalo_functions(callbacks)
 
     with pytest.raises(ISPyBDepositionNotMade):
@@ -173,7 +174,7 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
     store_3d_grid_scan,
     dummy_params: GridscanInternalParameters,
 ):
-    callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
+    callbacks = XrayCentreCallbackCollection.setup()
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
     expected_centre_grid_coords = np.array([4, 6, 2])
@@ -214,6 +215,6 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
         )
     )
     np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
-
+    assert isinstance(found_bbox, np.ndarray)
     expected_bbox_size = np.array([8, 8, 7]) - np.array([2, 2, 2])
     np.testing.assert_array_equal(found_bbox, expected_bbox_size)

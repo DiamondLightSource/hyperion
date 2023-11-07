@@ -81,8 +81,8 @@ def do_rotation_main_plan_for_tests(
             fake_read,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-            lambda _: callbacks,
+            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
+            lambda: callbacks,
         ),
         patch("dodal.beamlines.i03.undulator", lambda: sim_und),
         patch("dodal.beamlines.i03.synchrotron", lambda: sim_synch),
@@ -116,8 +116,8 @@ def run_full_rotation_plan(
             fake_read,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-            lambda _: mock_rotation_subscriptions,
+            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
+            lambda: mock_rotation_subscriptions,
         ),
     ):
         RE(rotation_scan(fake_create_rotation_devices, test_rotation_params))
@@ -339,8 +339,8 @@ def test_rotation_scan(
             return_value=detector_motion,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-            lambda _: mock_rotation_subscriptions,
+            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
+            lambda: mock_rotation_subscriptions,
         ),
     ):
         composite = RotationScanComposite(
@@ -361,12 +361,14 @@ def test_rotation_scan(
     eiger.unstage.assert_called()
 
 
-def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests_standard):
+def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests_standard) -> None:
     RE: RunEngine = setup_and_run_rotation_plan_for_tests_standard["RE"]
     assert RE._exit_status == "success"
 
 
-def test_rotation_plan_zebra_settings(setup_and_run_rotation_plan_for_tests_standard):
+def test_rotation_plan_zebra_settings(
+    setup_and_run_rotation_plan_for_tests_standard,
+) -> None:
     zebra: Zebra = setup_and_run_rotation_plan_for_tests_standard["zebra"]
     params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests_standard[
         "test_rotation_params"
@@ -381,12 +383,12 @@ def test_rotation_plan_zebra_settings(setup_and_run_rotation_plan_for_tests_stan
 def test_full_rotation_plan_smargon_settings(
     run_full_rotation_plan,
     test_rotation_params,
-):
+) -> None:
     smargon: Smargon = run_full_rotation_plan.smargon
     params: RotationInternalParameters = test_rotation_params
     expt_params = params.experiment_params
 
-    omega_set: MagicMock = smargon.omega.set
+    omega_set: MagicMock = smargon.omega.set  # type: ignore
     rotation_speed = (
         expt_params.image_width / params.hyperion_params.detector_params.exposure_time
     )
@@ -405,7 +407,7 @@ def test_full_rotation_plan_smargon_settings(
 
 def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     setup_and_run_rotation_plan_for_tests_nomove,
-):
+) -> None:
     smargon: Smargon = setup_and_run_rotation_plan_for_tests_nomove["smargon"]
     params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests_nomove[
         "test_rotation_params"
@@ -477,8 +479,8 @@ def test_cleanup_happens(
         cleanup_plan.assert_not_called()
     # check that failure is handled in composite plan
     with patch(
-        "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-        lambda _: mock_rotation_subscriptions,
+        "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
+        lambda: mock_rotation_subscriptions,
     ):
         with pytest.raises(MyTestException) as exc:
             RE(
@@ -525,7 +527,7 @@ def test_ispyb_deposition_in_plan(
     test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )
-    callbacks = RotationCallbackCollection.from_params(test_rotation_params)
+    callbacks = RotationCallbackCollection.setup()
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = DEV_ISPYB_DATABASE_CFG
 
     composite = RotationScanComposite(
@@ -547,8 +549,8 @@ def test_ispyb_deposition_in_plan(
             fake_read,
         ),
         patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.from_params",
-            lambda _: callbacks,
+            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
+            lambda: callbacks,
         ),
     ):
         RE(

@@ -12,6 +12,7 @@ from bluesky.run_engine import RunEngine
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
+from hyperion.parameters.constants import ROTATION_OUTER_PLAN
 from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -80,7 +81,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
 
     RE = RunEngine({})
 
-    cb = RotationCallbackCollection.from_params(test_params)
+    cb = RotationCallbackCollection.setup()
     cb.ispyb_handler.start = MagicMock()
     cb.ispyb_handler.stop = MagicMock()
     cb.ispyb_handler.event = MagicMock()
@@ -97,18 +98,18 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         h5py.File(str(TEST_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE), "r") as example_nexus,
         h5py.File(nexus_filename, "r") as hyperion_nexus,
     ):
-        assert hyperion_nexus["/entry/start_time"][()] == b"test_timeZ"
-        assert hyperion_nexus["/entry/end_time_estimated"][()] == b"test_timeZ"
+        assert hyperion_nexus["/entry/start_time"][()] == b"test_timeZ"  # type: ignore
+        assert hyperion_nexus["/entry/end_time_estimated"][()] == b"test_timeZ"  # type: ignore
 
         # we used to write the positions wrong...
         hyperion_omega: np.ndarray = np.array(
-            hyperion_nexus["/entry/data/omega"][:]
+            hyperion_nexus["/entry/data/omega"][:]  # type: ignore
         ) * (3599 / 3600)
-        example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]
+        example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]  # type: ignore
         assert np.allclose(hyperion_omega, example_omega)
 
-        hyperion_data_shape = hyperion_nexus["/entry/data/data"].shape
-        example_data_shape = example_nexus["/entry/data/data"].shape
+        hyperion_data_shape = hyperion_nexus["/entry/data/data"].shape  # type: ignore
+        example_data_shape = example_nexus["/entry/data/data"].shape  # type: ignore
 
         assert hyperion_data_shape == example_data_shape
 
@@ -117,12 +118,12 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         transmission = "attenuator/attenuator_transmission"
         wavelength = "beam/incident_wavelength"
         assert np.isclose(
-            hyperion_instrument[transmission][()],
-            example_instrument[transmission][()],
+            hyperion_instrument[transmission][()],  # type: ignore
+            example_instrument[transmission][()],  # type: ignore
         )
         assert np.isclose(
-            hyperion_instrument[wavelength][()],
-            example_instrument[wavelength][()],
+            hyperion_instrument[wavelength][()],  # type: ignore
+            example_instrument[wavelength][()],  # type: ignore
         )
 
         hyperion_sam_x = hyperion_nexus["/entry/sample/sample_x/sam_x"]
@@ -141,16 +142,16 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         example_sam_omega = example_nexus["/entry/sample/sample_omega/omega"]
 
         assert np.isclose(
-            hyperion_sam_x[()],
-            example_sam_x[()],
+            hyperion_sam_x[()],  # type: ignore
+            example_sam_x[()],  # type: ignore
         )
         assert np.isclose(
-            hyperion_sam_y[()],
-            example_sam_y[()],
+            hyperion_sam_y[()],  # type: ignore
+            example_sam_y[()],  # type: ignore
         )
         assert np.isclose(
-            hyperion_sam_z[()],
-            example_sam_z[()],
+            hyperion_sam_z[()],  # type: ignore
+            example_sam_z[()],  # type: ignore
         )
 
         assert hyperion_sam_x.attrs.get("depends_on") == example_sam_x.attrs.get(

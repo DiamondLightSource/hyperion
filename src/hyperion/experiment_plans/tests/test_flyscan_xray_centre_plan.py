@@ -1,7 +1,7 @@
 import types
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
@@ -27,6 +27,10 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     run_gridscan_and_move,
     wait_for_gridscan_valid,
 )
+from hyperion.experiment_plans.tests.conftest import (
+    modified_interactor_mock,
+    modified_store_grid_scan_mock,
+)
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -36,15 +40,18 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
 from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
 )
+from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
+    GRIDSCAN_OUTER_PLAN,
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
 )
@@ -83,32 +90,37 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
 ):
     undulator_test_value = 1.234
 
-    fake_fgs_composite.undulator.gap.user_readback.sim_put(undulator_test_value)
+    fake_fgs_composite.undulator.gap.user_readback.sim_put(undulator_test_value)  # type: ignore
 
     synchrotron_test_value = "test"
-    fake_fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(
+    fake_fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(  # type: ignore
         synchrotron_test_value
     )
 
     transmission_test_value = 0.01
-    fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)
+    fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)  # type: ignore
 
     xgap_test_value = 0.1234
     ygap_test_value = 0.2345
-    fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)
-    fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)
+    fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
+    fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)  # type: ignore
     flux_test_value = 10.0
-    fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
+    fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-    test_ispyb_callback = GridscanISPyBCallback(test_fgs_params)
+    test_ispyb_callback = GridscanISPyBCallback()
     test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     RE.subscribe(test_ispyb_callback)
 
+    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "hyperion_internal_parameters": test_fgs_params.json(),
+        }
+    )
     def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
-        yield from bps.open_run()
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
         yield from read_hardware_for_ispyb_during_collection(attn, fl)
-        yield from bps.close_run()
 
     RE(
         standalone_read_hardware_for_ispyb(
@@ -151,6 +163,12 @@ def test_results_adjusted_and_passed_to_move_xyz(
     set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
+    mock_subscriptions.ispyb_handler.start(
+        {
+            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "hyperion_internal_parameters": test_fgs_params.json(),
+        }
+    )
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
@@ -208,7 +226,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
             mock_subscriptions,
         )
     )
-
+    assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
     ap_call_large = call(
         *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
     )
@@ -274,6 +292,10 @@ def test_results_passed_to_move_motors(
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True)
 @patch("bluesky.plan_stubs.rd")
+@patch(
+    "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
+    modified_interactor_mock,
+)
 def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     rd: MagicMock,
     move_xyz: MagicMock,
@@ -284,6 +306,9 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
+    td = TestData()
+    mock_subscriptions.ispyb_handler.start(td.test_start_document)
+    mock_subscriptions.zocalo_handler.start(td.test_start_document)
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
@@ -346,6 +371,7 @@ def test_logging_within_plan(
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
+    mock_subscriptions.ispyb_handler.start({})
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
@@ -397,8 +423,8 @@ def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
 ):
     test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
 
-    test_fgs.scan_invalid.sim_put(False)
-    test_fgs.position_counter.sim_put(0)
+    test_fgs.scan_invalid.sim_put(False)  # type: ignore
+    test_fgs.position_counter.sim_put(0)  # type: ignore
 
     RE(wait_for_gridscan_valid(test_fgs))
 
@@ -411,8 +437,8 @@ def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
 ):
     test_fgs: FastGridScan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
 
-    test_fgs.scan_invalid.sim_put(True)
-    test_fgs.position_counter.sim_put(0)
+    test_fgs.scan_invalid.sim_put(True)  # type: ignore
+    test_fgs.position_counter.sim_put(0)  # type: ignore
     with pytest.raises(WarningException):
         RE(wait_for_gridscan_valid(test_fgs))
 
@@ -448,22 +474,26 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     mock_parent = MagicMock()
     fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
-    fake_fgs_composite.eiger.filewriters_finished = Status()
-    fake_fgs_composite.eiger.filewriters_finished.set_finished()
+    fake_fgs_composite.eiger.filewriters_finished = Status(done=True, success=True)
     fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
-    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)
+    fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)  # type: ignore
     fake_fgs_composite.eiger.stage = MagicMock(
         return_value=Status(None, None, 0, True, True)
     )
-    fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)
+    fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
-    mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
     with patch(
-        "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
-        lambda _: mock_subscriptions,
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
+        lambda: mock_subscriptions,
     ), patch(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
         autospec=True,
+    ), patch(
+        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
+        lambda _: modified_interactor_mock(mock_parent.run_end),
+    ), patch(
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
+        modified_store_grid_scan_mock,
     ):
         RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
@@ -511,7 +541,7 @@ def test_when_grid_scan_fails_then_detector_disarmed_and_correct_exception_retur
     fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
 
     # Without the complete finishing we will not get all the images
-    fake_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1
+    fake_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1  # type: ignore
 
     # Want to get the underlying completion error, not the one raised from unstage
     with pytest.raises(CompleteException):
