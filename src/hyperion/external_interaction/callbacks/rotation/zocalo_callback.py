@@ -26,7 +26,7 @@ class RotationZocaloCallback(CallbackBase):
 
     def start(self, doc: dict):
         LOGGER.info("Zocalo handler received start document.")
-        if doc.get("subplan_name") == "rotation_scan_main":
+        if self.run_uid is None:
             self.run_uid = doc.get("uid")
 
     def stop(self, doc: dict):

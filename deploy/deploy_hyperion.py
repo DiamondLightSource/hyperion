@@ -5,7 +5,7 @@ from subprocess import PIPE, CalledProcessError, Popen
 from git import Repo
 from packaging.version import Version
 
-recognised_beamlines = ["dev", "i03", "i02-1"]
+recognised_beamlines = ["dev", "i03", "i02-1", "i04"]ain
 
 
 class repo:
@@ -67,12 +67,15 @@ def get_hyperion_release_dir_from_args(repo: repo) -> str:
     if args.beamline == "dev":
         print("Running as dev")
         return "/tmp/hyperion_release_test/bluesky"
+<<<<<<< HEAD
     elif args.beamline == "i03":
         return f"/dls_sw/{args.beamline}/software/bluesky"
     elif args.beamline == "i02-1":
         return f"/dls_sw/{args.beamline}/software/bluesky"
+=======
+>>>>>>> origin/main
     else:
-        raise Exception("not running in dev mode, exiting... (remove this)")
+        return f"/dls_sw/{args.beamline}/software/bluesky"
 
 
 if __name__ == "__main__":

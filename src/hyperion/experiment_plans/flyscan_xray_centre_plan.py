@@ -25,8 +25,12 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 
 import hyperion.log
+from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
-from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
+    read_hardware_for_ispyb_pre_collection,
+)
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_gridscan,
@@ -152,18 +156,21 @@ def run_gridscan(
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
-        yield from read_hardware_for_ispyb(
+        yield from read_hardware_for_ispyb_pre_collection(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+        )
+        yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator,
             fgs_composite.flux,
         )
 
     fgs_motors = fgs_composite.fast_grid_scan
 
-    # TODO: Check topup gate
+    hyperion.log.LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
+
     yield from wait_for_gridscan_valid(fgs_motors)
 
     @bpp.set_run_key_decorator("do_fgs")
@@ -174,6 +181,16 @@ def run_gridscan(
     )
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
+        # Check topup gate
+        dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000.0
+        total_exposure = (
+            parameters.experiment_params.get_num_images() * dwell_time_in_s
+        )  # Expected exposure time for full scan
+        yield from check_topup_and_wait_if_necessary(
+            fgs_composite.synchrotron,
+            total_exposure,
+            30.0,
+        )
         yield from bps.kickoff(fgs_motors)
         yield from bps.complete(fgs_motors, wait=True)
 

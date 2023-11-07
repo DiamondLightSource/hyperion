@@ -21,7 +21,10 @@
             "type": "number"
         },
         "phi_start": {
-            "type": "number"
+            "type": [
+                "number",
+                "null"
+            ]
         },
         "chi_start": {
             "type": [
@@ -36,13 +39,22 @@
             ]
         },
         "x": {
-            "type": "number"
+            "type": [
+                "number",
+                "null"
+            ]
         },
         "y": {
-            "type": "number"
+            "type": [
+                "number",
+                "null"
+            ]
         },
         "z": {
-            "type": "number"
+            "type": [
+                "number",
+                "null"
+            ]
         },
         "positive_rotation_direction": {
             "type": "boolean"

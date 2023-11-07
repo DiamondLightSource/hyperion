@@ -4,12 +4,15 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from pydantic import BaseModel, validator
 
+from hyperion.utils.utils import convert_eV_to_angstrom
+
 GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
     "sample_barcode": None,
     "visit_path": "",
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
+    "current_energy_ev": 12700,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     "upper_left": [0, 0, 0],
     "position": [0, 0, 0],
@@ -17,7 +20,6 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "transmission_fraction": 1.0,
     "flux": 10.0,
-    "wavelength": 0.01,
     "beam_size_x": 0.1,
     "beam_size_y": 0.1,
     "focal_spot_size_x": 0.0,
@@ -56,7 +58,7 @@ class IspybParams(BaseModel):
         return np.array(position)
 
     transmission_fraction: float
-    wavelength: float
+    current_energy_ev: float
     beam_size_x: float
     beam_size_y: float
     focal_spot_size_x: float
@@ -83,6 +85,10 @@ class IspybParams(BaseModel):
                 "Transmission_fraction of >1 given. Did you give a percentage instead of a fraction?"
             )
         return transmission_fraction
+
+    @property
+    def wavelength_angstroms(self):
+        return convert_eV_to_angstrom(self.current_energy_ev)
 
 
 class RotationIspybParams(IspybParams):

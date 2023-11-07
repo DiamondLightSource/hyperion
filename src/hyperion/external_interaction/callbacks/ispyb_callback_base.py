@@ -7,17 +7,20 @@ from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 from hyperion.log import LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import ISPYB_PLAN_NAME, SIM_ISPYB_CONFIG
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
+from hyperion.parameters.constants import (
+    ISPYB_HARDWARE_READ_PLAN,
+    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+    SIM_ISPYB_CONFIG,
 )
+from hyperion.parameters.internal_parameters import InternalParameters
 
 
 class BaseISPyBCallback(CallbackBase):
-    def __init__(self, parameters: GridscanInternalParameters):
+    def __init__(self, parameters: InternalParameters):
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
+        self.ispyb: StoreInIspyb
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
@@ -53,7 +56,7 @@ class BaseISPyBCallback(CallbackBase):
         ), "ISPyB deposition can't be initialised!"
         event_descriptor = self.descriptors[doc["descriptor"]]
 
-        if event_descriptor.get("name") == ISPYB_PLAN_NAME:
+        if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"].get(
                 "undulator_gap", 0.0
             )
@@ -66,6 +69,8 @@ class BaseISPyBCallback(CallbackBase):
             self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"].get(
                 "s4_slit_gaps_ygap", 0.0
             )
+
+        if event_descriptor.get("name") == ISPYB_TRANSMISSION_FLUX_READ_PLAN:
             self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
                 "data"
             ].get("attenuator_actual_transmission", 0.0)
@@ -73,9 +78,9 @@ class BaseISPyBCallback(CallbackBase):
                 "flux_flux_reading", 0.0
             )
 
-            LOGGER.info("Creating ispyb entry.")
-            self.ispyb_ids = self.ispyb.begin_deposition()
-            LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
+        LOGGER.info("Creating ispyb entry.")
+        self.ispyb_ids = self.ispyb.begin_deposition()
+        LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
     def stop(self, doc: dict):
         """Subclasses must check that they are recieving a stop document for the correct

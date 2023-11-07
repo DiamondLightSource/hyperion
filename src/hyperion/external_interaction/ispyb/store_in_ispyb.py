@@ -40,7 +40,7 @@ class StoreInIspyb(ABC):
         self.ispyb_params: IspybParams | None = None
         self.detector_params: DetectorParams | None = None
         self.run_number: int | None = None
-        self.omega_start: int | None = None
+        self.omega_start: float | None = None
         self.experiment_type: str | None = None
         self.xtal_snapshots: list[str] | None = None
         self.data_collection_group_id: int | None = None
@@ -223,16 +223,17 @@ class StoreInIspyb(ABC):
         params["omegastart"] = self.omega_start
         params["start_image_number"] = 1
         params["resolution"] = self.ispyb_params.resolution
-        params["wavelength"] = self.ispyb_params.wavelength
+        params["wavelength"] = self.ispyb_params.wavelength_angstroms
         beam_position = self.detector_params.get_beam_position_mm(
             self.detector_params.detector_distance
         )
         params["xbeam"], params["ybeam"] = beam_position
-        (
-            params["xtal_snapshot1"],
-            params["xtal_snapshot2"],
-            params["xtal_snapshot3"],
-        ) = self.xtal_snapshots
+        if len(self.xtal_snapshots) == 3:
+            (
+                params["xtal_snapshot1"],
+                params["xtal_snapshot2"],
+                params["xtal_snapshot3"],
+            ) = self.xtal_snapshots
         params["synchrotron_mode"] = self.ispyb_params.synchrotron_mode
         params["undulator_gap1"] = self.ispyb_params.undulator_gap
         params["starttime"] = self.get_current_time_string()
@@ -254,11 +255,15 @@ class StoreRotationInIspyb(StoreInIspyb):
         self.full_params: RotationInternalParameters = parameters
         self.ispyb_params: RotationIspybParams = parameters.hyperion_params.ispyb_params
         self.detector_params = parameters.hyperion_params.detector_params
+        self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
         self.data_collection_id: int | None = None
 
         if self.ispyb_params.xtal_snapshots_omega_start:
-            self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
+            self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start[:3]
+            LOGGER.info(
+                f"Using rotation scan snapshots {self.xtal_snapshots} for ISPyB deposition"
+            )
         else:
             self.xtal_snapshots = []
             LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
@@ -267,12 +272,13 @@ class StoreRotationInIspyb(StoreInIspyb):
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         assert self.full_params is not None
-        params["axis_range"] = self.full_params.experiment_params.rotation_angle
+        params["axis_range"] = self.full_params.experiment_params.image_width
         params["axis_end"] = (
             self.full_params.experiment_params.omega_start
             + self.full_params.experiment_params.rotation_angle
         )
         params["n_images"] = self.full_params.experiment_params.get_num_images()
+        params["kappastart"] = self.full_params.experiment_params.chi_start
         return params
 
     def _store_scan_data(self, conn: Connector):

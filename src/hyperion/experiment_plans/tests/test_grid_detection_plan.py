@@ -241,7 +241,7 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     assert my_grid_params.z_steps == pytest.approx(1)
     assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
 
-    assert my_grid_params.dwell_time == pytest.approx(500)
+    assert my_grid_params.dwell_time_ms == pytest.approx(500)
 
     assert my_grid_params.x_axis == test_x_grid_axis
     assert my_grid_params.y_axis == test_y_grid_axis
