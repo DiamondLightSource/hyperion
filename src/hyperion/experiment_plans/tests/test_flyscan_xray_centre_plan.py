@@ -463,18 +463,6 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
 
-    @bpp.run_decorator(
-        md={
-            "activate_callbacks": [
-                "XraycentreZocaloCallback",
-                "GridscanISPyBCallback",
-                "GridscanNexusFileCallback",
-            ],
-        }
-    )
-    def outer_plan(composite, params):
-        yield from flyscan_xray_centre(composite, params)
-
     with patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
         lambda _: mock_subscriptions,
@@ -482,7 +470,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
         autospec=True,
     ):
-        RE(outer_plan(fake_fgs_composite, test_fgs_params))
+        RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 

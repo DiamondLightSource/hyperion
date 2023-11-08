@@ -217,6 +217,7 @@ def test_plan_with_no_params_fails(test_env: ClientAndRunEngine):
         response.get("message")
         == "PlanNotFound(\"Corresponding internal param type for 'test_experiment_no_internal_param_type' not found in registry.\")"
     )
+    test_env.mock_run_engine.abort()
 
 
 def test_sending_start_twice_fails(test_env: ClientAndRunEngine):

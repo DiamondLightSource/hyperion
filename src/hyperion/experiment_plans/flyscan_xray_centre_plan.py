@@ -274,7 +274,7 @@ def flyscan_xray_centre(
             "subplan_name": "run_gridscan_move_and_tidy",
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "XraycentreZocaloCallback",
+                "XrayCentreZocaloCallback",
                 "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],
