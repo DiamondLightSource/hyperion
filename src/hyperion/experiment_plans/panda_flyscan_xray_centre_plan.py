@@ -53,13 +53,15 @@ from hyperion.utils.aperturescatterguard import (
 from hyperion.utils.context import device_composite_from_context, setup_context
 
 if TYPE_CHECKING:
-    from hyperion.parameters.plan_specific.gridscan_internal_params import (
-        GridscanInternalParameters,
+    from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
+        PandaGridscanInternalParameters as GridscanInternalParameters,
     )
+
+PANDA_SETUP_PATH = "/dls/science/users/qqh35939/panda_yaml_files/flyscan_base.yaml"  # This should be changed to somewhere proper
 
 
 @dataclasses.dataclass
-class PandAFlyScanXRayCentreComposite:
+class FlyScanXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
@@ -87,9 +89,9 @@ class PandAFlyScanXRayCentreComposite:
         )
 
 
-def create_devices(context: BlueskyContext) -> PandAFlyScanXRayCentreComposite:
+def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
-    return device_composite_from_context(context, PandAFlyScanXRayCentreComposite)
+    return device_composite_from_context(context, FlyScanXRayCentreComposite)
 
 
 def set_aperture_for_bbox_size(
@@ -117,13 +119,13 @@ def set_aperture_for_bbox_size(
     yield from set_aperture()
 
 
-def wait_for_gridscan_valid(panda_fgs_motors: PandAFastGridScan, timeout=0.5):
+def wait_for_gridscan_valid(fgs_motors: PandAFastGridScan, timeout=0.5):
     hyperion.log.LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
     for _ in range(times_to_check):
-        scan_invalid = yield from bps.rd(panda_fgs_motors.scan_invalid)
-        pos_counter = yield from bps.rd(panda_fgs_motors.position_counter)
+        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
+        pos_counter = yield from bps.rd(fgs_motors.position_counter)
         hyperion.log.LOGGER.debug(
             f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
         )
@@ -134,18 +136,21 @@ def wait_for_gridscan_valid(panda_fgs_motors: PandAFastGridScan, timeout=0.5):
     raise WarningException("Scan invalid - pin too long/short/bent and out of range")
 
 
-def tidy_up_plans(fgs_composite: PandAFlyScanXRayCentreComposite):
+def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     hyperion.log.LOGGER.info("Tidying up PandA")
-    yield from setup_panda_shutter_to_manual(fgs_composite.panda)
+    # TODO: what needs tidying up for panda scan? Do we want TTLOUT1 and 2 to no longer affect shutter/eiger?
+    # yield from setup_panda_shutter_to_manual(fgs_composite.panda)
+
+    # Most important thing to do for the tidy-up is make sure the PandA outputs are set to 0
 
 
 @bpp.set_run_key_decorator("run_gridscan")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan"})
 def run_gridscan(
-    fgs_composite: PandAFlyScanXRayCentreComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
     md={
-        "plan_name": "run_gridscan",
+        "plan_name": "run_panda_gridscan",
     },
 ):
     sample_motors = fgs_composite.sample_motors
@@ -168,7 +173,7 @@ def run_gridscan(
             fgs_composite.flux,
         )
 
-    fgs_motors = fgs_composite.fast_grid_scan
+    fgs_motors = fgs_composite.panda_fast_grid_scan
 
     hyperion.log.LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
@@ -184,7 +189,7 @@ def run_gridscan(
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         # Check topup gate
-        dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000.0
+        dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000
         total_exposure = (
             parameters.experiment_params.get_num_images() * dwell_time_in_s
         )  # Expected exposure time for full scan
@@ -209,7 +214,7 @@ def run_gridscan(
 @bpp.set_run_key_decorator("run_gridscan_and_move")
 @bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
 def run_gridscan_and_move(
-    fgs_composite: PandAFlyScanXRayCentreComposite,
+    fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
     subscriptions: XrayCentreCallbackCollection,
 ):
@@ -225,7 +230,9 @@ def run_gridscan_and_move(
         ]
     )
 
-    yield from setup_panda_for_flyscan(fgs_composite.panda)
+    yield from setup_panda_for_flyscan(
+        fgs_composite.panda, PANDA_SETUP_PATH, parameters
+    )
 
     hyperion.log.LOGGER.info("Starting grid scan")
 
@@ -249,7 +256,7 @@ def run_gridscan_and_move(
 
 
 def flyscan_xray_centre(
-    composite: PandAFlyScanXRayCentreComposite,
+    composite: FlyScanXRayCentreComposite,
     parameters: Any,
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.

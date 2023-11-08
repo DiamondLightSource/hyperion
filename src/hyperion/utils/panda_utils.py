@@ -37,13 +37,12 @@ def _get_panda_phases(panda: PandA):
     return [phase_1, phase_2]
 
 
-def save_panda(panda: PandA):
+def save_panda(panda: PandA, path: str):
     phases = yield from _get_panda_phases(panda)
-    save_to_yaml(phases, "/scratch/qqh35939/panda_yaml_saves/test.yaml")
+    save_to_yaml(phases, path)
 
 
-def load_panda(panda: PandA):
-    phases = yield from _get_panda_phases(panda)
-    values = load_from_yaml("/scratch/qqh35939/panda_yaml_saves/test.yaml")
+def load_panda(panda: PandA, path: str):
+    values = load_from_yaml(path)
     signals_to_set = walk_rw_signals(panda)
     yield from set_signal_values(signals_to_set, values)
