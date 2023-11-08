@@ -468,7 +468,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
             "activate_callbacks": [
                 "XraycentreZocaloCallback",
                 "GridscanISPyBCallback",
-                "XraycentreNexusCallback",
+                "GridscanNexusFileCallback",
             ],
         }
     )
