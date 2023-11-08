@@ -48,6 +48,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
         parameters: GridscanInternalParameters,
         ispyb_handler: GridscanISPyBCallback,
     ):
+        super().__init__()
         self.grid_position_to_motor_position: Callable[
             [ndarray], ndarray
         ] = parameters.experiment_params.grid_position_to_motor_position

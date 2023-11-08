@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from bluesky.callbacks import CallbackBase
+from event_model.documents.event import Event
 
 if TYPE_CHECKING:
     from event_model.documents.event import Event
@@ -18,14 +19,13 @@ class PlanReactiveCallback(CallbackBase):
         self.activity_uid = 0
 
     def start(self, doc: RunStart) -> RunStart | None:
-        callbacks_to_activate = doc.get("activate_callbacks") or []
-        self.active = type(self) in callbacks_to_activate
-        self.activity_uid = doc.get("uid")
+        callbacks_to_activate = doc.get("activate_callbacks")
+        if callbacks_to_activate:
+            self.active = type(self).__name__ in callbacks_to_activate
+            self.activity_uid = doc.get("uid")
         return self.activity_gated_start(doc) if self.active else doc
 
     def descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
-        if self.active:
-            self.activity_gated_descriptor(doc)
         return self.activity_gated_descriptor(doc) if self.active else doc
 
     def event(self, doc: Event) -> Event | None:

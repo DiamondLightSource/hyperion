@@ -294,6 +294,9 @@ def mock_subscriptions(test_fgs_params):
     )
     subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: [[0, 0], 0, 0]
+    subscriptions.ispyb_handler.active = True
+    subscriptions.nexus_handler.active = True
+    subscriptions.zocalo_handler.active = True
 
     return subscriptions
 

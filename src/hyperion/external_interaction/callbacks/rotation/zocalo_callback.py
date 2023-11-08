@@ -21,6 +21,7 @@ class RotationZocaloCallback(PlanReactiveCallback):
         zocalo_environment: str,
         ispyb_handler: RotationISPyBCallback,
     ):
+        super().__init__()
         self.ispyb: RotationISPyBCallback = ispyb_handler
         self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
         self.run_uid = None

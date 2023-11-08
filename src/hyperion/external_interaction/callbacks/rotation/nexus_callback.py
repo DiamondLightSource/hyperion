@@ -26,6 +26,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self.run_uid: str | None = None
         self.parameters: RotationInternalParameters | None = None
         self.writer: NexusWriter | None = None

@@ -31,6 +31,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self.parameters: GridscanInternalParameters | None = None
         self.run_start_uid: str | None = None
         self.nexus_writer_1: NexusWriter | None = None

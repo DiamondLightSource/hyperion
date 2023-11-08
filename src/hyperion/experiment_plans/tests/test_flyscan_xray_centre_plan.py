@@ -1,7 +1,7 @@
 import types
 from unittest.mock import MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
@@ -101,14 +101,18 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
 
     test_ispyb_callback = GridscanISPyBCallback(test_fgs_params)
+    test_ispyb_callback.active = True
     test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     RE.subscribe(test_ispyb_callback)
 
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "activate_callbacks": ["GridscanISPyBCallback"],
+        }
+    )
     def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
-        yield from bps.open_run()
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
         yield from read_hardware_for_ispyb_during_collection(attn, fl)
-        yield from bps.close_run()
 
     RE(
         standalone_read_hardware_for_ispyb(
@@ -458,6 +462,19 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
+
+    @bpp.run_decorator(
+        md={
+            "activate_callbacks": [
+                "XraycentreZocaloCallback",
+                "GridscanISPyBCallback",
+                "XraycentreNexusCallback",
+            ],
+        }
+    )
+    def outer_plan(composite, params):
+        yield from flyscan_xray_centre(composite, params)
+
     with patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
         lambda _: mock_subscriptions,
@@ -465,7 +482,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
         autospec=True,
     ):
-        RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+        RE(outer_plan(fake_fgs_composite, test_fgs_params))
 
     mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 

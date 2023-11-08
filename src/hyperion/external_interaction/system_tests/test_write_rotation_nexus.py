@@ -53,6 +53,7 @@ def fake_rotation_scan(
         md={
             "subplan_name": "rotation_scan_with_cleanup",
             "hyperion_internal_parameters": parameters.json(),
+            "activate_callbacks": "RotationNexusFileCallback",
         }
     )
     def plan():
