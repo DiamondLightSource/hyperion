@@ -5,11 +5,6 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
-from event_model import DocumentNames
-from event_model.documents.event import Event
-from event_model.documents.event_descriptor import EventDescriptor
-from event_model.documents.run_start import RunStart
-from event_model.documents.run_stop import RunStop
 from ophyd.sim import SynAxis
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
