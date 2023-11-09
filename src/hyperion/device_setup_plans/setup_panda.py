@@ -1,8 +1,10 @@
 from asyncio import subprocess
 
 import bluesky.plan_stubs as bps
+import numpy as np
+from dodal.devices.panda_fast_grid_scan import PandaGridScanParams
 from ophyd_async.core import SignalRW, load_device
-from ophyd_async.panda import PandA, seq_table_from_arrays, SeqTable
+from ophyd_async.panda import PandA, SeqTable, SeqTrigger, seq_table_from_arrays
 
 from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
@@ -10,21 +12,24 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 )
 
 ENCODER_TO_MM = 2000  # 20000 counts to a mm ? check this
+TIMEOUT = 60
 
 
 def setup_panda_for_flyscan(
-    panda: PandA, save_path: str, parameters: GridscanInternalParameters
+    panda: PandA, save_path: str, parameters: PandaGridScanParams, initial_x: float
 ):
     """This should load a 'base' panda-flyscan yaml file, then grid the grid parameters, then adjust the PandA
     sequencer table to match this new grid"""
 
     # This sets the PV's for a template panda fast grid scan, Load a template fast grid scan config,
     # uses /dls/science/users/qqh35939/panda_yaml_files/flyscan_base.yaml for now
-    
+    yield from load_device(panda, save_path)
 
-    """
-    
-    -Setting a 'signal' means to PCAP internally and to Eiger via physical panda output
+    # Home X2 encoder value : Do we want to measure X relative to the start of the grid scan or as an absolute position?
+    yield from bps.abs_set((panda.inenc[1].setp, initial_x * ENCODER_TO_MM))
+
+    """   
+    -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
     -NOTE: When we wait for the position to be greater/lower, give some lee-way (~10 counts) as the encoder counts arent always exact
     SEQUENCER TABLE:
         1:Wait for physical trigger from motion script to mark start of scan / change of direction
@@ -35,39 +40,44 @@ def setup_panda_for_flyscan(
         5:Wait for POSA (X2) to be less than X_START + (X_STEP_SIZE * NUM_X_STEPS), then
           send a signal out every 2000us (minimum eiger exposure time) + 4us (eiger dead time ((check that number)))
         6:Wait for POSA (X2) to be less than X_START, then cut out signal
-        7:Go back to step one. Scan should finish at step 6, and then not recieve any more physical triggers so the panda will stop sending outputs
-        
+        7:Go back to step one. Scan should finish at step 6, and then not recieve any more physical triggers so the panda will stop sending outputs 
         At this point, the panda blocks should be disarmed during the tidyup.
     """
 
-    #First move smargon to start position
-    yield from bps.abs_set((panda.inenc[1].setp, 0) #Home X2 encoder value
-                           
-    #Now construct the table...
-    """    repeats: Optional[npt.NDArray[np.uint16]] = None,
-    trigger: Optional[Sequence[SeqTrigger]] = None,
-    position: Optional[npt.NDArray[np.int32]] = None,
-    time1: Optional[npt.NDArray[np.uint32]] = None,
-    outa1: Optional[npt.NDArray[np.bool_]] = None,
-    outb1: Optional[npt.NDArray[np.bool_]] = None,
-    outc1: Optional[npt.NDArray[np.bool_]] = None,
-    outd1: Optional[npt.NDArray[np.bool_]] = None,
-    oute1: Optional[npt.NDArray[np.bool_]] = None,
-    outf1: Optional[npt.NDArray[np.bool_]] = None,
-    time2: npt.NDArray[np.uint32],
-    outa2: Optional[npt.NDArray[np.bool_]] = None,
-    outb2: Optional[npt.NDArray[np.bool_]] = None,
-    outc2: Optional[npt.NDArray[np.bool_]] = None,
-    outd2: Optional[npt.NDArray[np.bool_]] = None,
-    oute2: Optional[npt.NDArray[np.bool_]] = None,
-    outf2: Optional[npt.NDArray[np.bool_]] = None,
-) -> SeqTable:"""
+    # Construct sequencer 1 table
+    trigger = [
+        SeqTrigger.BITA_1,
+        SeqTrigger.POSA_GT,
+        SeqTrigger.POSA_GT,
+        SeqTrigger.BITA_1,
+        SeqTrigger.POSA_LT,
+        SeqTrigger.POSA_LT,
+    ]
+    position = np.array(
+        [
+            0,
+            (parameters.x_start * ENCODER_TO_MM),
+            (parameters.x_start * ENCODER_TO_MM)
+            + (parameters.x_steps * parameters.x_step_size) * ENCODER_TO_MM
+            - 15,
+            0,
+            (parameters.x_start * ENCODER_TO_MM)
+            + (parameters.x_steps * parameters.x_step_size * ENCODER_TO_MM),
+            (parameters.x_start * ENCODER_TO_MM) + 15,
+        ]
+    )
+    outa1 = np.array([False, True, False, False, True, False])
+    time2 = np.array([1, 1, 1, 1, 1, 1])
+    outa2 = np.array([1, 1, 1, 1, 1, 1])
 
-    #Build table
-                           
-                           
-    yield from bps.abs_set((panda.seq[1].table.))
-                           
+    seq_table: SeqTable = seq_table_from_arrays(
+        trigger=trigger, position=position, outa1=outa1, time2=time2, outa2=outa2
+    )
+
+    yield from bps.abs_set(panda.seq[1].table, seq_table)
+
+    # yield from bps.abs_set((panda.seq[1].table.))
+
     """ The sequencer table should be adjusted as follows:
     - 
     - Use the gridscan parameters read from hyperion to update some of the panda PV's:
@@ -79,18 +89,7 @@ def setup_panda_for_flyscan(
           correctly zeroed
         - The smargon should be moved to the start position (slightly before the SEQ1 start position) before the sequencer is armed
         - Arm the relevant blocks before beginning the plan (this could be done in arm function)
-    
-    
     """
-
-
-def disable_panda_blocks(panda: PandA):
-    """Use this at the beginning of setting up a PandA to ensure any residual settings are ignored"""
-    # devices = get_device_children(panda)
-
-    # Loops through panda blocks with read access with an 'enable' signal, and set to 0
-
-    ...
 
 
 # This might not be needed. For the Zebra, this function configures the zebra to make its outputs correspond to
@@ -106,11 +105,15 @@ def disable_panda_blocks(panda: PandA):
 #         yield from bps.wait(group)
 
 
-def arm_panda():
-    # Arm PCAP
-    ...
+def arm_panda_for_gridscan(panda: PandA):
+    yield from bps.abs_set(panda.seq[1].enable, True, group="arm_panda_gridscan")
+    yield from bps.abs_set(panda.clock[1].enable, True, group="arm_panda_gridscan")
+    yield from bps.abs_set(panda.pulse[1].enable, True, group="arm_panda_gridscan")
+    yield from bps.wait(group="arm_panda_gridscan", timeout=TIMEOUT)
 
 
-def disarm_panda():
-    # Disarm PCAP. This will disarm the blocks which were armed in the setup
-    ...
+def disarm_panda_for_gridscan(panda):
+    yield from bps.abs_set(panda.seq[1].enable, False, group="disarm_panda_gridscan")
+    yield from bps.abs_set(panda.clock[1].enable, False, group="disarm_panda_gridscan")
+    yield from bps.abs_set(panda.pulse[1].enable, False, group="disarm_panda_gridscan")
+    yield from bps.wait(group="disarm_panda_gridscan", timeout=TIMEOUT)

@@ -231,7 +231,10 @@ def run_gridscan_and_move(
     )
 
     yield from setup_panda_for_flyscan(
-        fgs_composite.panda, PANDA_SETUP_PATH, parameters
+        fgs_composite.panda,
+        PANDA_SETUP_PATH,
+        parameters.experiment_params,
+        initial_xyz[0],
     )
 
     hyperion.log.LOGGER.info("Starting grid scan")
