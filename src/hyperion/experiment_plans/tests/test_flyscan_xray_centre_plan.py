@@ -348,7 +348,10 @@ def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
             mock_subscriptions,
         )
     )
-    assert fake_fgs_composite.smargon.stub_offsets.center_at_current_position.get() == 1
+    assert (
+        fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+        == 1
+    )
 
 
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True)
@@ -360,11 +363,14 @@ def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
-    move_xyz.side_effect = Exception()
+    class MoveException(Exception):
+        pass
+
+    move_xyz.side_effect = MoveException()
     mock_subscriptions = MagicMock()
     mock_subscriptions.zocalo_handler.wait_for_results.return_value = ((0, 0, 0), None)
 
-    with pytest.raises(Exception):
+    with pytest.raises(MoveException):
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
@@ -372,7 +378,10 @@ def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
                 mock_subscriptions,
             )
         )
-    assert fake_fgs_composite.smargon.stub_offsets.center_at_current_position.get() == 0
+    assert (
+        fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+        == 0
+    )
 
 
 @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.sleep", autospec=True)
