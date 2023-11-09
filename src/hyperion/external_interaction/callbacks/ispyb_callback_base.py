@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
-from hyperion.log import ISPYB_LOGGER, set_dcgid_tag, set_up_callback_logging_handlers
+from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
@@ -20,13 +20,6 @@ class BaseISPyBCallback(CallbackBase):
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
-        if ISPYB_LOGGER.handlers == []:
-            set_up_callback_logging_handlers(
-                "hyperion_ispyb_callback.txt",
-                ISPYB_LOGGER,
-                "DEBUG",
-                True,  # TODO set dev mode for tests and remove this
-            )
         self.ispyb: StoreInIspyb
         self.params = parameters
         self.descriptors: Dict[str, dict] = {}

@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from dodal.log import LOGGER as dodal_logger
-from dodal.log import _add_handler, set_up_file_handler, set_up_graylog_handler
 from dodal.log import set_up_logging_handlers as setup_dodal_logging
 
 LOGGER = logging.getLogger("Hyperion")
@@ -16,6 +15,8 @@ ISPYB_LOGGER.setLevel(logging.DEBUG)
 
 NEXUS_LOGGER = logging.getLogger("Hyperion NeXus callbacks")
 NEXUS_LOGGER.setLevel(logging.DEBUG)
+
+ALL_LOGGERS = [LOGGER, ISPYB_LOGGER, NEXUS_LOGGER]
 
 
 class DCGIDFilter(logging.Filter):
@@ -36,10 +37,10 @@ def set_dcgid_tag(dcgid):
     dc_group_id_filter.dc_group_id = dcgid
 
 
-def set_up_hyperion_logging_handlers(
-    logger=LOGGER,
+def set_up_logging_handlers(
+    logger=dodal_logger,
     logging_level: Union[str, None] = "INFO",
-    dev_mode: bool = False,
+    dev_mode: bool | None = False,
     filename="hyperion.txt",
 ) -> List[logging.Handler]:
     """Set up the logging level and instances for user chosen level of logging.
@@ -51,27 +52,12 @@ def set_up_hyperion_logging_handlers(
         dev_mode,
         _get_logging_file_path(filename),
         file_handler_logging_level="DEBUG",
+        logger=logger,
     )
     dodal_logger.addFilter(dc_group_id_filter)
     logger.addFilter(dc_group_id_filter)
 
     return handlers
-
-
-def set_up_callback_logging_handlers(
-    filename,
-    logger=LOGGER,
-    logging_level: str = "INFO",
-    dev_mode: bool = False,
-):
-    stream_handler = logging.StreamHandler()
-    _add_handler(logger, stream_handler, logging_level)
-    graylog_handler = set_up_graylog_handler(logging_level, dev_mode, logger)
-    file_handler = set_up_file_handler(
-        logging_level, dev_mode, _get_logging_file_path(filename), logger
-    )
-    logger.addFilter(dc_group_id_filter)
-    return [stream_handler, graylog_handler, file_handler]
 
 
 def _get_logging_file_path(filename: str) -> Path:

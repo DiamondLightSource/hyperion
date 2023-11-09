@@ -6,14 +6,12 @@ import pytest
 from dodal.log import LOGGER as dodal_logger
 
 from hyperion import log
+from hyperion.conftest import _destroy_loggers
 
 
 @pytest.fixture
-def clear_loggers():
-    log.LOGGER.handlers.clear()
-    log.ISPYB_LOGGER.handlers.clear()
-    log.NEXUS_LOGGER.handlers.clear()
-    dodal_logger.handlers.clear()
+def clear_and_mock_loggers():
+    _destroy_loggers([*log.ALL_LOGGERS, dodal_logger])
     mock_open_with_tell = MagicMock()
     mock_open_with_tell.tell.return_value = 0
     with (
@@ -22,10 +20,7 @@ def clear_loggers():
         patch("dodal.log.logging.FileHandler.emit") as filehandler_emit,
     ):
         yield filehandler_emit, graylog_emit
-    log.LOGGER.handlers.clear()
-    log.ISPYB_LOGGER.handlers.clear()
-    log.NEXUS_LOGGER.handlers.clear()
-    dodal_logger.handlers.clear()
+    _destroy_loggers([*log.ALL_LOGGERS, dodal_logger])
 
 
 @pytest.mark.skip_log_setup
@@ -34,9 +29,9 @@ def clear_loggers():
 def test_no_env_variable_sets_correct_file_handler(
     mock_config_ophyd,
     mock_config_bluesky,
-    clear_loggers,
+    clear_and_mock_loggers,
 ) -> None:
-    log.set_up_hyperion_logging_handlers(logging_level=None, dev_mode=True)
+    log.set_up_logging_handlers(logging_level=None, dev_mode=True)
     file_handlers: FileHandler = next(
         filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)  # type: ignore
     )
@@ -51,9 +46,9 @@ def test_no_env_variable_sets_correct_file_handler(
 )  # Note we use a relative path here so it works in CI
 def test_set_env_variable_sets_correct_file_handler(
     mock_dir,
-    clear_loggers,
+    clear_and_mock_loggers,
 ) -> None:
-    log.set_up_hyperion_logging_handlers(logging_level=None, dev_mode=False)
+    log.set_up_logging_handlers(logging_level=None, dev_mode=False)
 
     file_handlers: FileHandler = next(
         filter(lambda h: isinstance(h, FileHandler), dodal_logger.handlers)  # type: ignore
@@ -64,10 +59,10 @@ def test_set_env_variable_sets_correct_file_handler(
 
 @pytest.mark.skip_log_setup
 def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
-    clear_loggers,
+    clear_and_mock_loggers,
 ):
-    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_loggers
-    log.set_up_hyperion_logging_handlers()
+    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+    log.set_up_logging_handlers()
 
     log.set_dcgid_tag(100)
 
@@ -85,10 +80,10 @@ def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
 
 @pytest.mark.skip_log_setup
 def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
-    clear_loggers,
+    clear_and_mock_loggers,
 ):
-    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_loggers
-    log.set_up_hyperion_logging_handlers()
+    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+    log.set_up_logging_handlers()
     logger = log.LOGGER
     logger.info("test_hyperion")
     dodal_logger.info("test_dodal")
@@ -110,16 +105,26 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
 
 @pytest.mark.skip_log_setup
 def test_callback_loggers_log_to_own_files(
-    clear_loggers,
+    clear_and_mock_loggers,
 ):
-    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_loggers
-    hyperion_handlers = log.set_up_hyperion_logging_handlers()
+    mock_filehandler_emit, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+    hyperion_handlers = log.set_up_logging_handlers()
 
     hyperion_logger = log.LOGGER
     ispyb_logger = log.ISPYB_LOGGER
     nexus_logger = log.NEXUS_LOGGER
-    log.set_up_callback_logging_handlers("ispyb", log.ISPYB_LOGGER, "INFO")
-    log.set_up_callback_logging_handlers("nexus", log.NEXUS_LOGGER, "INFO")
+    log.set_up_logging_handlers(
+        logging_level="INFO",
+        dev_mode=True,
+        filename="ispyb",
+        logger=log.ISPYB_LOGGER,
+    )
+    log.set_up_logging_handlers(
+        logging_level="INFO",
+        dev_mode=True,
+        filename="nexus",
+        logger=log.NEXUS_LOGGER,
+    )
 
     hyperion_logger.info("test_hyperion")
     ispyb_logger.info("test_ispyb")

@@ -42,7 +42,7 @@ from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
 )
-from hyperion.log import set_up_hyperion_logging_handlers
+from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
@@ -148,7 +148,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
-    set_up_hyperion_logging_handlers(logging_level="INFO", dev_mode=True)
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
     mock_subscriptions.ispyb_handler.descriptor(
@@ -240,7 +240,7 @@ def test_results_passed_to_move_motors(
 ):
     from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 
-    set_up_hyperion_logging_handlers(logging_level="INFO", dev_mode=True)
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
     motor_position = test_fgs_params.experiment_params.grid_position_to_motor_position(
         np.array([1, 2, 3])
@@ -312,7 +312,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         }
     )
 
-    set_up_hyperion_logging_handlers(logging_level="INFO", dev_mode=True)
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
     RE(
@@ -374,7 +374,7 @@ def test_logging_within_plan(
         }
     )
 
-    set_up_hyperion_logging_handlers(logging_level="INFO", dev_mode=True)
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
     RE(
