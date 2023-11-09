@@ -27,7 +27,7 @@ from hyperion.__main__ import (
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.log import LOGGER
-from hyperion.parameters import external_parameters
+from hyperion.parameters import jsonschema_external_parameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -39,7 +39,9 @@ STOP_ENDPOINT = Actions.STOP.value
 STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
-TEST_PARAMS = json.dumps(external_parameters.from_file("test_parameter_defaults.json"))
+TEST_PARAMS = json.dumps(
+    jsonschema_external_parameters.from_file("test_parameter_defaults.json")
+)
 
 SECS_PER_RUNENGINE_LOOP = 0.1
 RUNENGINE_TAKES_TIME_TIMEOUT = 15

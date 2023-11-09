@@ -43,7 +43,7 @@ from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_SMALL,
 )
 from hyperion.log import set_up_logging_handlers
-from hyperion.parameters import external_parameters
+from hyperion.parameters import jsonschema_external_parameters
 from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
@@ -60,7 +60,7 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
         test_fgs_params.hyperion_params.detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
     )
-    raw_params_dict = external_parameters.from_file()
+    raw_params_dict = jsonschema_external_parameters.from_file()
     raw_params_dict["hyperion_params"]["detector_params"][
         "detector_size_constants"
     ] = EIGER_TYPE_EIGER2_X_4M

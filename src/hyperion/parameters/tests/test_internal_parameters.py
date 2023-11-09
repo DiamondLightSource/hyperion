@@ -11,8 +11,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     GridscanIspybParams,
 )
-from hyperion.parameters import external_parameters
-from hyperion.parameters.external_parameters import from_file
+from hyperion.parameters import jsonschema_external_parameters
 from hyperion.parameters.internal_parameters import (
     InternalParameters,
     extract_hyperion_params_from_flat_dict,
@@ -20,6 +19,7 @@ from hyperion.parameters.internal_parameters import (
     flatten_dict,
     get_extracted_experiment_and_flat_hyperion_params,
 )
+from hyperion.parameters.jsonschema_external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
     GridscanInternalParameters,
@@ -31,14 +31,14 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 
 @pytest.fixture
 def raw_params():
-    return external_parameters.from_file(
+    return jsonschema_external_parameters.from_file(
         "src/hyperion/parameters/tests/test_data/good_test_parameters.json"
     )
 
 
 @pytest.fixture
 def rotation_raw_params():
-    return external_parameters.from_file(
+    return jsonschema_external_parameters.from_file(
         "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
     )
 
@@ -67,7 +67,7 @@ TEST_PARAM_DICT = {
 def test_cant_initialise_abstract_internalparams():
     with pytest.raises(TypeError):
         internal_parameters = InternalParameters(  # noqa
-            **external_parameters.from_file()
+            **jsonschema_external_parameters.from_file()
         )
 
 
@@ -106,7 +106,7 @@ def test_internal_param_serialisation_deserialisation():
 
 
 def test_flatten():
-    params = external_parameters.from_file(
+    params = jsonschema_external_parameters.from_file(
         "src/hyperion/parameters/tests/test_data/good_test_parameters.json"
     )
     flat_dict = flatten_dict(params)
@@ -238,7 +238,7 @@ def test_param_fields_match_components_they_should_use(
 
 
 def test_internal_params_eq():
-    params = external_parameters.from_file(
+    params = jsonschema_external_parameters.from_file(
         "src/hyperion/parameters/tests/test_data/good_test_parameters.json"
     )
     internal_params = GridscanInternalParameters(**params)

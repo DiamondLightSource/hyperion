@@ -11,7 +11,9 @@ from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_SMALL,
 )
-from hyperion.parameters.external_parameters import from_file as default_raw_params
+from hyperion.parameters.jsonschema_external_parameters import (
+    from_file as default_raw_params,
+)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )

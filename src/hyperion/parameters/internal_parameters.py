@@ -3,26 +3,10 @@ from typing import Any
 
 from dodal.devices.eiger import DetectorParams
 from pydantic import BaseModel, root_validator
-from semver import Version
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
-from hyperion.parameters.external_parameters import from_json
-
-
-class ParameterVersion(Version):
-    @classmethod
-    def _parse(cls, version):
-        return cls.parse(version)
-
-    @classmethod
-    def __get_validators__(cls):
-        """Return a list of validator methods for pydantic models."""
-        yield cls._parse
-
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        """Inject/mutate the pydantic field schema in-place."""
-        field_schema.update(examples=["1.0.2", "2.15.3-alpha", "21.3.15-beta+12345"])
+from hyperion.parameters.external_parameters import ParameterVersion
+from hyperion.parameters.jsonschema_external_parameters import from_json
 
 
 class HyperionParameters(BaseModel):

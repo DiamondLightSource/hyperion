@@ -9,7 +9,9 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
-from hyperion.parameters.external_parameters import from_file as default_raw_params
+from hyperion.parameters.jsonschema_external_parameters import (
+    from_file as default_raw_params,
+)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
