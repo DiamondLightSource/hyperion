@@ -17,6 +17,9 @@ from hyperion.external_interaction.zocalo.zocalo_interaction import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
+)
 
 
 class XrayCentreZocaloCallback(CallbackBase):
@@ -53,15 +56,17 @@ class XrayCentreZocaloCallback(CallbackBase):
             LOGGER.info(
                 "Zocalo callback recieved start document with experiment parameters."
             )
-            assert (
-                self.ispyb.params is not None
-            ), "ISPyB handler attached to Zocalo handler did not recieve parameters"
+            params = GridscanInternalParameters.from_json(
+                doc.get("hyperion_internal_parameters")
+            )
+            zocalo_environment = params.hyperion_params.zocalo_environment
+            LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloInteractor(
                 self.ispyb.params.hyperion_params.zocalo_environment
             )
             self.grid_position_to_motor_position: Callable[
                 [ndarray], ndarray
-            ] = self.ispyb.params.experiment_params.grid_position_to_motor_position
+            ] = params.experiment_params.grid_position_to_motor_position
         LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == "do_fgs":
             self.do_fgs_uid = doc.get("uid")

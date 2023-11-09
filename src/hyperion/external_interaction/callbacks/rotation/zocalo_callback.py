@@ -9,6 +9,9 @@ from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import ROTATION_OUTER_PLAN
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 
 class RotationZocaloCallback(CallbackBase):
@@ -29,10 +32,11 @@ class RotationZocaloCallback(CallbackBase):
             LOGGER.info(
                 "Zocalo callback recieved start document with experiment parameters."
             )
-            assert (
-                self.ispyb.params is not None
-            ), "ISPyB handler attached to Zocalo handler did not recieve parameters"
-            zocalo_environment = self.ispyb.params.hyperion_params.zocalo_environment
+            params = RotationInternalParameters.from_json(
+                doc.get("hyperion_internal_parameters")
+            )
+            zocalo_environment = params.hyperion_params.zocalo_environment
+            LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
         if self.run_uid is None:
             self.run_uid = doc.get("uid")
