@@ -2,9 +2,8 @@ from typing import Any, Tuple, cast
 
 from dodal.utils import get_beamline_name
 
-from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
-
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
 
 BEAMLINE_PARAMETER_KEYWORDS = ["FB", "FULL", "deadtime"]
 
@@ -17,7 +16,7 @@ class GDABeamlineParameters:
 
     def __getitem__(self, item: str):
         return self.params[item]
-        
+
     @classmethod
     def from_lines(cls, file_name: str, config_lines: list[str]):
         ob = cls()
@@ -36,19 +35,22 @@ class GDABeamlineParameters:
             try:
                 # BEAMLINE_PARAMETER_KEYWORDS effectively raw string but whitespace removed
                 if value not in BEAMLINE_PARAMETER_KEYWORDS:
-                    config_pairs[i] = (config_pairs[i][0], cls.parse_value(config_pairs[i][1]))
+                    config_pairs[i] = (
+                        config_pairs[i][0],
+                        cls.parse_value(config_pairs[i][1]),
+                    )
             except Exception as e:
                 LOGGER.warning(f"Unable to parse {file_name} line {i}: {e}")
 
         ob.params = dict(config_pairs)
         return ob
-    
+
     @classmethod
     def from_file(cls, path: str):
         with open(path) as f:
             config_lines = f.readlines()
         return cls.from_lines(path, config_lines)
-                
+
     @classmethod
     def parse_value(cls, value: str):
         if value[0] == "[":
@@ -72,10 +74,10 @@ class GDABeamlineParameters:
         i = 0
         while (i := remaining.find(",")) != -1:
             list_output.append(cls.parse_list_element(remaining[:i]))
-            remaining = remaining[i+1:].lstrip()
+            remaining = remaining[i + 1 :].lstrip()
         if (i := remaining.find("]")) != -1:
             list_output.append(cls.parse_list_element(remaining[:i]))
-            remaining = remaining[i+1:].lstrip()
+            remaining = remaining[i + 1 :].lstrip()
         else:
             raise Exception("Missing closing ']' in list expression")
         return list_output
