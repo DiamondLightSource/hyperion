@@ -37,7 +37,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
-            self.run_uid = doc.get("uid")
             LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
             )

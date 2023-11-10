@@ -61,13 +61,10 @@ class BaseISPyBCallback(CallbackBase):
         hyperion.log"""
 
         LOGGER.debug("ISPyB handler received event document.")
-        assert isinstance(
-            self.ispyb, StoreInIspyb
-        ), "ISPyB deposition can't be initialised!"
+        assert self.ispyb is not None, "ISPyB deposition can't be initialised!"
+        assert self.params is not None, "ISPyB handler didn't recieve parameters!"
+
         event_descriptor = self.descriptors[doc["descriptor"]]
-        assert isinstance(self.params, GridscanInternalParameters) or isinstance(
-            self.params, RotationInternalParameters
-        ), "ISPyB handler params set with wrong type"
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_gap"
