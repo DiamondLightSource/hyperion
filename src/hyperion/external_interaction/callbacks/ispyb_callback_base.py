@@ -95,7 +95,7 @@ class BaseISPyBCallback(CallbackBase):
         set_dcgid_tag(None)
         try:
             self.ispyb.end_deposition(exit_status, reason)
-        except Exception:
-            ISPYB_LOGGER.info(
-                f"Failed to finalise ISPyB deposition on stop document: {doc}"
+        except Exception as e:
+            ISPYB_LOGGER.warning(
+                f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"
             )
