@@ -39,7 +39,7 @@ VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})(/?$)"
 class IspybIds(BaseModel):
     data_collection_ids: int | tuple[int, ...] | None = None
     data_collection_group_id: int | None = None
-    grid_id: int | None = None
+    grid_ids: tuple[int, ...] | None = None
 
 
 class StoreInIspyb(ABC):
@@ -350,7 +350,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         return IspybIds(
             data_collection_ids=self.data_collection_ids,
             data_collection_group_id=self.data_collection_group_id,
-            grid_id=self.grid_ids,
+            grid_ids=self.grid_ids,
         )
 
     def end_deposition(self, success: str, reason: str):

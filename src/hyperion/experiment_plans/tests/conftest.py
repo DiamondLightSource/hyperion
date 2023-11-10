@@ -30,7 +30,10 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
+from hyperion.external_interaction.ispyb.store_in_ispyb import (
+    IspybIds,
+    Store3DGridscanInIspyb,
+)
 from hyperion.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
 from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
@@ -296,7 +299,9 @@ def modified_interactor_mock(assign_run_end: Callable | None = None):
 
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
     mock = MagicMock(spec=Store3DGridscanInIspyb)
-    mock.begin_deposition.return_value = (dcids, dcgid, 0)
+    mock.begin_deposition.return_value = IspybIds(
+        data_collection_ids=dcids, data_collection_group_id=dcgid, grid_ids=(0, 0)
+    )
     return mock
 
 
@@ -320,7 +325,9 @@ def mock_subscriptions(test_fgs_params):
             }
         )
     subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
-    subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: [[0, 0], 0, 0]
+    subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: IspybIds(
+        data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0, 0)
+    )
 
     return subscriptions
 

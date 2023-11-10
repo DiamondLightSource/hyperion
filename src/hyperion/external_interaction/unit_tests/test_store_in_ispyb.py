@@ -8,6 +8,7 @@ from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
 from hyperion.external_interaction.ispyb.store_in_ispyb import (
+    IspybIds,
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
     StoreRotationInIspyb,
@@ -228,9 +229,9 @@ def test_store_rotation_scan(
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    assert dummy_rotation_ispyb.begin_deposition() == (
-        TEST_DATA_COLLECTION_IDS[0],
-        TEST_DATA_COLLECTION_GROUP_ID,
+    assert dummy_rotation_ispyb.begin_deposition() == IspybIds(
+        data_collection_ids=TEST_DATA_COLLECTION_IDS[0],
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
 
 

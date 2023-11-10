@@ -9,6 +9,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
+from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
 from hyperion.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -54,10 +55,12 @@ class TestXrayCentreZocaloHandler:
         nexus_writer: MagicMock,
         dummy_params,
     ):
-        dc_ids = [1, 2]
+        dc_ids = (1, 2)
         dcg_id = 4
 
-        mock_ispyb_store_grid_scan.return_value = [dc_ids, None, dcg_id]
+        mock_ispyb_store_grid_scan.return_value = IspybIds(
+            data_collection_ids=dc_ids, grid_ids=None, data_collection_group_id=dcg_id
+        )
         mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
         mock_ispyb_update_time_and_status.return_value = None
 
@@ -115,7 +118,9 @@ class TestXrayCentreZocaloHandler:
         )
         callbacks.ispyb_handler.event(td.test_event_document_during_data_collection)
 
-        callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
+        callbacks.ispyb_handler.ispyb_ids = IspybIds(
+            data_collection_ids=(0, 0), data_collection_group_id=100, grid_ids=(0, 0)
+        )
         expected_centre_grid_coords = np.array([1, 2, 3])
         single_crystal_result = [
             {
@@ -152,7 +157,9 @@ class TestXrayCentreZocaloHandler:
     ):
         callbacks = XrayCentreCallbackCollection.setup()
         init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks)
-        callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
+        callbacks.ispyb_handler.ispyb_ids = IspybIds(
+            data_collection_ids=(0, 0), data_collection_group_id=100, grid_ids=(0, 0)
+        )
         callbacks.zocalo_handler.zocalo_interactor.wait_for_result.side_effect = (
             NoDiffractionFound()
         )
@@ -191,7 +198,9 @@ class TestXrayCentreZocaloHandler:
     ):
         callbacks = XrayCentreCallbackCollection.setup()
         init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks)
-        callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
+        callbacks.ispyb_handler.ispyb_ids = IspybIds(
+            data_collection_ids=(0, 0), data_collection_group_id=100, grid_ids=(0, 0)
+        )
         expected_centre_grid_coords = np.array([4, 6, 2])
         multi_crystal_result = [
             {

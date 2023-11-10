@@ -18,6 +18,7 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.store_in_ispyb import (
+    IspybIds,
     StoreInIspyb,
     StoreRotationInIspyb,
 )
@@ -199,9 +200,11 @@ def test_zocalo_start_and_end_triggered_once(
     cb.ispyb_handler.params = params
 
     def set_ispyb_ids(cbs):
-        cbs.ispyb_handler.ispyb_ids = (0, 0)
+        cbs.ispyb_handler.ispyb_ids = IspybIds(
+            data_collection_ids=0, data_collection_group_id=0
+        )
 
-    RE(fake_rotation_scan(params, cb, after_open_do=set_ispyb_ids))
+    RE(fake_rotation_scan(params, cb, after_main_do=set_ispyb_ids))
 
     zocalo.assert_called_once()
     cb.zocalo_handler.zocalo_interactor.run_start.assert_called_once()
@@ -248,14 +251,17 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
     cb.ispyb_handler.start(test_start_doc)
     cb.zocalo_handler.start(test_start_doc)
     cb.ispyb_handler.ispyb = MagicMock(spec=StoreInIspyb)
-    cb.ispyb_handler.ispyb_ids = (0, 0)
+
     cb.zocalo_handler.zocalo_interactor.run_start = MagicMock()
     cb.zocalo_handler.zocalo_interactor.run_end = MagicMock()
 
-    def after_open_assert(callbacks: RotationCallbackCollection):
+    def after_open_do(callbacks: RotationCallbackCollection):
         callbacks.ispyb_handler.ispyb.begin_deposition.assert_not_called()
 
-    def after_main_assert(callbacks: RotationCallbackCollection):
+    def after_main_do(callbacks: RotationCallbackCollection):
+        cb.ispyb_handler.ispyb_ids = IspybIds(
+            data_collection_ids=0, data_collection_group_id=0
+        )
         callbacks.ispyb_handler.ispyb.begin_deposition.assert_called_once()
         cb.zocalo_handler.zocalo_interactor.run_end.assert_not_called()
 
@@ -263,7 +269,7 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
         "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
         autospec=True,
     ):
-        RE(fake_rotation_scan(params, cb, after_open_assert, after_main_assert))
+        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 
     cb.zocalo_handler.zocalo_interactor.run_end.assert_called_once()
 
@@ -281,11 +287,14 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         autospec=True, side_effect=cb.ispyb_handler.start
     )
 
-    def after_open_assert(callbacks: RotationCallbackCollection):
+    def after_open_do(callbacks: RotationCallbackCollection):
         callbacks.ispyb_handler.start.assert_called_once()
         assert callbacks.ispyb_handler.uid_to_finalize_on is None
 
-    def after_main_assert(callbacks: RotationCallbackCollection):
+    def after_main_do(callbacks: RotationCallbackCollection):
+        cb.ispyb_handler.ispyb_ids = IspybIds(
+            data_collection_ids=0, data_collection_group_id=0
+        )
         assert callbacks.ispyb_handler.start.call_count == 2
         assert callbacks.ispyb_handler.uid_to_finalize_on is not None
 
@@ -293,4 +302,4 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
         autospec=True,
     ):
-        RE(fake_rotation_scan(params, cb, after_open_assert, after_main_assert))
+        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))

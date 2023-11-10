@@ -11,6 +11,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
+from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
 from hyperion.external_interaction.zocalo.zocalo_interaction import (
     NoDiffractionFound,
     ZocaloInteractor,
@@ -70,9 +71,9 @@ class XrayCentreZocaloCallback(CallbackBase):
         LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == "do_fgs":
             self.do_fgs_uid = doc.get("uid")
-            if self.ispyb.ispyb_ids[0] is not None:
-                datacollection_ids = self.ispyb.ispyb_ids[0]
-                for id in datacollection_ids:
+            if self.ispyb.ispyb_ids.data_collection_ids is not None:
+                assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
+                for id in self.ispyb.ispyb_ids.data_collection_ids:
                     self.zocalo_interactor.run_start(id)
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
@@ -82,10 +83,10 @@ class XrayCentreZocaloCallback(CallbackBase):
             LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
-            if self.ispyb.ispyb_ids == (None, None, None):
+            if self.ispyb.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
-            datacollection_ids = self.ispyb.ispyb_ids[0]
-            for id in datacollection_ids:
+            assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
+            for id in self.ispyb.ispyb_ids.data_collection_ids:
                 self.zocalo_interactor.run_end(id)
             self.processing_start_time = time.time()
 
@@ -98,11 +99,13 @@ class XrayCentreZocaloCallback(CallbackBase):
         Returns:
             ndarray: The xray centre position to move to
         """
-        datacollection_group_id = self.ispyb.ispyb_ids[2]
+        assert (
+            self.ispyb.ispyb_ids.data_collection_group_id is not None
+        ), "ISPyB deposition was not initialised!"
 
         try:
             raw_results = self.zocalo_interactor.wait_for_result(
-                datacollection_group_id
+                self.ispyb.ispyb_ids.data_collection_group_id
             )
 
             # Sort from strongest to weakest in case of multiple crystals
