@@ -36,8 +36,8 @@ class GDABeamlineParameters:
                 # BEAMLINE_PARAMETER_KEYWORDS effectively raw string but whitespace removed
                 if value not in BEAMLINE_PARAMETER_KEYWORDS:
                     config_pairs[i] = (
-                        config_pairs[i][0],
-                        cls.parse_value(config_pairs[i][1]),
+                        param,
+                        cls.parse_value(value),
                     )
             except Exception as e:
                 LOGGER.warning(f"Unable to parse {file_name} line {i}: {e}")
@@ -79,7 +79,7 @@ class GDABeamlineParameters:
             list_output.append(cls.parse_list_element(remaining[:i]))
             remaining = remaining[i + 1 :].lstrip()
         else:
-            raise Exception("Missing closing ']' in list expression")
+            raise ValueError("Missing closing ']' in list expression")
         return list_output
 
 
