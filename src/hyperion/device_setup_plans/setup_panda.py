@@ -12,7 +12,7 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 )
 
 ENCODER_TO_MM = 2000  # 20000 counts to a mm ? check this
-TIMEOUT = 60
+GENERAL_TIMEOUT = 60
 
 
 def setup_panda_for_flyscan(
@@ -105,15 +105,19 @@ def setup_panda_for_flyscan(
 #         yield from bps.wait(group)
 
 
-def arm_panda_for_gridscan(panda: PandA):
-    yield from bps.abs_set(panda.seq[1].enable, True, group="arm_panda_gridscan")
-    yield from bps.abs_set(panda.clock[1].enable, True, group="arm_panda_gridscan")
-    yield from bps.abs_set(panda.pulse[1].enable, True, group="arm_panda_gridscan")
-    yield from bps.wait(group="arm_panda_gridscan", timeout=TIMEOUT)
+def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan", wait=False):
+    yield from bps.abs_set(panda.seq[1].enable, True, group=group)
+    yield from bps.abs_set(panda.clock[1].enable, True, group=group)
+    yield from bps.abs_set(panda.pulse[1].enable, True, group=group)
+    yield from bps.wait(group="arm_panda_gridscan", timeout=GENERAL_TIMEOUT)
+    if wait:
+        yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
 
 
-def disarm_panda_for_gridscan(panda):
-    yield from bps.abs_set(panda.seq[1].enable, False, group="disarm_panda_gridscan")
-    yield from bps.abs_set(panda.clock[1].enable, False, group="disarm_panda_gridscan")
-    yield from bps.abs_set(panda.pulse[1].enable, False, group="disarm_panda_gridscan")
-    yield from bps.wait(group="disarm_panda_gridscan", timeout=TIMEOUT)
+def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan", wait=False):
+    yield from bps.abs_set(panda.seq[1].enable, False, group=group)
+    yield from bps.abs_set(panda.clock[1].enable, False, group=group)
+    yield from bps.abs_set(panda.pulse[1].enable, False, group=group)
+    yield from bps.wait(group="disarm_panda_gridscan", timeout=GENERAL_TIMEOUT)
+    if wait:
+        yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)

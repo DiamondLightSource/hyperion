@@ -24,6 +24,7 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra import Zebra
 from ophyd_async.panda import PandA
 
 import hyperion.log
@@ -34,8 +35,12 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_pre_collection,
 )
 from hyperion.device_setup_plans.setup_panda import (
+    disarm_panda_for_gridscan,
     setup_panda_for_flyscan,
-    setup_panda_shutter_to_manual,
+)
+from hyperion.device_setup_plans.setup_zebra import (
+    set_zebra_shutter_to_manual,
+    setup_zebra_for_panda_flyscan,
 )
 from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
@@ -76,6 +81,7 @@ class FlyScanXRayCentreComposite:
     synchrotron: Synchrotron
     xbpm_feedback: XBPMFeedback
     panda: PandA
+    zebra: Zebra
 
     @property
     def sample_motors(self) -> Smargon:
@@ -137,11 +143,10 @@ def wait_for_gridscan_valid(fgs_motors: PandAFastGridScan, timeout=0.5):
 
 
 def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
-    hyperion.log.LOGGER.info("Tidying up PandA")
-    # TODO: what needs tidying up for panda scan? Do we want TTLOUT1 and 2 to no longer affect shutter/eiger?
-    # yield from setup_panda_shutter_to_manual(fgs_composite.panda)
-
-    # Most important thing to do for the tidy-up is make sure the PandA outputs are set to 0
+    hyperion.log.LOGGER.info("Disabling panda blocks")
+    yield from disarm_panda_for_gridscan(fgs_composite.panda, wait=True)
+    hyperion.log.LOGGER.info("Tidying up Zebra")
+    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
 
 @bpp.set_run_key_decorator("run_gridscan")
@@ -230,12 +235,16 @@ def run_gridscan_and_move(
         ]
     )
 
+    hyperion.log.LOGGER.info("Setting up Panda for flyscan")
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         PANDA_SETUP_PATH,
         parameters.experiment_params,
         initial_xyz[0],
     )
+
+    hyperion.log.LOGGER.info("Setting up Zebra for panda flyscan")
+    yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra)
 
     hyperion.log.LOGGER.info("Starting grid scan")
 
