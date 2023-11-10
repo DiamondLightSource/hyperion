@@ -44,7 +44,10 @@ from hyperion.external_interaction.system_tests.conftest import (
 )
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import ISPYB_PLAN_NAME, ISPYB_UPDATING_COLLECTION
+from hyperion.parameters.constants import (
+    ISPYB_HARDWARE_READ_PLAN,
+    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -149,7 +152,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
     mock_subscriptions.ispyb_handler.descriptor(
-        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+        {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
     mock_subscriptions.ispyb_handler.event(
         {
@@ -163,7 +166,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
         }
     )
     mock_subscriptions.ispyb_handler.descriptor(
-        {"uid": "abc123", "name": ISPYB_UPDATING_COLLECTION}
+        {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
     )
     mock_subscriptions.ispyb_handler.event(
         {
@@ -282,7 +285,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     RE: RunEngine,
 ):
     mock_subscriptions.ispyb_handler.descriptor(
-        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+        {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
 
     mock_subscriptions.ispyb_handler.event(
@@ -297,7 +300,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         }
     )
     mock_subscriptions.ispyb_handler.descriptor(
-        {"uid": "abc123", "name": ISPYB_UPDATING_COLLECTION}
+        {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
     )
     mock_subscriptions.ispyb_handler.event(
         {
@@ -344,7 +347,7 @@ def test_logging_within_plan(
     RE: RunEngine,
 ):
     mock_subscriptions.ispyb_handler.descriptor(
-        {"uid": "123abc", "name": ISPYB_PLAN_NAME}
+        {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
 
     mock_subscriptions.ispyb_handler.event(
@@ -359,7 +362,7 @@ def test_logging_within_plan(
         }
     )
     mock_subscriptions.ispyb_handler.descriptor(
-        {"uid": "abc123", "name": ISPYB_UPDATING_COLLECTION}
+        {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
     )
     mock_subscriptions.ispyb_handler.event(
         {

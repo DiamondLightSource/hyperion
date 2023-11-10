@@ -2,7 +2,10 @@ from unittest.mock import patch
 
 import pytest
 
-from hyperion.parameters.constants import ISPYB_PLAN_NAME, ISPYB_UPDATING_COLLECTION
+from hyperion.parameters.constants import (
+    ISPYB_HARDWARE_READ_PLAN,
+    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+)
 
 
 @pytest.fixture
@@ -86,12 +89,12 @@ class TestData:
     test_descriptor_document_pre_data_collection: dict = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ISPYB_PLAN_NAME,
+        "name": ISPYB_HARDWARE_READ_PLAN,
     }
     test_descriptor_document_during_data_collection: dict = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ISPYB_UPDATING_COLLECTION,
+        "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN,
     }
     test_event_document_pre_data_collection: dict = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
