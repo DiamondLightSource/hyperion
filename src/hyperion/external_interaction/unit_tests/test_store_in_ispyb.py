@@ -555,12 +555,13 @@ def test_ispyb_deposition_comment_correct_for_rotation_scan(
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
 
     dummy_rotation_ispyb.ispyb_params.comment = "Test comment"
+    dummy_rotation_ispyb.ispyb_params.position = np.array([10.89, 20.3, 30.004])
 
     dummy_rotation_ispyb.begin_deposition()
     mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
 
     upserted_param_value_list = mock_upsert_call_args[0]
-    assert upserted_param_value_list[29] == ("Hyperion: Test comment")
+    assert upserted_param_value_list[29] == "Hyperion: (11, 20, 30) Test comment"
 
 
 @patch("ispyb.open", autospec=True)

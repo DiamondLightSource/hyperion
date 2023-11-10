@@ -303,7 +303,10 @@ class StoreRotationInIspyb(StoreInIspyb):
         self._end_deposition(self.data_collection_id, success, reason)
 
     def _construct_comment(self) -> str:
-        return "Hyperion: " + self.ispyb_params.comment
+        rounded_positions = ", ".join(
+            str(round(pos)) for pos in self.ispyb_params.position
+        )
+        return f"Hyperion: ({rounded_positions}) {self.ispyb_params.comment}"
 
 
 class StoreGridscanInIspyb(StoreInIspyb):
