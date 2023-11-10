@@ -5,6 +5,7 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.store_in_ispyb import (
+    IspybIds,
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
     StoreGridscanInIspyb,
@@ -36,7 +37,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         super().__init__()
         self.params: GridscanInternalParameters
         self.ispyb: StoreGridscanInIspyb
-        self.ispyb_ids: tuple = (None, None, None)
+        self.ispyb_ids: IspybIds = IspybIds()
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
@@ -54,15 +55,16 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             self.uid_to_finalize_on = doc.get("uid")
 
     def append_to_comment(self, comment: str):
-        for id in self.ispyb_ids[0]:
+        assert isinstance(self.ispyb_ids.data_collection_ids, tuple)
+        for id in self.ispyb_ids.data_collection_ids:
             self._append_to_comment(id, comment)
 
     def event(self, doc: dict):
         super().event(doc)
-        set_dcgid_tag(self.ispyb_ids[2])
+        set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
-            if self.ispyb_ids == (None, None, None):
+            if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             super().stop(doc)

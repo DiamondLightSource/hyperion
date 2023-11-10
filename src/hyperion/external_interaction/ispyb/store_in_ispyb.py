@@ -12,6 +12,7 @@ from dodal.devices.detector import DetectorParams
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.core import Core
 from ispyb.sp.mxacquisition import MXAcquisition
+from pydantic import BaseModel
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
@@ -33,6 +34,12 @@ if TYPE_CHECKING:
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
 VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})(/?$)"
+
+
+class IspybIds(BaseModel):
+    data_collection_ids: int | tuple[int, ...] | None = None
+    data_collection_group_id: int | None = None
+    grid_id: int | None = None
 
 
 class StoreInIspyb(ABC):
@@ -62,7 +69,7 @@ class StoreInIspyb(ABC):
         pass
 
     @abstractmethod
-    def begin_deposition(self, success: str, reason: str):
+    def begin_deposition(self) -> IspybIds:
         pass
 
     @abstractmethod
@@ -299,10 +306,11 @@ class StoreRotationInIspyb(StoreInIspyb):
 
         return data_collection_id, data_collection_group_id
 
-    def begin_deposition(self):
+    def begin_deposition(self) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
-            return self._store_scan_data(conn)
+            ids = self._store_scan_data(conn)
+            return IspybIds(data_collection_ids=ids[0], data_collection_group_id=ids[1])
 
     def end_deposition(self, success: str, reason: str):
         assert (
@@ -339,7 +347,11 @@ class StoreGridscanInIspyb(StoreInIspyb):
             self.grid_ids,
             self.data_collection_group_id,
         ) = self.store_grid_scan(self.full_params)
-        return self.data_collection_ids, self.grid_ids, self.data_collection_group_id
+        return IspybIds(
+            data_collection_ids=self.data_collection_ids,
+            data_collection_group_id=self.data_collection_group_id,
+            grid_id=self.grid_ids,
+        )
 
     def end_deposition(self, success: str, reason: str):
         assert (

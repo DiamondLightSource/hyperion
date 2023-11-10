@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 from bluesky.callbacks import CallbackBase
 
-from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
+from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds, StoreInIspyb
 from hyperion.log import LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
@@ -20,11 +20,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
-    from hyperion.external_interaction.ispyb.store_in_ispyb import (
-        Store2DGridscanInIspyb,
-        Store3DGridscanInIspyb,
-        StoreRotationInIspyb,
-    )
+    from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 
 
 class BaseISPyBCallback(CallbackBase):
@@ -35,7 +31,7 @@ class BaseISPyBCallback(CallbackBase):
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )
-        self.ispyb: StoreRotationInIspyb | Store3DGridscanInIspyb | Store2DGridscanInIspyb
+        self.ispyb: StoreInIspyb
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
         if self.ispyb_config == SIM_ISPYB_CONFIG:
@@ -44,9 +40,7 @@ class BaseISPyBCallback(CallbackBase):
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
         self.uid_to_finalize_on: Optional[str] = None
-        self.ispyb_ids: tuple[int, int] | tuple[int, int, int] | tuple[
-            None, None, None
-        ] = (None, None, None)
+        self.ispyb_ids: IspybIds = IspybIds()
 
     def _append_to_comment(self, id: int, comment: str):
         assert isinstance(self.ispyb, StoreInIspyb)
