@@ -62,7 +62,20 @@ def test_i03_beamline_parameters():
     ]
 
 
-def test_parse_exception_causes_warning():
+@patch("hyperion.parameters.beamline_parameters.LOGGER")
+def test_parse_exception_causes_warning(mock_logger):
+    params = GDABeamlineParameters.from_file(
+        "src/hyperion/parameters/tests/test_data/bad_beamlineParameters"
+    )
+    assert params["flux_predict_polynomial_coefficients_5"] == [
+        -0.0000707134131045123,
+        7.0205491504418,
+        -194299.6440518530,
+        1835805807.3974800,
+        -3280251055671.100,
+    ]
+    mock_logger.warning.assert_called_once()
+
     params = GDABeamlineParameters.from_file(
         "src/hyperion/parameters/tests/test_data/bad_beamlineParameters"
     )
