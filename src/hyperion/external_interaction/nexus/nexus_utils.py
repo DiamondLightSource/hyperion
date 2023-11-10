@@ -10,7 +10,7 @@ from nexgen.nxs_utils.Axes import TransformationType
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
 
 
-def create_goniometer_axes(
+def create_i03_goniometer_axes(
     omega_start: float,
     scan_points: dict | None,
     x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
@@ -61,6 +61,55 @@ def create_goniometer_axes(
             "chi", "sam_x", TransformationType.ROTATION, (0.006, -0.0264, 0.9996), chi
         ),
         Axis("phi", "chi", TransformationType.ROTATION, (-1, -0.0025, -0.0056), phi),
+    ]
+    return Goniometer(gonio_axes, scan_points)
+
+
+def create_vmxm_goniometer_axes(
+    omega_start: float,
+    scan_points: dict | None,
+    x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> Goniometer:
+    """Returns a Nexgen 'Goniometer' object with the dependency chain of I03's Smargon
+    goniometer. If scan points is provided these values will be used in preference to
+    those from the params object.
+
+    Args:
+        omega_start (float): the starting position of omega, the only extra value that
+                             needs to be specified except for the scan points.
+        scan_points (dict):  a dictionary of points in the scan for each axis. Obtained
+                             by calculating the scan path with scanspec and calling
+                             consume() on it.
+        x_y_z_increments:    optionally, specify the increments between each image for
+                             the x, y, and z axes. Will be ignored if scan_points
+                             is provided.
+    """
+    gonio_axes = [
+        Axis("omega", ".", TransformationType.ROTATION, (-1.0, 0.0, 0.0), omega_start),
+        Axis(
+            name="sam_z",
+            depends="omega",
+            transformation_type=TransformationType.TRANSLATION,
+            vector=(0.0, 0.0, 1.0),
+            start_pos=0.0,
+            increment=x_y_z_increments[2],
+        ),
+        Axis(
+            name="sam_y",
+            depends="sam_z",
+            transformation_type=TransformationType.TRANSLATION,
+            vector=(0.0, 1.0, 0.0),
+            start_pos=0.0,
+            increment=x_y_z_increments[1],
+        ),
+        Axis(
+            name="sam_x",
+            depends="sam_y",
+            transformation_type=TransformationType.TRANSLATION,
+            vector=(1.0, 0.0, 0.0),
+            start_pos=0.0,
+            increment=x_y_z_increments[0],
+        ),
     ]
     return Goniometer(gonio_axes, scan_points)
 

@@ -5,8 +5,9 @@ from typing import Literal
 import h5py
 import numpy as np
 import pytest
-from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
+from dodal.devices.fast_grid_scan_common import GridAxis, GridScanParams
 
+from hyperion.external_interaction.nexus.nexus_utils import create_i03_goniometer_axes
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -26,10 +27,15 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 @pytest.fixture
 def dummy_nexus_writers(test_fgs_params: GridscanInternalParameters):
     nexus_info_1 = test_fgs_params.get_nexus_info(1)
-    nexus_writer_1 = NexusWriter(test_fgs_params, **nexus_info_1)
+    nexus_writer_1 = NexusWriter(
+        test_fgs_params,
+        create_goniometer_func=create_i03_goniometer_axes,
+        **nexus_info_1,
+    )
     nexus_info_2 = test_fgs_params.get_nexus_info(2)
     nexus_writer_2 = NexusWriter(
         test_fgs_params,
+        create_goniometer_func=create_i03_goniometer_axes,
         **nexus_info_2,
         vds_start_index=nexus_info_1["data_shape"][0],
     )
@@ -49,8 +55,16 @@ def create_nexus_writers_with_many_images(parameters: GridscanInternalParameters
         parameters.experiment_params.y_steps = y
         parameters.experiment_params.z_steps = z
         parameters.hyperion_params.detector_params.num_triggers = x * y + x * z
-        nexus_writer_1 = NexusWriter(parameters, **parameters.get_nexus_info(1))
-        nexus_writer_2 = NexusWriter(parameters, **parameters.get_nexus_info(2))
+        nexus_writer_1 = NexusWriter(
+            parameters,
+            create_goniometer_func=create_i03_goniometer_axes,
+            **parameters.get_nexus_info(1),
+        )
+        nexus_writer_2 = NexusWriter(
+            parameters,
+            create_goniometer_func=create_i03_goniometer_axes,
+            **parameters.get_nexus_info(2),
+        )
 
         yield nexus_writer_1, nexus_writer_2
 
@@ -71,7 +85,11 @@ def dummy_nexus_writers_with_more_images(test_fgs_params: GridscanInternalParame
 
 @pytest.fixture
 def single_dummy_file(test_fgs_params: GridscanInternalParameters):
-    nexus_writer = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(1))
+    nexus_writer = NexusWriter(
+        test_fgs_params,
+        create_goniometer_func=create_i03_goniometer_axes,
+        **test_fgs_params.get_nexus_info(1),
+    )
     yield nexus_writer
     for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
         if os.path.isfile(file):

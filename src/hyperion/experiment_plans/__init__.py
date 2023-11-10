@@ -10,10 +10,14 @@ from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_tip_centre_then_xray_centre,
 )
 from hyperion.experiment_plans.rotation_scan_plan import rotation_scan
+from hyperion.experiment_plans.vmxm_flyscan_xray_centre_plan import (
+    vmxm_flyscan_xray_centre,
+)
 
 __all__ = [
     "flyscan_xray_centre",
     "grid_detect_then_xray_centre",
     "rotation_scan",
     "pin_tip_centre_then_xray_centre",
+    "vmxm_flyscan_xray_centre",
 ]

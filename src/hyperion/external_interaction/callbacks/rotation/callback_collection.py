@@ -15,6 +15,7 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
 from hyperion.external_interaction.callbacks.rotation.zocalo_callback import (
     RotationZocaloCallback,
 )
+from hyperion.external_interaction.nexus.nexus_utils import create_i03_goniometer_axes
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
@@ -25,7 +26,9 @@ if TYPE_CHECKING:
 @dataclass(frozen=True, order=True)
 class RotationCallbackCollection(AbstractPlanCallbackCollection):
     """Groups the callbacks for external interactions for a rotation scan.
-    Cast to a list to pass it to Bluesky.preprocessors.subs_decorator()."""
+    Cast to a list to pass it to Bluesky.preprocessors.subs_decorator().
+
+    Note: specific to i03."""
 
     nexus_handler: RotationNexusFileCallback
     ispyb_handler: RotationISPyBCallback
@@ -33,7 +36,9 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
 
     @classmethod
     def from_params(cls, parameters: RotationInternalParameters):
-        nexus_handler = RotationNexusFileCallback()
+        nexus_handler = RotationNexusFileCallback(
+            create_goniometer_axes=create_i03_goniometer_axes
+        )
         ispyb_handler = RotationISPyBCallback(parameters)
         zocalo_handler = RotationZocaloCallback(
             parameters.hyperion_params.zocalo_environment, ispyb_handler

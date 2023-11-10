@@ -4,7 +4,7 @@ from typing import Any
 
 import numpy as np
 from dodal.devices.detector import DetectorParams, TriggerMode
-from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
+from dodal.devices.fast_grid_scan_common import GridAxis, GridScanParams
 from pydantic import validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
