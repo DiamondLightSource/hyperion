@@ -89,6 +89,12 @@ def smargon() -> Smargon:
     smargon.z.user_setpoint._use_limits = False
     smargon.omega.user_setpoint._use_limits = False
 
+    # Initial positions, needed for stub_offsets
+    smargon.stub_offsets.center_at_current_position.disp.sim_put(0)
+    smargon.x.user_readback.sim_put(0.0)
+    smargon.y.user_readback.sim_put(0.0)
+    smargon.z.user_readback.sim_put(0.0)
+
     with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
         smargon.y
     ), patch_motor(smargon.z):
