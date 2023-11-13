@@ -16,30 +16,29 @@ def _destroy_loggers(loggers):
     for logger in loggers:
         for handler in logger.handlers:
             handler.close()
-    [logger.handlers.clear() for logger in loggers]
+        logger.handlers.clear()
 
 
 def pytest_runtest_setup(item):
     markers = [m.name for m in item.own_markers]
     log_level = "DEBUG" if item.config.option.debug_logging else "INFO"
+    log_params = {"logging_level": log_level, "dev_mode": True}
     if "skip_log_setup" not in markers:
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print(f"Initialising Hyperion logger for tests at {log_level}")
-                set_up_logging_handlers(LOGGER, log_level, True)
+                set_up_logging_handlers(logger=LOGGER, **log_params)
         if ISPYB_LOGGER.handlers == []:
             print(f"Initialising ISPyB logger for tests at {log_level}")
             set_up_logging_handlers(
-                logging_level=log_level,
-                dev_mode=True,
+                **log_params,
                 filename="hyperion_ispyb_callback.txt",
                 logger=ISPYB_LOGGER,
             )
         if NEXUS_LOGGER.handlers == []:
             print(f"Initialising nexus logger for tests at {log_level}")
             set_up_logging_handlers(
-                logging_level=log_level,
-                dev_mode=True,
+                **log_params,
                 filename="hyperion_nexus_callback.txt",
                 logger=NEXUS_LOGGER,
             )

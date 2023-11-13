@@ -64,7 +64,7 @@ def _get_logging_file_path(filename: str) -> Path:
     """Get the path to write the hyperion log files to.
 
     If the HYPERION_LOG_DIR environment variable exists then logs will be put in here.
-    If no envrionment variable is found it will default it to the ./tmp/dev directory.
+    If no environment variable is found it will default it to the ./tmp/dev directory.
     If the directories needed don't exist they will be created.
 
     Returns:
