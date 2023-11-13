@@ -5,7 +5,7 @@ Repository for the Hyperion project to implement Unattended Data Collections on 
 
 Currently the software is able to:
 * Centre a sample, first using an optical camera, then using an xray grid scan. This centring is done at two orthogonal angles so that the sample is centred in 3D.
-* Preform a rotation scan to take diffraction data of the sample
+* Perform a rotation scan to take diffraction data of the sample
 
 Left to do is:
 * Mount/unmount samples
