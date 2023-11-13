@@ -1,7 +1,7 @@
 # hyperion
 ![Tests](https://github.com/DiamondLightSource/hyperion/actions/workflows/code.yml/badge.svg) [![codecov](https://codecov.io/gh/DiamondLightSource/hyperion/branch/main/graph/badge.svg?token=00Ww81MHe8)](https://codecov.io/gh/DiamondLightSource/hyperion)
 
-Repository for the Hyperion project to implement Unattend Data Collections on the Diamond MX beamlines using the [BlueSky](https://nsls-ii.github.io/bluesky/) / Ophyd framework from BNL. 
+Repository for the Hyperion project to implement Unattended Data Collections on the Diamond MX beamlines using the [BlueSky](https://nsls-ii.github.io/bluesky/) / Ophyd framework from BNL. 
 
 Currently the software is able to:
 * Centre a sample, first using an optical camera, then using an xray grid scan. This centring is done at two orthogonal angles so that the sample is centred in 3D.
