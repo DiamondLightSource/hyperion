@@ -1,10 +1,16 @@
 # hyperion
 ![Tests](https://github.com/DiamondLightSource/hyperion/actions/workflows/code.yml/badge.svg) [![codecov](https://codecov.io/gh/DiamondLightSource/hyperion/branch/main/graph/badge.svg?token=00Ww81MHe8)](https://codecov.io/gh/DiamondLightSource/hyperion)
 
-Repository for the Hyperion project to implement "3D grid scans" using the BlueSky / Ophyd framework from BNL. 
+Repository for the Hyperion project to implement Unattended Data Collections on the Diamond MX beamlines using the [BlueSky](https://nsls-ii.github.io/bluesky/) / Ophyd framework from BNL. 
 
-https://nsls-ii.github.io/bluesky/
+Currently the software is able to:
+* Centre a sample, first using an optical camera, then using an xray grid scan. This centring is done at two orthogonal angles so that the sample is centred in 3D.
+* Perform a rotation scan to take diffraction data of the sample
 
+Left to do is:
+* Mount/unmount samples
+* Set up the beamline to be in a standard state for collection
+* Change energy of the beamline
 
 Development Installation
 =================
