@@ -255,9 +255,7 @@ def create_app(
     return app, runner
 
 
-def cli_arg_parse() -> (
-    Tuple[Optional[str], Optional[bool], Optional[bool], Optional[bool]]
-):
+def cli_arg_parse() -> Tuple[Optional[str], bool, bool, bool]:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dev",

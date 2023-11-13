@@ -1,7 +1,7 @@
 import logging
 from os import environ
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_logging_handlers as setup_dodal_logging
@@ -39,8 +39,8 @@ def set_dcgid_tag(dcgid):
 
 def set_up_logging_handlers(
     logger=dodal_logger,
-    logging_level: Union[str, None] = "INFO",
-    dev_mode: bool | None = False,
+    logging_level: str | None = "INFO",
+    dev_mode: bool = False,
     filename="hyperion.txt",
 ) -> List[logging.Handler]:
     """Set up the logging level and instances for user chosen level of logging.
