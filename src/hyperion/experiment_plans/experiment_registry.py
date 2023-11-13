@@ -7,7 +7,7 @@ from dodal.devices.panda_fast_grid_scan import PandaGridScanParams
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 import hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
-import hyperion.experiment_plans.panda_flyscan_xray_centre_plan as panda_flyscan_xray_centre_scan
+import hyperion.experiment_plans.panda_flyscan_xray_centre_plan as panda_flyscan_xray_centre_plan
 import hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
 from hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
@@ -80,7 +80,7 @@ class ExperimentRegistryEntry(TypedDict):
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "panda_flyscan_xray_centre": {
-        "setup": panda_flyscan_xray_centre_scan.create_devices,
+        "setup": panda_flyscan_xray_centre_plan.create_devices,
         "internal_param_type": PandaGridscanInternalParameters,
         "experiment_param_type": PandaGridScanParams,
         "callback_collection_type": XrayCentreCallbackCollection,

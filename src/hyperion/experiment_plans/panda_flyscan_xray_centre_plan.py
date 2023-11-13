@@ -62,7 +62,7 @@ if TYPE_CHECKING:
         PandaGridscanInternalParameters as GridscanInternalParameters,
     )
 
-PANDA_SETUP_PATH = "/dls/science/users/qqh35939/panda_yaml_files/flyscan_base.yaml"  # This should be changed to somewhere proper
+PANDA_SETUP_PATH = "/dls_sw/i03/software/bluesky/hyperion_v8.0.0/ophyd-async/flyscan_base.yaml"  # This should be changed to somewhere proper
 
 
 @dataclasses.dataclass
@@ -267,7 +267,7 @@ def run_gridscan_and_move(
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
 
-def flyscan_xray_centre(
+def panda_flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
     parameters: Any,
 ) -> MsgGenerator:
@@ -329,4 +329,4 @@ if __name__ == "__main__":
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)
 
-    RE(flyscan_xray_centre(composite, parameters))
+    RE(panda_flyscan_xray_centre(composite, parameters))

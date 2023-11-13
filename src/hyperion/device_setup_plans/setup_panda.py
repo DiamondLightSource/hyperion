@@ -11,7 +11,7 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
     PandaGridscanInternalParameters as GridscanInternalParameters,
 )
 
-ENCODER_TO_MM = 2000  # 20000 counts to a mm ? check this
+ENCODER_TO_MM = 20000  # 20000 counts to a mm ? check this
 GENERAL_TIMEOUT = 60
 
 
@@ -26,7 +26,7 @@ def setup_panda_for_flyscan(
     yield from load_device(panda, save_path)
 
     # Home X2 encoder value : Do we want to measure X relative to the start of the grid scan or as an absolute position?
-    yield from bps.abs_set((panda.inenc[1].setp, initial_x * ENCODER_TO_MM))
+    yield from bps.abs_set(panda.inenc[1].setp, initial_x * ENCODER_TO_MM)
 
     """   
     -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
