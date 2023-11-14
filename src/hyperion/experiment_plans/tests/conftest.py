@@ -338,10 +338,6 @@ def mock_subscriptions(test_fgs_params):
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0, 0)
     )
 
-    subscriptions.ispyb_handler.active = True
-    subscriptions.nexus_handler.active = True
-    subscriptions.zocalo_handler.active = True
-
     return subscriptions
 
 
