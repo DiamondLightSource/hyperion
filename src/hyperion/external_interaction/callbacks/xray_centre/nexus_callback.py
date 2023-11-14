@@ -3,7 +3,7 @@ from __future__ import annotations
 from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
-from hyperion.log import LOGGER
+from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN, ISPYB_HARDWARE_READ_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -37,7 +37,7 @@ class GridscanNexusFileCallback(CallbackBase):
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
-            LOGGER.info(
+            NEXUS_LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."
             )
             json_params = doc.get("hyperion_internal_parameters")
@@ -53,7 +53,7 @@ class GridscanNexusFileCallback(CallbackBase):
             # https://github.com/DiamondLightSource/python-hyperion/issues/629
             # and update parameters before creating writers
 
-            LOGGER.info("Initialising nexus writers")
+            NEXUS_LOGGER.info("Initialising nexus writers")
             nexus_data_1 = self.parameters.get_nexus_info(1)
             nexus_data_2 = self.parameters.get_nexus_info(2)
             self.nexus_writer_1 = NexusWriter(self.parameters, **nexus_data_1)

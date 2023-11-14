@@ -10,7 +10,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     Store3DGridscanInIspyb,
     StoreGridscanInIspyb,
 )
-from hyperion.log import LOGGER, set_dcgid_tag
+from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -42,8 +42,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
-            LOGGER.info(
-                "ISPyB callback recieved start document with experiment parameters."
+            self.uid_to_finalize_on = doc.get("uid")
+            ISPYB_LOGGER.info(
+                "ISPyB callback recieved start document with experiment parameters and"
+                f"uid: {self.uid_to_finalize_on}"
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.params = GridscanInternalParameters.from_json(json_params)
@@ -52,7 +54,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 if self.params.experiment_params.is_3d_grid_scan
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
-            self.uid_to_finalize_on = doc.get("uid")
 
     def append_to_comment(self, comment: str):
         assert isinstance(self.ispyb_ids.data_collection_ids, tuple)
@@ -65,6 +66,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
+            ISPYB_LOGGER.info(
+                "ISPyB callback received stop document corresponding to start document "
+                f"with uid: {self.uid_to_finalize_on}."
+            )
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             super().stop(doc)

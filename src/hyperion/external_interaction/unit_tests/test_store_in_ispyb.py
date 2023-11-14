@@ -249,7 +249,7 @@ def test_store_rotation_scan_failures(
     with pytest.raises(AssertionError):
         dummy_rotation_ispyb.end_deposition("", "")
 
-    with patch("hyperion.log.LOGGER.warning", autospec=True) as warning:
+    with patch("hyperion.log.ISPYB_LOGGER.warning", autospec=True) as warning:
         dummy_rotation_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = (
             None
         )

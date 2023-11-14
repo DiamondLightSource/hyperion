@@ -1,10 +1,16 @@
 # hyperion
 ![Tests](https://github.com/DiamondLightSource/hyperion/actions/workflows/code.yml/badge.svg) [![codecov](https://codecov.io/gh/DiamondLightSource/hyperion/branch/main/graph/badge.svg?token=00Ww81MHe8)](https://codecov.io/gh/DiamondLightSource/hyperion)
 
-Repository for the Hyperion project to implement "3D grid scans" using the BlueSky / Ophyd framework from BNL. 
+Repository for the Hyperion project to implement Unattended Data Collections on the Diamond MX beamlines using the [BlueSky](https://nsls-ii.github.io/bluesky/) / Ophyd framework from BNL. 
 
-https://nsls-ii.github.io/bluesky/
+Currently the software is able to:
+* Centre a sample, first using an optical camera, then using an xray grid scan. This centring is done at two orthogonal angles so that the sample is centred in 3D.
+* Perform a rotation scan to take diffraction data of the sample
 
+Left to do is:
+* Mount/unmount samples
+* Set up the beamline to be in a standard state for collection
+* Change energy of the beamline
 
 Development Installation
 =================
@@ -43,6 +49,8 @@ python -m hyperion --skip-startup-connection
 
 Testing
 --------------
+Unit tests can be run with `python -m pytest -m "not s03" --random-order`. To see log output from tests you can use the `-s` command line option, and to set the logger levels to `DEBUG` rather than `INFO`, you can use the option `--debug-logging`. So to run the unit tests such that all logs are at `DEBUG` level and are printed to the terminal, you can use `python -m pytest -m "not s03" --random-order -s --debug-logging`. Note that this will likely overrun your terminal buffer, so you can narrow the selection of tests with the `-k "<test name pattern>"` option.
+
 To be able to run the system tests, or a complete fake scan, we need the simulated S03 beamline. This can be found at: https://gitlab.diamond.ac.uk/controls/python3/s03_utils
 
 To fake interaction and processing with Zocalo, you can run `fake_zocalo/dls_start_fake_zocalo.sh`, and make sure to run `module load dials/latest` before starting hyperion (in the same terminal).

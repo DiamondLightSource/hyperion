@@ -21,7 +21,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     Orientation,
     RotationIspybParams,
 )
-from hyperion.log import LOGGER
+from hyperion.log import ISPYB_LOGGER
 from hyperion.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -136,7 +136,7 @@ class StoreInIspyb(ABC):
             success (str): The success of the run, could be fail or abort
             reason (str): If the run failed, the reason why
         """
-        LOGGER.info(
+        ISPYB_LOGGER.info(
             f"End ispyb deposition with status '{success}' and reason '{reason}'."
         )
         if success == "fail" or success == "abort":
@@ -276,12 +276,12 @@ class StoreRotationInIspyb(StoreInIspyb):
 
         if self.ispyb_params.xtal_snapshots_omega_start:
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start[:3]
-            LOGGER.info(
+            ISPYB_LOGGER.info(
                 f"Using rotation scan snapshots {self.xtal_snapshots} for ISPyB deposition"
             )
         else:
             self.xtal_snapshots = []
-            LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
+            ISPYB_LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
 
     def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]

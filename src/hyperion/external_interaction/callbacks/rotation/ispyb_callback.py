@@ -7,7 +7,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     IspybIds,
     StoreRotationInIspyb,
 )
-from hyperion.log import LOGGER, set_dcgid_tag
+from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -37,7 +37,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
-            LOGGER.info(
+            ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
             )
             json_params = doc.get("hyperion_internal_parameters")
@@ -46,7 +46,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.ispyb_config, self.params
             )
         self.ispyb_ids: IspybIds = IspybIds()
-        LOGGER.info("ISPYB handler received start document.")
+        ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
 

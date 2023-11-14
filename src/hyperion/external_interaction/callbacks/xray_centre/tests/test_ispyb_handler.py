@@ -9,10 +9,10 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 )
 from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
-from hyperion.log import LOGGER, set_up_logging_handlers
-from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
+from hyperion.log import (
+    ISPYB_LOGGER,
+    dc_group_id_filter,
+    set_up_logging_handlers,
 )
 
 DC_IDS = [1, 2]
@@ -26,18 +26,15 @@ def mock_emit():
         set_up_logging_handlers(dev_mode=True)
     test_handler = logging.Handler()
     test_handler.emit = MagicMock()  # type: ignore
-    LOGGER.addHandler(test_handler)
+    ISPYB_LOGGER.addHandler(test_handler)
+    ISPYB_LOGGER.addFilter(dc_group_id_filter)
     dodal_logger.addHandler(test_handler)
 
     yield test_handler.emit
 
-    LOGGER.removeHandler(test_handler)
+    ISPYB_LOGGER.removeHandler(test_handler)
+    ISPYB_LOGGER.removeFilter(dc_group_id_filter)
     dodal_logger.removeHandler(test_handler)
-
-
-@pytest.fixture
-def dummy_params():
-    return GridscanInternalParameters(**default_raw_params())
 
 
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
@@ -119,7 +116,7 @@ class TestXrayCentreIspybHandler:
         ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
         ispyb_handler.event(td.test_event_document_during_data_collection)
 
-        for logger in [LOGGER, dodal_logger]:
+        for logger in [ISPYB_LOGGER, dodal_logger]:
             logger.info("test")
             latest_record = mock_emit.call_args.args[-1]
             assert latest_record.dc_group_id == DCG_ID
@@ -136,7 +133,7 @@ class TestXrayCentreIspybHandler:
         ispyb_handler.event(td.test_event_document_during_data_collection)
         ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
 
-        for logger in [LOGGER, dodal_logger]:
+        for logger in [ISPYB_LOGGER, dodal_logger]:
             logger.info("test")
 
             latest_record = mock_emit.call_args.args[-1]

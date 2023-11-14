@@ -3,7 +3,7 @@ from __future__ import annotations
 from bluesky.callbacks import CallbackBase
 
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
-from hyperion.log import LOGGER
+from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.constants import ROTATION_OUTER_PLAN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -33,12 +33,12 @@ class RotationNexusFileCallback(CallbackBase):
     def start(self, doc: dict):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             self.run_uid = doc.get("uid")
-            LOGGER.info(
+            NEXUS_LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.parameters = RotationInternalParameters.from_json(json_params)
-            LOGGER.info("Setting up nexus file.")
+            NEXUS_LOGGER.info("Setting up nexus file.")
             self.writer = NexusWriter(
                 self.parameters,
                 self.parameters.get_scan_points(),

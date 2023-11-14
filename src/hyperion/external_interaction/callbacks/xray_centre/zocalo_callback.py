@@ -16,7 +16,7 @@ from hyperion.external_interaction.zocalo.zocalo_interaction import (
     NoDiffractionFound,
     ZocaloInteractor,
 )
-from hyperion.log import LOGGER
+from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -54,21 +54,19 @@ class XrayCentreZocaloCallback(CallbackBase):
 
     def start(self, doc: dict):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
-            LOGGER.info(
+            ISPYB_LOGGER.info(
                 "Zocalo callback recieved start document with experiment parameters."
             )
             params = GridscanInternalParameters.from_json(
                 doc.get("hyperion_internal_parameters")
             )
             zocalo_environment = params.hyperion_params.zocalo_environment
-            LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
-            self.zocalo_interactor = ZocaloInteractor(
-                self.ispyb.params.hyperion_params.zocalo_environment
-            )
+            ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
+            self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
             self.grid_position_to_motor_position: Callable[
                 [ndarray], ndarray
             ] = params.experiment_params.grid_position_to_motor_position
-        LOGGER.info("Zocalo handler received start document.")
+        ISPYB_LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == "do_fgs":
             self.do_fgs_uid = doc.get("uid")
             if self.ispyb.ispyb_ids.data_collection_ids is not None:
@@ -80,7 +78,7 @@ class XrayCentreZocaloCallback(CallbackBase):
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.do_fgs_uid:
-            LOGGER.info(
+            ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
             if self.ispyb.ispyb_ids == IspybIds():
@@ -112,7 +110,7 @@ class XrayCentreZocaloCallback(CallbackBase):
             raw_results = sorted(
                 raw_results, key=lambda d: d["total_count"], reverse=True
             )
-            LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
+            ISPYB_LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
             crystal_summary = ""
 
             bboxes = []
@@ -140,7 +138,7 @@ class XrayCentreZocaloCallback(CallbackBase):
 
             bbox_size: list[int] | None = bboxes[0]
 
-            LOGGER.info(
+            ISPYB_LOGGER.info(
                 f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"
             )
 
@@ -152,11 +150,11 @@ class XrayCentreZocaloCallback(CallbackBase):
             self.ispyb.append_to_comment("Found no diffraction.")
             xray_centre = fallback_xyz
             bbox_size = None
-            LOGGER.warning(log_msg)
+            ISPYB_LOGGER.warning(log_msg)
 
         self.processing_time = time.time() - self.processing_start_time
         self.ispyb.append_to_comment(
             f"Zocalo processing took {self.processing_time:.2f} s"
         )
-        LOGGER.info(f"Zocalo processing took {self.processing_time}s")
+        ISPYB_LOGGER.info(f"Zocalo processing took {self.processing_time}s")
         return xray_centre, bbox_size
