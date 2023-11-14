@@ -325,8 +325,6 @@ def test_rotation_scan(
     attenuator: Attenuator,
     mock_rotation_subscriptions: RotationCallbackCollection,
 ):
-    eiger.stage = MagicMock()
-    eiger.unstage = MagicMock()
     zebra.pc.arm.armed.set(False)
     with (
         patch("dodal.beamlines.i03.smargon", return_value=smargon),
@@ -449,8 +447,6 @@ def test_cleanup_happens(
     class MyTestException(Exception):
         pass
 
-    eiger.stage = MagicMock()
-    eiger.unstage = MagicMock()
     smargon.omega.set = MagicMock(
         side_effect=MyTestException("Experiment fails because this is a test")
     )
