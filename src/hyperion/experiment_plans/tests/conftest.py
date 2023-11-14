@@ -77,8 +77,11 @@ def test_rotation_params_nomove():
 
 
 @pytest.fixture
-def eiger():
-    return i03.eiger(fake_with_ophyd_sim=True)
+def eiger(done_status):
+    eiger = i03.eiger(fake_with_ophyd_sim=True)
+    eiger.stage = MagicMock(return_value=done_status)
+    eiger.unstage = MagicMock(return_value=done_status)
+    return eiger
 
 
 @pytest.fixture
@@ -190,6 +193,13 @@ def test_full_grid_scan_params():
     return GridScanWithEdgeDetectInternalParameters(**params)
 
 
+@pytest.fixture
+def done_status():
+    s = Status()
+    s.set_finished()
+    return s
+
+
 @pytest.fixture()
 def fake_create_devices(
     eiger: EigerDetector,
@@ -197,8 +207,6 @@ def fake_create_devices(
     zebra: Zebra,
     detector_motion: DetectorMotion,
 ):
-    eiger.stage = MagicMock()
-    eiger.unstage = MagicMock()
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
     mock_arm_disarm = MagicMock(
@@ -230,9 +238,8 @@ def fake_create_rotation_devices(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
+    done_status,
 ):
-    eiger.stage = MagicMock()
-    eiger.unstage = MagicMock()
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
     mock_arm_disarm = MagicMock(
@@ -272,6 +279,9 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
         xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(fake_with_ophyd_sim=True),
     )
+
+    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.unstage = MagicMock(return_value=done_status)
 
     fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
