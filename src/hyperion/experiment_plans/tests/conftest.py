@@ -281,7 +281,6 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
-    fake_composite.eiger.unstage = MagicMock(return_value=done_status)
 
     fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
     fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
