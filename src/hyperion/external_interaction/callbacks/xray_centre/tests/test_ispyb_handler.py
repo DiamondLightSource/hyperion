@@ -40,8 +40,8 @@ def dummy_params():
     return GridscanInternalParameters(**default_raw_params())
 
 
-def mock_store_in_ispyb(dummy_params, *args, **kwargs) -> Store3DGridscanInIspyb:
-    mock = Store3DGridscanInIspyb(None, dummy_params)
+def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
+    mock = Store3DGridscanInIspyb("", params)
     mock.store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
     mock.get_current_time_string = MagicMock(return_value=td.DUMMY_TIME_STRING)
     mock.update_scan_with_end_time_and_status = MagicMock(return_value=None)

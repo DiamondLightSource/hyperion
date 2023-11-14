@@ -312,18 +312,12 @@ def mock_subscriptions(test_fgs_params):
         modified_interactor_mock,
     ):
         subscriptions = XrayCentreCallbackCollection.setup()
-        subscriptions.ispyb_handler.start(
-            {
-                "subplan_name": GRIDSCAN_OUTER_PLAN,
-                "hyperion_internal_parameters": test_fgs_params.json(),
-            }
-        )
-        subscriptions.zocalo_handler.start(
-            {
-                "subplan_name": GRIDSCAN_OUTER_PLAN,
-                "hyperion_internal_parameters": test_fgs_params.json(),
-            }
-        )
+        start_doc = {
+            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "hyperion_internal_parameters": test_fgs_params.json(),
+        }
+        subscriptions.ispyb_handler.start(start_doc)
+        subscriptions.zocalo_handler.start(start_doc)
     subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: IspybIds(
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0, 0)

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 from pydantic import BaseModel, validator
@@ -75,8 +75,8 @@ class IspybParams(BaseModel):
     synchrotron_mode: Optional[str] = None
     slit_gap_size_x: Optional[float] = None
     slit_gap_size_y: Optional[float] = None
-    xtal_snapshots_omega_start: Optional[List[str]] = None
-    xtal_snapshots_omega_end: Optional[List[str]] = None
+    xtal_snapshots_omega_start: Optional[list[str]] = None
+    xtal_snapshots_omega_end: Optional[list[str]] = None
 
     @validator("transmission_fraction")
     def _transmission_not_percentage(cls, transmission_fraction: float):

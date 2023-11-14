@@ -12,6 +12,7 @@ from dodal.devices.detector import DetectorParams
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.core import Core
 from ispyb.sp.mxacquisition import MXAcquisition
+from numpy import ndarray
 from pydantic import BaseModel
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
@@ -44,15 +45,15 @@ class IspybIds(BaseModel):
 
 class StoreInIspyb(ABC):
     def __init__(self, ispyb_config: str, experiment_type: str) -> None:
-        self.ispyb_params: IspybParams | None = None
-        self.detector_params: DetectorParams | None = None
-        self.run_number: int | None = None
-        self.omega_start: float | None = None
-        self.experiment_type: str | None = None
-        self.xtal_snapshots: list[str] | None = None
-        self.data_collection_group_id: int | None = None
         self.ISPYB_CONFIG_PATH: str = ispyb_config
         self.experiment_type = experiment_type
+        self.ispyb_params: IspybParams
+        self.detector_params: DetectorParams
+        self.run_number: int
+        self.omega_start: float
+        self.experiment_type: str
+        self.xtal_snapshots: list[str]
+        self.data_collection_group_id: int
 
     @abstractmethod
     def _store_scan_data(self, conn: Connector) -> tuple:
@@ -327,15 +328,16 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self,
         ispyb_config: str,
         experiment_type: str,
-        parameters: GridscanInternalParameters | None = None,
+        parameters: GridscanInternalParameters,
     ) -> None:
         super().__init__(ispyb_config, experiment_type)
-        self.full_params: GridscanInternalParameters | None = parameters
-        self.ispyb_params: GridscanIspybParams | None = None
+        self.full_params: GridscanInternalParameters = parameters
+        self.ispyb_params: GridscanIspybParams = parameters.hyperion_params.ispyb_params
+        self.upper_left: list[int] | ndarray = self.ispyb_params.upper_left
+        self.y_steps: int = self.full_params.experiment_params.y_steps
+        self.y_step_size: float = self.full_params.experiment_params.y_step_size
+        self.omega_start = 0
         self.data_collection_ids: tuple[int, ...] | None = None
-        self.upper_left: list[int] | None = None
-        self.y_steps: int | None = None
-        self.y_step_size: float | None = None
         self.grid_ids: tuple[int, ...] | None = None
 
     def begin_deposition(self):
@@ -366,7 +368,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self.detector_params = full_params.hyperion_params.detector_params
         self.run_number = self.detector_params.run_number
         self.omega_start = self.detector_params.omega_start
-        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
+        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
         self.upper_left = [
             int(self.ispyb_params.upper_left[0]),
             int(self.ispyb_params.upper_left[1]),
@@ -442,7 +444,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
 
 class Store3DGridscanInIspyb(StoreGridscanInIspyb):
-    def __init__(self, ispyb_config, parameters=None):
+    def __init__(self, ispyb_config: str, parameters: GridscanInternalParameters):
         super().__init__(ispyb_config, "Mesh3D", parameters)
 
     def _store_scan_data(self, conn: Connector):
@@ -481,7 +483,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         ), "StoreGridscanInIspyb failed to get parameters"
         self.omega_start += 90
         self.run_number += 1
-        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
+        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end or []
         self.upper_left = [
             int(self.ispyb_params.upper_left[0]),
             int(self.ispyb_params.upper_left[2]),
@@ -491,7 +493,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
 
 
 class Store2DGridscanInIspyb(StoreGridscanInIspyb):
-    def __init__(self, ispyb_config, parameters=None):
+    def __init__(self, ispyb_config: str, parameters: GridscanInternalParameters):
         super().__init__(ispyb_config, "mesh", parameters)
 
     def _store_scan_data(self, conn: Connector):

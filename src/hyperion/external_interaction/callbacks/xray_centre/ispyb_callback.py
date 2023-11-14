@@ -11,6 +11,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     StoreGridscanInIspyb,
 )
 from hyperion.log import LOGGER, set_dcgid_tag
+from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -40,9 +41,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.ispyb_ids: IspybIds = IspybIds()
 
     def start(self, doc: dict):
-        if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
+        if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             LOGGER.info(
-                "Nexus writer recieved start document with experiment parameters."
+                "ISPyB callback recieved start document with experiment parameters."
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.params = GridscanInternalParameters.from_json(json_params)
