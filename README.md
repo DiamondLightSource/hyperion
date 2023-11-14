@@ -49,6 +49,8 @@ python -m hyperion --skip-startup-connection
 
 Testing
 --------------
+Unit tests can be run with `python -m pytest -m "not s03" --random-order`. To see log output from tests you can use the `-s` command line option, and to set the logger levels to `DEBUG` rather than `INFO`, you can use the option `--debug-logging`. So to run the unit tests such that all logs are at `DEBUG` level and are printed to the terminal, you can use `python -m pytest -m "not s03" --random-order -s --debug-logging`. Note that this will likely overrun your terminal buffer, so you can narrow the selection of tests with the `-k "<test name pattern>"` option.
+
 To be able to run the system tests, or a complete fake scan, we need the simulated S03 beamline. This can be found at: https://gitlab.diamond.ac.uk/controls/python3/s03_utils
 
 To fake interaction and processing with Zocalo, you can run `fake_zocalo/dls_start_fake_zocalo.sh`, and make sure to run `module load dials/latest` before starting hyperion (in the same terminal).

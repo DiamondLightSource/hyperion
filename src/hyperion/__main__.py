@@ -255,9 +255,7 @@ def create_app(
     return app, runner
 
 
-def cli_arg_parse() -> (
-    Tuple[Optional[str], Optional[bool], Optional[bool], Optional[bool]]
-):
+def cli_arg_parse() -> Tuple[Optional[str], bool, bool, bool]:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dev",
@@ -297,9 +295,22 @@ if __name__ == "__main__":
         dev_mode,
         skip_startup_connection,
     ) = cli_arg_parse()
-
-    hyperion.log.set_up_logging_handlers(logging_level, dev_mode)
-    app, runner = create_app(skip_startup_connection=skip_startup_connection)
+    hyperion.log.set_up_logging_handlers(
+        logging_level=logging_level, dev_mode=bool(dev_mode)
+    )
+    hyperion.log.set_up_logging_handlers(
+        logging_level=logging_level,
+        dev_mode=dev_mode,
+        filename="hyperion_ispyb_callback.txt",
+        logger=hyperion.log.ISPYB_LOGGER,
+    )
+    hyperion.log.set_up_logging_handlers(
+        logging_level=logging_level,
+        dev_mode=dev_mode,
+        filename="hyperion_nexus_callback.txt",
+        logger=hyperion.log.NEXUS_LOGGER,
+    )
+    app, runner = create_app(skip_startup_connection=bool(skip_startup_connection))
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
