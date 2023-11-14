@@ -17,7 +17,7 @@ from hyperion.external_interaction.zocalo.zocalo_interaction import (
     NoDiffractionFound,
     ZocaloInteractor,
 )
-from hyperion.log import LOGGER
+from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -61,7 +61,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
         )
 
     def activity_gated_start(self, doc: dict):
-        LOGGER.info("Zocalo handler received start document.")
+        ISPYB_LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == "do_fgs":
             self.do_fgs_uid = doc.get("uid")
             if self.ispyb.ispyb_ids[0] is not None:
@@ -73,7 +73,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
 
     def activity_gated_stop(self, doc: dict):
         if doc.get("run_start") == self.do_fgs_uid:
-            LOGGER.info(
+            ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
             if self.ispyb.ispyb_ids == (None, None, None):
@@ -103,7 +103,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             raw_results = sorted(
                 raw_results, key=lambda d: d["total_count"], reverse=True
             )
-            LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
+            ISPYB_LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
             crystal_summary = ""
 
             bboxes = []
@@ -131,7 +131,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
 
             bbox_size: list[int] | None = bboxes[0]
 
-            LOGGER.info(
+            ISPYB_LOGGER.info(
                 f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"
             )
 
@@ -143,11 +143,11 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             self.ispyb.append_to_comment("Found no diffraction.")
             xray_centre = fallback_xyz
             bbox_size = None
-            LOGGER.warning(log_msg)
+            ISPYB_LOGGER.warning(log_msg)
 
         self.processing_time = time.time() - self.processing_start_time
         self.ispyb.append_to_comment(
             f"Zocalo processing took {self.processing_time:.2f} s"
         )
-        LOGGER.info(f"Zocalo processing took {self.processing_time}s")
+        ISPYB_LOGGER.info(f"Zocalo processing took {self.processing_time}s")
         return xray_centre, bbox_size

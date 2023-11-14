@@ -4,7 +4,7 @@ from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
-from hyperion.log import LOGGER
+from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -34,12 +34,12 @@ class RotationNexusFileCallback(PlanReactiveCallback):
     def activity_gated_start(self, doc: dict):
         if doc.get("subplan_name") == "rotation_scan_with_cleanup":
             self.run_uid = doc.get("uid")
-            LOGGER.info(
+            NEXUS_LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.parameters = RotationInternalParameters.from_json(json_params)
-            LOGGER.info("Setting up nexus file.")
+            NEXUS_LOGGER.info("Setting up nexus file.")
             self.writer = NexusWriter(
                 self.parameters,
                 self.parameters.get_scan_points(),

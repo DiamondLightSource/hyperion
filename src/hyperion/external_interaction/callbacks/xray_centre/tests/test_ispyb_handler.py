@@ -8,7 +8,11 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
-from hyperion.log import LOGGER, set_up_logging_handlers
+from hyperion.log import (
+    ISPYB_LOGGER,
+    dc_group_id_filter,
+    set_up_logging_handlers,
+)
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -102,15 +106,18 @@ def mock_emit():
         set_up_logging_handlers(dev_mode=True)
     test_handler = logging.Handler()
     test_handler.emit = MagicMock()  # type: ignore
-    LOGGER.addHandler(test_handler)
+    ISPYB_LOGGER.addHandler(test_handler)
+    ISPYB_LOGGER.addFilter(dc_group_id_filter)
     dodal_logger.addHandler(test_handler)
 
     yield test_handler.emit
 
-    LOGGER.removeHandler(test_handler)
+    ISPYB_LOGGER.removeHandler(test_handler)
+    ISPYB_LOGGER.removeFilter(dc_group_id_filter)
     dodal_logger.removeHandler(test_handler)
 
 
+@pytest.mark.skip_log_setup
 def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
     mock_emit, mock_ispyb_store_grid_scan: MagicMock, dummy_params
 ):
@@ -126,12 +133,12 @@ def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then
     )
     ispyb_handler.activity_gated_event(td.test_event_document_during_data_collection)
 
-    for logger in [LOGGER, dodal_logger]:
-        logger.info("test")
-        latest_record = mock_emit.call_args.args[-1]
-        assert latest_record.dc_group_id == DCG_ID
+    ISPYB_LOGGER.info("test")
+    latest_record = mock_emit.call_args.args[-1]
+    assert latest_record.dc_group_id == DCG_ID
 
 
+@pytest.mark.skip_log_setup
 def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
     mock_emit,
     mock_ispyb_store_grid_scan: MagicMock,
@@ -154,8 +161,8 @@ def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_the
     ispyb_handler.activity_gated_event(td.test_event_document_during_data_collection)
     ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
-    for logger in [LOGGER, dodal_logger]:
-        logger.info("test")
+    for logger in [ISPYB_LOGGER, dodal_logger]:
+        ISPYB_LOGGER.info("test")
 
         latest_record = mock_emit.call_args.args[-1]
         assert not hasattr(latest_record, "dc_group_id")

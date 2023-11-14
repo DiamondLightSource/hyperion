@@ -7,7 +7,7 @@ from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
-from hyperion.log import LOGGER, set_dcgid_tag
+from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
@@ -27,7 +27,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
         if self.ispyb_config == SIM_ISPYB_CONFIG:
-            LOGGER.warning(
+            ISPYB_LOGGER.warning(
                 "Using dev ISPyB database. If you want to use the real database, please"
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
@@ -38,7 +38,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
         try:
             self.ispyb.append_to_comment(id, comment)
         except TypeError:
-            LOGGER.warning("ISPyB deposition not initialised, can't update comment.")
+            ISPYB_LOGGER.warning(
+                "ISPyB deposition not initialised, can't update comment."
+            )
 
     def activity_gated_descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
@@ -51,7 +53,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
 
-        LOGGER.debug("ISPyB handler received event document.")
+        ISPYB_LOGGER.debug("ISPyB handler received event document.")
         assert isinstance(
             self.ispyb, StoreInIspyb
         ), "ISPyB deposition can't be initialised!"
@@ -79,9 +81,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 "flux_flux_reading"
             ]
 
-            LOGGER.info("Creating ispyb entry.")
+            ISPYB_LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
-            LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
+            ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
     def activity_gated_stop(self, doc: dict):
         """Subclasses must check that they are recieving a stop document for the correct
@@ -89,11 +91,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
         assert isinstance(
             self.ispyb, StoreInIspyb
         ), "ISPyB handler recieved stop document, but deposition object doesn't exist!"
-        LOGGER.debug("ISPyB handler received stop document.")
+        ISPYB_LOGGER.debug("ISPyB handler received stop document.")
         exit_status = doc.get("exit_status")
         reason = doc.get("reason")
         set_dcgid_tag(None)
         try:
             self.ispyb.end_deposition(exit_status, reason)
-        except Exception:
-            LOGGER.info(f"Failed to finalise ISPyB deposition on stop document: {doc}")
+        except Exception as e:
+            ISPYB_LOGGER.warning(
+                f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"
+            )
