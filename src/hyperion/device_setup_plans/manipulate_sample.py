@@ -16,14 +16,14 @@ def setup_sample_environment(
     backlight: Backlight,
     attenuator: Attenuator,
     transmission_fraction: float,
-    detector_distance: float,
+    detector_distance_mm: float,
     group="setup_senv",
 ):
     """Move out the backlight, retract the detector shutter, and set the attenuator to
     transmission."""
 
     yield from bps.abs_set(detector_motion.shutter, 1, group=group)
-    yield from bps.abs_set(detector_motion.z, detector_distance, group=group)
+    yield from bps.abs_set(detector_motion.z, detector_distance_mm, group=group)
     yield from bps.abs_set(backlight, backlight.OUT, group=group)
     yield from bps.abs_set(attenuator, transmission_fraction, group=group)
 

@@ -25,41 +25,33 @@ class NexusWriter:
         parameters: InternalParameters,
         scan_points: dict,
         data_shape: tuple[int, int, int],
-        omega_start: float | None = None,
+        omega_start_deg: float | None = None,
         run_number: int | None = None,
         vds_start_index: int = 0,
     ) -> None:
         self.scan_points: dict = scan_points
         self.data_shape: tuple[int, int, int] = data_shape
-        self.omega_start: float = (
-            omega_start
-            if omega_start
-            else parameters.hyperion_params.detector_params.omega_start
+        self.omega_start_deg: float = (
+            omega_start_deg
+            if omega_start_deg
+            else parameters.detector_params.omega_start_deg
         )
         self.run_number: int = (
-            run_number
-            if run_number
-            else parameters.hyperion_params.detector_params.run_number
+            run_number if run_number else parameters.detector_params.run_number
         )
-        self.detector: Detector = create_detector_parameters(
-            parameters.hyperion_params.detector_params
-        )
+        self.detector: Detector = create_detector_parameters(parameters.detector_params)
         self.beam, self.attenuator = create_beam_and_attenuator_parameters(
             parameters.ispyb_params
         )
-        self.source: Source = Source(parameters.hyperion_params.beamline)
-        self.directory: Path = Path(
-            parameters.hyperion_params.detector_params.directory
-        )
-        self.filename: str = parameters.hyperion_params.detector_params.prefix
+        self.source: Source = Source(parameters.beamline)
+        self.directory: Path = Path(parameters.detector_params.directory)
+        self.filename: str = parameters.detector_params.prefix
         self.start_index: int = vds_start_index
         self.full_num_of_images: int = (
-            parameters.hyperion_params.detector_params.num_triggers
-            * parameters.hyperion_params.detector_params.num_images_per_trigger
+            parameters.detector_params.num_triggers
+            * parameters.detector_params.num_images_per_trigger
         )
-        self.full_filename: str = (
-            parameters.hyperion_params.detector_params.full_filename
-        )
+        self.full_filename: str = parameters.detector_params.full_filename
         self.nexus_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}.nxs"
         )
@@ -71,7 +63,7 @@ class NexusWriter:
         except Exception:
             chi = 0.0
         self.goniometer: Goniometer = create_goniometer_axes(
-            self.omega_start, self.scan_points, chi=chi
+            self.omega_start_deg, self.scan_points, chi=chi
         )
 
     def create_nexus_file(self):

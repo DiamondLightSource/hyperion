@@ -12,6 +12,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
 )
 from hyperion.parameters import jsonschema_external_parameters
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.internal_parameters import (
     InternalParameters,
 )
@@ -86,3 +87,13 @@ def test_ispyb_param_dict():
     assert isinstance(modified_ispyb_params.position, np.ndarray)
     modified_as_dict = modified_ispyb_params.dict()
     assert modified_as_dict.get("position") == [123, 7777777, 3]
+
+
+def test_gridscan_parameters_from_external():
+    with open(
+        "src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+    ) as f:
+        data = json.loads(f.read())
+    external_params = ExternalParameters.parse_obj(data)
+    external_params.experiment_type = "flyscan_xray_centre"
+    internal_params = GridscanInternalParameters.from_external(external_params)

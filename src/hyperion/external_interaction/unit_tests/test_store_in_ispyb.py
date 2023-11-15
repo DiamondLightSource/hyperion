@@ -331,13 +331,10 @@ def test_store_3d_grid_scan(
     )
 
     assert (
-        dummy_ispyb_3d.omega_start
-        == dummy_params.hyperion_params.detector_params.omega_start + 90
+        dummy_ispyb_3d.omega_start_deg
+        == dummy_params.detector_params.omega_start_deg + 90
     )
-    assert (
-        dummy_ispyb_3d.run_number
-        == dummy_params.hyperion_params.detector_params.run_number + 1
-    )
+    assert dummy_ispyb_3d.run_number == dummy_params.detector_params.run_number + 1
     assert (
         dummy_ispyb_3d.xtal_snapshots
         == dummy_params.ispyb_params.xtal_snapshots_omega_end

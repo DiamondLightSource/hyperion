@@ -39,7 +39,7 @@ class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
-    position: np.ndarray
+    position: np.ndarray = np.ndarray([0, 0, 0])
 
     @classmethod
     def from_external(cls, external: ExternalParameters):
@@ -67,10 +67,10 @@ class IspybParams(BaseModel):
 
     transmission_fraction: float
     current_energy_ev: float
-    beam_size_x: float
-    beam_size_y: float
-    focal_spot_size_x: float
-    focal_spot_size_y: float
+    beam_size_x_mm: float
+    beam_size_y_mm: float
+    focal_spot_size_x_mm: float
+    focal_spot_size_y_mm: float
     comment: str
     resolution: float
 

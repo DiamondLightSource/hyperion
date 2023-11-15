@@ -11,7 +11,6 @@ from pydantic.dataclasses import dataclass
 from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
 from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.internal_parameters import (
-    HyperionParameters,
     InternalParameters,
 )
 
@@ -24,8 +23,8 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
 
     exposure_time: float
     snapshot_dir: str
-    detector_distance: float
-    omega_start: float
+    detector_distance_mm: float
+    omega_start_deg: float
 
     tip_offset_microns: float = 0
     oav_centring_file: str = "/dls_sw/i03/software/gda/configurations/i03-config/etc/OAVCentring_hyperion.json"
@@ -43,15 +42,11 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
 
     class Config:
         arbitrary_types_allowed = True
-        json_encoders = {
-            **HyperionParameters.Config.json_encoders,
-        }
 
     @classmethod
     def from_external(cls, external: ExternalParameters):
         return cls(
             params_version=external.parameter_version,
-            hyperion_params=HyperionParameters.from_external(external),
             ispyb_params=GridscanIspybParams.from_external(external),
             experiment_params=PinCentreThenXrayCentreParams(
                 **external.data_parameters.dict(),

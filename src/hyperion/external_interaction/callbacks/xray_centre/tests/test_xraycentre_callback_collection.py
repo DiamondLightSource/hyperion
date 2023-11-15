@@ -31,8 +31,8 @@ def test_callback_collection_init():
         == test_parameters.experiment_params
     )
     assert (
-        callbacks.ispyb_handler.params.hyperion_params.detector_params
-        == test_parameters.hyperion_params.detector_params
+        callbacks.ispyb_handler.params.detector_params
+        == test_parameters.detector_params
     )
     assert callbacks.ispyb_handler.params.ispyb_params == test_parameters.ispyb_params
     assert (
@@ -51,9 +51,9 @@ def eiger():
         exposure_time=0.1,
         directory="/tmp",
         prefix="file_name",
-        detector_distance=100.0,
-        omega_start=0.0,
-        omega_increment=0.1,
+        detector_distance_mm=100.0,
+        omega_start_deg=0.0,
+        omega_increment_deg=0.1,
         num_images=50,
         use_roi_mode=False,
         run_number=0,
@@ -87,7 +87,7 @@ def test_communicator_in_composite_run(
     RE = RunEngine({})
 
     params = GridscanInternalParameters(**default_raw_params())
-    params.hyperion_params.beamline = SIM_BEAMLINE
+    params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
     callbacks = XrayCentreCallbackCollection.from_params(params)

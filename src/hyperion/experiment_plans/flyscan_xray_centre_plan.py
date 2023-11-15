@@ -266,7 +266,7 @@ def flyscan_xray_centre(
     Returns:
         Generator: The plan for the gridscan
     """
-    composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
+    composite.eiger.set_detector_parameters(parameters.detector_params)
 
     subscriptions = XrayCentreCallbackCollection.from_params(parameters)
 

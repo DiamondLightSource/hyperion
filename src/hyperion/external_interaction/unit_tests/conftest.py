@@ -31,7 +31,7 @@ def test_rotation_params():
     params.experiment_params.x = 0
     params.experiment_params.y = 0
     params.experiment_params.z = 0
-    params.hyperion_params.detector_params.exposure_time = 0.004
+    params.detector_params.exposure_time = 0.004
     params.ispyb_params.transmission_fraction = 0.49118047952
     return params
 
@@ -42,13 +42,11 @@ def test_fgs_params(request):
     params.ispyb_params.current_energy_ev = convert_angstrom_to_eV(1.0)
     params.ispyb_params.flux = 9.0
     params.ispyb_params.transmission_fraction = 0.5
-    params.hyperion_params.detector_params.current_energy_ev = convert_angstrom_to_eV(
-        1.0
-    )
-    params.hyperion_params.detector_params.use_roi_mode = True
-    params.hyperion_params.detector_params.num_triggers = request.param
-    params.hyperion_params.detector_params.directory = (
+    params.detector_params.current_energy_ev = convert_angstrom_to_eV(1.0)
+    params.detector_params.use_roi_mode = True
+    params.detector_params.num_triggers = request.param
+    params.detector_params.directory = (
         os.path.dirname(os.path.realpath(__file__)) + "/test_data"
     )
-    params.hyperion_params.detector_params.prefix = "dummy"
+    params.detector_params.prefix = "dummy"
     yield params

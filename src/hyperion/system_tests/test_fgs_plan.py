@@ -39,7 +39,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 @pytest.fixture
 def params():
     params = GridscanInternalParameters(**default_raw_params())
-    params.hyperion_params.beamline = SIM_BEAMLINE
+    params.beamline = SIM_BEAMLINE
     return params
 
 
@@ -196,8 +196,8 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     fetch_comment: Callable,
     params: GridscanInternalParameters,
 ):
-    params.hyperion_params.detector_params.directory = "./tmp"
-    params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
+    params.detector_params.directory = "./tmp"
+    params.detector_params.prefix = str(uuid.uuid1())
     params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
@@ -233,8 +233,8 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     """This test currently avoids hardware interaction and is mostly confirming
     interaction with dev_ispyb and dev_zocalo"""
 
-    params.hyperion_params.detector_params.directory = "./tmp"
-    params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
+    params.detector_params.directory = "./tmp"
+    params.detector_params.prefix = str(uuid.uuid1())
     params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid

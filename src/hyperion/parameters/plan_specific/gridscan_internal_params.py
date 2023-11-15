@@ -1,21 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
-
-import numpy as np
 from dodal.devices.det_dim_constants import DetectorSize_pixels
-from dodal.devices.detector import TriggerMode
+from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
-from pydantic import Extra, validator
+from pydantic import Extra
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
 from hyperion.parameters.external_parameters import ExternalParameters
-from hyperion.parameters.internal_parameters import (
-    HyperionParameters,
-    InternalParameters,
-)
+from hyperion.parameters.internal_parameters import InternalParameters
 
 
 class GridscanInternalParameters(InternalParameters):
@@ -25,23 +19,39 @@ class GridscanInternalParameters(InternalParameters):
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {
-            **HyperionParameters.Config.json_encoders,
+            **DetectorParams.Config.json_encoders,
+            **GridscanIspybParams.Config.json_encoders,
         }
         extra = Extra.ignore
 
     @classmethod
     def from_external(cls, external: ExternalParameters):
+        (
+            data_params,
+            expt_params,
+            zocalo_environment,
+            beamline,
+            insertion_prefix,
+            experiment_type,
+        ) = cls._common_from_external(external)
+        expt_params["omega_increment_deg"] = 0
+        expt_params["num_images_per_trigger"] = 1
+        experiment_params = GridScanParams(
+            **data_params,
+            **expt_params,
+        )
+        expt_params["num_triggers"] = experiment_params.get_num_images()
+        expt_params["trigger_mode"] = TriggerMode.FREE_RUN
+
         return cls(
             params_version=external.parameter_version,
-            hyperion_params=HyperionParameters.from_external(external),
-            ispyb_params=GridscanIspybParams(
-                **external.data_parameters.dict(),
-                **external.experiment_parameters.dict(),
-            ),
-            experiment_params=GridScanParams(
-                **external.data_parameters.dict(),
-                **external.experiment_parameters.dict(),
-            ),
+            zocalo_environment=zocalo_environment,
+            beamline=beamline,
+            insertion_prefix=insertion_prefix,
+            experiment_type=experiment_type,
+            ispyb_params=GridscanIspybParams(**data_params, **expt_params),
+            detector_params=DetectorParams(**data_params, **expt_params),
+            experiment_params=experiment_params,
         )
 
     # @validator("hyperion_params", pre=True)
@@ -51,7 +61,7 @@ class GridscanInternalParameters(InternalParameters):
     #     experiment_params: GridScanParams = values["experiment_params"]
     #     all_params["num_images"] = experiment_params.get_num_images()
     #     all_params["position"] = np.array(all_params["position"])
-    #     all_params["omega_increment"] = 0
+    #     all_params["omega_increment_deg"] = 0
     #     all_params["num_triggers"] = all_params["num_images"]
     #     all_params["num_images_per_trigger"] = 1
     #     all_params["trigger_mode"] = TriggerMode.FREE_RUN
@@ -81,7 +91,7 @@ class GridscanInternalParameters(InternalParameters):
 
     def get_data_shape(self, scan_points: dict) -> tuple[int, int, int]:
         size: DetectorSize_pixels = (
-            self.hyperion_params.detector_params.detector_size_constants.det_size_pixels
+            self.detector_params.detector_size_constants.det_size_pixels
         )
         ax = list(scan_points.keys())[0]
         num_frames_in_vds = len(scan_points[ax])
@@ -91,24 +101,24 @@ class GridscanInternalParameters(InternalParameters):
         assert (
             scan_number == 1 or scan_number == 2
         ), "Cannot provide parameters for other scans than 1 or 2"
-        detector_params = self.hyperion_params.detector_params
-        return detector_params.omega_start + 90 * (scan_number - 1)
+        detector_params = self.detector_params
+        return detector_params.omega_start_deg + 90 * (scan_number - 1)
 
     def get_run_number(self, scan_number: int) -> int:
         assert (
             scan_number == 1 or scan_number == 2
         ), "Cannot provide parameters for other scans than 1 or 2"
-        detector_params = self.hyperion_params.detector_params
+        detector_params = self.detector_params
         return detector_params.run_number + (scan_number - 1)
 
     def get_nexus_info(self, scan_number: int) -> dict:
         """Returns a dict of info necessary for initialising NexusWriter, containing:
-        data_shape, scan_points, omega_start, filename
+        data_shape, scan_points, omega_start_deg, filename
         """
         scan_points = self.get_scan_points(scan_number)
         return {
             "data_shape": self.get_data_shape(scan_points),
             "scan_points": scan_points,
-            "omega_start": self.get_omega_start(scan_number),
+            "omega_start_deg": self.get_omega_start(scan_number),
             "run_number": self.get_run_number(scan_number),
         }

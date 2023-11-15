@@ -1,7 +1,7 @@
 from typing import Any
 
-from dodal.devices.det_dim_constants import DetectorSizeConstants
 from dodal.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
+from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.zebra import RotationDirection
 from pydantic import (
     BaseModel,
@@ -37,11 +37,10 @@ EXTERNAL_PARAMETERS_VERSION = ParameterVersion(5, 0, 0)
 
 
 class ExternalExperimentParameters(BaseModel):
-    beam_xy_converter: DetectorDistanceToBeamXYConverter | None = None
     chi_start_deg: StrictFloat | None = None
     det_dist_to_beam_converter_path: str | None = None
     detector_distance_mm: NonNegativeFloat | None = None
-    detector_size_constants: DetectorSizeConstants | None = None
+    detector: str | None = None
     dwell_time_ms: StrictInt | None = None
     energy_ev: NonNegativeFloat | None = None
     exposure_time_ms: NonNegativeFloat | None = None
@@ -49,14 +48,15 @@ class ExternalExperimentParameters(BaseModel):
     kappa_start_deg: StrictFloat | None = None
     num_images_per_trigger: int | None = None
     num_triggers: int | None = None
-    omega_increment_deg: StrictFloat | None = None
-    omega_start_deg: StrictFloat | None = None
+    omega_increment_deg: float | None = None
+    omega_start_deg: float | None = None
     phi_start_deg: StrictFloat | None = None
     rotation_axis: str | None = None
     rotation_direction: RotationDirection | None = None
     scan_width_deg: StrictFloat | None = None
     shutter_opening_time_s: float | None = None
     use_roi_mode: bool | None = None
+    trigger_mode: TriggerMode | None = None
     x_steps: NonNegativeInt | None = None
     y_steps: NonNegativeInt | None = None
     z_steps: NonNegativeInt | None = None
@@ -72,13 +72,34 @@ class ExternalExperimentParameters(BaseModel):
     y: StrictFloat | None = None
     z: StrictFloat | None = None
 
+    # Not supplied, initialised by validators
+    beam_xy_converter: DetectorDistanceToBeamXYConverter
+
     class Config:
         extra = Extra.forbid
         arbitrary_types_allowed = True
-        json_encoders = {
-            DetectorDistanceToBeamXYConverter: lambda _: None,
-            DetectorSizeConstants: lambda d: d.det_type_string,
-        }
+        json_encoders = {**DetectorParams.Config.json_encoders}
+
+    @validator("trigger_mode", pre=True)
+    def _parse_direction(cls, trigger_mode: str | int | TriggerMode):
+        if trigger_mode is None:
+            return None
+        if isinstance(trigger_mode, TriggerMode):
+            return trigger_mode
+        if isinstance(trigger_mode, str):
+            return TriggerMode[trigger_mode]
+        else:
+            return TriggerMode(trigger_mode)
+
+    @validator("beam_xy_converter", always=True, pre=True)
+    def _parse_beam_xy_converter(
+        cls,
+        beam_xy_converter: DetectorDistanceToBeamXYConverter,
+        values: dict[str, Any],
+    ) -> DetectorDistanceToBeamXYConverter:
+        return DetectorDistanceToBeamXYConverter(
+            values["det_dist_to_beam_converter_path"]
+        )
 
 
 class ExternalDataParameters(BaseModel):
@@ -125,9 +146,7 @@ class ExternalParameters(BaseModel):
     parameter_version: ParameterVersion
     experiment_parameters: ExternalExperimentParameters
     data_parameters: ExternalDataParameters
-
-    # Not supplied externally - filled in in main for use in converting to internal
-    _experiment_type: str | None = None
+    experiment_type: str | None = None
 
     class Config:
         use_enum_values = True
@@ -145,4 +164,8 @@ class ExternalParameters(BaseModel):
         assert (
             parameter_version.major == EXTERNAL_PARAMETERS_VERSION.major
         ), f"Parameters major version doesn't match - this version of Hyperion uses {EXTERNAL_PARAMETERS_VERSION.major}"
+        assert parameter_version.minor <= EXTERNAL_PARAMETERS_VERSION.minor, (
+            f"Parameters version too new - this version of Hyperion uses"
+            f" {EXTERNAL_PARAMETERS_VERSION.major}.{EXTERNAL_PARAMETERS_VERSION.minor}.x"
+        )
         return parameter_version

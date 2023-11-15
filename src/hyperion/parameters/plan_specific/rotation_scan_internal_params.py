@@ -14,22 +14,8 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
 )
 from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.internal_parameters import (
-    HyperionParameters,
     InternalParameters,
 )
-
-
-class RotationHyperionParameters(HyperionParameters):
-    ispyb_params: RotationIspybParams = RotationIspybParams(
-        **GRIDSCAN_ISPYB_PARAM_DEFAULTS
-    )
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {
-            **DetectorParams.Config.json_encoders,
-            **RotationIspybParams.Config.json_encoders,
-        }
 
 
 class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
@@ -40,7 +26,7 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     rotation_axis: str = "omega"
     rotation_angle: float = 360.0
     image_width: float = 0.1
-    omega_start: float = 0.0
+    omega_start_deg: float = 0.0
     phi_start: float | None = None
     chi_start: float | None = None
     kappa_start: float | None = None
@@ -83,9 +69,6 @@ class RotationInternalParameters(InternalParameters):
 
     class Config:
         arbitrary_types_allowed = True
-        json_encoders = {
-            **HyperionParameters.Config.json_encoders,
-        }
 
     @classmethod
     def from_external(cls, external: ExternalParameters):
@@ -110,9 +93,9 @@ class RotationInternalParameters(InternalParameters):
     #         all_params["rotation_axis"] == "omega"
     #         and all_params.get("rotation_increment") is not None
     #     ):
-    #         all_params["omega_increment"] = all_params["rotation_increment"]
+    #         all_params["omega_increment_deg"] = all_params["rotation_increment"]
     #     else:
-    #         all_params["omega_increment"] = 0
+    #         all_params["omega_increment_deg"] = 0
     #     all_params["num_triggers"] = 1
     #     all_params["num_images_per_trigger"] = all_params["num_images"]
     #     return RotationHyperionParameters(
@@ -124,10 +107,10 @@ class RotationInternalParameters(InternalParameters):
     def get_scan_points(self):
         scan_spec = Line(
             axis="omega",
-            start=self.experiment_params.omega_start,
+            start=self.experiment_params.omega_start_deg,
             stop=(
                 self.experiment_params.rotation_angle
-                + self.experiment_params.omega_start
+                + self.experiment_params.omega_start_deg
             ),
             num=self.experiment_params.get_num_images(),
         )
@@ -135,7 +118,5 @@ class RotationInternalParameters(InternalParameters):
         return scan_path.consume().midpoints
 
     def get_data_shape(self) -> tuple[int, int, int]:
-        size = (
-            self.hyperion_params.detector_params.detector_size_constants.det_size_pixels
-        )
+        size = self.detector_params.detector_size_constants.det_size_pixels
         return (self.experiment_params.get_num_images(), size.width, size.height)

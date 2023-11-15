@@ -11,7 +11,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
 
 
 def create_goniometer_axes(
-    omega_start: float,
+    omega_start_deg: float,
     scan_points: dict | None,
     x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
     chi: float = 0.0,
@@ -22,7 +22,7 @@ def create_goniometer_axes(
     those from the params object.
 
     Args:
-        omega_start (float): the starting position of omega, the only extra value that
+        omega_start_deg (float): the starting position of omega, the only extra value that
                              needs to be specified except for the scan points.
         scan_points (dict):  a dictionary of points in the scan for each axis. Obtained
                              by calculating the scan path with scanspec and calling
@@ -32,7 +32,9 @@ def create_goniometer_axes(
                              is provided.
     """
     gonio_axes = [
-        Axis("omega", ".", TransformationType.ROTATION, (-1.0, 0.0, 0.0), omega_start),
+        Axis(
+            "omega", ".", TransformationType.ROTATION, (-1.0, 0.0, 0.0), omega_start_deg
+        ),
         Axis(
             name="sam_z",
             depends="omega",
@@ -93,14 +95,14 @@ def create_detector_parameters(detector_params: DetectorParams) -> Detector:
             ".",
             TransformationType.TRANSLATION,
             (0.0, 0.0, 1.0),
-            detector_params.detector_distance,
+            detector_params.detector_distance_mm,
         )
     ]
     # Eiger parameters, axes, beam_center, exp_time, [fast, slow]
     return Detector(
         eiger_params,
         detector_axes,
-        detector_params.get_beam_position_pixels(detector_params.detector_distance),
+        detector_params.get_beam_position_pixels(detector_params.detector_distance_mm),
         detector_params.exposure_time,
         [(-1.0, 0.0, 0.0), (0.0, -1.0, 0.0)],
     )

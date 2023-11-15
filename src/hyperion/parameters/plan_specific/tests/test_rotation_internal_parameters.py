@@ -17,7 +17,7 @@ def test_rotation_scan_param_validity():
         rotation_axis="omega",
         rotation_angle=360,
         image_width=0.1,
-        omega_start=0,
+        omega_start_deg=0,
         phi_start=0,
         chi_start=0,
         kappa_start=0,
@@ -57,7 +57,7 @@ def test_rotation_parameters_load_from_file():
     with pytest.raises(AttributeError):
         ispyb_params.upper_left
 
-    detector_params = internal_parameters.hyperion_params.detector_params
+    detector_params = internal_parameters.detector_params
 
     assert detector_params.detector_size_constants == EIGER2_X_16M_SIZE
 

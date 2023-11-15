@@ -39,7 +39,7 @@ def test_params():
     params.experiment_params.x = 0
     params.experiment_params.y = 0
     params.experiment_params.z = 0
-    params.hyperion_params.detector_params.exposure_time = 0.004
+    params.detector_params.exposure_time = 0.004
     params.ispyb_params.transmission_fraction = 0.49118047952
     return params
 
@@ -69,7 +69,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     zocalo,
     test_params: RotationInternalParameters,
 ):
-    run_number = test_params.hyperion_params.detector_params.run_number
+    run_number = test_params.detector_params.run_number
     nexus_filename = str(TEST_DIRECTORY / (TEST_FILENAME + f"_{run_number}.nxs"))
     master_filename = str(TEST_DIRECTORY / (TEST_FILENAME + f"_{run_number}_master.h5"))
 

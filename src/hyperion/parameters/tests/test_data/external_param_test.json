@@ -2,7 +2,7 @@
   "parameter_version": "5.0.0",
   "experiment_parameters": {
     "chi_start_deg": 0,
-    "det_dist_to_beam_converter_path": "src/hyperion/unit_tests/test_lookup_table.txt",
+    
     "detector_distance_mm": 100,
     "dwell_time_ms": 2,
     "energy_ev": 10000,

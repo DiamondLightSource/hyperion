@@ -36,7 +36,7 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
         nexus_handler = RotationNexusFileCallback()
         ispyb_handler = RotationISPyBCallback(parameters)
         zocalo_handler = RotationZocaloCallback(
-            parameters.hyperion_params.zocalo_environment, ispyb_handler
+            parameters.zocalo_environment, ispyb_handler
         )
         callback_collection = cls(
             nexus_handler=nexus_handler,

@@ -130,7 +130,7 @@ class SteppedGridScanInternalParameters(InternalParameters):
     # ):
     #     experiment_params: SteppedGridScanParams = values["experiment_params"]
     #     all_params["num_images"] = experiment_params.get_num_images()
-    #     all_params["omega_increment"] = 0
+    #     all_params["omega_increment_deg"] = 0
     #     all_params["num_images_per_trigger"] = 1
 
     #     return HyperionParameters(
@@ -161,9 +161,7 @@ class SteppedGridScanInternalParameters(InternalParameters):
         return scan_path.consume().midpoints
 
     def get_data_shape(self, scan_points: dict) -> tuple[int, int, int]:
-        size = (
-            self.hyperion_params.detector_params.detector_size_constants.det_size_pixels
-        )
+        size = self.detector_params.detector_size_constants.det_size_pixels
         ax = list(scan_points.keys())[0]
         num_frames_in_vds = len(scan_points[ax])
         return (num_frames_in_vds, size.width, size.height)

@@ -371,8 +371,8 @@ def test_rotation_plan_zebra_settings(setup_and_run_rotation_plan_for_tests_stan
     ]
     expt_params = params.experiment_params
 
-    assert zebra.pc.gate_start.get() == expt_params.omega_start
-    assert zebra.pc.gate_start.get() == expt_params.omega_start
+    assert zebra.pc.gate_start.get() == expt_params.omega_start_deg
+    assert zebra.pc.gate_start.get() == expt_params.omega_start_deg
     assert zebra.pc.pulse_start.get() == expt_params.shutter_opening_time_s
 
 
@@ -385,9 +385,7 @@ def test_full_rotation_plan_smargon_settings(
     expt_params = params.experiment_params
 
     omega_set: MagicMock = smargon.omega.set
-    rotation_speed = (
-        expt_params.image_width / params.hyperion_params.detector_params.exposure_time
-    )
+    rotation_speed = expt_params.image_width / params.detector_params.exposure_time
 
     assert smargon.phi.user_readback.get() == expt_params.phi_start
     assert smargon.chi.user_readback.get() == expt_params.chi_start
@@ -515,9 +513,9 @@ def test_ispyb_deposition_in_plan(
     test_img_wid = 0.27
 
     test_rotation_params.experiment_params.image_width = test_img_wid
-    test_rotation_params.ispyb_params.beam_size_x = test_bs_x
-    test_rotation_params.ispyb_params.beam_size_y = test_bs_y
-    test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
+    test_rotation_params.ispyb_params.beam_size_x_mm = test_bs_x
+    test_rotation_params.ispyb_params.beam_size_y_mm = test_bs_y
+    test_rotation_params.detector_params.exposure_time = test_exp_time
     test_rotation_params.ispyb_params.current_energy_ev = convert_angstrom_to_eV(
         test_wl
     )
@@ -604,9 +602,7 @@ def test_acceleration_offset_calculated_correctly(
         flux,
     )
 
-    expected_start_angle = (
-        test_rotation_params.hyperion_params.detector_params.omega_start
-    )
+    expected_start_angle = test_rotation_params.detector_params.omega_start_deg
 
     mock_move_to_start.assert_called_once_with(
         smargon.omega, expected_start_angle, pytest.approx(0.3)

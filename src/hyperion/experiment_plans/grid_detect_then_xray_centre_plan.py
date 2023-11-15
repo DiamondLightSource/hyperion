@@ -122,7 +122,7 @@ def detect_grid_and_do_gridscan(
     assert composite.aperture_scatterguard.aperture_positions is not None
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
-    detector_params = parameters.hyperion_params.detector_params
+    detector_params = parameters.detector_params
     snapshot_template = (
         f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
     )
@@ -221,7 +221,7 @@ def grid_detect_then_xray_centre(
     """
     eiger: EigerDetector = composite.eiger
 
-    eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
+    eiger.set_detector_parameters(parameters.detector_params)
 
     oav_params = OAVParameters("xrayCentring", **oav_param_files)
 

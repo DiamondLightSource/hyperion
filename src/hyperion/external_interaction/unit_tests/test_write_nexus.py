@@ -48,7 +48,7 @@ def create_nexus_writers_with_many_images(parameters: GridscanInternalParameters
         parameters.experiment_params.x_steps = x
         parameters.experiment_params.y_steps = y
         parameters.experiment_params.z_steps = z
-        parameters.hyperion_params.detector_params.num_triggers = x * y + x * z
+        parameters.detector_params.num_triggers = x * y + x * z
         nexus_writer_1 = NexusWriter(parameters, **parameters.get_nexus_info(1))
         nexus_writer_2 = NexusWriter(parameters, **parameters.get_nexus_info(2))
 
@@ -215,9 +215,7 @@ def test_nexus_writer_files_are_formatted_as_expected(
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
-        expected_file_name_prefix = (
-            test_fgs_params.hyperion_params.detector_params.prefix + "_0"
-        )
+        expected_file_name_prefix = test_fgs_params.detector_params.prefix + "_0"
         assert file_name.startswith(expected_file_name_prefix)
 
 
@@ -297,7 +295,7 @@ def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_fi
 def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_files_still_written(
     test_fgs_params: GridscanInternalParameters,
 ):
-    test_fgs_params.hyperion_params.detector_params.prefix = "non_existant_file"
+    test_fgs_params.detector_params.prefix = "non_existant_file"
     with create_nexus_writers_with_many_images(test_fgs_params) as (
         nexus_writer_1,
         nexus_writer_2,

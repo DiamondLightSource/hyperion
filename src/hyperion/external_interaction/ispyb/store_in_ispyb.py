@@ -40,7 +40,7 @@ class StoreInIspyb(ABC):
         self.ispyb_params: IspybParams | None = None
         self.detector_params: DetectorParams | None = None
         self.run_number: int | None = None
-        self.omega_start: float | None = None
+        self.omega_start_deg: float | None = None
         self.experiment_type: str | None = None
         self.xtal_snapshots: list[str] | None = None
         self.data_collection_group_id: int | None = None
@@ -197,18 +197,18 @@ class StoreInIspyb(ABC):
         params["parentid"] = data_collection_group_id
         params["sampleid"] = self.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
-        params["axis_start"] = self.omega_start
-        params["focal_spot_size_at_samplex"] = self.ispyb_params.focal_spot_size_x
-        params["focal_spot_size_at_sampley"] = self.ispyb_params.focal_spot_size_y
+        params["axis_start"] = self.omega_start_deg
+        params["focal_spot_size_at_samplex"] = self.ispyb_params.focal_spot_size_x_mm
+        params["focal_spot_size_at_sampley"] = self.ispyb_params.focal_spot_size_y_mm
         params["slitgap_vertical"] = self.ispyb_params.slit_gap_size_y
         params["slitgap_horizontal"] = self.ispyb_params.slit_gap_size_x
-        params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x
-        params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y
+        params["beamsize_at_samplex"] = self.ispyb_params.beam_size_x_mm
+        params["beamsize_at_sampley"] = self.ispyb_params.beam_size_y_mm
         # Ispyb wants the transmission in a percentage, we use fractions
         params["transmission"] = self.ispyb_params.transmission_fraction * 100
         params["comments"] = self._construct_comment()
         params["data_collection_number"] = self.run_number
-        params["detector_distance"] = self.detector_params.detector_distance
+        params["detector_distance_mm"] = self.detector_params.detector_distance_mm
         params["exp_time"] = self.detector_params.exposure_time
         params["imgdir"] = self.detector_params.directory
         params["imgprefix"] = self.detector_params.prefix
@@ -220,12 +220,12 @@ class StoreInIspyb(ABC):
         params["overlap"] = 0
 
         params["flux"] = self.ispyb_params.flux
-        params["omegastart"] = self.omega_start
+        params["omegastart"] = self.omega_start_deg
         params["start_image_number"] = 1
         params["resolution"] = self.ispyb_params.resolution
         params["wavelength"] = self.ispyb_params.wavelength_angstroms
         beam_position = self.detector_params.get_beam_position_mm(
-            self.detector_params.detector_distance
+            self.detector_params.detector_distance_mm
         )
         params["xbeam"], params["ybeam"] = beam_position
         if len(self.xtal_snapshots) == 3:
@@ -254,9 +254,9 @@ class StoreRotationInIspyb(StoreInIspyb):
         super().__init__(ispyb_config, "SAD")
         self.full_params: RotationInternalParameters = parameters
         self.ispyb_params: RotationIspybParams = parameters.ispyb_params
-        self.detector_params = parameters.hyperion_params.detector_params
+        self.detector_params = parameters.detector_params
         self.run_number = self.detector_params.run_number
-        self.omega_start = self.detector_params.omega_start
+        self.omega_start_deg = self.detector_params.omega_start_deg
         self.data_collection_id: int | None = None
 
         if self.ispyb_params.xtal_snapshots_omega_start:
@@ -274,7 +274,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         assert self.full_params is not None
         params["axis_range"] = self.full_params.experiment_params.image_width
         params["axis_end"] = (
-            self.full_params.experiment_params.omega_start
+            self.full_params.experiment_params.omega_start_deg
             + self.full_params.experiment_params.rotation_angle
         )
         params["n_images"] = self.full_params.experiment_params.get_num_images()
@@ -340,9 +340,9 @@ class StoreGridscanInIspyb(StoreInIspyb):
     def store_grid_scan(self, full_params: GridscanInternalParameters):
         self.full_params = full_params
         self.ispyb_params = full_params.ispyb_params
-        self.detector_params = full_params.hyperion_params.detector_params
+        self.detector_params = full_params.detector_params
         self.run_number = self.detector_params.run_number
-        self.omega_start = self.detector_params.omega_start
+        self.omega_start_deg = self.detector_params.omega_start_deg
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start
         self.upper_left = [
             int(self.ispyb_params.upper_left[0]),
@@ -359,7 +359,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
     ) -> dict[str, Any]:
         assert self.full_params is not None
         params["axis_range"] = 0
-        params["axis_end"] = self.omega_start
+        params["axis_end"] = self.omega_start_deg
         params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
         return params
 
@@ -446,7 +446,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         )
 
     def __prepare_second_scan_params(self):
-        self.omega_start += 90
+        self.omega_start_deg += 90
         self.run_number += 1
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_end
         self.upper_left = [

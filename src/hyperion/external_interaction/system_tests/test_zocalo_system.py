@@ -38,7 +38,7 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
 @pytest.fixture
 def run_zocalo_with_dev_ispyb(dummy_params: GridscanInternalParameters, dummy_ispyb_3d):
     def inner(sample_name="", fallback=np.array([0, 0, 0])):
-        dummy_params.hyperion_params.detector_params.prefix = sample_name
+        dummy_params.detector_params.prefix = sample_name
         zc: XrayCentreZocaloCallback = XrayCentreCallbackCollection.from_params(
             dummy_params
         ).zocalo_handler

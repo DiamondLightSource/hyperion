@@ -83,7 +83,7 @@ def pin_tip_centre_then_xray_centre(
 
     eiger: EigerDetector = composite.eiger
 
-    eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
+    eiger.set_detector_parameters(parameters.detector_params)
 
     return start_preparing_data_collection_then_do_plan(
         eiger,

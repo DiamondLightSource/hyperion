@@ -57,7 +57,7 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
     test_fgs_params: GridscanInternalParameters,
 ):
     assert (
-        test_fgs_params.hyperion_params.detector_params.detector_size_constants.det_type_string
+        test_fgs_params.detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
     )
     raw_params_dict = jsonschema_external_parameters.from_file()
@@ -65,9 +65,7 @@ def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_d
         "detector_size_constants"
     ] = EIGER_TYPE_EIGER2_X_4M
     params: GridscanInternalParameters = GridscanInternalParameters(**raw_params_dict)
-    det_dimension = (
-        params.hyperion_params.detector_params.detector_size_constants.det_dimension
-    )
+    det_dimension = params.detector_params.detector_size_constants.det_dimension
     assert det_dimension == EIGER2_X_4M_DIMENSION
 
 

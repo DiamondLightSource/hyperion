@@ -189,13 +189,13 @@ class RunExperiment(Resource):
                         f"Experiment plan '{plan_name}' has no 'run' method specified in the registry."
                     )
                 external_parameters = ExternalParameters(**request.data)
-                external_parameters._experiment_type = plan_name
+                external_parameters.experiment_type = plan_name
                 parameters = experiment_internal_param_type.from_external(
                     external_parameters
                 )
-                if plan_name != parameters.hyperion_params.experiment_type:
+                if plan_name != parameters.experiment_type:
                     raise PlanNotFound(
-                        f"Wrong experiment parameters ({parameters.hyperion_params.experiment_type}) "
+                        f"Wrong experiment parameters ({parameters.experiment_type}) "
                         f"for plan endpoint {plan_name}."
                     )
                 status_and_message = self.runner.start(plan, parameters, plan_name)

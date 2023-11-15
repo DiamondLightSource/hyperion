@@ -1,20 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
-
-import numpy as np
 from dodal.devices.detector import TriggerMode
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
-from pydantic import validator
 from pydantic.dataclasses import dataclass
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
-    IspybParams,
 )
 from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.internal_parameters import (
-    HyperionParameters,
     InternalParameters,
 )
 
@@ -27,8 +21,8 @@ class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
 
     exposure_time: float
     snapshot_dir: str
-    detector_distance: float
-    omega_start: float
+    detector_distance_mm: float
+    omega_start_deg: float
 
     # This is the correct grid size for single pin
     grid_width_microns: float = 600
@@ -43,15 +37,11 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
 
     class Config:
         arbitrary_types_allowed = True
-        json_encoders = {
-            **HyperionParameters.Config.json_encoders,
-        }
 
     @classmethod
     def from_external(cls, external: ExternalParameters):
         return cls(
             params_version=external.parameter_version,
-            hyperion_params=HyperionParameters.from_external(external),
             ispyb_params=GridscanIspybParams.from_external(external),
             experiment_params=GridScanWithEdgeDetectParams(
                 **external.data_parameters.dict(),

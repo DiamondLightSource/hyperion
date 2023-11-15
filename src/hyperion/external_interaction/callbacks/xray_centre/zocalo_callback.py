@@ -53,9 +53,7 @@ class XrayCentreZocaloCallback(CallbackBase):
         self.processing_time = 0.0
         self.do_fgs_uid: Optional[str] = None
         self.ispyb: GridscanISPyBCallback = ispyb_handler
-        self.zocalo_interactor = ZocaloInteractor(
-            parameters.hyperion_params.zocalo_environment
-        )
+        self.zocalo_interactor = ZocaloInteractor(parameters.zocalo_environment)
 
     def start(self, doc: dict):
         ISPYB_LOGGER.info("Zocalo handler received start document.")

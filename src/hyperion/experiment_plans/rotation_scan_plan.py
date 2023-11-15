@@ -144,12 +144,12 @@ def rotation_scan_plan(
     a fixed axis - for now this axis is limited to omega. Only does the scan itself, no
     setup tasks."""
 
-    detector_params: DetectorParams = params.hyperion_params.detector_params
+    detector_params: DetectorParams = params.detector_params
     expt_params: RotationScanParams = params.experiment_params
 
-    start_angle_deg = detector_params.omega_start
-    scan_width_deg = expt_params.get_num_images() * detector_params.omega_increment
-    image_width_deg = detector_params.omega_increment
+    start_angle_deg = detector_params.omega_start_deg
+    scan_width_deg = expt_params.get_num_images() * detector_params.omega_increment_deg
+    image_width_deg = detector_params.omega_increment_deg
     exposure_time_s = detector_params.exposure_time
     shutter_time_s = expt_params.shutter_opening_time_s
 
@@ -266,7 +266,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
         params: RotationInternalParameters,
     ):
         eiger: EigerDetector = composite.eiger
-        eiger.set_detector_parameters(params.hyperion_params.detector_params)
+        eiger.set_detector_parameters(params.detector_params)
 
         @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: cleanup_plan(composite=composite))
@@ -277,7 +277,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
                 composite.backlight,
                 composite.attenuator,
                 params.ispyb_params.transmission_fraction,
-                params.hyperion_params.detector_params.detector_distance,
+                params.detector_params.detector_distance_mm,
             )
             LOGGER.info("moving to position (if specified)")
             yield from move_x_y_z(

@@ -62,8 +62,23 @@ def test_external_parameter_version_validation(version, success, blank_sub_param
             )
 
 
+def test_write_blank_params(blank_sub_params):
+    expt_params, data_params = blank_sub_params
+    e = ExternalParameters(
+        parameter_version="5.0.0",
+        experiment_parameters=expt_params,
+        data_parameters=data_params,
+    )
+    with open(
+        "src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json", "w"
+    ) as f:
+        f.write(e.json(indent=2))
+
+
 def test_external_parameters_load_from_file():
-    with open("src/hyperion/parameters/tests/test_data/external_param_test.json") as f:
+    with open(
+        "src/hyperion/parameters/tests/test_data/external_param_test_blank.json"
+    ) as f:
         data = json.loads(f.read())
     params = ExternalParameters.parse_obj(data)
-    assert params.parameter_version == ""
+    assert params.parameter_version == "5.0.0"

@@ -23,7 +23,7 @@ def test_grid_scan_with_edge_detect_parameters_load_from_file():
     np.testing.assert_array_equal(ispyb_params.position, np.array([10, 20, 30]))
     np.testing.assert_array_equal(ispyb_params.upper_left, np.array([0, 0, 0]))
 
-    detector_params = internal_parameters.hyperion_params.detector_params
+    detector_params = internal_parameters.detector_params
 
     assert detector_params.detector_size_constants == EIGER2_X_16M_SIZE
     assert detector_params.num_triggers == 0
