@@ -97,3 +97,34 @@ def test_gridscan_parameters_from_external():
     external_params = ExternalParameters.parse_obj(data)
     external_params.experiment_type = "flyscan_xray_centre"
     internal_params = GridscanInternalParameters.from_external(external_params)
+    assert internal_params.ispyb_params.comment == "Comment."
+    assert internal_params.detector_params.current_energy_ev == 12700
+
+    scan_1_num_images = len(internal_params.get_scan_points(1)["sam_x"])
+    scan_2_num_images = len(internal_params.get_scan_points(2)["sam_x"])
+    assert (
+        scan_1_num_images
+        == internal_params.experiment_params.x_steps
+        * internal_params.experiment_params.y_steps
+    )
+    assert (
+        scan_2_num_images
+        == internal_params.experiment_params.x_steps
+        * internal_params.experiment_params.z_steps
+    )
+    assert (
+        internal_params.detector_params.num_triggers
+        == scan_1_num_images + scan_2_num_images
+    )
+
+
+def test_rotation_parameters_from_external():
+    with open(
+        "src/hyperion/parameters/tests/test_data/external_param_test_rotation.json"
+    ) as f:
+        data = json.loads(f.read())
+    external_params = ExternalParameters.parse_obj(data)
+    external_params.experiment_type = "rotation_scan"
+    internal_params = RotationInternalParameters.from_external(external_params)
+    assert internal_params.ispyb_params.comment == "Comment."
+    assert internal_params.detector_params.current_energy_ev == 12700

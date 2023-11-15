@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dodal.devices.detector import DetectorParams
+from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.motors import XYZLimitBundle
 from dodal.devices.zebra import RotationDirection
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
@@ -9,7 +9,6 @@ from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
-    GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     RotationIspybParams,
 )
 from hyperion.parameters.external_parameters import ExternalParameters
@@ -25,7 +24,7 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
 
     rotation_axis: str = "omega"
     rotation_angle: float = 360.0
-    image_width: float = 0.1
+    image_width_deg: float = 0.1
     omega_start_deg: float = 0.0
     phi_start: float | None = None
     chi_start: float | None = None
@@ -37,7 +36,7 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     shutter_opening_time_s: float = 0.6
 
     @validator("rotation_direction", pre=True)
-    def _parse_direction(cls, rotation_direction: str | int):
+    def _parse_direction(cls, rotation_direction: str | int | RotationDirection):
         if isinstance(rotation_direction, str):
             return RotationDirection[rotation_direction]
         else:
@@ -60,7 +59,7 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
         return True
 
     def get_num_images(self):
-        return int(self.rotation_angle / self.image_width)
+        return int(self.rotation_angle / self.image_width_deg)
 
 
 class RotationInternalParameters(InternalParameters):
@@ -72,37 +71,40 @@ class RotationInternalParameters(InternalParameters):
 
     @classmethod
     def from_external(cls, external: ExternalParameters):
+        (
+            data_params,
+            expt_params,
+            zocalo_environment,
+            beamline,
+            insertion_prefix,
+            experiment_type,
+        ) = cls._common_from_external(external)
+        if (
+            expt_params["rotation_axis"] == "omega"
+            and expt_params.get("rotation_increment_deg") is not None
+        ):
+            expt_params["omega_increment_deg"] = expt_params["rotation_increment_deg"]
+        else:
+            expt_params["omega_increment_deg"] = 0
+        expt_params["num_triggers"] = 1
+        experiment_params = RotationScanParams(
+            **data_params,
+            **expt_params,
+        )
+        expt_params["num_images_per_trigger"] = experiment_params.get_num_images()
+        expt_params["trigger_mode"] = TriggerMode.SET_FRAMES
+        expt_params["prefix"] = external.data_parameters.filename_prefix
+
         return cls(
             params_version=external.parameter_version,
-            hyperion_params=HyperionParameters.from_external(external),
-            ispyb_params=RotationIspybParams.from_external(external),
-            experiment_params=RotationScanParams(
-                **external.data_parameters.dict(),
-                **external.experiment_parameters.dict(),
-            ),
+            zocalo_environment=zocalo_environment,
+            beamline=beamline,
+            insertion_prefix=insertion_prefix,
+            experiment_type=experiment_type,
+            ispyb_params=RotationIspybParams(**data_params, **expt_params),
+            detector_params=DetectorParams(**data_params, **expt_params),
+            experiment_params=experiment_params,
         )
-
-    # @validator("hyperion_params", pre=True)
-    # def _preprocess_hyperion_params(
-    #     cls, all_params: dict[str, Any], values: dict[str, Any]
-    # ):
-    #     experiment_params: RotationScanParams = values["experiment_params"]
-    #     all_params["num_images"] = experiment_params.get_num_images()
-    #     all_params["position"] = np.array(all_params["position"])
-    #     if (
-    #         all_params["rotation_axis"] == "omega"
-    #         and all_params.get("rotation_increment") is not None
-    #     ):
-    #         all_params["omega_increment_deg"] = all_params["rotation_increment"]
-    #     else:
-    #         all_params["omega_increment_deg"] = 0
-    #     all_params["num_triggers"] = 1
-    #     all_params["num_images_per_trigger"] = all_params["num_images"]
-    #     return RotationHyperionParameters(
-    #         **extract_hyperion_params_from_flat_dict(
-    #             all_params, cls._hyperion_param_key_definitions()
-    #         )
-    #     )
 
     def get_scan_points(self):
         scan_spec = Line(

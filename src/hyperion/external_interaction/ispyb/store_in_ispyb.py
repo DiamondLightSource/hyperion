@@ -272,7 +272,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         assert self.full_params is not None
-        params["axis_range"] = self.full_params.experiment_params.image_width
+        params["axis_range"] = self.full_params.experiment_params.image_width_deg
         params["axis_end"] = (
             self.full_params.experiment_params.omega_start_deg
             + self.full_params.experiment_params.rotation_angle

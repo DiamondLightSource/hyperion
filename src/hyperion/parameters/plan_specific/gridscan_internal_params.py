@@ -42,6 +42,7 @@ class GridscanInternalParameters(InternalParameters):
         )
         expt_params["num_triggers"] = experiment_params.get_num_images()
         expt_params["trigger_mode"] = TriggerMode.FREE_RUN
+        expt_params["prefix"] = external.data_parameters.filename_prefix
 
         return cls(
             params_version=external.parameter_version,
@@ -53,20 +54,6 @@ class GridscanInternalParameters(InternalParameters):
             detector_params=DetectorParams(**data_params, **expt_params),
             experiment_params=experiment_params,
         )
-
-    # @validator("hyperion_params", pre=True)
-    # def _preprocess_hyperion_params(
-    #     cls, all_params: dict[str, Any], values: dict[str, Any]
-    # ):
-    #     experiment_params: GridScanParams = values["experiment_params"]
-    #     all_params["num_images"] = experiment_params.get_num_images()
-    #     all_params["position"] = np.array(all_params["position"])
-    #     all_params["omega_increment_deg"] = 0
-    #     all_params["num_triggers"] = all_params["num_images"]
-    #     all_params["num_images_per_trigger"] = 1
-    #     all_params["trigger_mode"] = TriggerMode.FREE_RUN
-    #     all_params["upper_left"] = np.array(all_params["upper_left"])
-    #     return HyperionParameters.parse_obj(all_params)
 
     def get_scan_points(self, scan_number: int) -> dict:
         """Get the scan points for the first or second gridscan: scan number must be

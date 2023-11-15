@@ -3,6 +3,7 @@ from typing import Any
 from dodal.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
 from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.zebra import RotationDirection
+from numpy import isin
 from pydantic import (
     BaseModel,
     Extra,
@@ -43,7 +44,7 @@ class ExternalExperimentParameters(BaseModel):
     detector: str | None = None
     dwell_time_ms: StrictInt | None = None
     energy_ev: NonNegativeFloat | None = None
-    exposure_time_ms: NonNegativeFloat | None = None
+    exposure_time_s: NonNegativeFloat | None = None
     image_width_deg: StrictFloat | None = None
     kappa_start_deg: StrictFloat | None = None
     num_images_per_trigger: int | None = None
@@ -53,6 +54,7 @@ class ExternalExperimentParameters(BaseModel):
     phi_start_deg: StrictFloat | None = None
     rotation_axis: str | None = None
     rotation_direction: RotationDirection | None = None
+    rotation_increment_deg: float | None = None
     scan_width_deg: StrictFloat | None = None
     shutter_opening_time_s: float | None = None
     use_roi_mode: bool | None = None
@@ -81,7 +83,7 @@ class ExternalExperimentParameters(BaseModel):
         json_encoders = {**DetectorParams.Config.json_encoders}
 
     @validator("trigger_mode", pre=True)
-    def _parse_direction(cls, trigger_mode: str | int | TriggerMode):
+    def _parse_trigger_mode(cls, trigger_mode: str | int | TriggerMode):
         if trigger_mode is None:
             return None
         if isinstance(trigger_mode, TriggerMode):
@@ -90,6 +92,17 @@ class ExternalExperimentParameters(BaseModel):
             return TriggerMode[trigger_mode]
         else:
             return TriggerMode(trigger_mode)
+
+    @validator("rotation_direction", pre=True)
+    def _parse_direction(cls, rotation_direction: str | int | RotationDirection):
+        if rotation_direction is None:
+            return None
+        if isinstance(rotation_direction, RotationDirection):
+            return RotationDirection
+        if isinstance(rotation_direction, str):
+            return RotationDirection[rotation_direction]
+        else:
+            return RotationDirection(rotation_direction)
 
     @validator("beam_xy_converter", always=True, pre=True)
     def _parse_beam_xy_converter(

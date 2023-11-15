@@ -40,7 +40,7 @@ class InternalParameters(BaseModel):
         )
         assert (
             external.experiment_type is not None
-        ), "Can't initialise InternalParameters from ExternalParameters without set '_experiment_type' field."
+        ), "Can't initialise InternalParameters from ExternalParameters without set 'experiment_type' field."
         zocalo_environment = (
             external.data_parameters.zocalo_environment or "artemis-dev"
         )

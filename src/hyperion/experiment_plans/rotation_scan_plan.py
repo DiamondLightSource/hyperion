@@ -150,7 +150,7 @@ def rotation_scan_plan(
     start_angle_deg = detector_params.omega_start_deg
     scan_width_deg = expt_params.get_num_images() * detector_params.omega_increment_deg
     image_width_deg = detector_params.omega_increment_deg
-    exposure_time_s = detector_params.exposure_time
+    exposure_time_s = detector_params.exposure_time_s
     shutter_time_s = expt_params.shutter_opening_time_s
 
     speed_for_rotation_deg_s = image_width_deg / exposure_time_s

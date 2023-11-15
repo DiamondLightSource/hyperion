@@ -385,7 +385,7 @@ def test_full_rotation_plan_smargon_settings(
     expt_params = params.experiment_params
 
     omega_set: MagicMock = smargon.omega.set
-    rotation_speed = expt_params.image_width / params.detector_params.exposure_time
+    rotation_speed = expt_params.image_width_deg / params.detector_params.exposure_time
 
     assert smargon.phi.user_readback.get() == expt_params.phi_start
     assert smargon.chi.user_readback.get() == expt_params.chi_start
@@ -512,7 +512,7 @@ def test_ispyb_deposition_in_plan(
     test_exp_time = 0.023
     test_img_wid = 0.27
 
-    test_rotation_params.experiment_params.image_width = test_img_wid
+    test_rotation_params.experiment_params.image_width_deg = test_img_wid
     test_rotation_params.ispyb_params.beam_size_x_mm = test_bs_x
     test_rotation_params.ispyb_params.beam_size_y_mm = test_bs_y
     test_rotation_params.detector_params.exposure_time = test_exp_time

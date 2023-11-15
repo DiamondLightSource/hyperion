@@ -16,7 +16,7 @@ def test_rotation_scan_param_validity():
     test_params = RotationScanParams(
         rotation_axis="omega",
         rotation_angle=360,
-        image_width=0.1,
+        image_width_deg=0.1,
         omega_start_deg=0,
         phi_start=0,
         chi_start=0,
