@@ -1,11 +1,16 @@
+from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky import Msg
 from bluesky.run_engine import RunEngine
+from dodal.devices.fast_grid_scan import FastGridScan
+from ophyd.sim import make_fake_device
 
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
     pin_centre_then_xray_centre_plan,
+    pin_tip_centre_then_xray_centre,
 )
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -60,3 +65,186 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 
     mock_detect_and_do_gridscan.assert_called_once()
     mock_pin_tip_centre.assert_called_once()
+
+
+message_handlers = []
+callbacks = {}
+next_callback_token = 0
+
+
+def add_callback(msg_args):
+    global next_callback_token
+    callbacks[next_callback_token] = msg_args
+    next_callback_token += 1
+
+
+class MessageHandler:
+    def __init__(self, p: Callable[[Msg], bool], r: Callable[[Msg], None]):
+        self.predicate = p
+        self.runnable = r
+
+
+def fire_callback(document_name, document):
+    for callback_func, callback_docname in callbacks.values():
+        if callback_docname == "all" or callback_docname == document_name:
+            callback_func(document_name, document)
+
+
+@patch(
+    "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
+    autospec=True,
+)
+@patch(
+    "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.XrayCentreZocaloCallback.wait_for_results",
+    lambda self, x: ([0, 0, 0], [1, 1, 1]),
+)
+def test_when_pin_centre_xray_centre_called_then_detector_positioned(
+    mock_pin_tip_centre: MagicMock,
+    test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
+    test_config_files,
+    oav,
+    smargon,
+    detector_motion,
+    synchrotron,
+):
+    magic_mock = MagicMock()
+    magic_mock.oav = oav
+    magic_mock.smargon = smargon
+    magic_mock.detector_motion = detector_motion
+    scan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
+    scan.scan_invalid.sim_put(True)
+    scan.position_counter.sim_put(0)
+    magic_mock.fast_grid_scan = scan
+    magic_mock.synchrotron = synchrotron
+    oav.zoom_controller.frst.set("7.5x")
+
+    messages = list[MessageHandler]()
+    gen = pin_tip_centre_then_xray_centre(
+        magic_mock, test_pin_centre_then_xray_centre_params, test_config_files
+    )
+    send_value = None
+    message_handlers.append(
+        MessageHandler(
+            lambda msg: msg.command == "subscribe", lambda msg: add_callback(msg.args)
+        )
+    )
+    message_handlers.append(
+        MessageHandler(
+            lambda msg: msg.command in ("trigger", "read")
+            and msg.obj
+            and msg.obj.name == "oav_mxsc_pin_tip",
+            lambda msg: {"oav_mxsc_pin_tip_triggered_tip": {"value": (100, 100)}},
+        )
+    )
+    message_handlers.append(
+        MessageHandler(
+            lambda msg: msg.command == "read"
+            and msg.obj
+            and msg.obj.name == "oav_mxsc_top",
+            lambda msg: {"values": {"value": [50, 51, 52, 53, 54, 55]}},
+        )
+    )
+    message_handlers.append(
+        MessageHandler(
+            lambda msg: msg.command == "read"
+            and msg.obj
+            and msg.obj.name == "oav_mxsc_bottom",
+            lambda msg: {"values": {"value": [50, 49, 48, 47, 46, 45]}},
+        )
+    )
+    message_handlers.append(
+        MessageHandler(
+            lambda msg: msg.command == "set"
+            and msg.obj
+            and msg.obj.name == "oav_mxsc_enable_callbacks",
+            # XXX what are reasonable values for these?
+            lambda msg: fire_callback(
+                "event",
+                {
+                    "data": {
+                        "oav_snapshot_last_saved_path": "xxx",
+                        "oav_snapshot_last_path_outer": "xxx",
+                        "oav_snapshot_last_path_full_overlay": "xxx",
+                        "oav_snapshot_top_left_x": 0,
+                        "oav_snapshot_top_left_y": 0,
+                        "oav_snapshot_box_width": 100,
+                        "smargon_omega": 1,
+                        "smargon_x": 0,
+                        "smargon_y": 0,
+                        "smargon_z": 0,
+                        "oav_snapshot_num_boxes_x": 10,
+                        "oav_snapshot_num_boxes_y": 10,
+                    }
+                },
+            ),
+        )
+    )
+    message_handlers.append(
+        MessageHandler(
+            lambda msg: msg.command == "set"
+            and msg.obj
+            and msg.obj.name == "detector_motion_shutter",
+            lambda msg: message_handlers.append(
+                MessageHandler(
+                    lambda msg: msg.command == "read"
+                    and msg.obj
+                    and msg.obj.name == "detector_motion_shutter",
+                    lambda msg: {"values": {"value": 1}},
+                )
+            ),
+        )
+    )
+    message_handlers.append(
+        MessageHandler(
+            lambda msg: msg.command == "set"
+            and msg.obj
+            and msg.obj.name == "detector_motion_z",
+            lambda msg: message_handlers.append(
+                MessageHandler(
+                    lambda msg: msg.command == "read"
+                    and msg.obj
+                    and msg.obj.name == "detector_motion_z_motor_done_move",
+                    lambda msg: {"values": {"value": 1}},
+                )
+            ),
+        )
+    )
+    try:
+        while msg := gen.send(send_value):
+            send_value = None
+            messages.append(msg)
+            print(msg)
+            if handler := next((h for h in message_handlers if h.predicate(msg)), None):
+                send_value = handler.runnable(msg)
+
+            if send_value:
+                print(f">send {send_value}")
+    except StopIteration:
+        pass
+
+    messages = messages_from_where(
+        messages, lambda msg: msg.obj is magic_mock.detector_motion.z
+    )
+    assert messages[0].args[0] == 100
+    assert messages[0].kwargs["group"] == "ready_for_data_collection"
+    assert messages[1].obj is magic_mock.detector_motion.shutter
+    assert messages[1].args[0] == 1
+    assert messages[1].kwargs["group"] == "ready_for_data_collection"
+    assert (
+        messages := messages_from_where(
+            messages[2:],
+            lambda msg: msg.command == "wait"
+            and msg.kwargs["group"] == "ready_for_data_collection",
+        )
+    )
+    assert messages_from_where(
+        messages[2:],
+        lambda msg: msg.command == "open_run"
+        and msg.kwargs["subplan_name"] == "do_fgs",
+    )
+
+
+def messages_from_where(messages: list, predicate):
+    indices = [i for i in range(len(messages)) if predicate(messages[i])]
+    assert indices
+    return messages[indices[0] :]
