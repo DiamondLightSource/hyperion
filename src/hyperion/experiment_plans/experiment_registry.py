@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable, Union
+from typing import Callable, Type, TypedDict, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 import hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
 import hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
@@ -12,6 +13,7 @@ from hyperion.experiment_plans import (
     stepped_grid_scan_plan,
 )
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
     NullPlanCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
@@ -20,6 +22,12 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
+from hyperion.external_interaction.ispyb.ispyb_dataclass import (
+    GridscanIspybParams,
+    IspybParams,
+    RotationIspybParams,
+)
+from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
     GridScanWithEdgeDetectParams,
@@ -49,35 +57,48 @@ def do_nothing():
     pass
 
 
+class PlanRegistryEntry(TypedDict):
+    setup: Callable
+    internal_param_type: Type[InternalParameters]
+    ispyb_param_type: Type[IspybParams]
+    experiment_param_type: Type[AbstractExperimentParameterBase]
+    callback_collection_type: Type[AbstractPlanCallbackCollection]
+
+
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
-PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
+PLAN_REGISTRY: dict[str, PlanRegistryEntry] = {
     "flyscan_xray_centre": {
         "setup": flyscan_xray_centre_plan.create_devices,
         "internal_param_type": GridscanInternalParameters,
+        "ispyb_param_type": GridscanIspybParams,
         "experiment_param_type": GridScanParams,
         "callback_collection_type": XrayCentreCallbackCollection,
     },
     "grid_detect_then_xray_centre": {
         "setup": grid_detect_then_xray_centre_plan.create_devices,
         "internal_param_type": GridScanWithEdgeDetectInternalParameters,
+        "ispyb_param_type": GridscanIspybParams,
         "experiment_param_type": GridScanWithEdgeDetectParams,
         "callback_collection_type": NullPlanCallbackCollection,
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
         "internal_param_type": RotationInternalParameters,
+        "ispyb_param_type": RotationIspybParams,
         "experiment_param_type": RotationScanParams,
         "callback_collection_type": RotationCallbackCollection,
     },
     "pin_tip_centre_then_xray_centre": {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
         "internal_param_type": PinCentreThenXrayCentreInternalParameters,
+        "ispyb_param_type": GridscanIspybParams,
         "experiment_param_type": PinCentreThenXrayCentreParams,
         "callback_collection_type": NullPlanCallbackCollection,
     },
     "stepped_grid_scan": {
         "setup": stepped_grid_scan_plan.create_devices,
         "internal_param_type": SteppedGridScanInternalParameters,
+        "ispyb_param_type": GridscanIspybParams,
         "experiment_param_type": SteppedGridScanParams,
         "callback_collection_type": NullPlanCallbackCollection,
     },

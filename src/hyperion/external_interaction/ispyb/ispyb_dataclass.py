@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from pydantic import BaseModel, validator
 
+from hyperion.parameters import external_parameters
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.utils.utils import convert_eV_to_angstrom
 
 GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
@@ -38,6 +40,12 @@ class IspybParams(BaseModel):
     microns_per_pixel_x: float
     microns_per_pixel_y: float
     position: np.ndarray
+
+    @classmethod
+    def from_external(cls, external: ExternalParameters):
+        data_dict = external.data_parameters.dict()
+        experiment_dict = external.experiment_parameters.dict()
+        return cls(**data_dict, **experiment_dict)
 
     class Config:
         arbitrary_types_allowed = True

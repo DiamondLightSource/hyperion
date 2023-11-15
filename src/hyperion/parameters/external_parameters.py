@@ -84,14 +84,16 @@ class ExternalExperimentParameters(BaseModel):
 class ExternalDataParameters(BaseModel):
     beam_size_x_mm: float | None = None
     beam_size_y_mm: float | None = None
+    beamline: str | None = None
     comment: str | None = None
     directory: str | None = None
+    filename_prefix: str | None = None
     flux: float | None = None
     focal_spot_size_x_mm: float | None = None
     focal_spot_size_y_mm: float | None = None
+    insertion_prefix: str | None = None
     microns_per_pixel_x: float | None = None
     microns_per_pixel_y: float | None = None
-    prefix: str | None = None
     resolution: float | None = None
     run_number: int | None = None
     sample_barcode: str | None = None
@@ -105,12 +107,13 @@ class ExternalDataParameters(BaseModel):
     visit_path: str | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots_omega_start: list[str] | None = None
+    zocalo_environment: str | None = None
 
     class Config:
         extra = Extra.forbid
 
 
-class HyperionExternalParameters(BaseModel):
+class ExternalParameters(BaseModel):
     """Class for any and all parameters which could be supplied to Hyperion - for all
     experiment types. InternalParameters classes are responsible for checking and
     reporting whether required values are supplied - For External parameters they must
@@ -119,6 +122,9 @@ class HyperionExternalParameters(BaseModel):
     parameter_version: ParameterVersion
     experiment_parameters: ExternalExperimentParameters
     data_parameters: ExternalDataParameters
+
+    # Not supplied externally - filled in in main for use in converting to internal
+    _experiment_type: str | None = None
 
     class Config:
         use_enum_values = True

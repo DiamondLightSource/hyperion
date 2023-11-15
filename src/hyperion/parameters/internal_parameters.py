@@ -2,10 +2,12 @@ from abc import abstractmethod
 from typing import Any
 
 from dodal.devices.eiger import DetectorParams
+from dodal.utils import BeamlinePrefix, get_beamline_name
 from pydantic import BaseModel, root_validator
 
+from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
-from hyperion.parameters.external_parameters import ParameterVersion
+from hyperion.parameters.external_parameters import ExternalParameters, ParameterVersion
 from hyperion.parameters.jsonschema_external_parameters import from_json
 
 
@@ -23,6 +25,26 @@ class HyperionParameters(BaseModel):
             **DetectorParams.Config.json_encoders,
             **IspybParams.Config.json_encoders,
         }
+
+    @classmethod
+    def from_external(cls, external: ExternalParameters):
+        assert (
+            external._experiment_type is not None
+        ), "Can't initialise HyperionParameters from ExternalParameters without set '_experiment_type' field."
+        ispyb_param_type = PLAN_REGISTRY[external._experiment_type]["ispyb_param_type"]
+        return cls(
+            zocalo_environment=external.data_parameters.zocalo_environment
+            or "artemis-dev",
+            beamline=external.data_parameters.beamline or get_beamline_name("i03"),
+            insertion_prefix=external.data_parameters.insertion_prefix
+            or BeamlinePrefix(get_beamline_name("i03")).insertion_prefix,
+            experiment_type=external._experiment_type,
+            detector_params=DetectorParams(
+                **external.data_parameters.dict(),
+                **external.experiment_parameters.dict(),
+            ),
+            ispyb_params=ispyb_param_type.from_external(external),
+        )
 
 
 def flatten_dict(d: dict, parent_items: dict = {}) -> dict:

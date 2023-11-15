@@ -22,6 +22,7 @@ from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
 from hyperion.parameters.constants import Actions, Status
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
 from hyperion.utils.context import setup_context
@@ -185,10 +186,13 @@ class RunExperiment(Resource):
                     )
                 if plan is None:
                     raise PlanNotFound(
-                        f"Experiment plan '{plan_name}' has no 'run' method."
+                        f"Experiment plan '{plan_name}' has no 'run' method specified in the registry."
                     )
-
-                parameters = experiment_internal_param_type.from_json(request.data)
+                external_parameters = ExternalParameters(**request.data)
+                external_parameters._experiment_type = plan_name
+                parameters = experiment_internal_param_type.from_external(
+                    external_parameters
+                )
                 if plan_name != parameters.hyperion_params.experiment_type:
                     raise PlanNotFound(
                         f"Wrong experiment parameters ({parameters.hyperion_params.experiment_type}) "

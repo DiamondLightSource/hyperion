@@ -5,7 +5,7 @@ from hyperion.parameters.external_parameters import (
     EXTERNAL_PARAMETERS_VERSION,
     ExternalDataParameters,
     ExternalExperimentParameters,
-    HyperionExternalParameters,
+    ExternalParameters,
     ParameterVersion,
 )
 
@@ -17,12 +17,12 @@ def blank_sub_params():
 
 def test_version_takes_string_or_ParameterVersion(blank_sub_params):
     expt_params, data_params = blank_sub_params
-    HyperionExternalParameters(
+    ExternalParameters(
         parameter_version=ParameterVersion.parse("5.0.0"),
         experiment_parameters=expt_params,
         data_parameters=data_params,
     )
-    HyperionExternalParameters(
+    ExternalParameters(
         parameter_version="5.0.0",  # type: ignore
         experiment_parameters=expt_params,
         data_parameters=data_params,
@@ -46,14 +46,14 @@ test_versions_and_successes = [
 def test_external_parameter_version_validation(version, success, blank_sub_params):
     expt_params, data_params = blank_sub_params
     if success:
-        HyperionExternalParameters(
+        ExternalParameters(
             parameter_version=version,  # type: ignore
             experiment_parameters=expt_params,
             data_parameters=data_params,
         )
     else:
         with pytest.raises(ValidationError):
-            HyperionExternalParameters(
+            ExternalParameters(
                 parameter_version=version,  # type: ignore
                 experiment_parameters=expt_params,
                 data_parameters=data_params,
