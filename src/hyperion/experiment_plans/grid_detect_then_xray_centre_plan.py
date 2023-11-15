@@ -217,5 +217,7 @@ def grid_detect_then_xray_centre(
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
+        composite.detector_motion,
+        parameters.hyperion_params.detector_params.detector_distance,
         plan_to_perform,
     )
