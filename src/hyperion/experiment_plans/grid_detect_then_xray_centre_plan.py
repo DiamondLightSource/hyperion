@@ -88,21 +88,6 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
     return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
 
 
-def wait_for_det_to_finish_moving(detector: DetectorMotion, timeout=120.0):
-    LOGGER.info("Waiting for detector to finish moving")
-    SLEEP_PER_CHECK = 0.1
-    times_to_check = int(timeout / SLEEP_PER_CHECK)
-    for _ in range(times_to_check):
-        detector_state = yield from bps.rd(detector.shutter)
-        detector_z_dmov = yield from bps.rd(detector.z.motor_done_move)
-        LOGGER.info(f"Shutter state is {'open' if detector_state==1 else 'closed'}")
-        LOGGER.info(f"Detector z DMOV is {detector_z_dmov}")
-        if detector_state == 1 and detector_z_dmov == 1:
-            return
-        yield from bps.sleep(SLEEP_PER_CHECK)
-    raise TimeoutError("Detector not finished moving")
-
-
 def create_parameters_for_flyscan_xray_centre(
     grid_scan_with_edge_params: GridScanWithEdgeDetectInternalParameters,
     grid_parameters: GridScanParams,
@@ -187,7 +172,6 @@ def detect_grid_and_do_gridscan(
         composite.aperture_scatterguard,
         composite.aperture_scatterguard.aperture_positions.SMALL,
     )
-    yield from wait_for_det_to_finish_moving(composite.detector_motion)
 
     flyscan_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=composite.aperture_scatterguard,
