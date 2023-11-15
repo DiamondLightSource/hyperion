@@ -12,7 +12,6 @@ from bluesky.run_engine import RunEngine
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
-from hyperion.parameters.jsonschema_external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )

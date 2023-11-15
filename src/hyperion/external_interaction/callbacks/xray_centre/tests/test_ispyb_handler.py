@@ -13,9 +13,7 @@ from hyperion.log import (
     dc_group_id_filter,
     set_up_logging_handlers,
 )
-from hyperion.parameters.jsonschema_external_parameters import (
-    from_file as default_raw_params,
-)
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -27,7 +25,11 @@ td = TestData()
 
 @pytest.fixture
 def dummy_params():
-    return GridscanInternalParameters(**default_raw_params())
+    return GridscanInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+        )
+    )
 
 
 def test_fgs_failing_results_in_bad_run_status_in_ispyb(

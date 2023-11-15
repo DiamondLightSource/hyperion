@@ -15,16 +15,19 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.parameters.constants import SIM_BEAMLINE
-from hyperion.parameters.jsonschema_external_parameters import (
-    from_file as default_raw_params,
-)
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
 
 def test_callback_collection_init():
-    test_parameters = GridscanInternalParameters(**default_raw_params())
+    test_parameters = GridscanInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+        )
+    )
+
     callbacks = XrayCentreCallbackCollection.from_params(test_parameters)
     assert (
         callbacks.ispyb_handler.params.experiment_params
@@ -35,10 +38,7 @@ def test_callback_collection_init():
         == test_parameters.detector_params
     )
     assert callbacks.ispyb_handler.params.ispyb_params == test_parameters.ispyb_params
-    assert (
-        callbacks.ispyb_handler.params.hyperion_params
-        == test_parameters.hyperion_params
-    )
+
     assert callbacks.ispyb_handler.params == test_parameters
     assert callbacks.zocalo_handler.ispyb == callbacks.ispyb_handler
     assert len(list(callbacks)) == 3
@@ -48,7 +48,7 @@ def test_callback_collection_init():
 def eiger():
     detector_params: DetectorParams = DetectorParams(
         current_energy_ev=100,
-        exposure_time=0.1,
+        exposure_time_s=0.1,
         directory="/tmp",
         prefix="file_name",
         detector_distance_mm=100.0,
@@ -86,7 +86,11 @@ def test_communicator_in_composite_run(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
     RE = RunEngine({})
 
-    params = GridscanInternalParameters(**default_raw_params())
+    params = GridscanInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+        )
+    )
     params.beamline = SIM_BEAMLINE
     ispyb_begin_deposition.return_value = ([1, 2], None, 4)
 
@@ -116,7 +120,11 @@ def test_communicator_in_composite_run(
 
 
 def test_callback_collection_list():
-    test_parameters = GridscanInternalParameters(**default_raw_params())
+    test_parameters = GridscanInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+        )
+    )
     callbacks = XrayCentreCallbackCollection.from_params(test_parameters)
     callback_list = list(callbacks)
     assert len(callback_list) == 3
@@ -126,7 +134,11 @@ def test_callback_collection_list():
 
 
 def test_subscribe_in_plan():
-    test_parameters = GridscanInternalParameters(**default_raw_params())
+    test_parameters = GridscanInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+        )
+    )
     callbacks = XrayCentreCallbackCollection.from_params(test_parameters)
     document_event_mock = MagicMock()
     callbacks.ispyb_handler.start = document_event_mock

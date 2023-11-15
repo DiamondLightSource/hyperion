@@ -18,7 +18,7 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
-from hyperion.parameters.jsonschema_external_parameters import from_file
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -26,9 +26,9 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 
 @pytest.fixture
 def params():
-    return RotationInternalParameters(
-        **from_file(
-            "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+    return RotationInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/external_param_test_rotation.json"
         )
     )
 

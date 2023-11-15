@@ -13,9 +13,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     StoreRotationInIspyb,
 )
 from hyperion.parameters.constants import SIM_ISPYB_CONFIG
-from hyperion.parameters.jsonschema_external_parameters import (
-    from_file as default_raw_params,
-)
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -115,7 +113,11 @@ EMPTY_DATA_COLLECTION_PARAMS = {
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = GridscanInternalParameters(**default_raw_params())
+    dummy_params = GridscanInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+        )
+    )
     dummy_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.ispyb_params.microns_per_pixel_x = 0.8
     dummy_params.ispyb_params.microns_per_pixel_y = 0.8
@@ -124,9 +126,9 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_rotation_params():
-    dummy_params = RotationInternalParameters(
-        **default_raw_params(
-            "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+    dummy_params = RotationInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_rotation.json"
         )
     )
     return dummy_params

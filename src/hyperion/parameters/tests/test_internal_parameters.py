@@ -128,3 +128,4 @@ def test_rotation_parameters_from_external():
     internal_params = RotationInternalParameters.from_external(external_params)
     assert internal_params.ispyb_params.comment == "Comment."
     assert internal_params.detector_params.current_energy_ev == 12700
+    assert internal_params.experiment_params.get_num_images == 365

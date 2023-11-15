@@ -6,9 +6,6 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
 from hyperion.parameters.constants import ISPYB_HARDWARE_READ_PLAN
-from hyperion.parameters.jsonschema_external_parameters import (
-    from_file as default_raw_params,
-)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -21,11 +18,6 @@ test_start_document = {
     "plan_type": "generator",
     "plan_name": "run_gridscan_and_move",
 }
-
-
-@pytest.fixture
-def dummy_params():
-    return GridscanInternalParameters(**default_raw_params())
 
 
 @pytest.fixture

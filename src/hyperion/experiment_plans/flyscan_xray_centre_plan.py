@@ -42,8 +42,8 @@ from hyperion.exceptions import WarningException
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.parameters import jsonschema_external_parameters
 from hyperion.parameters.constants import SIM_BEAMLINE
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -307,8 +307,10 @@ if __name__ == "__main__":
         GridscanInternalParameters,
     )
 
-    parameters = GridscanInternalParameters(
-        **jsonschema_external_parameters.from_file()
+    parameters = GridscanInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+        )
     )
     subscriptions = XrayCentreCallbackCollection.from_params(parameters)
 

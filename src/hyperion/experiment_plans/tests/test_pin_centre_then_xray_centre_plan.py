@@ -7,9 +7,7 @@ from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
     pin_centre_then_xray_centre_plan,
 )
-from hyperion.parameters.jsonschema_external_parameters import (
-    from_file as raw_params_from_file,
-)
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectParams,
 )
@@ -20,10 +18,11 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
 
 @pytest.fixture
 def test_pin_centre_then_xray_centre_params():
-    params = raw_params_from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_pin_centre_then_xray_centre_parameters.json"
+    return PinCentreThenXrayCentreInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/good_test_pin_centre_then_xray_centre_parameters.json"
+        )
     )
-    return PinCentreThenXrayCentreInternalParameters(**params)
 
 
 def test_when_create_parameters_for_grid_detection_thne_parameters_created(

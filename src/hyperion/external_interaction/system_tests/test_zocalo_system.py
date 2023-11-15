@@ -11,9 +11,7 @@ from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_SMALL,
 )
-from hyperion.parameters.jsonschema_external_parameters import (
-    from_file as default_raw_params,
-)
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -21,7 +19,11 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 
 @pytest.mark.s03
 def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
-    params = GridscanInternalParameters(**default_raw_params())
+    params = GridscanInternalParameters.from_external(
+        ExternalParameters.parse_file(
+            "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
+        )
+    )
     zc: XrayCentreZocaloCallback = XrayCentreCallbackCollection.from_params(
         params
     ).zocalo_handler

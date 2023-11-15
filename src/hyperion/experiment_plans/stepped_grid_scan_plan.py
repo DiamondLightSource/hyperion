@@ -13,7 +13,6 @@ from dodal.devices.smargon import Smargon
 from dodal.utils import get_beamline_name
 
 from hyperion.log import LOGGER
-from hyperion.parameters import jsonschema_external_parameters
 from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.tracing import TRACER
@@ -96,28 +95,3 @@ def do_at_each_step(detectors, step, pos_cache):
     motors = step.keys()
     yield from move_per_step(step, pos_cache)
     yield from take_reading(list(detectors) + list(motors))
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--beamline",
-        help="The beamline prefix this is being run on",
-        default=SIM_BEAMLINE,
-    )
-    args = parser.parse_args()
-
-    RE = RunEngine({})
-    RE.waiting_hook = ProgressBarManager()
-    from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
-        SteppedGridScanInternalParameters,
-    )
-
-    parameters = SteppedGridScanInternalParameters(
-        jsonschema_external_parameters.from_file()
-    )
-
-    context = setup_context(wait_for_connection=True)
-    composite = create_devices(context)
-
-    RE(get_plan(composite, parameters))
