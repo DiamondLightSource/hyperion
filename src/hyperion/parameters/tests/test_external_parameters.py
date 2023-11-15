@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from pydantic import ValidationError
 
@@ -58,3 +60,10 @@ def test_external_parameter_version_validation(version, success, blank_sub_param
                 experiment_parameters=expt_params,
                 data_parameters=data_params,
             )
+
+
+def test_external_parameters_load_from_file():
+    with open("src/hyperion/parameters/tests/test_data/external_param_test.json") as f:
+        data = json.loads(f.read())
+    params = ExternalParameters.parse_obj(data)
+    assert params.parameter_version == ""

@@ -198,7 +198,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 ):
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
-    params.hyperion_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 100
@@ -235,7 +235,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
 
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
-    params.hyperion_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 1

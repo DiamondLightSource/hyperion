@@ -9,14 +9,10 @@ from pydantic import validator
 from pydantic.dataclasses import dataclass
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
-    extract_experiment_params_from_flat_dict,
-    extract_hyperion_params_from_flat_dict,
-)
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanHyperionParameters,
 )
 
 
@@ -43,7 +39,7 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
 
 class PinCentreThenXrayCentreInternalParameters(InternalParameters):
     experiment_params: PinCentreThenXrayCentreParams
-    hyperion_params: GridscanHyperionParameters
+    ispyb_params: GridscanIspybParams
 
     class Config:
         arbitrary_types_allowed = True
@@ -51,43 +47,16 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
             **HyperionParameters.Config.json_encoders,
         }
 
-    @staticmethod
-    def _hyperion_param_key_definitions() -> tuple[list[str], list[str], list[str]]:
-        (
-            hyperion_param_field_keys,
-            detector_field_keys,
-            ispyb_field_keys,
-        ) = InternalParameters._hyperion_param_key_definitions()
-        ispyb_field_keys += list(GridscanIspybParams.__annotations__.keys())
-        return hyperion_param_field_keys, detector_field_keys, ispyb_field_keys
-
-    @validator("experiment_params", pre=True)
-    def _preprocess_experiment_params(
-        cls,
-        experiment_params: dict[str, Any],
-    ):
-        return PinCentreThenXrayCentreParams(
-            **extract_experiment_params_from_flat_dict(
-                PinCentreThenXrayCentreParams, experiment_params
-            )
-        )
-
-    @validator("hyperion_params", pre=True)
-    def _preprocess_hyperion_params(
-        cls, all_params: dict[str, Any], values: dict[str, Any]
-    ):
-        experiment_params: PinCentreThenXrayCentreParams = values["experiment_params"]
-        all_params["num_images"] = experiment_params.get_num_images()
-        all_params["position"] = np.array(all_params["position"])
-        all_params["omega_increment"] = 0
-        all_params["num_triggers"] = all_params["num_images"]
-        all_params["num_images_per_trigger"] = 1
-        all_params["trigger_mode"] = TriggerMode.FREE_RUN
-        all_params["upper_left"] = np.zeros(3, dtype=np.int32)
-        return GridscanHyperionParameters(
-            **extract_hyperion_params_from_flat_dict(
-                all_params, cls._hyperion_param_key_definitions()
-            )
+    @classmethod
+    def from_external(cls, external: ExternalParameters):
+        return cls(
+            params_version=external.parameter_version,
+            hyperion_params=HyperionParameters.from_external(external),
+            ispyb_params=GridscanIspybParams.from_external(external),
+            experiment_params=PinCentreThenXrayCentreParams(
+                **external.data_parameters.dict(),
+                **external.experiment_parameters.dict(),
+            ),
         )
 
     def get_data_shape(self):

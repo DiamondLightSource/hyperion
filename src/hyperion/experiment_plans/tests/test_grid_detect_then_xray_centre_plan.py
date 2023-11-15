@@ -212,7 +212,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
         assert isinstance(params, GridscanInternalParameters)
 
-        ispyb_params = params.hyperion_params.ispyb_params
+        ispyb_params = params.ispyb_params
         assert_array_equal(ispyb_params.upper_left, [1, 2, 3])
         assert ispyb_params.xtal_snapshots_omega_start == [
             "c",

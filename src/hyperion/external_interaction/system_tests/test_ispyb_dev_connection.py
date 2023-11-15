@@ -71,7 +71,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     StoreClass, exp_num_of_grids, success, fetch_comment
 ):
     test_params = GridscanInternalParameters(**default_raw_params())
-    test_params.hyperion_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
+    test_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
     ispyb: StoreGridscanInIspyb = StoreClass(DEV_ISPYB_DATABASE_CFG, test_params)
     dc_ids, grid_ids, dcg_id = ispyb.begin_deposition()
 

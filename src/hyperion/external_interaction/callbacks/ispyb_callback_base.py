@@ -58,26 +58,18 @@ class BaseISPyBCallback(CallbackBase):
         event_descriptor = self.descriptors[doc["descriptor"]]
 
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
-            self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
-                "undulator_gap"
-            ]
-            self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][
+            self.params.ispyb_params.undulator_gap = doc["data"]["undulator_gap"]
+            self.params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"
             ]
-            self.params.hyperion_params.ispyb_params.slit_gap_size_x = doc["data"][
-                "s4_slit_gaps_xgap"
-            ]
-            self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"][
-                "s4_slit_gaps_ygap"
-            ]
+            self.params.ispyb_params.slit_gap_size_x = doc["data"]["s4_slit_gaps_xgap"]
+            self.params.ispyb_params.slit_gap_size_y = doc["data"]["s4_slit_gaps_ygap"]
 
         if event_descriptor.get("name") == ISPYB_TRANSMISSION_FLUX_READ_PLAN:
-            self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
-                "data"
-            ]["attenuator_actual_transmission"]
-            self.params.hyperion_params.ispyb_params.flux = doc["data"][
-                "flux_flux_reading"
+            self.params.ispyb_params.transmission_fraction = doc["data"][
+                "attenuator_actual_transmission"
             ]
+            self.params.ispyb_params.flux = doc["data"]["flux_flux_reading"]
 
             ISPYB_LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()

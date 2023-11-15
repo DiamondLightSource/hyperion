@@ -116,9 +116,9 @@ EMPTY_DATA_COLLECTION_PARAMS = {
 @pytest.fixture
 def dummy_params():
     dummy_params = GridscanInternalParameters(**default_raw_params())
-    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 0.8
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 0.8
+    dummy_params.ispyb_params.upper_left = np.array([100, 100, 50])
+    dummy_params.ispyb_params.microns_per_pixel_x = 0.8
+    dummy_params.ispyb_params.microns_per_pixel_y = 0.8
     return dummy_params
 
 
@@ -251,9 +251,7 @@ def test_store_rotation_scan_failures(
         dummy_rotation_ispyb.end_deposition("", "")
 
     with patch("hyperion.log.ISPYB_LOGGER.warning", autospec=True) as warning:
-        dummy_rotation_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = (
-            None
-        )
+        dummy_rotation_params.ispyb_params.xtal_snapshots_omega_start = None
         ispyb_no_snapshots = StoreRotationInIspyb(  # noqa
             SIM_ISPYB_CONFIG, dummy_rotation_params
         )
@@ -321,7 +319,7 @@ def test_store_3d_grid_scan(
     y = 1
     z = 2
 
-    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([x, y, z])
+    dummy_params.ispyb_params.upper_left = np.array([x, y, z])
     dummy_params.experiment_params.z_step_size = 0.2
 
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
@@ -342,7 +340,7 @@ def test_store_3d_grid_scan(
     )
     assert (
         dummy_ispyb_3d.xtal_snapshots
-        == dummy_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end
+        == dummy_params.ispyb_params.xtal_snapshots_omega_end
     )
     assert dummy_ispyb_3d.y_step_size == dummy_params.experiment_params.z_step_size
     assert dummy_ispyb_3d.y_steps == dummy_params.experiment_params.z_steps
@@ -424,7 +422,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     dummy_params: GridscanInternalParameters,
 ):
     expected_sample_id = "0001"
-    dummy_params.hyperion_params.ispyb_params.sample_id = expected_sample_id
+    dummy_params.ispyb_params.sample_id = expected_sample_id
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")
@@ -509,9 +507,7 @@ def test_ispyb_deposition_rounds_to_int(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    dummy_ispyb.full_params.hyperion_params.ispyb_params.upper_left = np.array(
-        [0.01, 100, 50]
-    )
+    dummy_ispyb.full_params.ispyb_params.upper_left = np.array([0.01, 100, 50])
     dummy_ispyb.begin_deposition()
     mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
 

@@ -164,13 +164,13 @@ def detect_grid_and_do_gridscan(
     )
 
     # Hack because the callback returns the list in inverted order
-    parameters.hyperion_params.ispyb_params.xtal_snapshots_omega_start = (
+    parameters.ispyb_params.xtal_snapshots_omega_start = (
         oav_callback.snapshot_filenames[0][::-1]
     )
-    parameters.hyperion_params.ispyb_params.xtal_snapshots_omega_end = (
-        oav_callback.snapshot_filenames[1][::-1]
-    )
-    parameters.hyperion_params.ispyb_params.upper_left = out_upper_left
+    parameters.ispyb_params.xtal_snapshots_omega_end = oav_callback.snapshot_filenames[
+        1
+    ][::-1]
+    parameters.ispyb_params.upper_left = out_upper_left
 
     grid_params = grid_params_callback.get_grid_parameters()
 

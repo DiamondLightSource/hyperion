@@ -45,7 +45,7 @@ class NexusWriter:
             parameters.hyperion_params.detector_params
         )
         self.beam, self.attenuator = create_beam_and_attenuator_parameters(
-            parameters.hyperion_params.ispyb_params
+            parameters.ispyb_params
         )
         self.source: Source = Source(parameters.hyperion_params.beamline)
         self.directory: Path = Path(

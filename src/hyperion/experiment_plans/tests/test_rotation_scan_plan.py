@@ -515,11 +515,11 @@ def test_ispyb_deposition_in_plan(
     test_img_wid = 0.27
 
     test_rotation_params.experiment_params.image_width = test_img_wid
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
+    test_rotation_params.ispyb_params.beam_size_x = test_bs_x
+    test_rotation_params.ispyb_params.beam_size_y = test_bs_y
     test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
-    test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
-        convert_angstrom_to_eV(test_wl)
+    test_rotation_params.ispyb_params.current_energy_ev = convert_angstrom_to_eV(
+        test_wl
     )
     callbacks = RotationCallbackCollection.from_params(test_rotation_params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = DEV_ISPYB_DATABASE_CFG

@@ -115,9 +115,12 @@ class ExternalDataParameters(BaseModel):
 
 class ExternalParameters(BaseModel):
     """Class for any and all parameters which could be supplied to Hyperion - for all
-    experiment types. InternalParameters classes are responsible for checking and
-    reporting whether required values are supplied - For External parameters they must
-    only have the correct version, and no parameters which don't exist at all."""
+    experiment types. External parameters must only have the correct version, and no
+    parameters which don't exist at all; InternalParameters classes are responsible for
+    checking and reporting whether required values are supplied.
+
+    ExternalParameters handles the conversions into Python datatypes from the raw JSON,
+    e.g. turning lists into ndarrays, parsing enums, etc."""  # TODO revisit this - is is better to do this in internalparams which need to be serialised/deserialised anyway?
 
     parameter_version: ParameterVersion
     experiment_parameters: ExternalExperimentParameters

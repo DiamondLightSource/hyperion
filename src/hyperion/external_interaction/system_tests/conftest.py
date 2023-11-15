@@ -106,12 +106,10 @@ def fetch_datacollection_attribute() -> Callable:
 @pytest.fixture
 def dummy_params():
     dummy_params = GridscanInternalParameters(**default_raw_params())
-    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 0.8
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 0.8
-    dummy_params.hyperion_params.ispyb_params.visit_path = (
-        "/dls/i03/data/2022/cm31105-5/"
-    )
+    dummy_params.ispyb_params.upper_left = np.array([100, 100, 50])
+    dummy_params.ispyb_params.microns_per_pixel_x = 0.8
+    dummy_params.ispyb_params.microns_per_pixel_y = 0.8
+    dummy_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
     return dummy_params
 
 

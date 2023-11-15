@@ -51,7 +51,7 @@ def test_rotation_parameters_load_from_file():
     assert isinstance(internal_parameters.experiment_params, RotationScanParams)
     assert internal_parameters.experiment_params.rotation_direction == -1
 
-    ispyb_params = internal_parameters.hyperion_params.ispyb_params
+    ispyb_params = internal_parameters.ispyb_params
 
     np.testing.assert_array_equal(ispyb_params.position, np.array([10, 20, 30]))
     with pytest.raises(AttributeError):

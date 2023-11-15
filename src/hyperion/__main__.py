@@ -176,8 +176,8 @@ class RunExperiment(Resource):
                         f"Experiment plan '{plan_name}' not found in registry."
                     )
 
-                experiment_internal_param_type: InternalParameters = (
-                    experiment_registry_entry.get("internal_param_type")
+                experiment_internal_param_type = experiment_registry_entry.get(
+                    "internal_param_type"
                 )
                 plan = self.context.plan_functions.get(plan_name)
                 if experiment_internal_param_type is None:

@@ -17,7 +17,7 @@ def test_FGS_parameters_load_from_file():
 
     assert isinstance(internal_parameters.experiment_params, GridScanParams)
 
-    ispyb_params = internal_parameters.hyperion_params.ispyb_params
+    ispyb_params = internal_parameters.ispyb_params
 
     np.testing.assert_array_equal(ispyb_params.position, np.array([10, 20, 30]))
     np.testing.assert_array_equal(ispyb_params.upper_left, np.array([10, 20, 30]))

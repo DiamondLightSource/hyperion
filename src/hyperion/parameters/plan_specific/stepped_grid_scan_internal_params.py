@@ -1,20 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 from dodal.devices.motors import XYZLimitBundle
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
-from pydantic import validator
 from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
 from hyperion.parameters.internal_parameters import (
-    HyperionParameters,
     InternalParameters,
-    extract_experiment_params_from_flat_dict,
-    extract_hyperion_params_from_flat_dict,
 )
 
 
@@ -116,33 +111,33 @@ class SteppedGridScanParams(AbstractExperimentParameterBase):
 
 class SteppedGridScanInternalParameters(InternalParameters):
     experiment_params: SteppedGridScanParams
-    hyperion_params: HyperionParameters
+    ispyb_params: GridscanIspybParams
 
-    @validator("experiment_params", pre=True)
-    def _preprocess_experiment_params(
-        cls,
-        experiment_params: dict[str, Any],
-    ):
-        return SteppedGridScanParams(
-            **extract_experiment_params_from_flat_dict(
-                SteppedGridScanParams, experiment_params
-            )
-        )
+    # @validator("experiment_params", pre=True)
+    # def _preprocess_experiment_params(
+    #     cls,
+    #     experiment_params: dict[str, Any],
+    # ):
+    #     return SteppedGridScanParams(
+    #         **extract_experiment_params_from_flat_dict(
+    #             SteppedGridScanParams, experiment_params
+    #         )
+    #     )
 
-    @validator("hyperion_params", pre=True)
-    def _preprocess_hyperion_params(
-        cls, all_params: dict[str, Any], values: dict[str, Any]
-    ):
-        experiment_params: SteppedGridScanParams = values["experiment_params"]
-        all_params["num_images"] = experiment_params.get_num_images()
-        all_params["omega_increment"] = 0
-        all_params["num_images_per_trigger"] = 1
+    # @validator("hyperion_params", pre=True)
+    # def _preprocess_hyperion_params(
+    #     cls, all_params: dict[str, Any], values: dict[str, Any]
+    # ):
+    #     experiment_params: SteppedGridScanParams = values["experiment_params"]
+    #     all_params["num_images"] = experiment_params.get_num_images()
+    #     all_params["omega_increment"] = 0
+    #     all_params["num_images_per_trigger"] = 1
 
-        return HyperionParameters(
-            **extract_hyperion_params_from_flat_dict(
-                all_params, cls._hyperion_param_key_definitions()
-            )
-        )
+    #     return HyperionParameters(
+    #         **extract_hyperion_params_from_flat_dict(
+    #             all_params, cls._hyperion_param_key_definitions()
+    #         )
+    #     )
 
     def get_scan_points(self, scan_number: int) -> dict:
         """Get the scan points for the first or second gridscan: scan number must be

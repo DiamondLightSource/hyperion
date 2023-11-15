@@ -34,10 +34,7 @@ def test_callback_collection_init():
         callbacks.ispyb_handler.params.hyperion_params.detector_params
         == test_parameters.hyperion_params.detector_params
     )
-    assert (
-        callbacks.ispyb_handler.params.hyperion_params.ispyb_params
-        == test_parameters.hyperion_params.ispyb_params
-    )
+    assert callbacks.ispyb_handler.params.ispyb_params == test_parameters.ispyb_params
     assert (
         callbacks.ispyb_handler.params.hyperion_params
         == test_parameters.hyperion_params
