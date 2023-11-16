@@ -36,7 +36,12 @@ def set_up_logging_handlers(
 
     Mode defaults to production and can be switched to dev with the --dev flag on run.
     """
-    handlers = setup_dodal_logging(logging_level, dev_mode, _get_logging_file_path(), file_handler_logging_level="DEBUG")
+    handlers = setup_dodal_logging(
+        logging_level,
+        dev_mode,
+        _get_logging_file_path(),
+        file_handler_logging_level="DEBUG",
+    )
     dodal_logger.addFilter(dc_group_id_filter)
     LOGGER.addFilter(dc_group_id_filter)
 
