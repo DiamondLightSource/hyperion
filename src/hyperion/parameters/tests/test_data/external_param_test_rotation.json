@@ -9,7 +9,7 @@
     "dwell_time_ms": 20,
     "energy_ev": 12700,
     "exposure_time_s": 0.020,
-    "image_width_deg": null,
+    "image_width_deg": 0.1,
     "kappa_start_deg": null,
     "num_images_per_trigger": null,
     "num_triggers": null,
@@ -60,7 +60,11 @@
     "synchrotron_mode": null,
     "transmission_fraction": 0.01,
     "undulator_gap": null,
-    "upper_left": [0,0,0],
+    "upper_left": [
+      0,
+      0,
+      0
+    ],
     "visit_path": "/tmp/test_directory/cm-12345",
     "xtal_snapshots_omega_end": null,
     "xtal_snapshots_omega_start": null,

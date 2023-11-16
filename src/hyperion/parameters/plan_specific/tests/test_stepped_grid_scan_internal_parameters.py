@@ -1,15 +1,13 @@
-from hyperion.parameters import jsonschema_external_parameters
 from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
     SteppedGridScanInternalParameters,
     SteppedGridScanParams,
 )
 
 
-def test_stepped_grid_scan_parameters_load_from_file():
-    params = jsonschema_external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_stepped_grid_scan_parameters.json"
+def test_stepped_grid_scan_parameters_load_from_file(dummy_external_gridscan_params):
+    internal_parameters = SteppedGridScanInternalParameters.from_external(
+        dummy_external_gridscan_params
     )
-    internal_parameters = SteppedGridScanInternalParameters(**params)
 
     assert isinstance(internal_parameters.experiment_params, SteppedGridScanParams)
     assert internal_parameters.experiment_params.x_steps == 5

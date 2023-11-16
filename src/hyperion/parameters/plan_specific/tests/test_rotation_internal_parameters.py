@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -5,6 +6,7 @@ import pytest
 from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.motors import XYZLimitBundle
 
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
@@ -58,12 +60,15 @@ def test_rotation_parameters_load_from_file(
     assert detector_params.detector_size_constants == EIGER2_X_16M_SIZE
 
 
-def test_rotation_parameters_enum_interpretation(dummy_rotation_params):
-    params = jsonschema_external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
-    )
-    params["experiment_params"]["rotation_direction"] = "POSITIVE"
-    internal_parameters = RotationInternalParameters(**params)
+def test_rotation_parameters_enum_interpretation():
+    with open(
+        "src/hyperion/parameters/tests/test_data/external_param_test_rotation.json"
+    ) as f:
+        data = json.loads(f.read())
+
+    data["experiment_params"]["rotation_direction"] = "POSITIVE"
+    external = ExternalParameters.parse_obj(data)
+    internal_parameters = RotationInternalParameters.from_external(external)
     assert isinstance(internal_parameters.experiment_params, RotationScanParams)
 
     assert internal_parameters.experiment_params.rotation_direction == 1

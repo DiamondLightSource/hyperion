@@ -11,6 +11,7 @@ from hyperion.log import (
     NEXUS_LOGGER,
     set_up_logging_handlers,
 )
+from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -76,6 +77,7 @@ def dummy_external_gridscan_params():
     external = ExternalParameters.parse_file(
         "src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
     )
+    external.data_parameters.beamline = SIM_BEAMLINE
     external.experiment_type = "flyscan_xray_centre"
     return external
 
@@ -83,6 +85,11 @@ def dummy_external_gridscan_params():
 @pytest.fixture
 def dummy_gridscan_params(dummy_external_gridscan_params):
     return GridscanInternalParameters.from_external(dummy_external_gridscan_params)
+
+
+@pytest.fixture
+def dummy_json_external_gridscan_params(dummy_external_gridscan_params):
+    return dummy_external_gridscan_params.json
 
 
 @pytest.fixture

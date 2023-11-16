@@ -26,21 +26,11 @@ from hyperion.external_interaction.system_tests.conftest import (  # noqa
     zocalo_env,
 )
 from hyperion.parameters.beamline_parameters import GDABeamlineParameters
-from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
+from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
-from hyperion.parameters.jsonschema_external_parameters import (
-    from_file as default_raw_params,
-)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-
-
-@pytest.fixture
-def params():
-    params = GridscanInternalParameters(**default_raw_params())
-    params.beamline = SIM_BEAMLINE
-    return params
 
 
 @pytest.fixture
@@ -98,13 +88,13 @@ def test_run_gridscan(
     complete: MagicMock,
     kickoff: MagicMock,
     wait: MagicMock,
-    params: GridscanInternalParameters,
+    dummy_gridscan_params: GridscanInternalParameters,
     RE: RunEngine,
     fgs_composite: FlyScanXRayCentreComposite,
 ):
     fgs_composite.eiger.unstage = lambda: True
     # Would be better to use flyscan_xray_centre instead but eiger doesn't work well in S03
-    RE(run_gridscan(fgs_composite, params))
+    RE(run_gridscan(fgs_composite, dummy_gridscan_params))
 
 
 @pytest.mark.s03
@@ -145,10 +135,10 @@ def test_full_plan_tidies_at_end(
     kickoff: MagicMock,
     wait: MagicMock,
     fgs_composite: FlyScanXRayCentreComposite,
-    params: GridscanInternalParameters,
+    dummy_gridscan_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
-    callbacks = XrayCentreCallbackCollection.from_params(params)
+    callbacks = XrayCentreCallbackCollection.from_params(dummy_gridscan_params)
     callbacks.nexus_handler.nexus_writer_1 = MagicMock()
     callbacks.nexus_handler.nexus_writer_2 = MagicMock()
     callbacks.ispyb_handler.ispyb_ids = MagicMock()
@@ -157,7 +147,7 @@ def test_full_plan_tidies_at_end(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
         return_value=callbacks,
     ):
-        RE(flyscan_xray_centre(fgs_composite, params))
+        RE(flyscan_xray_centre(fgs_composite, dummy_gridscan_params))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -180,12 +170,12 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     kickoff: MagicMock,
     wait: MagicMock,
     fgs_composite: FlyScanXRayCentreComposite,
-    params: GridscanInternalParameters,
+    dummy_gridscan_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
     run_gridscan_and_move.side_effect = Exception()
     with pytest.raises(Exception):
-        RE(flyscan_xray_centre(fgs_composite, params))
+        RE(flyscan_xray_centre(fgs_composite, dummy_gridscan_params))
     set_shutter_to_manual.assert_called_once()
 
 
@@ -194,22 +184,22 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     RE: RunEngine,
     fgs_composite: FlyScanXRayCentreComposite,
     fetch_comment: Callable,
-    params: GridscanInternalParameters,
+    dummy_gridscan_params: GridscanInternalParameters,
 ):
-    params.detector_params.directory = "./tmp"
-    params.detector_params.prefix = str(uuid.uuid1())
-    params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    dummy_gridscan_params.detector_params.directory = "./tmp"
+    dummy_gridscan_params.detector_params.prefix = str(uuid.uuid1())
+    dummy_gridscan_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    params.experiment_params.z_steps = 100
+    dummy_gridscan_params.experiment_params.z_steps = 100
 
-    callbacks = XrayCentreCallbackCollection.from_params(params)
+    callbacks = XrayCentreCallbackCollection.from_params(dummy_gridscan_params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
     mock_start_zocalo = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
 
     with pytest.raises(WarningException):
-        RE(flyscan_xray_centre(fgs_composite, params))
+        RE(flyscan_xray_centre(fgs_composite, dummy_gridscan_params))
 
     dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
 
@@ -228,25 +218,25 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     RE: RunEngine,
     fgs_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,
-    params: GridscanInternalParameters,
+    dummy_gridscan_params: GridscanInternalParameters,
 ):
     """This test currently avoids hardware interaction and is mostly confirming
     interaction with dev_ispyb and dev_zocalo"""
 
-    params.detector_params.directory = "./tmp"
-    params.detector_params.prefix = str(uuid.uuid1())
-    params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    dummy_gridscan_params.detector_params.directory = "./tmp"
+    dummy_gridscan_params.detector_params.prefix = str(uuid.uuid1())
+    dummy_gridscan_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    params.experiment_params.z_steps = 1
+    dummy_gridscan_params.experiment_params.z_steps = 1
 
     fgs_composite.eiger.stage = MagicMock()
     fgs_composite.eiger.unstage = MagicMock()
 
-    callbacks = XrayCentreCallbackCollection.from_params(params)
+    callbacks = XrayCentreCallbackCollection.from_params(dummy_gridscan_params)
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
-    RE(flyscan_xray_centre(fgs_composite, params))
+    RE(flyscan_xray_centre(fgs_composite, dummy_gridscan_params))
 
     # The following numbers are derived from the centre returned in fake_zocalo
     assert fgs_composite.sample_motors.x.user_readback.get() == pytest.approx(-0.05)
