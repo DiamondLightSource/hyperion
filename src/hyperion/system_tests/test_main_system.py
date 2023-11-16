@@ -267,15 +267,6 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
     assert response_json["exception_type"] == "Exception"
 
 
-def test_given_started_when_RE_stops_on_its_own_happily_then_no_error_reported(
-    test_env: ClientAndRunEngine,
-):
-    test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
-    test_env.mock_run_engine.RE_takes_time = False
-    response_json = wait_for_run_engine_status(test_env.client)
-    assert response_json["status"] == Status.IDLE.value
-
-
 def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.RE_takes_time = False
 

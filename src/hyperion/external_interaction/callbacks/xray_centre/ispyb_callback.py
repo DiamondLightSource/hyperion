@@ -9,7 +9,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     Store3DGridscanInIspyb,
     StoreGridscanInIspyb,
 )
-from hyperion.log import set_dcgid_tag
+from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -34,6 +34,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def __init__(self, parameters: GridscanInternalParameters):
         super().__init__(parameters)
+        self.params: GridscanInternalParameters
         self.ispyb: StoreGridscanInIspyb = (
             Store3DGridscanInIspyb(self.ispyb_config, self.params)
             if self.params.experiment_params.is_3d_grid_scan
@@ -51,6 +52,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
+            ISPYB_LOGGER.info(
+                "ISPyB callback received stop document corresponding to start document"
+                "uid."
+            )
             if self.ispyb_ids == (None, None, None):
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             super().stop(doc)
