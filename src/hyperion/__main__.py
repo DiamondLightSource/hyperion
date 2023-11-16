@@ -188,7 +188,7 @@ class RunExperiment(Resource):
                     raise PlanNotFound(
                         f"Experiment plan '{plan_name}' has no 'run' method specified in the registry."
                     )
-                external_parameters = ExternalParameters(**request.data)
+                external_parameters = ExternalParameters.parse_obj(request.data)
                 external_parameters.experiment_type = plan_name
                 parameters = experiment_internal_param_type.from_external(
                     external_parameters

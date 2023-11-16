@@ -3,13 +3,11 @@ from typing import Any
 from dodal.devices.det_dist_to_beam_converter import DetectorDistanceToBeamXYConverter
 from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.zebra import RotationDirection
-from numpy import isin
 from pydantic import (
     BaseModel,
     Extra,
     NonNegativeFloat,
     NonNegativeInt,
-    StrictFloat,
     StrictInt,
     validator,
 )
@@ -38,41 +36,41 @@ EXTERNAL_PARAMETERS_VERSION = ParameterVersion(5, 0, 0)
 
 
 class ExternalExperimentParameters(BaseModel):
-    chi_start_deg: StrictFloat | None = None
+    chi_start_deg: float | None = None
     det_dist_to_beam_converter_path: str | None = None
     detector_distance_mm: NonNegativeFloat | None = None
     detector: str | None = None
     dwell_time_ms: StrictInt | None = None
     energy_ev: NonNegativeFloat | None = None
     exposure_time_s: NonNegativeFloat | None = None
-    image_width_deg: StrictFloat | None = None
-    kappa_start_deg: StrictFloat | None = None
+    image_width_deg: float | None = None
+    kappa_start_deg: float | None = None
     num_images_per_trigger: int | None = None
     num_triggers: int | None = None
     omega_increment_deg: float | None = None
     omega_start_deg: float | None = None
-    phi_start_deg: StrictFloat | None = None
+    phi_start_deg: float | None = None
     rotation_axis: str | None = None
     rotation_direction: RotationDirection | None = None
     rotation_increment_deg: float | None = None
-    scan_width_deg: StrictFloat | None = None
+    scan_width_deg: float | None = None
     shutter_opening_time_s: float | None = None
     use_roi_mode: bool | None = None
     trigger_mode: TriggerMode | None = None
     x_steps: NonNegativeInt | None = None
     y_steps: NonNegativeInt | None = None
     z_steps: NonNegativeInt | None = None
-    x_step_size_um: StrictFloat | None = None
-    y_step_size_um: StrictFloat | None = None
-    z_step_size_um: StrictFloat | None = None
-    x_start_mm: StrictFloat | None = None
-    y1_start_mm: StrictFloat | None = None
-    y2_start_mm: StrictFloat | None = None
-    z1_start_mm: StrictFloat | None = None
-    z2_start_mm: StrictFloat | None = None
-    x: StrictFloat | None = None
-    y: StrictFloat | None = None
-    z: StrictFloat | None = None
+    x_step_size_um: float | None = None
+    y_step_size_um: float | None = None
+    z_step_size_um: float | None = None
+    x_start_mm: float | None = None
+    y1_start_mm: float | None = None
+    y2_start_mm: float | None = None
+    z1_start_mm: float | None = None
+    z2_start_mm: float | None = None
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
 
     # Not supplied, initialised by validators
     beam_xy_converter: DetectorDistanceToBeamXYConverter
@@ -137,7 +135,7 @@ class ExternalDataParameters(BaseModel):
     synchrotron_mode: str | None = None
     transmission_fraction: float | None = None
     undulator_gap: float | None = None
-    upper_left: list[str] | None = None
+    upper_left: list[float] | None = None
     visit_path: str | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots_omega_start: list[str] | None = None

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 
 from dodal.devices.eiger import DetectorParams
@@ -61,7 +63,7 @@ class InternalParameters(BaseModel):
 
     @classmethod
     @abstractmethod
-    def from_external(cls, external: ExternalParameters):
+    def from_external(cls, external: ExternalParameters) -> InternalParameters:
         ...
 
     @abstractmethod

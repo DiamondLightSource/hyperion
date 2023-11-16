@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from pydantic import BaseModel, validator
 
-from hyperion.parameters import external_parameters
 from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.utils.utils import convert_eV_to_angstrom
 
@@ -39,12 +38,18 @@ class IspybParams(BaseModel):
     visit_path: str
     microns_per_pixel_x: float
     microns_per_pixel_y: float
-    position: np.ndarray = np.ndarray([0, 0, 0])
+    position: np.ndarray
 
     @classmethod
     def from_external(cls, external: ExternalParameters):
         data_dict = external.data_parameters.dict()
-        experiment_dict = external.experiment_parameters.dict()
+        expt = external.experiment_parameters
+        experiment_dict = expt.dict()
+        data_dict["position"] = [
+            expt.x_start_mm or expt.x or 0,
+            expt.y1_start_mm or expt.y or 0,
+            expt.z1_start_mm or expt.z or 0,
+        ]
         return cls(**data_dict, **experiment_dict)
 
     class Config:
@@ -56,7 +61,7 @@ class IspybParams(BaseModel):
         as_dict["position"] = as_dict["position"].tolist()
         return as_dict
 
-    @validator("position", pre=True)
+    @validator("position", always=True, pre=True)
     def _parse_position(
         cls, position: list[int | float] | np.ndarray, values: Dict[str, Any]
     ) -> np.ndarray:

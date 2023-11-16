@@ -43,7 +43,11 @@ class GridscanInternalParameters(InternalParameters):
         expt_params["num_triggers"] = experiment_params.get_num_images()
         expt_params["trigger_mode"] = TriggerMode.FREE_RUN
         expt_params["prefix"] = external.data_parameters.filename_prefix
-
+        data_params["position"] = [
+            external.experiment_parameters.x_start_mm,
+            external.experiment_parameters.y1_start_mm,
+            external.experiment_parameters.z1_start_mm,
+        ]
         return cls(
             params_version=external.parameter_version,
             zocalo_environment=zocalo_environment,

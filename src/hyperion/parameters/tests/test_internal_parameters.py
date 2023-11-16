@@ -3,51 +3,21 @@ import json
 
 import numpy as np
 import pytest
-from dodal.devices.detector import DetectorParams
-from dodal.devices.fast_grid_scan import GridScanParams
-from pydantic import ValidationError
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     GridscanIspybParams,
 )
-from hyperion.parameters import jsonschema_external_parameters
 from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.internal_parameters import (
     InternalParameters,
 )
-from hyperion.parameters.jsonschema_external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-
-
-@pytest.fixture
-def raw_params():
-    return jsonschema_external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_parameters.json"
-    )
-
-
-@pytest.fixture
-def rotation_raw_params():
-    return jsonschema_external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
-    )
-
-
-@pytest.fixture
-def gridscan_params(raw_params):
-    return GridscanInternalParameters(**raw_params)
-
-
-@pytest.fixture
-def rotation_params(rotation_raw_params):
-    return RotationInternalParameters(**rotation_raw_params)
-
 
 TEST_PARAM_DICT = {
     "layer_1": {
