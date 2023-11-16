@@ -12,6 +12,7 @@ from bluesky.run_engine import RunEngine
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -22,19 +23,14 @@ TEST_FILENAME = "rotation_scan_test_nexus"
 
 
 @pytest.fixture
-def test_params():
-    param_dict = from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+def test_params(dummy_external_rotation_params: ExternalParameters):
+    dummy_external_rotation_params.data_parameters.directory = (
+        "src/hyperion/external_interaction/unit_tests/test_data"
     )
-    param_dict["hyperion_params"]["detector_params"][
-        "directory"
-    ] = "src/hyperion/external_interaction/unit_tests/test_data"
-    param_dict["hyperion_params"]["detector_params"]["prefix"] = TEST_FILENAME
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    param_dict["hyperion_params"]["detector_params"]["energy_ev"] = 12700
-    param_dict["hyperion_params"]["ispyb_params"]["energy_ev"] = 12700
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    params = RotationInternalParameters(**param_dict)
+    dummy_external_rotation_params.data_parameters.filename_prefix = TEST_FILENAME
+    dummy_external_rotation_params.experiment_parameters.scan_width_deg = 360.0
+    dummy_external_rotation_params.experiment_parameters.energy_ev = 12700
+    params = RotationInternalParameters.from_external(dummy_external_rotation_params)
     params.experiment_params.x = 0
     params.experiment_params.y = 0
     params.experiment_params.z = 0

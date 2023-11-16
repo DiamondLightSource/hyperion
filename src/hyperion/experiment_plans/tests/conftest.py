@@ -31,13 +31,8 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
 from hyperion.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
+from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.internal_parameters import InternalParameters
-from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
-)
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -53,26 +48,11 @@ def patch_motor(motor):
 
 
 @pytest.fixture
-def test_fgs_params():
-    return GridscanInternalParameters(**raw_params_from_file())
-
-
-@pytest.fixture
-def test_rotation_params():
-    return RotationInternalParameters(
-        **raw_params_from_file(
-            "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
-        )
-    )
-
-
-@pytest.fixture
-def test_rotation_params_nomove():
-    return RotationInternalParameters(
-        **raw_params_from_file(
-            "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters_nomove.json"
-        )
-    )
+def test_rotation_params_nomove(dummy_external_rotation_params: ExternalParameters):
+    dummy_external_rotation_params.experiment_parameters.x = None
+    dummy_external_rotation_params.experiment_parameters.y = None
+    dummy_external_rotation_params.experiment_parameters.z = None
+    return RotationInternalParameters.from_external(dummy_external_rotation_params)
 
 
 @pytest.fixture
@@ -182,14 +162,6 @@ def test_config_files():
         "oav_config_json": "src/hyperion/experiment_plans/tests/test_data/OAVCentring.json",
         "display_config": "src/hyperion/experiment_plans/tests/test_data/display.configuration",
     }
-
-
-@pytest.fixture
-def test_full_grid_scan_params():
-    params = raw_params_from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_grid_with_edge_detect_parameters.json"
-    )
-    return GridScanWithEdgeDetectInternalParameters(**params)
 
 
 @pytest.fixture

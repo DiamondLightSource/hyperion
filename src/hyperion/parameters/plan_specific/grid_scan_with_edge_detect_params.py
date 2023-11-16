@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dodal.devices.detector import TriggerMode
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic.dataclasses import dataclass
 

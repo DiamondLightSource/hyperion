@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import argparse
 import dataclasses
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bluesky_plans
 from blueapi.core import BlueskyContext, MsgGenerator
-from bluesky.run_engine import RunEngine
-from bluesky.utils import ProgressBarManager
 from dodal.devices.smargon import Smargon
 from dodal.utils import get_beamline_name
 
@@ -16,7 +13,7 @@ from hyperion.log import LOGGER
 from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.tracing import TRACER
-from hyperion.utils.context import device_composite_from_context, setup_context
+from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (

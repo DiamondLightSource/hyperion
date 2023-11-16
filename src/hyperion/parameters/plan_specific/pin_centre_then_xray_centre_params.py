@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
-
-import numpy as np
-from dodal.devices.detector import TriggerMode
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
-from pydantic import validator
 from pydantic.dataclasses import dataclass
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
