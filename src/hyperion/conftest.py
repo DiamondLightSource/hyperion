@@ -15,6 +15,9 @@ from hyperion.parameters.external_parameters import ExternalParameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 
 def _destroy_loggers(loggers):
@@ -93,4 +96,4 @@ def dummy_rotation_external_params():
 
 @pytest.fixture
 def dummy_rotation_params(dummy_rotation_external_params):
-    return GridscanInternalParameters.from_external(dummy_rotation_external_params)
+    return RotationInternalParameters.from_external(dummy_rotation_external_params)

@@ -39,10 +39,10 @@ def test_fgs_params(request):
             "src/hyperion/parameters/tests/test_data/src/hyperion/parameters/tests/test_data/external_param_test_gridscan.json"
         )
     )
-    params.ispyb_params.current_energy_ev = convert_angstrom_to_eV(1.0)
+    params.ispyb_params.energy_ev = convert_angstrom_to_eV(1.0)
     params.ispyb_params.flux = 9.0
     params.ispyb_params.transmission_fraction = 0.5
-    params.detector_params.current_energy_ev = convert_angstrom_to_eV(1.0)
+    params.detector_params.energy_ev = convert_angstrom_to_eV(1.0)
     params.detector_params.use_roi_mode = True
     params.detector_params.num_triggers = request.param
     params.detector_params.directory = (

@@ -30,10 +30,10 @@ TEST_PARAM_DICT = {
 }
 
 
-def test_cant_initialise_abstract_internalparams():
+def test_cant_initialise_abstract_internalparams(dummy_gridscan_external_params):
     with pytest.raises(TypeError):
-        internal_parameters = InternalParameters(  # noqa
-            **jsonschema_external_parameters.from_file()
+        internal_parameters = InternalParameters.from_external(  # type: ignore  # noqa: F841
+            dummy_gridscan_external_params
         )
 
 
@@ -42,7 +42,7 @@ def test_ispyb_param_wavelength():
 
     ispyb_params = GridscanIspybParams(**GRIDSCAN_ISPYB_PARAM_DEFAULTS)
     assert ispyb_params.wavelength_angstroms == pytest.approx(
-        convert_eV_to_angstrom(GRIDSCAN_ISPYB_PARAM_DEFAULTS["current_energy_ev"])
+        convert_eV_to_angstrom(GRIDSCAN_ISPYB_PARAM_DEFAULTS["energy_ev"])
     )
 
 
@@ -68,7 +68,7 @@ def test_gridscan_parameters_from_external():
     external_params.experiment_type = "flyscan_xray_centre"
     internal_params = GridscanInternalParameters.from_external(external_params)
     assert internal_params.ispyb_params.comment == "Comment."
-    assert internal_params.detector_params.current_energy_ev == 12700
+    assert internal_params.detector_params.energy_ev == 12700
 
     scan_1_num_images = len(internal_params.get_scan_points(1)["sam_x"])
     scan_2_num_images = len(internal_params.get_scan_points(2)["sam_x"])
@@ -97,5 +97,5 @@ def test_rotation_parameters_from_external():
     external_params.experiment_type = "rotation_scan"
     internal_params = RotationInternalParameters.from_external(external_params)
     assert internal_params.ispyb_params.comment == "Comment."
-    assert internal_params.detector_params.current_energy_ev == 12700
+    assert internal_params.detector_params.energy_ev == 12700
     assert internal_params.experiment_params.get_num_images == 365

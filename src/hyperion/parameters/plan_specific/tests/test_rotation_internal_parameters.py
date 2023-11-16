@@ -5,7 +5,6 @@ import pytest
 from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.motors import XYZLimitBundle
 
-from hyperion.parameters import jsonschema_external_parameters
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
@@ -42,27 +41,24 @@ def test_rotation_scan_param_validity():
     assert not test_params.xyz_are_valid(lims)
 
 
-def test_rotation_parameters_load_from_file():
-    params = jsonschema_external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
-    )
-    internal_parameters = RotationInternalParameters(**params)
+def test_rotation_parameters_load_from_file(
+    dummy_rotation_params: RotationInternalParameters,
+):
+    assert isinstance(dummy_rotation_params.experiment_params, RotationScanParams)
+    assert dummy_rotation_params.experiment_params.rotation_direction == -1
 
-    assert isinstance(internal_parameters.experiment_params, RotationScanParams)
-    assert internal_parameters.experiment_params.rotation_direction == -1
-
-    ispyb_params = internal_parameters.ispyb_params
+    ispyb_params = dummy_rotation_params.ispyb_params
 
     np.testing.assert_array_equal(ispyb_params.position, np.array([10, 20, 30]))
     with pytest.raises(AttributeError):
-        ispyb_params.upper_left
+        ispyb_params.upper_left  # type: ignore
 
-    detector_params = internal_parameters.detector_params
+    detector_params = dummy_rotation_params.detector_params
 
     assert detector_params.detector_size_constants == EIGER2_X_16M_SIZE
 
 
-def test_rotation_parameters_enum_interpretation():
+def test_rotation_parameters_enum_interpretation(dummy_rotation_params):
     params = jsonschema_external_parameters.from_file(
         "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
     )

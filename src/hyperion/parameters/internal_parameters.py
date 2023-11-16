@@ -37,7 +37,7 @@ class InternalParameters(BaseModel):
         expt_params.update(
             {
                 "detector_size_constants": external.experiment_parameters.detector,
-                "current_energy_ev": external.experiment_parameters.energy_ev,
+                "energy_ev": external.experiment_parameters.energy_ev,
             }
         )
         assert (
