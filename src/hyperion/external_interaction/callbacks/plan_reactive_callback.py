@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable
 
 from bluesky.callbacks import CallbackBase
-from event_model.documents.event import Event
 
 if TYPE_CHECKING:
     from event_model.documents.event import Event
@@ -14,6 +13,19 @@ if TYPE_CHECKING:
 
 class PlanReactiveCallback(CallbackBase):
     def __init__(self, *, emit: Callable[..., Any] | None = None) -> None:
+        """A callback base class which can be left permanently subscribed to a plan, and
+        will 'activate' and 'deactivate' at the start and end of a plan which provides
+        metadata to trigger this.
+        The run_decorator of the plan should include in its metadata dictionary the key
+        'activate callbacks', with a list of strings of the callback class(es) to
+        activate or deactivate. On a recieving a start doc which specifies this, this
+        class will be activated, and on recieving the stop document for the
+        corresponding uid it will deactivate. The ordinary 'start', 'descriptor',
+        'event' and 'stop' methods will be triggered as normal, and will in turn trigger
+        'activity_gated_' methods - to preserve this functionality, subclasses which
+        override 'start' etc. should include a call to super().start(...) etc.
+        The logic of how activation is triggered will change to a more readable, version
+        in the future (https://github.com/DiamondLightSource/hyperion/issues/964)."""
         super().__init__(emit=emit)
         self.active = False
         self.activity_uid = 0
