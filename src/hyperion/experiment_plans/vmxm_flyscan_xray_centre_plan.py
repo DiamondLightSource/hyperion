@@ -9,6 +9,7 @@ import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
+from dodal.beamlines.vmxm.vmxm_sample_motors import VmxmSampleMotors
 from dodal.devices.backlight import VmxmBacklight
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan_2d import FastGridScan2D
@@ -45,6 +46,7 @@ class VmxmFlyScanXRayCentreComposite:
     backlight: VmxmBacklight
     eiger: EigerDetector
     fast_grid_scan: FastGridScan2D
+    sample_motors: VmxmSampleMotors
     synchrotron: Synchrotron
     zebra: Zebra
 
@@ -93,6 +95,7 @@ def run_gridscan(
 
     # TODO: Check topup gate
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
+    yield from bps.mv(fgs_composite.sample_motors.omega, parameters.get_omega_start(1))
     yield from wait_for_gridscan_valid(fgs_motors)
 
     @bpp.set_run_key_decorator("do_fgs")
