@@ -7,8 +7,13 @@ from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.backlight import Backlight
-from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
+from dodal.devices.oav.oav_detector import (
+    DISPLAY_CONFIG,
+    OAV,
+    ZOOM_PARAMS_FILE,
+    OAVConfigParams,
+)
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.setup_oav import (
@@ -23,6 +28,12 @@ from hyperion.parameters.constants import OAV_REFRESH_DELAY
 from hyperion.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5
+
+OAV_CONFIG_FILE_DEFAULTS = {
+    "oav_config_json": OAV_CONFIG_JSON,
+    "display_config": DISPLAY_CONFIG,
+    "zoom_params_file": ZOOM_PARAMS_FILE,
+}
 
 
 @dataclasses.dataclass
@@ -140,15 +151,18 @@ def pin_tip_centre_plan(
                                     to be.
     """
     oav: OAV = composite.oav
+    oav.parameters = OAVConfigParams(
+        oav_config_files["zoom_params_file"], oav_config_files["display_config"]
+    )
     smargon: Smargon = composite.smargon
-    oav_params = OAVParameters("pinTipCentring", **oav_config_files)
+    oav_params = OAVParameters("pinTipCentring", oav_config_files["oav_config_json"])
 
-    tip_offset_px = int(tip_offset_microns / oav_params.micronsPerXPixel)
+    tip_offset_px = int(tip_offset_microns / oav.parameters.micronsPerXPixel)
 
     def offset_and_move(tip: Pixel):
         pixel_to_move_to = (tip[0] + tip_offset_px, tip[1])
         position_mm = yield from get_move_required_so_that_beam_is_at_pixel(
-            smargon, pixel_to_move_to, oav_params
+            smargon, pixel_to_move_to, oav.parameters
         )
         LOGGER.info(f"Tip centring moving to : {position_mm}")
         yield from move_smargon_warn_on_out_of_range(smargon, position_mm)

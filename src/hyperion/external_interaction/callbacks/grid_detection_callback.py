@@ -1,14 +1,16 @@
 import numpy as np
 from bluesky.callbacks import CallbackBase
 from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.oav.oav_detector import OAVConfigParams
 
 from hyperion.device_setup_plans.setup_oav import calculate_x_y_z_of_pixel
 from hyperion.log import LOGGER
 
 
 class GridDetectionCallback(CallbackBase):
-    def __init__(self, oav_params: OAVParameters, exposure_time: float, *args) -> None:
+    def __init__(
+        self, oav_params: OAVConfigParams, exposure_time: float, *args
+    ) -> None:
         super().__init__(*args)
         self.exposure_time = exposure_time
         self.oav_params = oav_params

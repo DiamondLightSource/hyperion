@@ -95,12 +95,12 @@ def grid_detection_main_plan(
     start_positions = []
     box_numbers = []
 
-    assert isinstance(parameters.micronsPerXPixel, float)
-    box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
-    assert isinstance(parameters.micronsPerYPixel, float)
-    box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
+    assert isinstance(oav.parameters.micronsPerXPixel, float)
+    box_size_x_pixels = box_size_um / oav.parameters.micronsPerXPixel
+    assert isinstance(oav.parameters.micronsPerYPixel, float)
+    box_size_y_pixels = box_size_um / oav.parameters.micronsPerYPixel
 
-    grid_width_pixels = int(grid_width_microns / parameters.micronsPerXPixel)
+    grid_width_pixels = int(grid_width_microns / oav.parameters.micronsPerXPixel)
 
     # The FGS uses -90 so we need to match it
     for angle in [0, -90]:
@@ -167,7 +167,7 @@ def grid_detection_main_plan(
         )
 
         position = yield from get_move_required_so_that_beam_is_at_pixel(
-            smargon, centre_of_first_box, parameters
+            smargon, centre_of_first_box, oav.parameters
         )
         start_positions.append(position)
 
