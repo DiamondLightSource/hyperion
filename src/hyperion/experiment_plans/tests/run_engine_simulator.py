@@ -1,6 +1,6 @@
 from typing import Callable, Generator, Sequence
 
-from bluesky import Msg
+from bluesky.utils import Msg
 
 from hyperion.log import LOGGER
 
@@ -143,9 +143,9 @@ def add_simple_oav_mxsc_callback_handlers(sim: RunEngineSimulator):
             "event",
             {
                 "data": {
-                    "oav_snapshot_last_saved_path": "xxx",
-                    "oav_snapshot_last_path_outer": "xxx",
-                    "oav_snapshot_last_path_full_overlay": "xxx",
+                    "oav_snapshot_last_saved_path": "/tmp/image1.png",
+                    "oav_snapshot_last_path_outer": "/tmp/image2.png",
+                    "oav_snapshot_last_path_full_overlay": "/tmp/image3.png",
                     "oav_snapshot_top_left_x": 0,
                     "oav_snapshot_top_left_y": 0,
                     "oav_snapshot_box_width": 100,
@@ -159,3 +159,11 @@ def add_simple_oav_mxsc_callback_handlers(sim: RunEngineSimulator):
             },
         ),
     )
+
+
+def assert_message_and_return_remaining(messages: list, predicate):
+    """Find the next message matching the predicate, assert that we found it
+    Return: all the remaining messages starting from the matched message"""
+    indices = [i for i in range(len(messages)) if predicate(messages[i])]
+    assert indices, f"Nothing matched predicate {predicate}"
+    return messages[indices[0] :]

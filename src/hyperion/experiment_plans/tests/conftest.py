@@ -346,8 +346,6 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron):
     magic_mock.smargon = smargon
     magic_mock.detector_motion = detector_motion
     scan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
-    # scan.scan_invalid.sim_put(True)
-    # scan.position_counter.sim_put(0)
     magic_mock.fast_grid_scan = scan
     magic_mock.synchrotron = synchrotron
     oav.zoom_controller.frst.set("7.5x")

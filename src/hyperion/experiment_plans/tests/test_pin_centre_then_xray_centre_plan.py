@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from bluesky import Msg
 from bluesky.run_engine import RunEngine
+from bluesky.utils import Msg
 from dodal.devices.detector_motion import ShutterState
 
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
@@ -14,6 +14,7 @@ from hyperion.experiment_plans.tests.run_engine_simulator import (
     RunEngineSimulator,
     add_simple_oav_mxsc_callback_handlers,
     add_simple_pin_tip_centre_handlers,
+    assert_message_and_return_remaining,
 )
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -76,7 +77,7 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 )
 @patch(
     "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.XrayCentreZocaloCallback.wait_for_results",
-    lambda self, x: ([0, 0, 0], [1, 1, 1]),
+    lambda _, __: ([0, 0, 0], [1, 1, 1]),
 )
 def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_pin_tip_centre: MagicMock,
@@ -111,7 +112,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         )
     )
 
-    messages = messages_from_where(
+    messages = assert_message_and_return_remaining(
         messages, lambda msg: msg.obj is simple_beamline.detector_motion.z
     )
     assert messages[0].args[0] == 100
@@ -119,21 +120,13 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     assert messages[1].obj is simple_beamline.detector_motion.shutter
     assert messages[1].args[0] == 1
     assert messages[1].kwargs["group"] == "ready_for_data_collection"
-    assert (
-        messages := messages_from_where(
-            messages[2:],
-            lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == "ready_for_data_collection",
-        )
+    messages = assert_message_and_return_remaining(
+        messages[2:],
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == "ready_for_data_collection",
     )
-    assert messages_from_where(
+    assert_message_and_return_remaining(
         messages[2:],
         lambda msg: msg.command == "open_run"
         and msg.kwargs["subplan_name"] == "do_fgs",
     )
-
-
-def messages_from_where(messages: list, predicate):
-    indices = [i for i in range(len(messages)) if predicate(messages[i])]
-    assert indices
-    return messages[indices[0] :]
