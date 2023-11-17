@@ -5,7 +5,7 @@ import pytest
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from ophyd.signal import Signal
@@ -28,6 +28,7 @@ DISPLAY_CONFIGURATION = (
 @pytest.fixture
 def oav() -> OAV:
     oav = i03.oav(fake_with_ophyd_sim=True)
+    oav.parameters = OAVConfigParams(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION)
 
     oav.proc.port_name.sim_put("proc")
     oav.cam.port_name.sim_put("CAM")
@@ -43,9 +44,7 @@ def oav() -> OAV:
 
 @pytest.fixture
 def mock_parameters():
-    return OAVParameters(
-        "loopCentring", ZOOM_LEVELS_XML, OAV_CENTRING_JSON, DISPLAY_CONFIGURATION
-    )
+    return OAVParameters("loopCentring", OAV_CENTRING_JSON)
 
 
 def fake_smargon() -> Smargon:
@@ -108,24 +107,24 @@ def test_when_set_up_oav_with_different_zoom_levels_then_flat_field_applied_corr
 )
 def test_values_for_move_so_that_beam_is_at_pixel(
     smargon: Smargon,
-    mock_parameters,
+    oav: OAV,
     px_per_um,
     beam_centre,
     angle,
     pixel_to_move_to,
     expected_xyz,
 ):
-    mock_parameters.micronsPerXPixel = px_per_um[0]
-    mock_parameters.micronsPerYPixel = px_per_um[1]
-    mock_parameters.beam_centre_i = beam_centre[0]
-    mock_parameters.beam_centre_j = beam_centre[1]
+    oav.parameters.micronsPerXPixel = px_per_um[0]
+    oav.parameters.micronsPerYPixel = px_per_um[1]
+    oav.parameters.beam_centre_i = beam_centre[0]
+    oav.parameters.beam_centre_j = beam_centre[1]
 
     smargon.omega.user_readback.sim_put(angle)
 
     RE = RunEngine(call_returns_result=True)
     pos = RE(
         get_move_required_so_that_beam_is_at_pixel(
-            smargon, pixel_to_move_to, mock_parameters
+            smargon, pixel_to_move_to, oav.parameters
         )
     ).plan_result
 
