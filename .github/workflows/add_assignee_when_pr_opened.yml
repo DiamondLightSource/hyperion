@@ -1,6 +1,5 @@
 # See https://confluence.diamond.ac.uk/x/tJqQC for instructions if this needs a new token
 name: Assign author of pull request to referenced issue that was not assigned to issue ticket beforehand
-run-name: ${{github.actor}} is learning GitHub Actions
 on:   
  pull_request:
       types: [ready_for_review, opened, review_requested]
@@ -42,4 +41,4 @@ jobs:
           gh api graphql -f query='
             mutation ($assignable_id: ID!, $author_id: [ID!]! ){
               addAssigneesToAssignable(input:{assignableId: $assignable_id, assigneeIds: $author_id })
-              }' -f assignable_id=$ASSIGNABLE_ID -f author_id=$AUTHOR_ID --jq '.data.addAssigneesToAssignable')
+              }' -f assignable_id=$ISSUE_REFERENCED_ID -f author_id=$AUTHOR_ID --jq '.data.addAssigneesToAssignable')
