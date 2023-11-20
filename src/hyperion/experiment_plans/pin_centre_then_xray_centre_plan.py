@@ -70,7 +70,7 @@ def pin_centre_then_xray_centre_plan(
         oav=composite.oav, smargon=composite.smargon, backlight=composite.backlight
     )
     pin_tip_centring_composite.oav.parameters = OAVConfigParams(
-        oav_config_files["zoom_params_files"], oav_config_files["display_config"]
+        oav_config_files["zoom_params_file"], oav_config_files["display_config"]
     )
 
     yield from pin_tip_centre_plan(
