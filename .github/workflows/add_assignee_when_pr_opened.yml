@@ -13,7 +13,6 @@ jobs:
         # * AUTHOR_ID - The ID of the person who made a pull request so that the author can be assigned to the Fixes#999
         env:
           GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
-          ORGANIZATION: ${{ github.repository_owner }}
           REPO_ORG_NAME: ${{ github.repository }}
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
         run: |
