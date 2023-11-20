@@ -14,10 +14,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
           ORGANIZATION: ${{ github.repository_owner }}
+          REPO_ORG_NAME: ${{ github.repository }}
         run: |
           gh api graphql -f query='
-            query ($org: String!, $number: Int!) {
-              organization(login: $org) {
+            query ($org: String!, $repo: String!, $number: Int!) {
+              repository(owner: $org, name: $repo) {
                 pullRequest(number: $number) {
                   closingIssuesReferences(first: 1) {
                     edges {
@@ -29,7 +30,7 @@ jobs:
                   author { ... on User {id} }
                 }
               }
-            }' -f org=$ORGANIZATION -f number=$PULL_REQUEST_NUMBER > project_data.json
+            }' -f org=$ORGANIZATION -f repo=${REPO_ORG_NAME##*/} -f number=$PULL_REQUEST_NUMBER > project_data.json
 
           echo 'ASSIGNABLE_ID='$(jq '.data.organization.pullRequest.closingIssuesReferences.edges.node.id' project_data.json) >> $GITHUB_ENV
           echo 'AUTHOR_ID='$(jq '.data.organization.pullRequest.author.id' project_data.json) >> $GITHUB_ENV
