@@ -43,4 +43,4 @@ jobs:
           gh api graphql -f query='
             mutation ($assignable_id: ID!, $author_id: [ID!]! ){
               addAssigneesToAssignable(input:{assignableId: $assignable_id, assigneeIds: $author_id })
-              }' -f assignable_id=$ASSIGNABLE_ID -f author_id=$AUTHOR_ID --jq '.data.addAssigneesToAssignable')
+              }' -f assignable_id=$ASSIGNABLE_ID -f author_id=$AUTHOR_ID --jq '.data.addAssigneesToAssignable'
