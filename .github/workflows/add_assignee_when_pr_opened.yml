@@ -31,7 +31,7 @@ jobs:
               }
             }' -f org=$ORGANIZATION -f number=$PULL_REQUEST_NUMBER > project_data.json
 
-          echo 'ISSUE_REFERENCED_ID='$(jq '.data.organization.pullRequest.closingIssuesReferences.edges.node.id' project_data.json) >> $GITHUB_ENV
+          echo 'ASSIGNABLE_ID='$(jq '.data.organization.pullRequest.closingIssuesReferences.edges.node.id' project_data.json) >> $GITHUB_ENV
           echo 'AUTHOR_ID='$(jq '.data.organization.pullRequest.author.id' project_data.json) >> $GITHUB_ENV
       # Add assingee of pull request of the references issue/ticket
       - name: Mutation to add name of pull request assigner to fixes ticket
@@ -41,4 +41,4 @@ jobs:
           gh api graphql -f query='
             mutation ($assignable_id: ID!, $author_id: [ID!]! ){
               addAssigneesToAssignable(input:{assignableId: $assignable_id, assigneeIds: $author_id })
-              }' -f assignable_id=$ISSUE_REFERENCED_ID -f author_id=$AUTHOR_ID --jq '.data.addAssigneesToAssignable')
+              }' -f assignable_id=$ASSIGNABLE_ID -f author_id=$AUTHOR_ID --jq '.data.addAssigneesToAssignable')
