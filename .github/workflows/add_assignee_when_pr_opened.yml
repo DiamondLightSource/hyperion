@@ -15,11 +15,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
           ORGANIZATION: ${{ github.repository_owner }}
           REPO_ORG_NAME: ${{ github.repository }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           gh api graphql -f query='
             query ($org: String!, $repo: String!, $number: Int!) {
               repository(owner: $org, name: $repo) {
-                pullRequest(number: $number) {
+                pullRequest(number: $number }}) {
                   closingIssuesReferences(first: 1) {
                     edges {
                       node {
