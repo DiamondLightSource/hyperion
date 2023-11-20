@@ -34,7 +34,7 @@ jobs:
             }' -f org=$ORGANIZATION -f repo=${REPO_ORG_NAME##*/} -F number=$PULL_REQUEST_NUMBER > project_data.json
           
           echo "$(<project_data.json )"
-          echo 'ASSIGNABLE_ID='$(jq '.data.repository.pullRequest.closingIssuesReferences.edges.node.id' project_data.json) >> $GITHUB_ENV
+          echo 'ASSIGNABLE_ID='$(jq '.data.repository.pullRequest.closingIssuesReferences.edges[0].node.id' project_data.json) >> $GITHUB_ENV
           echo 'AUTHOR_ID='$(jq '.data.repository.pullRequest.author.id' project_data.json) >> $GITHUB_ENV
       # Add assingee of pull request of the references issue/ticket
       - name: Mutation to add name of pull request assigner to fixes ticket
