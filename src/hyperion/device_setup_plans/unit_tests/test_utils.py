@@ -23,11 +23,16 @@ def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct
     eiger.detector_params = MagicMock()
     eiger.async_stage = MagicMock()
     eiger.disarm_detector = MagicMock()
+    detector_motion = MagicMock()
 
     RE = RunEngine()
 
     with pytest.raises(TestException):
-        RE(start_preparing_data_collection_then_do_plan(eiger, my_plan()))
+        RE(
+            start_preparing_data_collection_then_do_plan(
+                eiger, detector_motion, 100, my_plan()
+            )
+        )
 
     # Check detector was armed
     eiger.async_stage.assert_called_once()

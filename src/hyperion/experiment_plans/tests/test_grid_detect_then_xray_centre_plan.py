@@ -5,7 +5,6 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.beamlines.i03 import detector_motion
 from dodal.devices.backlight import Backlight
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -16,7 +15,6 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
-    wait_for_det_to_finish_moving,
 )
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
@@ -81,25 +79,12 @@ def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
     )
 
 
-def test_wait_for_detector(RE):
-    d_m = detector_motion(fake_with_ophyd_sim=True)
-    with pytest.raises(TimeoutError):
-        RE(wait_for_det_to_finish_moving(d_m, 0.2))
-    d_m.shutter.sim_put(1)  # type: ignore
-    d_m.z.motor_done_move.sim_put(1)  # type: ignore
-    RE(wait_for_det_to_finish_moving(d_m, 0.5))
-
-
 def test_full_grid_scan(test_fgs_params, test_config_files):
     devices = MagicMock()
     plan = grid_detect_then_xray_centre(devices, test_fgs_params, test_config_files)
     assert isinstance(plan, Generator)
 
 
-@patch(
-    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.wait_for_det_to_finish_moving",
-    autospec=True,
-)
 @patch(
     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
@@ -116,7 +101,6 @@ def test_detect_grid_and_do_gridscan(
     mock_oav_callback_init: MagicMock,
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
-    mock_wait_for_detector: MagicMock,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
@@ -153,17 +137,10 @@ def test_detect_grid_and_do_gridscan(
             grid_detect_devices.aperture_scatterguard.aperture_positions.SMALL
         )
 
-        # Check we wait for detector to finish moving
-        mock_wait_for_detector.assert_called_once()
-
         # Check we called out to underlying fast grid scan plan
         mock_flyscan_xray_centre_plan.assert_called_once_with(ANY, ANY)
 
 
-@patch(
-    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.wait_for_det_to_finish_moving",
-    autospec=True,
-)
 @patch(
     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
@@ -180,7 +157,6 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_oav_callback_init: MagicMock,
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
-    _: MagicMock,
     eiger: EigerDetector,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
