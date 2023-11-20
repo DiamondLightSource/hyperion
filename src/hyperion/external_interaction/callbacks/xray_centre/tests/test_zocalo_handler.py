@@ -53,16 +53,20 @@ def test_execution_of_run_gridscan_triggers_zocalo_calls(
     callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
     mock_zocalo_functions(callbacks)
 
-    callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
-    callbacks.ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    callbacks.ispyb_handler.event(td.test_event_document_pre_data_collection)
-    callbacks.ispyb_handler.descriptor(
-        td.test_descriptor_document_during_data_collection
+    callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
+    callbacks.ispyb_handler.activity_gated_descriptor(td.test_descriptor_document_pre_data_collection)  # type: ignore
+    callbacks.ispyb_handler.activity_gated_event(
+        td.test_event_document_pre_data_collection
     )
-    callbacks.ispyb_handler.event(td.test_event_document_during_data_collection)
-    callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
-    callbacks.ispyb_handler.stop(td.test_stop_document)
-    callbacks.zocalo_handler.stop(td.test_stop_document)
+    callbacks.ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_during_data_collection  # type: ignore
+    )
+    callbacks.ispyb_handler.activity_gated_event(
+        td.test_event_document_during_data_collection
+    )
+    callbacks.zocalo_handler.activity_gated_start(td.test_do_fgs_start_document)
+    callbacks.ispyb_handler.activity_gated_stop(td.test_stop_document)
+    callbacks.zocalo_handler.activity_gated_stop(td.test_stop_document)
 
     callbacks.zocalo_handler.zocalo_interactor.run_start.assert_has_calls(
         [call(x) for x in dc_ids]
@@ -88,15 +92,19 @@ def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_cal
     dummy_params: GridscanInternalParameters,
 ):
     callbacks = XrayCentreCallbackCollection.from_params(dummy_params)
-    callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
-    callbacks.ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    callbacks.ispyb_handler.event(td.test_event_document_pre_data_collection)
-
-    callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
-    callbacks.ispyb_handler.descriptor(
-        td.test_descriptor_document_during_data_collection
+    callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
+    callbacks.ispyb_handler.activity_gated_descriptor(td.test_descriptor_document_pre_data_collection)  # type: ignore
+    callbacks.ispyb_handler.activity_gated_event(
+        td.test_event_document_pre_data_collection
     )
-    callbacks.ispyb_handler.event(td.test_event_document_during_data_collection)
+
+    callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
+    callbacks.ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_during_data_collection  # type: ignore
+    )
+    callbacks.ispyb_handler.activity_gated_event(
+        td.test_event_document_during_data_collection
+    )
 
     mock_zocalo_functions(callbacks)
     callbacks.ispyb_handler.ispyb_ids = ([0], 0, 100)
@@ -162,7 +170,7 @@ def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_excepti
     mock_zocalo_functions(callbacks)
 
     with pytest.raises(ISPyBDepositionNotMade):
-        callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
+        callbacks.zocalo_handler.activity_gated_start(td.test_do_fgs_start_document)
 
 
 @patch(
@@ -216,4 +224,4 @@ def test_multiple_results_from_zocalo_sorted_by_total_count_returns_centre_and_b
     np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
 
     expected_bbox_size = np.array([8, 8, 7]) - np.array([2, 2, 2])
-    np.testing.assert_array_equal(found_bbox, expected_bbox_size)
+    np.testing.assert_array_equal(found_bbox, expected_bbox_size)  # type: ignore

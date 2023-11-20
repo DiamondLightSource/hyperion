@@ -39,15 +39,15 @@ class RotationISPyBCallback(BaseISPyBCallback):
         assert self.ispyb_ids[0] is not None
         self._append_to_comment(self.ispyb_ids[0], comment)
 
-    def start(self, doc: dict):
+    def activity_gated_start(self, doc: dict):
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == "rotation_scan_main":
             self.uid_to_finalize_on = doc.get("uid")
 
-    def event(self, doc: dict):
-        super().event(doc)
+    def activity_gated_event(self, doc: dict):
+        super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids[1])
 
-    def stop(self, doc: dict):
+    def activity_gated_stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
-            super().stop(doc)
+            super().activity_gated_stop(doc)

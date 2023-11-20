@@ -278,6 +278,11 @@ def flyscan_xray_centre(
         md={
             "subplan_name": "run_gridscan_move_and_tidy",
             "hyperion_internal_parameters": parameters.json(),
+            "activate_callbacks": [
+                "XrayCentreZocaloCallback",
+                "GridscanISPyBCallback",
+                "GridscanNexusFileCallback",
+            ],
         }
     )
     @bpp.finalize_decorator(lambda: tidy_up_plans(composite))

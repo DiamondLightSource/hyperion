@@ -1,7 +1,7 @@
 import types
 from unittest.mock import MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
@@ -101,14 +101,18 @@ def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
     fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)
 
     test_ispyb_callback = GridscanISPyBCallback(test_fgs_params)
+    test_ispyb_callback.active = True
     test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     RE.subscribe(test_ispyb_callback)
 
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "activate_callbacks": ["GridscanISPyBCallback"],
+        }
+    )
     def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
-        yield from bps.open_run()
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
         yield from read_hardware_for_ispyb_during_collection(attn, fl)
-        yield from bps.close_run()
 
     RE(
         standalone_read_hardware_for_ispyb(
@@ -154,7 +158,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "123abc",
             "data": {
@@ -168,7 +172,7 @@ def test_results_adjusted_and_passed_to_move_xyz(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
     )
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "abc123",
             "data": {
@@ -288,7 +292,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
     )
 
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "123abc",
             "data": {
@@ -302,7 +306,7 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
     mock_subscriptions.ispyb_handler.descriptor(
         {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
     )
-    mock_subscriptions.ispyb_handler.event(
+    mock_subscriptions.ispyb_handler.activity_gated_event(
         {
             "descriptor": "abc123",
             "data": {
@@ -334,10 +338,41 @@ def test_individual_plans_triggered_once_and_only_once_in_composite_run(
 def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
     move_xyz: MagicMock,
     run_gridscan: MagicMock,
+    mock_subscriptions: XrayCentreCallbackCollection,
     fake_fgs_composite: FlyScanXRayCentreComposite,
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
 ):
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
+    )
+
+    mock_subscriptions.ispyb_handler.activity_gated_event(
+        {
+            "descriptor": "123abc",
+            "data": {
+                "undulator_gap": 0,
+                "synchrotron_machine_status_synchrotron_mode": 0,
+                "s4_slit_gaps_xgap": 0,
+                "s4_slit_gaps_ygap": 0,
+            },
+        }
+    )
+    mock_subscriptions.ispyb_handler.descriptor(
+        {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
+    )
+    mock_subscriptions.ispyb_handler.activity_gated_event(
+        {
+            "descriptor": "abc123",
+            "data": {
+                "attenuator_actual_transmission": 0,
+                "flux_flux_reading": 10,
+            },
+        }
+    )
+
+    set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+    RE.subscribe(VerbosePlanExecutionLoggingCallback())
     mock_subscriptions = MagicMock()
     mock_subscriptions.zocalo_handler.wait_for_results.return_value = ((0, 0, 0), None)
 
@@ -451,6 +486,7 @@ def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
     fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)
 
     mock_subscriptions.zocalo_handler.zocalo_interactor.run_end = mock_parent.run_end
+
     with patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.from_params",
         lambda _: mock_subscriptions,

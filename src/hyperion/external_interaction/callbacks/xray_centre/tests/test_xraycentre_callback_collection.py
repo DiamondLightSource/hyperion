@@ -131,10 +131,10 @@ def test_subscribe_in_plan():
     callbacks = XrayCentreCallbackCollection.from_params(test_parameters)
     document_event_mock = MagicMock()
     callbacks.ispyb_handler.start = document_event_mock
-    callbacks.ispyb_handler.stop = document_event_mock
-    callbacks.zocalo_handler.start = document_event_mock
-    callbacks.zocalo_handler.stop = document_event_mock
-    callbacks.nexus_handler.start = document_event_mock
+    callbacks.ispyb_handler.activity_gated_stop = document_event_mock
+    callbacks.zocalo_handler.activity_gated_start = document_event_mock
+    callbacks.zocalo_handler.activity_gated_stop = document_event_mock
+    callbacks.nexus_handler.activity_gated_start = document_event_mock
     callbacks.nexus_handler.stop = document_event_mock
 
     RE = RunEngine()

@@ -38,12 +38,16 @@ def test_fgs_failing_results_in_bad_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
     ispyb_handler = GridscanISPyBCallback(dummy_params)
-    ispyb_handler.start(td.test_start_document)
-    ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    ispyb_handler.event(td.test_event_document_pre_data_collection)
-    ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-    ispyb_handler.event(td.test_event_document_during_data_collection)
-    ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
+    ispyb_handler.activity_gated_start(td.test_start_document)
+    ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_pre_data_collection
+    )
+    ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
+    ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_during_data_collection
+    )
+    ispyb_handler.activity_gated_event(td.test_event_document_during_data_collection)
+    ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
     mock_ispyb_update_time_and_status.assert_has_calls(
         [
@@ -70,12 +74,16 @@ def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
     ispyb_handler = GridscanISPyBCallback(dummy_params)
-    ispyb_handler.start(td.test_start_document)
-    ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    ispyb_handler.event(td.test_event_document_pre_data_collection)
-    ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-    ispyb_handler.event(td.test_event_document_during_data_collection)
-    ispyb_handler.stop(td.test_do_fgs_gridscan_stop_document)
+    ispyb_handler.activity_gated_start(td.test_start_document)
+    ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_pre_data_collection
+    )
+    ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
+    ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_during_data_collection
+    )
+    ispyb_handler.activity_gated_event(td.test_event_document_during_data_collection)
+    ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
     mock_ispyb_update_time_and_status.assert_has_calls(
         [
@@ -115,11 +123,15 @@ def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then
 ):
     mock_ispyb_store_grid_scan.return_value = [DC_IDS, None, DCG_ID]
     ispyb_handler = GridscanISPyBCallback(dummy_params)
-    ispyb_handler.start(td.test_start_document)
-    ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    ispyb_handler.event(td.test_event_document_pre_data_collection)
-    ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-    ispyb_handler.event(td.test_event_document_during_data_collection)
+    ispyb_handler.activity_gated_start(td.test_start_document)
+    ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_pre_data_collection
+    )
+    ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
+    ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_during_data_collection
+    )
+    ispyb_handler.activity_gated_event(td.test_event_document_during_data_collection)
 
     ISPYB_LOGGER.info("test")
     latest_record = mock_emit.call_args.args[-1]
@@ -138,12 +150,16 @@ def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_the
     mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
     mock_ispyb_update_time_and_status.return_value = None
     ispyb_handler = GridscanISPyBCallback(dummy_params)
-    ispyb_handler.start(td.test_start_document)
-    ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-    ispyb_handler.event(td.test_event_document_pre_data_collection)
-    ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-    ispyb_handler.event(td.test_event_document_during_data_collection)
-    ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
+    ispyb_handler.activity_gated_start(td.test_start_document)
+    ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_pre_data_collection
+    )
+    ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
+    ispyb_handler.activity_gated_descriptor(
+        td.test_descriptor_document_during_data_collection
+    )
+    ispyb_handler.activity_gated_event(td.test_event_document_during_data_collection)
+    ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
     for logger in [ISPYB_LOGGER, dodal_logger]:
         ISPYB_LOGGER.info("test")

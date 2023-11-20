@@ -38,7 +38,7 @@ def test_writers_not_setup_on_plan_start_doc(
 ):
     nexus_handler = GridscanNexusFileCallback()
     nexus_writer.assert_not_called()
-    nexus_handler.start(
+    nexus_handler.activity_gated_start(
         {
             "subplan_name": "run_gridscan_move_and_tidy",
             "hyperion_internal_parameters": dummy_params.json(),
@@ -56,7 +56,7 @@ def test_writers_dont_create_on_init_but_do_on_ispyb_event(
     assert nexus_handler.nexus_writer_1 is None
     assert nexus_handler.nexus_writer_2 is None
 
-    nexus_handler.start(
+    nexus_handler.activity_gated_start(
         {
             "subplan_name": "run_gridscan_move_and_tidy",
             "hyperion_internal_parameters": dummy_params.json(),
@@ -72,7 +72,7 @@ def test_writers_dont_create_on_init_but_do_on_ispyb_event(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter",
         mock_writer,
     ):
-        nexus_handler.descriptor({"name": ISPYB_HARDWARE_READ_PLAN})
+        nexus_handler.activity_gated_descriptor({"name": ISPYB_HARDWARE_READ_PLAN})
 
     assert nexus_handler.nexus_writer_1 is not None
     assert nexus_handler.nexus_writer_2 is not None
@@ -86,13 +86,13 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
     nexus_writer.side_effect = [MagicMock(), MagicMock()]
 
     nexus_handler = GridscanNexusFileCallback()
-    nexus_handler.start(
+    nexus_handler.activity_gated_start(
         {
             "subplan_name": "run_gridscan_move_and_tidy",
             "hyperion_internal_parameters": dummy_params.json(),
         }
     )
-    nexus_handler.start(
+    nexus_handler.activity_gated_start(
         {
             "subplan_name": "run_gridscan",
         }
@@ -100,7 +100,7 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
     with patch(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
     ):
-        nexus_handler.descriptor(
+        nexus_handler.activity_gated_descriptor(
             {
                 "name": "ispyb_reading_hardware",
             }
@@ -115,7 +115,7 @@ def test_sensible_error_if_writing_triggered_before_params_received(
 ):
     nexus_handler = GridscanNexusFileCallback()
     with pytest.raises(AssertionError) as excinfo:
-        nexus_handler.descriptor(
+        nexus_handler.activity_gated_descriptor(
             {
                 "name": "ispyb_reading_hardware",
             }
