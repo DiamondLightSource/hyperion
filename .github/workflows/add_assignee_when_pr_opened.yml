@@ -17,7 +17,7 @@ jobs:
         run: |
           gh api graphql -f query='
             query ($org: String!, $number: Int!) {
-              organization(login: $org!) {
+              organization(login: $org) {
                 pullRequest(number: $number) {
                   closingIssuesReferences(first: 1) {
                     edges {
