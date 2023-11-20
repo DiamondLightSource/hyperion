@@ -20,7 +20,7 @@ jobs:
           gh api graphql -f query='
             query ($org: String!, $repo: String!, $number: Int!) {
               repository(owner: $org, name: $repo) {
-                pullRequest(number: $number }}) {
+                pullRequest(number: $number) {
                   closingIssuesReferences(first: 1) {
                     edges {
                       node {
