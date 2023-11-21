@@ -1,7 +1,6 @@
 import types
 from unittest.mock import MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest

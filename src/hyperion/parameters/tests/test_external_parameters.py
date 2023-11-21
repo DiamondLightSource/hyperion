@@ -90,7 +90,7 @@ def test_parse_exception_causes_warning(mock_logger):
 
 def test_parse_list():
     test_data = [([1, 2, 3], "[1, 2, 3]"), ([1, True, 3], "[1, Yes, 3]")]
-    for (expected, input) in test_data:
+    for expected, input in test_data:
         actual = GDABeamlineParameters.parse_value(input)
         assert expected == actual, f"Actual:{actual}, expected: {expected}\n"
 
