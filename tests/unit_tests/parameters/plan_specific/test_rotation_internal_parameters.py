@@ -44,7 +44,7 @@ def test_rotation_scan_param_validity():
 
 def test_rotation_parameters_load_from_file():
     params = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
     internal_parameters = RotationInternalParameters(**params)
 
@@ -64,7 +64,7 @@ def test_rotation_parameters_load_from_file():
 
 def test_rotation_parameters_enum_interpretation():
     params = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
     params["experiment_params"]["rotation_direction"] = "POSITIVE"
     internal_parameters = RotationInternalParameters(**params)

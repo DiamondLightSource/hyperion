@@ -26,7 +26,7 @@ with open(
 ) as f:
     rotation_scan_schema = json.load(f)
 with open(
-    "tests/test_data/good_test_parameters.json",
+    "tests/test_data/parameter_json_files/good_test_parameters.json",
     "r",
 ) as f:
     params = json.load(f)
@@ -72,7 +72,7 @@ def test_serialised_grid_scan_params_validate():
 
 def test_good_params_rotationparams_validates():
     with open(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json",
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
         "r",
     ) as f:
         params = json.load(f)
@@ -83,7 +83,7 @@ def test_good_params_rotationparams_validates():
 
 def test_bad_params_wrong_version_raises_exception():
     with open(
-        "src/hyperion/parameters/tests/test_data/bad_tests/parameter_json_files/test_parameters_wrong_version.json",
+        "tests/test_data/parameter_json_files/bad_test_parameters_wrong_version.json",
         "r",
     ) as f:
         params = json.load(f)

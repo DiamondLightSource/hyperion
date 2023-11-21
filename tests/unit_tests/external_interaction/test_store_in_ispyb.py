@@ -125,7 +125,7 @@ def dummy_params():
 def dummy_rotation_params():
     dummy_params = RotationInternalParameters(
         **default_raw_params(
-            "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
     return dummy_params

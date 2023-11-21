@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Files written by tests - but not the README!
+tests/test/data/scratch/*
+!tests/test/data/scratch/README
+
 # C extensions
 *.so
 

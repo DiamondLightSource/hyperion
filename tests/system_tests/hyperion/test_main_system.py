@@ -41,7 +41,7 @@ SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
     external_parameters.from_file(
-        "tests/parameter_json_files/test_parameter_defaults.json"
+        "tests/test_data/parameter_json_files/test_parameter_defaults.json"
     )
 )
 
@@ -275,7 +275,9 @@ def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
 def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.RE_takes_time = False
 
-    with open("tests/parameter_json_files/test_parameters.json") as test_params_file:
+    with open(
+        "tests/test_data/parameter_json_files/test_parameters.json"
+    ) as test_params_file:
         test_params = test_params_file.read()
     response = test_env.client.put(START_ENDPOINT, data=test_params)
     check_status_in_response(response, Status.SUCCESS)

@@ -32,14 +32,14 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 @pytest.fixture
 def raw_params():
     return external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/parameter_json_files/test_parameters.json"
     )
 
 
 @pytest.fixture
 def rotation_raw_params():
     return external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
 
 
@@ -107,7 +107,7 @@ def test_internal_param_serialisation_deserialisation():
 
 def test_flatten():
     params = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/parameter_json_files/test_parameters.json"
     )
     flat_dict = flatten_dict(params)
     for k in flat_dict:
@@ -133,7 +133,7 @@ def test_hyperion_params_needs_values_from_experiment(raw_params):
 
 
 def test_hyperion_parameters_only_from_file():
-    with open("src/hyperion/parameters/tests/test_data/hyperion_parameters.json") as f:
+    with open("tests/test_data/hyperion_parameters.json") as f:
         hyperion_param_dict = json.load(f)
     hyperion_params_deserialised = GridscanHyperionParameters(**hyperion_param_dict)
     ispyb = hyperion_params_deserialised.ispyb_params
@@ -239,7 +239,7 @@ def test_param_fields_match_components_they_should_use(
 
 def test_internal_params_eq():
     params = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/parameter_json_files/test_parameters.json"
     )
     internal_params = GridscanInternalParameters(**params)
     internal_params_2 = copy.deepcopy(internal_params)

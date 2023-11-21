@@ -1,22 +1,18 @@
 {
-    "params_version": "0.0.4",
+    "params_version": "4.0.0",
     "hyperion_params": {
         "beamline": "BL03S",
         "insertion_prefix": "SR03S",
         "detector": "EIGER2_X_16M",
         "zocalo_environment": "dev_artemis",
-        "experiment_type": "grid_scan",
+        "experiment_type": "flyscan_xray_centre",
         "detector_params": {
             "current_energy_ev": 100,
-            "exposure_time": 0.1,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,
-            "detector_distance": 100.0,
-            "omega_start": 0.0,
-            "num_images": 50,
             "use_roi_mode": false,
-            "det_dist_to_beam_converter_path": "tests/unit_tests/hyperion/test_lookup_table.txt"
+            "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
         },
         "ispyb_params": {
             "visit_path": "/tmp/cm31105-4/",
@@ -71,6 +67,9 @@
         "y1_start": 0.0,
         "y2_start": 0.0,
         "z1_start": 0.0,
-        "z2_start": 0.0
+        "z2_start": 0.0,
+        "exposure_time": 0.1,
+        "detector_distance": 100.0,
+        "omega_start": 0.0
     }
 }

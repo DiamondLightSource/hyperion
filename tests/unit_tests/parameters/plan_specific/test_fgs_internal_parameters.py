@@ -10,7 +10,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 
 def test_FGS_parameters_load_from_file():
     params = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/parameter_json_files/test_parameters.json"
     )
     internal_parameters = GridscanInternalParameters(**params)
     internal_parameters.json()

@@ -16,7 +16,7 @@ from hyperion.utils.utils import convert_angstrom_to_eV
 @pytest.fixture
 def test_rotation_params():
     param_dict = from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_rotation_scan_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
     param_dict["hyperion_params"]["detector_params"][
         "directory"

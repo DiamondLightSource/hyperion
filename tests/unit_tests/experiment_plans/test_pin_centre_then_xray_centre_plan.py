@@ -18,7 +18,7 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
     PinCentreThenXrayCentreInternalParameters,
 )
 
-from .test_run_engine_simulator import (
+from .conftest import (
     RunEngineSimulator,
     add_simple_oav_mxsc_callback_handlers,
     add_simple_pin_tip_centre_handlers,
@@ -29,7 +29,7 @@ from .test_run_engine_simulator import (
 @pytest.fixture
 def test_pin_centre_then_xray_centre_params():
     params = raw_params_from_file(
-        "tests/test_data/good_test_pin_centre_then_xray_centre_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json"
     )
     return PinCentreThenXrayCentreInternalParameters(**params)
 

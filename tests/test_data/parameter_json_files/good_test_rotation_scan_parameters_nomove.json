@@ -5,14 +5,14 @@
         "insertion_prefix": "SR03S",
         "detector": "EIGER2_X_16M",
         "zocalo_environment": "dev_artemis",
-        "experiment_type": "flyscan_xray_centre",
+        "experiment_type": "rotation_scan",
         "detector_params": {
             "current_energy_ev": 100,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,
             "use_roi_mode": false,
-            "det_dist_to_beam_converter_path": "tests/unit_tests/hyperion/test_lookup_table.txt"
+            "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
         },
         "ispyb_params": {
             "visit_path": "/tmp/cm31105-4/",
@@ -56,20 +56,14 @@
         }
     },
     "experiment_params": {
-        "x_steps": 5,
-        "y_steps": 10,
-        "z_steps": 2,
-        "x_step_size": 0.1,
-        "y_step_size": 0.1,
-        "z_step_size": 0.1,
-        "dwell_time_ms": 2,
-        "x_start": 0.0,
-        "y1_start": 0.0,
-        "y2_start": 0.0,
-        "z1_start": 0.0,
-        "z2_start": 0.0,
+        "rotation_axis": "omega",
+        "rotation_angle": 180.0,
+        "omega_start": 0.0,
         "exposure_time": 0.1,
         "detector_distance": 100.0,
-        "omega_start": 0.0
+        "rotation_increment": 0.1,
+        "rotation_direction": "NEGATIVE",
+        "offset_deg": 1.0,
+        "shutter_opening_time_s": 0.6
     }
 }

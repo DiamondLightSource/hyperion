@@ -10,10 +10,10 @@ from hyperion.parameters.beamline_parameters import (
 
 def test_new_parameters_is_a_new_object():
     a = external_parameters.from_file(
-        "tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/parameter_json_files/test_parameters.json"
     )
     b = external_parameters.from_file(
-        "tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/parameter_json_files/test_parameters.json"
     )
     assert a == b
     assert a is not b
@@ -21,7 +21,7 @@ def test_new_parameters_is_a_new_object():
 
 def test_parameters_load_from_file():
     params = external_parameters.from_file(
-        "tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/parameter_json_files/test_parameters.json"
     )
     expt_params = params["experiment_params"]
     assert expt_params["x_steps"] == 5

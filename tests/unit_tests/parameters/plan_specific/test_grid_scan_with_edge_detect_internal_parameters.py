@@ -10,7 +10,7 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 
 def test_grid_scan_with_edge_detect_parameters_load_from_file():
     params = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_grid_with_edge_detect_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
     internal_parameters = GridScanWithEdgeDetectInternalParameters(**params)
 
