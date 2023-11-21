@@ -1,5 +1,16 @@
+from __future__ import annotations
+
+from unittest.mock import MagicMock, patch
+
 import pytest
 
+from hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+    rotation_scan,
+)
+from hyperion.external_interaction.callbacks.rotation.callback_collection import (
+    RotationCallbackCollection,
+)
 from hyperion.external_interaction.ispyb.store_in_ispyb import (
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
@@ -10,6 +21,12 @@ from hyperion.parameters.external_parameters import from_file as default_raw_par
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
+from hyperion.utils.utils import convert_angstrom_to_eV
+
+from ...conftest import fake_read
 
 
 @pytest.mark.s03
@@ -99,3 +116,84 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 
     for grid_no, dc_id in enumerate(dc_ids):
         assert fetch_comment(dc_id) == expected_comments[grid_no]
+
+
+@pytest.mark.s03
+@patch("bluesky.plan_stubs.wait")
+@patch("hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter")
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback"
+)
+def test_ispyb_deposition_in_rotation_plan(
+    bps_wait,
+    nexus_writer,
+    zocalo_callback,
+    fake_create_rotation_devices,
+    RE,
+    test_rotation_params: RotationInternalParameters,
+    fetch_comment,
+    fetch_datacollection_attribute,
+    undulator,
+    attenuator,
+    synchrotron,
+    s4_slit_gaps,
+    flux,
+):
+    test_wl = 0.71
+    test_bs_x = 0.023
+    test_bs_y = 0.047
+    test_exp_time = 0.023
+    test_img_wid = 0.27
+
+    test_rotation_params.experiment_params.image_width = test_img_wid
+    test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
+    test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
+    test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
+    test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
+        convert_angstrom_to_eV(test_wl)
+    )
+    callbacks = RotationCallbackCollection.setup()
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = DEV_ISPYB_DATABASE_CFG
+
+    composite = RotationScanComposite(
+        attenuator=attenuator,
+        backlight=MagicMock(),
+        detector_motion=MagicMock(),
+        eiger=MagicMock(),
+        flux=flux,
+        smargon=MagicMock(),
+        undulator=undulator,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=MagicMock(),
+    )
+
+    with (
+        patch(
+            "bluesky.preprocessors.__read_and_stash_a_motor",
+            fake_read,
+        ),
+        patch(
+            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
+            lambda: callbacks,
+        ),
+    ):
+        RE(
+            rotation_scan(
+                composite,
+                test_rotation_params,
+            )
+        )
+
+    dcid = callbacks.ispyb_handler.ispyb_ids[0]
+    comment = fetch_comment(dcid)
+    assert comment == "Hyperion rotation scan"
+    wavelength = fetch_datacollection_attribute(dcid, "wavelength")
+    beamsize_x = fetch_datacollection_attribute(dcid, "beamSizeAtSampleX")
+    beamsize_y = fetch_datacollection_attribute(dcid, "beamSizeAtSampleY")
+    exposure = fetch_datacollection_attribute(dcid, "exposureTime")
+
+    assert wavelength == test_wl
+    assert beamsize_x == test_bs_x
+    assert beamsize_y == test_bs_y
+    assert exposure == test_exp_time

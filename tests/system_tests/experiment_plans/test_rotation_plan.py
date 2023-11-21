@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 
 from hyperion.experiment_plans.rotation_scan_plan import (
@@ -35,11 +34,6 @@ def devices():
         s4_slit_gaps=i03.s4_slit_gaps(),
         zebra=i03.zebra(),
     )
-
-
-@pytest.fixture
-def RE():
-    return RunEngine()
 
 
 TEST_OFFSET = 1
