@@ -1,5 +1,4 @@
 import pytest
-from bluesky.run_engine import RunEngine
 from dodal.devices.zebra import (
     IN3_TTL,
     IN4_TTL,
@@ -16,11 +15,6 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     setup_zebra_for_rotation,
 )
-
-
-@pytest.fixture
-def RE():
-    return RunEngine({})
 
 
 @pytest.fixture

@@ -43,11 +43,6 @@ def params():
 
 
 @pytest.fixture
-def RE():
-    return RunEngine({})
-
-
-@pytest.fixture
 def fgs_composite():
     composite = FlyScanXRayCentreComposite(
         attenuator=i03.attenuator(),

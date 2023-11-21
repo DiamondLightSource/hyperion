@@ -49,11 +49,6 @@ def test_start_doc(params: RotationInternalParameters):
     }
 
 
-@pytest.fixture
-def RE():
-    return RunEngine({})
-
-
 def activate_callbacks(cbs: RotationCallbackCollection | XrayCentreCallbackCollection):
     cbs.ispyb_handler.active = True
     cbs.nexus_handler.active = True

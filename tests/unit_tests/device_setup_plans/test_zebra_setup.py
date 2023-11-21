@@ -2,7 +2,6 @@ from functools import partial
 from unittest.mock import MagicMock
 
 import pytest
-from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.zebra import (
     IN3_TTL,
@@ -23,11 +22,6 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     setup_zebra_for_rotation,
 )
-
-
-@pytest.fixture
-def RE():
-    return RunEngine({})
 
 
 @pytest.fixture
