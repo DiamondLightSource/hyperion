@@ -18,9 +18,7 @@ def test_rotation_params():
     param_dict = from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
-    param_dict["hyperion_params"]["detector_params"][
-        "directory"
-    ] = "src/hyperion/external_interaction/unit_tests/test_data"
+    param_dict["hyperion_params"]["detector_params"]["directory"] = "tests/test_data"
     param_dict["hyperion_params"]["detector_params"]["prefix"] = "TEST_FILENAME"
     param_dict["hyperion_params"]["detector_params"]["current_energy_ev"] = 12700
     param_dict["hyperion_params"]["ispyb_params"]["current_energy_ev"] = 12700

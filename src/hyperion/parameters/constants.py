@@ -12,7 +12,7 @@ BEAMLINE_PARAMETER_PATHS = {
 }
 
 # this one is for reading
-SIM_ISPYB_CONFIG = "src/hyperion/external_interaction/unit_tests/test_config.cfg"
+SIM_ISPYB_CONFIG = "tests/test_data/test_config.cfg"
 # this one is for making depositions:
 DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
 
