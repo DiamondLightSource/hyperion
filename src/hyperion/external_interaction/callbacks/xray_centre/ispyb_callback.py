@@ -60,11 +60,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         for id in self.ispyb_ids.data_collection_ids:
             self._append_to_comment(id, comment)
 
-    def event(self, doc: dict):
-        super().event(doc)
+    def activity_gated_event(self, doc: dict):
+        super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
-    def stop(self, doc: dict):
+    def activity_gated_stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
             ISPYB_LOGGER.info(
                 "ISPyB callback received stop document corresponding to start document "
@@ -72,4 +72,4 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
-            super().stop(doc)
+            super().activity_gated_stop(doc)

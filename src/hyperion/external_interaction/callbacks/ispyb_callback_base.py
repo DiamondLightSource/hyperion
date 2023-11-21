@@ -3,8 +3,9 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Dict, Optional
 
-from bluesky.callbacks import CallbackBase
-
+from hyperion.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds, StoreInIspyb
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
@@ -23,11 +24,12 @@ if TYPE_CHECKING:
     from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 
 
-class BaseISPyBCallback(CallbackBase):
+class BaseISPyBCallback(PlanReactiveCallback):
     def __init__(self) -> None:
-        """Subclasses should run super().__init__(), then in their start() method set
+        """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
+        super().__init__()
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )
@@ -51,14 +53,14 @@ class BaseISPyBCallback(CallbackBase):
                 "ISPyB deposition not initialised, can't update comment."
             )
 
-    def descriptor(self, doc: dict):
+    def activity_gated_descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
 
-    def start(self, doc: dict):
+    def activity_gated_start(self, doc: dict):
         if self.uid_to_finalize_on is None:
             self.uid_to_finalize_on = doc.get("uid")
 
-    def event(self, doc: dict):
+    def activity_gated_event(self, doc: dict):
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
         ISPYB_LOGGER.debug("ISPyB handler received event document.")
@@ -93,7 +95,7 @@ class BaseISPyBCallback(CallbackBase):
             self.ispyb_ids = self.ispyb.begin_deposition()
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
-    def stop(self, doc: dict):
+    def activity_gated_stop(self, doc: dict):
         """Subclasses must check that they are recieving a stop document for the correct
         uid to use this method!"""
         assert isinstance(

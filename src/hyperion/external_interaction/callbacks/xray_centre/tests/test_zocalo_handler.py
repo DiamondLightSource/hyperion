@@ -66,19 +66,23 @@ class TestXrayCentreZocaloHandler:
 
         callbacks = XrayCentreCallbackCollection.setup()
         init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks, dc_ids, dcg_id)
-        callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
+        callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
         callbacks.zocalo_handler.start(td.test_run_gridscan_start_document)
-        callbacks.ispyb_handler.descriptor(
+        callbacks.ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
+        )  # type: ignore
+        callbacks.ispyb_handler.activity_gated_event(
+            td.test_event_document_pre_data_collection
         )
-        callbacks.ispyb_handler.event(td.test_event_document_pre_data_collection)
-        callbacks.ispyb_handler.descriptor(
-            td.test_descriptor_document_during_data_collection
+        callbacks.ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_during_data_collection  # type: ignore
         )
-        callbacks.ispyb_handler.event(td.test_event_document_during_data_collection)
-        callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
-        callbacks.ispyb_handler.stop(td.test_stop_document)
-        callbacks.zocalo_handler.stop(td.test_stop_document)
+        callbacks.ispyb_handler.activity_gated_event(
+            td.test_event_document_during_data_collection
+        )
+        callbacks.zocalo_handler.activity_gated_start(td.test_do_fgs_start_document)
+        callbacks.ispyb_handler.activity_gated_stop(td.test_stop_document)
+        callbacks.zocalo_handler.activity_gated_stop(td.test_stop_document)
 
         callbacks.zocalo_handler.zocalo_interactor.run_start.assert_has_calls(
             [call(x) for x in dc_ids]
@@ -112,11 +116,13 @@ class TestXrayCentreZocaloHandler:
         )
         callbacks.ispyb_handler.event(td.test_event_document_pre_data_collection)
 
-        callbacks.ispyb_handler.start(td.test_run_gridscan_start_document)
-        callbacks.ispyb_handler.descriptor(
-            td.test_descriptor_document_during_data_collection
+        callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
+        callbacks.ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_during_data_collection  # type: ignore
         )
-        callbacks.ispyb_handler.event(td.test_event_document_during_data_collection)
+        callbacks.ispyb_handler.activity_gated_event(
+            td.test_event_document_during_data_collection
+        )
 
         callbacks.ispyb_handler.ispyb_ids = IspybIds(
             data_collection_ids=(0, 0), data_collection_group_id=100, grid_ids=(0, 0)
@@ -185,7 +191,7 @@ class TestXrayCentreZocaloHandler:
         init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks)
 
         with pytest.raises(ISPyBDepositionNotMade):
-            callbacks.zocalo_handler.start(td.test_do_fgs_start_document)
+            callbacks.zocalo_handler.activity_gated_start(td.test_do_fgs_start_document)
 
     @patch(
         "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
@@ -241,4 +247,4 @@ class TestXrayCentreZocaloHandler:
         np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
         assert isinstance(found_bbox, np.ndarray)
         expected_bbox_size = np.array([8, 8, 7]) - np.array([2, 2, 2])
-        np.testing.assert_array_equal(found_bbox, expected_bbox_size)
+        np.testing.assert_array_equal(found_bbox, expected_bbox_size)  # type: ignore

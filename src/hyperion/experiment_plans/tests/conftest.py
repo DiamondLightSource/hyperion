@@ -11,6 +11,7 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -18,6 +19,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from ophyd.epics_motor import EpicsMotor
+from ophyd.sim import make_fake_device
 from ophyd.status import Status
 
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -360,3 +362,16 @@ def mock_rotation_subscriptions(test_rotation_params):
 def fake_read(obj, initial_positions, _):
     initial_positions[obj] = 0
     yield Msg("null", obj)
+
+
+@pytest.fixture
+def simple_beamline(detector_motion, oav, smargon, synchrotron):
+    magic_mock = MagicMock()
+    magic_mock.oav = oav
+    magic_mock.smargon = smargon
+    magic_mock.detector_motion = detector_motion
+    scan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
+    magic_mock.fast_grid_scan = scan
+    magic_mock.synchrotron = synchrotron
+    oav.zoom_controller.frst.set("7.5x")
+    return magic_mock

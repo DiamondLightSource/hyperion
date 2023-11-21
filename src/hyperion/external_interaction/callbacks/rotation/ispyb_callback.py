@@ -35,7 +35,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         assert isinstance(self.ispyb_ids.data_collection_ids, int)
         self._append_to_comment(self.ispyb_ids.data_collection_ids, comment)
 
-    def start(self, doc: dict):
+    def activity_gated_start(self, doc: dict):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
@@ -50,10 +50,10 @@ class RotationISPyBCallback(BaseISPyBCallback):
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
 
-    def event(self, doc: dict):
-        super().event(doc)
+    def activity_gated_event(self, doc: dict):
+        super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
-    def stop(self, doc: dict):
+    def activity_gated_stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
-            super().stop(doc)
+            super().activity_gated_stop(doc)

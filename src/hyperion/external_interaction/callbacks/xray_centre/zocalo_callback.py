@@ -4,9 +4,11 @@ import time
 from typing import Callable, Optional
 
 import numpy as np
-from bluesky.callbacks import CallbackBase
 from numpy import ndarray
 
+from hyperion.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -23,7 +25,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 
 
-class XrayCentreZocaloCallback(CallbackBase):
+class XrayCentreZocaloCallback(PlanReactiveCallback):
     """Callback class to handle the triggering of Zocalo processing.
     Sends zocalo a run_start signal on recieving a start document for the 'do_fgs'
     sub-plan, and sends a run_end signal on recieving a stop document for the#
@@ -47,12 +49,13 @@ class XrayCentreZocaloCallback(CallbackBase):
         self,
         ispyb_handler: GridscanISPyBCallback,
     ):
+        super().__init__()
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.do_fgs_uid: Optional[str] = None
         self.ispyb: GridscanISPyBCallback = ispyb_handler
 
-    def start(self, doc: dict):
+    def activity_gated_start(self, doc: dict):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             ISPYB_LOGGER.info(
                 "Zocalo callback recieved start document with experiment parameters."
@@ -76,7 +79,7 @@ class XrayCentreZocaloCallback(CallbackBase):
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
-    def stop(self, doc: dict):
+    def activity_gated_stop(self, doc: dict):
         if doc.get("run_start") == self.do_fgs_uid:
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."

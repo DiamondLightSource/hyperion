@@ -285,6 +285,11 @@ def flyscan_xray_centre(
         md={
             "subplan_name": GRIDSCAN_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
+            "activate_callbacks": [
+                "XrayCentreZocaloCallback",
+                "GridscanISPyBCallback",
+                "GridscanNexusFileCallback",
+            ],
         }
     )
     @bpp.finalize_decorator(lambda: tidy_up_plans(composite))

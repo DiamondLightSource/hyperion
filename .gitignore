@@ -144,3 +144,6 @@ lockfiles/
 
 # ruff cache
 .ruff_cache/
+
+# idea project files
+.idea/

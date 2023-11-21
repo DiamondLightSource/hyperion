@@ -54,12 +54,18 @@ class TestXrayCentreIspybHandler:
         self,
     ):
         ispyb_handler = GridscanISPyBCallback()
-        ispyb_handler.start(td.test_start_document)
-        ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-        ispyb_handler.event(td.test_event_document_pre_data_collection)
-        ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-        ispyb_handler.event(td.test_event_document_during_data_collection)
-        ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
+        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_pre_data_collection
+        )
+        ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_during_data_collection
+        )
+        ispyb_handler.activity_gated_event(
+            td.test_event_document_during_data_collection
+        )
+        ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
         ispyb_handler.ispyb.update_scan_with_end_time_and_status.assert_has_calls(
             [
@@ -82,12 +88,18 @@ class TestXrayCentreIspybHandler:
         self,
     ):
         ispyb_handler = GridscanISPyBCallback()
-        ispyb_handler.start(td.test_start_document)
-        ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-        ispyb_handler.event(td.test_event_document_pre_data_collection)
-        ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-        ispyb_handler.event(td.test_event_document_during_data_collection)
-        ispyb_handler.stop(td.test_do_fgs_gridscan_stop_document)
+        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_pre_data_collection
+        )
+        ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_during_data_collection
+        )
+        ispyb_handler.activity_gated_event(
+            td.test_event_document_during_data_collection
+        )
+        ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
         ispyb_handler.ispyb.update_scan_with_end_time_and_status.assert_has_calls(
             [
@@ -110,11 +122,17 @@ class TestXrayCentreIspybHandler:
         self, mock_emit
     ):
         ispyb_handler = GridscanISPyBCallback()
-        ispyb_handler.start(td.test_start_document)
-        ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-        ispyb_handler.event(td.test_event_document_pre_data_collection)
-        ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-        ispyb_handler.event(td.test_event_document_during_data_collection)
+        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_pre_data_collection
+        )
+        ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_during_data_collection
+        )
+        ispyb_handler.activity_gated_event(
+            td.test_event_document_during_data_collection
+        )
 
         for logger in [ISPYB_LOGGER, dodal_logger]:
             logger.info("test")
@@ -126,12 +144,18 @@ class TestXrayCentreIspybHandler:
         mock_emit,
     ):
         ispyb_handler = GridscanISPyBCallback()
-        ispyb_handler.start(td.test_start_document)
-        ispyb_handler.descriptor(td.test_descriptor_document_pre_data_collection)
-        ispyb_handler.event(td.test_event_document_pre_data_collection)
-        ispyb_handler.descriptor(td.test_descriptor_document_during_data_collection)
-        ispyb_handler.event(td.test_event_document_during_data_collection)
-        ispyb_handler.stop(td.test_run_gridscan_failed_stop_document)
+        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_pre_data_collection
+        )
+        ispyb_handler.activity_gated_event(td.test_event_document_pre_data_collection)
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_during_data_collection
+        )
+        ispyb_handler.activity_gated_event(
+            td.test_event_document_during_data_collection
+        )
+        ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
         for logger in [ISPYB_LOGGER, dodal_logger]:
             logger.info("test")

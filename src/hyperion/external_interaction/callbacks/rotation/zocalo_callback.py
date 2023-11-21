@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from bluesky.callbacks import CallbackBase
-
+from hyperion.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
@@ -14,7 +15,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 
-class RotationZocaloCallback(CallbackBase):
+class RotationZocaloCallback(PlanReactiveCallback):
     """Simple callback which sends the ISPyB IDs for a rotation data collection to
     zocalo. Both run_start() and run_end() are sent when the collection is done.
     Triggers on the 'stop' document for 'rotation_scan_main'."""
@@ -23,10 +24,11 @@ class RotationZocaloCallback(CallbackBase):
         self,
         ispyb_handler: RotationISPyBCallback,
     ):
+        super().__init__()
         self.ispyb: RotationISPyBCallback = ispyb_handler
         self.run_uid = None
 
-    def start(self, doc: dict):
+    def activity_gated_start(self, doc: dict):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             ISPYB_LOGGER.info(
@@ -42,7 +44,7 @@ class RotationZocaloCallback(CallbackBase):
         if self.run_uid is None:
             self.run_uid = doc.get("uid")
 
-    def stop(self, doc: dict):
+    def activity_gated_stop(self, doc: dict):
         if self.run_uid and doc.get("run_start") == self.run_uid:
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
