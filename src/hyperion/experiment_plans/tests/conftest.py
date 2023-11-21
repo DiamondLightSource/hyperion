@@ -1,4 +1,5 @@
 from functools import partial
+from typing import Callable, Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -31,8 +32,13 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
+from hyperion.external_interaction.ispyb.store_in_ispyb import (
+    IspybIds,
+    Store3DGridscanInIspyb,
+)
 from hyperion.external_interaction.system_tests.conftest import TEST_RESULT_LARGE
+from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
+from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -47,7 +53,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 
 
 def mock_set(motor: EpicsMotor, val):
-    motor.user_readback.sim_put(val)
+    motor.user_readback.sim_put(val)  # type: ignore
     return Status(done=True, success=True)
 
 
@@ -87,7 +93,7 @@ def eiger(done_status):
 
 
 @pytest.fixture
-def smargon() -> Smargon:
+def smargon() -> Generator[Smargon, None, None]:
     smargon = i03.smargon(fake_with_ophyd_sim=True)
     smargon.x.user_setpoint._use_limits = False
     smargon.y.user_setpoint._use_limits = False
@@ -294,26 +300,45 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
         False
     )
 
-    fake_composite.fast_grid_scan.scan_invalid.sim_put(False)
-    fake_composite.fast_grid_scan.position_counter.sim_put(0)
+    fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
+    fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
 
     return fake_composite
 
 
+def modified_interactor_mock(assign_run_end: Callable | None = None):
+    mock = MagicMock(spec=ZocaloInteractor)
+    mock.wait_for_result.return_value = TEST_RESULT_LARGE
+    if assign_run_end:
+        mock.run_end = assign_run_end
+    return mock
+
+
+def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
+    mock = MagicMock(spec=Store3DGridscanInIspyb)
+    mock.begin_deposition.return_value = IspybIds(
+        data_collection_ids=dcids, data_collection_group_id=dcgid, grid_ids=(0, 0)
+    )
+    return mock
+
+
 @pytest.fixture
 def mock_subscriptions(test_fgs_params):
-    subscriptions = XrayCentreCallbackCollection.from_params(test_fgs_params)
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_end = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.run_start = MagicMock()
-    subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-        TEST_RESULT_LARGE
-    )
+    with patch(
+        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
+        modified_interactor_mock,
+    ):
+        subscriptions = XrayCentreCallbackCollection.setup()
+        start_doc = {
+            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "hyperion_internal_parameters": test_fgs_params.json(),
+        }
+        subscriptions.ispyb_handler.activity_gated_start(start_doc)
+        subscriptions.zocalo_handler.activity_gated_start(start_doc)
     subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
-    subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: [[0, 0], 0, 0]
-    subscriptions.ispyb_handler.active = True
-    subscriptions.nexus_handler.active = True
-    subscriptions.zocalo_handler.active = True
+    subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: IspybIds(
+        data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0, 0)
+    )
 
     return subscriptions
 
@@ -330,7 +355,7 @@ def mock_rotation_subscriptions(test_rotation_params):
         "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
         autospec=True,
     ):
-        subscriptions = RotationCallbackCollection.from_params(test_rotation_params)
+        subscriptions = RotationCallbackCollection.setup()
     return subscriptions
 
 

@@ -8,6 +8,7 @@ from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
 from hyperion.external_interaction.ispyb.store_in_ispyb import (
+    IspybIds,
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
     StoreRotationInIspyb,
@@ -228,9 +229,9 @@ def test_store_rotation_scan(
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    assert dummy_rotation_ispyb.begin_deposition() == (
-        TEST_DATA_COLLECTION_IDS[0],
-        TEST_DATA_COLLECTION_GROUP_ID,
+    assert dummy_rotation_ispyb.begin_deposition() == IspybIds(
+        data_collection_ids=TEST_DATA_COLLECTION_IDS[0],
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
 
 
@@ -344,6 +345,8 @@ def test_store_3d_grid_scan(
     )
     assert dummy_ispyb_3d.y_step_size == dummy_params.experiment_params.z_step_size
     assert dummy_ispyb_3d.y_steps == dummy_params.experiment_params.z_steps
+
+    assert dummy_ispyb_3d.upper_left is not None
 
     assert dummy_ispyb_3d.upper_left[0] == x
     assert dummy_ispyb_3d.upper_left[1] == z
@@ -507,6 +510,7 @@ def test_ispyb_deposition_rounds_to_int(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+    assert dummy_ispyb.full_params is not None
     dummy_ispyb.full_params.hyperion_params.ispyb_params.upper_left = np.array(
         [0.01, 100, 50]
     )

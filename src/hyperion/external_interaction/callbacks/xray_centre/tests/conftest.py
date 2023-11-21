@@ -2,9 +2,19 @@ from unittest.mock import patch
 
 import pytest
 
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
 from hyperion.parameters.constants import (
+    GRIDSCAN_AND_MOVE,
+    GRIDSCAN_MAIN_PLAN,
+    GRIDSCAN_OUTER_PLAN,
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+)
+from hyperion.parameters.external_parameters import from_file as default_raw_params
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
 )
 
 
@@ -56,6 +66,16 @@ def mock_ispyb_end_deposition():
         yield p
 
 
+@pytest.fixture
+def ispyb_handler():
+    return GridscanISPyBCallback()
+
+
+def dummy_params():
+    dummy_params = GridscanInternalParameters(**default_raw_params())
+    return dummy_params
+
+
 class TestData:
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
     GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
@@ -66,7 +86,9 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": "run_gridscan_and_move",
+        "plan_name": GRIDSCAN_OUTER_PLAN,
+        "subplan_name": GRIDSCAN_OUTER_PLAN,
+        "hyperion_internal_parameters": dummy_params().json(),
     }
     test_run_gridscan_start_document: dict = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -74,8 +96,8 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": "run_gridscan_and_move",
-        "subplan_name": "run_gridscan",
+        "plan_name": GRIDSCAN_AND_MOVE,
+        "subplan_name": GRIDSCAN_MAIN_PLAN,
     }
     test_do_fgs_start_document: dict = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -83,7 +105,7 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": "run_gridscan_and_move",
+        "plan_name": GRIDSCAN_AND_MOVE,
         "subplan_name": "do_fgs",
     }
     test_descriptor_document_pre_data_collection: dict = {
@@ -137,7 +159,7 @@ class TestData:
         "exit_status": "success",
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": "run_gridscan",
+        "subplan_name": GRIDSCAN_MAIN_PLAN,
     }
     test_do_fgs_gridscan_stop_document: dict = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -163,5 +185,5 @@ class TestData:
         "exit_status": "fail",
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": "run_gridscan",
+        "subplan_name": GRIDSCAN_MAIN_PLAN,
     }

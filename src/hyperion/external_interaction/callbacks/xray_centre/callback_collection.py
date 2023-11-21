@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
@@ -16,9 +15,6 @@ from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import 
     XrayCentreZocaloCallback,
 )
 
-if TYPE_CHECKING:
-    from hyperion.parameters.internal_parameters import InternalParameters
-
 
 @dataclass(frozen=True, order=True)
 class XrayCentreCallbackCollection(AbstractPlanCallbackCollection):
@@ -31,10 +27,10 @@ class XrayCentreCallbackCollection(AbstractPlanCallbackCollection):
     zocalo_handler: XrayCentreZocaloCallback
 
     @classmethod
-    def from_params(cls, parameters: InternalParameters):
+    def setup(cls):
         nexus_handler = GridscanNexusFileCallback()
-        ispyb_handler = GridscanISPyBCallback(parameters)
-        zocalo_handler = XrayCentreZocaloCallback(parameters, ispyb_handler)
+        ispyb_handler = GridscanISPyBCallback()
+        zocalo_handler = XrayCentreZocaloCallback(ispyb_handler)
         callback_collection = cls(
             nexus_handler=nexus_handler,
             ispyb_handler=ispyb_handler,

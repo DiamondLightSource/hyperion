@@ -5,7 +5,7 @@ from hyperion.external_interaction.callbacks.plan_reactive_callback import (
 )
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
-from hyperion.parameters.constants import ISPYB_HARDWARE_READ_PLAN
+from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN, ISPYB_HARDWARE_READ_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -38,7 +38,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         self.nexus_writer_2: NexusWriter | None = None
 
     def activity_gated_start(self, doc: dict):
-        if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
+        if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             NEXUS_LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."
             )

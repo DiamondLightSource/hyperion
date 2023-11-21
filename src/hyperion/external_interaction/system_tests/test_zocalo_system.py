@@ -20,7 +20,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 @pytest.mark.s03
 def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
     params = GridscanInternalParameters(**default_raw_params())
-    zc: XrayCentreZocaloCallback = XrayCentreCallbackCollection.from_params(
+    zc: XrayCentreZocaloCallback = XrayCentreCallbackCollection.setup(
         params
     ).zocalo_handler
     dcids = [1, 2]
@@ -37,7 +37,7 @@ def test_when_running_start_stop_then_get_expected_returned_results(zocalo_env):
 def run_zocalo_with_dev_ispyb(dummy_params: GridscanInternalParameters, dummy_ispyb_3d):
     def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.hyperion_params.detector_params.prefix = sample_name
-        zc: XrayCentreZocaloCallback = XrayCentreCallbackCollection.from_params(
+        zc: XrayCentreZocaloCallback = XrayCentreCallbackCollection.setup(
             dummy_params
         ).zocalo_handler
         zc.ispyb.ispyb.ISPYB_CONFIG_PATH = dummy_ispyb_3d.ISPYB_CONFIG_PATH

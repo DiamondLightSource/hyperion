@@ -43,7 +43,13 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import SIM_BEAMLINE
+from hyperion.parameters.constants import (
+    DO_FGS,
+    GRIDSCAN_AND_MOVE,
+    GRIDSCAN_MAIN_PLAN,
+    GRIDSCAN_OUTER_PLAN,
+    SIM_BEAMLINE,
+)
 from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -95,6 +101,7 @@ def set_aperture_for_bbox_size(
     bbox_size: list[int],
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
+    assert aperture_device.aperture_positions is not None
     if bbox_size[0] < 2:
         aperture_size_positions = aperture_device.aperture_positions.MEDIUM
         selected_aperture = "MEDIUM_APERTURE"
@@ -137,13 +144,13 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
 
 
-@bpp.set_run_key_decorator("run_gridscan")
-@bpp.run_decorator(md={"subplan_name": "run_gridscan"})
+@bpp.set_run_key_decorator(GRIDSCAN_MAIN_PLAN)
+@bpp.run_decorator(md={"subplan_name": GRIDSCAN_MAIN_PLAN})
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
     md={
-        "plan_name": "run_gridscan",
+        "plan_name": GRIDSCAN_MAIN_PLAN,
     },
 ):
     sample_motors = fgs_composite.sample_motors
@@ -173,8 +180,8 @@ def run_gridscan(
 
     yield from wait_for_gridscan_valid(fgs_motors)
 
-    @bpp.set_run_key_decorator("do_fgs")
-    @bpp.run_decorator(md={"subplan_name": "do_fgs"})
+    @bpp.set_run_key_decorator(DO_FGS)
+    @bpp.run_decorator(md={"subplan_name": DO_FGS})
     @bpp.contingency_decorator(
         except_plan=lambda e: (yield from bps.stop(fgs_composite.eiger)),
         else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
@@ -204,8 +211,8 @@ def run_gridscan(
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
-@bpp.set_run_key_decorator("run_gridscan_and_move")
-@bpp.run_decorator(md={"subplan_name": "run_gridscan_and_move"})
+@bpp.set_run_key_decorator(GRIDSCAN_AND_MOVE)
+@bpp.run_decorator(md={"subplan_name": GRIDSCAN_AND_MOVE})
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
@@ -268,15 +275,15 @@ def flyscan_xray_centre(
     """
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    subscriptions = XrayCentreCallbackCollection.from_params(parameters)
+    subscriptions = XrayCentreCallbackCollection.setup()
 
     @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
         list(subscriptions)  # must be the outermost decorator to receive the metadata
     )
-    @bpp.set_run_key_decorator("run_gridscan_move_and_tidy")
+    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": "run_gridscan_move_and_tidy",
+            "subplan_name": GRIDSCAN_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "XrayCentreZocaloCallback",
@@ -307,13 +314,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     RE = RunEngine({})
-    RE.waiting_hook = ProgressBarManager()
+    RE.waiting_hook = ProgressBarManager()  # type: ignore
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
         GridscanInternalParameters,
     )
 
     parameters = GridscanInternalParameters(**external_parameters.from_file())
-    subscriptions = XrayCentreCallbackCollection.from_params(parameters)
+    subscriptions = XrayCentreCallbackCollection.setup()
 
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)

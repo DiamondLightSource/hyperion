@@ -1,29 +1,39 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
+from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds, StoreInIspyb
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
     SIM_ISPYB_CONFIG,
 )
-from hyperion.parameters.internal_parameters import InternalParameters
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
+)
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
+
+if TYPE_CHECKING:
+    from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
-    def __init__(self, parameters: InternalParameters):
+    def __init__(self) -> None:
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
         super().__init__()
+        self.params: GridscanInternalParameters | RotationInternalParameters | None = (
+            None
+        )
         self.ispyb: StoreInIspyb
-        self.params = parameters
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
         if self.ispyb_config == SIM_ISPYB_CONFIG:
@@ -32,33 +42,24 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 " set the ISPYB_CONFIG_PATH environment variable."
             )
         self.uid_to_finalize_on: Optional[str] = None
-
-    def _append_to_comment(self, id: int, comment: str):
-        assert isinstance(self.ispyb, StoreInIspyb)
-        try:
-            self.ispyb.append_to_comment(id, comment)
-        except TypeError:
-            ISPYB_LOGGER.warning(
-                "ISPyB deposition not initialised, can't update comment."
-            )
-
-    def activity_gated_descriptor(self, doc: dict):
-        self.descriptors[doc["uid"]] = doc
+        self.ispyb_ids: IspybIds = IspybIds()
 
     def activity_gated_start(self, doc: dict):
         if self.uid_to_finalize_on is None:
             self.uid_to_finalize_on = doc.get("uid")
 
+    def activity_gated_descriptor(self, doc: dict):
+        self.descriptors[doc["uid"]] = doc
+
     def activity_gated_event(self, doc: dict):
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
-
         ISPYB_LOGGER.debug("ISPyB handler received event document.")
-        assert isinstance(
-            self.ispyb, StoreInIspyb
-        ), "ISPyB deposition can't be initialised!"
+        assert self.ispyb is not None, "ISPyB deposition wasn't initialised!"
+        assert self.params is not None, "ISPyB handler didn't recieve parameters!"
         event_descriptor = self.descriptors[doc["descriptor"]]
 
+        event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_gap"
@@ -92,12 +93,24 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.ispyb, StoreInIspyb
         ), "ISPyB handler recieved stop document, but deposition object doesn't exist!"
         ISPYB_LOGGER.debug("ISPyB handler received stop document.")
-        exit_status = doc.get("exit_status")
-        reason = doc.get("reason")
+        exit_status = (
+            doc.get("exit_status") or "Exit status not available in stop document!"
+        )
+        reason = doc.get("reason") or ""
+
         set_dcgid_tag(None)
         try:
             self.ispyb.end_deposition(exit_status, reason)
         except Exception as e:
             ISPYB_LOGGER.warning(
                 f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"
+            )
+
+    def _append_to_comment(self, id: int, comment: str):
+        assert isinstance(self.ispyb, StoreInIspyb)
+        try:
+            self.ispyb.append_to_comment(id, comment)
+        except TypeError:
+            ISPYB_LOGGER.warning(
+                "ISPyB deposition not initialised, can't update comment."
             )
