@@ -44,21 +44,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.uid_to_finalize_on: Optional[str] = None
         self.ispyb_ids: IspybIds = IspybIds()
 
-    def _append_to_comment(self, id: int, comment: str):
-        assert isinstance(self.ispyb, StoreInIspyb)
-        try:
-            self.ispyb.append_to_comment(id, comment)
-        except TypeError:
-            ISPYB_LOGGER.warning(
-                "ISPyB deposition not initialised, can't update comment."
-            )
-
-    def activity_gated_descriptor(self, doc: dict):
-        self.descriptors[doc["uid"]] = doc
-
     def activity_gated_start(self, doc: dict):
         if self.uid_to_finalize_on is None:
             self.uid_to_finalize_on = doc.get("uid")
+
+    def activity_gated_descriptor(self, doc: dict):
+        self.descriptors[doc["uid"]] = doc
 
     def activity_gated_event(self, doc: dict):
         """Subclasses should extend this to add a call to set_dcig_tag from
@@ -113,4 +104,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
         except Exception as e:
             ISPYB_LOGGER.warning(
                 f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"
+            )
+
+    def _append_to_comment(self, id: int, comment: str):
+        assert isinstance(self.ispyb, StoreInIspyb)
+        try:
+            self.ispyb.append_to_comment(id, comment)
+        except TypeError:
+            ISPYB_LOGGER.warning(
+                "ISPyB deposition not initialised, can't update comment."
             )

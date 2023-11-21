@@ -40,7 +40,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.ispyb: StoreGridscanInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
 
-    def start(self, doc: dict):
+    def activity_gated_start(self, doc: dict):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_LOGGER.info(
@@ -55,11 +55,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
 
-    def append_to_comment(self, comment: str):
-        assert isinstance(self.ispyb_ids.data_collection_ids, tuple)
-        for id in self.ispyb_ids.data_collection_ids:
-            self._append_to_comment(id, comment)
-
     def activity_gated_event(self, doc: dict):
         super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
@@ -73,3 +68,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             super().activity_gated_stop(doc)
+
+    def append_to_comment(self, comment: str):
+        assert isinstance(self.ispyb_ids.data_collection_ids, tuple)
+        for id in self.ispyb_ids.data_collection_ids:
+            self._append_to_comment(id, comment)

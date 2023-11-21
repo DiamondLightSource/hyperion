@@ -42,7 +42,10 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
-from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
+from hyperion.external_interaction.ispyb.store_in_ispyb import (
+    IspybIds,
+    Store3DGridscanInIspyb,
+)
 from hyperion.external_interaction.system_tests.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
@@ -70,10 +73,8 @@ def ispyb_plan(test_fgs_params):
         }
     )
     def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
-        yield from bps.open_run()
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
         yield from read_hardware_for_ispyb_during_collection(attn, fl)
-        yield from bps.close_run()
 
     return standalone_read_hardware_for_ispyb
 
@@ -138,6 +139,9 @@ class TestFlyscanXrayCentrePlan:
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
         test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
+        test_ispyb_callback.ispyb.begin_deposition.return_value = IspybIds(
+            data_collection_ids=(2, 3), data_collection_group_id=5, grid_ids=(7, 8, 9)
+        )
         RE.subscribe(test_ispyb_callback)
 
         RE(
@@ -186,13 +190,13 @@ class TestFlyscanXrayCentrePlan:
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-        mock_subscriptions.ispyb_handler.start(
+        mock_subscriptions.ispyb_handler.activity_gated_start(
             {
                 "subplan_name": GRIDSCAN_OUTER_PLAN,
                 "hyperion_internal_parameters": test_fgs_params.json(),
             }
         )
-        mock_subscriptions.ispyb_handler.descriptor(
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
@@ -206,7 +210,7 @@ class TestFlyscanXrayCentrePlan:
                 },
             }
         )
-        mock_subscriptions.ispyb_handler.descriptor(
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
@@ -336,9 +340,9 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
     ):
         td = TestData()
-        mock_subscriptions.ispyb_handler.start(td.test_start_document)
-        mock_subscriptions.zocalo_handler.start(td.test_start_document)
-        mock_subscriptions.ispyb_handler.descriptor(
+        mock_subscriptions.ispyb_handler.activity_gated_start(td.test_start_document)
+        mock_subscriptions.zocalo_handler.activity_gated_start(td.test_start_document)
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
         )
 
@@ -353,7 +357,7 @@ class TestFlyscanXrayCentrePlan:
                 },
             }
         )
-        mock_subscriptions.ispyb_handler.descriptor(
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
@@ -381,7 +385,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
     ):
-        mock_subscriptions.ispyb_handler.descriptor(
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
         )
 
@@ -396,7 +400,7 @@ class TestFlyscanXrayCentrePlan:
                 },
             }
         )
-        mock_subscriptions.ispyb_handler.descriptor(
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
@@ -411,9 +415,11 @@ class TestFlyscanXrayCentrePlan:
 
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        mock_subscriptions.zocalo_handler.wait_for_results.return_value = (
-            (0, 0, 0),
-            None,
+        mock_subscriptions.zocalo_handler.wait_for_results = MagicMock(
+            return_value=(
+                (0, 0, 0),
+                None,
+            )
         )
 
         RE(

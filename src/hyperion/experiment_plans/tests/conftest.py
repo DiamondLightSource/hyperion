@@ -333,8 +333,8 @@ def mock_subscriptions(test_fgs_params):
             "subplan_name": GRIDSCAN_OUTER_PLAN,
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
-        subscriptions.ispyb_handler.start(start_doc)
-        subscriptions.zocalo_handler.start(start_doc)
+        subscriptions.ispyb_handler.activity_gated_start(start_doc)
+        subscriptions.zocalo_handler.activity_gated_start(start_doc)
     subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
     subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: IspybIds(
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0, 0)
