@@ -41,6 +41,6 @@ jobs:
                   }
                 }
               }
-            }' -f org=$ORGANIZATION -F repo=${REPO_ORG_NAME##*/} -F  > project_data.json
+            }' -f org=$ORGANIZATION -F repo=${REPO_ORG_NAME##*/} > project_data.json
 
           echo 'step_issue_id='$(jq '.data.repository.pullRequest.closingIssuesReferences.edges[0].node.id' project_data.json) >> $GITHUB_OUTPUT
