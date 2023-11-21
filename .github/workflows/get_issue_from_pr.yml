@@ -32,16 +32,15 @@ jobs:
           gh api graphql -f query='
             query($org: String!, $repo: String!){
               repository(owner: $org, name: $repo) {
-                pullRequest(number: $number) {
+                pullRequest(number: $number)
                   closingIssuesReferences(first: 1) {
                     edges {
                       node {
                         id
                       }
                     }
-                  author { ... on User {id} }
+                  }
                 }
-              }
-            }' -f org=$ORGANIZATION -F repo=${REPO_ORG_NAME##*/} -F number=$PULL_REQUEST_NUMBER > project_data.json
+              }' -f org=$ORGANIZATION -F repo=${REPO_ORG_NAME##*/} -F number=$PULL_REQUEST_NUMBER > project_data.json
 
           echo 'step_issue_id='$(jq '.data.repository.pullRequest.closingIssuesReferences.edges[0].node.id' project_data.json) >> $GITHUB_OUTPUT
