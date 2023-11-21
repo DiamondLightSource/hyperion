@@ -16,13 +16,9 @@ from hyperion.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
 
-ZOOM_LEVELS_XML = (
-    "src/hyperion/experiment_plans/tests/test_data/jCameraManZoomLevels.xml"
-)
-OAV_CENTRING_JSON = "src/hyperion/experiment_plans/tests/test_data/OAVCentring.json"
-DISPLAY_CONFIGURATION = (
-    "src/hyperion/experiment_plans/tests/test_data/display.configuration"
-)
+ZOOM_LEVELS_XML = "tests/test_data/jCameraManZoomLevels.xml"
+OAV_CENTRING_JSON = "tests/test_data/OAVCentring.json"
+DISPLAY_CONFIGURATION = "tests/test_data/display.configuration"
 
 
 @pytest.fixture
