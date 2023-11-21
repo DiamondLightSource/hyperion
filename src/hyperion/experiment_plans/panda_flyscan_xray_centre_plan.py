@@ -144,9 +144,15 @@ def wait_for_gridscan_valid(fgs_motors: PandAFastGridScan, timeout=0.5):
 
 def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     hyperion.log.LOGGER.info("Disabling panda blocks")
-    yield from disarm_panda_for_gridscan(fgs_composite.panda, wait=True)
+    yield from disarm_panda_for_gridscan(
+        fgs_composite.panda, group="panda_flyscan_tidy"
+    )
     hyperion.log.LOGGER.info("Tidying up Zebra")
-    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
+    yield from set_zebra_shutter_to_manual(
+        fgs_composite.zebra, group="panda_flyscan_tidy"
+    )
+
+    yield from bps.wait(group="panda_flyscan_tidy", wait=10)
 
 
 @bpp.set_run_key_decorator("run_gridscan")

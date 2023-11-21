@@ -35,9 +35,9 @@ def setup_panda_for_flyscan(
         1:Wait for physical trigger from motion script to mark start of scan / change of direction
         2:Wait for POSA (X2) to be greater than X_START, then
           send a signal out every 2000us (minimum eiger exposure time) + 4us (eiger dead time ((check that number)))
-        3:Wait for POSA (X2) to be greater than X_START + (X_STEP_SIZE * NUM_X_STEPS), then cut out the signal
+        3:Wait for POSA (X2) to be greater than X_START + X_STEP_SIZE, then cut out the signal
         4:Wait for physical trigger from motion script to mark change of direction
-        5:Wait for POSA (X2) to be less than X_START + (X_STEP_SIZE * NUM_X_STEPS), then
+        5:Wait for POSA (X2) to be less than X_START + X_STEP_SIZE, then
           send a signal out every 2000us (minimum eiger exposure time) + 4us (eiger dead time ((check that number)))
         6:Wait for POSA (X2) to be less than X_START, then cut out signal
         7:Go back to step one. Scan should finish at step 6, and then not recieve any more physical triggers so the panda will stop sending outputs 
@@ -58,11 +58,11 @@ def setup_panda_for_flyscan(
             0,
             (parameters.x_start * ENCODER_TO_MM),
             (parameters.x_start * ENCODER_TO_MM)
-            + (parameters.x_steps * parameters.x_step_size) * ENCODER_TO_MM
+            + (parameters.x_step_size) * ENCODER_TO_MM
             - 15,
             0,
             (parameters.x_start * ENCODER_TO_MM)
-            + (parameters.x_steps * parameters.x_step_size * ENCODER_TO_MM),
+            + (parameters.x_step_size * ENCODER_TO_MM),
             (parameters.x_start * ENCODER_TO_MM) + 15,
         ]
     )

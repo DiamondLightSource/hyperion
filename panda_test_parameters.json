@@ -56,10 +56,9 @@
         }
     },
     "experiment_params": {
-        "x_steps": 5,
         "y_steps": 10,
         "z_steps": 2,
-        "x_step_size": 0.1,
+        "x_step_size": 0.2,
         "y_step_size": 0.02,
         "z_step_size": 0.02,
         "dwell_time_ms": 2,
