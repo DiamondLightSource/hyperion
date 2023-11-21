@@ -2,8 +2,8 @@ from threading import Thread
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 
-from hyperion.__main__ import cli_arg_parse
 from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER, set_up_logging_handlers
+from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS
 
 
@@ -24,7 +24,7 @@ def setup_logging():
         _,
         dev_mode,
         _,
-    ) = cli_arg_parse()
+    ) = parse_cli_args()
     set_up_logging_handlers(
         logging_level=logging_level,
         dev_mode=dev_mode,

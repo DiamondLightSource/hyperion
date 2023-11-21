@@ -1,4 +1,3 @@
-import argparse
 import atexit
 import threading
 from dataclasses import asdict
@@ -22,6 +21,7 @@ from hyperion.external_interaction.callbacks.aperture_change_callback import (
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
@@ -258,38 +258,6 @@ def create_app(
     return app, runner
 
 
-def cli_arg_parse() -> Tuple[Optional[str], bool, bool, bool]:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--dev",
-        action="store_true",
-        help="Use dev options, such as local graylog instances and S03",
-    )
-    parser.add_argument(
-        "--verbose-event-logging",
-        action="store_true",
-        help="Log all bluesky event documents to graylog",
-    )
-    parser.add_argument(
-        "--logging-level",
-        type=str,
-        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
-        help="Choose overall logging level, defaults to INFO",
-    )
-    parser.add_argument(
-        "--skip-startup-connection",
-        action="store_true",
-        help="Skip connecting to EPICS PVs on startup",
-    )
-    args = parser.parse_args()
-    return (
-        args.logging_level,
-        args.verbose_event_logging,
-        args.dev,
-        args.skip_startup_connection,
-    )
-
-
 def main():
     hyperion_port = 5005
     (
@@ -297,7 +265,7 @@ def main():
         VERBOSE_EVENT_LOGGING,
         dev_mode,
         skip_startup_connection,
-    ) = cli_arg_parse()
+    ) = parse_cli_args()
     hyperion.log.set_up_logging_handlers(
         logging_level=logging_level, dev_mode=bool(dev_mode)
     )

@@ -20,7 +20,6 @@ from hyperion.__main__ import (
     Actions,
     BlueskyRunner,
     Status,
-    cli_arg_parse,
     create_app,
     setup_context,
 )
@@ -28,6 +27,7 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
+from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -279,10 +279,10 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
 
 def test_cli_args_parse():
     argv[1:] = ["--dev", "--logging-level=DEBUG"]
-    test_args = cli_arg_parse()
+    test_args = parse_cli_args()
     assert test_args == ("DEBUG", False, True, False)
     argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
-    test_args = cli_arg_parse()
+    test_args = parse_cli_args()
     assert test_args == ("DEBUG", True, True, False)
     argv[1:] = [
         "--dev",
@@ -290,7 +290,7 @@ def test_cli_args_parse():
         "--verbose-event-logging",
         "--skip-startup-connection",
     ]
-    test_args = cli_arg_parse()
+    test_args = parse_cli_args()
     assert test_args == ("DEBUG", True, True, True)
 
 
