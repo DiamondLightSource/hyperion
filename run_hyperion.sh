@@ -78,7 +78,6 @@ if [[ $STOP == 1 ]]; then
         fi
     fi
     pkill -f "python -m hyperion"
-    pkill -f "python -m artemis"
 
     echo "Hyperion stopped"
     exit 0
@@ -98,7 +97,6 @@ if [[ $START == 1 ]]; then
     fi
 
     pkill -f "python -m hyperion"
-    pkill -f "python -m artemis"
 
     module unload controls_dev
     module load python/3.10
@@ -133,7 +131,8 @@ if [[ $START == 1 ]]; then
         if [ "${args[$i]}" != false ]; then commands+="${arg_strings[$i]} "; fi;
     done
     
-    python -m hyperion `echo $commands;`>$start_log_path 2>&1 &
+    hyperion `echo $commands;`>$start_log_path 2>&1 &
+    hyperion-callbacks
 
     echo "$(date) Waiting for Hyperion to boot"
 

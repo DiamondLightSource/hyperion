@@ -287,7 +287,7 @@ def cli_arg_parse() -> Tuple[Optional[str], bool, bool, bool]:
     )
 
 
-if __name__ == "__main__":
+def main():
     hyperion_port = 5005
     (
         logging_level,
@@ -297,18 +297,6 @@ if __name__ == "__main__":
     ) = cli_arg_parse()
     hyperion.log.set_up_logging_handlers(
         logging_level=logging_level, dev_mode=bool(dev_mode)
-    )
-    hyperion.log.set_up_logging_handlers(
-        logging_level=logging_level,
-        dev_mode=dev_mode,
-        filename="hyperion_ispyb_callback.txt",
-        logger=hyperion.log.ISPYB_LOGGER,
-    )
-    hyperion.log.set_up_logging_handlers(
-        logging_level=logging_level,
-        dev_mode=dev_mode,
-        filename="hyperion_nexus_callback.txt",
-        logger=hyperion.log.NEXUS_LOGGER,
     )
     app, runner = create_app(skip_startup_connection=bool(skip_startup_connection))
     atexit.register(runner.shutdown)
@@ -324,3 +312,7 @@ if __name__ == "__main__":
     )
     runner.wait_on_queue()
     flask_thread.join()
+
+
+if __name__ == "__main__":
+    main()
