@@ -9,11 +9,12 @@ jobs:
     steps:
       - name: Get project data
         # This will get information about the project in general and add it to the environment.
-        # * ISSUE_REFERENCED_ID - The ID for the Issue that was referenes at Fixes#999
+        # * ASSIGNABLE_ID - The ID for the Issue that was referenes at Fixes#999
         # * AUTHOR_ID - The ID of the person who made a pull request so that the author can be assigned to the Fixes#999
         env:
           GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
-          REPO_ORG_NAME: ${{ github.repository }}
+          ORGANIZATION: ${{ github.repository_owner }}
+          REPO_ORG_NAME: ${{ github.repository }} # Contains the repo_name in format org/repo_name
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           gh api graphql -f query='
@@ -31,8 +32,7 @@ jobs:
                 }
               }
             }' -f org=$ORGANIZATION -f repo=${REPO_ORG_NAME##*/} -F number=$PULL_REQUEST_NUMBER > project_data.json
-          
-          echo "$(<project_data.json )"
+
           echo 'ASSIGNABLE_ID='$(jq '.data.repository.pullRequest.closingIssuesReferences.edges[0].node.id' project_data.json) >> $GITHUB_ENV
           echo 'AUTHOR_ID='$(jq '.data.repository.pullRequest.author.id' project_data.json) >> $GITHUB_ENV
       # Add assingee of pull request of the references issue/ticket
