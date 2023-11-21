@@ -7,6 +7,7 @@ from traceback import format_exception
 from typing import Any, Callable, Optional, Tuple
 
 from blueapi.core import BlueskyContext, MsgGenerator
+from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from flask import Flask, request
 from flask_restful import Api, Resource
@@ -21,7 +22,7 @@ from hyperion.external_interaction.callbacks.aperture_change_callback import (
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from hyperion.parameters.constants import Actions, Status
+from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
 from hyperion.utils.context import setup_context
@@ -68,12 +69,14 @@ class BlueskyRunner:
     def __init__(
         self, RE: RunEngine, context: BlueskyContext, skip_startup_connection=False
     ) -> None:
+        self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
         self.RE = RE
         self.skip_startup_connection = skip_startup_connection
         self.context = context
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
         RE.subscribe(self.aperture_change_callback)
+        RE.subscribe(self.publisher)
 
         if not self.skip_startup_connection:
             for plan_name in PLAN_REGISTRY:
