@@ -39,8 +39,8 @@ def init_cbs_with_docs_and_mock_zocalo_and_ispyb(
         "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
         lambda _, __: modified_store_grid_scan_mock(dcids=dcids, dcgid=dcgid),
     ):
-        callbacks.ispyb_handler.start(td.test_start_document)
-        callbacks.zocalo_handler.start(td.test_start_document)
+        callbacks.ispyb_handler.activity_gated_start(td.test_start_document)
+        callbacks.zocalo_handler.activity_gated_start(td.test_start_document)
     callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
@@ -67,7 +67,9 @@ class TestXrayCentreZocaloHandler:
         callbacks = XrayCentreCallbackCollection.setup()
         init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks, dc_ids, dcg_id)
         callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
-        callbacks.zocalo_handler.start(td.test_run_gridscan_start_document)
+        callbacks.zocalo_handler.activity_gated_start(
+            td.test_run_gridscan_start_document
+        )
         callbacks.ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
         )  # type: ignore
@@ -111,10 +113,12 @@ class TestXrayCentreZocaloHandler:
     ):
         callbacks = XrayCentreCallbackCollection.setup()
         init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks)
-        callbacks.ispyb_handler.descriptor(
+        callbacks.ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
         )
-        callbacks.ispyb_handler.event(td.test_event_document_pre_data_collection)
+        callbacks.ispyb_handler.activity_gated_event(
+            td.test_event_document_pre_data_collection
+        )
 
         callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
         callbacks.ispyb_handler.activity_gated_descriptor(

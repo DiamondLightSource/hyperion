@@ -152,6 +152,7 @@ def test_nexus_handler_only_writes_once(
         cb = RotationCallbackCollection.setup()
     activate_callbacks(cb)
     cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.ispyb_handler.activity_gated_event = MagicMock(autospec=True)
     cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
 
     RE(fake_rotation_scan(params, cb))

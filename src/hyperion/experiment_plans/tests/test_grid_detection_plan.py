@@ -46,7 +46,7 @@ def fake_devices(smargon: Smargon, backlight: Backlight):
         "dodal.devices.areadetector.plugins.MJPG.Image"
     ) as mock_image_class:
         mock_image = MagicMock()
-        mock_image_class.open.return_value = mock_image
+        mock_image_class.open.return_value.__enter__.return_value = mock_image
 
         composite = OavGridDetectionComposite(
             backlight=backlight,
