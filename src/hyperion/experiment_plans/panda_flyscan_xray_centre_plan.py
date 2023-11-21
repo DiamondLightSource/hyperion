@@ -135,7 +135,7 @@ def wait_for_gridscan_valid(fgs_motors: PandAFastGridScan, timeout=0.5):
         hyperion.log.LOGGER.debug(
             f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
         )
-        if not scan_invalid and pos_counter == 0:
+        if not scan_invalid:
             hyperion.log.LOGGER.info("Gridscan scan valid and position counter reset")
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
@@ -152,7 +152,7 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
         fgs_composite.zebra, group="panda_flyscan_tidy"
     )
 
-    yield from bps.wait(group="panda_flyscan_tidy", wait=10)
+    yield from bps.wait(group="panda_flyscan_tidy", timeout=10)
 
 
 @bpp.set_run_key_decorator("run_gridscan")

@@ -4,18 +4,18 @@
         "beamline": "BL03I",
         "insertion_prefix": "SR03I",
         "detector": "EIGER2_X_16M",
-        "zocalo_environment": "dev_artemis",
+        "zocalo_environment": "artemis",
         "experiment_type": "panda_flyscan_xray_centre",
         "detector_params": {
             "current_energy_ev": 12700,
             "directory": "/dls/i03/data/2023/cm33866-5/test_hyperion",
             "prefix": "panda_test",
-            "run_number": 6,
+            "run_number": 142,
             "use_roi_mode": false,
             "det_dist_to_beam_converter_path": "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
         },
         "ispyb_params": {
-            "visit_path": "/tmp/cm31105-4/",
+            "visit_path": "/dls/i03/data/2023/cm33866-5/",
             "microns_per_pixel_x": 1.0,
             "microns_per_pixel_y": 1.0,
             "upper_left": [
@@ -56,9 +56,10 @@
         }
     },
     "experiment_params": {
+        "x_steps": 10,
         "y_steps": 10,
         "z_steps": 2,
-        "x_step_size": 0.2,
+        "x_step_size": 0.02,
         "y_step_size": 0.02,
         "z_step_size": 0.02,
         "dwell_time_ms": 2,
