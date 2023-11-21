@@ -49,7 +49,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dcid = dummy_ispyb.begin_deposition()
     dummy_ispyb.end_deposition("fail", "could not connect to devices")
     assert (
-        fetch_comment(dcid[0][0])
+        fetch_comment(dcid.data_collection_ids[0])
         == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 

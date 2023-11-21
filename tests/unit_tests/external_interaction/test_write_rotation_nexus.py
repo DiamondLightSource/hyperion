@@ -19,8 +19,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 TEST_EXAMPLE_NEXUS_FILE = Path("ins_8_5.nxs")
-TEST_DIRECTORY = Path("tests/test_data/scratch")
-TEST_FILENAME = "rotation_scan_test_nexus"
+TEST_DIRECTORY = Path("tests/test_data")
+TEST_FILENAME = "scratch/rotation_scan_test_nexus"
 
 
 @pytest.fixture
@@ -28,9 +28,7 @@ def test_params():
     param_dict = from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
-    param_dict["hyperion_params"]["detector_params"][
-        "directory"
-    ] = "src/hyperion/external_interaction/unit_tests/test_data"
+    param_dict["hyperion_params"]["detector_params"]["directory"] = "tests/test_data"
     param_dict["hyperion_params"]["detector_params"]["prefix"] = TEST_FILENAME
     param_dict["experiment_params"]["rotation_angle"] = 360.0
     param_dict["hyperion_params"]["detector_params"]["current_energy_ev"] = 12700
