@@ -66,7 +66,7 @@ Starting a scan
 
 To start a scan you can do the following:
 ```
-curl -X PUT http://127.0.0.1:5005/flyscan_xray_centre/start --data-binary "@test_parameters.json" -H "Content-Type: application/json"
+curl -X PUT http://127.0.0.1:5005/flyscan_xray_centre/start --data-binary "@tests/parameter_json_files/test_parameters.json" -H "Content-Type: application/json"
 ```
 
 Getting the Runner Status
