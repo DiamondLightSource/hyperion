@@ -27,20 +27,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
           ORGANIZATION: ${{ github.repository_owner }}
           REPO_ORG_NAME: ${{ github.repository }} # Contains the repo_name in format org/repo_name
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           gh api graphql -f query='
             query($org: String!, $repo: String!){
               repository(owner: $org, name: $repo) {
-                pullRequest(number: ${{inputs.pr_id}}) {
+                pullRequest(number: $number) {
                   closingIssuesReferences(first: 1) {
                     edges {
                       node {
                         id
                       }
                     }
-                  }
+                  author { ... on User {id} }
                 }
               }
-            }' -f org=$ORGANIZATION -F repo=${REPO_ORG_NAME##*/} > project_data.json
+            }' -f org=$ORGANIZATION -F repo=${REPO_ORG_NAME##*/} -F number=$PULL_REQUEST_NUMBER > project_data.json
 
           echo 'step_issue_id='$(jq '.data.repository.pullRequest.closingIssuesReferences.edges[0].node.id' project_data.json) >> $GITHUB_OUTPUT
