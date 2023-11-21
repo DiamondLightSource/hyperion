@@ -17,8 +17,8 @@ def synchrotron():
     return i03.synchrotron(fake_with_ophyd_sim=True)
 
 
-@patch("src.hyperion.device_setup_plans.check_topup.wait_for_topup_complete")
-@patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
+@patch("hyperion.device_setup_plans.check_topup.wait_for_topup_complete")
+@patch("hyperion.device_setup_plans.check_topup.bps.sleep")
 def test_when_topup_before_end_of_collection_wait(fake_sleep, fake_wait, synchrotron):
     synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.USER.value)
     synchrotron.top_up.start_countdown.sim_put(20.0)
@@ -35,8 +35,8 @@ def test_when_topup_before_end_of_collection_wait(fake_sleep, fake_wait, synchro
     fake_sleep.assert_called_once_with(60.0)
 
 
-@patch("src.hyperion.device_setup_plans.check_topup.bps.rd")
-@patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
+@patch("hyperion.device_setup_plans.check_topup.bps.rd")
+@patch("hyperion.device_setup_plans.check_topup.bps.sleep")
 def test_wait_for_topup_complete(fake_sleep, fake_rd, synchrotron):
     def fake_generator(value):
         yield from bps.null()
@@ -56,8 +56,8 @@ def test_wait_for_topup_complete(fake_sleep, fake_rd, synchrotron):
     fake_sleep.assert_called_with(0.1)
 
 
-@patch("src.hyperion.device_setup_plans.check_topup.bps.sleep")
-@patch("src.hyperion.device_setup_plans.check_topup.bps.null")
+@patch("hyperion.device_setup_plans.check_topup.bps.sleep")
+@patch("hyperion.device_setup_plans.check_topup.bps.null")
 def test_no_waiting_if_decay_mode(fake_null, fake_sleep, synchrotron):
     synchrotron.top_up.start_countdown.sim_put(-1)
 
@@ -73,7 +73,7 @@ def test_no_waiting_if_decay_mode(fake_null, fake_sleep, synchrotron):
     assert fake_sleep.call_count == 0
 
 
-@patch("src.hyperion.device_setup_plans.check_topup.bps.null")
+@patch("hyperion.device_setup_plans.check_topup.bps.null")
 def test_no_waiting_when_mode_does_not_allow_gating(fake_null, synchrotron):
     synchrotron.top_up.start_countdown.sim_put(1.0)
     synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN.value)
