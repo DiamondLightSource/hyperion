@@ -26,7 +26,7 @@ with open(
 ) as f:
     rotation_scan_schema = json.load(f)
 with open(
-    "src/hyperion/parameters/tests/test_data/good_tests/parameter_json_files/test_parameters.json",
+    "tests/test_data/good_test_parameters.json",
     "r",
 ) as f:
     params = json.load(f)

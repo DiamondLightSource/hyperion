@@ -36,7 +36,6 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.external_interaction.ispyb.store_in_ispyb import (
     IspybIds,
     Store3DGridscanInIspyb,
@@ -57,6 +56,7 @@ from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
 )
+from ..external_interaction.callbacks.xray_centre.conftest import TestData
 from .conftest import (
     modified_interactor_mock,
     modified_store_grid_scan_mock,

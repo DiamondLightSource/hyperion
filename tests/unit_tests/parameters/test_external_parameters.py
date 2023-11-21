@@ -10,18 +10,18 @@ from hyperion.parameters.beamline_parameters import (
 
 def test_new_parameters_is_a_new_object():
     a = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/good_tests/parameter_json_files/test_parameters.json"
     )
     b = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/good_tests/parameter_json_files/test_parameters.json"
     )
     assert a == b
     assert a is not b
 
 
-def tests/parameter_json_files/test_parameters_load_from_file():
+def test_parameters_load_from_file():
     params = external_parameters.from_file(
-        "src/hyperion/parameters/tests/test_data/good_tests/parameter_json_files/test_parameters.json"
+        "tests/test_data/good_tests/parameter_json_files/test_parameters.json"
     )
     expt_params = params["experiment_params"]
     assert expt_params["x_steps"] == 5
@@ -40,7 +40,7 @@ def tests/parameter_json_files/test_parameters_load_from_file():
 
 def test_beamline_parameters():
     params = GDABeamlineParameters.from_file(
-        "src/hyperion/parameters/tests/test_data/test_beamline_parameters.txt"
+        "tests/test_data/test_beamline_parameters.txt"
     )
     assert params["sg_x_MEDIUM_APERTURE"] == 5.285
     assert params["col_parked_downstream_x"] == 0
@@ -50,9 +50,7 @@ def test_beamline_parameters():
 
 
 def test_i03_beamline_parameters():
-    params = GDABeamlineParameters.from_file(
-        "src/hyperion/parameters/tests/test_data/i04_beamlineParameters"
-    )
+    params = GDABeamlineParameters.from_file("tests/test_data/i04_beamlineParameters")
     assert params["flux_predict_polynomial_coefficients_5"] == [
         -0.0000707134131045123,
         7.0205491504418,
@@ -64,9 +62,7 @@ def test_i03_beamline_parameters():
 
 @patch("hyperion.parameters.beamline_parameters.LOGGER")
 def test_parse_exception_causes_warning(mock_logger):
-    params = GDABeamlineParameters.from_file(
-        "src/hyperion/parameters/tests/test_data/bad_beamlineParameters"
-    )
+    params = GDABeamlineParameters.from_file("tests/test_data/bad_beamlineParameters")
     assert params["flux_predict_polynomial_coefficients_5"] == [
         -0.0000707134131045123,
         7.0205491504418,
@@ -76,9 +72,7 @@ def test_parse_exception_causes_warning(mock_logger):
     ]
     mock_logger.warning.assert_called_once()
 
-    params = GDABeamlineParameters.from_file(
-        "src/hyperion/parameters/tests/test_data/bad_beamlineParameters"
-    )
+    params = GDABeamlineParameters.from_file("tests/test_data/bad_beamlineParameters")
     assert params["flux_predict_polynomial_coefficients_5"] == [
         -0.0000707134131045123,
         7.0205491504418,
@@ -106,7 +100,7 @@ def test_get_beamline_parameters():
     environ["BEAMLINE"] = "i03"
     with patch.dict(
         "hyperion.parameters.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
-        {"i03": "src/hyperion/parameters/tests/test_data/test_beamline_parameters.txt"},
+        {"i03": "tests/test_data/test_beamline_parameters.txt"},
     ):
         params = get_beamline_parameters()
     assert params["col_parked_downstream_x"] == 0

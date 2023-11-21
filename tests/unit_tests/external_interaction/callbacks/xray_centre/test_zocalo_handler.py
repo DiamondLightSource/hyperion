@@ -6,7 +6,6 @@ import pytest
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.callbacks.xray_centre.tests.conftest import TestData
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
 from hyperion.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
@@ -16,6 +15,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 
 from ....experiment_plans.conftest import modified_store_grid_scan_mock
+from ....external_interaction.callbacks.xray_centre.conftest import TestData
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}

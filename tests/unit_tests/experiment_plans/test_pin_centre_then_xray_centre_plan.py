@@ -10,12 +10,6 @@ from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_centre_then_xray_centre_plan,
     pin_tip_centre_then_xray_centre,
 )
-from hyperion.experiment_plans.tests.run_engine_simulator import (
-    RunEngineSimulator,
-    add_simple_oav_mxsc_callback_handlers,
-    add_simple_pin_tip_centre_handlers,
-    assert_message_and_return_remaining,
-)
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectParams,
@@ -24,16 +18,23 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
     PinCentreThenXrayCentreInternalParameters,
 )
 
+from .test_run_engine_simulator import (
+    RunEngineSimulator,
+    add_simple_oav_mxsc_callback_handlers,
+    add_simple_pin_tip_centre_handlers,
+    assert_message_and_return_remaining,
+)
+
 
 @pytest.fixture
 def test_pin_centre_then_xray_centre_params():
     params = raw_params_from_file(
-        "src/hyperion/parameters/tests/test_data/good_test_pin_centre_then_xray_centre_parameters.json"
+        "tests/test_data/good_test_pin_centre_then_xray_centre_parameters.json"
     )
     return PinCentreThenXrayCentreInternalParameters(**params)
 
 
-def test_when_create_parameters_for_grid_detection_thne_parameters_created(
+def test_when_create_parameters_for_grid_detection_then_parameters_created(
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
 ):
     grid_detect_params = create_parameters_for_grid_detection(

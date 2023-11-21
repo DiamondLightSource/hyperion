@@ -10,7 +10,6 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
 
-from hyperion.device_setup_plans.unit_tests.test_setup_oav import fake_smargon
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
     detect_grid_and_do_gridscan,
@@ -25,6 +24,8 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+from ..device_setup_plans.test_setup_oav import fake_smargon
 
 
 def _fake_grid_detection(
