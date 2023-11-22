@@ -193,6 +193,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
     test_config_files: Dict,
 ):
+    oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
     mock_oav_callback = OavSnapshotCallback()
     mock_oav_callback.snapshot_filenames = [["a", "b", "c"], ["d", "e", "f"]]
     mock_oav_callback.out_upper_left = [[1, 2], [1, 3]]
@@ -204,6 +205,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    # grid_detect_devices.oav.zoom_controller.level.set(f"{oav_params.zoom}x")
 
     with patch.object(eiger.do_arm, "set", MagicMock()), patch.object(
         grid_detect_devices.aperture_scatterguard, "set", MagicMock()
@@ -212,9 +214,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
             detect_grid_and_do_gridscan(
                 grid_detect_devices,
                 parameters=test_full_grid_scan_params,
-                oav_params=OAVParameters(
-                    "xrayCentring", test_config_files["oav_config_json"]
-                ),
+                oav_params=oav_params,
             )
         )
 

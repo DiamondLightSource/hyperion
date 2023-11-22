@@ -23,7 +23,7 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
 
 
 @pytest.fixture
-def fake_devices(smargon: Smargon, backlight: Backlight):
+def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
     oav = i03.oav(fake_with_ophyd_sim=True)
     oav.wait_for_connection()
 
