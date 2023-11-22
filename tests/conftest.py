@@ -225,6 +225,36 @@ def attenuator():
 
 
 @pytest.fixture
+def dcm():
+    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    dcm.pitch.user_setpoint._use_limits = False
+    dcm.dcm_roll_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_roll_converter.txt"
+    )
+    return dcm
+
+
+@pytest.fixture
+def qbpm1():
+    return i03.qbpm1(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def vfm():
+    return i03.vfm(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def hfm():
+    return i03.hfm(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def i0():
+    return i03.i0(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
 def aperture_scatterguard():
     return i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,

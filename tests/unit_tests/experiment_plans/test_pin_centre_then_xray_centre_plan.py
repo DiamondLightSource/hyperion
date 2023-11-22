@@ -19,11 +19,10 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
     PinCentreThenXrayCentreInternalParameters,
 )
 
+from ..conftest import RunEngineSimulator, assert_message_and_return_remaining
 from .conftest import (
-    RunEngineSimulator,
     add_simple_oav_mxsc_callback_handlers,
     add_simple_pin_tip_centre_handlers,
-    assert_message_and_return_remaining,
 )
 
 
