@@ -19,17 +19,24 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 TEST_EXAMPLE_NEXUS_FILE = Path("ins_8_5.nxs")
-TEST_DIRECTORY = Path("tests/test_data")
-TEST_FILENAME = "scratch/rotation_scan_test_nexus"
+TEST_DATA_DIRECTORY = Path("tests/test_data")
+TEST_FILENAME = "rotation_scan_test_nexus"
+
+
+@pytest.fixture()
+def temp_directory(tmpdir):
+    return tmpdir
 
 
 @pytest.fixture
-def test_params():
+def test_params(tmpdir):
     param_dict = from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
     param_dict["hyperion_params"]["detector_params"]["directory"] = "tests/test_data"
-    param_dict["hyperion_params"]["detector_params"]["prefix"] = TEST_FILENAME
+    param_dict["hyperion_params"]["detector_params"][
+        "prefix"
+    ] = f"{tmpdir}/{TEST_FILENAME}"
     param_dict["experiment_params"]["rotation_angle"] = 360.0
     param_dict["hyperion_params"]["detector_params"]["current_energy_ev"] = 12700
     param_dict["hyperion_params"]["ispyb_params"]["current_energy_ev"] = 12700
@@ -66,17 +73,11 @@ def fake_rotation_scan(
     autospec=True,
 )
 def test_rotation_scan_nexus_output_compared_to_existing_file(
-    zocalo,
-    test_params: RotationInternalParameters,
+    zocalo, test_params: RotationInternalParameters, temp_directory
 ):
     run_number = test_params.hyperion_params.detector_params.run_number
-    nexus_filename = str(TEST_DIRECTORY / (TEST_FILENAME + f"_{run_number}.nxs"))
-    master_filename = str(TEST_DIRECTORY / (TEST_FILENAME + f"_{run_number}_master.h5"))
-
-    if os.path.isfile(nexus_filename):
-        os.remove(nexus_filename)
-    if os.path.isfile(master_filename):
-        os.remove(master_filename)
+    nexus_filename = f"{temp_directory}/{TEST_FILENAME}_{run_number}.nxs"
+    master_filename = f"{temp_directory}/{TEST_FILENAME}_{run_number}_master.h5"
 
     RE = RunEngine({})
 
@@ -94,7 +95,9 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     assert os.path.isfile(master_filename)
 
     with (
-        h5py.File(str(TEST_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE), "r") as example_nexus,
+        h5py.File(
+            str(TEST_DATA_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE), "r"
+        ) as example_nexus,
         h5py.File(nexus_filename, "r") as hyperion_nexus,
     ):
         assert hyperion_nexus["/entry/start_time"][()] == b"test_timeZ"  # type: ignore
@@ -171,6 +174,3 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         assert hyperion_sam_omega.attrs.get(
             "depends_on"
         ) == example_sam_omega.attrs.get("depends_on")
-
-    os.remove(nexus_filename)
-    os.remove(master_filename)
