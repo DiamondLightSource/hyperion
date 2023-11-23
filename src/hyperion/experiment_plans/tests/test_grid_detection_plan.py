@@ -74,6 +74,10 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     composite.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    composite.oav.parameters.micronsPerXPixel = 1.58
+    composite.oav.parameters.micronsPerYPixel = 1.58
+    composite.oav.parameters.beam_centre_i = 517
+    composite.oav.parameters.beam_centre_j = 350
 
     RE(
         grid_detection_plan(
@@ -106,6 +110,10 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    oav.parameters.micronsPerXPixel = 1.58
+    oav.parameters.micronsPerYPixel = 1.58
+    oav.parameters.beam_centre_i = 517
+    oav.parameters.beam_centre_j = 350
     oav.mxsc.pin_tip.tip_x.sim_put(-1)
     oav.mxsc.pin_tip.tip_y.sim_put(-1)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
@@ -183,6 +191,10 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     composite.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    composite.oav.parameters.micronsPerXPixel = 1.58
+    composite.oav.parameters.micronsPerYPixel = 1.58
+    composite.oav.parameters.beam_centre_i = 517
+    composite.oav.parameters.beam_centre_j = 350
 
     for _ in range(2):
         cb = OavSnapshotCallback()
@@ -215,6 +227,10 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     composite.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    composite.oav.parameters.micronsPerXPixel = 1.58
+    composite.oav.parameters.micronsPerYPixel = 1.58
+    composite.oav.parameters.beam_centre_i = 517
+    composite.oav.parameters.beam_centre_j = 350
 
     cb = GridDetectionCallback(composite.oav.parameters, exposure_time=0.5)
     RE.subscribe(cb)

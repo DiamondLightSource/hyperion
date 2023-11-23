@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
@@ -166,10 +166,16 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     RE,
 ):
     smargon.omega.user_readback.sim_put(0)
-    composite = PinTipCentringComposite(
-        backlight=MagicMock(), oav=MagicMock(), smargon=smargon
+    mock_oav = MagicMock(spec=OAV)
+    mock_oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    RE(pin_tip_centre_plan(composite, 50, test_config_files))
+    mock_oav.parameters.micronsPerXPixel = 2.87
+    mock_oav.parameters.micronsPerYPixel = 2.87
+    composite = PinTipCentringComposite(
+        backlight=MagicMock(), oav=mock_oav, smargon=smargon
+    )
+    RE(pin_tip_centre_plan(composite, 50, test_config_files["oav_config_json"]))
 
     mock_setup_oav.assert_called_once()
 

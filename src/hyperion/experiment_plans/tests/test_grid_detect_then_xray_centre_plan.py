@@ -93,7 +93,9 @@ def test_wait_for_detector(RE):
 
 def test_full_grid_scan(test_fgs_params, test_config_files):
     devices = MagicMock()
-    plan = grid_detect_then_xray_centre(devices, test_fgs_params, test_config_files)
+    plan = grid_detect_then_xray_centre(
+        devices, test_fgs_params, test_config_files["oav_config_json"]
+    )
     assert isinstance(plan, Generator)
 
 
@@ -131,6 +133,10 @@ def test_detect_grid_and_do_gridscan(
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    grid_detect_devices.oav.parameters.micronsPerXPixel = 0.806
+    grid_detect_devices.oav.parameters.micronsPerYPixel = 0.806
+    grid_detect_devices.oav.parameters.beam_centre_i = 549
+    grid_detect_devices.oav.parameters.beam_centre_j = 347
     assert grid_detect_devices.aperture_scatterguard.aperture_positions is not None
 
     with patch.object(
@@ -205,7 +211,10 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
-    # grid_detect_devices.oav.zoom_controller.level.set(f"{oav_params.zoom}x")
+    grid_detect_devices.oav.parameters.micronsPerXPixel = 0.806
+    grid_detect_devices.oav.parameters.micronsPerYPixel = 0.806
+    grid_detect_devices.oav.parameters.beam_centre_i = 549
+    grid_detect_devices.oav.parameters.beam_centre_j = 347
 
     with patch.object(eiger.do_arm, "set", MagicMock()), patch.object(
         grid_detect_devices.aperture_scatterguard, "set", MagicMock()
