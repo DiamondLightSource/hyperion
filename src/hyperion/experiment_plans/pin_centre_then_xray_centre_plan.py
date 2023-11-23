@@ -2,11 +2,6 @@ import json
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.oav.oav_detector import (
-    DISPLAY_CONFIG,
-    ZOOM_PARAMS_FILE,
-    OAVConfigParams,
-)
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 
 from hyperion.device_setup_plans.utils import (
@@ -28,12 +23,6 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
     PinCentreThenXrayCentreInternalParameters,
 )
 from hyperion.utils.context import device_composite_from_context
-
-OAV_CONFIG_FILE_DEFAULTS = {
-    "oav_config_json": OAV_CONFIG_JSON,
-    "display_config": DISPLAY_CONFIG,
-    "zoom_params_file": ZOOM_PARAMS_FILE,
-}
 
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
@@ -60,27 +49,24 @@ def create_parameters_for_grid_detection(
 def pin_centre_then_xray_centre_plan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: PinCentreThenXrayCentreInternalParameters,
-    oav_config_files=OAV_CONFIG_FILE_DEFAULTS,
+    oav_config_file: str = OAV_CONFIG_JSON,
 ):
     """Plan that perfoms a pin tip centre followed by an xray centre to completely
     centre the sample"""
-    oav_config_files["oav_config_json"] = parameters.experiment_params.oav_centring_file
+    oav_config_file = parameters.experiment_params.oav_centring_file
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav, smargon=composite.smargon, backlight=composite.backlight
-    )
-    pin_tip_centring_composite.oav.parameters = OAVConfigParams(
-        oav_config_files["zoom_params_file"], oav_config_files["display_config"]
     )
 
     yield from pin_tip_centre_plan(
         pin_tip_centring_composite,
         parameters.experiment_params.tip_offset_microns,
-        oav_config_files,
+        oav_config_file,
     )
     grid_detect_params = create_parameters_for_grid_detection(parameters)
 
-    oav_params = OAVParameters("xrayCentring", oav_config_files["oav_config_json"])
+    oav_params = OAVParameters("xrayCentring", oav_config_file)
 
     yield from detect_grid_and_do_gridscan(
         composite,

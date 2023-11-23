@@ -15,12 +15,7 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.flux import Flux
-from dodal.devices.oav.oav_detector import (
-    DISPLAY_CONFIG,
-    OAV,
-    ZOOM_PARAMS_FILE,
-    OAVConfigParams,
-)
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -61,12 +56,6 @@ if TYPE_CHECKING:
         GridScanWithEdgeDetectInternalParameters,
         GridScanWithEdgeDetectParams,
     )
-
-OAV_CONFIG_FILE_DEFAULTS = {
-    "oav_config_json": OAV_CONFIG_JSON,
-    "display_config": DISPLAY_CONFIG,
-    "zoom_params_file": ZOOM_PARAMS_FILE,
-}
 
 
 @dataclasses.dataclass
@@ -224,7 +213,7 @@ def detect_grid_and_do_gridscan(
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: Any,
-    oav_config: dict = OAV_CONFIG_FILE_DEFAULTS,
+    oav_config: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
@@ -234,10 +223,7 @@ def grid_detect_then_xray_centre(
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    composite.oav.parameters = OAVConfigParams(
-        oav_config["zoom_params_file"], oav_config["display_config"]
-    )
-    oav_params = OAVParameters("xrayCentring", oav_config["oav_config_json"])
+    oav_params = OAVParameters("xrayCentring", oav_config)
 
     plan_to_perform = detect_grid_and_do_gridscan(
         composite,

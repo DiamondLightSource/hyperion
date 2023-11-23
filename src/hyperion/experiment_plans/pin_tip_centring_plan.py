@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Dict, Generator
+from typing import Generator
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -7,12 +7,7 @@ from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.backlight import Backlight
-from dodal.devices.oav.oav_detector import (
-    DISPLAY_CONFIG,
-    OAV,
-    ZOOM_PARAMS_FILE,
-    OAVConfigParams,
-)
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.smargon import Smargon
 
@@ -28,12 +23,6 @@ from hyperion.parameters.constants import OAV_REFRESH_DELAY
 from hyperion.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5
-
-OAV_CONFIG_FILE_DEFAULTS = {
-    "oav_config_json": OAV_CONFIG_JSON,
-    "display_config": DISPLAY_CONFIG,
-    "zoom_params_file": ZOOM_PARAMS_FILE,
-}
 
 
 @dataclasses.dataclass
@@ -140,7 +129,7 @@ def move_smargon_warn_on_out_of_range(
 def pin_tip_centre_plan(
     composite: PinTipCentringComposite,
     tip_offset_microns: float,
-    oav_config_files: Dict[str, str] = OAV_CONFIG_FILE_DEFAULTS,
+    oav_config_file: str = OAV_CONFIG_JSON,
 ):
     """Finds the tip of the pin and moves to roughly the centre based on this tip. Does
     this at both the current omega angle and +90 deg from this angle so as to get a
@@ -151,11 +140,8 @@ def pin_tip_centre_plan(
                                     to be.
     """
     oav: OAV = composite.oav
-    oav.parameters = OAVConfigParams(
-        oav_config_files["zoom_params_file"], oav_config_files["display_config"]
-    )
     smargon: Smargon = composite.smargon
-    oav_params = OAVParameters("pinTipCentring", oav_config_files["oav_config_json"])
+    oav_params = OAVParameters("pinTipCentring", oav_config_file)
 
     tip_offset_px = int(tip_offset_microns / oav.parameters.micronsPerXPixel)
 
