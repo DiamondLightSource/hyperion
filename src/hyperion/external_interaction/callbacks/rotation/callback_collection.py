@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
@@ -16,11 +15,6 @@ from hyperion.external_interaction.callbacks.rotation.zocalo_callback import (
     RotationZocaloCallback,
 )
 
-if TYPE_CHECKING:
-    from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-        RotationInternalParameters,
-    )
-
 
 @dataclass(frozen=True, order=True)
 class RotationCallbackCollection(AbstractPlanCallbackCollection):
@@ -32,12 +26,10 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
     zocalo_handler: RotationZocaloCallback
 
     @classmethod
-    def from_params(cls, parameters: RotationInternalParameters):
+    def setup(cls):
         nexus_handler = RotationNexusFileCallback()
-        ispyb_handler = RotationISPyBCallback(parameters)
-        zocalo_handler = RotationZocaloCallback(
-            parameters.hyperion_params.zocalo_environment, ispyb_handler
-        )
+        ispyb_handler = RotationISPyBCallback()
+        zocalo_handler = RotationZocaloCallback(ispyb_handler)
         callback_collection = cls(
             nexus_handler=nexus_handler,
             ispyb_handler=ispyb_handler,

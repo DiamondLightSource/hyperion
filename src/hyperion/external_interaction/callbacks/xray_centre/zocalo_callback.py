@@ -4,24 +4,28 @@ import time
 from typing import Callable, Optional
 
 import numpy as np
-from bluesky.callbacks import CallbackBase
 from numpy import ndarray
 
+from hyperion.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
+from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
 from hyperion.external_interaction.zocalo.zocalo_interaction import (
     NoDiffractionFound,
     ZocaloInteractor,
 )
 from hyperion.log import ISPYB_LOGGER
+from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
 
-class XrayCentreZocaloCallback(CallbackBase):
+class XrayCentreZocaloCallback(PlanReactiveCallback):
     """Callback class to handle the triggering of Zocalo processing.
     Sends zocalo a run_start signal on recieving a start document for the 'do_fgs'
     sub-plan, and sends a run_end signal on recieving a stop document for the#
@@ -43,40 +47,47 @@ class XrayCentreZocaloCallback(CallbackBase):
 
     def __init__(
         self,
-        parameters: GridscanInternalParameters,
         ispyb_handler: GridscanISPyBCallback,
     ):
-        self.grid_position_to_motor_position: Callable[
-            [ndarray], ndarray
-        ] = parameters.experiment_params.grid_position_to_motor_position
+        super().__init__()
         self.processing_start_time = 0.0
         self.processing_time = 0.0
         self.do_fgs_uid: Optional[str] = None
         self.ispyb: GridscanISPyBCallback = ispyb_handler
-        self.zocalo_interactor = ZocaloInteractor(
-            parameters.hyperion_params.zocalo_environment
-        )
 
-    def start(self, doc: dict):
+    def activity_gated_start(self, doc: dict):
+        if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
+            ISPYB_LOGGER.info(
+                "Zocalo callback recieved start document with experiment parameters."
+            )
+            params = GridscanInternalParameters.from_json(
+                doc.get("hyperion_internal_parameters")
+            )
+            zocalo_environment = params.hyperion_params.zocalo_environment
+            ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
+            self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
+            self.grid_position_to_motor_position: Callable[
+                [ndarray], ndarray
+            ] = params.experiment_params.grid_position_to_motor_position
         ISPYB_LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == "do_fgs":
             self.do_fgs_uid = doc.get("uid")
-            if self.ispyb.ispyb_ids[0] is not None:
-                datacollection_ids = self.ispyb.ispyb_ids[0]
-                for id in datacollection_ids:
+            if self.ispyb.ispyb_ids.data_collection_ids is not None:
+                assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
+                for id in self.ispyb.ispyb_ids.data_collection_ids:
                     self.zocalo_interactor.run_start(id)
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
-    def stop(self, doc: dict):
+    def activity_gated_stop(self, doc: dict):
         if doc.get("run_start") == self.do_fgs_uid:
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
-            if self.ispyb.ispyb_ids == (None, None, None):
+            if self.ispyb.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
-            datacollection_ids = self.ispyb.ispyb_ids[0]
-            for id in datacollection_ids:
+            assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
+            for id in self.ispyb.ispyb_ids.data_collection_ids:
                 self.zocalo_interactor.run_end(id)
             self.processing_start_time = time.time()
 
@@ -89,11 +100,13 @@ class XrayCentreZocaloCallback(CallbackBase):
         Returns:
             ndarray: The xray centre position to move to
         """
-        datacollection_group_id = self.ispyb.ispyb_ids[2]
+        assert (
+            self.ispyb.ispyb_ids.data_collection_group_id is not None
+        ), "ISPyB deposition was not initialised!"
 
         try:
             raw_results = self.zocalo_interactor.wait_for_result(
-                datacollection_group_id
+                self.ispyb.ispyb_ids.data_collection_group_id
             )
 
             # Sort from strongest to weakest in case of multiple crystals

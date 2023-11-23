@@ -15,7 +15,11 @@ from dodal.utils import get_beamline_name
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
 from hyperion.parameters.beamline_parameters import GDABeamlineParameters
-from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
+from hyperion.parameters.constants import (
+    BEAMLINE_PARAMETER_PATHS,
+    GRIDSCAN_MAIN_PLAN,
+    SIM_BEAMLINE,
+)
 from hyperion.tracing import TRACER
 from hyperion.utils.context import device_composite_from_context, setup_context
 
@@ -47,7 +51,7 @@ def run_gridscan(
     composite: SteppedGridScanComposite,
     parameters: SteppedGridScanInternalParameters,
     md={
-        "plan_name": "run_gridscan",
+        "plan_name": GRIDSCAN_MAIN_PLAN,
     },
 ):
     sample_motors: Smargon = composite.smargon

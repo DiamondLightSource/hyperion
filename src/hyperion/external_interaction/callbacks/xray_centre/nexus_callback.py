@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from bluesky.callbacks import CallbackBase
-
+from hyperion.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
-from hyperion.parameters.constants import ISPYB_HARDWARE_READ_PLAN
+from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN, ISPYB_HARDWARE_READ_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
 
-class GridscanNexusFileCallback(CallbackBase):
+class GridscanNexusFileCallback(PlanReactiveCallback):
     """Callback class to handle the creation of Nexus files based on experiment \
     parameters. Initialises on recieving a 'start' document for the \
     'run_gridscan_move_and_tidy' sub plan, which must also contain the run parameters, \
@@ -30,13 +31,14 @@ class GridscanNexusFileCallback(CallbackBase):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self.parameters: GridscanInternalParameters | None = None
         self.run_start_uid: str | None = None
         self.nexus_writer_1: NexusWriter | None = None
         self.nexus_writer_2: NexusWriter | None = None
 
-    def start(self, doc: dict):
-        if doc.get("subplan_name") == "run_gridscan_move_and_tidy":
+    def activity_gated_start(self, doc: dict):
+        if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             NEXUS_LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."
             )
@@ -44,7 +46,7 @@ class GridscanNexusFileCallback(CallbackBase):
             self.parameters = GridscanInternalParameters.from_json(json_params)
             self.run_start_uid = doc.get("uid")
 
-    def descriptor(self, doc):
+    def activity_gated_descriptor(self, doc):
         if doc.get("name") == ISPYB_HARDWARE_READ_PLAN:
             assert (
                 self.parameters is not None
