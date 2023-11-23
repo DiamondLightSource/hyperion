@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from bluesky.callbacks import CallbackBase
-
+from hyperion.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
+from hyperion.parameters.constants import ROTATION_OUTER_PLAN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
 
-class RotationNexusFileCallback(CallbackBase):
+class RotationNexusFileCallback(PlanReactiveCallback):
     """Callback class to handle the creation of Nexus files based on experiment
     parameters for rotation scans
 
@@ -25,12 +27,13 @@ class RotationNexusFileCallback(CallbackBase):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self.run_uid: str | None = None
         self.parameters: RotationInternalParameters | None = None
         self.writer: NexusWriter | None = None
 
-    def start(self, doc: dict):
-        if doc.get("subplan_name") == "rotation_scan_with_cleanup":
+    def activity_gated_start(self, doc: dict):
+        if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             self.run_uid = doc.get("uid")
             NEXUS_LOGGER.info(
                 "Nexus writer recieved start document with experiment parameters."

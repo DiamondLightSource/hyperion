@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Files written by tests - but not the README!
+tests/test_data/scratch/*
+!tests/test_data/scratch/README
+
 # C extensions
 *.so
 
@@ -144,3 +148,6 @@ lockfiles/
 
 # ruff cache
 .ruff_cache/
+
+# idea project files
+.idea/
