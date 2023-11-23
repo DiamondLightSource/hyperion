@@ -79,7 +79,7 @@ def pin_centre_then_xray_centre_plan(
 def pin_tip_centre_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: PinCentreThenXrayCentreInternalParameters,
-    oav_config_files: dict[str, str] = OAV_CONFIG_FILE_DEFAULTS,
+    oav_config_file: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
 
@@ -91,5 +91,5 @@ def pin_tip_centre_then_xray_centre(
         eiger,
         composite.detector_motion,
         parameters.experiment_params.detector_distance,
-        pin_centre_then_xray_centre_plan(composite, parameters, oav_config_files),
+        pin_centre_then_xray_centre_plan(composite, parameters, oav_config_file),
     )
