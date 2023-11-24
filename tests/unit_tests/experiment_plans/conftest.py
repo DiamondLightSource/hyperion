@@ -18,8 +18,9 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
 )
 from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
-from system_tests.external_interaction.conftest import TEST_RESULT_LARGE
-from unit_tests.conftest import RunEngineSimulator
+
+from ...system_tests.external_interaction.conftest import TEST_RESULT_LARGE
+from ...unit_tests.conftest import RunEngineSimulator
 
 
 def modified_interactor_mock(assign_run_end: Callable | None = None):

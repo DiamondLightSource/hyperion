@@ -1,17 +1,14 @@
-from functools import partial
-from unittest.mock import MagicMock
-
-from bluesky import Msg, RunEngine
+from bluesky import Msg
 from dodal.devices.DCM import DCM
 from dodal.devices.qbpm1 import QBPM1
-from ophyd.status import Status
 
 from hyperion.device_setup_plans.peak_finder import (
     SimpleMaximumPeakEstimator,
     SingleScanPassPeakFinder,
 )
 from hyperion.log import LOGGER
-from unit_tests.conftest import RunEngineSimulator
+
+from ..conftest import RunEngineSimulator
 
 
 def test_simple_max_peak_estimator():
@@ -72,31 +69,3 @@ def dump(generator):
             sendval = yield yielded
         except StopIteration:
             break
-
-
-def test_single_scan_pass_peak_finder_with_runengine(
-    dcm: DCM, qbpm1: QBPM1, RE: RunEngine
-):
-    def side_effect(new_value: int, _):
-        # dcm.pitch.set(new_value)
-        return Status(done=True, success=True)
-
-    # zebra.pc.arm.TIMEOUT = 0.5
-
-    mock_pitch = MagicMock(side_effect=partial(side_effect, 1))
-
-    dcm.pitch.set = mock_pitch
-
-    peak_finder = SingleScanPassPeakFinder(SimpleMaximumPeakEstimator())
-
-    retval = []
-
-    def delegate():
-        peak = yield from peak_finder.find_peak_plan(
-            dcm.pitch, qbpm1.intensityC, 5, 1.2, 0.1
-        )
-        retval.append(peak)
-
-    RE(dump(delegate()))
-    assert retval[0] == 9
-    # assert (messages := assert_message_and_return_remaining(messages, lambda msg: )

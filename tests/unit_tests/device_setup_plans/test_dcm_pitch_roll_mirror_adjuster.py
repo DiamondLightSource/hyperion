@@ -10,7 +10,8 @@ from dodal.devices.vfm import VFM
 from hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
     DCMPitchRollMirrorAdjuster,
 )
-from unit_tests.conftest import (
+
+from ..conftest import (
     RunEngineSimulator,
     assert_message_and_return_remaining,
     mock_message_generator,
