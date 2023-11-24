@@ -23,11 +23,6 @@ TEST_DATA_DIRECTORY = Path("tests/test_data")
 TEST_FILENAME = "rotation_scan_test_nexus"
 
 
-@pytest.fixture()
-def temp_directory(tmpdir):
-    return tmpdir
-
-
 @pytest.fixture
 def test_params(tmpdir):
     param_dict = from_file(
@@ -73,11 +68,11 @@ def fake_rotation_scan(
     autospec=True,
 )
 def test_rotation_scan_nexus_output_compared_to_existing_file(
-    zocalo, test_params: RotationInternalParameters, temp_directory
+    zocalo, test_params: RotationInternalParameters, tmpdir
 ):
     run_number = test_params.hyperion_params.detector_params.run_number
-    nexus_filename = f"{temp_directory}/{TEST_FILENAME}_{run_number}.nxs"
-    master_filename = f"{temp_directory}/{TEST_FILENAME}_{run_number}_master.h5"
+    nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
+    master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"
 
     RE = RunEngine({})
 
