@@ -8,15 +8,16 @@ SIM_ZOCALO_ENV = "dev_artemis"
 BEAMLINE_PARAMETER_PATHS = {
     "i03": "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters",
     "i04": "/dls_sw/i04/software/gda_versions/gda_9_29/workspace_git/gda-mx.git/configurations/i04-config/scripts/beamlineParameters",
-    "s03": "src/hyperion/parameters/tests/test_data/test_beamline_parameters.txt",
+    "s03": "tests/test_data/test_beamline_parameters.txt",
 }
 
 CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
 
-# this one is for reading:
-SIM_ISPYB_CONFIG = "src/hyperion/external_interaction/unit_tests/test_config.cfg"
+# this one is for reading
+SIM_ISPYB_CONFIG = "tests/test_data/test_config.cfg"
 # this one is for making depositions:
 DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
+
 PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
 OAV_REFRESH_DELAY = 0.3
 

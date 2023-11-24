@@ -14,7 +14,7 @@ from pika.spec import BasicProperties
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from hyperion.external_interaction.system_tests.conftest import (
+from ..tests.system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_SMALL,
 )
