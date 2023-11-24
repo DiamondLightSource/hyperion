@@ -24,6 +24,7 @@ class NoDiffractionFound(WarningException):
 class ZocaloInteractor:
     def __init__(self, environment: str = "artemis", logger=LOGGER):
         self.zocalo_environment: str = environment
+        self.logger = logger
 
     def _get_zocalo_connection(self):
         zc = zocalo.configuration.from_file()
@@ -57,7 +58,7 @@ class ZocaloInteractor:
             data_collection_id (int): The ID of the data collection representing the
                                     gridscan in ISPyB
         """
-        logger.info(f"Submitting to zocalo with ispyb id {data_collection_id}")
+        self.logger.info(f"Submitting to zocalo with ispyb id {data_collection_id}")
         self._send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
 
     def run_end(self, data_collection_id: int):
@@ -116,9 +117,9 @@ class ZocaloInteractor:
             rw: workflows.recipe.RecipeWrapper, header: dict, message: dict
         ) -> None:
             try:
-                logger.info(f"Received {message}")
+                self.logger.info(f"Received {message}")
                 recipe_parameters = rw.recipe_step["parameters"]
-                logger.info(f"Recipe step parameters: {recipe_parameters}")
+                self.logger.info(f"Recipe step parameters: {recipe_parameters}")
                 transport.ack(header)
                 received_group_id = recipe_parameters["dcgid"]
                 if received_group_id == str(data_collection_group_id):
@@ -127,7 +128,7 @@ class ZocaloInteractor:
                         raise NoDiffractionFound()
                     result_received.put(results)
                 else:
-                    logger.warning(
+                    self.logger.warning(
                         f"Warning: results for {received_group_id} received but expected \
                             {data_collection_group_id}"
                     )
