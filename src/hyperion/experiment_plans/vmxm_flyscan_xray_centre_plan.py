@@ -9,7 +9,6 @@ import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal.beamlines.vmxm.vmxm_sample_motors import VmxmSampleMotors
 from dodal.devices.backlight import VmxmBacklight
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan_2d import FastGridScan2D
@@ -18,6 +17,7 @@ from dodal.devices.fast_grid_scan_2d import (
 )
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.vmxm.vmxm_attenuator import VmxmAttenuator
+from dodal.devices.vmxm.vmxm_sample_motors import VmxmSampleMotors
 from dodal.devices.zebra import (
     Zebra,
 )
@@ -89,6 +89,11 @@ def run_gridscan(
 ):
     fgs_motors = fgs_composite.fast_grid_scan
 
+    yield from bps.mv(
+        fgs_composite.attenuator,
+        parameters.hyperion_params.ispyb_params.transmission_fraction,
+    )
+
     yield from bps.create(name=ISPYB_HARDWARE_READ_PLAN)
     yield from bps.read(fgs_composite.synchrotron.machine_status.synchrotron_mode)
     yield from bps.save()
@@ -117,8 +122,6 @@ def run_gridscan(
 
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()
-
-    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
 def setup_vmxm_zebra_for_gridscan(

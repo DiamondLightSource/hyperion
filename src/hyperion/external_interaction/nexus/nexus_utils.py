@@ -69,6 +69,8 @@ def create_vmxm_goniometer_axes(
     omega_start: float,
     scan_points: dict | None,
     x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    chi: float = 0,
+    phi: float = 0,
 ) -> Goniometer:
     """Returns a Nexgen 'Goniometer' object with the dependency chain of I03's Smargon
     goniometer. If scan points is provided these values will be used in preference to
@@ -85,7 +87,7 @@ def create_vmxm_goniometer_axes(
                              is provided.
     """
     gonio_axes = [
-        Axis("omega", ".", TransformationType.ROTATION, (-1.0, 0.0, 0.0), omega_start),
+        Axis("omega", ".", TransformationType.ROTATION, (0.0, 1.0, 0.0), omega_start),
         Axis(
             name="sam_z",
             depends="omega",
@@ -132,8 +134,10 @@ def create_detector_parameters(detector_params: DetectorParams) -> Detector:
     """
     detector_pixels = detector_params.get_detector_size_pizels()
 
+    # FIXME - Make generic enough for both VMXm and i03 (and other beamlines)
+    # get these from detector_params probably.
     eiger_params = EigerDetector(
-        "Eiger 16M", (detector_pixels.height, detector_pixels.width), "Si", 46051, 0
+        "Eiger 9M", (detector_pixels.height, detector_pixels.width), "CdTe", 2418770, 0
     )
 
     detector_axes = [
