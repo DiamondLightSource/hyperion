@@ -65,7 +65,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             )
             zocalo_environment = params.hyperion_params.zocalo_environment
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
-            self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
+            self.zocalo_interactor = ZocaloInteractor(zocalo_environment, ISPYB_LOGGER)
             self.grid_position_to_motor_position: Callable[
                 [ndarray], ndarray
             ] = params.experiment_params.grid_position_to_motor_position

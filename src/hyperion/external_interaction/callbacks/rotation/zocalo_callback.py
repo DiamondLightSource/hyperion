@@ -39,7 +39,7 @@ class RotationZocaloCallback(PlanReactiveCallback):
             )
             zocalo_environment = params.hyperion_params.zocalo_environment
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
-            self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
+            self.zocalo_interactor = ZocaloInteractor(zocalo_environment, ISPYB_LOGGER)
 
         if self.run_uid is None:
             self.run_uid = doc.get("uid")

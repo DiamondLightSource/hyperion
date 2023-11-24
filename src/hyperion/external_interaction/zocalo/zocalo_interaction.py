@@ -11,8 +11,8 @@ import zocalo.configuration
 from numpy import ndarray
 from workflows.transport import lookup
 
-import hyperion.log
 from hyperion.exceptions import WarningException
+from hyperion.log import LOGGER
 
 TIMEOUT = 180
 
@@ -22,7 +22,7 @@ class NoDiffractionFound(WarningException):
 
 
 class ZocaloInteractor:
-    def __init__(self, environment: str = "artemis"):
+    def __init__(self, environment: str = "artemis", logger=LOGGER):
         self.zocalo_environment: str = environment
 
     def _get_zocalo_connection(self):
@@ -57,9 +57,7 @@ class ZocaloInteractor:
             data_collection_id (int): The ID of the data collection representing the
                                     gridscan in ISPyB
         """
-        hyperion.log.LOGGER.info(
-            f"Submitting to zocalo with ispyb id {data_collection_id}"
-        )
+        logger.info(f"Submitting to zocalo with ispyb id {data_collection_id}")
         self._send_to_zocalo({"event": "start", "ispyb_dcid": data_collection_id})
 
     def run_end(self, data_collection_id: int):
@@ -118,9 +116,9 @@ class ZocaloInteractor:
             rw: workflows.recipe.RecipeWrapper, header: dict, message: dict
         ) -> None:
             try:
-                hyperion.log.LOGGER.info(f"Received {message}")
+                logger.info(f"Received {message}")
                 recipe_parameters = rw.recipe_step["parameters"]
-                hyperion.log.LOGGER.info(f"Recipe step parameters: {recipe_parameters}")
+                logger.info(f"Recipe step parameters: {recipe_parameters}")
                 transport.ack(header)
                 received_group_id = recipe_parameters["dcgid"]
                 if received_group_id == str(data_collection_group_id):
@@ -129,7 +127,7 @@ class ZocaloInteractor:
                         raise NoDiffractionFound()
                     result_received.put(results)
                 else:
-                    hyperion.log.LOGGER.warning(
+                    logger.warning(
                         f"Warning: results for {received_group_id} received but expected \
                             {data_collection_group_id}"
                     )

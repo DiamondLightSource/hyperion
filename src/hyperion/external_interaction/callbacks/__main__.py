@@ -1,7 +1,26 @@
 from threading import Thread
+from typing import Callable
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 
+from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
+from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
+    RotationNexusFileCallback,
+)
+from hyperion.external_interaction.callbacks.rotation.zocalo_callback import (
+    RotationZocaloCallback,
+)
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
+from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
+    XrayCentreZocaloCallback,
+)
 from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER, set_up_logging_handlers
 from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS
@@ -12,10 +31,23 @@ def start_proxy():
     proxy.start()
 
 
-def start_dispatcher():
+def start_dispatcher(callbacks: list[Callable]):
     d = RemoteDispatcher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[1]}")
-    d.subscribe(print)
+    [d.subscribe(cb) for cb in callbacks]
     d.start()
+
+
+def setup_callbacks():
+    gridscan_ispyb = GridscanISPyBCallback()
+    rotation_ispyb = RotationISPyBCallback()
+    return [
+        GridscanNexusFileCallback(),
+        gridscan_ispyb,
+        XrayCentreZocaloCallback(gridscan_ispyb),
+        RotationNexusFileCallback(),
+        rotation_ispyb,
+        RotationZocaloCallback(rotation_ispyb),
+    ]
 
 
 def setup_logging():
