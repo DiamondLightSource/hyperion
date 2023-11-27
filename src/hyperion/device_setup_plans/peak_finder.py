@@ -83,7 +83,9 @@ class SingleScanPassPeakFinder(PeakFinder):
             handle_event,
         )
 
-        return self._peak_estimator.estimate_peak(xy_data)
+        estimated_peak_x = self._peak_estimator.estimate_peak(xy_data)
+        yield from bps.mv(x, estimated_peak_x, wait=True)
+        return estimated_peak_x
 
 
 class SimpleMaximumPeakEstimator(PeakEstimator):

@@ -1,3 +1,5 @@
+from math import isclose
+
 from bluesky import Msg
 from dodal.devices.DCM import DCM
 from dodal.devices.qbpm1 import QBPM1
@@ -6,7 +8,6 @@ from hyperion.device_setup_plans.peak_finder import (
     SimpleMaximumPeakEstimator,
     SingleScanPassPeakFinder,
 )
-from hyperion.log import LOGGER
 
 
 def test_simple_max_peak_estimator():
@@ -47,22 +48,59 @@ def test_single_scan_pass_peak_finder(dcm: DCM, qbpm1: QBPM1, sim):
     sim.add_handler(
         "save", None, lambda msg: sim.fire_callback("event", pitch_handler.doc(msg))
     )
-    sim.simulate_plan(
+
+    messages = sim.simulate_plan(
         peak_finder.find_peak_plan(dcm.pitch, qbpm1.intensityC, 5, 0.9, 0.1)
     )
-    # assert (messages := assert_message_and_return_remaining(messages, lambda msg: )
 
+    # Inside the run the peak finder performs the scan
+    messages = sim.assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "open_run"
+    )
 
-def dump(generator):
-    g = generator
-    if callable(g):
-        g = g()
-
-    sendval = None
-    while True:
+    def assert_one_step(messages, expected_x):
         try:
-            yielded = g.send(sendval)
-            LOGGER.info(f"yielded {yielded}")
-            sendval = yield yielded
-        except StopIteration:
-            break
+            messages = sim.assert_message_and_return_remaining(
+                messages[1:],
+                lambda msg: msg.command == "set"
+                and msg.obj.name == "dcm_pitch"
+                and isclose(msg.args[0], expected_x),
+            )
+            messages = sim.assert_message_and_return_remaining(
+                messages[1:], lambda msg: msg.command == "wait"
+            )
+            messages = sim.assert_message_and_return_remaining(
+                messages[1:], lambda msg: msg.command == "create"
+            )
+            messages = sim.assert_message_and_return_remaining(
+                messages[1:],
+                lambda msg: msg.command == "read"
+                and msg.obj.name == "dcm_pitch_user_setpoint",
+            )
+            messages = sim.assert_message_and_return_remaining(
+                messages[1:],
+                lambda msg: msg.command == "read"
+                and msg.obj.name == "qbpm1_intensityC",
+            )
+            return sim.assert_message_and_return_remaining(
+                messages[1:], lambda msg: msg.command == "save"
+            )
+        except Exception as e:
+            raise AssertionError(f"expected_x = {expected_x}") from e
+
+    for i in range(0, 19):
+        messages = assert_one_step(messages, 4.1 + 0.1 * i)
+
+    # assert the final move to peak
+    messages = sim.assert_message_and_return_remaining(
+        messages[1:], lambda msg: msg.command == "close_run"
+    )
+    messages = sim.assert_message_and_return_remaining(
+        messages[1:],
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "dcm_pitch"
+        and msg.args == (5,),
+    )
+    sim.assert_message_and_return_remaining(
+        messages[1:], lambda msg: msg.command == "wait"
+    )
