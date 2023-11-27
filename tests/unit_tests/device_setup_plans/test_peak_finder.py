@@ -8,8 +8,6 @@ from hyperion.device_setup_plans.peak_finder import (
 )
 from hyperion.log import LOGGER
 
-from ..conftest import RunEngineSimulator
-
 
 def test_simple_max_peak_estimator():
     test_data = [(1, 1), (1.5, 1.5), (2, 3.1), (2.5, 4.3), (3, 2.0), (4.5, 2.5)]
@@ -38,8 +36,7 @@ class FakeDCMPitchHandler:
         }
 
 
-def test_single_scan_pass_peak_finder(dcm: DCM, qbpm1: QBPM1):
-    sim = RunEngineSimulator()
+def test_single_scan_pass_peak_finder(dcm: DCM, qbpm1: QBPM1, sim):
     peak_finder = SingleScanPassPeakFinder(SimpleMaximumPeakEstimator())
     pitch_handler = FakeDCMPitchHandler()
     sim.add_handler_for_callback_subscribes()

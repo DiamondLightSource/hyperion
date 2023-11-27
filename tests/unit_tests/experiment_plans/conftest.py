@@ -20,7 +20,6 @@ from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloIntera
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 
 from ...system_tests.external_interaction.conftest import TEST_RESULT_LARGE
-from ...unit_tests.conftest import RunEngineSimulator
 
 
 def modified_interactor_mock(assign_run_end: Callable | None = None):
@@ -94,7 +93,7 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron):
     return magic_mock
 
 
-def add_simple_pin_tip_centre_handlers(sim: RunEngineSimulator):
+def add_simple_pin_tip_centre_handlers(sim):
     """Handlers to simulate a basic fake pin tip"""
     sim.add_handler(
         ("trigger", "read"),
@@ -113,7 +112,7 @@ def add_simple_pin_tip_centre_handlers(sim: RunEngineSimulator):
     )
 
 
-def add_simple_oav_mxsc_callback_handlers(sim: RunEngineSimulator):
+def add_simple_oav_mxsc_callback_handlers(sim):
     """Handlers to simulate a basic oav callback firing"""
     sim.add_handler(
         "set",

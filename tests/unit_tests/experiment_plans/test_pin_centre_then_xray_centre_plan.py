@@ -19,7 +19,6 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
     PinCentreThenXrayCentreInternalParameters,
 )
 
-from ..conftest import RunEngineSimulator, assert_message_and_return_remaining
 from .conftest import (
     add_simple_oav_mxsc_callback_handlers,
     add_simple_pin_tip_centre_handlers,
@@ -85,6 +84,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
     simple_beamline,
     test_config_files,
+    sim,
 ):
     simple_beamline.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
@@ -123,7 +123,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         )
     )
 
-    messages = assert_message_and_return_remaining(
+    messages = sim.assert_message_and_return_remaining(
         messages, lambda msg: msg.obj is simple_beamline.detector_motion.z
     )
     assert messages[0].args[0] == 100
@@ -131,12 +131,12 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     assert messages[1].obj is simple_beamline.detector_motion.shutter
     assert messages[1].args[0] == 1
     assert messages[1].kwargs["group"] == "ready_for_data_collection"
-    messages = assert_message_and_return_remaining(
+    messages = sim.assert_message_and_return_remaining(
         messages[2:],
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == "ready_for_data_collection",
     )
-    assert_message_and_return_remaining(
+    sim.assert_message_and_return_remaining(
         messages[2:],
         lambda msg: msg.command == "open_run"
         and msg.kwargs["subplan_name"] == "do_fgs",
