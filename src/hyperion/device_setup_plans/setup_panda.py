@@ -13,6 +13,7 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 
 MM_TO_ENCODER_COUNTS = 20000
 GENERAL_TIMEOUT = 60
+DEADTIME_S = 10e-6
 
 
 def setup_panda_for_flyscan(
@@ -20,6 +21,7 @@ def setup_panda_for_flyscan(
     config_yaml_path: str,
     parameters: PandaGridScanParams,
     initial_x: float,
+    exposure_time_s: float,
 ):
     """This should load a 'base' panda-flyscan yaml file, then grid the grid parameters, then adjust the PandA
     sequencer table to match this new grid"""
@@ -28,12 +30,16 @@ def setup_panda_for_flyscan(
     # uses /dls/science/users/qqh35939/panda_yaml_files/flyscan_base.yaml for now
     yield from load_device(panda, config_yaml_path)
 
-    # Before this, we need to move the smargon to X2=0 (TODO)
-
     # Home X2 encoder value : Do we want to measure X relative to the start of the grid scan or as an absolute position?
     yield from bps.abs_set(
         panda.inenc[1].setp, initial_x * MM_TO_ENCODER_COUNTS, wait=True
     )
+
+    # Make sure the eiger trigger should be sent every time = (exposure time + deadtime). Assume deadtime is 10 microseconds (check)
+    yield from bps.abs_set(panda.clock[1].period, DEADTIME_S + exposure_time_s)
+
+    # The trigger width should last the same length as the exposure time
+    yield from bps.abs_set(panda.pulse[1].width, exposure_time_s)
 
     """   
     -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
@@ -98,8 +104,9 @@ def setup_panda_for_flyscan(
                 0,
                 (parameters.x_start * MM_TO_ENCODER_COUNTS),
                 (parameters.x_start * MM_TO_ENCODER_COUNTS)
-                + (parameters.x_step_size) * MM_TO_ENCODER_COUNTS,
-                0,
+                + (parameters.x_step_size)
+                * MM_TO_ENCODER_COUNTS,  # once we get back the num_x_steps PV, the table values should go to
+                0,  # x_step_size*num_x_steps*MM_TO_ENCODER_COUNTS
                 (parameters.x_start * MM_TO_ENCODER_COUNTS)
                 + (parameters.x_step_size * MM_TO_ENCODER_COUNTS),
                 (parameters.x_start * MM_TO_ENCODER_COUNTS),

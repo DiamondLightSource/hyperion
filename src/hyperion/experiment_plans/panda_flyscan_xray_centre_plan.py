@@ -247,6 +247,7 @@ def run_gridscan_and_move(
         PANDA_SETUP_PATH,
         parameters.experiment_params,
         initial_xyz[0],
+        parameters.hyperion_params.detector_params.exposure_time,
     )
 
     hyperion.log.LOGGER.info("Setting up Zebra for panda flyscan")
