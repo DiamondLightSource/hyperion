@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 from dodal.devices.detector import TriggerMode
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic import validator
 from pydantic.dataclasses import dataclass
@@ -32,7 +33,7 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
     omega_start: float
 
     tip_offset_microns: float = 0
-    oav_centring_file: str = "/dls_sw/i03/software/gda/configurations/i03-config/etc/OAVCentring_hyperion.json"
+    oav_centring_file: str = OAV_CONFIG_FILE_DEFAULTS["oav_config_json"]
 
     # Width for single pin
     grid_width_microns: float = 600
