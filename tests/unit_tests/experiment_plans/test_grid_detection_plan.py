@@ -42,6 +42,14 @@ def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
     oav.mxsc.pin_tip.tip_x.sim_put(8)
     oav.mxsc.pin_tip.tip_y.sim_put(5)
 
+    oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    oav.parameters.micronsPerXPixel = 1.58
+    oav.parameters.micronsPerYPixel = 1.58
+    oav.parameters.beam_centre_i = 517
+    oav.parameters.beam_centre_j = 350
+
     with patch("dodal.devices.areadetector.plugins.MJPG.requests"), patch(
         "dodal.devices.areadetector.plugins.MJPG.Image"
     ) as mock_image_class:
@@ -71,13 +79,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     RE.subscribe(cb)
 
     composite, image = fake_devices
-    composite.oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    composite.oav.parameters.micronsPerXPixel = 1.58
-    composite.oav.parameters.micronsPerYPixel = 1.58
-    composite.oav.parameters.beam_centre_i = 517
-    composite.oav.parameters.beam_centre_j = 350
 
     RE(
         grid_detection_plan(
@@ -107,13 +108,7 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
 ):
     composite, _ = fake_devices
     oav: OAV = composite.oav
-    oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    oav.parameters.micronsPerXPixel = 1.58
-    oav.parameters.micronsPerYPixel = 1.58
-    oav.parameters.beam_centre_i = 517
-    oav.parameters.beam_centre_j = 350
+
     oav.mxsc.pin_tip.tip_x.sim_put(-1)
     oav.mxsc.pin_tip.tip_y.sim_put(-1)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
@@ -143,9 +138,7 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     composite, _ = fake_devices
-    composite.oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
+
     composite.oav.parameters.micronsPerXPixel = 0.1
     composite.oav.parameters.micronsPerYPixel = 0.1
     composite.oav.parameters.beam_centre_i = 4
@@ -188,13 +181,6 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     composite, _ = fake_devices
-    composite.oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    composite.oav.parameters.micronsPerXPixel = 1.58
-    composite.oav.parameters.micronsPerYPixel = 1.58
-    composite.oav.parameters.beam_centre_i = 517
-    composite.oav.parameters.beam_centre_j = 350
 
     for _ in range(2):
         cb = OavSnapshotCallback()
@@ -224,13 +210,6 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     composite, _ = fake_devices
-    composite.oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    composite.oav.parameters.micronsPerXPixel = 1.58
-    composite.oav.parameters.micronsPerYPixel = 1.58
-    composite.oav.parameters.beam_centre_i = 517
-    composite.oav.parameters.beam_centre_j = 350
 
     cb = GridDetectionCallback(composite.oav.parameters, exposure_time=0.5)
     RE.subscribe(cb)
