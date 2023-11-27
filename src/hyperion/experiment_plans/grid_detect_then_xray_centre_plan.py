@@ -16,7 +16,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -114,7 +114,7 @@ def detect_grid_and_do_gridscan(
 
     oav_callback = OavSnapshotCallback()
     grid_params_callback = GridDetectionCallback(
-        oav_params, experiment_params.exposure_time
+        composite.oav.parameters, experiment_params.exposure_time
     )
 
     @bpp.subs_decorator([oav_callback, grid_params_callback])
@@ -197,7 +197,7 @@ def detect_grid_and_do_gridscan(
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: Any,
-    oav_param_files: dict = OAV_CONFIG_FILE_DEFAULTS,
+    oav_config: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
@@ -207,7 +207,7 @@ def grid_detect_then_xray_centre(
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    oav_params = OAVParameters("xrayCentring", **oav_param_files)
+    oav_params = OAVParameters("xrayCentring", oav_config)
 
     plan_to_perform = detect_grid_and_do_gridscan(
         composite,

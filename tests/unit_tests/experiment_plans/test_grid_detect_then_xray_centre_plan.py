@@ -7,6 +7,7 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from numpy.testing import assert_array_equal
 
@@ -82,7 +83,9 @@ def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
 
 def test_full_grid_scan(test_fgs_params, test_config_files):
     devices = MagicMock()
-    plan = grid_detect_then_xray_centre(devices, test_fgs_params, test_config_files)
+    plan = grid_detect_then_xray_centre(
+        devices, test_fgs_params, test_config_files["oav_config_json"]
+    )
     assert isinstance(plan, Generator)
 
 
@@ -112,6 +115,13 @@ def test_detect_grid_and_do_gridscan(
     mock_oav_callback.snapshot_filenames = [["test"], ["test3"]]
     mock_oav_callback_init.return_value = mock_oav_callback
     mock_grid_detection_plan.side_effect = _fake_grid_detection
+    grid_detect_devices.oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    grid_detect_devices.oav.parameters.micronsPerXPixel = 0.806
+    grid_detect_devices.oav.parameters.micronsPerYPixel = 0.806
+    grid_detect_devices.oav.parameters.beam_centre_i = 549
+    grid_detect_devices.oav.parameters.beam_centre_j = 347
     assert grid_detect_devices.aperture_scatterguard.aperture_positions is not None
 
     with patch.object(
@@ -121,7 +131,9 @@ def test_detect_grid_and_do_gridscan(
             detect_grid_and_do_gridscan(
                 grid_detect_devices,
                 parameters=test_full_grid_scan_params,
-                oav_params=OAVParameters("xrayCentring", **test_config_files),
+                oav_params=OAVParameters(
+                    "xrayCentring", test_config_files["oav_config_json"]
+                ),
             )
         )
         # Verify we called the grid detection plan
@@ -164,6 +176,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
     test_config_files: Dict,
 ):
+    oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
     mock_oav_callback = OavSnapshotCallback()
     mock_oav_callback.snapshot_filenames = [["a", "b", "c"], ["d", "e", "f"]]
     mock_oav_callback.out_upper_left = [[1, 2], [1, 3]]
@@ -172,6 +185,14 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     mock_grid_detection_plan.side_effect = _fake_grid_detection
 
+    grid_detect_devices.oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    grid_detect_devices.oav.parameters.micronsPerXPixel = 0.806
+    grid_detect_devices.oav.parameters.micronsPerYPixel = 0.806
+    grid_detect_devices.oav.parameters.beam_centre_i = 549
+    grid_detect_devices.oav.parameters.beam_centre_j = 347
+
     with patch.object(eiger.do_arm, "set", MagicMock()), patch.object(
         grid_detect_devices.aperture_scatterguard, "set", MagicMock()
     ):
@@ -179,7 +200,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
             detect_grid_and_do_gridscan(
                 grid_detect_devices,
                 parameters=test_full_grid_scan_params,
-                oav_params=OAVParameters("xrayCentring", **test_config_files),
+                oav_params=oav_params,
             )
         )
 
