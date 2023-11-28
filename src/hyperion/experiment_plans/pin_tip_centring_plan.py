@@ -8,7 +8,7 @@ from bluesky.utils import Msg
 from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.setup_oav import (
