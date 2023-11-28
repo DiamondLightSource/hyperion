@@ -6,7 +6,6 @@ from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.smargon import Smargon
-from ophyd.status import StableSubscriptionStatus
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
