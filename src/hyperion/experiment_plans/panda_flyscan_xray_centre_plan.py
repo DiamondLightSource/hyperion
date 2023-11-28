@@ -291,7 +291,7 @@ def panda_flyscan_xray_centre(
     """
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    subscriptions = XrayCentreCallbackCollection.from_params(parameters)
+    subscriptions = XrayCentreCallbackCollection.setup()
 
     @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
         list(subscriptions)  # must be the outermost decorator to receive the metadata
@@ -331,7 +331,7 @@ if __name__ == "__main__":
     )
 
     parameters = GridscanInternalParameters(**external_parameters.from_file())
-    subscriptions = XrayCentreCallbackCollection.from_params(parameters)
+    subscriptions = XrayCentreCallbackCollection.setup()
 
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)
