@@ -4,6 +4,10 @@ import time
 from typing import Callable, Optional
 
 import numpy as np
+from dodal.devices.zocalo import (
+    NoDiffractionFound,
+    ZocaloInteractor,
+)
 from numpy import ndarray
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
@@ -14,10 +18,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
-from hyperion.external_interaction.zocalo.zocalo_interaction import (
-    NoDiffractionFound,
-    ZocaloInteractor,
-)
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
