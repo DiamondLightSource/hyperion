@@ -6,6 +6,7 @@ from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.smargon import Smargon
+from ophyd.status import StableSubscriptionStatus
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
@@ -34,12 +35,14 @@ def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_re
 
 
 def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargon_moved_positive_and_tip_returned(
-    smargon: Smargon, oav: OAV, RE: RunEngine
+    smargon: Smargon,
+    oav: OAV,
+    RE: RunEngine,
 ):
+    oav.mxsc.pin_tip.settle_time_s.put(0.01)
     smargon.x.user_setpoint.sim_set_limits([-2, 2])
     oav.mxsc.pin_tip.triggered_tip.put(oav.mxsc.pin_tip.INVALID_POSITION)
-    oav.mxsc.pin_tip.validity_timeout.put(0.01)
-
+    oav.mxsc.pin_tip.validity_timeout.put(0.015)
     smargon.x.user_readback.sim_put(0)
 
     def set_pin_tip_when_x_moved(*args, **kwargs):
@@ -57,16 +60,17 @@ def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargo
 def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon_moved_negative_and_tip_returned(
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
+    oav.mxsc.pin_tip.settle_time_s.put(0.01)
     smargon.x.user_setpoint.sim_set_limits([-2, 2])
     oav.mxsc.pin_tip.tip_x.sim_put(0)
     oav.mxsc.pin_tip.tip_y.sim_put(100)
-    oav.mxsc.pin_tip.validity_timeout.put(0.01)
+    oav.mxsc.pin_tip.validity_timeout.put(0.15)
 
     smargon.x.user_readback.sim_put(0)
 
     def set_pin_tip_when_x_moved(*args, **kwargs):
-        oav.mxsc.pin_tip.tip_x.sim_put(100)
         oav.mxsc.pin_tip.tip_y.sim_put(200)
+        oav.mxsc.pin_tip.tip_x.sim_put(100)
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
