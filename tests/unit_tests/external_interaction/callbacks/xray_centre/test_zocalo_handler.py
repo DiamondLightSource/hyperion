@@ -2,13 +2,13 @@ from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
+from dodal.devices.zocalo.zocalo_interaction import NoDiffractionFound
 
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
-from hyperion.external_interaction.zocalo.zocalo_interaction import NoDiffractionFound
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,

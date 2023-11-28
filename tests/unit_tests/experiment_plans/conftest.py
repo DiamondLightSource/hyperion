@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.utils import Msg
 from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.zocalo.zocalo_interaction import ZocaloInteractor
 from ophyd.sim import make_fake_device
 
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
@@ -16,7 +17,6 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     IspybIds,
     Store3DGridscanInIspyb,
 )
-from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 

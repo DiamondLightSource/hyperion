@@ -8,13 +8,13 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from pytest import mark, raises
-from zocalo.configuration import Configuration
-
-from hyperion.external_interaction.zocalo.zocalo_interaction import (
+from dodal.devices.zocalo.zocalo_interaction import (
     NoDiffractionFound,
     ZocaloInteractor,
 )
+from pytest import mark, raises
+from zocalo.configuration import Configuration
+
 from hyperion.parameters.constants import SIM_ZOCALO_ENV
 
 EXPECTED_DCID = 100
@@ -26,7 +26,7 @@ EXPECTED_RUN_END_MESSAGE = {
 
 
 @patch("zocalo.configuration.from_file", autospec=True)
-@patch("hyperion.external_interaction.zocalo.zocalo_interaction.lookup", autospec=True)
+@patch("dodal.devices.zocalo.zocalo_interaction.lookup", autospec=True)
 def _test_zocalo(
     func_testing: Callable, expected_params: dict, mock_transport_lookup, mock_from_file
 ):
@@ -98,7 +98,7 @@ def test__run_start_and_end(
 
 @patch("workflows.recipe.wrap_subscribe", autospec=True)
 @patch("zocalo.configuration.from_file", autospec=True)
-@patch("hyperion.external_interaction.zocalo.zocalo_interaction.lookup", autospec=True)
+@patch("dodal.devices.zocalo.zocalo_interaction.lookup", autospec=True)
 def test_when_message_recieved_from_zocalo_then_point_returned(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
@@ -147,7 +147,7 @@ def test_when_message_recieved_from_zocalo_then_point_returned(
 
 @patch("workflows.recipe.wrap_subscribe", autospec=True)
 @patch("zocalo.configuration.from_file", autospec=True)
-@patch("hyperion.external_interaction.zocalo.zocalo_interaction.lookup", autospec=True)
+@patch("dodal.devices.zocalo.zocalo_interaction.lookup", autospec=True)
 def test_when_exception_caused_by_zocalo_message_then_exception_propagated(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
@@ -184,7 +184,7 @@ def test_when_exception_caused_by_zocalo_message_then_exception_propagated(
 
 @patch("workflows.recipe.wrap_subscribe", autospec=True)
 @patch("zocalo.configuration.from_file", autospec=True)
-@patch("hyperion.external_interaction.zocalo.zocalo_interaction.lookup", autospec=True)
+@patch("dodal.devices.zocalo.zocalo_interaction.lookup", autospec=True)
 def test_when_no_results_returned_then_no_diffraction_exception_raised(
     mock_transport_lookup, mock_from_file, mock_wrap_subscribe
 ):
