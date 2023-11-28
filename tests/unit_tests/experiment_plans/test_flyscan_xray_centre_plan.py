@@ -203,7 +203,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
@@ -350,7 +350,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
@@ -393,7 +393,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
