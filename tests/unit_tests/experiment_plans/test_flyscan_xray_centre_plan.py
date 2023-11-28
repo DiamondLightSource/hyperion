@@ -119,7 +119,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        fake_fgs_composite.undulator.gap.user_readback.sim_put(undulator_test_value)  # type: ignore
+        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
 
         synchrotron_test_value = "test"
         fake_fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(  # type: ignore
@@ -203,7 +203,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
@@ -350,7 +350,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
@@ -393,7 +393,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
