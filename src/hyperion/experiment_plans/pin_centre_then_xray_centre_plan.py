@@ -2,7 +2,7 @@ import json
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -49,7 +49,7 @@ def create_parameters_for_grid_detection(
 def pin_centre_then_xray_centre_plan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: PinCentreThenXrayCentreInternalParameters,
-    oav_config_files=OAV_CONFIG_FILE_DEFAULTS,
+    oav_config_files=OAV_CONFIG_JSON,
 ):
     """Plan that perfoms a pin tip centre followed by an xray centre to completely
     centre the sample"""
