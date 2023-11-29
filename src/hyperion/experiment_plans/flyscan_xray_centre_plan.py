@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -23,6 +23,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
+from dodal.devices.zocalo import XrcResult, ZocaloResults
 
 import hyperion.log
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
@@ -78,6 +79,7 @@ class FlyScanXRayCentreComposite:
     synchrotron: Synchrotron
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
+    zocalo_results: ZocaloResults = ZocaloResults("dev_artemis")
 
     @property
     def sample_motors(self) -> Smargon:
@@ -239,13 +241,22 @@ def run_gridscan_and_move(
     # the data were submitted to zocalo by the zocalo callback during the gridscan,
     # but results may not be ready, and need to be collected regardless.
     # it might not be ideal to block for this, see #327
-    xray_centre, bbox_size = subscriptions.zocalo_handler.wait_for_results(initial_xyz)
+    processing_results: Sequence[XrcResult] = yield from bps.rd(
+        fgs_composite.zocalo_results
+    )
 
-    if bbox_size is not None:
+    if len(processing_results) is not None:
+        xray_centre = processing_results[0]["centre_of_mass"]
+        bbox_size = (
+            np.array(processing_results[0]["bounding_box"][1])
+            - np.array(processing_results[0]["bounding_box"][0])
+        ).tolist()
         with TRACER.start_span("change_aperture"):
             yield from set_aperture_for_bbox_size(
                 fgs_composite.aperture_scatterguard, bbox_size
             )
+    else:
+        xray_centre = initial_xyz
 
     # once we have the results, go to the appropriate position
     hyperion.log.LOGGER.info("Moving to centre of mass.")

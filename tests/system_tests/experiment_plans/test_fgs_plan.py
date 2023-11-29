@@ -1,4 +1,5 @@
 import uuid
+from os import environ
 from typing import Callable
 from unittest.mock import MagicMock, patch
 
@@ -7,6 +8,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
+from ophyd.status import Status
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -17,6 +19,7 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
     run_gridscan,
+    run_gridscan_and_move,
 )
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -44,6 +47,10 @@ def params():
 
 @pytest.fixture
 def fgs_composite():
+    from os import environ
+
+    p = environ.get("EPICS_CA_SERVER_PORT")
+    assert p is not None
     composite = FlyScanXRayCentreComposite(
         attenuator=i03.attenuator(),
         aperture_scatterguard=i03.aperture_scatterguard(),
@@ -52,7 +59,7 @@ def fgs_composite():
         fast_grid_scan=i03.fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(),
-        smargon=i03.smargon(),
+        smargon=MagicMock(),  # i03.smargon(),
         undulator=i03.undulator(),
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
         xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
@@ -71,22 +78,23 @@ def fgs_composite():
         aperture_positions.LARGE[2], wait=True
     )
     composite.eiger.cam.manual_trigger.put("Yes")
-
-    # S03 currently does not have StaleParameters_RBV
-    composite.eiger.wait_for_stale_parameters = lambda: None
     composite.eiger.odin.check_odin_initialised = lambda: (True, "")
+    composite.eiger.stage = MagicMock(return_value=Status(done=True, success=True))
+    composite.eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
 
     composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
 
     return composite
 
 
-@pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
-@patch("hyperion.flyscan_xray_centre.wait_for_gridscan_valid", autospec=True)
+@patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.wait_for_gridscan_valid",
+    autospec=True,
+)
 def test_run_gridscan(
     wait_for_gridscan_valid: MagicMock,
     complete: MagicMock,
@@ -96,9 +104,30 @@ def test_run_gridscan(
     RE: RunEngine,
     fgs_composite: FlyScanXRayCentreComposite,
 ):
-    fgs_composite.eiger.unstage = lambda: True
-    # Would be better to use flyscan_xray_centre instead but eiger doesn't work well in S03
     RE(run_gridscan(fgs_composite, params))
+
+
+@pytest.mark.s03
+@patch("bluesky.plan_stubs.wait", autospec=True)
+@patch("bluesky.plan_stubs.kickoff", autospec=True)
+@patch("bluesky.plan_stubs.complete", autospec=True)
+@patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.wait_for_gridscan_valid",
+    autospec=True,
+)
+def test_run_gridscan_and_move(
+    wait_for_gridscan_valid: MagicMock,
+    complete: MagicMock,
+    kickoff: MagicMock,
+    wait: MagicMock,
+    params: GridscanInternalParameters,
+    RE: RunEngine,
+    fgs_composite: FlyScanXRayCentreComposite,
+):
+    cbs = XrayCentreCallbackCollection(
+        nexus_handler=MagicMock(), ispyb_handler=MagicMock(), zocalo_handler=MagicMock()
+    )
+    RE(run_gridscan_and_move(fgs_composite, params, cbs))
 
 
 @pytest.mark.s03

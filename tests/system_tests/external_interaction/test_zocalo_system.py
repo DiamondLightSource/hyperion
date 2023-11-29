@@ -46,7 +46,7 @@ def run_zocalo_with_dev_ispyb(dummy_params: GridscanInternalParameters, dummy_is
             "subplan_name": GRIDSCAN_OUTER_PLAN,
             "hyperion_internal_parameters": dummy_params.json(),
         }
-        cbs: XrayCentreCallbackCollection = XrayCentreCallbackCollection.setup()
+        cbs = XrayCentreCallbackCollection.setup()
         zc = cbs.zocalo_handler
         ispyb = cbs.ispyb_handler
         ispyb.activity_gated_start(start_doc)
