@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.utils import Msg
 from dodal.devices.fast_grid_scan import FastGridScan
-from dodal.devices.zocalo.zocalo_interaction import ZocaloInteractor
+from dodal.devices.zocalo.zocalo_interaction import ZocaloTrigger
 from ophyd.sim import make_fake_device
 
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
@@ -24,7 +24,7 @@ from ...system_tests.external_interaction.conftest import TEST_RESULT_LARGE
 
 
 def modified_interactor_mock(assign_run_end: Callable | None = None):
-    mock = MagicMock(spec=ZocaloInteractor)
+    mock = MagicMock(spec=ZocaloTrigger)
     mock.wait_for_result.return_value = TEST_RESULT_LARGE
     if assign_run_end:
         mock.run_end = assign_run_end
@@ -42,7 +42,7 @@ def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
 @pytest.fixture
 def mock_subscriptions(test_fgs_params):
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
+        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     ):
         subscriptions = XrayCentreCallbackCollection.setup()

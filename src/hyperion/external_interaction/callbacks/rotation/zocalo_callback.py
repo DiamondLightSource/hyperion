@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dodal.devices.zocalo import (
-    ZocaloInteractor,
+    ZocaloTrigger,
 )
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
@@ -42,7 +42,7 @@ class RotationZocaloCallback(PlanReactiveCallback):
             )
             zocalo_environment = params.hyperion_params.zocalo_environment
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
-            self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
+            self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
 
         if self.run_uid is None:
             self.run_uid = doc.get("uid")

@@ -6,7 +6,7 @@ from typing import Callable, Optional
 import numpy as np
 from dodal.devices.zocalo import (
     NoDiffractionFound,
-    ZocaloInteractor,
+    ZocaloTrigger,
 )
 from numpy import ndarray
 
@@ -56,6 +56,8 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
         self.ispyb: GridscanISPyBCallback = ispyb_handler
 
     def activity_gated_start(self, doc: dict):
+        ISPYB_LOGGER.info("XRC Zocalo handler received start document.")
+
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             ISPYB_LOGGER.info(
                 "Zocalo callback recieved start document with experiment parameters."
@@ -65,11 +67,8 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             )
             zocalo_environment = params.hyperion_params.zocalo_environment
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
-            self.zocalo_interactor = ZocaloInteractor(zocalo_environment)
-            self.grid_position_to_motor_position: Callable[
-                [ndarray], ndarray
-            ] = params.experiment_params.grid_position_to_motor_position
-        ISPYB_LOGGER.info("Zocalo handler received start document.")
+            self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
+
         if doc.get("subplan_name") == "do_fgs":
             self.do_fgs_uid = doc.get("uid")
             if self.ispyb.ispyb_ids.data_collection_ids is not None:
@@ -91,29 +90,8 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
                 self.zocalo_interactor.run_end(id)
             self.processing_start_time = time.time()
 
-    def wait_for_results(self, fallback_xyz: ndarray) -> tuple[ndarray, Optional[list]]:
-        """Blocks until a centre has been received from Zocalo
-
-        Args:
-            fallback_xyz (ndarray): The position to fallback to if no centre is found
-
-        Returns:
-            ndarray: The xray centre position to move to
-        """
-        assert (
-            self.ispyb.ispyb_ids.data_collection_group_id is not None
-        ), "ISPyB deposition was not initialised!"
-
-        try:
-            raw_results = self.zocalo_interactor.wait_for_result(
-                self.ispyb.ispyb_ids.data_collection_group_id
-            )
-
-            # Sort from strongest to weakest in case of multiple crystals
-            raw_results = sorted(
-                raw_results, key=lambda d: d["total_count"], reverse=True
-            )
-            ISPYB_LOGGER.info(f"Zocalo: found {len(raw_results)} crystals.")
+# TODO move to ispyb handler
+"""
             crystal_summary = ""
 
             bboxes = []
@@ -132,32 +110,12 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
                     f"Size (grid boxes) {bboxes[n]};"
                 )
             self.ispyb.append_to_comment(crystal_summary)
-
+"""
             raw_centre = np.array([*(raw_results[0]["centre_of_mass"])])
-            adjusted_centre = raw_centre - np.array([0.5, 0.5, 0.5])
 
-            # _wait_for_result returns the centre of the grid box, but we want the corner
-            xray_centre = self.grid_position_to_motor_position(adjusted_centre)
 
-            bbox_size: list[int] | None = bboxes[0]
 
             ISPYB_LOGGER.info(
                 f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"
             )
 
-        except NoDiffractionFound:
-            # We move back to the centre if results aren't found
-            log_msg = (
-                f"Zocalo: No diffraction found, using fallback centre {fallback_xyz}"
-            )
-            self.ispyb.append_to_comment("Found no diffraction.")
-            xray_centre = fallback_xyz
-            bbox_size = None
-            ISPYB_LOGGER.warning(log_msg)
-
-        self.processing_time = time.time() - self.processing_start_time
-        self.ispyb.append_to_comment(
-            f"Zocalo processing took {self.processing_time:.2f} s"
-        )
-        ISPYB_LOGGER.info(f"Zocalo processing took {self.processing_time}s")
-        return xray_centre, bbox_size

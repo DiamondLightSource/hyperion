@@ -325,7 +325,7 @@ class TestFlyscanXrayCentrePlan:
     )
     @patch("bluesky.plan_stubs.rd")
     @patch(
-        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
+        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
@@ -556,7 +556,7 @@ class TestFlyscanXrayCentrePlan:
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(
-            "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
+            "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
             RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))

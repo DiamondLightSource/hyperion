@@ -63,6 +63,10 @@ if TYPE_CHECKING:
     )
 
 
+class NoDiffractionFound(WarningException):
+    pass
+
+
 @dataclasses.dataclass
 class FlyScanXRayCentreComposite:
     """All devices which are directly or indirectly required by this plan"""
@@ -100,7 +104,7 @@ def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
 
 def set_aperture_for_bbox_size(
     aperture_device: ApertureScatterguard,
-    bbox_size: list[int],
+    bbox_size: list[int] | np.ndarray,
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
     assert aperture_device.aperture_positions is not None
@@ -218,7 +222,6 @@ def run_gridscan(
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
-    subscriptions: XrayCentreCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
@@ -239,9 +242,12 @@ def run_gridscan_and_move(
     yield from run_gridscan(fgs_composite, parameters)
 
     yield from trigger_zocalo(fgs_composite.zocalo)
-    xray_centre, bbox_size = yield from get_processing_results(fgs_composite.zocalo)
+    xray_centre, bbox_size = get_processing_results(fgs_composite.zocalo)
 
-    if xray_centre is not None:
+    if xray_centre is not None and bbox_size is not None:
+        xray_centre = parameters.experiment_params.grid_position_to_motor_position(
+            xray_centre
+        )
         with TRACER.start_span("change_aperture"):
             yield from set_aperture_for_bbox_size(
                 fgs_composite.aperture_scatterguard, bbox_size
@@ -300,10 +306,10 @@ def flyscan_xray_centre(
         composite.attenuator,
         parameters.hyperion_params.ispyb_params.transmission_fraction,
     )
-    def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
-        yield from run_gridscan_and_move(fgs_composite, params, comms)
+    def run_gridscan_and_move_and_tidy(fgs_composite, params):
+        yield from run_gridscan_and_move(fgs_composite, params)
 
-    return run_gridscan_and_move_and_tidy(composite, parameters, subscriptions)
+    return run_gridscan_and_move_and_tidy(composite, parameters)
 
 
 if __name__ == "__main__":

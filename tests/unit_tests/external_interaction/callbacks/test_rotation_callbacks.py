@@ -188,7 +188,7 @@ def test_nexus_handler_triggers_write_file_when_told(
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloInteractor",
+    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 @patch(
@@ -222,7 +222,7 @@ def test_zocalo_start_and_end_triggered_once(
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloInteractor",
+    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
@@ -245,7 +245,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     autospec=True,
 )
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloInteractor",
+    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zocalo(
@@ -285,7 +285,7 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloInteractor",
+    "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(

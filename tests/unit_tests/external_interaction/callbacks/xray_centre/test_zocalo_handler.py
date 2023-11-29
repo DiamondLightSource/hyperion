@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
-from dodal.devices.zocalo.zocalo_interaction import NoDiffractionFound
 
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -42,7 +41,6 @@ def init_cbs_with_docs_and_mock_zocalo_and_ispyb(
     ):
         callbacks.ispyb_handler.activity_gated_start(td.test_start_document)
         callbacks.zocalo_handler.activity_gated_start(td.test_start_document)
-    callbacks.zocalo_handler.zocalo_interactor.wait_for_result = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
 
@@ -100,62 +98,6 @@ class TestXrayCentreZocaloHandler:
         assert callbacks.zocalo_handler.zocalo_interactor.run_end.call_count == len(
             dc_ids
         )
-
-        callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_not_called()
-
-    @patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
-        autospec=True,
-    )
-    def test_zocalo_called_to_wait_on_results_when_communicator_wait_for_results_called(
-        self,
-        store_3d_grid_scan,
-        dummy_params: GridscanInternalParameters,
-    ):
-        callbacks = XrayCentreCallbackCollection.setup()
-        init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks)
-        callbacks.ispyb_handler.activity_gated_descriptor(
-            td.test_descriptor_document_pre_data_collection
-        )
-        callbacks.ispyb_handler.activity_gated_event(
-            td.test_event_document_pre_data_collection
-        )
-
-        callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
-        callbacks.ispyb_handler.activity_gated_descriptor(
-            td.test_descriptor_document_during_data_collection  # type: ignore
-        )
-        callbacks.ispyb_handler.activity_gated_event(
-            td.test_event_document_during_data_collection
-        )
-
-        callbacks.ispyb_handler.ispyb_ids = IspybIds(
-            data_collection_ids=(0, 0), data_collection_group_id=100, grid_ids=(0, 0)
-        )
-        expected_centre_grid_coords = np.array([1, 2, 3])
-        single_crystal_result = [
-            {
-                "max_voxel": [1, 2, 3],
-                "centre_of_mass": expected_centre_grid_coords,
-                "bounding_box": [[1, 1, 1], [2, 2, 2]],
-                "total_count": 192512.0,
-            }
-        ]
-        callbacks.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-            single_crystal_result
-        )
-        results = callbacks.zocalo_handler.wait_for_results(np.array([0, 0, 0]))
-
-        found_centre = results[0]
-        callbacks.zocalo_handler.zocalo_interactor.wait_for_result.assert_called_once_with(
-            100
-        )
-        expected_centre_motor_coords = (
-            dummy_params.experiment_params.grid_position_to_motor_position(
-                expected_centre_grid_coords - 0.5
-            )
-        )
-        np.testing.assert_array_equal(found_centre, expected_centre_motor_coords)
 
     @patch(
         "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
