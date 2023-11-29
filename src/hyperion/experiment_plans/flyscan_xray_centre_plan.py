@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -23,7 +23,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
-from dodal.devices.zocalo import NULL_RESULT, XrcResult, ZocaloResults
+from dodal.devices.zocalo import ZocaloResults, get_processing_results, trigger_zocalo
 
 import hyperion.log
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
@@ -239,14 +239,9 @@ def run_gridscan_and_move(
     yield from run_gridscan(fgs_composite, parameters)
 
     yield from trigger_zocalo(fgs_composite.zocalo)
-    processing_results = yield from get_processing_results(fgs_composite.zocalo)
+    xray_centre, bbox_size = yield from get_processing_results(fgs_composite.zocalo)
 
-    if len(processing_results) is not None:
-        xray_centre = processing_results[0]["centre_of_mass"]
-        bbox_size = (
-            np.array(processing_results[0]["bounding_box"][1])
-            - np.array(processing_results[0]["bounding_box"][0])
-        ).tolist()
+    if xray_centre is not None:
         with TRACER.start_span("change_aperture"):
             yield from set_aperture_for_bbox_size(
                 fgs_composite.aperture_scatterguard, bbox_size
@@ -262,26 +257,6 @@ def run_gridscan_and_move(
     hyperion.log.LOGGER.info("Recentring smargon co-ordinate system to this point.")
     yield from bps.mv(
         fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
-    )
-
-
-def trigger_zocalo(zocalo: ZocaloResults):
-    # the data were submitted to zocalo by the zocalo callback during the gridscan,
-    # but results may not be ready, and need to be collected regardless.
-    # it might not be ideal to block for this, see #327
-    yield from bps.create()
-    yield from bps.trigger(zocalo)
-    yield from bps.read(zocalo)
-    yield from bps.save()
-
-
-def get_processing_results(zocalo: ZocaloResults):
-    return np.array(
-        [
-            (yield from bps.rd(zocalo.x_position)),
-            (yield from bps.rd(zocalo.y_position)),
-            (yield from bps.rd(zocalo.z_position)),
-        ]
     )
 
 
