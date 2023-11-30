@@ -241,17 +241,20 @@ def run_gridscan_and_move(
     res = yield from get_processing_results(fgs_composite.zocalo)
     xray_centre, bbox_size = res
 
-    if xray_centre is not None and bbox_size is not None:
+    if xray_centre is not None:
         xray_centre = parameters.experiment_params.grid_position_to_motor_position(
             xray_centre
         )
+    else:
+        xray_centre = initial_xyz
+        LOGGER.warning("No X-ray centre recieved")
+    if bbox_size is not None:
         with TRACER.start_span("change_aperture"):
             yield from set_aperture_for_bbox_size(
                 fgs_composite.aperture_scatterguard, bbox_size
             )
     else:
-        LOGGER.warning
-        xray_centre = initial_xyz
+        LOGGER.warning("No bounding box size recieved")
 
     # once we have the results, go to the appropriate position
     LOGGER.info("Moving to centre of mass.")
