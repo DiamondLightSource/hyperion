@@ -334,10 +334,10 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
+        RE: RunEngine,
         mock_subscriptions: XrayCentreCallbackCollection,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE: RunEngine,
     ):
         td = TestData()
         mock_subscriptions.ispyb_handler.activity_gated_start(td.test_start_document)
@@ -371,6 +371,11 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.get_processing_results",
+        autospec=True,
+        return_value=(None, None),
+    )
+    @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
     )
     @patch(
@@ -380,10 +385,11 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        mock_subscriptions: XrayCentreCallbackCollection,
-        fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        get_processing_results,
         RE: RunEngine,
+        mock_subscriptions: XrayCentreCallbackCollection,
+        test_fgs_params: GridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
@@ -415,18 +421,11 @@ class TestFlyscanXrayCentrePlan:
 
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        mock_subscriptions.zocalo_handler.wait_for_results = MagicMock(
-            return_value=(
-                (0, 0, 0),
-                None,
-            )
-        )
 
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
                 test_fgs_params,
-                mock_subscriptions,
             )
         )
         assert (
@@ -434,6 +433,11 @@ class TestFlyscanXrayCentrePlan:
             == 1
         )
 
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.get_processing_results",
+        autospec=True,
+        return_value=(None, None),
+    )
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
     )
@@ -444,28 +448,18 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
+        get_processing_results: MagicMock,
+        RE: RunEngine,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE: RunEngine,
     ):
         class MoveException(Exception):
             pass
 
         move_xyz.side_effect = MoveException()
-        mock_subscriptions = MagicMock()
-        mock_subscriptions.zocalo_handler.wait_for_results.return_value = (
-            (0, 0, 0),
-            None,
-        )
 
         with pytest.raises(MoveException):
-            RE(
-                run_gridscan_and_move(
-                    fake_fgs_composite,
-                    test_fgs_params,
-                    mock_subscriptions,
-                )
-            )
+            RE(run_gridscan_and_move(fake_fgs_composite, test_fgs_params))
         assert (
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 0

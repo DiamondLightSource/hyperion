@@ -318,7 +318,9 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
-def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
+def fake_fgs_composite(
+    smargon: Smargon, test_fgs_params: InternalParameters, RE: RunEngine
+):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=i03.aperture_scatterguard(fake_with_ophyd_sim=True),
         attenuator=i03.attenuator(fake_with_ophyd_sim=True),
@@ -332,6 +334,7 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
         xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(fake_with_ophyd_sim=True),
+        zocalo=i03.zocalo(),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -345,6 +348,24 @@ def fake_fgs_composite(smargon: Smargon, test_fgs_params: InternalParameters):
     fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
         False
     )
+
+    def mock_complete(zoc):
+        zoc._put_results(
+            [
+                {
+                    "centre_of_mass": [6, 6, 6],
+                    "max_voxel": [5, 5, 5],
+                    "max_count": 123456,
+                    "n_voxels": 321,
+                    "total_count": 999999,
+                    "bounding_box": [[3, 3, 3], [9, 9, 9]],
+                }
+            ]
+        )
+        return Status(done=True, success=True)
+
+    fake_composite.zocalo.kickoff = lambda: Status(done=True, success=True)
+    fake_composite.zocalo.complete = MagicMock(side_effect=partial(mock_complete, fake_composite.zocalo))  # type: ignore
 
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore

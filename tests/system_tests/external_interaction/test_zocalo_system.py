@@ -1,5 +1,9 @@
+import bluesky.plan_stubs as bps
 import numpy as np
 import pytest
+import pytest_asyncio
+from bluesky.run_engine import RunEngine
+from dodal.devices.zocalo import ZocaloResults
 
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -16,9 +20,25 @@ from .conftest import (
 )
 
 
+@pytest_asyncio.fixture
+async def zocalo_device():
+    zd = ZocaloResults()
+    zd.timeout_s = 5
+    await zd.connect()
+    return zd
+
+
+def trigger_zocalo_results_plan(zocalo):
+    yield from bps.open_run()
+    yield from bps.kickoff(zocalo, wait=True)
+    yield from bps.complete(zocalo, wait=True)
+    yield from bps.close_run()
+
+
 @pytest.mark.s03
-def test_when_running_start_stop_then_get_expected_returned_results(
-    dummy_params, zocalo_env
+@pytest.mark.asyncio
+async def test_when_running_start_stop_then_get_expected_returned_results(
+    dummy_params, zocalo_env, zocalo_device: ZocaloResults, RE: RunEngine
 ):
     start_doc = {
         "subplan_name": GRIDSCAN_OUTER_PLAN,
@@ -34,8 +54,9 @@ def test_when_running_start_stop_then_get_expected_returned_results(
         zc.zocalo_interactor.run_start(dcid)
     for dcid in dcids:
         zc.zocalo_interactor.run_end(dcid)
-    result = zc.zocalo_interactor.wait_for_result(4)
-    assert result[0] == TEST_RESULT_LARGE[0]
+    RE(trigger_zocalo_results_plan(zocalo_device))
+    result = await zocalo_device.read()
+    assert result["zocalo_results-results"]["value"][0] == TEST_RESULT_LARGE[0]
 
 
 @pytest.fixture

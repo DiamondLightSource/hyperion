@@ -20,12 +20,9 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 
-from ...system_tests.external_interaction.conftest import TEST_RESULT_LARGE
-
 
 def modified_interactor_mock(assign_run_end: Callable | None = None):
     mock = MagicMock(spec=ZocaloTrigger)
-    mock.wait_for_result.return_value = TEST_RESULT_LARGE
     if assign_run_end:
         mock.run_end = assign_run_end
     return mock

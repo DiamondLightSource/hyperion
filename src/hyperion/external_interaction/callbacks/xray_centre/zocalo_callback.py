@@ -5,7 +5,6 @@ from typing import Callable, Optional
 
 import numpy as np
 from dodal.devices.zocalo import (
-    NoDiffractionFound,
     ZocaloTrigger,
 )
 from numpy import ndarray
@@ -90,6 +89,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
                 self.zocalo_interactor.run_end(id)
             self.processing_start_time = time.time()
 
+
 # TODO move to ispyb handler
 """
             crystal_summary = ""
@@ -111,11 +111,3 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
                 )
             self.ispyb.append_to_comment(crystal_summary)
 """
-            raw_centre = np.array([*(raw_results[0]["centre_of_mass"])])
-
-
-
-            ISPYB_LOGGER.info(
-                f"Results recieved from zocalo: {xray_centre}, bounding box size: {bbox_size}"
-            )
-
