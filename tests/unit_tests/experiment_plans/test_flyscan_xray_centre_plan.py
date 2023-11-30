@@ -1,4 +1,5 @@
 import types
+from functools import partial
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
@@ -13,6 +14,7 @@ from dodal.devices.det_dim_constants import (
 from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
+from ophyd_async.core.async_status import AsyncStatus
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -177,6 +179,7 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
+    @pytest.mark.asyncio
     def test_results_adjusted_and_passed_to_move_xyz(
         self,
         move_x_y_z: MagicMock,
@@ -223,34 +226,35 @@ class TestFlyscanXrayCentrePlan:
             }
         )
 
-        mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-            TEST_RESULT_LARGE
+        @AsyncStatus.wrap
+        async def mock_complete(results):
+            await fake_fgs_composite.zocalo._put_results(results)
+
+        fake_fgs_composite.zocalo.complete = MagicMock(
+            side_effect=partial(mock_complete, TEST_RESULT_LARGE)
         )
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
                 test_fgs_params,
-                mock_subscriptions,
             )
         )
-        mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-            TEST_RESULT_MEDIUM
+        fake_fgs_composite.zocalo.complete = MagicMock(
+            side_effect=partial(mock_complete, TEST_RESULT_MEDIUM)
         )
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
                 test_fgs_params,
-                mock_subscriptions,
             )
         )
-        mock_subscriptions.zocalo_handler.zocalo_interactor.wait_for_result.return_value = (
-            TEST_RESULT_SMALL
+        fake_fgs_composite.zocalo.complete = MagicMock(
+            side_effect=partial(mock_complete, TEST_RESULT_SMALL)
         )
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
                 test_fgs_params,
-                mock_subscriptions,
             )
         )
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
@@ -371,9 +375,8 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "hyperion.experiment_plans.flyscan_xray_centre_plan.get_processing_results",
-        autospec=True,
-        return_value=(None, None),
+        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
+        return_value=Status(done=True, success=True),
     )
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
@@ -385,7 +388,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        get_processing_results,
+        aperture_set: MagicMock,
         RE: RunEngine,
         mock_subscriptions: XrayCentreCallbackCollection,
         test_fgs_params: GridscanInternalParameters,
@@ -434,11 +437,6 @@ class TestFlyscanXrayCentrePlan:
         )
 
     @patch(
-        "hyperion.experiment_plans.flyscan_xray_centre_plan.get_processing_results",
-        autospec=True,
-        return_value=(None, None),
-    )
-    @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
     )
     @patch(
@@ -448,13 +446,20 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        get_processing_results: MagicMock,
         RE: RunEngine,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
     ):
         class MoveException(Exception):
             pass
+
+        @AsyncStatus.wrap
+        async def mock_complete(results):
+            await fake_fgs_composite.zocalo._put_results(results)
+
+        fake_fgs_composite.zocalo.complete = MagicMock(
+            side_effect=partial(mock_complete, [])
+        )
 
         move_xyz.side_effect = MoveException()
 

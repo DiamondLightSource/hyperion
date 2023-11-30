@@ -22,6 +22,7 @@ from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from ophyd.epics_motor import EpicsMotor
 from ophyd.status import Status
+from ophyd_async.core.async_status import AsyncStatus
 
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
@@ -349,23 +350,21 @@ def fake_fgs_composite(
         False
     )
 
-    def mock_complete(zoc):
-        zoc._put_results(
-            [
-                {
-                    "centre_of_mass": [6, 6, 6],
-                    "max_voxel": [5, 5, 5],
-                    "max_count": 123456,
-                    "n_voxels": 321,
-                    "total_count": 999999,
-                    "bounding_box": [[3, 3, 3], [9, 9, 9]],
-                }
-            ]
-        )
-        return Status(done=True, success=True)
+    test_result = {
+        "centre_of_mass": [6, 6, 6],
+        "max_voxel": [5, 5, 5],
+        "max_count": 123456,
+        "n_voxels": 321,
+        "total_count": 999999,
+        "bounding_box": [[3, 3, 3], [9, 9, 9]],
+    }
+
+    @AsyncStatus.wrap
+    async def mock_complete(result):
+        await fake_composite.zocalo._put_results([result])
 
     fake_composite.zocalo.kickoff = lambda: Status(done=True, success=True)
-    fake_composite.zocalo.complete = MagicMock(side_effect=partial(mock_complete, fake_composite.zocalo))  # type: ignore
+    fake_composite.zocalo.complete = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
 
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
