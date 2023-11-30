@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import time
-from typing import Callable, Optional
+from typing import Optional
 
-import numpy as np
 from dodal.devices.zocalo import (
     ZocaloTrigger,
 )
-from numpy import ndarray
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,

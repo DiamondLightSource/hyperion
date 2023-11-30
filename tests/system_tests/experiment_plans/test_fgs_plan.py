@@ -1,5 +1,4 @@
 import uuid
-from os import environ
 from typing import Callable
 from unittest.mock import MagicMock, patch
 

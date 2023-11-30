@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, call, patch
 
-import numpy as np
 import pytest
 
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
