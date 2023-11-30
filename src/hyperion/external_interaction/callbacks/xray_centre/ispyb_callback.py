@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import numpy as np
+from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
+from event_model.documents.event import Event
+
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
@@ -55,8 +59,38 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
 
-    def activity_gated_event(self, doc: dict):
+    def activity_gated_event(self, doc: Event):
         super().activity_gated_event(doc)
+
+        event_descriptor = self.descriptors[doc["descriptor"]]
+        if event_descriptor.get("name") == ZOCALO_READING_PLAN_NAME:
+            crystal_summary = ""
+
+            bboxes = []
+            raw_results = doc["data"]["zocalo_results-results"]
+            if len(raw_results) > 0:
+                for n, res in enumerate(raw_results):
+                    bboxes.append(
+                        np.array(res["bounding_box"][1])
+                        - np.array(res["bounding_box"][0])
+                    )
+
+                    nicely_formatted_com = [
+                        f"{np.round(com,2)}" for com in res["centre_of_mass"]
+                    ]
+                    crystal_summary += (
+                        f"Crystal {n+1}: "
+                        f"Strength {res['total_count']}; "
+                        f"Position (grid boxes) {nicely_formatted_com}; "
+                        f"Size (grid boxes) {bboxes[n]};"
+                    )
+            else:
+                crystal_summary += "Zocalo found no crystals in this gridscan."
+            assert isinstance(self.ispyb_ids.data_collection_ids, tuple)
+            self.ispyb.append_to_comment(
+                self.ispyb_ids.data_collection_ids[0], crystal_summary
+            )
+
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
     def activity_gated_stop(self, doc: dict):

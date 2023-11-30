@@ -86,26 +86,3 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             for id in self.ispyb.ispyb_ids.data_collection_ids:
                 self.zocalo_interactor.run_end(id)
             self.processing_start_time = time.time()
-
-
-# TODO move to ispyb handler
-"""
-            crystal_summary = ""
-
-            bboxes = []
-            for n, res in enumerate(raw_results):
-                bboxes.append(
-                    np.array(res["bounding_box"][1]) - np.array(res["bounding_box"][0])
-                )
-
-                nicely_formatted_com = [
-                    f"{np.round(com,2)}" for com in res["centre_of_mass"]
-                ]
-                crystal_summary += (
-                    f"Crystal {n+1}: "
-                    f"Strength {res['total_count']}; "
-                    f"Position (grid boxes) {nicely_formatted_com}; "
-                    f"Size (grid boxes) {bboxes[n]};"
-                )
-            self.ispyb.append_to_comment(crystal_summary)
-"""

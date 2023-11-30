@@ -12,6 +12,7 @@ from dodal.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.fast_grid_scan import FastGridScan
+from event_model import Event
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core.async_status import AsyncStatus
@@ -63,6 +64,17 @@ from .conftest import (
     modified_interactor_mock,
     modified_store_grid_scan_mock,
 )
+
+
+def make_event_doc(data, descriptor="abc123") -> Event:
+    return {
+        "time": 0,
+        "timestamps": {"a": 0},
+        "seq_num": 0,
+        "uid": "not so random uid",
+        "descriptor": descriptor,
+        "data": data,
+    }
 
 
 @pytest.fixture
@@ -203,27 +215,27 @@ class TestFlyscanXrayCentrePlan:
             {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
-            {
-                "descriptor": "123abc",
-                "data": {
+            make_event_doc(
+                {
                     "undulator_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
                 },
-            }
+                descriptor="123abc",
+            )
         )
         mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
-            {
-                "descriptor": "abc123",
-                "data": {
+            make_event_doc(
+                {
                     "attenuator_actual_transmission": 0,
                     "flux_flux_reading": 10,
                 },
-            }
+                descriptor="abc123",
+            )
         )
 
         @AsyncStatus.wrap
@@ -351,27 +363,27 @@ class TestFlyscanXrayCentrePlan:
         )
 
         mock_subscriptions.ispyb_handler.activity_gated_event(
-            {
-                "descriptor": "123abc",
-                "data": {
+            make_event_doc(
+                {
                     "undulator_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
                 },
-            }
+                descriptor="123abc",
+            )
         )
         mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
-            {
-                "descriptor": "abc123",
-                "data": {
+            make_event_doc(
+                {
                     "attenuator_actual_transmission": 0,
                     "flux_flux_reading": 10,
                 },
-            }
+                descriptor="abc123",
+            )
         )
 
     @patch(
@@ -399,27 +411,27 @@ class TestFlyscanXrayCentrePlan:
         )
 
         mock_subscriptions.ispyb_handler.activity_gated_event(
-            {
-                "descriptor": "123abc",
-                "data": {
+            make_event_doc(
+                {
                     "undulator_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
                 },
-            }
+                descriptor="123abc",
+            )
         )
         mock_subscriptions.ispyb_handler.activity_gated_descriptor(
             {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
-            {
-                "descriptor": "abc123",
-                "data": {
+            make_event_doc(
+                {
                     "attenuator_actual_transmission": 0,
                     "flux_flux_reading": 10,
                 },
-            }
+                descriptor="abc123",
+            )
         )
 
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -435,6 +447,139 @@ class TestFlyscanXrayCentrePlan:
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 1
         )
+
+    @patch(
+        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
+        return_value=Status(done=True, success=True),
+    )
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
+    )
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
+    )
+    def test_when_gridscan_succeeds_ispyb_comment_appended_to(
+        self,
+        move_xyz: MagicMock,
+        run_gridscan: MagicMock,
+        aperture_set: MagicMock,
+        RE: RunEngine,
+        mock_subscriptions: XrayCentreCallbackCollection,
+        test_fgs_params: GridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+    ):
+        mock_subscriptions.ispyb_handler.active = True
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
+            {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
+        )
+
+        mock_subscriptions.ispyb_handler.activity_gated_event(
+            make_event_doc(
+                {
+                    "undulator_gap": 0,
+                    "synchrotron_machine_status_synchrotron_mode": 0,
+                    "s4_slit_gaps_xgap": 0,
+                    "s4_slit_gaps_ygap": 0,
+                },
+                descriptor="123abc",
+            )
+        )
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
+            {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
+        )
+        mock_subscriptions.ispyb_handler.activity_gated_event(
+            make_event_doc(
+                {
+                    "attenuator_actual_transmission": 0,
+                    "flux_flux_reading": 10,
+                },
+                descriptor="abc123",
+            )
+        )
+
+        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+        RE.subscribe(mock_subscriptions.ispyb_handler)
+        RE.subscribe(VerbosePlanExecutionLoggingCallback())
+
+        RE(
+            run_gridscan_and_move(
+                fake_fgs_composite,
+                test_fgs_params,
+            )
+        )
+        app_to_comment: MagicMock = (
+            mock_subscriptions.ispyb_handler.ispyb.append_to_comment
+        )  # type:ignore
+        app_to_comment.assert_called()
+        call = app_to_comment.call_args_list[0]
+        assert "Crystal 1: Strength 999999" in call.args[1]
+
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
+    )
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
+    )
+    def test_when_gridscan_fails_ispyb_comment_appended_to(
+        self,
+        move_xyz: MagicMock,
+        run_gridscan: MagicMock,
+        RE: RunEngine,
+        mock_subscriptions: XrayCentreCallbackCollection,
+        test_fgs_params: GridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+    ):
+        mock_subscriptions.ispyb_handler.active = True
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
+            {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
+        )
+        mock_subscriptions.ispyb_handler.activity_gated_event(
+            make_event_doc(
+                {
+                    "undulator_gap": 0,
+                    "synchrotron_machine_status_synchrotron_mode": 0,
+                    "s4_slit_gaps_xgap": 0,
+                    "s4_slit_gaps_ygap": 0,
+                },
+                descriptor="123abc",
+            )
+        )
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
+            {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
+        )
+        mock_subscriptions.ispyb_handler.activity_gated_event(
+            make_event_doc(
+                {
+                    "attenuator_actual_transmission": 0,
+                    "flux_flux_reading": 10,
+                },
+                descriptor="abc123",
+            )
+        )
+
+        @AsyncStatus.wrap
+        async def mock_complete(results):
+            await fake_fgs_composite.zocalo._put_results(results)
+
+        fake_fgs_composite.zocalo.complete = MagicMock(
+            side_effect=partial(mock_complete, [])
+        )
+        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+        RE.subscribe(mock_subscriptions.ispyb_handler)
+        RE.subscribe(VerbosePlanExecutionLoggingCallback())
+
+        RE(
+            run_gridscan_and_move(
+                fake_fgs_composite,
+                test_fgs_params,
+            )
+        )
+        app_to_comment: MagicMock = (
+            mock_subscriptions.ispyb_handler.ispyb.append_to_comment
+        )  # type:ignore
+        app_to_comment.assert_called()
+        call = app_to_comment.call_args_list[0]
+        assert "Zocalo found no crystals in this gridscan" in call.args[1]
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True

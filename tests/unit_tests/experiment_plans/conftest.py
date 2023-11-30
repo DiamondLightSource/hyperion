@@ -41,6 +41,8 @@ def mock_subscriptions(test_fgs_params):
     with patch(
         "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
+    ), patch(
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.append_to_comment"
     ):
         subscriptions = XrayCentreCallbackCollection.setup()
         start_doc = {
