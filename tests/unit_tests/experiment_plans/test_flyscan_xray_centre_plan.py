@@ -77,6 +77,19 @@ def make_event_doc(data, descriptor="abc123") -> Event:
     }
 
 
+BASIC_PRE_SETUP_DOC = {
+    "undulator_current_gap": 0,
+    "undulator_gap": 0,
+    "synchrotron_machine_status_synchrotron_mode": 0,
+    "s4_slit_gaps_xgap": 0,
+    "s4_slit_gaps_ygap": 0,
+}
+BASIC_POST_SETUP_DOC = {
+    "attenuator_actual_transmission": 0,
+    "flux_flux_reading": 10,
+}
+
+
 @pytest.fixture
 def ispyb_plan(test_fgs_params):
     @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
@@ -216,12 +229,7 @@ class TestFlyscanXrayCentrePlan:
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "undulator_gap": 0,
-                    "synchrotron_machine_status_synchrotron_mode": 0,
-                    "s4_slit_gaps_xgap": 0,
-                    "s4_slit_gaps_ygap": 0,
-                },
+                BASIC_PRE_SETUP_DOC,
                 descriptor="123abc",
             )
         )
@@ -230,10 +238,7 @@ class TestFlyscanXrayCentrePlan:
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "attenuator_actual_transmission": 0,
-                    "flux_flux_reading": 10,
-                },
+                BASIC_POST_SETUP_DOC,
                 descriptor="abc123",
             )
         )
@@ -242,7 +247,7 @@ class TestFlyscanXrayCentrePlan:
         async def mock_complete(results):
             await fake_fgs_composite.zocalo._put_results(results)
 
-        fake_fgs_composite.zocalo.complete = MagicMock(
+        fake_fgs_composite.zocalo.trigger = MagicMock(
             side_effect=partial(mock_complete, TEST_RESULT_LARGE)
         )
         RE(
@@ -251,7 +256,7 @@ class TestFlyscanXrayCentrePlan:
                 test_fgs_params,
             )
         )
-        fake_fgs_composite.zocalo.complete = MagicMock(
+        fake_fgs_composite.zocalo.trigger = MagicMock(
             side_effect=partial(mock_complete, TEST_RESULT_MEDIUM)
         )
         RE(
@@ -260,7 +265,7 @@ class TestFlyscanXrayCentrePlan:
                 test_fgs_params,
             )
         )
-        fake_fgs_composite.zocalo.complete = MagicMock(
+        fake_fgs_composite.zocalo.trigger = MagicMock(
             side_effect=partial(mock_complete, TEST_RESULT_SMALL)
         )
         RE(
@@ -364,12 +369,7 @@ class TestFlyscanXrayCentrePlan:
 
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "undulator_gap": 0,
-                    "synchrotron_machine_status_synchrotron_mode": 0,
-                    "s4_slit_gaps_xgap": 0,
-                    "s4_slit_gaps_ygap": 0,
-                },
+                BASIC_PRE_SETUP_DOC,
                 descriptor="123abc",
             )
         )
@@ -378,10 +378,7 @@ class TestFlyscanXrayCentrePlan:
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "attenuator_actual_transmission": 0,
-                    "flux_flux_reading": 10,
-                },
+                BASIC_POST_SETUP_DOC,
                 descriptor="abc123",
             )
         )
@@ -412,12 +409,7 @@ class TestFlyscanXrayCentrePlan:
 
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "undulator_gap": 0,
-                    "synchrotron_machine_status_synchrotron_mode": 0,
-                    "s4_slit_gaps_xgap": 0,
-                    "s4_slit_gaps_ygap": 0,
-                },
+                BASIC_PRE_SETUP_DOC,
                 descriptor="123abc",
             )
         )
@@ -426,10 +418,7 @@ class TestFlyscanXrayCentrePlan:
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "attenuator_actual_transmission": 0,
-                    "flux_flux_reading": 10,
-                },
+                BASIC_POST_SETUP_DOC,
                 descriptor="abc123",
             )
         )
@@ -475,12 +464,7 @@ class TestFlyscanXrayCentrePlan:
 
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "undulator_gap": 0,
-                    "synchrotron_machine_status_synchrotron_mode": 0,
-                    "s4_slit_gaps_xgap": 0,
-                    "s4_slit_gaps_ygap": 0,
-                },
+                BASIC_PRE_SETUP_DOC,
                 descriptor="123abc",
             )
         )
@@ -489,10 +473,7 @@ class TestFlyscanXrayCentrePlan:
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "attenuator_actual_transmission": 0,
-                    "flux_flux_reading": 10,
-                },
+                BASIC_POST_SETUP_DOC,
                 descriptor="abc123",
             )
         )
@@ -535,12 +516,7 @@ class TestFlyscanXrayCentrePlan:
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "undulator_gap": 0,
-                    "synchrotron_machine_status_synchrotron_mode": 0,
-                    "s4_slit_gaps_xgap": 0,
-                    "s4_slit_gaps_ygap": 0,
-                },
+                BASIC_PRE_SETUP_DOC,
                 descriptor="123abc",
             )
         )
@@ -549,10 +525,7 @@ class TestFlyscanXrayCentrePlan:
         )
         mock_subscriptions.ispyb_handler.activity_gated_event(
             make_event_doc(
-                {
-                    "attenuator_actual_transmission": 0,
-                    "flux_flux_reading": 10,
-                },
+                BASIC_POST_SETUP_DOC,
                 descriptor="abc123",
             )
         )
@@ -561,7 +534,7 @@ class TestFlyscanXrayCentrePlan:
         async def mock_complete(results):
             await fake_fgs_composite.zocalo._put_results(results)
 
-        fake_fgs_composite.zocalo.complete = MagicMock(
+        fake_fgs_composite.zocalo.trigger = MagicMock(
             side_effect=partial(mock_complete, [])
         )
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
@@ -602,7 +575,7 @@ class TestFlyscanXrayCentrePlan:
         async def mock_complete(results):
             await fake_fgs_composite.zocalo._put_results(results)
 
-        fake_fgs_composite.zocalo.complete = MagicMock(
+        fake_fgs_composite.zocalo.trigger = MagicMock(
             side_effect=partial(mock_complete, [])
         )
 

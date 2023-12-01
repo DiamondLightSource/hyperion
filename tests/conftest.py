@@ -364,7 +364,7 @@ def fake_fgs_composite(
         await fake_composite.zocalo._put_results([result])
 
     fake_composite.zocalo.kickoff = lambda: Status(done=True, success=True)
-    fake_composite.zocalo.complete = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
+    fake_composite.zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
 
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore

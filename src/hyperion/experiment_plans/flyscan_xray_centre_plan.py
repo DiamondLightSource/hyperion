@@ -18,7 +18,7 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -270,10 +270,10 @@ def run_gridscan_and_move(
     with TRACER.start_span("move_to_result"):
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
-    # LOGGER.info("Recentring smargon co-ordinate system to this point.")
-    # yield from bps.mv(
-    #     fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
-    # )
+    LOGGER.info("Recentring smargon co-ordinate system to this point.")
+    yield from bps.mv(
+        fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
+    )
 
 
 def flyscan_xray_centre(
