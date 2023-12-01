@@ -243,8 +243,9 @@ def run_gridscan_and_move(
 
     try:
         yield from trigger_wait_and_read_zocalo(fgs_composite.zocalo)
+        LOGGER.info("Zocalo triggered and read, interpreting results.")
         xray_centre, bbox_size = yield from get_processing_results(fgs_composite.zocalo)
-
+        LOGGER.info(f"Got xray centre: {xray_centre}, bbox size: {bbox_size}")
         if xray_centre is not None:
             xray_centre = parameters.experiment_params.grid_position_to_motor_position(
                 xray_centre
