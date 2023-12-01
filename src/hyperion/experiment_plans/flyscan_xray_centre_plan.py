@@ -241,6 +241,8 @@ def run_gridscan_and_move(
 
     yield from run_gridscan(fgs_composite, parameters)
 
+    LOGGER.info("Grid scan finished, getting results.")
+
     try:
         yield from trigger_wait_and_read_zocalo(fgs_composite.zocalo)
         LOGGER.info("Zocalo triggered and read, interpreting results.")
@@ -268,10 +270,10 @@ def run_gridscan_and_move(
     with TRACER.start_span("move_to_result"):
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
-    LOGGER.info("Recentring smargon co-ordinate system to this point.")
-    yield from bps.mv(
-        fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
-    )
+    # LOGGER.info("Recentring smargon co-ordinate system to this point.")
+    # yield from bps.mv(
+    #     fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
+    # )
 
 
 def flyscan_xray_centre(

@@ -67,7 +67,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             crystal_summary = ""
 
             bboxes = []
-            raw_results = doc["data"]["zocalo_results-results"]
+            ISPYB_LOGGER.info(f"Amending comment based on Zocalo reading doc: {doc}")
+            raw_results = doc["data"]["zocalo-results"]
             if len(raw_results) > 0:
                 for n, res in enumerate(raw_results):
                     bboxes.append(
