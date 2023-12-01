@@ -23,7 +23,11 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
-from dodal.devices.zocalo import ZocaloResults, get_processing_results, trigger_zocalo
+from dodal.devices.zocalo import (
+    ZocaloResults,
+    get_processing_results,
+    trigger_wait_and_read_zocalo,
+)
 
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
@@ -237,7 +241,7 @@ def run_gridscan_and_move(
 
     yield from run_gridscan(fgs_composite, parameters)
 
-    yield from trigger_zocalo(fgs_composite.zocalo)
+    yield from trigger_wait_and_read_zocalo(fgs_composite.zocalo)
     res = yield from get_processing_results(fgs_composite.zocalo)
     xray_centre, bbox_size = res
 

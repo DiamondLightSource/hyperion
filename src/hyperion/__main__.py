@@ -12,7 +12,6 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
-import hyperion.log
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
@@ -21,6 +20,7 @@ from hyperion.external_interaction.callbacks.aperture_change_callback import (
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from hyperion.log import ISPYB_LOGGER, LOGGER, NEXUS_LOGGER, set_up_logging_handlers
 from hyperion.parameters.constants import Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
@@ -85,7 +85,7 @@ class BlueskyRunner:
         parameters: InternalParameters,
         plan_name: str,
     ) -> StatusAndMessage:
-        hyperion.log.LOGGER.info(f"Started with parameters: {parameters}")
+        LOGGER.info(f"Started with parameters: {parameters}")
 
         devices: Any = PLAN_REGISTRY[plan_name]["setup"](self.context)
 
@@ -145,12 +145,10 @@ class BlueskyRunner:
 
                     self.last_run_aborted = False
                 except WarningException as exception:
-                    hyperion.log.LOGGER.warning("Warning Exception", exc_info=True)
+                    LOGGER.warning("Warning Exception", exc_info=True)
                     self.current_status = ErrorStatusAndMessage(exception)
                 except Exception as exception:
-                    hyperion.log.LOGGER.error(
-                        "Exception on running plan", exc_info=True
-                    )
+                    LOGGER.error("Exception on running plan", exc_info=True)
 
                     if self.last_run_aborted:
                         # Aborting will cause an exception here that we want to swallow
@@ -197,7 +195,7 @@ class RunExperiment(Resource):
                 status_and_message = self.runner.start(plan, parameters, plan_name)
             except Exception as e:
                 status_and_message = ErrorStatusAndMessage(e)
-                hyperion.log.LOGGER.error(format_exception(e))
+                LOGGER.error(format_exception(e))
 
         elif action == Actions.STOP.value:
             status_and_message = self.runner.stop()
@@ -221,7 +219,7 @@ class StopOrStatus(Resource):
         action = kwargs.get("action")
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STATUS.value:
-            hyperion.log.LOGGER.debug(
+            LOGGER.debug(
                 f"Runner recieved status request - state of the runner object is: {self.runner.__dict__} - state of the RE is: {self.runner.RE.__dict__}"
             )
             status_and_message = self.runner.current_status
@@ -295,20 +293,18 @@ if __name__ == "__main__":
         dev_mode,
         skip_startup_connection,
     ) = cli_arg_parse()
-    hyperion.log.set_up_logging_handlers(
-        logging_level=logging_level, dev_mode=bool(dev_mode)
-    )
-    hyperion.log.set_up_logging_handlers(
+    set_up_logging_handlers(logging_level=logging_level, dev_mode=bool(dev_mode))
+    set_up_logging_handlers(
         logging_level=logging_level,
         dev_mode=dev_mode,
         filename="hyperion_ispyb_callback.txt",
-        logger=hyperion.log.ISPYB_LOGGER,
+        logger=ISPYB_LOGGER,
     )
-    hyperion.log.set_up_logging_handlers(
+    set_up_logging_handlers(
         logging_level=logging_level,
         dev_mode=dev_mode,
         filename="hyperion_nexus_callback.txt",
-        logger=hyperion.log.NEXUS_LOGGER,
+        logger=NEXUS_LOGGER,
     )
     app, runner = create_app(skip_startup_connection=bool(skip_startup_connection))
     atexit.register(runner.shutdown)
@@ -319,7 +315,7 @@ if __name__ == "__main__":
         daemon=True,
     )
     flask_thread.start()
-    hyperion.log.LOGGER.info(
+    LOGGER.info(
         f"Hyperion now listening on {hyperion_port} ({'IN DEV' if dev_mode else ''})"
     )
     runner.wait_on_queue()
