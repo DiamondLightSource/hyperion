@@ -241,25 +241,27 @@ def run_gridscan_and_move(
 
     yield from run_gridscan(fgs_composite, parameters)
 
-    yield from trigger_wait_and_read_zocalo(fgs_composite.zocalo)
-    res = yield from get_processing_results(fgs_composite.zocalo)
-    xray_centre, bbox_size = res
+    try:
+        yield from trigger_wait_and_read_zocalo(fgs_composite.zocalo)
+        xray_centre, bbox_size = yield from get_processing_results(fgs_composite.zocalo)
 
-    if xray_centre is not None:
-        xray_centre = parameters.experiment_params.grid_position_to_motor_position(
-            xray_centre
-        )
-    else:
-        xray_centre = initial_xyz
-        LOGGER.warning("No X-ray centre recieved")
-    if bbox_size is not None:
-        with TRACER.start_span("change_aperture"):
-            yield from set_aperture_for_bbox_size(
-                fgs_composite.aperture_scatterguard, bbox_size
+        if xray_centre is not None:
+            xray_centre = parameters.experiment_params.grid_position_to_motor_position(
+                xray_centre
             )
-    else:
-        LOGGER.warning("No bounding box size recieved")
-
+        else:
+            xray_centre = initial_xyz
+            LOGGER.warning("No X-ray centre recieved")
+        if bbox_size is not None:
+            with TRACER.start_span("change_aperture"):
+                yield from set_aperture_for_bbox_size(
+                    fgs_composite.aperture_scatterguard, bbox_size
+                )
+        else:
+            LOGGER.warning("No bounding box size recieved")
+    except Exception as e:
+        LOGGER.warning("Exception encountered trying to read from Zocalo.", exc_info=e)
+        xray_centre = initial_xyz
     # once we have the results, go to the appropriate position
     LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
