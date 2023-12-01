@@ -32,7 +32,7 @@ def find_device_in_context(
 
     device = context.find_device(name)
     if device is None:
-        raise ValueError(f"Cannot find device named '{name}' in bluesky context.")
+        raise ValueError(f"Cannot find device named '{name}' in bluesky context {context.devices}.")
 
     if not isinstance(device, expected_type):
         raise ValueError(
