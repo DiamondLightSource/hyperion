@@ -4,6 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.devices.detector_motion import ShutterState
+from dodal.devices.oav.oav_detector import OAVConfigParams
 
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
@@ -82,6 +83,14 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     simple_beamline,
     test_config_files,
 ):
+    simple_beamline.oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    simple_beamline.oav.parameters.micronsPerXPixel = 0.806
+    simple_beamline.oav.parameters.micronsPerYPixel = 0.806
+    simple_beamline.oav.parameters.beam_centre_i = 549
+    simple_beamline.oav.parameters.beam_centre_j = 347
+
     sim = RunEngineSimulator()
     sim.add_handler_for_callback_subscribes()
     add_simple_pin_tip_centre_handlers(sim)
@@ -105,7 +114,9 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
 
     messages = sim.simulate_plan(
         pin_tip_centre_then_xray_centre(
-            simple_beamline, test_pin_centre_then_xray_centre_params, test_config_files
+            simple_beamline,
+            test_pin_centre_then_xray_centre_params,
+            test_config_files["oav_config_json"],
         )
     )
 

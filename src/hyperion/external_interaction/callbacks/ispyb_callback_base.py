@@ -63,7 +63,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
-                "undulator_gap"
+                "undulator_current_gap"
             ]
             self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"

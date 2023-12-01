@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Dict, Generator
+from typing import Generator
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -8,7 +8,7 @@ from bluesky.utils import Msg
 from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.setup_oav import (
@@ -129,7 +129,7 @@ def move_smargon_warn_on_out_of_range(
 def pin_tip_centre_plan(
     composite: PinTipCentringComposite,
     tip_offset_microns: float,
-    oav_config_files: Dict[str, str] = OAV_CONFIG_FILE_DEFAULTS,
+    oav_config_file: str = OAV_CONFIG_JSON,
 ):
     """Finds the tip of the pin and moves to roughly the centre based on this tip. Does
     this at both the current omega angle and +90 deg from this angle so as to get a
@@ -141,14 +141,14 @@ def pin_tip_centre_plan(
     """
     oav: OAV = composite.oav
     smargon: Smargon = composite.smargon
-    oav_params = OAVParameters("pinTipCentring", **oav_config_files)
+    oav_params = OAVParameters("pinTipCentring", oav_config_file)
 
-    tip_offset_px = int(tip_offset_microns / oav_params.micronsPerXPixel)
+    tip_offset_px = int(tip_offset_microns / oav.parameters.micronsPerXPixel)
 
     def offset_and_move(tip: Pixel):
         pixel_to_move_to = (tip[0] + tip_offset_px, tip[1])
         position_mm = yield from get_move_required_so_that_beam_is_at_pixel(
-            smargon, pixel_to_move_to, oav_params
+            smargon, pixel_to_move_to, oav.parameters
         )
         LOGGER.info(f"Tip centring moving to : {position_mm}")
         yield from move_smargon_warn_on_out_of_range(smargon, position_mm)

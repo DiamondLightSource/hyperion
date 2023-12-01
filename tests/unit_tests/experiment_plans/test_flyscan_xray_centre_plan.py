@@ -133,7 +133,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        fake_fgs_composite.undulator.gap.user_readback.sim_put(undulator_test_value)  # type: ignore
+        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
 
         synchrotron_test_value = "test"
         fake_fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(  # type: ignore

@@ -1,0 +1,26 @@
+# See https://confluence.diamond.ac.uk/x/tJqQC for instructions if this needs a new token
+name: Assign author of pull request to referenced issue that was not assigned to issue ticket beforehand
+on:
+ pull_request:
+      types: [ready_for_review, opened, review_requested]
+jobs:
+  get_author_of_pull_request_query:
+    uses: ./.github/workflows/get_issue_from_pr.yml
+    with:
+      pr_id: ${{ github.event.pull_request.number }}
+    secrets: inherit
+
+  assign_author_to_issue_mutation:
+    runs-on: ubuntu-latest
+    needs: get_author_of_pull_request_query
+    steps:
+      - id: mutation_to_add_author
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHPROJECT_TOKEN }}
+        run: |
+          gh api graphql -f query='
+            mutation ($assignable_id: ID!, $author_id: [ID!]! ){
+              addAssigneesToAssignable(input:{assignableId: $assignable_id, assigneeIds: $author_id }) {
+                clientMutationId
+                }
+              }' -f assignable_id=${{ needs.get_author_of_pull_request_query.outputs.issue_from_pr }} -f author_id=${{ needs.get_author_of_pull_request_query.outputs.author }}
