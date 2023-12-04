@@ -29,6 +29,9 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
 from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
+from hyperion.external_interaction.callbacks.logging_callback import (
+    VerbosePlanExecutionLoggingCallback,
+)
 from hyperion.log import (
     ALL_LOGGERS,
     ISPYB_LOGGER,
@@ -101,7 +104,11 @@ def pytest_runtest_teardown():
 
 @pytest.fixture
 def RE():
-    return RunEngine({}, call_returns_result=True)
+    RE = RunEngine({}, call_returns_result=True)
+    RE.subscribe(
+        VerbosePlanExecutionLoggingCallback()
+    )  # log all events at INFO for easier debugging
+    return RE
 
 
 def mock_set(motor: EpicsMotor, val):

@@ -286,14 +286,12 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
-    @patch("bluesky.plan_stubs.rd")
     @patch(
         "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         self,
-        rd: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
@@ -505,7 +503,11 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
+        done_status,
     ):
+        fake_fgs_composite.aperture_scatterguard.set = MagicMock(
+            return_value=done_status
+        )
         test_fgs_params.experiment_params.set_stub_offsets = False
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_fgs_params

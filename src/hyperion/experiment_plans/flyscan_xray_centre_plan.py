@@ -243,7 +243,7 @@ def run_gridscan_and_move(
 
     LOGGER.info("Grid scan finished, getting results.")
 
-    try:
+    with TRACER.start_span("wait_for_zocalocd ../"):
         yield from trigger_wait_and_read_zocalo(fgs_composite.zocalo)
         LOGGER.info("Zocalo triggered and read, interpreting results.")
         xray_centre, bbox_size = yield from get_processing_results(fgs_composite.zocalo)
@@ -262,9 +262,7 @@ def run_gridscan_and_move(
                 )
         else:
             LOGGER.warning("No bounding box size recieved")
-    except Exception as e:
-        LOGGER.warning("Exception encountered trying to read from Zocalo.", exc_info=e)
-        xray_centre = initial_xyz
+
     # once we have the results, go to the appropriate position
     LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
