@@ -102,18 +102,6 @@ class TestXrayCentreZocaloHandler:
         "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
         autospec=True,
     )
-    def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
-        self,
-        store_3d_grid_scan,
-        dummy_params,
-    ):
-        pass
-        # TODO reimplement
-
-    @patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
-        autospec=True,
-    )
     def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception(
         self,
         store_3d_grid_scan,

@@ -285,7 +285,7 @@ def cli_arg_parse() -> Tuple[Optional[str], bool, bool, bool]:
     )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     hyperion_port = 5005
     (
         logging_level,

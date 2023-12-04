@@ -1,11 +1,14 @@
+from functools import partial
 from typing import Callable, Generator, Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.utils import Msg
 from dodal.devices.fast_grid_scan import FastGridScan
-from dodal.devices.zocalo.zocalo_interaction import ZocaloTrigger
+from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
+from event_model import Event
 from ophyd.sim import make_fake_device
+from ophyd_async.core.async_status import AsyncStatus
 
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
@@ -13,12 +16,84 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
 from hyperion.external_interaction.ispyb.store_in_ispyb import (
     IspybIds,
     Store3DGridscanInIspyb,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
+from hyperion.parameters.constants import (
+    GRIDSCAN_OUTER_PLAN,
+    ISPYB_HARDWARE_READ_PLAN,
+    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+)
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
+)
+
+
+def make_event_doc(data, descriptor="abc123") -> Event:
+    return {
+        "time": 0,
+        "timestamps": {"a": 0},
+        "seq_num": 0,
+        "uid": "not so random uid",
+        "descriptor": descriptor,
+        "data": data,
+    }
+
+
+BASIC_PRE_SETUP_DOC = {
+    "undulator_current_gap": 0,
+    "undulator_gap": 0,
+    "synchrotron_machine_status_synchrotron_mode": 0,
+    "s4_slit_gaps_xgap": 0,
+    "s4_slit_gaps_ygap": 0,
+}
+BASIC_POST_SETUP_DOC = {
+    "attenuator_actual_transmission": 0,
+    "flux_flux_reading": 10,
+}
+
+
+def mock_zocalo_trigger(zocalo: ZocaloResults, result):
+    @AsyncStatus.wrap
+    async def mock_complete(results):
+        await zocalo._put_results(results)
+
+    zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
+
+
+def run_generic_ispyb_handler_setup(
+    ispyb_handler: GridscanISPyBCallback, params: GridscanInternalParameters
+):
+    ispyb_handler.active = True
+    ispyb_handler.activity_gated_start(
+        {
+            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "hyperion_internal_parameters": params.json(),
+        }
+    )
+    ispyb_handler.activity_gated_descriptor(
+        {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
+    )
+    ispyb_handler.activity_gated_event(
+        make_event_doc(
+            BASIC_PRE_SETUP_DOC,
+            descriptor="123abc",
+        )
+    )
+    ispyb_handler.activity_gated_descriptor(
+        {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
+    )
+    ispyb_handler.activity_gated_event(
+        make_event_doc(
+            BASIC_POST_SETUP_DOC,
+            descriptor="abc123",
+        )
+    )
 
 
 def modified_interactor_mock(assign_run_end: Callable | None = None):
