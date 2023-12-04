@@ -145,7 +145,7 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     composite.oav.parameters.beam_centre_j = 4
 
     oav_cb = OavSnapshotCallback()
-    grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004)
+    grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004, False)
     RE.subscribe(oav_cb)
     RE.subscribe(grid_param_cb)
     RE(
@@ -211,7 +211,7 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
 
     composite, _ = fake_devices
 
-    cb = GridDetectionCallback(composite.oav.parameters, exposure_time=0.5)
+    cb = GridDetectionCallback(composite.oav.parameters, 0.5, True)
     RE.subscribe(cb)
 
     RE(
@@ -256,3 +256,5 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     assert my_grid_params.x_axis == test_x_grid_axis
     assert my_grid_params.y_axis == test_y_grid_axis
     assert my_grid_params.z_axis == test_z_grid_axis
+
+    assert my_grid_params.set_stub_offsets is True
