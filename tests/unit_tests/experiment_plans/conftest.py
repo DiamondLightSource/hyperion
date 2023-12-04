@@ -69,6 +69,9 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
 def run_generic_ispyb_handler_setup(
     ispyb_handler: GridscanISPyBCallback, params: GridscanInternalParameters
 ):
+    """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
+    happens at the start of the outer plan."""
+
     ispyb_handler.active = True
     ispyb_handler.activity_gated_start(
         {

@@ -1,3 +1,4 @@
+import random
 import types
 from functools import partial
 from unittest.mock import MagicMock, call, patch
@@ -411,11 +412,8 @@ class TestFlyscanXrayCentrePlan:
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
-
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         RE.subscribe(mock_subscriptions.ispyb_handler)
-        RE.subscribe(VerbosePlanExecutionLoggingCallback())
-
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
@@ -429,18 +427,43 @@ class TestFlyscanXrayCentrePlan:
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
 
-
-@patch(
-    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
-    autospec=True,
-)
-def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
-    self,
-    store_3d_grid_scan,
-    dummy_params,
-):
-    pass
-    # TODO reimplement
+    @patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.mv", autospec=True)
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
+    )
+    def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
+        self,
+        move_xyz: MagicMock,
+        mock_mv: MagicMock,
+        RE: RunEngine,
+        mock_subscriptions: XrayCentreCallbackCollection,
+        test_fgs_params: GridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        done_status,
+    ):
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        initial_x_y_z = np.array(
+            [
+                random.uniform(-0.5, 0.5),
+                random.uniform(-0.5, 0.5),
+                random.uniform(-0.5, 0.5),
+            ]
+        )
+        fake_fgs_composite.smargon.x.user_readback.sim_put(initial_x_y_z[0])  # type: ignore
+        fake_fgs_composite.smargon.y.user_readback.sim_put(initial_x_y_z[1])  # type: ignore
+        fake_fgs_composite.smargon.z.user_readback.sim_put(initial_x_y_z[2])  # type: ignore
+        run_generic_ispyb_handler_setup(
+            mock_subscriptions.ispyb_handler, test_fgs_params
+        )
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
+        RE.subscribe(mock_subscriptions.ispyb_handler)
+        RE(
+            run_gridscan_and_move(
+                fake_fgs_composite,
+                test_fgs_params,
+            )
+        )
+        assert np.all(move_xyz.call_args[0][1:] == initial_x_y_z)
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
