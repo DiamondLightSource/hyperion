@@ -227,9 +227,12 @@ def attenuator():
 @pytest.fixture
 def dcm():
     dcm = i03.dcm(fake_with_ophyd_sim=True)
-    dcm.pitch.user_setpoint._use_limits = False
+    dcm.pitch_in_mrad.user_setpoint._use_limits = False
     dcm.dcm_roll_converter_lookup_table_path = (
         "tests/test_data/test_beamline_dcm_roll_converter.txt"
+    )
+    dcm.dcm_pitch_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
     )
     return dcm
 
@@ -241,7 +244,16 @@ def qbpm1():
 
 @pytest.fixture
 def vfm():
-    return i03.vfm(fake_with_ophyd_sim=True)
+    vfm = i03.vfm(fake_with_ophyd_sim=True)
+    vfm.bragg_to_lat_lookup_table_path = (
+        "tests/test_data/test_beamline_vfm_lat_converter.txt"
+    )
+    return vfm
+
+
+@pytest.fixture
+def vfm_mirror_voltages():
+    return i03.vfm_mirror_voltages(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture

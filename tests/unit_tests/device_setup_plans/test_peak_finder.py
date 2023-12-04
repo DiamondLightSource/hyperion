@@ -31,7 +31,7 @@ class FakeDCMPitchHandler:
         self._i += 1
         return {
             "data": {
-                "dcm_pitch_user_setpoint": self._pitch,
+                "dcm_pitch_in_mrad_user_setpoint": self._pitch,
                 "qbpm1_intensityC": self._intensities[self._i],
             }
         }
@@ -42,15 +42,19 @@ def test_single_scan_pass_peak_finder(dcm: DCM, qbpm1: QBPM1, sim):
     pitch_handler = FakeDCMPitchHandler()
     sim.add_handler_for_callback_subscribes()
     sim.add_handler(
-        "read", "dcm_pitch_user_setpoint", lambda msg: pitch_handler.read_pitch(msg)
+        "read",
+        "dcm_pitch_in_mrad_user_setpoint",
+        lambda msg: pitch_handler.read_pitch(msg),
     )
-    sim.add_handler("set", "dcm_pitch", lambda msg: pitch_handler.set_pitch(msg))
+    sim.add_handler(
+        "set", "dcm_pitch_in_mrad", lambda msg: pitch_handler.set_pitch(msg)
+    )
     sim.add_handler(
         "save", None, lambda msg: sim.fire_callback("event", pitch_handler.doc(msg))
     )
 
     messages = sim.simulate_plan(
-        peak_finder.find_peak_plan(dcm.pitch, qbpm1.intensityC, 5, 0.9, 0.1)
+        peak_finder.find_peak_plan(dcm.pitch_in_mrad, qbpm1.intensityC, 5, 0.9, 0.1)
     )
 
     # Inside the run the peak finder performs the scan
@@ -63,7 +67,7 @@ def test_single_scan_pass_peak_finder(dcm: DCM, qbpm1: QBPM1, sim):
             messages = sim.assert_message_and_return_remaining(
                 messages[1:],
                 lambda msg: msg.command == "set"
-                and msg.obj.name == "dcm_pitch"
+                and msg.obj.name == "dcm_pitch_in_mrad"
                 and isclose(msg.args[0], expected_x),
             )
             messages = sim.assert_message_and_return_remaining(
@@ -75,7 +79,7 @@ def test_single_scan_pass_peak_finder(dcm: DCM, qbpm1: QBPM1, sim):
             messages = sim.assert_message_and_return_remaining(
                 messages[1:],
                 lambda msg: msg.command == "read"
-                and msg.obj.name == "dcm_pitch_user_setpoint",
+                and msg.obj.name == "dcm_pitch_in_mrad_user_setpoint",
             )
             messages = sim.assert_message_and_return_remaining(
                 messages[1:],
@@ -98,7 +102,7 @@ def test_single_scan_pass_peak_finder(dcm: DCM, qbpm1: QBPM1, sim):
     messages = sim.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm_pitch"
+        and msg.obj.name == "dcm_pitch_in_mrad"
         and msg.args == (5,),
     )
     sim.assert_message_and_return_remaining(
