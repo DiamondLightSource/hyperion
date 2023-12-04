@@ -34,6 +34,9 @@ class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
     # This is the correct grid size for single pin
     grid_width_microns: float = 600
 
+    # Whether to set the stub offsets after centering
+    set_stub_offsets: bool = False
+
     def get_num_images(self):
         return 0
 
