@@ -1,6 +1,5 @@
 import random
 import types
-from functools import partial
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
@@ -508,48 +507,17 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
     ):
         test_fgs_params.experiment_params.set_stub_offsets = False
-        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
-            {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
-        )
-
-        mock_subscriptions.ispyb_handler.activity_gated_event(
-            {
-                "descriptor": "123abc",
-                "data": {
-                    "undulator_current_gap": 0,
-                    "synchrotron_machine_status_synchrotron_mode": 0,
-                    "s4_slit_gaps_xgap": 0,
-                    "s4_slit_gaps_ygap": 0,
-                },
-            }
-        )
-        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
-            {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
-        )
-        mock_subscriptions.ispyb_handler.activity_gated_event(
-            {
-                "descriptor": "abc123",
-                "data": {
-                    "attenuator_actual_transmission": 0,
-                    "flux_flux_reading": 10,
-                },
-            }
+        run_generic_ispyb_handler_setup(
+            mock_subscriptions.ispyb_handler, test_fgs_params
         )
 
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        mock_subscriptions.zocalo_handler.wait_for_results = MagicMock(
-            return_value=(
-                (0, 0, 0),
-                None,
-            )
-        )
 
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
                 test_fgs_params,
-                mock_subscriptions,
             )
         )
         assert (
