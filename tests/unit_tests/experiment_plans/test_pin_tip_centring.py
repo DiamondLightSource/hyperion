@@ -17,6 +17,11 @@ from hyperion.experiment_plans.pin_tip_centring_plan import (
 )
 
 
+def mock_generator(x, y):
+    yield from null()
+    return x, y
+
+
 def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
@@ -79,14 +84,18 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
     assert result.plan_result == (100, 200)
 
 
+@patch("hyperion.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip")
 def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
-    smargon: Smargon, oav: OAV, RE: RunEngine
+    mock_move_pin_into_view: MagicMock, smargon: Smargon, oav: OAV, RE: RunEngine
 ):
+    mock_move_pin_into_view.side_effect = [
+        mock_generator(0, 0),
+        mock_generator(0, 0),
+    ]
+
     smargon.x.user_setpoint.sim_set_limits([-2, 2])
     smargon.x.user_setpoint.sim_put(-1.8)
     smargon.x.user_readback.sim_put(-1.8)
-    oav.mxsc.pin_tip.tip_x.sim_put(0)
-    oav.mxsc.pin_tip.tip_y.sim_put(100)
 
     with pytest.raises(WarningException):
         RE(move_pin_into_view(oav, smargon, max_steps=1))
@@ -98,10 +107,6 @@ def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
 def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     mock_move_pin_into_view: MagicMock, smargon: Smargon, oav: OAV, RE: RunEngine
 ):
-    def mock_generator(x, y):
-        yield from null()
-        return x, y
-
     mock_move_pin_into_view.side_effect = [
         mock_generator(-1, -1),
         mock_generator(-1, -1),
