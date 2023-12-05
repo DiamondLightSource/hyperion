@@ -94,7 +94,6 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     simple_beamline.oav.parameters.beam_centre_i = 549
     simple_beamline.oav.parameters.beam_centre_j = 347
 
-    sim = RunEngineSimulator()
     sim.add_handler_for_callback_subscribes()
     add_simple_pin_tip_centre_handlers(sim)
     add_simple_oav_mxsc_callback_handlers(sim)
