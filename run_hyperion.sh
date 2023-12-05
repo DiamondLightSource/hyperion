@@ -116,6 +116,7 @@ if [[ $START == 1 ]]; then
     export HYPERION_LOG_DIR
     mkdir -p $HYPERION_LOG_DIR
     start_log_path=$HYPERION_LOG_DIR/start_log.txt
+    callback_start_log_path=$HYPERION_LOG_DIR/callback_start_log.txt
 
     source .venv/bin/activate
 
@@ -132,7 +133,7 @@ if [[ $START == 1 ]]; then
     done
     
     hyperion `echo $commands;`>$start_log_path 2>&1 &
-    hyperion-callbacks
+    hyperion-callbacks `echo $commands;`>$callback_start_log_path 2>&1 &
 
     echo "$(date) Waiting for Hyperion to boot"
 
