@@ -73,10 +73,10 @@ class BlueskyRunner:
         self.RE = RE
         self.skip_startup_connection = skip_startup_connection
         self.context = context
-        if VERBOSE_EVENT_LOGGING:
-            RE.subscribe(VerbosePlanExecutionLoggingCallback())
         RE.subscribe(self.aperture_change_callback)
         RE.subscribe(self.publisher)
+        if VERBOSE_EVENT_LOGGING:
+            RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         if not self.skip_startup_connection:
             for plan_name in PLAN_REGISTRY:
