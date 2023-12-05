@@ -46,6 +46,9 @@
         },
         "omega_start": {
             "type": "number"
+        },
+        "set_stub_offsets": {
+            "type": "boolean"
         }
     },
     "minProperties": 12,

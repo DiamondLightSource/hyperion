@@ -16,6 +16,9 @@
         },
         "grid_width_microns": {
             "type": "number"
+        },
+        "set_stub_offsets": {
+            "type": "boolean"
         }
     },
     "required": [
