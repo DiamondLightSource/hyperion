@@ -119,7 +119,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        fake_fgs_composite.undulator.gap.user_readback.sim_put(undulator_test_value)  # type: ignore
+        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
 
         synchrotron_test_value = "test"
         fake_fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(  # type: ignore
@@ -203,7 +203,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
@@ -350,7 +350,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
@@ -393,7 +393,7 @@ class TestFlyscanXrayCentrePlan:
             {
                 "descriptor": "123abc",
                 "data": {
-                    "undulator_gap": 0,
+                    "undulator_current_gap": 0,
                     "synchrotron_machine_status_synchrotron_mode": 0,
                     "s4_slit_gaps_xgap": 0,
                     "s4_slit_gaps_ygap": 0,
@@ -466,6 +466,71 @@ class TestFlyscanXrayCentrePlan:
                     mock_subscriptions,
                 )
             )
+        assert (
+            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            == 0
+        )
+
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
+    )
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
+    )
+    def test_given_setting_stub_offsets_disabled_then_stub_offsets_not_set(
+        self,
+        move_xyz: MagicMock,
+        run_gridscan: MagicMock,
+        mock_subscriptions: XrayCentreCallbackCollection,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_fgs_params: GridscanInternalParameters,
+        RE: RunEngine,
+    ):
+        test_fgs_params.experiment_params.set_stub_offsets = False
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
+            {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
+        )
+
+        mock_subscriptions.ispyb_handler.activity_gated_event(
+            {
+                "descriptor": "123abc",
+                "data": {
+                    "undulator_current_gap": 0,
+                    "synchrotron_machine_status_synchrotron_mode": 0,
+                    "s4_slit_gaps_xgap": 0,
+                    "s4_slit_gaps_ygap": 0,
+                },
+            }
+        )
+        mock_subscriptions.ispyb_handler.activity_gated_descriptor(
+            {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
+        )
+        mock_subscriptions.ispyb_handler.activity_gated_event(
+            {
+                "descriptor": "abc123",
+                "data": {
+                    "attenuator_actual_transmission": 0,
+                    "flux_flux_reading": 10,
+                },
+            }
+        )
+
+        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
+        RE.subscribe(VerbosePlanExecutionLoggingCallback())
+        mock_subscriptions.zocalo_handler.wait_for_results = MagicMock(
+            return_value=(
+                (0, 0, 0),
+                None,
+            )
+        )
+
+        RE(
+            run_gridscan_and_move(
+                fake_fgs_composite,
+                test_fgs_params,
+                mock_subscriptions,
+            )
+        )
         assert (
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 0

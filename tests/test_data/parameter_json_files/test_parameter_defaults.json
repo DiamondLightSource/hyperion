@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.0",
+    "params_version": "4.0.1",
     "hyperion_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",
@@ -68,6 +68,7 @@
         "z2_start": 0.0,
         "detector_distance": 100.0,
         "omega_start": 0.0,
-        "exposure_time": 0.1
+        "exposure_time": 0.1,
+        "set_stub_offsets": true
     }
 }

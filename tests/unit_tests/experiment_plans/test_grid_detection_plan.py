@@ -5,7 +5,7 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.fast_grid_scan import GridAxis
-from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
@@ -23,7 +23,7 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
 
 
 @pytest.fixture
-def fake_devices(smargon: Smargon, backlight: Backlight):
+def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
     oav = i03.oav(fake_with_ophyd_sim=True)
     oav.wait_for_connection()
 
@@ -41,6 +41,14 @@ def fake_devices(smargon: Smargon, backlight: Backlight):
 
     oav.mxsc.pin_tip.tip_x.sim_put(8)
     oav.mxsc.pin_tip.tip_y.sim_put(5)
+
+    oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    oav.parameters.micronsPerXPixel = 1.58
+    oav.parameters.micronsPerYPixel = 1.58
+    oav.parameters.beam_centre_i = 517
+    oav.parameters.beam_centre_j = 350
 
     with patch("dodal.devices.areadetector.plugins.MJPG.requests"), patch(
         "dodal.devices.areadetector.plugins.MJPG.Image"
@@ -65,7 +73,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     test_config_files,
     fake_devices,
 ):
-    params = OAVParameters(context="loopCentring", **test_config_files)
+    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     cb = OavSnapshotCallback()
     RE.subscribe(cb)
@@ -100,10 +108,11 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
 ):
     composite, _ = fake_devices
     oav: OAV = composite.oav
+
     oav.mxsc.pin_tip.tip_x.sim_put(-1)
     oav.mxsc.pin_tip.tip_y.sim_put(-1)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
-    params = OAVParameters(context="loopCentring", **test_config_files)
+    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     with pytest.raises(WarningException) as excinfo:
         RE(
@@ -126,16 +135,17 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     RE: RunEngine,
     test_config_files,
 ):
-    params = OAVParameters(context="loopCentring", **test_config_files)
-    params.micronsPerXPixel = 0.1
-    params.micronsPerYPixel = 0.1
-    params.beam_centre_i = 4
-    params.beam_centre_j = 4
+    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     composite, _ = fake_devices
 
+    composite.oav.parameters.micronsPerXPixel = 0.1
+    composite.oav.parameters.micronsPerYPixel = 0.1
+    composite.oav.parameters.beam_centre_i = 4
+    composite.oav.parameters.beam_centre_j = 4
+
     oav_cb = OavSnapshotCallback()
-    grid_param_cb = GridDetectionCallback(params, 0.004)
+    grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004, False)
     RE.subscribe(oav_cb)
     RE.subscribe(grid_param_cb)
     RE(
@@ -168,7 +178,7 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     RE: RunEngine,
     test_config_files,
 ):
-    params = OAVParameters(context="loopCentring", **test_config_files)
+    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     composite, _ = fake_devices
 
@@ -197,11 +207,11 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     RE: RunEngine,
     test_config_files,
 ):
-    params = OAVParameters(context="loopCentring", **test_config_files)
+    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
     composite, _ = fake_devices
 
-    cb = GridDetectionCallback(params, exposure_time=0.5)
+    cb = GridDetectionCallback(composite.oav.parameters, 0.5, True)
     RE.subscribe(cb)
 
     RE(
@@ -246,3 +256,5 @@ def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct
     assert my_grid_params.x_axis == test_x_grid_axis
     assert my_grid_params.y_axis == test_y_grid_axis
     assert my_grid_params.z_axis == test_z_grid_axis
+
+    assert my_grid_params.set_stub_offsets is True

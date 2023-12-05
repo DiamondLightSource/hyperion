@@ -5,7 +5,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import Msg
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
-from dodal.devices.oav.oav_detector import MXSC, OAV
+from dodal.devices.oav.oav_detector import MXSC, OAV, OAVConfigParams
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.utils import ColorMode, EdgeOutputArrayImageType
@@ -118,7 +118,7 @@ def pre_centring_setup_oav(oav: OAV, parameters: OAVParameters):
 
 
 def calculate_x_y_z_of_pixel(
-    current_x_y_z, current_omega, pixel: Pixel, oav_params: OAVParameters
+    current_x_y_z, current_omega, pixel: Pixel, oav_params: OAVConfigParams
 ) -> np.ndarray:
     beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
 
@@ -132,7 +132,7 @@ def calculate_x_y_z_of_pixel(
 
 
 def get_move_required_so_that_beam_is_at_pixel(
-    smargon: Smargon, pixel: Pixel, oav_params: OAVParameters
+    smargon: Smargon, pixel: Pixel, oav_params: OAVConfigParams
 ) -> Generator[Msg, None, np.ndarray]:
     """Calculate the required move so that the given pixel is in the centre of the beam."""
 
