@@ -40,6 +40,7 @@ from hyperion.external_interaction.ispyb.store_in_ispyb import (
     IspybIds,
     Store3DGridscanInIspyb,
 )
+from hyperion.external_interaction.zocalo.zocalo_interaction import ZocaloInteractor
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
@@ -326,7 +327,7 @@ class TestFlyscanXrayCentrePlan:
     @patch("bluesky.plan_stubs.rd")
     @patch(
         "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
-        modified_interactor_mock,
+        MagicMock(spec=ZocaloInteractor),
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
         self,
@@ -622,7 +623,7 @@ class TestFlyscanXrayCentrePlan:
             autospec=True,
         ), patch(
             "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
-            lambda _: modified_interactor_mock(mock_parent.run_end),
+            lambda _, __: modified_interactor_mock(mock_parent.run_end),
         ):
             RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 

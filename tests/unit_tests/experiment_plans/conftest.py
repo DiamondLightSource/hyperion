@@ -43,7 +43,7 @@ def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
 def mock_subscriptions(test_fgs_params):
     with patch(
         "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloInteractor",
-        modified_interactor_mock,
+        MagicMock(spec=ZocaloInteractor),
     ):
         subscriptions = XrayCentreCallbackCollection.setup()
         start_doc = {
