@@ -44,7 +44,7 @@ jobs:
         run: pip install -e .[dev]
 
       - name: Run tests
-        run: pytest --random-order -m "not (dlstbx or s03)"
+        run: pytest -s --random-order -m "not (dlstbx or s03)"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

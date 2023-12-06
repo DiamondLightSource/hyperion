@@ -6,7 +6,6 @@ from hyperion.external_interaction.callbacks.__main__ import (
     main,
     setup_callbacks,
     setup_logging,
-    setup_threads,
 )
 from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER
 
