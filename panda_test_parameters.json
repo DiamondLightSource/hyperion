@@ -10,7 +10,7 @@
             "current_energy_ev": 12700,
             "directory": "/dls/i03/data/2023/cm33866-5/test_hyperion",
             "prefix": "panda_test",
-            "run_number": 142,
+            "run_number": 336,
             "use_roi_mode": false,
             "det_dist_to_beam_converter_path": "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
         },
@@ -56,10 +56,10 @@
         }
     },
     "experiment_params": {
-        "x_steps": 1,
-        "y_steps": 10,
-        "z_steps": 2,
-        "x_step_size": 0.2,
+        "x_steps": 100,
+        "y_steps": 20,
+        "z_steps": 30,
+        "x_step_size": 0.02,
         "y_step_size": 0.02,
         "z_step_size": 0.02,
         "dwell_time_ms": 2,
@@ -69,7 +69,7 @@
         "y2_start": 0.0,
         "z1_start": 0.0,
         "z2_start": 0.0,
-        "exposure_time": 0.002,
+        "exposure_time": 0.02,
         "detector_distance": 100.0,
         "omega_start": 90.0
     }
