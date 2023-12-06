@@ -29,11 +29,14 @@ class PlanReactiveCallback(CallbackBase):
         super().__init__(emit=emit)
         self.active = False
         self.activity_uid = 0
+        self.log = None
 
     def start(self, doc: RunStart) -> RunStart | None:
         callbacks_to_activate = doc.get("activate_callbacks")
         if callbacks_to_activate:
-            self.active = type(self).__name__ in callbacks_to_activate
+            activate = type(self).__name__ in callbacks_to_activate
+            self.active = activate
+            self.optional_info_log(f"{'' if activate else 'not'} activating {type(self).__name__}")
             self.activity_uid = doc.get("uid")
         return self.activity_gated_start(doc) if self.active else doc
 
@@ -64,3 +67,11 @@ class PlanReactiveCallback(CallbackBase):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} with id: {hex(id(self))}>"
+
+    def optional_info_log(self, msg):
+        if self.log:
+            self.log.info(msg)
+    
+    def optional_debug_log(self, msg):
+        if self.log:
+            self.log.debug(msg)
