@@ -70,6 +70,7 @@ def setup_threads():
 
     def start_dispatcher(callbacks: list[Callable]):
         [dispatcher.subscribe(cb) for cb in callbacks]
+        dispatcher.subscribe(print)
         dispatcher.start()
 
     return proxy, dispatcher, start_proxy, start_dispatcher
