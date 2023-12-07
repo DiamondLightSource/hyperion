@@ -9,13 +9,14 @@ from bluesky.run_engine import RunEngine
 
 from hyperion.__main__ import CALLBACK_0MQ_PROXY_PORTS
 from hyperion.external_interaction.callbacks.__main__ import (
+    HyperionCallbackRunner,
     main,
     setup_callbacks,
     setup_logging,
 )
 from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER
 
-from ..conftest import TestCallback, get_test_plan
+from ..conftest import MockReactiveCallback, get_test_plan
 
 
 @patch("hyperion.external_interaction.callbacks.__main__.setup_callbacks")
@@ -50,6 +51,9 @@ def test_setup_logging(parse_cli_args):
     setup_logging()
     assert len(ISPYB_LOGGER.handlers) == 3
     assert len(NEXUS_LOGGER.handlers) == 3
+    setup_logging()
+    assert len(ISPYB_LOGGER.handlers) == 3
+    assert len(NEXUS_LOGGER.handlers) == 3
 
 
 @patch("hyperion.external_interaction.callbacks.__main__.wait_for_threads_forever")
@@ -61,7 +65,7 @@ def test_publisher_connects_to_remote_dispatcher(
     wait_forever: MagicMock,
     RE: RunEngine,
 ):
-    test_cb = TestCallback()
+    test_cb = MockReactiveCallback()
     setup_callbacks.return_value = [test_cb]
     thread_lock = Lock()
     thread_lock.acquire()
@@ -72,7 +76,8 @@ def test_publisher_connects_to_remote_dispatcher(
 
     wait_forever.side_effect = fake_wait_forever
 
-    remote_thread = Thread(target=main)
+    runner = HyperionCallbackRunner()
+    remote_thread = Thread(target=main, args=[runner])
     remote_thread.start()
 
     while wait_forever.call_count == 0:
@@ -80,11 +85,15 @@ def test_publisher_connects_to_remote_dispatcher(
 
     publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
     RE.subscribe(publisher)
-    RE(get_test_plan("TestCallback")[0]())
+    RE(get_test_plan("MockReactiveCallback")[0]())
 
     thread_lock.release()
     remote_thread.join()
     assert not remote_thread.is_alive()
+
+    runner.dispatcher.stop()
+    runner.dispatcher_thread.join()
+    assert not runner.dispatcher_thread.is_alive()
 
     test_cb.activity_gated_start.assert_called_once()
     test_cb.activity_gated_descriptor.assert_called_once()

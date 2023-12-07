@@ -22,7 +22,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 from hyperion.utils.utils import convert_angstrom_to_eV
 
 
-class TestCallback(PlanReactiveCallback):
+class MockReactiveCallback(PlanReactiveCallback):
     def __init__(self, *, emit: Callable[..., Any] | None = None) -> None:
         super().__init__(emit=emit)
         self.activity_gated_start = MagicMock()
@@ -33,7 +33,7 @@ class TestCallback(PlanReactiveCallback):
 
 @pytest.fixture
 def mocked_test_callback():
-    t = TestCallback()
+    t = MockReactiveCallback()
     return t
 
 

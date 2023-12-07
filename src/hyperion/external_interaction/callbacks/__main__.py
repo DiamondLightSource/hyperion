@@ -70,7 +70,6 @@ def setup_threads():
 
     def start_dispatcher(callbacks: list[Callable]):
         [dispatcher.subscribe(cb) for cb in callbacks]
-        dispatcher.subscribe(print)
         dispatcher.start()
 
     return proxy, dispatcher, start_proxy, start_dispatcher
@@ -93,22 +92,34 @@ def wait_for_threads_forever(threads: Sequence[Thread]):
         log_info("Proxy or dispatcher thread ended - exiting.")
 
 
-def main():
-    setup_logging()
-    log_info("Hyperion callback process started.")
+class HyperionCallbackRunner:
+    def __init__(self) -> None:
+        setup_logging()
+        log_info("Hyperion callback process started.")
 
-    callbacks = setup_callbacks()
-    proxy, dispatcher, start_proxy, start_dispatcher = setup_threads()
-    log_info("Created 0MQ proxy and local RemoteDispatcher.")
+        self.callbacks = setup_callbacks()
+        self.proxy, self.dispatcher, start_proxy, start_dispatcher = setup_threads()
+        log_info("Created 0MQ proxy and local RemoteDispatcher.")
 
-    proxy_thread = Thread(target=start_proxy, daemon=True)
-    dispatcher_thread = Thread(target=start_dispatcher, args=[callbacks], daemon=True)
+        self.proxy_thread = Thread(target=start_proxy, daemon=True)
+        self.dispatcher_thread = Thread(
+            target=start_dispatcher, args=[self.callbacks], daemon=True
+        )
 
-    log_info(f"Launching threads, with callbacks: {callbacks}")
-    proxy_thread.start()
-    dispatcher_thread.start()
-    log_info("Proxy and dispatcher thread launched.")
-    wait_for_threads_forever([proxy_thread, dispatcher_thread])
+    def start(self):
+        log_info(f"Launching threads, with callbacks: {self.callbacks}")
+        self.proxy_thread.start()
+        self.dispatcher_thread.start()
+        log_info("Proxy and dispatcher thread launched.")
+        wait_for_threads_forever([self.proxy_thread, self.dispatcher_thread])
+
+    def stop(self):
+        self.dispatcher.stop()
+
+
+def main(runner=None):
+    runner = runner or HyperionCallbackRunner()
+    runner.start()
 
 
 if __name__ == "__main__":

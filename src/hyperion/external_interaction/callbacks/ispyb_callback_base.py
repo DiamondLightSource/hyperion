@@ -58,10 +58,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
         assert self.ispyb is not None, "ISPyB deposition wasn't initialised!"
         assert self.params is not None, "ISPyB handler didn't recieve parameters!"
 
-        event_descriptor = self.descriptors.get([doc["descriptor"]])
+        event_descriptor = self.descriptors.get(doc["descriptor"])
         if event_descriptor is None:
-            ISPYB_LOGGER.warning(f"Ispyb handler {self} recieved event doc {doc} and "
-                                 "has no corresponding descriptor record")
+            ISPYB_LOGGER.warning(
+                f"Ispyb handler {self} recieved event doc {doc} and "
+                "has no corresponding descriptor record"
+            )
             return
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][

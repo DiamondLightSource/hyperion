@@ -47,6 +47,9 @@ def set_up_logging_handlers(
 
     Mode defaults to production and can be switched to dev with the --dev flag on run.
     """
+    logger.handlers.clear()
+    logger.filters.clear()
+    dodal_logger.filters.clear()
     handlers = setup_dodal_logging(
         logging_level,
         dev_mode,
