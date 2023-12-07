@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from math import cos
 
 import numpy as np
 from numpy import interp, loadtxt
@@ -41,9 +40,3 @@ class LinearInterpolationLUTConverter(LookupTableConverter):
     def s_to_t(self, s):
         # XXX numpy.interp doesn't do extrapolation, whereas GDA does, do we need this?
         return interp(s, self._s_values, self._t_values)
-
-
-class PerpRollLUTConverter(LookupTableConverter):
-    # TODO if we need to read the XML JEPQuantityConverter file instead of hardcoding this
-    def s_to_t(self, s):
-        return -1.0 * (25 / (2.0 * cos(s * 3.1416 / 180.0)) - 13.56)

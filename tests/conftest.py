@@ -34,6 +34,7 @@ from hyperion.log import (
     NEXUS_LOGGER,
     set_up_logging_handlers,
 )
+from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -110,6 +111,13 @@ def mock_set(motor: EpicsMotor, val):
 
 def patch_motor(motor):
     return patch.object(motor, "set", partial(mock_set, motor))
+
+
+@pytest.fixture
+def beamline_parameters():
+    return GDABeamlineParameters.from_file(
+        "tests/test_data/test_beamline_parameters.txt"
+    )
 
 
 @pytest.fixture

@@ -17,6 +17,7 @@ from hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
     adjust_dcm_pitch_roll_vfm_from_lut,
     adjust_mirror_stripe,
 )
+from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 
 
 def test_apply_and_wait_for_voltages_to_settle_happy_path(
@@ -215,7 +216,11 @@ def test_adjust_mirror_stripe(
 
 
 def test_adjust_dcm_pitch_roll_vfm_from_lut(
-    dcm: DCM, vfm: FocusingMirror, vfm_mirror_voltages: VFMMirrorVoltages, sim
+    dcm: DCM,
+    vfm: FocusingMirror,
+    vfm_mirror_voltages: VFMMirrorVoltages,
+    beamline_parameters: GDABeamlineParameters,
+    sim,
 ):
     sim.add_handler_for_callback_subscribes()
     sim.add_handler(
@@ -225,7 +230,9 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     )
 
     messages = sim.simulate_plan(
-        adjust_dcm_pitch_roll_vfm_from_lut(dcm, vfm, vfm_mirror_voltages, 7.5)
+        adjust_dcm_pitch_roll_vfm_from_lut(
+            dcm, vfm, vfm_mirror_voltages, beamline_parameters, 7.5
+        )
     )
 
     messages = sim.assert_message_and_return_remaining(
@@ -253,8 +260,8 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     messages = sim.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm_perp_in_mm"
-        and abs(msg.args[0] - 1.01225) < 1e-5
+        and msg.obj.name == "dcm_offset_in_mm"
+        and msg.args == (25.6,)
         and msg.kwargs["group"] == "DCM_GROUP",
     )
     messages = sim.assert_message_and_return_remaining(

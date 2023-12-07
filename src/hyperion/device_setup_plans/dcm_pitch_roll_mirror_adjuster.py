@@ -1,7 +1,7 @@
 import json
 
 import bluesky.plan_stubs as bps
-from dodal.devices.DCM import DCM
+from dodal.devices.DCM import DCM, fixed_offset_from_beamline_params
 from dodal.devices.focusing_mirror import (
     FocusingMirror,
     MirrorStripe,
@@ -10,9 +10,11 @@ from dodal.devices.focusing_mirror import (
 
 from hyperion.device_setup_plans.adjuster import LUTAdjuster
 from hyperion.log import LOGGER
+from hyperion.parameters.beamline_parameters import (
+    GDABeamlineParameters,
+)
 from hyperion.utils.lookup_table import (
     LinearInterpolationLUTConverter,
-    PerpRollLUTConverter,
 )
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
@@ -67,9 +69,15 @@ def adjust_mirror_stripe(
 
 
 def adjust_dcm_pitch_roll_vfm_from_lut(
-    dcm: DCM, vfm: FocusingMirror, vfm_mirror_voltages: VFMMirrorVoltages, energy_kev
+    dcm: DCM,
+    vfm: FocusingMirror,
+    vfm_mirror_voltages: VFMMirrorVoltages,
+    beamline_parameters: GDABeamlineParameters,
+    energy_kev,
 ):
-    """Beamline energy-change post-adjustments : Adjust DCM and VFM directly from lookup tables."""
+    """Beamline energy-change post-adjustments : Adjust DCM and VFM directly from lookup tables.
+    Lookups are performed against the Bragg angle which will have been automatically set by EPICS as a side-effect of the
+    energy change prior to calling this function."""
     # Transmission should be 100% and feedback should be OFF prior to entry
 
     # DCM Pitch
@@ -97,9 +105,9 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     yield from bps.wait(DCM_GROUP)
 
     # DCM Perp pitch
-    dcm_perp_adjuster = LUTAdjuster(PerpRollLUTConverter(), dcm.perp_in_mm, bragg_deg)
-    yield from dcm_perp_adjuster.adjust(DCM_GROUP)
-    LOGGER.info("Waiting for DCM perp adjust to complete...")
+    offset_mm = fixed_offset_from_beamline_params(beamline_parameters)
+    LOGGER.info(f"Adjusting DCM offset to {offset_mm} mm")
+    yield from bps.abs_set(dcm.offset_in_mm, offset_mm, group=DCM_GROUP)
     yield from bps.wait(DCM_GROUP)
 
     #
