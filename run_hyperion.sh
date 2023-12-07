@@ -54,6 +54,20 @@ for option in "$@"; do
     esac
 done
 
+kill_active_apps () {
+    echo "Killing active instances of hyperion and hyperion-callbacks..."
+    pkill -e -f "python.*hyperion"
+    echo "done."
+}
+
+check_user () {
+    if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
+        echo "Must be run from beamline control machine as gda2"
+        echo "Current host is $HOSTNAME and user is $USER"
+        exit 1
+    fi
+}
+
 #Check valid logging level was chosen
 if [[ "$LOGGING_LEVEL" != "INFO" && "$LOGGING_LEVEL" != "CRITICAL" && "$LOGGING_LEVEL" != "ERROR" 
     && "$LOGGING_LEVEL" != "WARNING" && "$LOGGING_LEVEL" != "DEBUG" ]]; then
@@ -65,19 +79,13 @@ if [ -z "${BEAMLINE}" ]; then
     echo "BEAMLINE parameter not set, assuming running on a dev machine."
     echo "If you would like to run not in dev use the option -b, --beamline=BEAMLNE to set it manually"
     IN_DEV=true
-else
-    IN_DEV=false
 fi
 
 if [[ $STOP == 1 ]]; then
     if [ $IN_DEV == false ]; then
-        if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
-            echo "Must be run from beamline control machine as gda2"
-            echo "Current host is $HOSTNAME and user is $USER"
-            exit 1
-        fi
+        check_user
     fi
-    pkill -f "python -m hyperion"
+    kill_active_apps
 
     echo "Hyperion stopped"
     exit 0
@@ -85,21 +93,16 @@ fi
 
 if [[ $START == 1 ]]; then
     if [ $IN_DEV == false ]; then
-        if [[ $HOSTNAME != "${BEAMLINE}-control.diamond.ac.uk" || $USER != "gda2" ]]; then
-            echo "Must be run from beamline control machine as gda2"
-            echo "Current host is $HOSTNAME and user is $USER"
-            exit 1
-        fi
+        check_user
 
         ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
         export ISPYB_CONFIG_PATH
 
     fi
 
-    pkill -f "python -m hyperion"
+    kill_active_apps
 
     module unload controls_dev
-    module load python/3.10
     module load dials
 
     RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
