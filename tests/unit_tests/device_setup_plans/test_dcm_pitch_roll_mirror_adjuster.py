@@ -22,9 +22,6 @@ from hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
 def test_apply_and_wait_for_voltages_to_settle_happy_path(
     vfm_mirror_voltages: VFMMirrorVoltages, vfm: FocusingMirror, RE: RunEngine
 ):
-    vfm_mirror_voltages.voltage_lookup_table_path = (
-        "tests/test_data/test_mirror_focus.json"
-    )
     _all_demands_accepted(vfm_mirror_voltages)
 
     RE(
@@ -181,8 +178,8 @@ def _mock_voltage_channel(setpoint: EpicsSignal, demand_accepted: EpicsSignal):
 
 
 mirror_stripe_params = [
-    (6.999, MirrorStripe.BARE, 140, 15),
-    (7.001, MirrorStripe.RHODIUM, 124, -46),
+    (6.999, "Bare", 140, 15),
+    (7.001, "Rhodium", 124, -46),
 ]
 
 
@@ -268,7 +265,7 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "vfm_stripe"
-        and msg.args == (MirrorStripe.RHODIUM,),
+        and msg.args == ("Rhodium",),
     )
     messages = sim.assert_message_and_return_remaining(
         messages[1:],

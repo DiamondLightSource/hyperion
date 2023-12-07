@@ -18,6 +18,7 @@ class LookupTableConverter(ABC):
 class LinearInterpolationLUTConverter(LookupTableConverter):
     def __init__(self, filename: str):
         super().__init__()
+        LOGGER.info(f"Using lookup table {filename}")
         s_and_t_vals = zip(*loadtxt(filename, comments=["#", "Units"]))
 
         self._s_values, self._t_values = s_and_t_vals

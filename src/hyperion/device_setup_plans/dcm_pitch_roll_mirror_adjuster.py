@@ -56,9 +56,13 @@ def adjust_mirror_stripe(
     # Transmission should be 100% and feedback should be OFF prior to entry
     stripe = mirror.energy_to_stripe(energy_kev)
 
-    yield from bps.abs_set(mirror.stripe, stripe)
+    LOGGER.info(
+        f"Adjusting mirror stripe for {energy_kev}keV selecting {stripe} stripe"
+    )
+    yield from bps.abs_set(mirror.stripe, stripe.value)
     yield from bps.abs_set(mirror.apply_stripe, 1)
 
+    LOGGER.info("Adjusting mirror voltages...")
     yield from _apply_and_wait_for_voltages_to_settle(stripe, mirror, mirror_voltages)
 
 
@@ -69,7 +73,9 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     # Transmission should be 100% and feedback should be OFF prior to entry
 
     # DCM Pitch
+    LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
     bragg_deg = yield from bps.rd(dcm.bragg_in_degrees.user_readback)
+    LOGGER.info(f"Read Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = LUTAdjuster(
         LinearInterpolationLUTConverter(dcm.dcm_pitch_converter_lookup_table_path),
         dcm.pitch_in_mrad,
@@ -77,6 +83,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     )
     yield from dcm_pitch_adjuster.adjust(DCM_GROUP)
     # It's possible we can remove these waits but we need to check
+    LOGGER.info("Waiting for DCM pitch adjust to complete...")
     yield from bps.wait(DCM_GROUP)
 
     # DCM Roll
@@ -86,11 +93,13 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
         bragg_deg,
     )
     yield from dcm_roll_adjuster.adjust(DCM_GROUP)
+    LOGGER.info("Waiting for DCM roll adjust to complete...")
     yield from bps.wait(DCM_GROUP)
 
     # DCM Perp pitch
     dcm_perp_adjuster = LUTAdjuster(PerpRollLUTConverter(), dcm.perp_in_mm, bragg_deg)
     yield from dcm_perp_adjuster.adjust(DCM_GROUP)
+    LOGGER.info("Waiting for DCM perp adjust to complete...")
     yield from bps.wait(DCM_GROUP)
 
     #
@@ -111,4 +120,5 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
         vfm.lat_mm,
         bragg_deg,
     )
+    LOGGER.info("Waiting for VFM Lat (Horizontal Translation) to complete...")
     yield from vfm_x_adjuster.adjust()
