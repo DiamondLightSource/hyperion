@@ -36,7 +36,9 @@ class PlanReactiveCallback(CallbackBase):
         if callbacks_to_activate:
             activate = type(self).__name__ in callbacks_to_activate
             self.active = activate
-            self.optional_info_log(f"{'' if activate else 'not'} activating {type(self).__name__}")
+            self.optional_info_log(
+                f"{'' if activate else 'not'} activating {type(self).__name__}"
+            )
             self.activity_uid = doc.get("uid")
         return self.activity_gated_start(doc) if self.active else doc
 
@@ -71,7 +73,7 @@ class PlanReactiveCallback(CallbackBase):
     def optional_info_log(self, msg):
         if self.log:
             self.log.info(msg)
-    
+
     def optional_debug_log(self, msg):
         if self.log:
             self.log.debug(msg)

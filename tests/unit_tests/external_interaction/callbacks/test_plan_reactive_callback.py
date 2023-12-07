@@ -1,49 +1,6 @@
-from typing import Any, Callable
-from unittest.mock import MagicMock
-
-import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
-import pytest
 from bluesky.run_engine import RunEngine
-from ophyd.sim import SynAxis
 
-from hyperion.external_interaction.callbacks.plan_reactive_callback import (
-    PlanReactiveCallback,
-)
-
-
-class TestCallback(PlanReactiveCallback):
-    def __init__(self, *, emit: Callable[..., Any] | None = None) -> None:
-        super().__init__(emit=emit)
-        self.activity_gated_start = MagicMock()
-        self.activity_gated_descriptor = MagicMock()
-        self.activity_gated_event = MagicMock()
-        self.activity_gated_stop = MagicMock()
-
-
-@pytest.fixture
-def mocked_test_callback():
-    t = TestCallback()
-    return t
-
-
-@pytest.fixture
-def RE_with_mock_callback(mocked_test_callback):
-    RE = RunEngine()
-    RE.subscribe(mocked_test_callback)
-    yield RE, mocked_test_callback
-
-
-def get_test_plan(callback_name):
-    s = SynAxis(name="fake_signal")
-
-    @bpp.run_decorator(md={"activate_callbacks": [callback_name]})
-    def test_plan():
-        yield from bps.create()
-        yield from bps.read(s)
-        yield from bps.save()
-
-    return test_plan, s
+from ..conftest import TestCallback, get_test_plan
 
 
 def test_activity_gated_functions_not_called_when_inactive(

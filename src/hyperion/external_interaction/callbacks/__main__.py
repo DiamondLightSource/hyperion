@@ -1,6 +1,6 @@
 from threading import Thread
 from time import sleep
-from typing import Callable
+from typing import Callable, Sequence
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 
@@ -81,6 +81,18 @@ def log_info(msg, *args, **kwargs):
     NEXUS_LOGGER.info(msg, *args, **kwargs)
 
 
+def wait_for_threads_forever(threads: Sequence[Thread]):
+    alive = [t.is_alive() for t in threads]
+    try:
+        while all(alive):
+            sleep(1)
+            alive = [t.is_alive() for t in threads]
+    except KeyboardInterrupt:
+        log_info("Main thread recieved interrupt - exiting.")
+    else:
+        log_info("Proxy or dispatcher thread ended - exiting.")
+
+
 def main():
     setup_logging()
     log_info("Hyperion callback process started.")
@@ -96,14 +108,8 @@ def main():
     proxy_thread.start()
     dispatcher_thread.start()
     log_info("Proxy and dispatcher thread launched.")
-    try:
-        while proxy_thread.is_alive() and dispatcher_thread.is_alive():
-            sleep(1)
-    except KeyboardInterrupt:
-        log_info("Main thread recieved interrupt - exiting.")
-    else:
-        log_info("Proxy or dispatcher thread ended - exiting.")
+    wait_for_threads_forever([proxy_thread, dispatcher_thread])
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     main()
