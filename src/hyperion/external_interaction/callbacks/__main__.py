@@ -114,7 +114,13 @@ class HyperionCallbackRunner:
         wait_for_threads_forever([self.proxy_thread, self.dispatcher_thread])
 
     def stop(self):
-        self.dispatcher.stop()
+        try:
+            self.dispatcher.stop()
+            self.proxy._backend.close(linger=1)
+            self.proxy._frontend.close(linger=1)
+            self.proxy._context.term()
+        except BaseException:
+            ...
 
 
 def main(runner=None):
