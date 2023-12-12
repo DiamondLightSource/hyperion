@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import time
+from time import time
 from typing import Optional
 
 from dodal.devices.zocalo import (
@@ -85,4 +85,4 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
             for id in self.ispyb.ispyb_ids.data_collection_ids:
                 self.zocalo_interactor.run_end(id)
-            self.processing_start_time = time.time()
+            self.ispyb.processing_start_time = time()

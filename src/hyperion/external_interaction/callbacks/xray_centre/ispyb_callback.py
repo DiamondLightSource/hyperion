@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from time import time
+
 import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents.event import Event
@@ -43,6 +45,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.params: GridscanInternalParameters
         self.ispyb: StoreGridscanInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
+        self.processing_start_time: float | None = None
 
     def activity_gated_start(self, doc: dict):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
@@ -65,6 +68,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == ZOCALO_READING_PLAN_NAME:
             crystal_summary = ""
+            if self.processing_start_time is not None:
+                proc_time = time() - self.processing_start_time
+                crystal_summary = f"Zocalo processing took {proc_time:.2f} s. "
 
             bboxes = []
             ISPYB_LOGGER.info(f"Amending comment based on Zocalo reading doc: {doc}")
@@ -83,7 +89,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                         f"Crystal {n+1}: "
                         f"Strength {res['total_count']}; "
                         f"Position (grid boxes) {nicely_formatted_com}; "
-                        f"Size (grid boxes) {bboxes[n]};"
+                        f"Size (grid boxes) {bboxes[n]}; "
                     )
             else:
                 crystal_summary += "Zocalo found no crystals in this gridscan."
