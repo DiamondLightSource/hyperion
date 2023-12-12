@@ -11,7 +11,7 @@ from hyperion.experiment_plans.rotation_scan_plan import (
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.store_in_ispyb import (
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
     StoreGridscanInIspyb,

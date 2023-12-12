@@ -12,7 +12,7 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.store_in_ispyb import (
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     IspybIds,
     Store3DGridscanInIspyb,
 )

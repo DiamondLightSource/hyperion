@@ -13,7 +13,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import IspybIds
 from hyperion.external_interaction.zocalo.zocalo_interaction import (
     NoDiffractionFound,
     ZocaloInteractor,

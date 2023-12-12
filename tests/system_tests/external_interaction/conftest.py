@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import hyperion.external_interaction.zocalo.zocalo_interaction
-from hyperion.external_interaction.ispyb.store_in_ispyb import (
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
 )

@@ -3,7 +3,7 @@ from __future__ import annotations
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_in_ispyb import (
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     IspybIds,
     StoreRotationInIspyb,
 )

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import datetime
-import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
@@ -10,7 +8,6 @@ import ispyb
 import ispyb.sqlalchemy
 from dodal.devices.detector import DetectorParams
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
-from ispyb.sp.core import Core
 from ispyb.sp.mxacquisition import MXAcquisition
 from numpy import ndarray
 from pydantic import BaseModel
@@ -20,6 +17,11 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     IspybParams,
     Orientation,
     RotationIspybParams,
+)
+from hyperion.external_interaction.ispyb.ispyb_utils import (
+    get_current_time_string,
+    get_session_id_from_visit,
+    get_visit_string_from_path,
 )
 from hyperion.log import ISPYB_LOGGER
 from hyperion.tracing import TRACER
@@ -34,7 +36,6 @@ if TYPE_CHECKING:
 
 I03_EIGER_DETECTOR = 78
 EIGER_FILE_SUFFIX = "h5"
-VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})(/?$)"
 
 
 class IspybIds(BaseModel):
@@ -87,23 +88,19 @@ class StoreInIspyb(ABC):
                 data_collection_id, comment, delimiter
             )
 
-    def get_current_time_string(self):
-        now = datetime.datetime.now()
-        return now.strftime("%Y-%m-%d %H:%M:%S")
-
-    def get_visit_string(self):
+    def get_visit_string(self) -> str:
         assert (
             self.ispyb_params and self.detector_params
         ), "StoreInISPyB didn't acquire params"
-        visit_path_match = self.get_visit_string_from_path(self.ispyb_params.visit_path)
+        visit_path_match = get_visit_string_from_path(self.ispyb_params.visit_path)
         if visit_path_match:
             return visit_path_match
-        else:
-            return self.get_visit_string_from_path(self.detector_params.directory)
-
-    def get_visit_string_from_path(self, path):
-        match = re.search(VISIT_PATH_REGEX, path) if path else None
-        return match.group(1) if match else None
+        visit_path_match = get_visit_string_from_path(self.detector_params.directory)
+        if not visit_path_match:
+            raise ValueError(
+                f"Visit not found from {self.ispyb_params.visit_path} or {self.detector_params.directory}"
+            )
+        return visit_path_match
 
     def update_scan_with_end_time_and_status(
         self,
@@ -143,7 +140,7 @@ class StoreInIspyb(ABC):
             run_status = "DataCollection Unsuccessful"
         else:
             run_status = "DataCollection Successful"
-        current_time = self.get_current_time_string()
+        current_time = get_current_time_string()
         assert self.data_collection_group_id is not None
         self.update_scan_with_end_time_and_status(
             current_time,
@@ -169,18 +166,10 @@ class StoreInIspyb(ABC):
 
     def _store_data_collection_group_table(self, conn: Connector) -> int:
         assert self.ispyb_params is not None
-        core: Core = conn.core
         mx_acquisition: MXAcquisition = conn.mx_acquisition
 
-        try:
-            session_id = core.retrieve_visit_id(self.get_visit_string())
-        except ispyb.NoResult:
-            raise Exception(
-                f"Not found - session ID for visit {self.get_visit_string()} where self.ispyb_params.visit_path is {self.ispyb_params.visit_path}"
-            )
-
         params = mx_acquisition.get_data_collection_group_params()
-        params["parentid"] = session_id
+        params["parentid"] = get_session_id_from_visit(conn, self.get_visit_string())
         params["experimenttype"] = self.experiment_type
         params["sampleid"] = self.ispyb_params.sample_id
         params["sample_barcode"] = self.ispyb_params.sample_barcode
@@ -197,18 +186,11 @@ class StoreInIspyb(ABC):
             and self.xtal_snapshots is not None
         )
 
-        core: Core = conn.core
         mx_acquisition: MXAcquisition = conn.mx_acquisition
-        try:
-            session_id = core.retrieve_visit_id(self.get_visit_string())
-        except ispyb.NoResult:
-            raise Exception(
-                f"Not found - session ID for visit {self.get_visit_string()}"
-            )
 
         params = mx_acquisition.get_data_collection_params()
 
-        params["visitid"] = session_id
+        params["visitid"] = get_session_id_from_visit(conn, self.get_visit_string())
         params["parentid"] = data_collection_group_id
         params["sampleid"] = self.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
@@ -251,7 +233,7 @@ class StoreInIspyb(ABC):
             ) = self.xtal_snapshots
         params["synchrotron_mode"] = self.ispyb_params.synchrotron_mode
         params["undulator_gap1"] = self.ispyb_params.undulator_gap
-        params["starttime"] = self.get_current_time_string()
+        params["starttime"] = get_current_time_string()
 
         # temporary file template until nxs filewriting is integrated and we can use
         # that file name

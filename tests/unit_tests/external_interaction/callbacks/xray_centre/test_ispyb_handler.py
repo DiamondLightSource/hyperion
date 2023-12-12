@@ -7,7 +7,9 @@ from dodal.log import LOGGER as dodal_logger
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_in_ispyb import Store3DGridscanInIspyb
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+    Store3DGridscanInIspyb,
+)
 from hyperion.log import (
     ISPYB_LOGGER,
     dc_group_id_filter,
@@ -41,11 +43,14 @@ def mock_emit():
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
     mock = Store3DGridscanInIspyb("", params)
     mock.store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
-    mock.get_current_time_string = MagicMock(return_value=td.DUMMY_TIME_STRING)
     mock.update_scan_with_end_time_and_status = MagicMock(return_value=None)
     return mock
 
 
+@patch(
+    "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.get_current_time_string",
+    MagicMock(return_value=td.DUMMY_TIME_STRING),
+)
 @patch(
     "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
     mock_store_in_ispyb,
