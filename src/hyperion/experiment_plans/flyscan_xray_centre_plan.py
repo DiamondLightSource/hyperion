@@ -24,9 +24,9 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import (
+    ZOCALO_READING_PLAN_NAME,
     ZocaloResults,
-    get_processing_results,
-    trigger_wait_and_read_zocalo,
+    get_processing_result,
 )
 
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
@@ -243,10 +243,12 @@ def run_gridscan_and_move(
 
     LOGGER.info("Grid scan finished, getting results.")
 
-    with TRACER.start_span("wait_for_zocalocd ../"):
-        yield from trigger_wait_and_read_zocalo(fgs_composite.zocalo)
+    with TRACER.start_span("wait_for_zocalo"):
+        yield from bps.trigger_and_read(
+            [fgs_composite.zocalo], name=ZOCALO_READING_PLAN_NAME
+        )
         LOGGER.info("Zocalo triggered and read, interpreting results.")
-        xray_centre, bbox_size = yield from get_processing_results(fgs_composite.zocalo)
+        xray_centre, bbox_size = yield from get_processing_result(fgs_composite.zocalo)
         LOGGER.info(f"Got xray centre: {xray_centre}, bbox size: {bbox_size}")
         if xray_centre is not None:
             xray_centre = parameters.experiment_params.grid_position_to_motor_position(
