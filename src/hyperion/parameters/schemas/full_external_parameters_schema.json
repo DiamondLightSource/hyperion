@@ -10,7 +10,7 @@
             "$ref": "hyperion_parameters_schema.json"
         },
         "experiment_params": {
-            "oneOf": [
+            "anyOf": [
                 {
                     "$ref": "experiment_schemas/grid_scan_params_schema.json"
                 },
@@ -19,6 +19,9 @@
                 },
                 {
                     "$ref": "experiment_schemas/grid_scan_with_edge_detect_params_schema.json"
+                },
+                {
+                    "$ref": "experiment_schemas/wait_for_robot_load_then_centre_schema.json"
                 }
             ]
         }
