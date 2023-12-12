@@ -398,17 +398,14 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
         mx_acquisition: MXAcquisition = conn.mx_acquisition
         params = mx_acquisition.get_dc_grid_params()
-
         params["parentid"] = ispyb_data_collection_id
-        params["dxInMm"] = self.full_params.experiment_params.x_step_size
-        params["dyInMm"] = self.y_step_size
-        params["stepsX"] = self.full_params.experiment_params.x_steps
-        params["stepsY"] = self.y_steps
-        # Although the stored values is microns per pixel the columns in ISPyB are named
-        # pixels per micron. See LIMS-564, which is tasked with fixing this inconsistency
-        params["pixelsPerMicronX"] = self.ispyb_params.microns_per_pixel_x
-        params["pixelsPerMicronY"] = self.ispyb_params.microns_per_pixel_y
-        params["snapshotOffsetXPixel"], params["snapshotOffsetYPixel"] = self.upper_left
+        params["dxinmm"] = self.full_params.experiment_params.x_step_size
+        params["dyinmm"] = self.y_step_size
+        params["stepsx"] = self.full_params.experiment_params.x_steps
+        params["stepsy"] = self.y_steps
+        params["micronsPerPixelX"] = self.ispyb_params.microns_per_pixel_x
+        params["micronsperpixely"] = self.ispyb_params.microns_per_pixel_y
+        params["snapshotoffsetxpixel"], params["snapshotoffsetypixel"] = self.upper_left
         params["orientation"] = Orientation.HORIZONTAL.value
         params["snaked"] = True
 

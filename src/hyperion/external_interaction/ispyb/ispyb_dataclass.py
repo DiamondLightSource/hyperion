@@ -91,6 +91,10 @@ class IspybParams(BaseModel):
         return convert_eV_to_angstrom(self.current_energy_ev)
 
 
+class RobotLoadIspybParams(IspybParams):
+    ...
+
+
 class RotationIspybParams(IspybParams):
     ...
 

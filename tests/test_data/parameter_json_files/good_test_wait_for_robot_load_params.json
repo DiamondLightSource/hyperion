@@ -1,0 +1,43 @@
+{
+    "params_version": "4.0.1",
+    "hyperion_params": {
+        "zocalo_environment": "artemis",
+        "beamline": "BL03I",
+        "insertion_prefix": "SR03S",
+        "experiment_type": "wait_for_robot_load_then_xray_centre",
+        "detector_params": {
+            "current_energy_ev": 100,
+            "directory": "/tmp/",
+            "prefix": "file_name",
+            "run_number": 0,
+            "use_roi_mode": false,
+            "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
+        },
+        "ispyb_params": {
+            "visit_path": "/tmp/cm31105-4",
+            "microns_per_pixel_x": 0.0,
+            "microns_per_pixel_y": 0.0,
+            "position": [
+                0,
+                0,
+                0
+            ],
+            "transmission_fraction": 1.0,
+            "flux": 10.0,
+            "beam_size_x": 0.1,
+            "beam_size_y": 0.1,
+            "focal_spot_size_x": 0.0,
+            "focal_spot_size_y": 0.0,
+            "comment": "Descriptive comment.",
+            "resolution": 1,
+            "sample_id": null,
+            "sample_barcode": null
+        }
+    },
+    "experiment_params": {
+        "omega_start": 0,
+        "exposure_time": 0.004,
+        "detector_distance": 255,
+        "snapshot_dir": "/tmp"
+    }
+}
