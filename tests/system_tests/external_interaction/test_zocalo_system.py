@@ -1,4 +1,7 @@
+from time import time
+
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 import pytest_asyncio
@@ -21,11 +24,23 @@ from .conftest import (
     TEST_RESULT_LARGE,
 )
 
+"""
+If fake-zocalo system tests are failing, check that the RMQ instance is set up right:
+
+- go to the admin panel and under the 'exchanges' tab ensure that there is a 'results'
+exchange for the zocalo vhost (other settings can be left blank)
+
+- go to the 'queues and streams' tab and add a binding for the xrc.i03 queue to the
+results exchange, with the routing key 'xrc.i03'
+
+- make sure that there are no un-acked/un-delivered messages on the i03.xrc queue
+"""
+
 
 @pytest_asyncio.fixture
 async def zocalo_device():
     zd = ZocaloResults()
-    zd.timeout_s = 5
+    zd.timeout_s = 10
     await zd.connect()
     return zd
 
@@ -51,7 +66,7 @@ async def test_when_running_start_stop_then_get_expected_returned_results(
         zc.zocalo_interactor.run_end(dcid)
     RE(bps.trigger(zocalo_device, wait=True))
     result = await zocalo_device.read()
-    assert result["zocalo_results-results"]["value"][0] == TEST_RESULT_LARGE[0]
+    assert result["zocalo-results"]["value"][0] == TEST_RESULT_LARGE[0]
 
 
 @pytest.fixture
@@ -63,36 +78,42 @@ def run_zocalo_with_dev_ispyb(
 ):
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.hyperion_params.detector_params.prefix = sample_name
-        start_doc = {
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
-            "hyperion_internal_parameters": dummy_params.json(),
-            "uid": "test",
-        }
         cbs = XrayCentreCallbackCollection.setup()
         zc = cbs.zocalo_handler
         zc.active = True
         ispyb = cbs.ispyb_handler
+        ispyb.ispyb_config = dummy_ispyb_3d.ISPYB_CONFIG_PATH
         ispyb.active = True
-        ispyb.activity_gated_start(start_doc)
-        zc.activity_gated_start(start_doc)
-        zc.ispyb.ispyb.ISPYB_CONFIG_PATH = dummy_ispyb_3d.ISPYB_CONFIG_PATH
-        zc.ispyb.ispyb_ids = zc.ispyb.ispyb.begin_deposition()
-        assert isinstance(zc.ispyb.ispyb_ids.data_collection_ids, tuple)
-        for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
-            zc.zocalo_interactor.run_start(dcid)
-        ispyb.activity_gated_stop({})
-        zc.activity_gated_stop({})
+
+        RE.subscribe(zc)
         RE.subscribe(ispyb)
 
+        @bpp.set_run_key_decorator("testing123")
+        @bpp.run_decorator()
         def plan():
-            yield from bps.open_run()
+            @bpp.set_run_key_decorator("testing124")
+            @bpp.run_decorator(
+                md={
+                    "subplan_name": GRIDSCAN_OUTER_PLAN,
+                    "hyperion_internal_parameters": dummy_params.json(),
+                }
+            )
+            def inner_plan():
+                yield from bps.sleep(0)
+                zc.ispyb.ispyb_ids = zc.ispyb.ispyb.begin_deposition()
+                assert isinstance(zc.ispyb.ispyb_ids.data_collection_ids, tuple)
+                for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
+                    zc.zocalo_interactor.run_start(dcid)
+                zc.ispyb.processing_start_time = time()
+                for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
+                    zc.zocalo_interactor.run_end(dcid)
+
+            yield from inner_plan()
             yield from bps.trigger_and_read(
                 [zocalo_device], name=ZOCALO_READING_PLAN_NAME
             )
-            yield from bps.close_run()
 
         RE(plan())
-        ispyb.activity_gated_stop({"run_start": "test"})
         centre = await zocalo_device.centres_of_mass.get_value()
         if centre.size == 0:
             centre = fallback
