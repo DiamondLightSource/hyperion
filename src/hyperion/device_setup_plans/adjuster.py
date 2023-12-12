@@ -23,14 +23,14 @@ class NullAdjuster(Adjuster):
 
 
 class LUTAdjuster(Adjuster):
+    """Adjusts a value according to a lookup table"""
+
     def __init__(
         self, lookup_table: LookupTableConverter, output_device: EpicsMotor, input
     ):
         self._lookup_table = lookup_table
         self._input = input
         self._output_device = output_device
-
-    """Adjusts a value according to a lookup table"""
 
     def adjust(self, group=None) -> Generator[Msg, None, None]:
         setpoint = self._lookup_table.s_to_t(self._input)

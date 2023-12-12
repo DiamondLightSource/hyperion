@@ -40,13 +40,14 @@ def _apply_and_wait_for_voltages_to_settle(
         raise ValueError(f"Unsupported stripe '{stripe}'")
 
     required_voltages = sample_data[stripe_key][mirror_key]
-    for i in range(0, len(required_voltages)):
-        voltage_channel = mirror_voltages.voltage_channels[i]
+    for voltage_channel, required_voltage in zip(
+        mirror_voltages.voltage_channels, required_voltages
+    ):
         LOGGER.debug(
-            f"Applying and waiting for voltage {voltage_channel.name} = {required_voltages[i]}"
+            f"Applying and waiting for voltage {voltage_channel.name} = {required_voltage}"
         )
         yield from bps.abs_set(
-            voltage_channel, required_voltages[i], group=MIRROR_VOLTAGE_GROUP
+            voltage_channel, required_voltage, group=MIRROR_VOLTAGE_GROUP
         )
 
     yield from bps.wait(group=MIRROR_VOLTAGE_GROUP)
@@ -55,13 +56,14 @@ def _apply_and_wait_for_voltages_to_settle(
 def adjust_mirror_stripe(
     energy_kev, mirror: FocusingMirror, mirror_voltages: VFMMirrorVoltages
 ):
-    # Transmission should be 100% and feedback should be OFF prior to entry
+    """Feedback should be OFF prior to entry, in order to prevent
+    feedback from making unnecessary corrections while beam is being adjusted."""
     stripe = mirror.energy_to_stripe(energy_kev)
 
     LOGGER.info(
         f"Adjusting mirror stripe for {energy_kev}keV selecting {stripe} stripe"
     )
-    yield from bps.abs_set(mirror.stripe, stripe.value)
+    yield from bps.abs_set(mirror.stripe, stripe.value, wait=True)
     yield from bps.abs_set(mirror.apply_stripe, 1)
 
     LOGGER.info("Adjusting mirror voltages...")
@@ -77,8 +79,9 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
 ):
     """Beamline energy-change post-adjustments : Adjust DCM and VFM directly from lookup tables.
     Lookups are performed against the Bragg angle which will have been automatically set by EPICS as a side-effect of the
-    energy change prior to calling this function."""
-    # Transmission should be 100% and feedback should be OFF prior to entry
+    energy change prior to calling this function.
+    Feedback should be OFF prior to entry, in order to prevent
+    feedback from making unnecessary corrections while beam is being adjusted."""
 
     # DCM Pitch
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
@@ -92,7 +95,6 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     yield from dcm_pitch_adjuster.adjust(DCM_GROUP)
     # It's possible we can remove these waits but we need to check
     LOGGER.info("Waiting for DCM pitch adjust to complete...")
-    yield from bps.wait(DCM_GROUP)
 
     # DCM Roll
     dcm_roll_adjuster = LUTAdjuster(
@@ -102,13 +104,11 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     )
     yield from dcm_roll_adjuster.adjust(DCM_GROUP)
     LOGGER.info("Waiting for DCM roll adjust to complete...")
-    yield from bps.wait(DCM_GROUP)
 
     # DCM Perp pitch
     offset_mm = fixed_offset_from_beamline_params(beamline_parameters)
     LOGGER.info(f"Adjusting DCM offset to {offset_mm} mm")
     yield from bps.abs_set(dcm.offset_in_mm, offset_mm, group=DCM_GROUP)
-    yield from bps.wait(DCM_GROUP)
 
     #
     # Adjust mirrors
@@ -121,6 +121,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
 
     # VFM Stripe selection
     yield from adjust_mirror_stripe(energy_kev, vfm, vfm_mirror_voltages)
+    yield from bps.wait(DCM_GROUP)
 
     # VFM Adjust - for I03 this table always returns the same value
     vfm_x_adjuster = LUTAdjuster(

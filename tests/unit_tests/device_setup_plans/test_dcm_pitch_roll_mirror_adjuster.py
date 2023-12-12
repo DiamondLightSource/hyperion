@@ -31,65 +31,15 @@ def test_apply_and_wait_for_voltages_to_settle_happy_path(
         )
     )
 
-    vfm_mirror_voltages._channel14_voltage_device._setpoint_v.set.assert_called_once_with(
-        140
-    )
-    vfm_mirror_voltages._channel15_voltage_device._setpoint_v.set.assert_called_once_with(
-        100
-    )
-    vfm_mirror_voltages._channel16_voltage_device._setpoint_v.set.assert_called_once_with(
-        70
-    )
-    vfm_mirror_voltages._channel17_voltage_device._setpoint_v.set.assert_called_once_with(
-        30
-    )
-    vfm_mirror_voltages._channel18_voltage_device._setpoint_v.set.assert_called_once_with(
-        30
-    )
-    vfm_mirror_voltages._channel19_voltage_device._setpoint_v.set.assert_called_once_with(
-        -65
-    )
-    vfm_mirror_voltages._channel20_voltage_device._setpoint_v.set.assert_called_once_with(
-        24
-    )
-    vfm_mirror_voltages._channel21_voltage_device._setpoint_v.set.assert_called_once_with(
-        15
-    )
+    for channel, expected_voltage in zip(
+        vfm_mirror_voltages.voltage_channels, [140, 100, 70, 30, 30, -65, 24, 15]
+    ):
+        channel._setpoint_v.set.assert_called_once_with(expected_voltage)
 
 
 def _all_demands_accepted(vfm_mirror_voltages):
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel14_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel14_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel15_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel15_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel16_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel16_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel17_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel17_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel18_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel18_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel19_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel19_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel20_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel20_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel21_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel21_voltage_device._demand_accepted,
-    )
+    for channel in vfm_mirror_voltages.voltage_channels:
+        _mock_voltage_channel(channel._setpoint_v, channel._demand_accepted)
 
 
 @patch("dodal.devices.focusing_mirror.DEFAULT_SETTLE_TIME_S", 3)
@@ -104,34 +54,11 @@ def test_apply_and_wait_for_voltages_to_settle_timeout(
         NullStatus()
     )
     vfm_mirror_voltages._channel14_voltage_device._demand_accepted.sim_put(0)
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel15_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel15_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel16_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel16_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel17_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel17_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel18_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel18_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel19_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel19_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel20_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel20_voltage_device._demand_accepted,
-    )
-    _mock_voltage_channel(
-        vfm_mirror_voltages._channel21_voltage_device._setpoint_v,
-        vfm_mirror_voltages._channel21_voltage_device._demand_accepted,
-    )
+    for channel in vfm_mirror_voltages.voltage_channels[1:]:
+        _mock_voltage_channel(
+            channel._setpoint_v,
+            channel._demand_accepted,
+        )
 
     actual_exception = None
 
@@ -146,36 +73,18 @@ def test_apply_and_wait_for_voltages_to_settle_timeout(
 
     assert actual_exception is not None
     # Check that all voltages set in parallel
-    vfm_mirror_voltages._channel14_voltage_device._setpoint_v.set.assert_called_once_with(
-        140
-    )
-    vfm_mirror_voltages._channel15_voltage_device._setpoint_v.set.assert_called_once_with(
-        100
-    )
-    vfm_mirror_voltages._channel16_voltage_device._setpoint_v.set.assert_called_once_with(
-        70
-    )
-    vfm_mirror_voltages._channel17_voltage_device._setpoint_v.set.assert_called_once_with(
-        30
-    )
-    vfm_mirror_voltages._channel18_voltage_device._setpoint_v.set.assert_called_once_with(
-        30
-    )
-    vfm_mirror_voltages._channel19_voltage_device._setpoint_v.set.assert_called_once_with(
-        -65
-    )
-    vfm_mirror_voltages._channel20_voltage_device._setpoint_v.set.assert_called_once_with(
-        24
-    )
-    vfm_mirror_voltages._channel21_voltage_device._setpoint_v.set.assert_called_once_with(
-        15
-    )
+    for channel, expected_voltage in zip(
+        vfm_mirror_voltages.voltage_channels, [140, 100, 70, 30, 30, -65, 24, 15]
+    ):
+        channel._setpoint_v.set.assert_called_once_with(expected_voltage)
 
 
 def _mock_voltage_channel(setpoint: EpicsSignal, demand_accepted: EpicsSignal):
-    setpoint.set = MagicMock()
-    setpoint.set.return_value = NullStatus()
-    demand_accepted.sim_put(DEMAND_ACCEPTED_OK)
+    def set_demand_and_return_ok(_):
+        demand_accepted.sim_put(DEMAND_ACCEPTED_OK)
+        return NullStatus()
+
+    setpoint.set = MagicMock(side_effect=set_demand_and_return_ok)
 
 
 mirror_stripe_params = [
@@ -197,7 +106,7 @@ def test_adjust_mirror_stripe(
     last_voltage,
 ):
     _all_demands_accepted(vfm_mirror_voltages)
-    vfm.stripe.set = MagicMock()
+    vfm.stripe.set = MagicMock(return_value=NullStatus())
     vfm.apply_stripe.set = MagicMock()
     parent = MagicMock()
     parent.attach_mock(vfm.stripe.set, "stripe_set")
@@ -244,18 +153,10 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     )
     messages = sim.assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "wait" and msg.kwargs["group"] == "DCM_GROUP",
-    )
-    messages = sim.assert_message_and_return_remaining(
-        messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "dcm_roll_in_mrad"
         and abs(msg.args[0] - 4.0) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
-    )
-    messages = sim.assert_message_and_return_remaining(
-        messages[1:],
-        lambda msg: msg.command == "wait" and msg.kwargs["group"] == "DCM_GROUP",
     )
     messages = sim.assert_message_and_return_remaining(
         messages[1:],
@@ -266,13 +167,13 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     )
     messages = sim.assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "wait" and msg.kwargs["group"] == "DCM_GROUP",
-    )
-    messages = sim.assert_message_and_return_remaining(
-        messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "vfm_stripe"
         and msg.args == ("Rhodium",),
+    )
+    messages = sim.assert_message_and_return_remaining(
+        messages[1:],
+        lambda msg: msg.command == "wait",
     )
     messages = sim.assert_message_and_return_remaining(
         messages[1:],
@@ -296,6 +197,10 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
             and msg.obj.name == f"vfm_mirror_voltages__channel{channel}_voltage_device"
             and msg.args == (expected_voltage,),
         )
+    messages = sim.assert_message_and_return_remaining(
+        messages[1:],
+        lambda msg: msg.command == "wait" and msg.kwargs["group"] == "DCM_GROUP",
+    )
     messages = sim.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
