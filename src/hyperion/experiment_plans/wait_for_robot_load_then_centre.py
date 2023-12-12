@@ -5,8 +5,12 @@ from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
 
+from hyperion.device_setup_plans.utils import (
+    start_preparing_data_collection_then_do_plan,
+)
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
@@ -45,12 +49,10 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     )
 
 
-def wait_for_robot_load_then_centre(
+def wait_for_robot_load_then_centre_plan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
-) -> MsgGenerator:
-    # Start arming the detector
-
+):
     # Move backlight in
 
     yield from wait_for_smargon_not_disabled(composite.smargon)
@@ -63,3 +65,19 @@ def wait_for_robot_load_then_centre(
     params_json = json.loads(parameters.json())
     pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
     yield from pin_tip_centre_then_xray_centre(composite, pin_centre_params)
+
+
+def wait_for_robot_load_then_centre(
+    composite: GridDetectThenXRayCentreComposite,
+    parameters: WaitForRobotLoadThenCentreInternalParameters,
+) -> MsgGenerator:
+    eiger: EigerDetector = composite.eiger
+
+    eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
+
+    return start_preparing_data_collection_then_do_plan(
+        eiger,
+        composite.detector_motion,
+        parameters.experiment_params.detector_distance,
+        wait_for_robot_load_then_centre_plan(composite, parameters),
+    )

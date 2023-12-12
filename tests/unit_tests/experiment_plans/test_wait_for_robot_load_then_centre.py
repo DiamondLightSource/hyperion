@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
 from ophyd.sim import instantiate_fake_device
 
@@ -57,6 +58,7 @@ def run_simulating_smargon_wait(
 ):
     mock_composite = MagicMock()
     mock_composite.smargon = instantiate_fake_device(Smargon, name="smargon")
+    mock_composite.eiger = instantiate_fake_device(EigerDetector, name="eiger")
 
     num_of_reads = 0
 
@@ -113,3 +115,30 @@ def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throw
 ):
     with pytest.raises(TimeoutError):
         run_simulating_smargon_wait(wait_for_robot_load_then_centre_params, 1000)
+
+
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre.pin_tip_centre_then_xray_centre"
+)
+def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
+    mock_centring_plan: MagicMock,
+    wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
+):
+    messages = run_simulating_smargon_wait(wait_for_robot_load_then_centre_params, 1)
+
+    arm_detector_messages = filter(
+        lambda msg: msg.command == "set" and msg.obj.name == "eiger_do_arm",
+        messages,
+    )
+    read_disabled_messages = filter(
+        lambda msg: msg.command == "read" and msg.obj.name == "smargon_disabled",
+        messages,
+    )
+
+    arm_detector_messages = list(arm_detector_messages)
+    assert len(arm_detector_messages) == 1
+
+    idx_of_arm_message = messages.index(arm_detector_messages[0])
+    idx_of_first_read_disabled_message = messages.index(list(read_disabled_messages)[0])
+
+    assert idx_of_arm_message < idx_of_first_read_disabled_message
