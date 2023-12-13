@@ -11,11 +11,12 @@ from hyperion.parameters.constants import (
 )
 
 VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})(/?$)"
+ISPYB_DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def get_current_time_string():
     now = datetime.datetime.now()
-    return now.strftime("%Y-%m-%d %H:%M:%S")
+    return now.strftime(ISPYB_DATE_TIME_FORMAT)
 
 
 def get_ispyb_config():

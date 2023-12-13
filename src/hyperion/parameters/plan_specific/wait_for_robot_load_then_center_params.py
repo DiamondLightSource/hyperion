@@ -45,6 +45,10 @@ class WaitForRobotLoadThenCentreParams:
     omega_start: float
     snapshot_dir: str
 
+    robot_load_start_time: str
+    sample_container_location: int
+    sample_dewar_location: int
+
 
 class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):
     experiment_params: WaitForRobotLoadThenCentreParams

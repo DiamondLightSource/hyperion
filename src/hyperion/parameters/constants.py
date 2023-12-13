@@ -28,6 +28,8 @@ DO_FGS = "do_fgs"
 # Rotation scan
 ROTATION_OUTER_PLAN = "rotation_scan_with_cleanup"
 ROTATION_PLAN_MAIN = "rotation_scan_main"
+# Robot load
+ROBOT_LOAD_PLAN = "robot_load"
 ########################################################################################
 
 

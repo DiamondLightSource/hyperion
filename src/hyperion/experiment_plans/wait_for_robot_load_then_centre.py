@@ -4,6 +4,7 @@ import json
 from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
@@ -17,7 +18,11 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_tip_centre_then_xray_centre,
 )
+from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+    RobotLoadISPyBCallback,
+)
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import ROBOT_LOAD_PLAN
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
@@ -53,17 +58,28 @@ def wait_for_robot_load_then_centre_plan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ):
-    # Move backlight in
+    @bpp.subs_decorator(RobotLoadISPyBCallback())
+    @bpp.set_run_key_decorator(ROBOT_LOAD_PLAN)
+    @bpp.run_decorator(
+        md={
+            "subplan_name": ROBOT_LOAD_PLAN,
+            "hyperion_internal_parameters": parameters.json(),
+            "activate_callbacks": [
+                "RobotLoadISPyBCallback",
+            ],
+        }
+    )
+    def wait_for_robot_load_and_take_snapshots():
+        # Move backlight in
 
-    yield from wait_for_smargon_not_disabled(composite.smargon)
+        yield from wait_for_smargon_not_disabled(composite.smargon)
 
-    # Take snapshot
+        # Take snapshot
 
-    # Put robot load into ispyb
+    yield from wait_for_robot_load_and_take_snapshots()
 
-    # Do centering
-    params_json = json.loads(parameters.json())
-    pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
+    params_dict = json.loads(parameters.json())
+    pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_dict)
     yield from pin_tip_centre_then_xray_centre(composite, pin_centre_params)
 
 
