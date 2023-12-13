@@ -14,7 +14,7 @@
             "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
         },
         "ispyb_params": {
-            "visit_path": "/tmp/cm31105-4",
+            "visit_path": "/tmp/mx37045-3",
             "microns_per_pixel_x": 0.0,
             "microns_per_pixel_y": 0.0,
             "position": [
@@ -22,15 +22,32 @@
                 0,
                 0
             ],
+            "xtal_snapshots_omega_start": [
+                "test_1_y",
+                "test_2_y",
+                "test_3_y"
+            ],
+            "xtal_snapshots_omega_end": [
+                "test_1_z",
+                "test_2_z",
+                "test_3_z"
+            ],
+            "xtal_snapshots": [
+                "test_1",
+                "test_2",
+                "test_3"
+            ],
             "transmission_fraction": 1.0,
             "flux": 10.0,
             "beam_size_x": 0.1,
             "beam_size_y": 0.1,
+            "slit_gap_size_x": 1.0,
+            "slit_gap_size_y": 1.0,
             "focal_spot_size_x": 0.0,
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
             "resolution": 1,
-            "sample_id": null,
+            "sample_id": 5054650,
             "sample_barcode": null
         }
     },
@@ -38,6 +55,9 @@
         "omega_start": 0,
         "exposure_time": 0.004,
         "detector_distance": 255,
-        "snapshot_dir": "/tmp"
+        "snapshot_dir": "/tmp",
+        "robot_load_start_time": "2023-12-13 16:46:15",
+        "sample_container_location": 10,
+        "sample_dewar_location": 7
     }
 }

@@ -13,12 +13,24 @@
         },
         "omega_start": {
             "type": "number"
+        },
+        "robot_load_start_time": {
+            "type": "string"
+        },
+        "sample_container_location": {
+            "type": "number"
+        },
+        "sample_dewar_location": {
+            "type": "number"
         }
     },
     "required": [
         "exposure_time",
         "snapshot_dir",
         "detector_distance",
-        "omega_start"
+        "omega_start",
+        "robot_load_start_time",
+        "sample_container_location",
+        "sample_dewar_location"
     ]
 }

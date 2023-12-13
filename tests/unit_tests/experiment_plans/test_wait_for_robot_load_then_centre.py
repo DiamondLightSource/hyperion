@@ -31,7 +31,11 @@ def wait_for_robot_load_then_centre_params():
 @patch(
     "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre.RobotLoadISPyBCallback"
+)
 def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
+    mock_ispyb_callback: MagicMock,
     mock_centring_plan: MagicMock,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
 ):

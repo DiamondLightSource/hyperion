@@ -45,6 +45,10 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     omega_start: float
     snapshot_dir: str
 
+    robot_load_start_time: str
+    sample_container_location: int
+    sample_dewar_location: int
+
     def get_num_images(self):
         return 0
 
