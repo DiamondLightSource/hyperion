@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import bluesky.plan_stubs as bps
-from dodal.beamlines.i03 import Attenuator, Flux, S4SlitGaps, Synchrotron, Undulator
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.flux import Flux
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 
 import hyperion.log
 from hyperion.parameters.constants import (

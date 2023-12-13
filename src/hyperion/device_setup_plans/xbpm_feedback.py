@@ -1,5 +1,6 @@
 from bluesky import plan_stubs as bps
-from bluesky.preprocessors import finalize_wrapper, make_decorator
+from bluesky.preprocessors import finalize_wrapper
+from bluesky.utils import make_decorator
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 

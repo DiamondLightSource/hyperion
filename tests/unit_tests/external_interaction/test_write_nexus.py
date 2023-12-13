@@ -43,15 +43,14 @@ def dummy_nexus_writers(test_fgs_params: GridscanInternalParameters):
 
 @contextmanager
 def create_nexus_writers_with_many_images(parameters: GridscanInternalParameters):
+    x, y, z = 45, 35, 25
+    parameters.experiment_params.x_steps = x
+    parameters.experiment_params.y_steps = y
+    parameters.experiment_params.z_steps = z
+    parameters.hyperion_params.detector_params.num_triggers = x * y + x * z
+    nexus_writer_1 = NexusWriter(parameters, **parameters.get_nexus_info(1))
+    nexus_writer_2 = NexusWriter(parameters, **parameters.get_nexus_info(2))
     try:
-        x, y, z = 45, 35, 25
-        parameters.experiment_params.x_steps = x
-        parameters.experiment_params.y_steps = y
-        parameters.experiment_params.z_steps = z
-        parameters.hyperion_params.detector_params.num_triggers = x * y + x * z
-        nexus_writer_1 = NexusWriter(parameters, **parameters.get_nexus_info(1))
-        nexus_writer_2 = NexusWriter(parameters, **parameters.get_nexus_info(2))
-
         yield nexus_writer_1, nexus_writer_2
 
     finally:
