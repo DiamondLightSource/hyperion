@@ -28,6 +28,9 @@ jobs:
       - name: Run ruff
         run: ruff .
 
+      - name: Run Pyright on changes
+        run: diff-quality --violations=pyright --fail-under=100
+
   tests:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
