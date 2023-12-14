@@ -35,6 +35,10 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
 
 
 def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
+    """Waits for the smargon disabled flag to go low. The robot hardware is responsible
+    for setting this to low when it is safe to move. It does this through a physical
+    connection between the robot and the smargon.
+    """
     LOGGER.info("Waiting for smargon enabled")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -53,15 +57,8 @@ def wait_for_robot_load_then_centre_plan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ):
-    # Move backlight in
-
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
-    # Take snapshot
-
-    # Put robot load into ispyb
-
-    # Do centering
     params_json = json.loads(parameters.json())
     pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
     yield from pin_tip_centre_then_xray_centre(composite, pin_centre_params)
