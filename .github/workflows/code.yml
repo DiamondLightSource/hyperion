@@ -32,7 +32,7 @@ jobs:
         run: pip install diff-cover; pip install git+https://github.com/dperl-dls/pyright_diff_quality_plugin.git;
 
       - name: Run Pyright on changes
-        run: diff-quality --violations=pyright --fail-under=100
+        run: git fetch origin main; diff-quality --violations=pyright --fail-under=100
 
   tests:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
