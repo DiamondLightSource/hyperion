@@ -1,6 +1,4 @@
 from multiprocessing import Process
-from time import sleep
-from typing import Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,10 +7,8 @@ from bluesky.run_engine import RunEngine
 
 from hyperion.__main__ import CALLBACK_0MQ_PROXY_PORTS
 from hyperion.external_interaction.callbacks.__main__ import (
-    HyperionCallbackRunner,
     main,
 )
-from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER
 
 from ..conftest import (  # noqa
     fetch_comment,
