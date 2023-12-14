@@ -25,9 +25,9 @@ def get_fake_pin_values_generator(x, y):
 def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
-    smargon.x.user_readback.sim_put(0)
-    oav.mxsc.pin_tip.tip_x.sim_put(100)
-    oav.mxsc.pin_tip.tip_y.sim_put(200)
+    smargon.x.user_readback.sim_put(0)  # type: ignore
+    oav.mxsc.pin_tip.tip_x.sim_put(100)  # type: ignore
+    oav.mxsc.pin_tip.tip_y.sim_put(200)  # type: ignore
 
     oav.mxsc.pin_tip.trigger = MagicMock(side_effect=oav.mxsc.pin_tip.trigger)
 
@@ -44,14 +44,14 @@ def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargo
     RE: RunEngine,
 ):
     oav.mxsc.pin_tip.settle_time_s.put(0.01)
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
+    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
     oav.mxsc.pin_tip.triggered_tip.put(oav.mxsc.pin_tip.INVALID_POSITION)
     oav.mxsc.pin_tip.validity_timeout.put(0.015)
-    smargon.x.user_readback.sim_put(0)
+    smargon.x.user_readback.sim_put(0)  # type: ignore
 
     def set_pin_tip_when_x_moved(*args, **kwargs):
-        oav.mxsc.pin_tip.tip_x.sim_put(100)
-        oav.mxsc.pin_tip.tip_y.sim_put(200)
+        oav.mxsc.pin_tip.tip_x.sim_put(100)  # type: ignore
+        oav.mxsc.pin_tip.tip_y.sim_put(200)  # type: ignore
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
@@ -65,16 +65,16 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
     oav.mxsc.pin_tip.settle_time_s.put(0.01)
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
-    oav.mxsc.pin_tip.tip_x.sim_put(0)
-    oav.mxsc.pin_tip.tip_y.sim_put(100)
+    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
+    oav.mxsc.pin_tip.tip_x.sim_put(0)  # type: ignore
+    oav.mxsc.pin_tip.tip_y.sim_put(100)  # type: ignore
     oav.mxsc.pin_tip.validity_timeout.put(0.15)
 
-    smargon.x.user_readback.sim_put(0)
+    smargon.x.user_readback.sim_put(0)  # type: ignore
 
     def set_pin_tip_when_x_moved(*args, **kwargs):
-        oav.mxsc.pin_tip.tip_y.sim_put(200)
-        oav.mxsc.pin_tip.tip_x.sim_put(100)
+        oav.mxsc.pin_tip.tip_y.sim_put(200)  # type: ignore
+        oav.mxsc.pin_tip.tip_x.sim_put(100)  # type: ignore
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
@@ -93,9 +93,9 @@ def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
         get_fake_pin_values_generator(0, 100),
     ]
 
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
-    smargon.x.user_setpoint.sim_put(-1.8)
-    smargon.x.user_readback.sim_put(-1.8)
+    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
+    smargon.x.user_setpoint.sim_put(-1.8)  # type: ignore
+    smargon.x.user_readback.sim_put(-1.8)  # type: ignore
 
     with pytest.raises(WarningException):
         RE(move_pin_into_view(oav, smargon, max_steps=1))
@@ -114,9 +114,9 @@ def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
         get_fake_pin_values_generator(-1, -1),
         get_fake_pin_values_generator(-1, -1),
     ]
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
-    smargon.x.user_setpoint.sim_put(1.8)
-    smargon.x.user_readback.sim_put(1.8)
+    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
+    smargon.x.user_setpoint.sim_put(1.8)  # type: ignore
+    smargon.x.user_readback.sim_put(1.8)  # type: ignore
 
     with pytest.raises(WarningException):
         RE(move_pin_into_view(oav, smargon, max_steps=1))
@@ -127,11 +127,11 @@ def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
 def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_positive_and_exception_thrown(
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])
+    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
     oav.mxsc.pin_tip.triggered_tip.put(oav.mxsc.pin_tip.INVALID_POSITION)
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
 
-    smargon.x.user_readback.sim_put(0)
+    smargon.x.user_readback.sim_put(0)  # type: ignore
 
     with pytest.raises(WarningException):
         RE(move_pin_into_view(oav, smargon))
@@ -142,7 +142,7 @@ def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_posit
 def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_exception(
     RE: RunEngine, smargon: Smargon
 ):
-    smargon.x.high_limit_travel.sim_put(10)
+    smargon.x.high_limit_travel.sim_put(10)  # type: ignore
 
     with pytest.raises(WarningException):
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
@@ -183,7 +183,7 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     test_config_files,
     RE,
 ):
-    smargon.omega.user_readback.sim_put(0)
+    smargon.omega.user_readback.sim_put(0)  # type: ignore
     mock_oav = MagicMock(spec=OAV)
     mock_oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]

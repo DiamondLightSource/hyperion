@@ -80,7 +80,7 @@ def test_total_counts_calc_new_transmission_raises_warning_on_high_transmission(
     composite: OptimizeAttenuationComposite = fake_create_devices()
     composite.sample_shutter.set = MagicMock(return_value=get_good_status())
     composite.xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
-    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
+    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])  # type: ignore
     RE(
         total_counts_optimisation(
             composite,
@@ -125,8 +125,8 @@ def test_deadtime_optimisation_calculates_deadtime_correctly(
 ):
     composite: OptimizeAttenuationComposite = fake_create_devices()
 
-    composite.xspress3mini.channel_1.total_time.sim_put(100)
-    composite.xspress3mini.channel_1.reset_ticks.sim_put(101)
+    composite.xspress3mini.channel_1.total_time.sim_put(100)  # type: ignore
+    composite.xspress3mini.channel_1.reset_ticks.sim_put(101)  # type: ignore
     is_deadtime_optimised.return_value = True
 
     with patch(
@@ -207,14 +207,14 @@ def test_total_count_exception_raised_after_max_cycles_reached(RE: RunEngine):
     composite.sample_shutter.set = MagicMock(return_value=get_good_status())
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
     composite.xspress3mini.arm = MagicMock(return_value=get_good_status())
-    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
+    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])  # type: ignore
     with pytest.raises(AttenuationOptimisationFailedException):
         RE(total_counts_optimisation(composite, 1, 0, 10, 0, 5, 2, 1, 0, 0))
 
 
 def test_arm_devices_runs_correct_functions(RE: RunEngine):
     composite: OptimizeAttenuationComposite = fake_create_devices()
-    composite.xspress3mini.detector_state.sim_put("Acquire")
+    composite.xspress3mini.detector_state.sim_put("Acquire")  # type: ignore
     composite.xspress3mini.arm = MagicMock(return_value=get_good_status())
     RE(arm_devices(composite.xspress3mini))
     composite.xspress3mini.arm.assert_called_once()
@@ -248,7 +248,7 @@ def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
     RE: RunEngine,
 ):
     composite: OptimizeAttenuationComposite = fake_create_devices()
-    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])
+    composite.xspress3mini.dt_corrected_latest_mca.sim_put([1, 1, 1, 1, 1, 1])  # type: ignore
     composite.sample_shutter.set = MagicMock(return_value=get_good_status())
     composite.xspress3mini.do_arm.set = MagicMock(return_value=get_good_status())
     with pytest.raises(AttenuationOptimisationFailedException):
@@ -276,7 +276,7 @@ def test_total_counts_gets_within_target(mock_arm_devices, RE: RunEngine):
     def update_data(_):
         nonlocal iteration
         iteration += 1
-        composite.xspress3mini.dt_corrected_latest_mca.sim_put(
+        composite.xspress3mini.dt_corrected_latest_mca.sim_put(  # type: ignore
             ([50, 50, 50, 50, 50]) * iteration
         )
         return get_good_status()

@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
 import pytest
-from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03

@@ -39,8 +39,8 @@ def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
     oav.mxsc.top.set([0,0,0,0,0,0,0,0,5,5,4,4,3,3,2,2,3,3,4,4])  # noqa: E231
     # fmt: on
 
-    oav.mxsc.pin_tip.tip_x.sim_put(8)
-    oav.mxsc.pin_tip.tip_y.sim_put(5)
+    oav.mxsc.pin_tip.tip_x.sim_put(8)  # type: ignore
+    oav.mxsc.pin_tip.tip_y.sim_put(5)  # type: ignore
 
     oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
@@ -109,8 +109,8 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     composite, _ = fake_devices
     oav: OAV = composite.oav
 
-    oav.mxsc.pin_tip.tip_x.sim_put(-1)
-    oav.mxsc.pin_tip.tip_y.sim_put(-1)
+    oav.mxsc.pin_tip.tip_x.sim_put(-1)  # type: ignore
+    oav.mxsc.pin_tip.tip_y.sim_put(-1)  # type: ignore
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 

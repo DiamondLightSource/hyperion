@@ -66,7 +66,7 @@ def grid_detection_main_plan(
     parameters: OAVParameters,
     snapshot_template: str,
     snapshot_dir: str,
-    grid_width_microns: int,
+    grid_width_microns: float,
     box_size_um: float,
 ):
     """
@@ -162,8 +162,8 @@ def grid_detection_main_plan(
 
         # The first frame is taken at the centre of the first box
         centre_of_first_box = (
-            upper_left[0] + box_size_x_pixels / 2,
-            upper_left[1] + box_size_y_pixels / 2,
+            int(upper_left[0] + box_size_x_pixels / 2),
+            int(upper_left[1] + box_size_y_pixels / 2),
         )
 
         position = yield from get_move_required_so_that_beam_is_at_pixel(

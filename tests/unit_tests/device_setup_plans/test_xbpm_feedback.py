@@ -20,7 +20,7 @@ def fake_devices():
     attenuator: Attenuator = make_fake_device(Attenuator)(name="atten")
 
     def fake_attenuator_set(val):
-        attenuator.actual_transmission.sim_put(val)
+        attenuator.actual_transmission.sim_put(val)  # type: ignore
         return Status(done=True, success=True)
 
     attenuator.set = MagicMock(side_effect=fake_attenuator_set)
@@ -43,7 +43,7 @@ def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expecte
         assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.PAUSE
         yield from bps.null()
 
-    xbpm_feedback.pos_stable.sim_put(1)
+    xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
     RE = RunEngine()
     RE(my_collection_plan())
@@ -85,7 +85,7 @@ def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then
     xbpm_feedback: XBPMFeedback = fake_devices[0]
     attenuator: Attenuator = fake_devices[1]
 
-    xbpm_feedback.pos_stable.sim_put(1)
+    xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
     class MyException(Exception):
         pass
