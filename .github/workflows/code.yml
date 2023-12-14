@@ -29,7 +29,7 @@ jobs:
         run: ruff .
 
       - name: Install diff-quality tools
-      - run: pip install diff-cover; pip install pyright_diff_quality_plugin @ git+https://github.com/dperl-dls/pyright_diff_quality_plugin.git;
+        run: pip install diff-cover; pip install pyright_diff_quality_plugin @ git+https://github.com/dperl-dls/pyright_diff_quality_plugin.git;
 
       - name: Run Pyright on changes
         run: diff-quality --violations=pyright --fail-under=100
