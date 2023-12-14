@@ -29,12 +29,15 @@ class StoreRobotLoadInIspyb:
         )
         self.entry_id: int | None = None
 
+    def _get_session_id(self, conn: Connector, visit_path: str):
+        visit = get_visit_string_from_path(visit_path)
+        if not visit:
+            raise ValueError(f"Visit not found from {visit_path}")
+        return get_session_id_from_visit(conn, visit)
+
     def _store_data(self, conn: Connector):
         mx_acquisition: MXAcquisition = conn.mx_acquisition
-        visit = get_visit_string_from_path(self.ispyb_params.visit_path)
-        if not visit:
-            raise ValueError(f"Visit not found from {self.ispyb_params.visit_path}")
-        session_id = get_session_id_from_visit(conn, visit)
+        session_id = self._get_session_id(conn, self.ispyb_params.visit_path)
         params = mx_acquisition.get_robot_action_params()
 
         params["session_id"] = session_id
@@ -61,10 +64,7 @@ class StoreRobotLoadInIspyb:
             mx_acquisition: MXAcquisition = conn.mx_acquisition
             params = mx_acquisition.get_robot_action_params()
 
-            visit = get_visit_string_from_path(self.ispyb_params.visit_path)
-            if not visit:
-                raise ValueError(f"Visit not found from {self.ispyb_params.visit_path}")
-            session_id = get_session_id_from_visit(conn, visit)
+            session_id = self._get_session_id(conn, self.ispyb_params.visit_path)
 
             params["id"] = self.entry_id
             params["session_id"] = session_id
