@@ -4,7 +4,7 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 
 from hyperion.device_setup_plans.check_topup import (
     check_topup_and_wait_if_necessary,
@@ -13,16 +13,18 @@ from hyperion.device_setup_plans.check_topup import (
 
 
 @pytest.fixture
-def synchrotron():
+def synchrotron() -> Synchrotron:
     return i03.synchrotron(fake_with_ophyd_sim=True)
 
 
 @patch("hyperion.device_setup_plans.check_topup.wait_for_topup_complete")
 @patch("hyperion.device_setup_plans.check_topup.bps.sleep")
-def test_when_topup_before_end_of_collection_wait(fake_sleep, fake_wait, synchrotron):
-    synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.USER.value)
-    synchrotron.top_up.start_countdown.sim_put(20.0)
-    synchrotron.top_up.end_countdown.sim_put(60.0)
+def test_when_topup_before_end_of_collection_wait(
+    fake_sleep, fake_wait, synchrotron: Synchrotron
+):
+    synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.USER.value)  # type: ignore
+    synchrotron.top_up.start_countdown.sim_put(20.0)  # type: ignore
+    synchrotron.top_up.end_countdown.sim_put(60.0)  # type: ignore
 
     RE = RunEngine()
     RE(
@@ -58,8 +60,8 @@ def test_wait_for_topup_complete(fake_sleep, fake_rd, synchrotron):
 
 @patch("hyperion.device_setup_plans.check_topup.bps.sleep")
 @patch("hyperion.device_setup_plans.check_topup.bps.null")
-def test_no_waiting_if_decay_mode(fake_null, fake_sleep, synchrotron):
-    synchrotron.top_up.start_countdown.sim_put(-1)
+def test_no_waiting_if_decay_mode(fake_null, fake_sleep, synchrotron: Synchrotron):
+    synchrotron.top_up.start_countdown.sim_put(-1)  # type: ignore
 
     RE = RunEngine()
     RE(
@@ -74,9 +76,11 @@ def test_no_waiting_if_decay_mode(fake_null, fake_sleep, synchrotron):
 
 
 @patch("hyperion.device_setup_plans.check_topup.bps.null")
-def test_no_waiting_when_mode_does_not_allow_gating(fake_null, synchrotron):
-    synchrotron.top_up.start_countdown.sim_put(1.0)
-    synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN.value)
+def test_no_waiting_when_mode_does_not_allow_gating(
+    fake_null, synchrotron: Synchrotron
+):
+    synchrotron.top_up.start_countdown.sim_put(1.0)  # type: ignore
+    synchrotron.machine_status.synchrotron_mode.sim_put(SynchrotronMode.SHUTDOWN.value)  # type: ignore
 
     RE = RunEngine()
     RE(
