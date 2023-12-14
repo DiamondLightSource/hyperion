@@ -135,7 +135,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
 )
 def test_nexus_handler_only_writes_once(
     ispyb,
-    nexus_writer,
+    nexus_writer: MagicMock,
     RE: RunEngine,
     params: RotationInternalParameters,
     test_start_doc,
@@ -197,7 +197,7 @@ def test_nexus_handler_triggers_write_file_when_told(
 )
 def test_zocalo_start_and_end_triggered_once(
     ispyb,
-    zocalo,
+    zocalo: MagicMock,
     RE: RunEngine,
     params: RotationInternalParameters,
 ):

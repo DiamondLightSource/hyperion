@@ -26,8 +26,8 @@ def oav() -> OAV:
     oav = i03.oav(fake_with_ophyd_sim=True)
     oav.parameters = OAVConfigParams(ZOOM_LEVELS_XML, DISPLAY_CONFIGURATION)
 
-    oav.proc.port_name.sim_put("proc")
-    oav.cam.port_name.sim_put("CAM")
+    oav.proc.port_name.sim_put("proc")  # type: ignore
+    oav.cam.port_name.sim_put("CAM")  # type: ignore
 
     oav.zoom_controller.zrst.set("1.0x")
     oav.zoom_controller.onst.set("2.0x")
@@ -51,7 +51,7 @@ def fake_smargon() -> Smargon:
     smargon.omega.user_setpoint._use_limits = False
 
     def mock_set(motor, val):
-        motor.user_readback.sim_put(val)
+        motor.user_readback.sim_put(val)  # type: ignore
         return Status(done=True, success=True)
 
     def patch_motor(motor):
@@ -115,7 +115,7 @@ def test_values_for_move_so_that_beam_is_at_pixel(
     oav.parameters.beam_centre_i = beam_centre[0]
     oav.parameters.beam_centre_j = beam_centre[1]
 
-    smargon.omega.user_readback.sim_put(angle)
+    smargon.omega.user_readback.sim_put(angle)  # type: ignore
 
     RE = RunEngine(call_returns_result=True)
     pos = RE(

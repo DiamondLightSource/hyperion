@@ -507,7 +507,7 @@ def test_acceleration_offset_calculated_correctly(
     undulator: Undulator,
     flux: Flux,
 ):
-    smargon.omega.acceleration.sim_put(0.2)
+    smargon.omega.acceleration.sim_put(0.2)  # type: ignore
     setup_and_run_rotation_plan_for_tests(
         RE,
         test_rotation_params,
