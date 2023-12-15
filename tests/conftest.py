@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.beamlines import i03
+from dodal.beamlines import beamline_utils, i03
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -263,7 +263,8 @@ def vfm():
 def vfm_mirror_voltages():
     voltages = i03.vfm_mirror_voltages(fake_with_ophyd_sim=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
-    return voltages
+    yield voltages
+    beamline_utils.clear_devices()
 
 
 @pytest.fixture
