@@ -236,8 +236,8 @@ def deadtime_optimisation(
     for cycle in range(0, max_cycles):
         yield from do_device_optimise_iteration(composite, transmission)
 
-        total_time = composite.xspress3mini.channel_1.total_time.get()
-        reset_ticks = composite.xspress3mini.channel_1.reset_ticks.get()
+        total_time = float(composite.xspress3mini.channel_1.total_time.get())
+        reset_ticks = float(composite.xspress3mini.channel_1.reset_ticks.get())
 
         LOGGER.info(f"Current total time = {total_time}")
         LOGGER.info(f"Current reset ticks = {reset_ticks}")
