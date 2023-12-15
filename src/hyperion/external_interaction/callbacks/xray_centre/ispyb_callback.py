@@ -44,7 +44,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_LOGGER.info(
-                "ISPyB callback recieved start document with experiment parameters and"
+                "ISPyB callback recieved start document with experiment parameters and "
                 f"uid: {self.uid_to_finalize_on}"
             )
             json_params = doc.get("hyperion_internal_parameters")

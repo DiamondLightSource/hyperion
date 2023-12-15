@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
 from blueapi.core import BlueskyContext, MsgGenerator
@@ -15,7 +15,7 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
 )
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
-    pin_tip_centre_then_xray_centre,
+    pin_centre_then_xray_centre_plan,
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
@@ -61,12 +61,12 @@ def wait_for_robot_load_then_centre_plan(
 
     params_json = json.loads(parameters.json())
     pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
-    yield from pin_tip_centre_then_xray_centre(composite, pin_centre_params)
+    yield from pin_centre_then_xray_centre_plan(composite, pin_centre_params)
 
 
 def wait_for_robot_load_then_centre(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: WaitForRobotLoadThenCentreInternalParameters,
+    parameters: Any,
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
 
