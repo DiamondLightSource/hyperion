@@ -7,14 +7,14 @@ from dodal.devices.focusing_mirror import (
     MirrorStripe,
     VFMMirrorVoltages,
 )
+from dodal.devices.util.adjuster_plans import lookup_table_adjuster
+from dodal.devices.util.lookup_tables import (
+    linear_interpolation_lut,
+)
 
-from hyperion.device_setup_plans.adjuster import LUTAdjuster
 from hyperion.log import LOGGER
 from hyperion.parameters.beamline_parameters import (
     GDABeamlineParameters,
-)
-from hyperion.utils.lookup_table import (
-    LinearInterpolationLUTConverter,
 )
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
@@ -87,22 +87,22 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
     bragg_deg = yield from bps.rd(dcm.bragg_in_degrees.user_readback)
     LOGGER.info(f"Read Bragg angle = {bragg_deg} degrees")
-    dcm_pitch_adjuster = LUTAdjuster(
-        LinearInterpolationLUTConverter(dcm.dcm_pitch_converter_lookup_table_path),
+    dcm_pitch_adjuster = lookup_table_adjuster(
+        linear_interpolation_lut(dcm.dcm_pitch_converter_lookup_table_path),
         dcm.pitch_in_mrad,
         bragg_deg,
     )
-    yield from dcm_pitch_adjuster.adjust(DCM_GROUP)
+    yield from dcm_pitch_adjuster(DCM_GROUP)
     # It's possible we can remove these waits but we need to check
     LOGGER.info("Waiting for DCM pitch adjust to complete...")
 
     # DCM Roll
-    dcm_roll_adjuster = LUTAdjuster(
-        LinearInterpolationLUTConverter(dcm.dcm_roll_converter_lookup_table_path),
+    dcm_roll_adjuster = lookup_table_adjuster(
+        linear_interpolation_lut(dcm.dcm_roll_converter_lookup_table_path),
         dcm.roll_in_mrad,
         bragg_deg,
     )
-    yield from dcm_roll_adjuster.adjust(DCM_GROUP)
+    yield from dcm_roll_adjuster(DCM_GROUP)
     LOGGER.info("Waiting for DCM roll adjust to complete...")
 
     # DCM Perp pitch
@@ -124,10 +124,10 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     yield from bps.wait(DCM_GROUP)
 
     # VFM Adjust - for I03 this table always returns the same value
-    vfm_x_adjuster = LUTAdjuster(
-        LinearInterpolationLUTConverter(vfm.bragg_to_lat_lookup_table_path),
+    vfm_x_adjuster = lookup_table_adjuster(
+        linear_interpolation_lut(vfm.bragg_to_lat_lookup_table_path),
         vfm.lat_mm,
         bragg_deg,
     )
     LOGGER.info("Waiting for VFM Lat (Horizontal Translation) to complete...")
-    yield from vfm_x_adjuster.adjust()
+    yield from vfm_x_adjuster()
