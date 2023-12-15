@@ -23,6 +23,7 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
+from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
 from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
@@ -46,10 +47,6 @@ def params():
 
 @pytest.fixture
 def fgs_composite():
-    from os import environ
-
-    p = environ.get("EPICS_CA_SERVER_PORT")
-    assert p is not None
     composite = FlyScanXRayCentreComposite(
         attenuator=i03.attenuator(),
         aperture_scatterguard=i03.aperture_scatterguard(),
@@ -58,11 +55,12 @@ def fgs_composite():
         fast_grid_scan=i03.fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(),
-        smargon=MagicMock(),  # i03.smargon(),
+        smargon=i03.smargon(),
         undulator=i03.undulator(),
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
         xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(),
+        zocalo=MagicMock(),
     )
 
     gda_beamline_parameters = GDABeamlineParameters.from_file(
@@ -123,10 +121,7 @@ def test_run_gridscan_and_move(
     RE: RunEngine,
     fgs_composite: FlyScanXRayCentreComposite,
 ):
-    cbs = XrayCentreCallbackCollection(
-        nexus_handler=MagicMock(), ispyb_handler=MagicMock(), zocalo_handler=MagicMock()
-    )
-    RE(run_gridscan_and_move(fgs_composite, params, cbs))
+    RE(run_gridscan_and_move(fgs_composite, params))
 
 
 @pytest.mark.s03
@@ -173,8 +168,9 @@ def test_full_plan_tidies_at_end(
     callbacks = XrayCentreCallbackCollection.setup()
     callbacks.nexus_handler.nexus_writer_1 = MagicMock()
     callbacks.nexus_handler.nexus_writer_2 = MagicMock()
-    callbacks.ispyb_handler.ispyb_ids = MagicMock()
-    callbacks.ispyb_handler.ispyb.datacollection_ids = MagicMock()
+    callbacks.ispyb_handler.ispyb_ids = IspybIds(
+        data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
+    )
     with patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
         return_value=callbacks,
@@ -225,7 +221,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 100
 
-    callbacks = XrayCentreCallbackCollection.setup(params)
+    callbacks = XrayCentreCallbackCollection.setup()
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
     mock_start_zocalo = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
@@ -233,7 +229,9 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     with pytest.raises(WarningException):
         RE(flyscan_xray_centre(fgs_composite, params))
 
-    dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
+    dcid_used = callbacks.ispyb_handler.ispyb_ids = IspybIds(
+        data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
+    )
 
     comment = fetch_comment(dcid_used)
 
@@ -253,7 +251,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     params: GridscanInternalParameters,
 ):
     """This test currently avoids hardware interaction and is mostly confirming
-    interaction with dev_ispyb and dev_zocalo"""
+    interaction with dev_ispyb and fake_zocalo"""
 
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
@@ -265,7 +263,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     fgs_composite.eiger.stage = MagicMock()
     fgs_composite.eiger.unstage = MagicMock()
 
-    callbacks = XrayCentreCallbackCollection.setup(params)
+    callbacks = XrayCentreCallbackCollection.setup()
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
     RE(flyscan_xray_centre(fgs_composite, params))

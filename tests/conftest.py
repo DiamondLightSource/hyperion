@@ -89,12 +89,18 @@ def pytest_runtest_setup(item):
         print("Running s03 test - setting EPICS server ports variables...")
         s03_epics_server_port = getenv("S03_EPICS_CA_SERVER_PORT")
         s03_epics_repeater_port = getenv("S03_EPICS_CA_REPEATER_PORT")
-        if s03_epics_server_port is not None:
-            environ["EPICS_CA_SERVER_PORT"] = s03_epics_server_port
-            print(f"[EPICS_CA_SERVER_PORT] = {s03_epics_server_port}")
-        if s03_epics_repeater_port is not None:
-            environ["EPICS_CA_REPEATER_PORT"] = s03_epics_repeater_port
-            print(f"[EPICS_CA_REPEATER_PORT] = {s03_epics_repeater_port}")
+
+        assert (
+            s03_epics_server_port is not None and s03_epics_repeater_port is not None
+        ), (
+            "Please run the S03 launch script with the '-f' flag to run it on a port "
+            " which doesn't clash with the real EPICS ports."
+        )
+
+        environ["EPICS_CA_SERVER_PORT"] = s03_epics_server_port
+        print(f"[EPICS_CA_SERVER_PORT] = {s03_epics_server_port}")
+        environ["EPICS_CA_REPEATER_PORT"] = s03_epics_repeater_port
+        print(f"[EPICS_CA_REPEATER_PORT] = {s03_epics_repeater_port}")
 
 
 def pytest_runtest_teardown():
