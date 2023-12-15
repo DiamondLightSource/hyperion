@@ -1,9 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from hyperion.utils.get_run_number import (
-    RunNumberException,
     _find_next_run_number_from_files,
     get_run_number,
 )
@@ -43,15 +40,10 @@ def test_get_run_number_finds_all_nexus_files(
 
 
 @patch("os.listdir")
-@patch("hyperion.utils.get_run_number._find_next_run_number_from_files")
-def test_exception_logged_on_invalid_values(
-    mock_find_next_run_number: MagicMock,
+def test_if_nexus_files_are_unnumbered_then_return_one(
     mock_list_dir: MagicMock,
 ):
-    mock_find_next_run_number.return_value = Exception
-    mock_list_dir.return_value = "file.nxs"
-    with pytest.raises(RunNumberException):
-        get_run_number("dir")
+    assert _find_next_run_number_from_files(["file.nxs", "foo.nxs", "ham.nxs"]) == 1
 
 
 @patch("os.listdir")

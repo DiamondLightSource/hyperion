@@ -5,10 +5,6 @@ from typing import List
 import hyperion.log
 
 
-class RunNumberException(Exception):
-    pass
-
-
 def _find_next_run_number_from_files(file_names: List[str]) -> int:
     valid_numbers = []
 
@@ -22,10 +18,10 @@ def _find_next_run_number_from_files(file_names: List[str]) -> int:
             hyperion.log.LOGGER.warning(
                 f"Identified nexus file {file_name} with unexpected format"
             )
-    try:
-        return max(valid_numbers) + 1
-    except Exception:
-        raise RunNumberException(f"Unable to find the run number")
+        if len(valid_numbers) != 0:
+            return max(valid_numbers) + 1
+        else:
+            return 1
 
 
 def get_run_number(directory: str) -> int:
