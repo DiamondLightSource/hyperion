@@ -1,6 +1,6 @@
 import bluesky.preprocessors as bpp
 import pytest
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.undulator import Undulator

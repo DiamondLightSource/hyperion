@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "exposure_time": {
+            "type": "number"
+        },
+        "snapshot_dir": {
+            "type": "string"
+        },
+        "detector_distance": {
+            "type": "number"
+        },
+        "omega_start": {
+            "type": "number"
+        }
+    },
+    "required": [
+        "exposure_time",
+        "snapshot_dir",
+        "detector_distance",
+        "omega_start"
+    ]
+}

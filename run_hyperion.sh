@@ -134,7 +134,8 @@ if [[ $START == 1 ]]; then
     do
         if [ "${args[$i]}" != false ]; then commands+="${arg_strings[$i]} "; fi;
     done
-    
+
+    unset PYEPICS_LIBCA
     hyperion `echo $commands;`>$start_log_path 2>&1 &
     hyperion-callbacks `echo $commands;`>$callback_start_log_path 2>&1 &
 
