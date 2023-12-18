@@ -337,10 +337,11 @@ def fake_fgs_composite(
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
     done_status,
+    attenuator,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=i03.aperture_scatterguard(fake_with_ophyd_sim=True),
-        attenuator=i03.attenuator(fake_with_ophyd_sim=True),
+        attenuator=attenuator,
         backlight=i03.backlight(fake_with_ophyd_sim=True),
         eiger=i03.eiger(fake_with_ophyd_sim=True),
         fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),
