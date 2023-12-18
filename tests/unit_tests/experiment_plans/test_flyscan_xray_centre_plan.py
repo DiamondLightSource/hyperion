@@ -606,15 +606,13 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
         with patch(
-            "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
-            lambda: mock_subscriptions,
-        ), patch(
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(
             "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
+            [RE.subscribe(cb) for cb in list(mock_subscriptions)]
             RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
