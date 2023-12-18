@@ -77,10 +77,6 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
     autospec=True,
 )
-@patch(
-    "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.XrayCentreZocaloCallback.wait_for_results",
-    lambda _, __: ([0, 0, 0], [1, 1, 1]),
-)
 def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,

@@ -21,6 +21,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
+    from event_model.documents.event import Event
+
     from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
 
 
@@ -51,7 +53,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def activity_gated_descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
 
-    def activity_gated_event(self, doc: dict):
+    def activity_gated_event(self, doc: Event):
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
         ISPYB_LOGGER.debug("ISPyB handler received event document.")
