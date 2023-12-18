@@ -52,7 +52,6 @@ class StoreInIspyb(ABC):
         self.detector_params: DetectorParams
         self.run_number: int
         self.omega_start: float
-        self.experiment_type: str
         self.xtal_snapshots: list[str]
         self.data_collection_group_id: int
 

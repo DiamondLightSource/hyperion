@@ -32,4 +32,4 @@ def get_session_id_from_visit(conn: Connector, visit: str):
         core: Core = conn.core
         return core.retrieve_visit_id(visit)
     except NoResult:
-        raise Exception(f"Not found - session ID for visit {visit}")
+        raise NoResult(f"No session ID found in ispyb for visit {visit}")
