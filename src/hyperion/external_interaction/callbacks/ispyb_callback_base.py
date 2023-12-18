@@ -62,6 +62,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
         event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
+            ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_current_gap"
             ]

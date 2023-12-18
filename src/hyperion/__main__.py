@@ -183,7 +183,7 @@ class RunExperiment(Resource):
                     )
                 if plan is None:
                     raise PlanNotFound(
-                        f"Experiment plan '{plan_name}' has no 'run' method."
+                        f"Experiment plan '{plan_name}' not found in context. Context has {self.context.plan_functions.keys()}"
                     )
 
                 parameters = experiment_internal_param_type.from_json(request.data)

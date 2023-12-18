@@ -10,6 +10,7 @@ from hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
     pin_centre_then_xray_centre_plan,
     stepped_grid_scan_plan,
+    wait_for_robot_load_then_centre_plan,
 )
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     NullPlanCallbackCollection,
@@ -38,6 +39,10 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
     SteppedGridScanInternalParameters,
     SteppedGridScanParams,
+)
+from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
+    WaitForRobotLoadThenCentreInternalParameters,
+    WaitForRobotLoadThenCentreParams,
 )
 
 
@@ -79,6 +84,12 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
         "setup": stepped_grid_scan_plan.create_devices,
         "internal_param_type": SteppedGridScanInternalParameters,
         "experiment_param_type": SteppedGridScanParams,
+        "callback_collection_type": NullPlanCallbackCollection,
+    },
+    "wait_for_robot_load_then_centre": {
+        "setup": wait_for_robot_load_then_centre_plan.create_devices,
+        "internal_param_type": WaitForRobotLoadThenCentreInternalParameters,
+        "experiment_param_type": WaitForRobotLoadThenCentreParams,
         "callback_collection_type": NullPlanCallbackCollection,
     },
 }
