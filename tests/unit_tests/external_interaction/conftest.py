@@ -23,12 +23,17 @@ from hyperion.utils.utils import convert_angstrom_to_eV
 
 
 class MockReactiveCallback(PlanReactiveCallback):
+    activity_gated_start: MagicMock
+    activity_gated_descriptor: MagicMock
+    activity_gated_event: MagicMock
+    activity_gated_stop: MagicMock
+
     def __init__(self, *, emit: Callable[..., Any] | None = None) -> None:
         super().__init__(emit=emit)
-        self.activity_gated_start = MagicMock()
-        self.activity_gated_descriptor = MagicMock()
-        self.activity_gated_event = MagicMock()
-        self.activity_gated_stop = MagicMock()
+        self.activity_gated_start = MagicMock()  # type: ignore
+        self.activity_gated_descriptor = MagicMock()  # type: ignore
+        self.activity_gated_event = MagicMock()  # type: ignore
+        self.activity_gated_stop = MagicMock()  # type: ignore
 
 
 @pytest.fixture
