@@ -1,4 +1,5 @@
 from bluesky.callbacks import CallbackBase
+from event_model.documents.run_start import RunStart
 
 from hyperion.log import LOGGER
 
@@ -8,7 +9,7 @@ class ApertureChangeCallback(CallbackBase):
         super().__init__(*args, **kwargs)
         self.last_selected_aperture: str = "NONE"
 
-    def start(self, doc: dict):
+    def start(self, doc: RunStart):
         if doc.get("subplan_name") == "change_aperture":
             LOGGER.info(f"START: {doc}")
             ap_size = doc.get("aperture_size")

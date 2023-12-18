@@ -186,9 +186,10 @@ class RunEngineSimulator:
     2) Calling simulate_plan()
     3) Examining the returned message list and making asserts against them"""
 
-    message_handlers = []
-    callbacks = {}
-    next_callback_token = 0
+    def __init__(self):
+        self.message_handlers = []
+        self.callbacks = {}
+        self.next_callback_token = 0
 
     def add_handler_for_callback_subscribes(self):
         """Add a handler that registers all the callbacks from subscribe messages so we can call them later.
