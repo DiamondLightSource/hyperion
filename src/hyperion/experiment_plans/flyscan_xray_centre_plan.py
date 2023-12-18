@@ -295,11 +295,6 @@ def flyscan_xray_centre(
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
     composite.zocalo.zocalo_environment = parameters.hyperion_params.zocalo_environment
 
-    subscriptions = XrayCentreCallbackCollection.setup()
-
-    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
-        list(subscriptions)  # must be the outermost decorator to receive the metadata
-    )
     @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
