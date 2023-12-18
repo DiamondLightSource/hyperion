@@ -23,6 +23,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
+from dodal.devices.zocalo import ZocaloResults
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -76,6 +77,7 @@ class GridDetectThenXRayCentreComposite:
     undulator: Undulator
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
+    zocalo: ZocaloResults
 
     def __post_init__(self):
         """Ensure that aperture positions are loaded whenever this class is created."""
@@ -188,6 +190,7 @@ def detect_grid_and_do_gridscan(
         synchrotron=composite.synchrotron,
         xbpm_feedback=composite.xbpm_feedback,
         zebra=composite.zebra,
+        zocalo=composite.zocalo,
     )
 
     yield from flyscan_xray_centre(

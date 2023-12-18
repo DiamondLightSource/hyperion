@@ -2,6 +2,7 @@ import os
 from functools import partial
 from typing import Callable
 
+import dodal.devices.zocalo.zocalo_interaction
 import ispyb.sqlalchemy
 import numpy as np
 import pytest
@@ -9,7 +10,6 @@ from ispyb.sqlalchemy import DataCollection
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import hyperion.external_interaction.zocalo.zocalo_interaction
 from hyperion.external_interaction.ispyb.store_in_ispyb import (
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
@@ -126,4 +126,4 @@ def dummy_ispyb_3d(dummy_params) -> Store3DGridscanInIspyb:
 @pytest.fixture
 def zocalo_env():
     os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
-    hyperion.external_interaction.zocalo.zocalo_interaction.TIMEOUT = 5
+    dodal.devices.zocalo.zocalo_interaction.DEFAULT_TIMEOUT = 5
