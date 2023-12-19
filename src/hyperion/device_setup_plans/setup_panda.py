@@ -13,7 +13,9 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
-DEADTIME_S = 10e-5
+DEADTIME_S = 200e-9 #according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
+
+TIME_BETWEEN_X_STEPS_S = 4.1e-3 #TODO: Link this to the PV and add as a parameter
 
 
 def setup_panda_for_flyscan(
@@ -40,11 +42,11 @@ def setup_panda_for_flyscan(
     yield from bps.abs_set(panda.clock[1].period, DEADTIME_S + exposure_time_s)
 
     # The trigger width should last the same length as the exposure time
-    yield from bps.abs_set(panda.pulse[1].width, 0.01) #TODO at some point, thinnk about what constant this shoudl be
+    yield from bps.abs_set(panda.pulse[1].width, 1e-8) #TODO at some point, thinnk about what constant this shoudl be
 
     """   
     -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
-    -NOTE: When we wait for the position to be greater/lower, give some lee-way (~10 counts) as the encoder counts arent always exact
+    -NOTE: When we wait for the position to be greater/lower, give some lee-way (X_STEP_SIZE/2 * MM_TO_ENCODER counts) as the encoder counts arent always exact
     SEQUENCER TABLE:
         1:Wait for physical trigger from motion script to mark start of scan / change of direction
         2:Wait for POSA (X2) to be greater than X_START, then
@@ -56,7 +58,15 @@ def setup_panda_for_flyscan(
         6:Wait for POSA (X2) to be less than X_START, then cut out signal
         7:Go back to step one. Scan should finish at step 6, and then not recieve any more physical triggers so the panda will stop sending outputs 
         At this point, the panda blocks should be disarmed during the tidyup.
+        
+        EDIT:
+        +ve and negative direction needs to have slightly different position values so the average position of the exposure time is the same. While in the negative direction, we should start the triggers at an earlier position:
+        take away velocity (mm/s) * exposure_time (s) * MM_TO_ENCODER_COUNTS from the corresponding table values
     """
+    
+    #Velocity set by this calculation in panda grid scan motion script
+    panda_velocity_mm_per_s = parameters.x_step_size/TIME_BETWEEN_X_STEPS_S
+    
 
     # Construct sequencer 1 table.
     # trigger = [
@@ -110,16 +120,16 @@ def setup_panda_for_flyscan(
                     * (
                         parameters.x_steps - 1
                     )  # x_start is the first trigger point, so we need to travel to x_steps-1 for the final triger point
-                    * MM_TO_ENCODER_COUNTS
+                    * MM_TO_ENCODER_COUNTS + (MM_TO_ENCODER_COUNTS*(parameters.x_step_size/2))
                 ),
                 0,
                 (parameters.x_start * MM_TO_ENCODER_COUNTS)
                 + (
                     parameters.x_step_size
                     * (parameters.x_steps - 1)
-                    * MM_TO_ENCODER_COUNTS
+                    * MM_TO_ENCODER_COUNTS + (panda_velocity_mm_per_s*exposure_time_s)
                 ),
-                (parameters.x_start * MM_TO_ENCODER_COUNTS),
+                (parameters.x_start * MM_TO_ENCODER_COUNTS - (MM_TO_ENCODER_COUNTS*(parameters.x_step_size/2)) + (panda_velocity_mm_per_s*exposure_time_s)),
             ],
             dtype=np.int32,
         ),
