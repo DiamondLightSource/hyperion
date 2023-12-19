@@ -13,7 +13,7 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
-DEADTIME_S = 200e-9 #according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
+DEADTIME_S = 1e-6 #according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
 TIME_BETWEEN_X_STEPS_S = 4.1e-3 #TODO: Link this to the PV and add as a parameter
 
@@ -127,9 +127,9 @@ def setup_panda_for_flyscan(
                 + (
                     parameters.x_step_size
                     * (parameters.x_steps - 1)
-                    * MM_TO_ENCODER_COUNTS + (panda_velocity_mm_per_s*exposure_time_s)
+                    * MM_TO_ENCODER_COUNTS + (panda_velocity_mm_per_s*exposure_time_s*MM_TO_ENCODER_COUNTS)
                 ),
-                (parameters.x_start * MM_TO_ENCODER_COUNTS - (MM_TO_ENCODER_COUNTS*(parameters.x_step_size/2)) + (panda_velocity_mm_per_s*exposure_time_s)),
+                (parameters.x_start * MM_TO_ENCODER_COUNTS - (MM_TO_ENCODER_COUNTS*(parameters.x_step_size/2)) + (panda_velocity_mm_per_s*exposure_time_s*MM_TO_ENCODER_COUNTS)),
             ],
             dtype=np.int32,
         ),
