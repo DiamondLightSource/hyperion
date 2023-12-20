@@ -44,6 +44,7 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     detector_distance: float
     omega_start: float
     snapshot_dir: str
+    requested_energy_kev: float
 
     def get_num_images(self):
         return 0

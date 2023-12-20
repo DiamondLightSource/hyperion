@@ -1,11 +1,13 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
 from ophyd.sim import instantiate_fake_device
 
+from hyperion.experiment_plans.set_energy_plan import SetEnergyComposite
 from hyperion.experiment_plans.wait_for_robot_load_then_centre_plan import (
     wait_for_robot_load_then_centre,
 )
@@ -19,6 +21,27 @@ from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params im
 
 
 @pytest.fixture
+def set_energy_composite(
+    vfm,
+    vfm_mirror_voltages,
+    dcm,
+    beamline_parameters,
+    undulator_dcm,
+    xbpm_feedback,
+    attenuator,
+):
+    return SetEnergyComposite(
+        vfm,
+        vfm_mirror_voltages,
+        dcm,
+        beamline_parameters,
+        undulator_dcm,
+        xbpm_feedback,
+        attenuator,
+    )
+
+
+@pytest.fixture
 def wait_for_robot_load_then_centre_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_wait_for_robot_load_params.json"
@@ -29,8 +52,13 @@ def wait_for_robot_load_then_centre_params():
 @patch(
     "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
 def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     mock_centring_plan: MagicMock,
+    set_energy_composite: SetEnergyComposite,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
 ):
     mock_composite = MagicMock()
@@ -39,7 +67,7 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     RE = RunEngine()
     RE(
         wait_for_robot_load_then_centre(
-            mock_composite, wait_for_robot_load_then_centre_params
+            mock_composite, set_energy_composite, wait_for_robot_load_then_centre_params
         )
     )
     composite_passed = mock_centring_plan.call_args[0][0]
@@ -51,8 +79,37 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
 
 
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+)
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([Msg("set_energy_plan")])),
+)
+def test_when_plan_run_energy_change_executes(
+    mock_centring_plan: MagicMock,
+    set_energy_composite: SetEnergyComposite,
+    wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
+    sim,
+):
+    mock_composite = MagicMock()
+    mock_composite.smargon = instantiate_fake_device(Smargon, name="smargon")
+
+    messages = sim.simulate_plan(
+        wait_for_robot_load_then_centre(
+            mock_composite, set_energy_composite, wait_for_robot_load_then_centre_params
+        )
+    )
+    sim.assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "set_energy_plan"
+    )
+
+
 def run_simulating_smargon_wait(
-    wait_for_robot_load_then_centre_params, total_disabled_reads, sim
+    wait_for_robot_load_then_centre_params,
+    set_energy_composite,
+    total_disabled_reads,
+    sim,
 ):
     mock_composite = MagicMock()
     mock_composite.smargon = instantiate_fake_device(Smargon, name="smargon")
@@ -73,7 +130,7 @@ def run_simulating_smargon_wait(
 
     return sim.simulate_plan(
         wait_for_robot_load_then_centre(
-            mock_composite, wait_for_robot_load_then_centre_params
+            mock_composite, set_energy_composite, wait_for_robot_load_then_centre_params
         )
     )
 
@@ -82,14 +139,22 @@ def run_simulating_smargon_wait(
 @patch(
     "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
 def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
     mock_centring_plan: MagicMock,
+    set_energy_composite: SetEnergyComposite,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
     total_disabled_reads: int,
     sim_run_engine,
 ):
     messages = run_simulating_smargon_wait(
-        wait_for_robot_load_then_centre_params, total_disabled_reads, sim_run_engine
+        wait_for_robot_load_then_centre_params,
+        set_energy_composite,
+        total_disabled_reads,
+        sim_run_engine,
     )
 
     mock_centring_plan.assert_called_once()
@@ -107,27 +172,40 @@ def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
 @patch(
     "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
 def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throws_exception(
     mock_centring_plan: MagicMock,
+    set_energy_composite: SetEnergyComposite,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
     sim_run_engine,
 ):
     with pytest.raises(TimeoutError):
         run_simulating_smargon_wait(
-            wait_for_robot_load_then_centre_params, 1000, sim_run_engine
+            wait_for_robot_load_then_centre_params,
+            set_energy_composite,
+            1000,
+            sim_run_engine,
         )
 
 
 @patch(
     "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
 def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     mock_centring_plan: MagicMock,
+    set_energy_composite: SetEnergyComposite,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
     sim_run_engine,
 ):
     messages = run_simulating_smargon_wait(
-        wait_for_robot_load_then_centre_params, 1, sim_run_engine
+        wait_for_robot_load_then_centre_params, set_energy_composite, 1, sim_run_engine
     )
 
     arm_detector_messages = filter(

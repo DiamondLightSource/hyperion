@@ -16,6 +16,10 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_centre_then_xray_centre_plan,
 )
+from hyperion.experiment_plans.set_energy_plan import (
+    SetEnergyComposite,
+    set_energy_plan,
+)
 from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
@@ -52,8 +56,12 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
 
 def wait_for_robot_load_then_centre_plan(
     composite: GridDetectThenXRayCentreComposite,
+    energy_composite: SetEnergyComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ):
+    yield from set_energy_plan(
+        parameters.experiment_params.requested_energy_kev, energy_composite
+    )
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
     params_json = json.loads(parameters.json())
@@ -63,6 +71,7 @@ def wait_for_robot_load_then_centre_plan(
 
 def wait_for_robot_load_then_centre(
     composite: GridDetectThenXRayCentreComposite,
+    energy_composite: SetEnergyComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
@@ -73,5 +82,5 @@ def wait_for_robot_load_then_centre(
         eiger,
         composite.detector_motion,
         parameters.experiment_params.detector_distance,
-        wait_for_robot_load_then_centre_plan(composite, parameters),
+        wait_for_robot_load_then_centre_plan(composite, energy_composite, parameters),
     )

@@ -296,6 +296,18 @@ def hfm():
 
 
 @pytest.fixture
+def xbpm_feedback():
+    yield i03.xbpm_feedback(fake_with_ophyd_sim=True)
+    beamline_utils.clear_devices()
+
+
+@pytest.fixture
+def undulator_dcm():
+    yield i03.undulator_dcm(fake_with_ophyd_sim=True)
+    beamline_utils.clear_devices()
+
+
+@pytest.fixture
 def aperture_scatterguard(done_status):
     ap_sg = i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,

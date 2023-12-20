@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.utils import Msg
 from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
 from ophyd.sim import make_fake_device
@@ -158,7 +159,7 @@ def fake_read(obj, initial_positions, _):
 
 
 @pytest.fixture
-def simple_beamline(detector_motion, oav, smargon, synchrotron):
+def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_files):
     magic_mock = MagicMock(autospec=True)
     magic_mock.oav = oav
     magic_mock.smargon = smargon
@@ -168,6 +169,10 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron):
     magic_mock.fast_grid_scan = scan
     magic_mock.synchrotron = synchrotron
     oav.zoom_controller.frst.set("7.5x")
+    oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    oav.parameters.update_on_zoom(7.5, 1024, 768)
     return magic_mock
 
 
