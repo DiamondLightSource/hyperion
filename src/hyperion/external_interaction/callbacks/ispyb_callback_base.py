@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING, Dict, Optional
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds, StoreInIspyb
+from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+    IspybIds,
+    StoreInIspyb,
+)
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
@@ -21,7 +24,11 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
-    from hyperion.external_interaction.ispyb.store_in_ispyb import StoreInIspyb
+    from event_model.documents.event import Event
+
+    from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+        StoreInIspyb,
+    )
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
@@ -35,7 +42,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         self.ispyb: StoreInIspyb
         self.descriptors: Dict[str, dict] = {}
-        self.ispyb_config = os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
+        self.ispyb_config = get_ispyb_config()
         if self.ispyb_config == SIM_ISPYB_CONFIG:
             ISPYB_LOGGER.warning(
                 "Using dev ISPyB database. If you want to use the real database, please"
@@ -51,16 +58,16 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def activity_gated_descriptor(self, doc: dict):
         self.descriptors[doc["uid"]] = doc
 
-    def activity_gated_event(self, doc: dict):
+    def activity_gated_event(self, doc: Event):
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
         ISPYB_LOGGER.debug("ISPyB handler received event document.")
         assert self.ispyb is not None, "ISPyB deposition wasn't initialised!"
         assert self.params is not None, "ISPyB handler didn't recieve parameters!"
-        event_descriptor = self.descriptors[doc["descriptor"]]
 
         event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
+            ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_current_gap"
             ]

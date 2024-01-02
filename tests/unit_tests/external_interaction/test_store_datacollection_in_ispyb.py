@@ -1,4 +1,3 @@
-import re
 from copy import deepcopy
 from unittest.mock import MagicMock, Mock, mock_open, patch
 
@@ -7,7 +6,7 @@ import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
-from hyperion.external_interaction.ispyb.store_in_ispyb import (
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     IspybIds,
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
@@ -28,7 +27,6 @@ TEST_GRID_INFO_ID = 56
 TEST_POSITION_ID = 78
 TEST_SESSION_ID = 90
 
-TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 
 EMPTY_DATA_COLLECTION_PARAMS = {
     "id": None,
@@ -147,31 +145,6 @@ def dummy_rotation_ispyb(dummy_rotation_params):
 def dummy_ispyb_3d(dummy_params):
     store_in_ispyb_3d = Store3DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
     return store_in_ispyb_3d
-
-
-def test_get_current_time_string(dummy_ispyb):
-    current_time = dummy_ispyb.get_current_time_string()
-
-    assert isinstance(current_time, str)
-    assert re.match(TIME_FORMAT_REGEX, current_time) is not None
-
-
-@pytest.mark.parametrize(
-    "visit_path, expected_match",
-    [
-        ("/dls/i03/data/2022/cm6477-45/", "cm6477-45"),
-        ("/dls/i03/data/2022/cm6477-45", "cm6477-45"),
-        ("/dls/i03/data/2022/mx54663-1/", "mx54663-1"),
-        ("/dls/i03/data/2022/mx54663-1", "mx54663-1"),
-        ("/dls/i03/data/2022/mx53-1/", None),
-        ("/dls/i03/data/2022/mx53-1", None),
-        ("/dls/i03/data/2022/mx5563-1565/", None),
-        ("/dls/i03/data/2022/mx5563-1565", None),
-    ],
-)
-def test_regex_string(dummy_ispyb, visit_path: str, expected_match: str):
-    test_visit_path = dummy_ispyb.get_visit_string_from_path(visit_path)
-    assert test_visit_path == expected_match
 
 
 @patch("ispyb.open", new_callable=mock_open)

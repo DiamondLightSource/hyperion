@@ -7,6 +7,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import AperturePositions
+from ophyd.status import Status
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -17,10 +18,12 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
     run_gridscan,
+    run_gridscan_and_move,
 )
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
+from hyperion.external_interaction.ispyb.store_in_ispyb import IspybIds
 from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
@@ -57,6 +60,7 @@ def fgs_composite():
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
         xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(),
+        zocalo=MagicMock(),
     )
 
     gda_beamline_parameters = GDABeamlineParameters.from_file(
@@ -71,22 +75,23 @@ def fgs_composite():
         aperture_positions.LARGE[2], wait=True
     )
     composite.eiger.cam.manual_trigger.put("Yes")
-
-    # S03 currently does not have StaleParameters_RBV
-    composite.eiger.wait_for_stale_parameters = lambda: None
     composite.eiger.odin.check_odin_initialised = lambda: (True, "")
+    composite.eiger.stage = MagicMock(return_value=Status(done=True, success=True))
+    composite.eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
 
     composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
 
     return composite
 
 
-@pytest.mark.skip(reason="Broken due to eiger issues in s03")
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
 @patch("bluesky.plan_stubs.complete", autospec=True)
-@patch("hyperion.flyscan_xray_centre.wait_for_gridscan_valid", autospec=True)
+@patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.wait_for_gridscan_valid",
+    autospec=True,
+)
 def test_run_gridscan(
     wait_for_gridscan_valid: MagicMock,
     complete: MagicMock,
@@ -96,9 +101,27 @@ def test_run_gridscan(
     RE: RunEngine,
     fgs_composite: FlyScanXRayCentreComposite,
 ):
-    fgs_composite.eiger.unstage = lambda: True
-    # Would be better to use flyscan_xray_centre instead but eiger doesn't work well in S03
     RE(run_gridscan(fgs_composite, params))
+
+
+@pytest.mark.s03
+@patch("bluesky.plan_stubs.wait", autospec=True)
+@patch("bluesky.plan_stubs.kickoff", autospec=True)
+@patch("bluesky.plan_stubs.complete", autospec=True)
+@patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.wait_for_gridscan_valid",
+    autospec=True,
+)
+def test_run_gridscan_and_move(
+    wait_for_gridscan_valid: MagicMock,
+    complete: MagicMock,
+    kickoff: MagicMock,
+    wait: MagicMock,
+    params: GridscanInternalParameters,
+    RE: RunEngine,
+    fgs_composite: FlyScanXRayCentreComposite,
+):
+    RE(run_gridscan_and_move(fgs_composite, params))
 
 
 @pytest.mark.s03
@@ -145,8 +168,9 @@ def test_full_plan_tidies_at_end(
     callbacks = XrayCentreCallbackCollection.setup()
     callbacks.nexus_handler.nexus_writer_1 = MagicMock()
     callbacks.nexus_handler.nexus_writer_2 = MagicMock()
-    callbacks.ispyb_handler.ispyb_ids = MagicMock()
-    callbacks.ispyb_handler.ispyb.datacollection_ids = MagicMock()
+    callbacks.ispyb_handler.ispyb_ids = IspybIds(
+        data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
+    )
     with patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
         return_value=callbacks,
@@ -197,7 +221,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 100
 
-    callbacks = XrayCentreCallbackCollection.setup(params)
+    callbacks = XrayCentreCallbackCollection.setup()
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
     mock_start_zocalo = MagicMock()
     callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
@@ -205,7 +229,9 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     with pytest.raises(WarningException):
         RE(flyscan_xray_centre(fgs_composite, params))
 
-    dcid_used = callbacks.ispyb_handler.ispyb.datacollection_ids[0]
+    dcid_used = callbacks.ispyb_handler.ispyb_ids = IspybIds(
+        data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
+    )
 
     comment = fetch_comment(dcid_used)
 
@@ -225,7 +251,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     params: GridscanInternalParameters,
 ):
     """This test currently avoids hardware interaction and is mostly confirming
-    interaction with dev_ispyb and dev_zocalo"""
+    interaction with dev_ispyb and fake_zocalo"""
 
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
@@ -237,7 +263,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     fgs_composite.eiger.stage = MagicMock()
     fgs_composite.eiger.unstage = MagicMock()
 
-    callbacks = XrayCentreCallbackCollection.setup(params)
+    callbacks = XrayCentreCallbackCollection.setup()
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
 
     RE(flyscan_xray_centre(fgs_composite, params))
