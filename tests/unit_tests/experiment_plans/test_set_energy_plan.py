@@ -1,10 +1,13 @@
 from unittest.mock import patch
 
-from bluesky import Msg
+from bluesky.utils import Msg
 
 from hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
     set_energy_plan,
+)
+from hyperion.parameters.plan_specific.set_energy_internal_params import (
+    SetEnergyInternalParameters,
 )
 
 
@@ -21,51 +24,53 @@ def test_set_energy_plan(
     xbpm_feedback,
     attenuator,
     undulator_dcm,
-    sim,
+    sim_run_engine,
 ):
     composite = SetEnergyComposite(
         vfm,
         vfm_mirror_voltages,
         dcm,
-        beamline_parameters,
         undulator_dcm,
         xbpm_feedback,
         attenuator,
     )
-    messages = sim.simulate_plan(set_energy_plan(11.1, composite))
-    messages = sim.assert_message_and_return_remaining(
+    internal_params = SetEnergyInternalParameters()
+    messages = sim_run_engine.simulate_plan(
+        set_energy_plan(11.1, composite, internal_params)
+    )
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "xbpm_feedback_pause_feedback"
         and msg.args == (0,),
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "attenuator"
         and msg.args == (0.1,),
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "undulator_dcm"
         and msg.args == (11.1,)
         and msg.kwargs["group"] == "UNDULATOR_GROUP",
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:], lambda msg: msg.command == "adjust_dcm_pitch_roll_vfm_from_lut"
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "wait" and msg.kwargs["group"] == "UNDULATOR_GROUP",
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "xbpm_feedback_pause_feedback"
         and msg.args == (1,),
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "attenuator"
