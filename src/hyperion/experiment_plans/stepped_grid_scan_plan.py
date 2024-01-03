@@ -9,12 +9,12 @@ import bluesky.plans as bluesky_plans
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
+from dodal.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.smargon import Smargon
 from dodal.utils import get_beamline_name
 
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
-from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.constants import (
     BEAMLINE_PARAMETER_PATHS,
     GRIDSCAN_MAIN_PLAN,
