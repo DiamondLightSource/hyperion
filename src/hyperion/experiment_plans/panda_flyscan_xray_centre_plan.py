@@ -242,12 +242,25 @@ def run_gridscan_and_move(
     )
 
     hyperion.log.LOGGER.info("Setting up Panda for flyscan")
+
+    # Set the time between x steps pv
+    DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
+
+    time_between_x_steps_ms = (
+        DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
+    )
+
+    yield from bps.mv(
+        fgs_composite.panda_fast_grid_scan.time_between_x_steps, time_between_x_steps_ms
+    )
+
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         PANDA_SETUP_PATH,
         parameters.experiment_params,
         initial_xyz[0],
         parameters.hyperion_params.detector_params.exposure_time,
+        time_between_x_steps_ms,
     )
 
     hyperion.log.LOGGER.info("Setting up Zebra for panda flyscan")

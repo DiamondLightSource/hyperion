@@ -13,9 +13,6 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
-DEADTIME_S = 1e-6 #according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
-
-TIME_BETWEEN_X_STEPS_S = 4.1e-3 #TODO: Link this to the PV and add as a parameter
 
 
 def setup_panda_for_flyscan(
@@ -24,6 +21,7 @@ def setup_panda_for_flyscan(
     parameters: PandaGridScanParams,
     initial_x: float,
     exposure_time_s: float,
+    time_between_x_steps_ms: float,
 ):
     """This should load a 'base' panda-flyscan yaml file, then grid the grid parameters, then adjust the PandA
     sequencer table to match this new grid"""
@@ -36,13 +34,17 @@ def setup_panda_for_flyscan(
     yield from bps.abs_set(
         panda.inenc[1].setp, initial_x * MM_TO_ENCODER_COUNTS, wait=True
     )
-    LOGGER.info(f"Initialising panda to {initial_x} mm, {initial_x * MM_TO_ENCODER_COUNTS} counts")
+    LOGGER.info(
+        f"Initialising panda to {initial_x} mm, {initial_x * MM_TO_ENCODER_COUNTS} counts"
+    )
 
     # Make sure the eiger trigger should be sent every time = (exposure time + deadtime). Assume deadtime is 10 microseconds (check)
-    yield from bps.abs_set(panda.clock[1].period, DEADTIME_S + exposure_time_s)
+    yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms)
 
     # The trigger width should last the same length as the exposure time
-    yield from bps.abs_set(panda.pulse[1].width, 1e-8) #TODO at some point, thinnk about what constant this shoudl be
+    yield from bps.abs_set(
+        panda.pulse[1].width, 1e-8
+    )  # TODO at some point, thinnk about what constant this shoudl be
 
     """   
     -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
@@ -63,10 +65,11 @@ def setup_panda_for_flyscan(
         +ve and negative direction needs to have slightly different position values so the average position of the exposure time is the same. While in the negative direction, we should start the triggers at an earlier position:
         take away velocity (mm/s) * exposure_time (s) * MM_TO_ENCODER_COUNTS from the corresponding table values
     """
-    
-    #Velocity set by this calculation in panda grid scan motion script
-    panda_velocity_mm_per_s = parameters.x_step_size/TIME_BETWEEN_X_STEPS_S
-    
+
+    # Velocity set by this calculation in panda grid scan motion script
+    panda_velocity_mm_per_s = (
+        parameters.x_step_size / parameters.time_between_x_steps_ms
+    )
 
     # Construct sequencer 1 table.
     # trigger = [
@@ -120,16 +123,22 @@ def setup_panda_for_flyscan(
                     * (
                         parameters.x_steps - 1
                     )  # x_start is the first trigger point, so we need to travel to x_steps-1 for the final triger point
-                    * MM_TO_ENCODER_COUNTS + (MM_TO_ENCODER_COUNTS*(parameters.x_step_size/2))
+                    * MM_TO_ENCODER_COUNTS
+                    + (MM_TO_ENCODER_COUNTS * (parameters.x_step_size / 2))
                 ),
                 0,
                 (parameters.x_start * MM_TO_ENCODER_COUNTS)
                 + (
                     parameters.x_step_size
                     * (parameters.x_steps - 1)
-                    * MM_TO_ENCODER_COUNTS + (panda_velocity_mm_per_s*exposure_time_s*MM_TO_ENCODER_COUNTS)
+                    * MM_TO_ENCODER_COUNTS
+                    + (panda_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS)
                 ),
-                (parameters.x_start * MM_TO_ENCODER_COUNTS - (MM_TO_ENCODER_COUNTS*(parameters.x_step_size/2)) + (panda_velocity_mm_per_s*exposure_time_s*MM_TO_ENCODER_COUNTS)),
+                (
+                    parameters.x_start * MM_TO_ENCODER_COUNTS
+                    - (MM_TO_ENCODER_COUNTS * (parameters.x_step_size / 2))
+                    + (panda_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS)
+                ),
             ],
             dtype=np.int32,
         ),
@@ -148,7 +157,7 @@ def setup_panda_for_flyscan(
         oute2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
         outf2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
     )
-    
+
     LOGGER.info(f"Setting Panda values: {str(table)}")
 
     yield from bps.abs_set(panda.seq[1].table, table)
