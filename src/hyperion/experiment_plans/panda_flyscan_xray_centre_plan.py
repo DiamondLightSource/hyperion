@@ -246,6 +246,19 @@ def run_gridscan_and_move(
     # Set the time between x steps pv
     DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
+    # Check smargon speed. Exposure time in s, x_step_size in mm
+    smargon_speed = (
+        parameters.experiment_params.x_step_size
+        / parameters.hyperion_params.detector_params.exposure_time
+    )
+    if smargon_speed > 10:
+        hyperion.log.LOGGER.error(
+            f"Smargon speed was calculated from x step size\
+                                  {parameters.experiment_params.x_step_size} and\
+                                      exposure time {parameters.hyperion_params.detector_params.exposure_time} as\
+                                          {smargon_speed}. The smargon's speed limit is 10 mm/s."
+        )
+
     time_between_x_steps_ms = (
         DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
     )

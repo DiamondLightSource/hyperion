@@ -67,9 +67,7 @@ def setup_panda_for_flyscan(
     """
 
     # Velocity set by this calculation in panda grid scan motion script
-    panda_velocity_mm_per_s = (
-        parameters.x_step_size / parameters.time_between_x_steps_ms
-    )
+    panda_velocity_mm_per_s = parameters.x_step_size / time_between_x_steps_ms
 
     # Construct sequencer 1 table.
     # trigger = [
