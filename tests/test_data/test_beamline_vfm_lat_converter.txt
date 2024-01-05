@@ -1,0 +1,5 @@
+# DCM Bragg angle to VFM x translation lookup 
+# The values cannot change direction.
+Units Deg Deg
+5.0 10.0
+25.0 10.0

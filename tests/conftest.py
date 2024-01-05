@@ -1,13 +1,13 @@
 import sys
 from functools import partial
 from os import environ, getenv
-from typing import Generator
+from typing import Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.beamlines import i03
+from dodal.beamlines import beamline_utils, i03
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -39,6 +39,7 @@ from hyperion.log import (
     NEXUS_LOGGER,
     set_up_logging_handlers,
 )
+from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
@@ -124,6 +125,13 @@ def mock_set(motor: EpicsMotor, val):
 
 def patch_motor(motor):
     return patch.object(motor, "set", partial(mock_set, motor))
+
+
+@pytest.fixture
+def beamline_parameters():
+    return GDABeamlineParameters.from_file(
+        "tests/test_data/test_beamline_parameters.txt"
+    )
 
 
 @pytest.fixture
@@ -236,6 +244,46 @@ def attenuator():
         autospec=True,
     ):
         yield i03.attenuator(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def dcm():
+    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    dcm.pitch_in_mrad.user_setpoint._use_limits = False
+    dcm.dcm_roll_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_roll_converter.txt"
+    )
+    dcm.dcm_pitch_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
+    )
+    return dcm
+
+
+@pytest.fixture
+def qbpm1():
+    return i03.qbpm1(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def vfm():
+    vfm = i03.vfm(fake_with_ophyd_sim=True)
+    vfm.bragg_to_lat_lookup_table_path = (
+        "tests/test_data/test_beamline_vfm_lat_converter.txt"
+    )
+    return vfm
+
+
+@pytest.fixture
+def vfm_mirror_voltages():
+    voltages = i03.vfm_mirror_voltages(fake_with_ophyd_sim=True)
+    voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
+    yield voltages
+    beamline_utils.clear_devices()
+
+
+@pytest.fixture
+def hfm():
+    return i03.hfm(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -390,7 +438,9 @@ def fake_fgs_composite(
     async def mock_complete(result):
         await fake_composite.zocalo._put_results([result])
 
-    fake_composite.zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
+    fake_composite.zocalo.trigger = MagicMock(
+        side_effect=partial(mock_complete, test_result)
+    )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
@@ -401,3 +451,151 @@ def fake_fgs_composite(
 def fake_read(obj, initial_positions, _):
     initial_positions[obj] = 0
     yield Msg("null", obj)
+
+
+class RunEngineSimulator:
+    """This class simulates a Bluesky RunEngine by recording and injecting responses to messages according to the
+    bluesky Message Protocol (see bluesky docs for details).
+    Basic usage consists of
+    1) Registering various handlers to respond to anticipated messages in the experiment plan and fire any
+    needed callbacks.
+    2) Calling simulate_plan()
+    3) Examining the returned message list and making asserts against them"""
+
+    def __init__(self):
+        self.message_handlers = []
+        self.callbacks = {}
+        self.next_callback_token = 0
+
+    def add_handler_for_callback_subscribes(self):
+        """Add a handler that registers all the callbacks from subscribe messages so we can call them later.
+        You probably want to call this as one of the first things unless you have a good reason not to.
+        """
+        self.message_handlers.append(
+            MessageHandler(
+                lambda msg: msg.command == "subscribe",
+                lambda msg: self._add_callback(msg.args),
+            )
+        )
+
+    def add_handler(
+        self, commands: Sequence[str], obj_name: str, handler: Callable[[Msg], object]
+    ):
+        """Add the specified handler for a particular message
+        Args:
+            commands: the command name for the message as defined in bluesky Message Protocol, or a sequence if more
+            than one matches
+            obj_name: the name property of the obj to match, can be None as not all messages have a name
+            handler: a lambda that accepts a Msg and returns an object; the object is sent to the current yield statement
+            in the generator, and is used when reading values from devices, the structure of the object depends on device
+            hinting.
+        """
+        if isinstance(commands, str):
+            commands = [commands]
+
+        self.message_handlers.append(
+            MessageHandler(
+                lambda msg: msg.command in commands
+                and (obj_name is None or (msg.obj and msg.obj.name == obj_name)),
+                handler,
+            )
+        )
+
+    def add_wait_handler(self, handler: Callable[[Msg], None], group: str = "any"):
+        """Add a wait handler for a particular message
+        Args:
+            handler: a lambda that accepts a Msg, use this to execute any code that simulates something that's
+            supposed to complete when a group finishes
+            group: name of the group to wait for, default is any which matches them all
+        """
+        self.message_handlers.append(
+            MessageHandler(
+                lambda msg: msg.command == "wait"
+                and (group == "any" or msg.kwargs["group"] == group),
+                handler,
+            )
+        )
+
+    def fire_callback(self, document_name, document):
+        """Fire all the callbacks registered for this document type in order to simulate something happening
+        Args:
+             document_name: document name as defined in the Bluesky Message Protocol 'subscribe' call,
+             all subscribers filtering on this document name will be called
+             document: the document to send
+        """
+        for callback_func, callback_docname in self.callbacks.values():
+            if callback_docname == "all" or callback_docname == document_name:
+                callback_func(document_name, document)
+
+    def simulate_plan(self, gen: Generator[Msg, object, object]) -> list[Msg]:
+        """Simulate the RunEngine executing the plan
+        Args:
+            gen: the generator function that executes the plan
+        Returns:
+            a list of the messages generated by the plan
+        """
+        messages = []
+        send_value = None
+        try:
+            while msg := gen.send(send_value):
+                send_value = None
+                messages.append(msg)
+                LOGGER.debug(f"<{msg}")
+                if handler := next(
+                    (h for h in self.message_handlers if h.predicate(msg)), None
+                ):
+                    send_value = handler.runnable(msg)
+
+                if send_value:
+                    LOGGER.debug(f">send {send_value}")
+        except StopIteration:
+            pass
+        return messages
+
+    def _add_callback(self, msg_args):
+        self.callbacks[self.next_callback_token] = msg_args
+        self.next_callback_token += 1
+
+    def assert_message_and_return_remaining(
+        self,
+        messages: list[Msg],
+        predicate: Callable[[Msg], bool],
+        group: Optional[str] = None,
+    ):
+        """Find the next message matching the predicate, assert that we found it
+        Return: all the remaining messages starting from the matched message"""
+        indices = [
+            i
+            for i in range(len(messages))
+            if (
+                not group
+                or (messages[i].kwargs and messages[i].kwargs.get("group") == group)
+            )
+            and predicate(messages[i])
+        ]
+        assert indices, f"Nothing matched predicate {predicate}"
+        return messages[indices[0] :]
+
+    def mock_message_generator(
+        self,
+        function_name: str,
+    ) -> Callable[..., Generator[Msg, object, object]]:
+        """Returns a callable that returns a generator yielding a Msg object recording the call arguments.
+        This can be used to mock methods returning a bluesky plan or portion thereof, call it from within a unit test
+        using the RunEngineSimulator, and then perform asserts on the message to verify in-order execution of the plan"""
+
+        def mock_method(*args, **kwargs):
+            yield Msg(function_name, None, *args, **kwargs)
+
+        return mock_method
+
+
+class MessageHandler:
+    def __init__(self, p: Callable[[Msg], bool], r: Callable[[Msg], object]):
+        self.predicate = p
+        self.runnable = r
+
+
+@pytest.fixture
+def sim_run_engine():
+    return RunEngineSimulator()
