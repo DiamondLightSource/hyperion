@@ -2,7 +2,7 @@ from threading import Timer
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine
 from dodal.devices.DCM import DCM
 from dodal.devices.focusing_mirror import (
     DEMAND_ACCEPTED_OK,
@@ -38,7 +38,7 @@ def test_apply_and_wait_for_voltages_to_settle_happy_path(
         for channel, expected_voltage in zip(
             vfm_mirror_voltages.voltage_channels, [140, 100, 70, 30, 30, -65, 24, 15]
         ):
-            channel.set.assert_called_once_with(expected_voltage)
+            channel.set.assert_called_once_with(expected_voltage)  # type: ignore
 
 
 def _mock_channel(magic_mock, accept_demand):
@@ -102,12 +102,12 @@ def test_apply_and_wait_for_voltages_to_settle_timeout(
         for channel, expected_voltage in zip(
             vfm_mirror_voltages.voltage_channels, [140, 100, 70, 30, 30, -65, 24, 15]
         ):
-            channel.set.assert_called_once_with(expected_voltage)
+            channel.set.assert_called_once_with(expected_voltage)  # type: ignore
 
 
 def _mock_voltage_channel(setpoint: EpicsSignal, demand_accepted: EpicsSignal):
     def set_demand_and_return_ok(_):
-        demand_accepted.sim_put(DEMAND_ACCEPTED_OK)
+        demand_accepted.sim_put(DEMAND_ACCEPTED_OK)  # type: ignore
         return NullStatus()
 
     setpoint.set = MagicMock(side_effect=set_demand_and_return_ok)
@@ -145,10 +145,10 @@ def test_adjust_mirror_stripe(
 
         assert parent.method_calls[0] == ("stripe_set", (expected_stripe,))
         assert parent.method_calls[1] == ("apply_stripe", (1,))
-        vfm_mirror_voltages.voltage_channels[0].set.assert_called_once_with(
+        vfm_mirror_voltages.voltage_channels[0].set.assert_called_once_with(  # type: ignore
             first_voltage
         )
-        vfm_mirror_voltages.voltage_channels[7].set.assert_called_once_with(
+        vfm_mirror_voltages.voltage_channels[7].set.assert_called_once_with(  # type: ignore
             last_voltage
         )
 

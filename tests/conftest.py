@@ -1,7 +1,7 @@
 import sys
 from functools import partial
 from os import environ, getenv
-from typing import Callable, Generator, Sequence
+from typing import Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -287,11 +287,6 @@ def hfm():
 
 
 @pytest.fixture
-def i0():
-    return i03.i0(fake_with_ophyd_sim=True)
-
-
-@pytest.fixture
 def aperture_scatterguard():
     return i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,
@@ -562,7 +557,10 @@ class RunEngineSimulator:
         self.next_callback_token += 1
 
     def assert_message_and_return_remaining(
-        self, messages: list[Msg], predicate: Callable[[Msg], bool], group: str = None
+        self,
+        messages: list[Msg],
+        predicate: Callable[[Msg], bool],
+        group: Optional[str] = None,
     ):
         """Find the next message matching the predicate, assert that we found it
         Return: all the remaining messages starting from the matched message"""
