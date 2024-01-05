@@ -1,8 +1,9 @@
 import pytest
-from dodal.beamlines.beamline_parameters import GDABeamlineParameters
+from dodal.beamlines.beamline_parameters import (
+    BEAMLINE_PARAMETER_PATHS,
+    GDABeamlineParameters,
+)
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
-
-from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS
 
 
 @pytest.fixture
