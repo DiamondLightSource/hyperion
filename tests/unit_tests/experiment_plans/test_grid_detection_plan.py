@@ -8,6 +8,7 @@ from dodal.devices.fast_grid_scan import GridAxis
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
+from ophyd.sim import NullStatus
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.oav_grid_detection_plan import (
@@ -24,7 +25,18 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
 
 @pytest.fixture
 def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
-    oav = i03.oav(fake_with_ophyd_sim=True)
+    oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True)
+
+    oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    oav.parameters.update_on_zoom = MagicMock()
+    oav.parameters.load_microns_per_pixel = MagicMock()
+    oav.parameters.micronsPerXPixel = 1.58
+    oav.parameters.micronsPerYPixel = 1.58
+    oav.parameters.beam_centre_i = 517
+    oav.parameters.beam_centre_j = 350
+
     oav.wait_for_connection()
 
     oav.zoom_controller.zrst.set("1.0x")
@@ -39,16 +51,8 @@ def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
     oav.mxsc.top.set([0,0,0,0,0,0,0,0,5,5,4,4,3,3,2,2,3,3,4,4])  # noqa: E231
     # fmt: on
 
-    oav.mxsc.pin_tip.tip_x.sim_put(8)  # type: ignore
-    oav.mxsc.pin_tip.tip_y.sim_put(5)  # type: ignore
-
-    oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    oav.parameters.micronsPerXPixel = 1.58
-    oav.parameters.micronsPerYPixel = 1.58
-    oav.parameters.beam_centre_i = 517
-    oav.parameters.beam_centre_j = 350
+    oav.mxsc.pin_tip.triggered_tip.put((8, 5))
+    oav.mxsc.pin_tip.trigger = MagicMock(return_value=NullStatus())
 
     with patch("dodal.devices.areadetector.plugins.MJPG.requests"), patch(
         "dodal.devices.areadetector.plugins.MJPG.Image"
@@ -66,9 +70,8 @@ def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
-@patch("bluesky.plan_stubs.wait")
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_grid_detection_plan_runs_and_triggers_snapshots(
-    bps_wait: MagicMock,
     RE: RunEngine,
     test_config_files,
     fake_devices,
@@ -101,6 +104,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     RE,
     test_config_files,
@@ -109,8 +113,7 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     composite, _ = fake_devices
     oav: OAV = composite.oav
 
-    oav.mxsc.pin_tip.tip_x.sim_put(-1)  # type: ignore
-    oav.mxsc.pin_tip.tip_y.sim_put(-1)  # type: ignore
+    oav.mxsc.pin_tip.triggered_tip.put((-1, -1))
     oav.mxsc.pin_tip.validity_timeout.put(0.01)
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
 
@@ -128,9 +131,8 @@ def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
-@patch("bluesky.plan_stubs.wait")
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
-    mock_wait,
     fake_devices,
     RE: RunEngine,
     test_config_files,
@@ -171,9 +173,12 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
-@patch("bluesky.plan_stubs.wait")
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
+@patch(
+    "hyperion.experiment_plans.oav_grid_detection_plan.pre_centring_setup_oav",
+    new=MagicMock(),
+)
 def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callback(
-    bps_wait: MagicMock,
     fake_devices,
     RE: RunEngine,
     test_config_files,
@@ -200,9 +205,8 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
-@patch("bluesky.plan_stubs.wait")
-def test_when_grid_detection_plan_run_then_grid_dectection_callback_gets_correct_values(
-    bps_wait: MagicMock,
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
+def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_values(
     fake_devices,
     RE: RunEngine,
     test_config_files,
