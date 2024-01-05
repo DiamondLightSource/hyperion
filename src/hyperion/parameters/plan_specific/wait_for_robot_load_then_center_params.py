@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from dodal.devices.detector import TriggerMode
-from dodal.devices.eiger import DetectorParams
+from dodal.devices.detector import DetectorParams, TriggerMode
+from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 from pydantic import validator
 from pydantic.dataclasses import dataclass
 
@@ -34,7 +34,7 @@ class WaitForRobotLoadThenCentreHyperionParameters(HyperionParameters):
 
 
 @dataclass
-class WaitForRobotLoadThenCentreParams:
+class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     """
     Holder class for the parameters of a plan that waits for robot load then does a
     centre.
@@ -44,6 +44,9 @@ class WaitForRobotLoadThenCentreParams:
     detector_distance: float
     omega_start: float
     snapshot_dir: str
+
+    def get_num_images(self):
+        return 0
 
 
 class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):

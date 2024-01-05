@@ -29,7 +29,7 @@ def nexus_writer():
 @pytest.fixture
 def mock_ispyb_get_time():
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.get_current_time_string"
+        "hyperion.external_interaction.ispyb.ispyb_utils.get_current_time_string"
     ) as p:
         yield p
 

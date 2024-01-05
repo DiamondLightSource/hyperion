@@ -86,4 +86,6 @@ def setup_context(
         fake_with_ophyd_sim=fake_with_ophyd_sim,
     )
 
+    LOGGER.info(f"Plans found in context: {context.plan_functions.keys()}")
+
     return context

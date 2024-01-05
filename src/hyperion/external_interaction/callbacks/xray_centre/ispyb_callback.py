@@ -10,7 +10,7 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.store_in_ispyb import (
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     IspybIds,
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
@@ -51,7 +51,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_LOGGER.info(
-                "ISPyB callback recieved start document with experiment parameters and"
+                "ISPyB callback recieved start document with experiment parameters and "
                 f"uid: {self.uid_to_finalize_on}"
             )
             json_params = doc.get("hyperion_internal_parameters")

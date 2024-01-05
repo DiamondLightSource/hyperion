@@ -6,7 +6,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
 from ophyd.sim import instantiate_fake_device
 
-from hyperion.experiment_plans.wait_for_robot_load_then_centre import (
+from hyperion.experiment_plans.wait_for_robot_load_then_centre_plan import (
     wait_for_robot_load_then_centre,
 )
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
@@ -29,7 +29,7 @@ def wait_for_robot_load_then_centre_params():
 
 
 @patch(
-    "hyperion.experiment_plans.wait_for_robot_load_then_centre.pin_tip_centre_then_xray_centre"
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
 def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     mock_centring_plan: MagicMock,
@@ -83,7 +83,7 @@ def run_simulating_smargon_wait(
 
 @pytest.mark.parametrize("total_disabled_reads", [5, 3, 14])
 @patch(
-    "hyperion.experiment_plans.wait_for_robot_load_then_centre.pin_tip_centre_then_xray_centre"
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
 def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
     mock_centring_plan: MagicMock,
@@ -107,7 +107,7 @@ def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
 
 
 @patch(
-    "hyperion.experiment_plans.wait_for_robot_load_then_centre.pin_tip_centre_then_xray_centre"
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
 def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throws_exception(
     mock_centring_plan: MagicMock,
@@ -118,7 +118,7 @@ def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throw
 
 
 @patch(
-    "hyperion.experiment_plans.wait_for_robot_load_then_centre.pin_tip_centre_then_xray_centre"
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
 def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     mock_centring_plan: MagicMock,

@@ -6,6 +6,7 @@ from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.smargon import Smargon
+from ophyd.sim import NullStatus
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
@@ -22,14 +23,14 @@ def get_fake_pin_values_generator(x, y):
     return x, y
 
 
+@patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
 def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
     smargon.x.user_readback.sim_put(0)  # type: ignore
-    oav.mxsc.pin_tip.tip_x.sim_put(100)  # type: ignore
-    oav.mxsc.pin_tip.tip_y.sim_put(200)  # type: ignore
+    oav.mxsc.pin_tip.triggered_tip.put((100, 200))
 
-    oav.mxsc.pin_tip.trigger = MagicMock(side_effect=oav.mxsc.pin_tip.trigger)
+    oav.mxsc.pin_tip.trigger = MagicMock(return_value=NullStatus())
 
     result = RE(move_pin_into_view(oav, smargon))
 
@@ -38,6 +39,7 @@ def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_re
     assert result.plan_result == (100, 200)
 
 
+@patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
 def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargon_moved_positive_and_tip_returned(
     smargon: Smargon,
     oav: OAV,
@@ -61,6 +63,7 @@ def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargo
     assert result.plan_result == (100, 200)
 
 
+@patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
 def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon_moved_negative_and_tip_returned(
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
@@ -85,6 +88,7 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
 
 
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip")
+@patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
 def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
     mock_trigger_and_return_tip: MagicMock, smargon: Smargon, oav: OAV, RE: RunEngine
 ):
@@ -104,6 +108,7 @@ def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
 
 
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip")
+@patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
 def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     mock_trigger_and_return_pin_tip: MagicMock,
     smargon: Smargon,
@@ -124,6 +129,7 @@ def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     assert smargon.x.user_readback.get() == 2
 
 
+@patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
 def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_positive_and_exception_thrown(
     smargon: Smargon, oav: OAV, RE: RunEngine
 ):
