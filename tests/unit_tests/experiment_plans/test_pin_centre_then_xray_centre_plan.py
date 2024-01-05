@@ -80,7 +80,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
     simple_beamline,
     test_config_files,
-    sim,
+    sim_run_engine,
 ):
     simple_beamline.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
@@ -90,27 +90,27 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     simple_beamline.oav.parameters.beam_centre_i = 549
     simple_beamline.oav.parameters.beam_centre_j = 347
 
-    sim.add_handler_for_callback_subscribes()
-    add_simple_pin_tip_centre_handlers(sim)
-    add_simple_oav_mxsc_callback_handlers(sim)
+    sim_run_engine.add_handler_for_callback_subscribes()
+    add_simple_pin_tip_centre_handlers(sim_run_engine)
+    add_simple_oav_mxsc_callback_handlers(sim_run_engine)
 
     def add_handlers_to_simulate_detector_motion(msg: Msg):
-        sim.add_handler(
+        sim_run_engine.add_handler(
             "read",
             "detector_motion_shutter",
             lambda msg_: {"values": {"value": int(ShutterState.OPEN)}},
         )
-        sim.add_handler(
+        sim_run_engine.add_handler(
             "read",
             "detector_motion_z_motor_done_move",
             lambda msg_: {"values": {"value": 1}},
         )
 
-    sim.add_wait_handler(
+    sim_run_engine.add_wait_handler(
         add_handlers_to_simulate_detector_motion, "ready_for_data_collection"
     )
 
-    messages = sim.simulate_plan(
+    messages = sim_run_engine.simulate_plan(
         pin_tip_centre_then_xray_centre(
             simple_beamline,
             test_pin_centre_then_xray_centre_params,
@@ -118,7 +118,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         )
     )
 
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages, lambda msg: msg.obj is simple_beamline.detector_motion.z
     )
     assert messages[0].args[0] == 100
@@ -126,12 +126,12 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     assert messages[1].obj is simple_beamline.detector_motion.shutter
     assert messages[1].args[0] == 1
     assert messages[1].kwargs["group"] == "ready_for_data_collection"
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[2:],
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == "ready_for_data_collection",
     )
-    sim.assert_message_and_return_remaining(
+    sim_run_engine.assert_message_and_return_remaining(
         messages[2:],
         lambda msg: msg.command == "open_run"
         and msg.kwargs["subplan_name"] == "do_fgs",

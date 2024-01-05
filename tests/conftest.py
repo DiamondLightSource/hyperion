@@ -443,7 +443,9 @@ def fake_fgs_composite(
     async def mock_complete(result):
         await fake_composite.zocalo._put_results([result])
 
-    fake_composite.zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
+    fake_composite.zocalo.trigger = MagicMock(
+        side_effect=partial(mock_complete, test_result)
+    )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
@@ -597,5 +599,5 @@ class MessageHandler:
 
 
 @pytest.fixture
-def sim():
+def sim_run_engine():
     return RunEngineSimulator()

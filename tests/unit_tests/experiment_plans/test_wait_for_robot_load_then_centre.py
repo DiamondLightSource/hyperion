@@ -86,10 +86,10 @@ def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
     mock_centring_plan: MagicMock,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
     total_disabled_reads: int,
-    sim,
+    sim_run_engine,
 ):
     messages = run_simulating_smargon_wait(
-        wait_for_robot_load_then_centre_params, total_disabled_reads, sim
+        wait_for_robot_load_then_centre_params, total_disabled_reads, sim_run_engine
     )
 
     mock_centring_plan.assert_called_once()
@@ -110,10 +110,12 @@ def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
 def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throws_exception(
     mock_centring_plan: MagicMock,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
-    sim,
+    sim_run_engine,
 ):
     with pytest.raises(TimeoutError):
-        run_simulating_smargon_wait(wait_for_robot_load_then_centre_params, 1000, sim)
+        run_simulating_smargon_wait(
+            wait_for_robot_load_then_centre_params, 1000, sim_run_engine
+        )
 
 
 @patch(
@@ -122,10 +124,10 @@ def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throw
 def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     mock_centring_plan: MagicMock,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
-    sim,
+    sim_run_engine,
 ):
     messages = run_simulating_smargon_wait(
-        wait_for_robot_load_then_centre_params, 1, sim
+        wait_for_robot_load_then_centre_params, 1, sim_run_engine
     )
 
     arm_detector_messages = filter(

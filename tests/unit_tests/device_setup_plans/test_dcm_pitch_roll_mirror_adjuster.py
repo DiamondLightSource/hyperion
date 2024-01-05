@@ -86,7 +86,6 @@ def test_apply_and_wait_for_voltages_to_settle_timeout(
         "dodal.devices.focusing_mirror.VFMMirrorVoltages.voltage_channels",
         new_callable=_one_demand_not_accepted(vfm_mirror_voltages),
     ):
-
         actual_exception = None
 
         try:
@@ -159,53 +158,53 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     vfm: FocusingMirror,
     vfm_mirror_voltages: VFMMirrorVoltages,
     beamline_parameters: GDABeamlineParameters,
-    sim,
+    sim_run_engine,
 ):
-    sim.add_handler_for_callback_subscribes()
-    sim.add_handler(
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_run_engine.add_handler(
         "read",
         "dcm_bragg_in_degrees",
         lambda msg: {"dcm_bragg_in_degrees": {"value": 5.0}},
     )
 
-    messages = sim.simulate_plan(
+    messages = sim_run_engine.simulate_plan(
         adjust_dcm_pitch_roll_vfm_from_lut(
             dcm, vfm, vfm_mirror_voltages, beamline_parameters, 7.5
         )
     )
 
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "dcm_pitch_in_mrad"
         and abs(msg.args[0] - -0.75859) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "dcm_roll_in_mrad"
         and abs(msg.args[0] - 4.0) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "dcm_offset_in_mm"
         and msg.args == (25.6,)
         and msg.kwargs["group"] == "DCM_GROUP",
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "vfm_stripe"
         and msg.args == ("Rhodium",),
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "wait",
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "vfm_apply_stripe"
@@ -221,17 +220,17 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
         (20, 4),
         (21, -46),
     ):
-        messages = sim.assert_message_and_return_remaining(
+        messages = sim_run_engine.assert_message_and_return_remaining(
             messages[1:],
             lambda msg: msg.command == "set"
             and msg.obj.name == f"vfm_mirror_voltages__channel{channel}_voltage_device"
             and msg.args == (expected_voltage,),
         )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "wait" and msg.kwargs["group"] == "DCM_GROUP",
     )
-    messages = sim.assert_message_and_return_remaining(
+    messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "vfm_lat_mm"
