@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.DCM import DCM
 from dodal.devices.focusing_mirror import (
     DEMAND_ACCEPTED_OK,
@@ -19,7 +20,6 @@ from hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
     adjust_dcm_pitch_roll_vfm_from_lut,
     adjust_mirror_stripe,
 )
-from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 
 
 def test_apply_and_wait_for_voltages_to_settle_happy_path(
