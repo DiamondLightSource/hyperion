@@ -513,7 +513,10 @@ class RunEngineSimulator:
         )
 
     def add_handler(
-        self, commands: Sequence[str], obj_name: str, handler: Callable[[Msg], object]
+        self,
+        commands: Sequence[str],
+        obj_name: Optional[str],
+        handler: Callable[[Msg], object],
     ):
         """Add the specified handler for a particular message
         Args:
