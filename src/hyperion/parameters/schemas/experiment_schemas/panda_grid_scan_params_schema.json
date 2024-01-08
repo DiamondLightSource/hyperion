@@ -20,9 +20,6 @@
         "z_step_size": {
             "type": "number"
         },
-        "dwell_time_ms": {
-            "type": "number"
-        },
         "x_start": {
             "type": "number"
         },
@@ -49,7 +46,11 @@
         },
         "set_stub_offsets": {
             "type": "boolean"
+        },
+        "runnup_distance_mm": {
+            "type": "number"
         }
+
     },
     "minProperties": 12,
     "additionalProperties": false
