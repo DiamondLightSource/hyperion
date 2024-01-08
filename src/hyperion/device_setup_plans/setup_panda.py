@@ -1,73 +1,41 @@
-from asyncio import subprocess
-
 import bluesky.plan_stubs as bps
 import numpy as np
+from blueapi.core import MsgGenerator
 from dodal.devices.panda_fast_grid_scan import PandaGridScanParams
-from ophyd_async.core import SignalRW, load_device
-from ophyd_async.panda import PandA, SeqTable, SeqTrigger, seq_table_from_arrays
+from ophyd_async.core import load_device
+from ophyd_async.panda import PandA, SeqTable, SeqTrigger
 
 from hyperion.log import LOGGER
-from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandaGridscanInternalParameters as GridscanInternalParameters,
-)
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
 
 
-def setup_panda_for_flyscan(
-    panda: PandA,
-    config_yaml_path: str,
-    parameters: PandaGridScanParams,
-    initial_x: float,
-    exposure_time_s: float,
-    time_between_x_steps_ms: float,
-):
-    """This should load a 'base' panda-flyscan yaml file, then grid the grid parameters, then adjust the PandA
-    sequencer table to match this new grid"""
-
-    # This sets the PV's for a template panda fast grid scan, Load a template fast grid scan config,
-    # uses /dls/science/users/qqh35939/panda_yaml_files/flyscan_base.yaml for now
-    yield from load_device(panda, config_yaml_path)
-
-    # Home X2 encoder value : Do we want to measure X relative to the start of the grid scan or as an absolute position?
-    yield from bps.abs_set(
-        panda.inenc[1].setp, initial_x * MM_TO_ENCODER_COUNTS, wait=True
-    )
-    LOGGER.info(
-        f"Initialising panda to {initial_x} mm, {initial_x * MM_TO_ENCODER_COUNTS} counts"
-    )
-
-    # Make sure the eiger trigger should be sent every time = (exposure time + deadtime). Assume deadtime is 10 microseconds (check)
-    yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms)
-
-    # The trigger width should last the same length as the exposure time
-    yield from bps.abs_set(
-        panda.pulse[1].width, 1e-8
-    )  # TODO at some point, thinnk about what constant this shoudl be
-
-    """   
+def get_seq_table(
+    parameters: PandaGridScanParams, time_between_x_steps_ms, exposure_time_s
+) -> SeqTable:
+    """
     -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
     -NOTE: When we wait for the position to be greater/lower, give some lee-way (X_STEP_SIZE/2 * MM_TO_ENCODER counts) as the encoder counts arent always exact
     SEQUENCER TABLE:
         1:Wait for physical trigger from motion script to mark start of scan / change of direction
         2:Wait for POSA (X2) to be greater than X_START, then
-          send a signal out every 2000us (minimum eiger exposure time) + 4us (eiger dead time ((check that number)))
+            send a signal out every 2000us (minimum eiger exposure time) + 4us (eiger dead time ((check that number)))
         3:Wait for POSA (X2) to be greater than X_START + X_STEP_SIZE, then cut out the signal
         4:Wait for physical trigger from motion script to mark change of direction
         5:Wait for POSA (X2) to be less than X_START + X_STEP_SIZE, then
-          send a signal out every 2000us (minimum eiger exposure time) + 4us (eiger dead time ((check that number)))
+            send a signal out every 2000us (minimum eiger exposure time) + 4us (eiger dead time ((check that number)))
         6:Wait for POSA (X2) to be less than X_START, then cut out signal
-        7:Go back to step one. Scan should finish at step 6, and then not recieve any more physical triggers so the panda will stop sending outputs 
+        7:Go back to step one. Scan should finish at step 6, and then not recieve any more physical triggers so the panda will stop sending outputs
         At this point, the panda blocks should be disarmed during the tidyup.
-        
+
         EDIT:
         +ve and negative direction needs to have slightly different position values so the average position of the exposure time is the same. While in the negative direction, we should start the triggers at an earlier position:
         take away velocity (mm/s) * exposure_time (s) * MM_TO_ENCODER_COUNTS from the corresponding table values
     """
 
     # Velocity set by this calculation in panda grid scan motion script
-    panda_velocity_mm_per_s = parameters.x_step_size / time_between_x_steps_ms
+    panda_velocity_mm_per_s = parameters.x_step_size * 1e-3 / time_between_x_steps_ms
 
     # Construct sequencer 1 table.
     # trigger = [
@@ -155,12 +123,47 @@ def setup_panda_for_flyscan(
         oute2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
         outf2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
     )
+    return table
 
-    LOGGER.info(f"Setting Panda values: {str(table)}")
+
+def setup_panda_for_flyscan(
+    panda: PandA,
+    config_yaml_path: str,
+    parameters: PandaGridScanParams,
+    initial_x: float,
+    exposure_time_s: float,
+    time_between_x_steps_ms: float,
+) -> MsgGenerator:
+    """This should load a 'base' panda-flyscan yaml file, then grid the grid parameters, then adjust the PandA
+    sequencer table to match this new grid"""
+
+    # This sets the PV's for a template panda fast grid scan, Load a template fast grid scan config,
+    # uses /dls/science/users/qqh35939/panda_yaml_files/flyscan_base.yaml for now
+    yield from load_device(panda, config_yaml_path)
+
+    # Home X2 encoder value : Do we want to measure X relative to the start of the grid scan or as an absolute position?
+    yield from bps.abs_set(
+        panda.inenc[1].setp, initial_x * MM_TO_ENCODER_COUNTS, wait=True
+    )
+    LOGGER.info(
+        f"Initialising panda to {initial_x} mm, {initial_x * MM_TO_ENCODER_COUNTS} counts"
+    )
+
+    # Make sure the eiger trigger should be sent every time = (exposure time + deadtime). Assume deadtime is 10 microseconds (check)
+    yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms)
+
+    # The trigger width should last the same length as the exposure time
+    yield from bps.abs_set(
+        panda.pulse[1].width, 1e-8
+    )  # TODO at some point, thinnk about what constant this shoudl be
+
+    table = get_seq_table(parameters, time_between_x_steps_ms, exposure_time_s)
+
+    LOGGER.info(f"Setting Panda sequencer values: {str(table)}")
 
     yield from bps.abs_set(panda.seq[1].table, table)
 
-    yield from arm_panda_for_gridscan(panda, wait=True)
+    yield from arm_panda_for_gridscan(panda)
 
     """ The sequencer table should be adjusted as follows:
     - 
@@ -176,15 +179,13 @@ def setup_panda_for_flyscan(
     """
 
 
-def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan", wait=False):
+def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
     yield from bps.abs_set(panda.seq[1].enable, "ONE", group=group)
     yield from bps.abs_set(panda.pulse[1].enable, "ONE", group=group)
     yield from bps.wait(group="arm_panda_gridscan", timeout=GENERAL_TIMEOUT)
-    if wait:
-        yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
 
 
-def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan", wait=False):
+def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan"):
     yield from bps.abs_set(panda.seq[1].enable, "ZERO", group=group)
     yield from bps.abs_set(
         panda.clock[1].enable, "ZERO", group=group
@@ -192,5 +193,3 @@ def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan", wait=False):
     # it will stop the eiger continuing to trigger if something in the sequencer table goes wrong
     yield from bps.abs_set(panda.pulse[1].enable, "ZERO", group=group)
     yield from bps.wait(group="disarm_panda_gridscan", timeout=GENERAL_TIMEOUT)
-    if wait:
-        yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
