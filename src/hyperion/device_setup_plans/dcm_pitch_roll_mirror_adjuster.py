@@ -1,6 +1,9 @@
 import json
 
 import bluesky.plan_stubs as bps
+from dodal.beamlines.beamline_parameters import (
+    GDABeamlineParameters,
+)
 from dodal.devices.DCM import DCM, fixed_offset_from_beamline_params
 from dodal.devices.focusing_mirror import (
     FocusingMirror,
@@ -13,9 +16,6 @@ from dodal.devices.util.lookup_tables import (
 )
 
 from hyperion.log import LOGGER
-from hyperion.parameters.beamline_parameters import (
-    GDABeamlineParameters,
-)
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
 DCM_GROUP = "DCM_GROUP"

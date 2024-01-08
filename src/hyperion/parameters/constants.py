@@ -5,11 +5,6 @@ SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_HARDWARE_READ_PLAN = "ispyb_reading_hardware"
 ISPYB_TRANSMISSION_FLUX_READ_PLAN = "ispyb_update_transmission_flux"
 SIM_ZOCALO_ENV = "dev_artemis"
-BEAMLINE_PARAMETER_PATHS = {
-    "i03": "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters",
-    "i04": "/dls_sw/i04/software/gda_versions/gda_9_29/workspace_git/gda-mx.git/configurations/i04-config/scripts/beamlineParameters",
-    "s03": "tests/test_data/test_beamline_parameters.txt",
-}
 
 # this one is for reading
 SIM_ISPYB_CONFIG = "tests/test_data/test_config.cfg"

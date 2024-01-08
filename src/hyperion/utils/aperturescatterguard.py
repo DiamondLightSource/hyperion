@@ -1,6 +1,5 @@
+from dodal.beamlines.beamline_parameters import get_beamline_parameters
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
-
-from hyperion.parameters.beamline_parameters import get_beamline_parameters
 
 
 def load_default_aperture_scatterguard_positions_if_unset(

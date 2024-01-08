@@ -159,10 +159,11 @@ def fake_read(obj, initial_positions, _):
 
 @pytest.fixture
 def simple_beamline(detector_motion, oav, smargon, synchrotron):
-    magic_mock = MagicMock()
+    magic_mock = MagicMock(autospec=True)
     magic_mock.oav = oav
     magic_mock.smargon = smargon
     magic_mock.detector_motion = detector_motion
+    magic_mock.zocalo = make_fake_device(ZocaloResults)()
     scan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
     magic_mock.fast_grid_scan = scan
     magic_mock.synchrotron = synchrotron

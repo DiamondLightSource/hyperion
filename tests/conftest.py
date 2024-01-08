@@ -8,6 +8,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import beamline_utils, i03
+from dodal.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -39,7 +40,6 @@ from hyperion.log import (
     NEXUS_LOGGER,
     set_up_logging_handlers,
 )
-from hyperion.parameters.beamline_parameters import GDABeamlineParameters
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
@@ -582,7 +582,8 @@ class RunEngineSimulator:
     ) -> Callable[..., Generator[Msg, object, object]]:
         """Returns a callable that returns a generator yielding a Msg object recording the call arguments.
         This can be used to mock methods returning a bluesky plan or portion thereof, call it from within a unit test
-        using the RunEngineSimulator, and then perform asserts on the message to verify in-order execution of the plan"""
+        using the RunEngineSimulator, and then perform asserts on the message to verify in-order execution of the plan
+        """
 
         def mock_method(*args, **kwargs):
             yield Msg(function_name, None, *args, **kwargs)
