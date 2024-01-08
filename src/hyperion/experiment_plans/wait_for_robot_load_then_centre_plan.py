@@ -41,9 +41,6 @@ from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
-from hyperion.parameters.plan_specific.set_energy_internal_params import (
-    SetEnergyInternalParameters,
-)
 from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
     WaitForRobotLoadThenCentreInternalParameters,
 )
@@ -106,7 +103,6 @@ def wait_for_robot_load_then_centre_plan(
     composite: WaitForRobotLoadThenCentreComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ):
-    set_energy_params = SetEnergyInternalParameters()
     set_energy_composite = SetEnergyComposite(
         vfm=composite.vfm,
         vfm_mirror_voltages=composite.vfm_mirror_voltages,
@@ -116,11 +112,12 @@ def wait_for_robot_load_then_centre_plan(
         attenuator=composite.attenuator,
     )
 
-    yield from set_energy_plan(
-        parameters.experiment_params.requested_energy_kev,
-        set_energy_composite,
-        set_energy_params,
-    )
+    if parameters.experiment_params.requested_energy_kev:
+        yield from set_energy_plan(
+            parameters.experiment_params.requested_energy_kev,
+            set_energy_composite,
+        )
+
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
     params_json = json.loads(parameters.json())

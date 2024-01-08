@@ -9,6 +9,7 @@ import hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
 from hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
     pin_centre_then_xray_centre_plan,
+    set_energy_plan,
     stepped_grid_scan_plan,
     wait_for_robot_load_then_centre_plan,
 )
@@ -35,6 +36,10 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
+)
+from hyperion.parameters.plan_specific.set_energy_internal_params import (
+    SetEnergyInternalParameters,
+    SetEnergyParams,
 )
 from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
     SteppedGridScanInternalParameters,
@@ -90,6 +95,12 @@ PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
         "setup": wait_for_robot_load_then_centre_plan.create_devices,
         "internal_param_type": WaitForRobotLoadThenCentreInternalParameters,
         "experiment_param_type": WaitForRobotLoadThenCentreParams,
+        "callback_collection_type": NullPlanCallbackCollection,
+    },
+    "set_energy": {
+        "setup": set_energy_plan.create_devices,
+        "internal_param_type": SetEnergyInternalParameters,
+        "experiment_param_type": SetEnergyParams,
         "callback_collection_type": NullPlanCallbackCollection,
     },
 }

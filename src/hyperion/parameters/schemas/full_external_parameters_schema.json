@@ -3,7 +3,7 @@
     "type": "object",
     "properties": {
         "params_version": {
-            "const": "4.0.1"
+            "const": "4.0.2"
         },
         "hyperion_params": {
             "type": "object",
@@ -22,6 +22,9 @@
                 },
                 {
                     "$ref": "experiment_schemas/wait_for_robot_load_then_centre_schema.json"
+                },
+                {
+                    "$ref": "experiment_schemas/set_energy_params_schema.json"
                 }
             ]
         }

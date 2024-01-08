@@ -168,9 +168,7 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     )
 
     messages = sim_run_engine.simulate_plan(
-        adjust_dcm_pitch_roll_vfm_from_lut(
-            dcm, vfm, vfm_mirror_voltages, beamline_parameters, 7.5
-        )
+        adjust_dcm_pitch_roll_vfm_from_lut(dcm, vfm, vfm_mirror_voltages, 7.5)
     )
 
     messages = sim_run_engine.assert_message_and_return_remaining(

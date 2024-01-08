@@ -34,6 +34,14 @@ def wait_for_robot_load_composite(
 
 
 @pytest.fixture
+def wait_for_robot_load_then_centre_params_no_energy():
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_wait_for_robot_load_params_no_energy.json"
+    )
+    return WaitForRobotLoadThenCentreInternalParameters(**params)
+
+
+@pytest.fixture
 def wait_for_robot_load_then_centre_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_wait_for_robot_load_params.json"
@@ -91,6 +99,28 @@ def test_when_plan_run_energy_change_executes(
     sim_run_engine.assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "set_energy_plan"
     )
+
+
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+)
+@patch(
+    "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([Msg("set_energy_plan")])),
+)
+def test_wait_for_robot_load_then_centre_doesnt_set_energy_if_not_specified(
+    mock_centring_plan: MagicMock,
+    wait_for_robot_load_composite: WaitForRobotLoadThenCentreComposite,
+    wait_for_robot_load_then_centre_params_no_energy: WaitForRobotLoadThenCentreInternalParameters,
+    sim_run_engine,
+):
+    messages = sim_run_engine.simulate_plan(
+        wait_for_robot_load_then_centre(
+            wait_for_robot_load_composite,
+            wait_for_robot_load_then_centre_params_no_energy,
+        )
+    )
+    assert not any(msg for msg in messages if msg.command == "set_energy_plan")
 
 
 def run_simulating_smargon_wait(
