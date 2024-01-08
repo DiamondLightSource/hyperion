@@ -185,7 +185,7 @@ def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
     yield from bps.wait(group="arm_panda_gridscan", timeout=GENERAL_TIMEOUT)
 
 
-def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan"):
+def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenerator:
     yield from bps.abs_set(panda.seq[1].enable, "ZERO", group=group)
     yield from bps.abs_set(
         panda.clock[1].enable, "ZERO", group=group
