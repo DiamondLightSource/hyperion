@@ -212,9 +212,9 @@ def run_gridscan(
     def do_fgs():
         yield from bps.wait()  # Wait for all moves to complete
         # Check topup gate
-        dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000
         total_exposure = (
-            parameters.experiment_params.get_num_images() * dwell_time_in_s
+            parameters.experiment_params.get_num_images()
+            * parameters.hyperion_params.detector_params.exposure_time
         )  # Expected exposure time for full scan
         yield from check_topup_and_wait_if_necessary(
             fgs_composite.synchrotron,
@@ -239,7 +239,6 @@ def run_gridscan(
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
-    subscriptions: XrayCentreCallbackCollection,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
@@ -258,25 +257,25 @@ def run_gridscan_and_move(
     # Set the time between x steps pv
     DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
-    # Check smargon speed. Exposure time in s, x_step_size in mm
+    time_between_x_steps_ms = (
+        DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
+    )
+
+    # Check smargon speed. Exposure time in s, x_step_size in mm. TODO: discuss best place to do this
     smargon_speed = (
-        parameters.experiment_params.x_step_size
-        / parameters.hyperion_params.detector_params.exposure_time
+        parameters.experiment_params.x_step_size * 1e-3 / time_between_x_steps_ms
     )
     if smargon_speed > 10:
         LOGGER.error(
             f"Smargon speed was calculated from x step size\
                                   {parameters.experiment_params.x_step_size} and\
-                                      exposure time {parameters.hyperion_params.detector_params.exposure_time} as\
+                                      time_between_x_steps_ms {time_between_x_steps_ms} as\
                                           {smargon_speed}. The smargon's speed limit is 10 mm/s."
         )
 
-    time_between_x_steps_ms = (
-        DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
-    )
-
     yield from bps.mv(
-        fgs_composite.panda_fast_grid_scan.time_between_x_steps, time_between_x_steps_ms
+        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
+        time_between_x_steps_ms,
     )
 
     yield from setup_panda_for_flyscan(
@@ -371,10 +370,10 @@ def panda_flyscan_xray_centre(
         composite.attenuator,
         parameters.hyperion_params.ispyb_params.transmission_fraction,
     )
-    def run_gridscan_and_move_and_tidy(fgs_composite, params, comms):
-        yield from run_gridscan_and_move(fgs_composite, params, comms)
+    def run_gridscan_and_move_and_tidy(fgs_composite, params):
+        yield from run_gridscan_and_move(fgs_composite, params)
 
-    return run_gridscan_and_move_and_tidy(composite, parameters, subscriptions)
+    return run_gridscan_and_move_and_tidy(composite, parameters)
 
 
 if __name__ == "__main__":

@@ -62,7 +62,6 @@
         "x_step_size": 0.02,
         "y_step_size": 0.02,
         "z_step_size": 0.02,
-        "dwell_time_ms": 2,
         "runnup_distance_mm": 0.1,
         "x_start": 0.0,
         "y1_start": 0.0,
