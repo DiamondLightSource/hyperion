@@ -73,7 +73,9 @@ from dodal.devices.zocalo import (
     get_processing_result,
 )
 
-PANDA_SETUP_PATH = "/dls_sw/i03/software/bluesky/hyperion_v8.0.0/ophyd-async/flyscan_base.yaml"  # This should be changed to somewhere proper
+PANDA_SETUP_PATH = (
+    "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_base.yaml"
+)
 
 
 @dataclasses.dataclass
@@ -263,7 +265,7 @@ def run_gridscan_and_move(
 
     # Check smargon speed. Exposure time in s, x_step_size in mm. TODO: discuss best place to do this
     smargon_speed = (
-        parameters.experiment_params.x_step_size * 1e-3 / time_between_x_steps_ms
+        parameters.experiment_params.x_step_size * 1e3 / time_between_x_steps_ms
     )
     if smargon_speed > 10:
         LOGGER.error(

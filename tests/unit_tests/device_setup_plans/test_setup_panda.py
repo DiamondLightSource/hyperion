@@ -56,10 +56,6 @@ def test_setup_panda_performs_correct_plans(mock_load_device):
     assert num_of_waits == 2
 
 
-"""TODO: figure out a check for these values being valid. Eg where should we check that velocity is in the right limit?
-"""
-
-
 @pytest.mark.parametrize(
     "x_steps, x_step_size, x_start, runnup_distance_mm, time_between_x_steps_ms, exposure_time_s",
     [
@@ -152,7 +148,8 @@ def test_setup_panda_correctly_configures_table(
     np.testing.assert_array_equal(table["outa2"], np.array([0, 1, 0, 0, 1, 0]))
 
 
-# TODO: When testing the plan we should have some system tests which check that (at least) all the blocks which were enabled are also disabled
+# It also would be useful to have some system tests which check that (at least)
+# all the blocks which were enabled on setup are also disabled on tidyup
 def test_disarm_panda_disables_correct_blocks():
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions("disarm")
     assert num_of_sets == 3
