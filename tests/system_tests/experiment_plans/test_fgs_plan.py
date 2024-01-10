@@ -6,6 +6,10 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
+from dodal.beamlines.beamline_parameters import (
+    BEAMLINE_PARAMETER_PATHS,
+    GDABeamlineParameters,
+)
 from dodal.devices.aperturescatterguard import AperturePositions
 from ophyd.status import Status
 
@@ -24,9 +28,8 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import IspybIds
-from hyperion.parameters.beamline_parameters import GDABeamlineParameters
-from hyperion.parameters.constants import BEAMLINE_PARAMETER_PATHS, SIM_BEAMLINE
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
+from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,

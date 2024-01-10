@@ -137,7 +137,7 @@ dmypy.json
 *~
 
 # Log files
-/tmp
+**/tmp
 
 # further build artifacts
 lockfiles/
