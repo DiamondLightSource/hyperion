@@ -12,6 +12,7 @@ from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
+    DEV_ISPYB_DATABASE_CFG,
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
     SIM_ISPYB_CONFIG,
@@ -26,16 +27,13 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 if TYPE_CHECKING:
     from event_model.documents.event import Event
 
-    from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-        StoreInIspyb,
-    )
-
 
 class BaseISPyBCallback(PlanReactiveCallback):
     def __init__(self) -> None:
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
+        ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__()
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
@@ -43,15 +41,21 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.ispyb: StoreInIspyb
         self.descriptors: Dict[str, dict] = {}
         self.ispyb_config = get_ispyb_config()
-        if self.ispyb_config == SIM_ISPYB_CONFIG:
+        if (
+            self.ispyb_config == SIM_ISPYB_CONFIG
+            or self.ispyb_config == DEV_ISPYB_DATABASE_CFG
+        ):
             ISPYB_LOGGER.warning(
-                "Using dev ISPyB database. If you want to use the real database, please"
-                " set the ISPYB_CONFIG_PATH environment variable."
+                f"{self.__class__} using dev ISPyB config: {self.ispyb_config}. If you"
+                "want to use the real database, please set the ISPYB_CONFIG_PATH "
+                "environment variable."
             )
         self.uid_to_finalize_on: Optional[str] = None
         self.ispyb_ids: IspybIds = IspybIds()
+        self.log = ISPYB_LOGGER
 
     def activity_gated_start(self, doc: dict):
+        ISPYB_LOGGER.debug("ISPyB Callback Start Triggered")
         if self.uid_to_finalize_on is None:
             self.uid_to_finalize_on = doc.get("uid")
 

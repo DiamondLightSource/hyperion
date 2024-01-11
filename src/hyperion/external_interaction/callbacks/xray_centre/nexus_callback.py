@@ -36,13 +36,14 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         self.run_start_uid: str | None = None
         self.nexus_writer_1: NexusWriter | None = None
         self.nexus_writer_2: NexusWriter | None = None
+        self.log = NEXUS_LOGGER
 
     def activity_gated_start(self, doc: dict):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
-            NEXUS_LOGGER.info(
-                "Nexus writer recieved start document with experiment parameters."
-            )
             json_params = doc.get("hyperion_internal_parameters")
+            NEXUS_LOGGER.info(
+                f"Nexus writer recieved start document with experiment parameters {json_params}"
+            )
             self.parameters = GridscanInternalParameters.from_json(json_params)
             self.run_start_uid = doc.get("uid")
 
@@ -55,7 +56,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             # https://github.com/DiamondLightSource/python-hyperion/issues/629
             # and update parameters before creating writers
 
-            NEXUS_LOGGER.info("Initialising nexus writers")
+            NEXUS_LOGGER.info("Initialising nexus writers...")
             nexus_data_1 = self.parameters.get_nexus_info(1)
             nexus_data_2 = self.parameters.get_nexus_info(2)
             self.nexus_writer_1 = NexusWriter(self.parameters, **nexus_data_1)
@@ -66,3 +67,6 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             )
             self.nexus_writer_1.create_nexus_file()
             self.nexus_writer_2.create_nexus_file()
+            NEXUS_LOGGER.info(
+                f"Nexus files created at {self.nexus_writer_1.full_filename} and {self.nexus_writer_1.full_filename}"
+            )

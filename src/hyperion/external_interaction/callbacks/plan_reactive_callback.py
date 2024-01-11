@@ -33,7 +33,7 @@ class PlanReactiveCallback(CallbackBase):
         super().__init__(emit=emit)
         self.active = False
         self.activity_uid = 0
-        self.log = log  # type: ignore # this is initialised to None and not annotated the superclass
+        self.log = log  # type: ignore # this is initialised to None and not annotated in the superclass
 
     def _run_activity_gated(self, func, doc):
         if not self.active:
