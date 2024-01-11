@@ -1,4 +1,3 @@
-import logging
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -12,7 +11,6 @@ from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
 )
 from hyperion.log import (
     ISPYB_LOGGER,
-    dc_group_id_filter,
     set_up_logging_handlers,
 )
 
@@ -24,20 +22,14 @@ td = TestData()
 
 
 @pytest.fixture
-def mock_emit():
+def mock_emits():
     with patch("hyperion.log.setup_dodal_logging"):
-        set_up_logging_handlers(dev_mode=True)
-    test_handler = logging.Handler()
-    test_handler.emit = MagicMock()  # type: ignore
-    ISPYB_LOGGER.addHandler(test_handler)
-    ISPYB_LOGGER.addFilter(dc_group_id_filter)
-    dodal_logger.addHandler(test_handler)
+        handlers = set_up_logging_handlers(dev_mode=True)
+    for h in handlers:
+        h.emit = MagicMock()
+    emits = [h.emit for h in handlers]
 
-    yield test_handler.emit
-
-    ISPYB_LOGGER.removeHandler(test_handler)
-    ISPYB_LOGGER.removeFilter(dc_group_id_filter)
-    dodal_logger.removeHandler(test_handler)
+    yield emits
 
 
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
@@ -125,7 +117,7 @@ class TestXrayCentreIspybHandler:
         )
 
     def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
-        self, mock_emit
+        self, mock_emits
     ):
         ispyb_handler = GridscanISPyBCallback()
         ispyb_handler.activity_gated_start(td.test_start_document)
@@ -142,12 +134,13 @@ class TestXrayCentreIspybHandler:
 
         for logger in [ISPYB_LOGGER, dodal_logger]:
             logger.info("test")
-            latest_record = mock_emit.call_args.args[-1]
-            assert latest_record.dc_group_id == DCG_ID
+            for emit in mock_emits:
+                latest_record = emit.call_args.args[-1]
+                assert latest_record.dc_group_id == DCG_ID
 
     def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
         self,
-        mock_emit,
+        mock_emits,
     ):
         ispyb_handler = GridscanISPyBCallback()
         ispyb_handler.activity_gated_start(td.test_start_document)
@@ -165,6 +158,6 @@ class TestXrayCentreIspybHandler:
 
         for logger in [ISPYB_LOGGER, dodal_logger]:
             logger.info("test")
-
-            latest_record = mock_emit.call_args.args[-1]
-            assert not hasattr(latest_record, "dc_group_id")
+            for emit in mock_emits:
+                latest_record = emit.call_args.args[-1]
+                assert not hasattr(latest_record, "dc_group_id")
