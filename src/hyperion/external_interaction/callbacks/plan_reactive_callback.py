@@ -35,17 +35,18 @@ class PlanReactiveCallback(CallbackBase):
         self.activity_uid = 0
         self.log = log  # type: ignore # this is initialised to None and not annotated in the superclass
 
-    def _run_activity_gated(self, func, doc):
-        if not self.active:
+    def _run_activity_gated(self, func, doc, override=False):
+        running_gated_function = override or self.active
+        if not running_gated_function:
             return doc
         if self.log:
             try:
-                return func(doc) if self.active else doc
+                return func(doc)
             except Exception as e:
                 self.log.exception(e)
                 raise
         else:
-            return func(doc) if self.active else doc
+            return func(doc)
 
     def start(self, doc: RunStart) -> RunStart | None:
         callbacks_to_activate = doc.get("activate_callbacks")
@@ -70,7 +71,9 @@ class PlanReactiveCallback(CallbackBase):
             self.active = False
             self.activity_uid = 0
         return (
-            self._run_activity_gated(self.activity_gated_stop, doc) if do_stop else doc
+            self._run_activity_gated(self.activity_gated_stop, doc, override=True)
+            if do_stop
+            else doc
         )
 
     def activity_gated_start(self, doc: RunStart):

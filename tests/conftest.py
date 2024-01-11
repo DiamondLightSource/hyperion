@@ -454,7 +454,7 @@ def fake_fgs_composite(
 
     @AsyncStatus.wrap
     async def mock_complete(result):
-        await fake_composite.zocalo._put_results([result])
+        await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
 
     fake_composite.zocalo.trigger = MagicMock(
         side_effect=partial(mock_complete, test_result)
