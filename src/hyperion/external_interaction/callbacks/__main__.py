@@ -1,3 +1,4 @@
+import logging
 from threading import Thread
 from time import sleep
 from typing import Callable, Sequence
@@ -40,13 +41,13 @@ def setup_callbacks():
     ]
 
 
-def setup_logging():
+def setup_logging(logging_args):
     (
         logging_level,
         _,
         dev_mode,
         _,
-    ) = parse_cli_args()
+    ) = logging_args
     set_up_logging_handlers(
         logging_level=logging_level,
         dev_mode=dev_mode,
@@ -59,11 +60,16 @@ def setup_logging():
         filename="hyperion_nexus_callback.txt",
         logger=NEXUS_LOGGER,
     )
+    log_info(f"Loggers initialised with arguments: {logging_args}")
+    nexgen_logger = logging.getLogger("nexgen")
+    nexgen_logger.parent = NEXUS_LOGGER
+    log_debug("nexgen logger added to nexus logger")
 
 
 def setup_threads():
     proxy = Proxy(*CALLBACK_0MQ_PROXY_PORTS)
     dispatcher = RemoteDispatcher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[1]}")
+    log_debug("Created proxy and dispatcher objects")
 
     def start_proxy():
         proxy.start()
@@ -80,9 +86,15 @@ def log_info(msg, *args, **kwargs):
     NEXUS_LOGGER.info(msg, *args, **kwargs)
 
 
+def log_debug(msg, *args, **kwargs):
+    ISPYB_LOGGER.debug(msg, *args, **kwargs)
+    NEXUS_LOGGER.debug(msg, *args, **kwargs)
+
+
 def wait_for_threads_forever(threads: Sequence[Thread]):
     alive = [t.is_alive() for t in threads]
     try:
+        log_debug("Trying to wait forever on callback and dispatcher threads")
         while all(alive):
             sleep(1)
             alive = [t.is_alive() for t in threads]
@@ -93,8 +105,10 @@ def wait_for_threads_forever(threads: Sequence[Thread]):
 
 
 class HyperionCallbackRunner:
-    def __init__(self) -> None:
-        setup_logging()
+    """Runs Nexus, ISPyB and Zocalo callbacks in their own process."""
+
+    def __init__(self, logging_args) -> None:
+        setup_logging(logging_args)
         log_info("Hyperion callback process started.")
 
         self.callbacks = setup_callbacks()
@@ -123,8 +137,9 @@ class HyperionCallbackRunner:
             ...
 
 
-def main(runner=None):
-    runner = runner or HyperionCallbackRunner()
+def main(logging_args=None):
+    logging_args = logging_args or parse_cli_args()
+    runner = HyperionCallbackRunner(logging_args)
     runner.start()
 
 
