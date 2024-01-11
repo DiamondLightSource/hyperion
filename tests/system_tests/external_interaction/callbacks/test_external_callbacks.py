@@ -135,6 +135,7 @@ def RE_with_external_callbacks():
         del os.environ["ISPYB_CONFIG_PATH"]
 
 
+@pytest.mark.s03
 def test_RE_with_external_callbacks_starts_and_stops(
     RE_with_external_callbacks: RunEngine,
 ):
