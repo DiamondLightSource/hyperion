@@ -182,7 +182,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
     # Check that we we mitted a valid reading from the zocalo device
-    zocalo_event = doc_catcher.event.call_args.args[0]["data"]
+    zocalo_event = doc_catcher.event.call_args.args[0]["data"]  # type: ignore
     assert np.all(zocalo_event["zocalo-centres_of_mass"][0] == [1, 2, 3])
     assert np.all(zocalo_event["zocalo-bbox_sizes"][0] == [6, 6, 5])
 
