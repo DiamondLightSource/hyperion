@@ -67,7 +67,7 @@ def pytest_runtest_setup(item):
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print(f"Initialising Hyperion logger for tests at {log_level}")
-                set_up_logging_handlers(logger=LOGGER, **log_params)
+                set_up_logging_handlers(**log_params)
         if ISPYB_LOGGER.handlers == []:
             print(f"Initialising ISPyB logger for tests at {log_level}")
             set_up_logging_handlers(
@@ -180,6 +180,7 @@ def smargon() -> Generator[Smargon, None, None]:
     smargon.y.user_setpoint._use_limits = False
     smargon.z.user_setpoint._use_limits = False
     smargon.omega.user_setpoint._use_limits = False
+    smargon.omega.velocity._use_limits = False
 
     # Initial positions, needed for stub_offsets
     smargon.stub_offsets.center_at_current_position.disp.sim_put(0)  # type: ignore
