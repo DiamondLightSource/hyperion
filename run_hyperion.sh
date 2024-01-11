@@ -133,6 +133,8 @@ if [[ $START == 1 ]]; then
         if [ "${args[$i]}" != false ]; then commands+="${arg_strings[$i]} "; fi;
     done
     
+    unset PYEPICS_LIBCA
+
     python -m hyperion `echo $commands;`>$start_log_path 2>&1 &
 
     echo "$(date) Waiting for Hyperion to boot"

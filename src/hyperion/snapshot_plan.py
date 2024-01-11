@@ -1,6 +1,6 @@
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine
 from dodal.devices.aperture import Aperture
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV

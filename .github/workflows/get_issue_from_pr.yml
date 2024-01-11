@@ -13,7 +13,9 @@ on:
       issue_from_pr:
         description: "The issue that the PR relates to"
         value: ${{ jobs.get_issue_from_pr.outputs.job_issue_id }}
-
+      author:
+        description: "The author of the PR"
+        value: ${{ jobs.get_issue_from_pr.outputs.author }}
 jobs:
   get_issue_from_pr:
     name: Get issue from PR
@@ -21,6 +23,7 @@ jobs:
     # Map the job outputs to step outputs
     outputs:
       job_issue_id: ${{ steps.get_issue.outputs.step_issue_id }}
+      author: ${{ steps.get_issue.outputs.author }}
     steps:
       - id: get_issue
         env:
@@ -39,8 +42,10 @@ jobs:
                       }
                     }
                   }
+                  author { ... on User {id} }
                 }
               }
             }' -f org=$ORGANIZATION -F repo=${REPO_ORG_NAME##*/} > project_data.json
 
           echo 'step_issue_id='$(jq '.data.repository.pullRequest.closingIssuesReferences.edges[0].node.id' project_data.json) >> $GITHUB_OUTPUT
+          echo 'author='$(jq '.data.repository.pullRequest.author.id' project_data.json) >> $GITHUB_OUTPUT

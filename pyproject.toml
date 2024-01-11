@@ -6,9 +6,10 @@ build-backend = "setuptools.build_meta"
 markers = [
     "s03: marks tests as requiring the s03 simulator running (deselect with '-m \"not s03\"')",
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",
+    "skip_log_setup: marks tests so that loggers are not setup before the test.",
 ]
 addopts = "--cov=src/hyperion --cov-report term --cov-report xml:cov.xml"
-testpaths = "src"
+testpaths = "tests"
 
 
 [tool.ruff]

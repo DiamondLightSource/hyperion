@@ -1,5 +1,6 @@
 from bluesky import plan_stubs as bps
-from bluesky.preprocessors import finalize_wrapper, make_decorator
+from bluesky.preprocessors import finalize_wrapper
+from bluesky.utils import make_decorator
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
@@ -50,7 +51,7 @@ def transmission_and_xbpm_feedback_for_collection_wrapper(
     attenuator: Attenuator,
     desired_transmission_fraction: float,
 ):
-    """Sets the transmission for the data collection, esuring the xbpm feedback is valid
+    """Sets the transmission for the data collection, ensuring the xbpm feedback is valid
     this wrapper should be run around every data collection.
 
     XBPM feedback isn't reliable during collections due to:

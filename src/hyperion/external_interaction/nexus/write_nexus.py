@@ -66,8 +66,12 @@ class NexusWriter:
         self.master_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}_master.h5"
         )
+        try:
+            chi = parameters.experiment_params.chi_start
+        except Exception:
+            chi = 0.0
         self.goniometer: Goniometer = create_goniometer_axes(
-            self.omega_start, self.scan_points
+            self.omega_start, self.scan_points, chi=chi
         )
 
     def create_nexus_file(self):

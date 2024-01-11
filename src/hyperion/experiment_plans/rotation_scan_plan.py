@@ -19,12 +19,16 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.epics_motor import EpicsMotor
 
+from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_x_y_z,
     setup_sample_environment,
 )
-from hyperion.device_setup_plans.read_hardware_for_setup import read_hardware_for_ispyb
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
+    read_hardware_for_ispyb_pre_collection,
+)
 from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
     disarm_zebra,
@@ -35,6 +39,7 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
     RotationCallbackCollection,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
@@ -129,8 +134,8 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
     )
 
 
-@bpp.set_run_key_decorator("rotation_scan_main")
-@bpp.run_decorator(md={"subplan_name": "rotation_scan_main"})
+@bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
+@bpp.run_decorator(md={"subplan_name": ROTATION_PLAN_MAIN})
 def rotation_scan_plan(
     composite: RotationScanComposite,
     params: RotationInternalParameters,
@@ -195,14 +200,16 @@ def rotation_scan_plan(
     yield from bps.wait("setup_zebra")
 
     # get some information for the ispyb deposition and trigger the callback
-    yield from read_hardware_for_ispyb(
+
+    yield from read_hardware_for_ispyb_pre_collection(
         composite.undulator,
         composite.synchrotron,
         composite.s4_slit_gaps,
+    )
+    yield from read_hardware_for_ispyb_during_collection(
         composite.attenuator,
         composite.flux,
     )
-
     LOGGER.info(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
         f" s, setting rotation speed to {image_width_deg/exposure_time_s} deg/s"
@@ -212,6 +219,14 @@ def rotation_scan_plan(
     )
 
     yield from arm_zebra(composite.zebra)
+
+    total_exposure = expt_params.get_num_images() * exposure_time_s
+    # Check topup gate
+    yield from check_topup_and_wait_if_necessary(
+        composite.synchrotron,
+        total_exposure,
+        ops_time=10.0,  # Additional time to account for rotation, is s
+    )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
     LOGGER.info(
         f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
@@ -238,14 +253,19 @@ def cleanup_plan(composite: RotationScanComposite, **kwargs):
 
 
 def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGenerator:
-    subscriptions = RotationCallbackCollection.from_params(parameters)
+    subscriptions = RotationCallbackCollection.setup()
 
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": "rotation_scan_with_cleanup",
+            "subplan_name": ROTATION_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
+            "activate_callbacks": [
+                "RotationZocaloCallback",
+                "RotationISPyBCallback",
+                "RotationNexusCallback",
+            ],
         }
     )
     def rotation_scan_plan_with_stage_and_cleanup(

@@ -73,7 +73,7 @@ def grid_detection_main_plan(
     parameters: OAVParameters,
     snapshot_template: str,
     snapshot_dir: str,
-    grid_width_microns: int,
+    grid_width_microns: float,
     box_size_um: float,
 ):
     """
@@ -104,12 +104,12 @@ def grid_detection_main_plan(
     start_positions = []
     box_numbers = []
 
-    assert isinstance(parameters.micronsPerXPixel, float)
-    box_size_x_pixels = box_size_um / parameters.micronsPerXPixel
-    assert isinstance(parameters.micronsPerYPixel, float)
-    box_size_y_pixels = box_size_um / parameters.micronsPerYPixel
+    assert isinstance(oav.parameters.micronsPerXPixel, float)
+    box_size_x_pixels = box_size_um / oav.parameters.micronsPerXPixel
+    assert isinstance(oav.parameters.micronsPerYPixel, float)
+    box_size_y_pixels = box_size_um / oav.parameters.micronsPerYPixel
 
-    grid_width_pixels = int(grid_width_microns / parameters.micronsPerXPixel)
+    grid_width_pixels = int(grid_width_microns / oav.parameters.micronsPerXPixel)
 
     # The FGS uses -90 so we need to match it
     for angle in [0, -90]:
@@ -121,7 +121,9 @@ def grid_detection_main_plan(
         if PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN:
             tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found_ad_mxsc(oav.mxsc)
         else:
-            tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found_ophyd(pin_tip_detection)
+            tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found_ophyd(
+                pin_tip_detection
+            )
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
@@ -174,12 +176,12 @@ def grid_detection_main_plan(
 
         # The first frame is taken at the centre of the first box
         centre_of_first_box = (
-            upper_left[0] + box_size_x_pixels / 2,
-            upper_left[1] + box_size_y_pixels / 2,
+            int(upper_left[0] + box_size_x_pixels / 2),
+            int(upper_left[1] + box_size_y_pixels / 2),
         )
 
         position = yield from get_move_required_so_that_beam_is_at_pixel(
-            smargon, centre_of_first_box, parameters
+            smargon, centre_of_first_box, oav.parameters
         )
         start_positions.append(position)
 

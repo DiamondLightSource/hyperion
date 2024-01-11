@@ -113,6 +113,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.venv*/
 
 # Spyder project settings
 .spyderproject
@@ -136,10 +137,13 @@ dmypy.json
 *~
 
 # Log files
-/tmp
+**/tmp
 
 # further build artifacts
 lockfiles/
 
 # ruff cache
 .ruff_cache/
+
+# idea project files
+.idea/

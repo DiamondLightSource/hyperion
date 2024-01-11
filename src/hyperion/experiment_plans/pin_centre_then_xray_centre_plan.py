@@ -2,7 +2,7 @@ import json
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.oav.oav_parameters import OAV_CONFIG_FILE_DEFAULTS, OAVParameters
+from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -49,24 +49,28 @@ def create_parameters_for_grid_detection(
 def pin_centre_then_xray_centre_plan(
     composite: GridDetectThenXRayCentreComposite,
     parameters: PinCentreThenXrayCentreInternalParameters,
-    oav_config_files=OAV_CONFIG_FILE_DEFAULTS,
+    oav_config_file: str = OAV_CONFIG_JSON,
 ):
     """Plan that perfoms a pin tip centre followed by an xray centre to completely
     centre the sample"""
-    oav_config_files["oav_config_json"] = parameters.experiment_params.oav_centring_file
+    oav_config_file = parameters.experiment_params.oav_centring_file
 
     pin_tip_centring_composite = PinTipCentringComposite(
-        oav=composite.oav, smargon=composite.smargon, backlight=composite.backlight, pin_tip_detection=composite.pin_tip_detection
+        oav=composite.oav,
+        smargon=composite.smargon,
+        backlight=composite.backlight,
+        pin_tip_detection=composite.pin_tip_detection,
     )
 
     yield from pin_tip_centre_plan(
         pin_tip_centring_composite,
         parameters.experiment_params.tip_offset_microns,
-        oav_config_files,
+        oav_config_file,
     )
+
     grid_detect_params = create_parameters_for_grid_detection(parameters)
 
-    oav_params = OAVParameters("xrayCentring", **oav_config_files)
+    oav_params = OAVParameters("xrayCentring", oav_config_file)
 
     yield from detect_grid_and_do_gridscan(
         composite,
@@ -78,6 +82,7 @@ def pin_centre_then_xray_centre_plan(
 def pin_tip_centre_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
     parameters: PinCentreThenXrayCentreInternalParameters,
+    oav_config_file: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
 
@@ -87,5 +92,7 @@ def pin_tip_centre_then_xray_centre(
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
-        pin_centre_then_xray_centre_plan(composite, parameters),
+        composite.detector_motion,
+        parameters.experiment_params.detector_distance,
+        pin_centre_then_xray_centre_plan(composite, parameters, oav_config_file),
     )
