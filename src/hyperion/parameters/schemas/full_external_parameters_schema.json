@@ -22,9 +22,6 @@
                 },
                 {
                     "$ref": "experiment_schemas/wait_for_robot_load_then_centre_schema.json"
-                },
-                {
-                    "$ref": "experiment_schemas/set_energy_params_schema.json"
                 }
             ]
         }

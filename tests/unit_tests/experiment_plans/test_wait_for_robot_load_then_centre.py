@@ -1,18 +1,14 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from blueapi.core import BlueskyContext
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.beamlines import i03
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
 from ophyd.sim import instantiate_fake_device
 
-from hyperion import experiment_plans
 from hyperion.experiment_plans.wait_for_robot_load_then_centre_plan import (
     WaitForRobotLoadThenCentreComposite,
-    create_devices,
     wait_for_robot_load_then_centre,
 )
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
@@ -248,20 +244,3 @@ def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     idx_of_first_read_disabled_message = messages.index(list(read_disabled_messages)[0])
 
     assert idx_of_arm_message < idx_of_first_read_disabled_message
-
-
-@pytest.mark.xfail(reason="Should we really test this")
-def test_create_devices():
-    context = BlueskyContext()
-    context.with_plan_module(experiment_plans)
-
-    context.with_dodal_module(
-        i03,
-        wait_for_connection=False,
-        fake_with_ophyd_sim=True,
-    )
-    bluesky_context = context
-    try:
-        create_devices(bluesky_context)
-    except Exception:
-        assert False

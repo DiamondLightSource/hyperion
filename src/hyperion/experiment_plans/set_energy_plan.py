@@ -6,7 +6,6 @@
 """
 import dataclasses
 
-from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.DCM import DCM
@@ -18,10 +17,6 @@ from hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
 from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_wrapper,
 )
-from hyperion.parameters.plan_specific.set_energy_internal_params import (
-    SetEnergyInternalParameters,
-)
-from hyperion.utils.context import device_composite_from_context
 
 UNDULATOR_GROUP = "UNDULATOR_GROUP"
 
@@ -36,10 +31,6 @@ class SetEnergyComposite:
     attenuator: Attenuator
 
 
-def create_devices(context: BlueskyContext) -> SetEnergyComposite:
-    return device_composite_from_context(context, SetEnergyComposite)
-
-
 def _set_energy_plan(
     energy_kev,
     composite: SetEnergyComposite,
@@ -52,7 +43,6 @@ def _set_energy_plan(
         energy_kev,
     )
     yield from bps.wait(group=UNDULATOR_GROUP)
-    # XXX Can we move undulator and DCM etc at the same time?
 
 
 def set_energy_plan(
@@ -64,13 +54,4 @@ def set_energy_plan(
         composite.xbpm_feedback,
         composite.attenuator,
         0.1,
-    )
-
-
-def set_energy(
-    composite: SetEnergyComposite, internal_params: SetEnergyInternalParameters
-):
-    set_energy_plan(
-        internal_params.experiment_params.requested_energy_kev,
-        composite,
     )
