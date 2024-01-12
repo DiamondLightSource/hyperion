@@ -70,6 +70,7 @@ def smargon():
 
 
 def fake_pin_tip_detection() -> PinTipDetection:
+    RunEngine()  # A RE is needed to start the bluesky loop
     pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
     return pin_tip_detection
 

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
+from dodal.devices.areadetector.plugins.MXSC import MXSC
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
@@ -32,7 +33,7 @@ def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_re
 
     oav.mxsc.pin_tip.trigger = MagicMock(return_value=NullStatus())
 
-    result = RE(move_pin_into_view(oav, smargon, MagicMock()))
+    result = RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     oav.mxsc.pin_tip.trigger.assert_called_once()
     assert smargon.x.user_readback.get() == 0
@@ -57,7 +58,7 @@ def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargo
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
-    result = RE(move_pin_into_view(oav, smargon, MagicMock()))
+    result = RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     assert smargon.x.user_readback.get() == DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)
@@ -81,7 +82,7 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
-    result = RE(move_pin_into_view(oav, smargon, MagicMock()))
+    result = RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     assert smargon.x.user_readback.get() == -DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)
@@ -102,7 +103,7 @@ def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
     smargon.x.user_readback.sim_put(-1.8)  # type: ignore
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon, MagicMock(), max_steps=1))
+        RE(move_pin_into_view(oav.mxsc.pin_tip, smargon, max_steps=1))
 
     assert smargon.x.user_readback.get() == -2
 
@@ -124,7 +125,7 @@ def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     smargon.x.user_readback.sim_put(1.8)  # type: ignore
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon, MagicMock(), max_steps=1))
+        RE(move_pin_into_view(oav.mxsc.pin_tip, smargon, max_steps=1))
 
     assert smargon.x.user_readback.get() == 2
 
@@ -140,7 +141,7 @@ def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_posit
     smargon.x.user_readback.sim_put(0)  # type: ignore
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon, MagicMock()))
+        RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     assert smargon.x.user_readback.get() == 1
 
@@ -190,7 +191,8 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     RE,
 ):
     smargon.omega.user_readback.sim_put(0)  # type: ignore
-    mock_oav = MagicMock(spec=OAV)
+    mock_oav: OAV = MagicMock(spec=OAV)
+    mock_oav.mxsc = MagicMock(spec=MXSC)
     mock_oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )

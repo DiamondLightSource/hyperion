@@ -4,8 +4,9 @@ from typing import Generator, Tuple
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import Msg
+from dodal.devices.areadetector.plugins.MXSC import MXSC
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
-from dodal.devices.oav.oav_detector import MXSC, OAV, OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -14,7 +15,6 @@ from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import PIN_TIP_SOURCE, PinTipSource
 
 Pixel = Tuple[int, int]
 oav_group = "oav_setup"
@@ -58,69 +58,51 @@ def start_mxsc(oav: OAV, min_callback_time, filename):
 
 
 def setup_pin_tip_detection_params(
-    oav: OAV, parameters: OAVParameters, ophyd_pin_tip_detection: PinTipDetection
+    pin_tip_detect_device: MXSC | PinTipDetection, parameters: OAVParameters
 ):
-    """
-    Note: currently sets up both ophyd pin tip detection and MXSC pin tip detection, with the same parameters,
-    to help with comparing the two approaches. This can eventually be removed in favour of always using ophyd
-    pin tip detection, once we are confident enough with it.
-    """
     # select which blur to apply to image
-    yield from set_using_group(oav.mxsc.preprocess_operation, parameters.preprocess)
     yield from set_using_group(
-        ophyd_pin_tip_detection.preprocess, parameters.preprocess
+        pin_tip_detect_device.preprocess_operation, parameters.preprocess
     )
 
     # sets length scale for blurring
-    yield from set_using_group(oav.mxsc.preprocess_ksize, parameters.preprocess_K_size)
     yield from set_using_group(
-        ophyd_pin_tip_detection.preprocess_ksize, parameters.preprocess_K_size
+        pin_tip_detect_device.preprocess_ksize, parameters.preprocess_K_size
     )
 
     # Canny edge detect - lower
     yield from set_using_group(
-        oav.mxsc.canny_lower_threshold,
+        pin_tip_detect_device.canny_lower_threshold,
         parameters.canny_edge_lower_threshold,
-    )
-    yield from set_using_group(
-        ophyd_pin_tip_detection.canny_lower, parameters.canny_edge_lower_threshold
     )
 
     # Canny edge detect - upper
     yield from set_using_group(
-        oav.mxsc.canny_upper_threshold,
+        pin_tip_detect_device.canny_upper_threshold,
         parameters.canny_edge_upper_threshold,
-    )
-    yield from set_using_group(
-        ophyd_pin_tip_detection.canny_upper, parameters.canny_edge_upper_threshold
     )
 
     # "Close" morphological operation
-    yield from set_using_group(oav.mxsc.close_ksize, parameters.close_ksize)
     yield from set_using_group(
-        ophyd_pin_tip_detection.close_ksize, parameters.close_ksize
+        pin_tip_detect_device.close_ksize, parameters.close_ksize
     )
 
     # Sample detection direction
     yield from set_using_group(
-        oav.mxsc.sample_detection_scan_direction, parameters.direction
-    )
-    yield from set_using_group(
-        ophyd_pin_tip_detection.scan_direction, parameters.direction
+        pin_tip_detect_device.scan_direction, parameters.direction
     )
 
     # Minimum height
     yield from set_using_group(
-        oav.mxsc.sample_detection_min_tip_height,
+        pin_tip_detect_device.min_tip_height,
         parameters.minimum_height,
-    )
-    yield from set_using_group(
-        ophyd_pin_tip_detection.min_tip_height, parameters.minimum_height
     )
 
 
 def pre_centring_setup_oav(
-    oav: OAV, parameters: OAVParameters, ophyd_pin_tip_detection: PinTipDetection
+    oav: OAV,
+    parameters: OAVParameters,
+    pin_tip_detection_device: PinTipDetection | MXSC,
 ):
     """
     Setup OAV PVs with required values.
@@ -130,7 +112,7 @@ def pre_centring_setup_oav(
     yield from set_using_group(oav.cam.acquire_time, parameters.exposure)
     yield from set_using_group(oav.cam.gain, parameters.gain)
 
-    yield from setup_pin_tip_detection_params(oav, parameters, ophyd_pin_tip_detection)
+    yield from setup_pin_tip_detection_params(pin_tip_detection_device, parameters)
 
     yield from start_mxsc(
         oav,
@@ -195,7 +177,6 @@ def get_move_required_so_that_beam_is_at_pixel(
 def wait_for_tip_to_be_found_ad_mxsc(
     mxsc: MXSC,
 ) -> Generator[Msg, None, Tuple[int, int]]:
-    assert PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN
     pin_tip = mxsc.pin_tip
     yield from bps.trigger(pin_tip, wait=True)
     found_tip = yield from bps.rd(pin_tip)
@@ -214,16 +195,16 @@ def wait_for_tip_to_be_found_ad_mxsc(
 def wait_for_tip_to_be_found_ophyd(
     ophyd_pin_tip_detection: PinTipDetection,
 ) -> Generator[Msg, None, Tuple[int, int]]:
-    assert PIN_TIP_SOURCE == PinTipSource.OHPYD_DEVICE
     found_tip = yield from bps.rd(ophyd_pin_tip_detection)
 
-    if found_tip == (None, None):
+    LOGGER.info("Pin tip not found, waiting a second and trying again")
+
+    if found_tip == ophyd_pin_tip_detection.INVALID_POSITION:
         # Wait a second and then retry
         yield from bps.sleep(1)
         found_tip = yield from bps.rd(ophyd_pin_tip_detection)
 
-    if found_tip == (None, None):
-        LOGGER.info("No tip found")
+    if found_tip == ophyd_pin_tip_detection.INVALID_POSITION:
         raise WarningException("No pin found")
 
     return found_tip  # type: ignore

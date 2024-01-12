@@ -5,7 +5,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
+from dodal.devices.areadetector.plugins.MXSC import MXSC, PinTipDetect
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
@@ -48,17 +48,15 @@ def create_devices(context: BlueskyContext) -> PinTipCentringComposite:
 def trigger_and_return_pin_tip(
     pin_tip: PinTipDetect | PinTipDetection,
 ) -> Generator[Msg, None, Pixel]:
-    if PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN:
-        yield from bps.trigger(pin_tip, wait=True)
+    yield from bps.trigger(pin_tip, wait=True)
     tip_x_y_px = yield from bps.rd(pin_tip)
     LOGGER.info(f"Pin tip found at {tip_x_y_px}")
     return tip_x_y_px
 
 
 def move_pin_into_view(
-    oav: OAV,
+    pin_tip_device: PinTipDetect | PinTipDetection,
     smargon: Smargon,
-    ophyd_pin_tip_detection: PinTipDetection,
     step_size_mm: float = DEFAULT_STEP_SIZE,
     max_steps: int = 2,
 ) -> Generator[Msg, None, Pixel]:
@@ -67,7 +65,7 @@ def move_pin_into_view(
     would take it past its limit, it moves to the limit instead.
 
     Args:
-        oav (OAV): The OAV to detect the tip with
+        pin_tip_device (PinTipDetect | PinTipDetection): The device being used to detect the pin
         smargon (Smargon): The gonio to move the tip
         step_size (float, optional): Distance to move the gonio (in mm) for each
                                     step of the search. Defaults to 0.5.
@@ -81,18 +79,10 @@ def move_pin_into_view(
     """
 
     def pin_tip_valid(pin_x: float):
-        return (
-            pin_x != 0
-            and pin_x != oav.mxsc.pin_tip.INVALID_POSITION[0]
-            and pin_x is not None
-        )
+        return pin_x != 0 and pin_x != pin_tip_device.INVALID_POSITION[0]
 
     for _ in range(max_steps):
-        tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(
-            oav.mxsc.pin_tip
-            if PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN
-            else ophyd_pin_tip_detection
-        )
+        tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
         if pin_tip_valid(tip_x_px):
             return (tip_x_px, tip_y_px)
@@ -116,7 +106,7 @@ def move_pin_into_view(
         # Some time for the view to settle after the move
         yield from bps.sleep(OAV_REFRESH_DELAY)
 
-    tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(oav.mxsc.pin_tip)
+    tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
     if not pin_tip_valid(tip_x_px):
         raise WarningException(
@@ -161,7 +151,13 @@ def pin_tip_centre_plan(
     oav: OAV = composite.oav
     smargon: Smargon = composite.smargon
     oav_params = OAVParameters("pinTipCentring", oav_config_file)
-    ophyd_pin_tip_detection = composite.pin_tip_detection
+
+    if PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN:
+        pin_tip_setup = oav.mxsc
+        pin_tip_detect = oav.mxsc.pin_tip
+    else:
+        pin_tip_setup = composite.pin_tip_detection
+        pin_tip_detect = composite.pin_tip_detection
 
     tip_offset_px = int(tip_offset_microns / oav.parameters.micronsPerXPixel)
 
@@ -179,9 +175,9 @@ def pin_tip_centre_plan(
     # See #673 for improvements
     yield from bps.sleep(0.3)
 
-    yield from pre_centring_setup_oav(oav, oav_params, ophyd_pin_tip_detection)
+    yield from pre_centring_setup_oav(oav, oav_params, pin_tip_setup)
 
-    tip = yield from move_pin_into_view(oav, smargon, ophyd_pin_tip_detection)
+    tip = yield from move_pin_into_view(pin_tip_detect, smargon)
     yield from offset_and_move(tip)
 
     yield from bps.mvr(smargon.omega, 90)
@@ -190,10 +186,10 @@ def pin_tip_centre_plan(
     # See #673 for improvements
     yield from bps.sleep(0.3)
 
-    if PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN:
+    if isinstance(pin_tip_setup, MXSC):
         LOGGER.info("Acquiring pin-tip from AD MXSC plugin")
-        tip = yield from wait_for_tip_to_be_found_ad_mxsc(oav.mxsc)
-    elif PIN_TIP_SOURCE == PinTipSource.OHPYD_DEVICE:
+        tip = yield from wait_for_tip_to_be_found_ad_mxsc(pin_tip_setup)
+    elif isinstance(pin_tip_setup, PinTipDetection):
         LOGGER.info("Acquiring pin-tip from ophyd device")
-        tip = yield from wait_for_tip_to_be_found_ophyd(ophyd_pin_tip_detection)
+        tip = yield from wait_for_tip_to_be_found_ophyd(pin_tip_setup)
     yield from offset_and_move(tip)

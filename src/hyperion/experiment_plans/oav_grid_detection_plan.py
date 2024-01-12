@@ -18,13 +18,10 @@ from hyperion.device_setup_plans.setup_oav import (
     get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
     wait_for_tip_to_be_found_ad_mxsc,
-    wait_for_tip_to_be_found_ophyd,
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import (
     OAV_REFRESH_DELAY,
-    PIN_TIP_SOURCE,
-    PinTipSource,
 )
 from hyperion.utils.context import device_composite_from_context
 
@@ -90,14 +87,13 @@ def grid_detection_main_plan(
     """
     oav: OAV = composite.oav
     smargon: Smargon = composite.smargon
-    pin_tip_detection: PinTipDetection = composite.pin_tip_detection
 
     LOGGER.info("OAV Centring: Starting grid detection centring")
 
     yield from bps.wait()
 
     # Set relevant PVs to whatever the config dictates.
-    yield from pre_centring_setup_oav(oav, parameters, pin_tip_detection)
+    yield from pre_centring_setup_oav(oav, parameters, oav.mxsc)
 
     LOGGER.info("OAV Centring: Camera set up")
 
@@ -118,12 +114,7 @@ def grid_detection_main_plan(
         # See #673 for improvements
         yield from bps.sleep(OAV_REFRESH_DELAY)
 
-        if PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN:
-            tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found_ad_mxsc(oav.mxsc)
-        else:
-            tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found_ophyd(
-                pin_tip_detection
-            )
+        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found_ad_mxsc(oav.mxsc)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
