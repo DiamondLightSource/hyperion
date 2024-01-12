@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 
 from hyperion.external_interaction.callbacks.__main__ import (
     main,
     setup_callbacks,
     setup_logging,
+    setup_threads,
 )
 from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER
 
@@ -54,3 +57,11 @@ def test_setup_logging(parse_cli_args):
     setup_logging(parse_cli_args())
     assert len(ISPYB_LOGGER.handlers) == 3
     assert len(NEXUS_LOGGER.handlers) == 3
+
+
+def test_setup_threads():
+    proxy, dispatcher, start_proxy, start_dispatcher = setup_threads()
+    assert isinstance(proxy, Proxy)
+    assert isinstance(dispatcher, RemoteDispatcher)
+    assert isinstance(start_proxy, Callable)
+    assert isinstance(start_dispatcher, Callable)

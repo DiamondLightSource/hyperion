@@ -1,3 +1,6 @@
+from unittest.mock import MagicMock
+
+import pytest
 from bluesky.run_engine import RunEngine
 
 from ..conftest import MockReactiveCallback, get_test_plan
@@ -93,3 +96,23 @@ def test_doesnt_activate_on_wrong_metadata(
     callback.activity_gated_descriptor.assert_not_called()  # type: ignore
     callback.activity_gated_event.assert_not_called()  # type: ignore
     callback.activity_gated_stop.assert_not_called()  # type: ignore
+
+
+def test_cb_logs_and_raises_exception():
+    cb = MockReactiveCallback()
+    cb.active = True
+
+    class MockTestException(Exception):
+        ...
+
+    e = MockTestException()
+
+    def mock_excepting_func(_):
+        raise e
+
+    cb.log = MagicMock()
+
+    with pytest.raises(MockTestException):
+        cb._run_activity_gated(mock_excepting_func, {"start": "test"})
+
+    cb.log.exception.assert_called_with(e)
