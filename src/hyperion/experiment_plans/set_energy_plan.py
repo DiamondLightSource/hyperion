@@ -18,6 +18,8 @@ from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_wrapper,
 )
 
+DESIRED_TRANSMISSION_FRACTION = 0.1
+
 UNDULATOR_GROUP = "UNDULATOR_GROUP"
 
 
@@ -53,5 +55,5 @@ def set_energy_plan(
         _set_energy_plan(energy_kev, composite),
         composite.xbpm_feedback,
         composite.attenuator,
-        0.1,
+        DESIRED_TRANSMISSION_FRACTION,
     )
