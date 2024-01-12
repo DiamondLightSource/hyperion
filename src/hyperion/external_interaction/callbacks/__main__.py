@@ -27,6 +27,8 @@ from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER, set_up_logging_handlers
 from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS
 
+LIVENESS_POLL_SECONDS = 1
+
 
 def setup_callbacks():
     gridscan_ispyb = GridscanISPyBCallback()
@@ -96,7 +98,7 @@ def wait_for_threads_forever(threads: Sequence[Thread]):
     try:
         log_debug("Trying to wait forever on callback and dispatcher threads")
         while all(alive):
-            sleep(1)
+            sleep(LIVENESS_POLL_SECONDS)
             alive = [t.is_alive() for t in threads]
     except KeyboardInterrupt:
         log_info("Main thread recieved interrupt - exiting.")
@@ -126,15 +128,6 @@ class HyperionCallbackRunner:
         self.dispatcher_thread.start()
         log_info("Proxy and dispatcher thread launched.")
         wait_for_threads_forever([self.proxy_thread, self.dispatcher_thread])
-
-    def stop(self):
-        try:
-            self.dispatcher.stop()
-            self.proxy._backend.close(linger=1)
-            self.proxy._frontend.close(linger=1)
-            self.proxy._context.term()
-        except BaseException:
-            ...
 
 
 def main(logging_args=None):
