@@ -206,7 +206,7 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     )
     RE(pin_tip_centre_plan(composite, 50, test_config_files["oav_config_json"]))
 
-    mock_setup_oav.assert_called_once()
+    assert mock_setup_oav.call_count == 2
 
     assert len(get_move.call_args_list) == 2
 

@@ -38,6 +38,7 @@
         "omega_start": 0,
         "exposure_time": 0.004,
         "detector_distance": 255,
-        "snapshot_dir": "/tmp"
+        "snapshot_dir": "/tmp",
+        "use_ophyd_pin_tip_detect": true
     }
 }

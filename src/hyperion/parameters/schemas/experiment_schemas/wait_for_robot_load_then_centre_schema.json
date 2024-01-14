@@ -13,6 +13,9 @@
         },
         "omega_start": {
             "type": "number"
+        },
+        "use_ophyd_pin_tip_detect": {
+            "type": "boolean"
         }
     },
     "required": [

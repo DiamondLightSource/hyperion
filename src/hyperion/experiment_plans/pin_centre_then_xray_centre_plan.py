@@ -66,6 +66,7 @@ def pin_centre_then_xray_centre_plan(
         pin_tip_centring_composite,
         parameters.experiment_params.tip_offset_microns,
         oav_config_file,
+        parameters.experiment_params.use_ophyd_pin_tip_detect,
     )
 
     grid_detect_params = create_parameters_for_grid_detection(parameters)

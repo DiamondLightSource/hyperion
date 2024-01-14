@@ -40,30 +40,3 @@ class Status(Enum):
     BUSY = "Busy"
     ABORTING = "Aborting"
     IDLE = "Idle"
-
-
-class PinTipSource:
-    """
-    Two possible sources for how to get pin-tip information from an OAV.
-
-    AD_MXSC_PLUGIN:
-        The calculations for pin-tip detection run in an ADPython areadetector
-        plugin, configured as part of the areadetector plugin chain in EPICS.
-        The pin tip location is being constantly calculated in the background.
-    OPHYD:
-        The calculations are done in an ophyd device, which pulls a camera frame
-        via PVAccess and then calculates the pin tip location locally, only when
-        requested.
-        Due to using PVAccess, this can only work on the beamline control machine,
-        not from a developer machine.
-    """
-
-    AD_MXSC_PLUGIN = 0
-    OHPYD_DEVICE = 1
-
-
-# Hack: currently default to using MXSC plugin.
-# Eventually probably want this passed in as a parameter,
-# or be confident enough in ophyd device that we can just use
-# that unconditionally.
-PIN_TIP_SOURCE = PinTipSource.AD_MXSC_PLUGIN

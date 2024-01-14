@@ -21,11 +21,7 @@ from hyperion.device_setup_plans.setup_oav import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import (
-    OAV_REFRESH_DELAY,
-    PIN_TIP_SOURCE,
-    PinTipSource,
-)
+from hyperion.parameters.constants import OAV_REFRESH_DELAY
 from hyperion.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5
@@ -139,6 +135,7 @@ def pin_tip_centre_plan(
     composite: PinTipCentringComposite,
     tip_offset_microns: float,
     oav_config_file: str = OAV_CONFIG_JSON,
+    use_ophyd_pin_tip_detect: bool = False,
 ):
     """Finds the tip of the pin and moves to roughly the centre based on this tip. Does
     this at both the current omega angle and +90 deg from this angle so as to get a
@@ -147,17 +144,19 @@ def pin_tip_centre_plan(
     Args:
         tip_offset_microns (float): The x offset from the tip where the centre is assumed
                                     to be.
+        use_ophyd_pin_tip_detect (bool): If true use the ophyd device to find the tip,
+                                    rather than the AD plugin.
     """
     oav: OAV = composite.oav
     smargon: Smargon = composite.smargon
     oav_params = OAVParameters("pinTipCentring", oav_config_file)
 
-    if PIN_TIP_SOURCE == PinTipSource.AD_MXSC_PLUGIN:
-        pin_tip_setup = oav.mxsc
-        pin_tip_detect = oav.mxsc.pin_tip
-    else:
+    if use_ophyd_pin_tip_detect:
         pin_tip_setup = composite.pin_tip_detection
         pin_tip_detect = composite.pin_tip_detection
+    else:
+        pin_tip_setup = oav.mxsc
+        pin_tip_detect = oav.mxsc.pin_tip
 
     tip_offset_px = int(tip_offset_microns / oav.parameters.micronsPerXPixel)
 
