@@ -158,6 +158,7 @@ def pin_tip_centre_plan(
         pin_tip_setup = oav.mxsc
         pin_tip_detect = oav.mxsc.pin_tip
 
+    assert oav.parameters.micronsPerXPixel is not None
     tip_offset_px = int(tip_offset_microns / oav.parameters.micronsPerXPixel)
 
     def offset_and_move(tip: Pixel):

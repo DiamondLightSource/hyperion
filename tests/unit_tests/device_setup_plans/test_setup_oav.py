@@ -175,7 +175,7 @@ async def test_given_tip_found_when_wait_for_tip_to_be_found_ophyd_called_then_t
     mock_pin_tip_detect._get_tip_position = AsyncMock(return_value=((100, 100), 0))
     RE = RunEngine(call_returns_result=True)
     result = RE(wait_for_tip_to_be_found_ophyd(mock_pin_tip_detect))
-    assert result.plan_result == (100, 100)
+    assert result.plan_result == (100, 100)  # type: ignore
     mock_pin_tip_detect._get_tip_position.assert_called_once()
     mock_sleep.assert_not_called()
 
@@ -194,7 +194,7 @@ async def test_given_no_tip_at_first_when_wait_for_tip_to_be_found_ophyd_called_
     )
     RE = RunEngine(call_returns_result=True)
     result = RE(wait_for_tip_to_be_found_ophyd(mock_pin_tip_detect))
-    assert result.plan_result == (100, 100)
+    assert result.plan_result == (100, 100)  # type: ignore
     assert mock_pin_tip_detect._get_tip_position.call_count == 2
     mock_sleep.assert_called_once()
 
