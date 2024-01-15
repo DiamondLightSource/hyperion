@@ -24,7 +24,7 @@ from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import 
     XrayCentreZocaloCallback,
 )
 from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER, set_up_logging_handlers
-from hyperion.parameters.cli import parse_cli_args
+from hyperion.parameters.cli import parse_callback_relevant_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS
 
 LIVENESS_POLL_SECONDS = 1
@@ -46,9 +46,7 @@ def setup_callbacks():
 def setup_logging(logging_args):
     (
         logging_level,
-        _,
         dev_mode,
-        _,
     ) = logging_args
     set_up_logging_handlers(
         logging_level=logging_level,
@@ -130,8 +128,8 @@ class HyperionCallbackRunner:
         wait_for_threads_forever([self.proxy_thread, self.dispatcher_thread])
 
 
-def main(logging_args=None):
-    logging_args = logging_args or parse_cli_args()
+def main(logging_args=None) -> None:
+    logging_args = logging_args or parse_callback_relevant_args()
     runner = HyperionCallbackRunner(logging_args)
     runner.start()
 
