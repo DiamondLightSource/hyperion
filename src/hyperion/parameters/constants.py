@@ -6,6 +6,8 @@ ISPYB_HARDWARE_READ_PLAN = "ispyb_reading_hardware"
 ISPYB_TRANSMISSION_FLUX_READ_PLAN = "ispyb_update_transmission_flux"
 SIM_ZOCALO_ENV = "dev_artemis"
 
+CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
+
 # this one is for reading
 SIM_ISPYB_CONFIG = "tests/test_data/test_config.cfg"
 # this one is for making depositions:

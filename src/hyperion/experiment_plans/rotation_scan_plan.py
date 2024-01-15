@@ -35,9 +35,6 @@ from hyperion.device_setup_plans.setup_zebra import (
     make_trigger_safe,
     setup_zebra_for_rotation,
 )
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
-)
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
@@ -253,9 +250,6 @@ def cleanup_plan(composite: RotationScanComposite, **kwargs):
 
 
 def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGenerator:
-    subscriptions = RotationCallbackCollection.setup()
-
-    @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={

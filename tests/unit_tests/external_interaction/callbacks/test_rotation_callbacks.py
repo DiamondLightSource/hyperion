@@ -140,6 +140,7 @@ def test_nexus_handler_only_writes_once(
     params: RotationInternalParameters,
     test_start_doc,
 ):
+    nexus_writer.return_value.full_filename = "test_full_filename"
     with patch(
         "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
         autospec=True,
@@ -255,6 +256,7 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
     params: RotationInternalParameters,
     test_start_doc,
 ):
+    nexus_writer.return_value.full_filename = "test_full_filename"
     cb = RotationCallbackCollection.setup()
     activate_callbacks(cb)
     cb.nexus_handler.activity_gated_start(test_start_doc)

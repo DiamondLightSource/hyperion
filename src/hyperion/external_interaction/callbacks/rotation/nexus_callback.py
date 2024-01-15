@@ -27,23 +27,25 @@ class RotationNexusFileCallback(PlanReactiveCallback):
     """
 
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(NEXUS_LOGGER)
         self.run_uid: str | None = None
         self.parameters: RotationInternalParameters | None = None
         self.writer: NexusWriter | None = None
+        self.log = NEXUS_LOGGER
 
     def activity_gated_start(self, doc: dict):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             self.run_uid = doc.get("uid")
-            NEXUS_LOGGER.info(
-                "Nexus writer recieved start document with experiment parameters."
-            )
             json_params = doc.get("hyperion_internal_parameters")
+            NEXUS_LOGGER.info(
+                f"Nexus writer recieved start document with experiment parameters {json_params}"
+            )
             self.parameters = RotationInternalParameters.from_json(json_params)
-            NEXUS_LOGGER.info("Setting up nexus file.")
+            NEXUS_LOGGER.info("Setting up nexus file...")
             self.writer = NexusWriter(
                 self.parameters,
                 self.parameters.get_scan_points(),
                 self.parameters.get_data_shape(),
             )
             self.writer.create_nexus_file()
+            NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")

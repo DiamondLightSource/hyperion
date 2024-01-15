@@ -60,7 +60,7 @@ BASIC_POST_SETUP_DOC = {
 def mock_zocalo_trigger(zocalo: ZocaloResults, result):
     @AsyncStatus.wrap
     async def mock_complete(results):
-        await zocalo._put_results(results)
+        await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
     zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
 

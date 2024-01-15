@@ -1,4 +1,3 @@
-import argparse
 import atexit
 import threading
 from dataclasses import asdict
@@ -7,6 +6,7 @@ from traceback import format_exception
 from typing import Any, Callable, Optional, Tuple
 
 from blueapi.core import BlueskyContext, MsgGenerator
+from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from flask import Flask, request
 from flask_restful import Api, Resource
@@ -20,8 +20,9 @@ from hyperion.external_interaction.callbacks.aperture_change_callback import (
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from hyperion.log import ISPYB_LOGGER, LOGGER, NEXUS_LOGGER, set_up_logging_handlers
-from hyperion.parameters.constants import Actions, Status
+from hyperion.log import LOGGER, set_up_logging_handlers
+from hyperion.parameters.cli import parse_cli_args
+from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
 from hyperion.utils.context import setup_context
@@ -68,12 +69,14 @@ class BlueskyRunner:
     def __init__(
         self, RE: RunEngine, context: BlueskyContext, skip_startup_connection=False
     ) -> None:
+        self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
         self.RE = RE
         self.skip_startup_connection = skip_startup_connection
         self.context = context
+        RE.subscribe(self.aperture_change_callback)
+        RE.subscribe(self.publisher)
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        RE.subscribe(self.aperture_change_callback)
 
         if not self.skip_startup_connection:
             for plan_name in PLAN_REGISTRY:
@@ -253,58 +256,16 @@ def create_app(
     return app, runner
 
 
-def cli_arg_parse() -> Tuple[Optional[str], bool, bool, bool]:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--dev",
-        action="store_true",
-        help="Use dev options, such as local graylog instances and S03",
-    )
-    parser.add_argument(
-        "--verbose-event-logging",
-        action="store_true",
-        help="Log all bluesky event documents to graylog",
-    )
-    parser.add_argument(
-        "--logging-level",
-        type=str,
-        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
-        help="Choose overall logging level, defaults to INFO",
-    )
-    parser.add_argument(
-        "--skip-startup-connection",
-        action="store_true",
-        help="Skip connecting to EPICS PVs on startup",
-    )
-    args = parser.parse_args()
-    return (
-        args.logging_level,
-        args.verbose_event_logging,
-        args.dev,
-        args.skip_startup_connection,
-    )
-
-
-if __name__ == "__main__":  # pragma: no cover
+def main():
     hyperion_port = 5005
     (
         logging_level,
         VERBOSE_EVENT_LOGGING,
         dev_mode,
         skip_startup_connection,
-    ) = cli_arg_parse()
-    set_up_logging_handlers(logging_level=logging_level, dev_mode=bool(dev_mode))
+    ) = parse_cli_args()
     set_up_logging_handlers(
-        logging_level=logging_level,
-        dev_mode=dev_mode,
-        filename="hyperion_ispyb_callback.txt",
-        logger=ISPYB_LOGGER,
-    )
-    set_up_logging_handlers(
-        logging_level=logging_level,
-        dev_mode=dev_mode,
-        filename="hyperion_nexus_callback.txt",
-        logger=NEXUS_LOGGER,
+        logger=LOGGER, logging_level=logging_level, dev_mode=bool(dev_mode)
     )
     app, runner = create_app(skip_startup_connection=bool(skip_startup_connection))
     atexit.register(runner.shutdown)
@@ -320,3 +281,7 @@ if __name__ == "__main__":  # pragma: no cover
     )
     runner.wait_on_queue()
     flask_thread.join()
+
+
+if __name__ == "__main__":
+    main()

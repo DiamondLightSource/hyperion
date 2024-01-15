@@ -22,7 +22,7 @@ def _check_and_pause_feedback(
 
     """
     yield from bps.mv(attenuator, 1.0)
-    LOGGER.info("Waiting for XPBM feedback before collection")
+    LOGGER.info("Waiting for XBPM feedback before collection")
     yield from bps.trigger(xbpm_feedback, wait=True)
     LOGGER.info(
         "XPBM feedback in position, pausing and setting transmission for collection"

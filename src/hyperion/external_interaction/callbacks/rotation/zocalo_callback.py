@@ -27,7 +27,7 @@ class RotationZocaloCallback(PlanReactiveCallback):
         self,
         ispyb_handler: RotationISPyBCallback,
     ):
-        super().__init__()
+        super().__init__(ISPYB_LOGGER)
         self.ispyb: RotationISPyBCallback = ispyb_handler
         self.run_uid = None
 

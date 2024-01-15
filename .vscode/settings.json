@@ -10,7 +10,7 @@
             88
         ],
         "editor.codeActionsOnSave": {
-            "source.fixAll.ruff": "never",
+            "source.fixAll.ruff": "explicit",
             "source.organizeImports.ruff": "explicit"
         },
         "editor.defaultFormatter": "ms-python.black-formatter"
