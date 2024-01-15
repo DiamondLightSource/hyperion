@@ -6,9 +6,9 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.DCM import DCM
 from dodal.devices.focusing_mirror import (
-    DEMAND_ACCEPTED_OK,
     FocusingMirror,
     MirrorStripe,
+    MirrorVoltageDemand,
     VFMMirrorVoltages,
 )
 from ophyd import EpicsSignal
@@ -107,7 +107,7 @@ def test_apply_and_wait_for_voltages_to_settle_timeout(
 
 def _mock_voltage_channel(setpoint: EpicsSignal, demand_accepted: EpicsSignal):
     def set_demand_and_return_ok(_):
-        demand_accepted.sim_put(DEMAND_ACCEPTED_OK)  # type: ignore
+        demand_accepted.sim_put(MirrorVoltageDemand.OK)  # type: ignore
         return NullStatus()
 
     setpoint.set = MagicMock(side_effect=set_demand_and_return_ok)
