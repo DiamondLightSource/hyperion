@@ -431,7 +431,13 @@ def test_warn_exception_during_plan_causes_warning_in_log(
     assert caplog.records[-1].levelname == "WARNING"
 
 
-def test_when_context_created_then_contains_expected_number_of_plans():
+@patch(
+    "dodal.devices.DCM.get_beamline_parameters",
+    return_value={"DCM_Perp_Offset_FIXED": 111},
+)
+def test_when_context_created_then_contains_expected_number_of_plans(
+    get_beamline_parameters,
+):
     with patch.dict(os.environ, {"BEAMLINE": "i03"}):
         context = setup_context(wait_for_connection=False)
 

@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.1",
+    "params_version": "4.0.2",
     "hyperion_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",

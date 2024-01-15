@@ -291,8 +291,15 @@ def vfm_mirror_voltages():
 
 
 @pytest.fixture
-def hfm():
-    return i03.hfm(fake_with_ophyd_sim=True)
+def xbpm_feedback():
+    yield i03.xbpm_feedback(fake_with_ophyd_sim=True)
+    beamline_utils.clear_devices()
+
+
+@pytest.fixture
+def undulator_dcm():
+    yield i03.undulator_dcm(fake_with_ophyd_sim=True)
+    beamline_utils.clear_devices()
 
 
 @pytest.fixture
