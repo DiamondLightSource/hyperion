@@ -48,6 +48,12 @@ from ..conftest import (  # noqa
     zocalo_env,
 )
 
+"""
+Note that because these tests use the external processes some of the errors coming from
+them may not be very informative. You will want to check the log files produced in `tmp`
+for better logs.
+"""
+
 
 @pytest_asyncio.fixture
 async def zocalo_device():
