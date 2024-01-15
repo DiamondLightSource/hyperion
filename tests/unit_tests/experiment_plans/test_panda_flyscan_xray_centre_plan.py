@@ -149,7 +149,7 @@ class TestFlyscanXrayCentrePlan:
         RE.subscribe(test_ispyb_callback)
 
         RE(
-            ++(
+            ispyb_plan(
                 fake_panda_fgs_composite.undulator,
                 fake_panda_fgs_composite.synchrotron,
                 fake_panda_fgs_composite.s4_slit_gaps,

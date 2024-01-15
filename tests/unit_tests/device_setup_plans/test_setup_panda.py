@@ -1,4 +1,3 @@
-from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -13,7 +12,7 @@ from hyperion.device_setup_plans.setup_panda import (
     setup_panda_for_flyscan,
 )
 
-from ..experiment_plans.conftest import RunEngineSimulator
+from ...conftest import RunEngineSimulator
 
 
 def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
@@ -57,7 +56,7 @@ def test_setup_panda_performs_correct_plans(mock_load_device):
 
 
 @pytest.mark.parametrize(
-    "x_steps, x_step_size, x_start, runnup_distance_mm, time_between_x_steps_ms, exposure_time_s",
+    "x_steps, x_step_size, x_start, run_up_distance_mm, time_between_x_steps_ms, exposure_time_s",
     [
         (10, 0.5, -1, 0.05, 10, 0.02),
         (0, 5, 0, 1, 1, 0.02),
@@ -68,7 +67,7 @@ def test_setup_panda_correctly_configures_table(
     x_steps: int,
     x_step_size: float,
     x_start: float,
-    runnup_distance_mm: float,
+    run_up_distance_mm: float,
     time_between_x_steps_ms: float,
     exposure_time_s: float,
 ):
@@ -94,7 +93,7 @@ def test_setup_panda_correctly_configures_table(
         x_steps=x_steps,
         x_step_size=x_step_size,
         x_start=x_start,
-        runnup_distance_mm=runnup_distance_mm,
+        run_up_distance_mm=run_up_distance_mm,
     )
 
     table = get_seq_table(params, time_between_x_steps_ms, exposure_time_s)

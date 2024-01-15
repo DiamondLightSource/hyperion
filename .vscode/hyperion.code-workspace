@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../dodal"
+		},
+		{
+			"path": "../../ophyd-async"
 		}
 	],
 	"settings": {

@@ -19,7 +19,11 @@
         },
         "set_stub_offsets": {
             "type": "boolean"
+        },
+        "use_panda": {
+            "type": "boolean"
         }
+
     },
     "required": [
         "exposure_time",

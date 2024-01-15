@@ -18,6 +18,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.panda_fast_grid_scan import PandaGridScanParams
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -25,6 +26,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.panda import PandA
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -37,6 +39,13 @@ from hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     grid_detection_plan,
 )
+from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
+    FlyScanXRayCentreComposite as PandaFlyscanXrayCentreComposite,
+)
+from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
+    PandAFastGridScan,
+    panda_flyscan_xray_centre,
+)
 from hyperion.external_interaction.callbacks.grid_detection_callback import (
     GridDetectionCallback,
 )
@@ -47,6 +56,12 @@ from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,
+)
+from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
+    GridScanParams as PandaGridScanParams,
+)
+from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
+    PandaGridscanInternalParameters,
 )
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -80,6 +95,8 @@ class GridDetectThenXRayCentreComposite:
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zocalo: ZocaloResults
+    panda: PandA
+    panda_fast_grid_scan: PandAFastGridScan
 
     def __post_init__(self):
         """Ensure that aperture positions are loaded whenever this class is created."""
@@ -99,6 +116,17 @@ def create_parameters_for_flyscan_xray_centre(
     params_json = json.loads(grid_scan_with_edge_params.json())
     params_json["experiment_params"] = json.loads(grid_parameters.json())
     flyscan_xray_centre_parameters = GridscanInternalParameters(**params_json)
+    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
+    return flyscan_xray_centre_parameters
+
+
+def create_parameters_for_panda_flyscan_xray_centre(
+    grid_scan_with_edge_params: GridScanWithEdgeDetectInternalParameters,
+    grid_parameters: PandaGridScanParams,
+) -> PandaGridscanInternalParameters:
+    params_json = json.loads(grid_scan_with_edge_params.json())
+    params_json["experiment_params"] = json.loads(grid_parameters.json())
+    flyscan_xray_centre_parameters = PandaGridscanInternalParameters(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
     return flyscan_xray_centre_parameters
 
@@ -164,11 +192,17 @@ def detect_grid_and_do_gridscan(
     )
     parameters.hyperion_params.ispyb_params.upper_left = out_upper_left
 
-    grid_params = grid_params_callback.get_grid_parameters()
+    if parameters.experiment_params.use_panda:
+        grid_params = grid_params_callback.get_panda_grid_parameters()
 
-    flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
-        parameters, grid_params
-    )
+        flyscan_xray_centre_parameters = (
+            create_parameters_for_panda_flyscan_xray_centre(parameters, grid_params)
+        )
+    else:
+        grid_params = grid_params_callback.get_grid_parameters()
+        flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
+            parameters, grid_params
+        )
 
     yield from bps.abs_set(composite.backlight, Backlight.OUT)
 
@@ -180,26 +214,50 @@ def detect_grid_and_do_gridscan(
         composite.aperture_scatterguard.aperture_positions.SMALL,
     )
 
-    flyscan_composite = FlyScanXRayCentreComposite(
-        aperture_scatterguard=composite.aperture_scatterguard,
-        attenuator=composite.attenuator,
-        backlight=composite.backlight,
-        eiger=composite.eiger,
-        fast_grid_scan=composite.fast_grid_scan,
-        flux=composite.flux,
-        s4_slit_gaps=composite.s4_slit_gaps,
-        smargon=composite.smargon,
-        undulator=composite.undulator,
-        synchrotron=composite.synchrotron,
-        xbpm_feedback=composite.xbpm_feedback,
-        zebra=composite.zebra,
-        zocalo=composite.zocalo,
-    )
+    if parameters.experiment_params.use_panda:
+        panda_flyscan_composite = PandaFlyscanXrayCentreComposite(
+            aperture_scatterguard=composite.aperture_scatterguard,
+            attenuator=composite.attenuator,
+            backlight=composite.backlight,
+            eiger=composite.eiger,
+            panda_fast_grid_scan=composite.panda_fast_grid_scan,
+            flux=composite.flux,
+            s4_slit_gaps=composite.s4_slit_gaps,
+            smargon=composite.smargon,
+            undulator=composite.undulator,
+            synchrotron=composite.synchrotron,
+            xbpm_feedback=composite.xbpm_feedback,
+            zebra=composite.zebra,
+            zocalo=composite.zocalo,
+            panda=composite.panda,
+        )
 
-    yield from flyscan_xray_centre(
-        flyscan_composite,
-        flyscan_xray_centre_parameters,
-    )
+        yield from panda_flyscan_xray_centre(
+            panda_flyscan_composite,
+            flyscan_xray_centre_parameters,
+        )
+
+    else:
+        flyscan_composite = FlyScanXRayCentreComposite(
+            aperture_scatterguard=composite.aperture_scatterguard,
+            attenuator=composite.attenuator,
+            backlight=composite.backlight,
+            eiger=composite.eiger,
+            fast_grid_scan=composite.fast_grid_scan,
+            flux=composite.flux,
+            s4_slit_gaps=composite.s4_slit_gaps,
+            smargon=composite.smargon,
+            undulator=composite.undulator,
+            synchrotron=composite.synchrotron,
+            xbpm_feedback=composite.xbpm_feedback,
+            zebra=composite.zebra,
+            zocalo=composite.zocalo,
+        )
+
+        yield from flyscan_xray_centre(
+            flyscan_composite,
+            flyscan_xray_centre_parameters,
+        )
 
 
 def grid_detect_then_xray_centre(

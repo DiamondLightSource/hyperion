@@ -80,6 +80,8 @@ def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
         xbpm_feedback=MagicMock(),
         zebra=MagicMock(),
         zocalo=MagicMock(),
+        panda=MagicMock(),
+        panda_fast_grid_scan=MagicMock(),
     )
 
 

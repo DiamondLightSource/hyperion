@@ -47,7 +47,7 @@
         "set_stub_offsets": {
             "type": "boolean"
         },
-        "runnup_distance_mm": {
+        "run_up_distance_mm": {
             "type": "number"
         }
 

@@ -37,6 +37,8 @@ class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
     # Whether to set the stub offsets after centering
     set_stub_offsets: bool = False
 
+    use_panda: bool = False
+
     def get_num_images(self):
         return 0
 

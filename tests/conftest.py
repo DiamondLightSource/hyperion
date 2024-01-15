@@ -553,7 +553,7 @@ def fake_panda_fgs_composite(
 
     @AsyncStatus.wrap
     async def mock_complete(result):
-        await fake_composite.zocalo._put_results([result])
+        await fake_composite.zocalo._put_results([result], MagicMock())
 
     fake_composite.zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
     fake_composite.zocalo.timeout_s = 3

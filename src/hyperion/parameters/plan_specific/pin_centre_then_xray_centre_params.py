@@ -46,6 +46,9 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
     # plugin
     use_ophyd_pin_tip_detect: bool = False
 
+    # Use constant motion panda scans instead of fast grid scans
+    use_panda: bool = False
+
     def get_num_images(self):
         return 0
 
