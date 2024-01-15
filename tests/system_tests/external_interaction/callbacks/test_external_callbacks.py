@@ -67,17 +67,21 @@ class DocumentCatcher(CallbackBase):
 
 
 def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -> None:
-    while monitor.poll():
-        monitor_event = recv_monitor_message(monitor)
-        LOGGER.info(f"Event: {monitor_event}")
-        if monitor_event["event"] == zmq.EVENT_CONNECTED:
-            LOGGER.info("CONNECTED - acquiring connection_active_lock")
-            connection_active_lock.acquire()
-        if monitor_event["event"] == zmq.EVENT_MONITOR_STOPPED:
-            break
-    connection_active_lock.release()
-    monitor.close()
-    LOGGER.info("event monitor thread done!")
+    try:
+        while monitor.poll():
+            monitor_event = recv_monitor_message(monitor)
+            LOGGER.info(f"Event: {monitor_event}")
+            if monitor_event["event"] == zmq.EVENT_CONNECTED:
+                LOGGER.info("CONNECTED - acquiring connection_active_lock")
+                connection_active_lock.acquire()
+            if monitor_event["event"] == zmq.EVENT_MONITOR_STOPPED:
+                break
+    except zmq.ZMQError:
+        pass
+    finally:
+        connection_active_lock.release()
+        monitor.close()
+        LOGGER.info("event monitor thread done!")
 
 
 @pytest.fixture
@@ -121,8 +125,6 @@ def RE_with_external_callbacks():
     t.join()
     if old_ispyb_config:
         os.environ["ISPYB_CONFIG_PATH"] = old_ispyb_config
-    else:
-        del os.environ["ISPYB_CONFIG_PATH"]
 
 
 @pytest.mark.s03
