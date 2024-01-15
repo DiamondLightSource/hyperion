@@ -6,7 +6,6 @@ import signal
 import subprocess
 import threading
 from time import sleep
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -68,22 +67,13 @@ class DocumentCatcher(CallbackBase):
 
 
 def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -> None:
-    EVENT_MAP = {}
-    LOGGER.info("Event names:")
-    for name in dir(zmq):
-        if name.startswith("EVENT_"):
-            value = getattr(zmq, name)
-            EVENT_MAP[value] = name
     while monitor.poll():
-        evt: dict[str, Any] = {}
-        mon_evt = recv_monitor_message(monitor)
-        evt.update(mon_evt)
-        evt["description"] = EVENT_MAP[evt["event"]]
-        LOGGER.info(f"Event: {evt}")
-        if evt["event"] == zmq.EVENT_CONNECTED:
+        monitor_event = recv_monitor_message(monitor)
+        LOGGER.info(f"Event: {monitor_event}")
+        if monitor_event["event"] == zmq.EVENT_CONNECTED:
             LOGGER.info("CONNECTED - acquiring connection_active_lock")
             connection_active_lock.acquire()
-        if evt["event"] == zmq.EVENT_MONITOR_STOPPED:
+        if monitor_event["event"] == zmq.EVENT_MONITOR_STOPPED:
             break
     connection_active_lock.release()
     monitor.close()
@@ -149,10 +139,6 @@ def test_RE_with_external_callbacks_starts_and_stops(
 
 @pytest.mark.asyncio
 @pytest.mark.s03
-@patch(
-    "hyperion.external_interaction.callbacks.__main__.parse_cli_args",
-    lambda: ("DEBUG", None, True, None),
-)
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,
@@ -257,6 +243,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
             )
         )
 
+    sleep(1)
     assert isfile("tmp/dev/hyperion_ispyb_callback.txt")
     ispyb_log_tail = subprocess.run(
         ["tail", "tmp/dev/hyperion_ispyb_callback.txt"],
