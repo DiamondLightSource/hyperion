@@ -1,8 +1,8 @@
 import argparse
 
 
-def parse_callback_relevant_args(parser=argparse.ArgumentParser()) -> tuple[str, bool]:
-    """Parses arguments relevant to hyperion-callbacks. Returns the tuple: (log_level: str, dev_mode: bool)"""
+def add_callback_relevant_args(parser: argparse.ArgumentParser) -> None:
+    """adds arguments relevant to hyperion-callbacks. Returns the tuple: (log_level: str, dev_mode: bool)"""
     parser.add_argument(
         "--dev",
         action="store_true",
@@ -14,6 +14,11 @@ def parse_callback_relevant_args(parser=argparse.ArgumentParser()) -> tuple[str,
         choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
         help="Choose overall logging level, defaults to INFO",
     )
+
+
+def parse_callback_cli_args() -> tuple[str, bool]:
+    parser = argparse.ArgumentParser()
+    add_callback_relevant_args(parser)
     args = parser.parse_args()
     return (args.logging_level, args.dev)
 
@@ -21,7 +26,7 @@ def parse_callback_relevant_args(parser=argparse.ArgumentParser()) -> tuple[str,
 def parse_cli_args() -> tuple[str | None, bool, bool, bool]:
     """Parses all arguments relevant to hyperion. Returns the tuple: (log_level: str, verbose_event_logging: bool, dev_mode: bool, skip_startup_connection: bool )"""
     parser = argparse.ArgumentParser()
-    parse_callback_relevant_args(parser)
+    add_callback_relevant_args(parser)
     parser.add_argument(
         "--verbose-event-logging",
         action="store_true",
