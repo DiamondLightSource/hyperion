@@ -161,6 +161,8 @@ def test_ispyb_deposition_in_rotation_plan(
 
     os.environ["ISPYB_CONFIG_PATH"] = DEV_ISPYB_DATABASE_CFG
     callbacks = RotationCallbackCollection.setup()
+    for cb in list(callbacks):
+        RE.subscribe(cb)
 
     composite = RotationScanComposite(
         attenuator=attenuator,
@@ -175,16 +177,7 @@ def test_ispyb_deposition_in_rotation_plan(
         zebra=fake_create_devices["zebra"],
     )
 
-    with (
-        patch(
-            "bluesky.preprocessors.__read_and_stash_a_motor",
-            fake_read,
-        ),
-        patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
-            lambda: callbacks,
-        ),
-    ):
+    with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
         RE(
             rotation_scan(
                 composite,
@@ -193,6 +186,7 @@ def test_ispyb_deposition_in_rotation_plan(
         )
 
     dcid = callbacks.ispyb_handler.ispyb_ids.data_collection_ids
+    assert dcid is not None
     comment = fetch_comment(dcid)
     assert comment == "Hyperion rotation scan"
     wavelength = fetch_datacollection_attribute(dcid, "wavelength")

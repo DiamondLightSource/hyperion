@@ -121,8 +121,6 @@ def RE_with_external_callbacks():
     t.join()
     if old_ispyb_config:
         os.environ["ISPYB_CONFIG_PATH"] = old_ispyb_config
-    else:
-        del os.environ["ISPYB_CONFIG_PATH"]
 
 
 @pytest.mark.s03
