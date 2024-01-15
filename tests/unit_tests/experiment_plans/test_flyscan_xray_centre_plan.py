@@ -197,11 +197,9 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
         RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
     ):
-        RE, mock_subscriptions = RE_with_subs
+        RE, _ = RE_with_subs
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        for cb in list(mock_subscriptions):
-            RE.subscribe(cb)
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
         RE(
@@ -343,7 +341,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        (RE, mock_subscriptions) = RE_with_subs
+        RE, mock_subscriptions = RE_with_subs
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
@@ -378,13 +376,12 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        (RE, mock_subscriptions) = RE_with_subs
+        RE, mock_subscriptions = RE_with_subs
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
 
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
-        RE.subscribe(mock_subscriptions.ispyb_handler)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(
@@ -414,12 +411,11 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        (RE, mock_subscriptions) = RE_with_subs
+        RE, mock_subscriptions = RE_with_subs
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
-        RE.subscribe(mock_subscriptions.ispyb_handler)
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
@@ -446,7 +442,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
-        (RE, mock_subscriptions) = RE_with_subs
+        RE, mock_subscriptions = RE_with_subs
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         initial_x_y_z = np.array(
             [
@@ -462,7 +458,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
-        RE.subscribe(mock_subscriptions.ispyb_handler)
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
@@ -510,12 +505,10 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE_with_subs,
+        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
         done_status,
     ):
-        RE: RunEngine
-        mock_subscriptions: XrayCentreCallbackCollection
-        (RE, mock_subscriptions) = RE_with_subs
+        RE, mock_subscriptions = RE_with_subs
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
@@ -603,7 +596,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
         RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
     ):
-        (RE, mock_subscriptions) = RE_with_subs
+        RE, mock_subscriptions = RE_with_subs
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
