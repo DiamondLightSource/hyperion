@@ -79,16 +79,16 @@ class PlanReactiveCallback(CallbackBase):
         )
 
     def activity_gated_start(self, doc: RunStart):
-        return None
+        return doc
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
-        return None
+        return doc
 
     def activity_gated_event(self, doc: Event):
-        return None
+        return doc
 
     def activity_gated_stop(self, doc: RunStop):
-        return None
+        return doc
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} with id: {hex(id(self))}>"
