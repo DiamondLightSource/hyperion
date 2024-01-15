@@ -13,8 +13,13 @@ if TYPE_CHECKING:
 
 
 class PlanReactiveCallback(CallbackBase):
+    log: Logger  # type: ignore # this is initialised to None and not annotated in the superclass
+
     def __init__(
-        self, *, emit: Callable[..., Any] | None = None, log: Logger | None = None
+        self,
+        log: Logger,
+        *,
+        emit: Callable[..., Any] | None = None,
     ) -> None:
         """A callback base class which can be left permanently subscribed to a plan, and
         will 'activate' and 'deactivate' at the start and end of a plan which provides
@@ -33,27 +38,24 @@ class PlanReactiveCallback(CallbackBase):
         super().__init__(emit=emit)
         self.active = False
         self.activity_uid = 0
-        self.log = log  # type: ignore # this is initialised to None and not annotated in the superclass
+        self.log = log
 
     def _run_activity_gated(self, func, doc, override=False):
         running_gated_function = override or self.active
         if not running_gated_function:
             return doc
-        if self.log:
-            try:
-                return func(doc)
-            except Exception as e:
-                self.log.exception(e)
-                raise
-        else:
+        try:
             return func(doc)
+        except Exception as e:
+            self.log.exception(e)
+            raise
 
     def start(self, doc: RunStart) -> RunStart | None:
         callbacks_to_activate = doc.get("activate_callbacks")
         if callbacks_to_activate:
             activate = type(self).__name__ in callbacks_to_activate
             self.active = activate
-            self.optional_info_log(
+            self.log.info(
                 f"{'' if activate else 'not'} activating {type(self).__name__}"
             )
             self.activity_uid = doc.get("uid")
@@ -90,11 +92,3 @@ class PlanReactiveCallback(CallbackBase):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} with id: {hex(id(self))}>"
-
-    def optional_info_log(self, msg):
-        if self.log:
-            self.log.info(msg)
-
-    def optional_debug_log(self, msg):
-        if self.log:
-            self.log.debug(msg)

@@ -34,7 +34,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
-        super().__init__()
+        super().__init__(ISPYB_LOGGER)
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )

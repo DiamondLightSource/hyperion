@@ -29,7 +29,7 @@ class MockReactiveCallback(PlanReactiveCallback):
     activity_gated_stop: MagicMock
 
     def __init__(self, *, emit: Callable[..., Any] | None = None) -> None:
-        super().__init__(emit=emit)
+        super().__init__(MagicMock(), emit=emit)
         self.activity_gated_start = MagicMock(name="activity_gated_start")  # type: ignore
         self.activity_gated_descriptor = MagicMock(name="activity_gated_descriptor")  # type: ignore
         self.activity_gated_event = MagicMock(name="activity_gated_event")  # type: ignore
