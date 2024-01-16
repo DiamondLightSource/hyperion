@@ -109,20 +109,20 @@ def mock_dict_values(d: dict):
 TEST_EXPTS = {
     "test_experiment": {
         "setup": MagicMock(),
-        "run": MagicMock(),
         "internal_param_type": MagicMock(),
         "experiment_param_type": MagicMock(),
+        "callback_collection_type": MagicMock(),
     },
     "test_experiment_no_internal_param_type": {
         "setup": MagicMock(),
-        "run": MagicMock(),
         "experiment_param_type": MagicMock(),
+        "callback_collection_type": MagicMock(),
     },
     "fgs_real_params": {
         "setup": MagicMock(),
-        "run": MagicMock(),
         "internal_param_type": GridscanInternalParameters,
         "experiment_param_type": MagicMock(),
+        "callback_collection_type": MagicMock(),
     },
 }
 
@@ -389,26 +389,26 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
         {
             "flyscan_xray_centre": {
                 "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
+                "internal_param_type": MagicMock(),
+                "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "rotation_scan": {
                 "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
+                "internal_param_type": MagicMock(),
+                "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "other_plan": {
                 "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
+                "internal_param_type": MagicMock(),
+                "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "yet_another_plan": {
                 "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
+                "internal_param_type": MagicMock(),
+                "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
         },

@@ -152,11 +152,7 @@ class BlueskyRunner:
                 if command.experiment is None:
                     raise ValueError("No experiment provided for START")
                 try:
-                    if (
-                        self.use_external_callbacks
-                        and command.callbacks
-                        and (cbs := list(command.callbacks.setup()))
-                    ):
+                    if command.callbacks and (cbs := list(command.callbacks.setup())):
                         self.subscribed_per_plan_callbacks += [
                             self.RE.subscribe(cb) for cb in cbs
                         ]
@@ -203,10 +199,12 @@ class RunExperiment(Resource):
                         f"Experiment plan '{plan_name}' not found in registry."
                     )
 
-                experiment_internal_param_type = experiment_registry_entry[
+                experiment_internal_param_type = experiment_registry_entry.get(
                     "internal_param_type"
-                ]
-                callback_type = experiment_registry_entry["callback_collection_type"]
+                )
+                callback_type = experiment_registry_entry.get(
+                    "callback_collection_type"
+                )
                 plan = self.context.plan_functions.get(plan_name)
                 if experiment_internal_param_type is None:
                     raise PlanNotFound(
