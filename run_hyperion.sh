@@ -4,6 +4,8 @@ STOP=0
 START=1
 SKIP_STARTUP_CONNECTION=false
 VERBOSE_EVENT_LOGGING=false
+IN_DEV=false
+EXTERNAL_CALLBACK_SERVICE=false
 LOGGING_LEVEL="INFO"
 
 for option in "$@"; do
@@ -27,9 +29,12 @@ for option in "$@"; do
         --verbose-event-logging)
             VERBOSE_EVENT_LOGGING=true
             ;;
+        --external-callbacks)
+            EXTERNAL_CALLBACK_SERVICE=true
+            ;;
         --logging-level=*)
-        LOGGING_LEVEL="${option#*=}"
-        ;;
+            LOGGING_LEVEL="${option#*=}"
+            ;;
 
         --help|--info|--h)
         
@@ -41,7 +46,6 @@ for option in "$@"; do
             echo "Operations"
             echo "  --stop                  Used to stop a currently running instance of Hyperion. Will override any other operations"
             echo "                          options"
-
             echo "  --no-start              Used to specify that the script should be run without starting the server."
             echo " "
             echo "By default this script will start an Hyperion server unless the --no-start flag is specified."
@@ -124,20 +128,37 @@ if [[ $START == 1 ]]; then
     source .venv/bin/activate
 
     #Add future arguments here
-    declare -A args=( ["IN_DEV"]="$IN_DEV" ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION" ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING"
-                    ["LOGGING_LEVEL"]="$LOGGING_LEVEL")
-    declare -A arg_strings=( ["IN_DEV"]="--dev" ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection" ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
-                            ["LOGGING_LEVEL"]="--logging-level=$LOGGING_LEVEL")
+    declare -A h_only_args=(        ["SKIP_STARTUP_CONNECTION"]="$SKIP_STARTUP_CONNECTION"
+                                    ["VERBOSE_EVENT_LOGGING"]="$VERBOSE_EVENT_LOGGING"
+                                    ["EXTERNAL_CALLBACK_SERVICE"]="$EXTERNAL_CALLBACK_SERVICE" )
+    declare -A h_only_arg_strings=( ["SKIP_STARTUP_CONNECTION"]="--skip-startup-connection"
+                                    ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
+                                    ["EXTERNAL_CALLBACK_SERVICE"]="--external-callbacks")
 
-    commands=()
-    for i in "${!args[@]}"
+    declare -A h_and_cb_args(           ["IN_DEV"]="$IN_DEV"
+                                        ["LOGGING_LEVEL"]="$LOGGING_LEVEL" )
+    declare -A h_and_cb_arg_strings(    ["IN_DEV"]="--dev"
+                                        ["LOGGING_LEVEL"]="--logging-level=$LOGGING_LEVEL" )
+
+    h_commands=()
+    for i in "${!h_only_args[@]}"
     do
-        if [ "${args[$i]}" != false ]; then commands+="${arg_strings[$i]} "; fi;
+        if [ "${h_only_args[$i]}" != false ]; then h_commands+="${h_only_arg_strings[$i]} "; fi;
+    done
+    cb_commands=()
+    for i in "${!h_and_cb_args[@]}"
+    do
+        if [ "${h_and_cb_args[$i]}" != false ]; then 
+            cb_commands+="${h_and_cb_arg_strings[$i]} ";
+            cb_commands+="${h_and_cb_arg_strings[$i]} ";
+        fi;
     done
 
     unset PYEPICS_LIBCA
-    hyperion `echo $commands;`>$start_log_path 2>&1 &
-    hyperion-callbacks `echo $commands;`>$callback_start_log_path 2>&1 &
+    hyperion `echo $h_commands;`>$start_log_path 2>&1 &
+    if [ $EXTERNAL_CALLBACK_SERVICE == true ]; then
+        hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
+    fi
 
     echo "$(date) Waiting for Hyperion to boot"
 
