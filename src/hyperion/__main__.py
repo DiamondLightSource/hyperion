@@ -14,6 +14,9 @@ from pydantic.dataclasses import dataclass
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
+from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
+)
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
 )
@@ -36,6 +39,7 @@ class Command:
     devices: Optional[Any] = None
     experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
     parameters: Optional[InternalParameters] = None
+    callbacks: Optional[type[AbstractPlanCallbackCollection]] = None
 
 
 @dataclass
@@ -75,6 +79,7 @@ class BlueskyRunner:
     ) -> None:
         self.RE = RE
         self.context = context
+        self.subscribed_per_plan_callbacks: list[int] = []
         RE.subscribe(self.aperture_change_callback)
 
         self.use_external_callbacks = use_external_callbacks
@@ -95,6 +100,7 @@ class BlueskyRunner:
         experiment: Callable,
         parameters: InternalParameters,
         plan_name: str,
+        callback_type: Optional[type[AbstractPlanCallbackCollection]],
     ) -> StatusAndMessage:
         LOGGER.info(f"Started with parameters: {parameters}")
 
@@ -108,7 +114,7 @@ class BlueskyRunner:
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
             self.command_queue.put(
-                Command(Actions.START, devices, experiment, parameters)
+                Command(Actions.START, devices, experiment, parameters, callback_type)
             )
             return StatusAndMessage(Status.SUCCESS)
 
@@ -146,6 +152,14 @@ class BlueskyRunner:
                 if command.experiment is None:
                     raise ValueError("No experiment provided for START")
                 try:
+                    if (
+                        self.use_external_callbacks
+                        and command.callbacks
+                        and (cbs := list(command.callbacks.setup()))
+                    ):
+                        self.subscribed_per_plan_callbacks += [
+                            self.RE.subscribe(cb) for cb in cbs
+                        ]
                     with TRACER.start_span("do_run"):
                         self.RE(command.experiment(command.devices, command.parameters))
 
@@ -166,6 +180,11 @@ class BlueskyRunner:
                         self.last_run_aborted = False
                     else:
                         self.current_status = ErrorStatusAndMessage(exception)
+                finally:
+                    [
+                        self.RE.unsubscribe(cb)
+                        for cb in self.subscribed_per_plan_callbacks
+                    ]
 
 
 class RunExperiment(Resource):
@@ -184,9 +203,10 @@ class RunExperiment(Resource):
                         f"Experiment plan '{plan_name}' not found in registry."
                     )
 
-                experiment_internal_param_type = experiment_registry_entry.get(
+                experiment_internal_param_type = experiment_registry_entry[
                     "internal_param_type"
-                )
+                ]
+                callback_type = experiment_registry_entry["callback_collection_type"]
                 plan = self.context.plan_functions.get(plan_name)
                 if experiment_internal_param_type is None:
                     raise PlanNotFound(
@@ -203,7 +223,9 @@ class RunExperiment(Resource):
                         f"Wrong experiment parameters ({parameters.hyperion_params.experiment_type}) "
                         f"for plan endpoint {plan_name}."
                     )
-                status_and_message = self.runner.start(plan, parameters, plan_name)
+                status_and_message = self.runner.start(
+                    plan, parameters, plan_name, callback_type
+                )
             except Exception as e:
                 status_and_message = ErrorStatusAndMessage(e)
                 LOGGER.error(format_exception(e))

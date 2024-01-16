@@ -132,7 +132,7 @@ def test_env(request):
     mock_run_engine = MockRunEngine(test_name=repr(request))
     mock_context = BlueskyContext()
     real_plans_and_test_exps = dict(
-        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
+        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS  # type: ignore
     )
     mock_context.plan_functions = {
         k: MagicMock() for k in real_plans_and_test_exps.keys()
@@ -298,7 +298,10 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
             ],
             ("INFO", True, True, True, True),
         ),
-        (["--external-callbacks", "--logging-level=WARNING"], ("WARNING", False, False, False, True)),
+        (
+            ["--external-callbacks", "--logging-level=WARNING"],
+            ("WARNING", False, False, False, True),
+        ),
     ],
 )
 def test_cli_args_parse(arg_list, parsed_arg_values):
@@ -374,7 +377,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(None, None, "flyscan_xray_centre")
+        runner.start(None, None, "flyscan_xray_centre", None)  # type: ignore
         mock_setup.assert_called_once()
         runner.shutdown()
 
