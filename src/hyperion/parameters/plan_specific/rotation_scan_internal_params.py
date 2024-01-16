@@ -129,6 +129,7 @@ class RotationInternalParameters(InternalParameters):
             all_params["omega_increment"] = 0
         all_params["num_triggers"] = 1
         all_params["num_images_per_trigger"] = all_params["num_images"]
+        all_params["current_energy_ev"] = all_params["expected_energy_ev"]
         return RotationHyperionParameters(
             **extract_hyperion_params_from_flat_dict(
                 all_params, cls._hyperion_param_key_definitions()

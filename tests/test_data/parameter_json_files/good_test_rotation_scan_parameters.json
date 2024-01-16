@@ -7,7 +7,7 @@
         "zocalo_environment": "dev_artemis",
         "experiment_type": "rotation_scan",
         "detector_params": {
-            "current_energy_ev": 100,
+            "expected_energy_ev": 100,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,

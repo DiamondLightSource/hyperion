@@ -33,7 +33,7 @@ def test_params(tmpdir):
         "prefix"
     ] = f"{tmpdir}/{TEST_FILENAME}"
     param_dict["experiment_params"]["rotation_angle"] = 360.0
-    param_dict["hyperion_params"]["detector_params"]["current_energy_ev"] = 12700
+    param_dict["hyperion_params"]["detector_params"]["expected_energy_ev"] = 12700
     param_dict["hyperion_params"]["ispyb_params"]["current_energy_ev"] = 12700
     param_dict["experiment_params"]["rotation_angle"] = 360.0
     params = RotationInternalParameters(**param_dict)
