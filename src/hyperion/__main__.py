@@ -67,12 +67,17 @@ class BlueskyRunner:
     context: BlueskyContext
 
     def __init__(
-        self, RE: RunEngine, context: BlueskyContext, skip_startup_connection=False
+        self,
+        RE: RunEngine,
+        context: BlueskyContext,
+        skip_startup_connection=False,
+        use_external_callbacks: bool = False,
     ) -> None:
         self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
         self.RE = RE
         self.skip_startup_connection = skip_startup_connection
         self.context = context
+        self.use_external_callbacks = use_external_callbacks
         RE.subscribe(self.aperture_change_callback)
         RE.subscribe(self.publisher)
         if VERBOSE_EVENT_LOGGING:
@@ -176,8 +181,8 @@ class RunExperiment(Resource):
                         f"Experiment plan '{plan_name}' not found in registry."
                     )
 
-                experiment_internal_param_type: InternalParameters = (
-                    experiment_registry_entry.get("internal_param_type")
+                experiment_internal_param_type = experiment_registry_entry.get(
+                    "internal_param_type"
                 )
                 plan = self.context.plan_functions.get(plan_name)
                 if experiment_internal_param_type is None:
@@ -233,12 +238,15 @@ def create_app(
     test_config=None,
     RE: RunEngine = RunEngine({}),
     skip_startup_connection: bool = False,
+    use_external_callbacks: bool = False,
 ) -> Tuple[Flask, BlueskyRunner]:
     context = setup_context(
         wait_for_connection=not skip_startup_connection,
     )
 
-    runner = BlueskyRunner(RE, context=context)
+    runner = BlueskyRunner(
+        RE, context=context, use_external_callbacks=use_external_callbacks
+    )
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
@@ -258,16 +266,14 @@ def create_app(
 
 def main():
     hyperion_port = 5005
-    (
-        logging_level,
-        VERBOSE_EVENT_LOGGING,
-        dev_mode,
-        skip_startup_connection,
-    ) = parse_cli_args()
+    args = parse_cli_args()
     set_up_logging_handlers(
-        logger=LOGGER, logging_level=logging_level, dev_mode=bool(dev_mode)
+        logger=LOGGER, logging_level=args.logging_level, dev_mode=args.dev_mode
     )
-    app, runner = create_app(skip_startup_connection=bool(skip_startup_connection))
+    app, runner = create_app(
+        skip_startup_connection=args.skip_startup_connection,
+        use_external_callbacks=args.use_external_callbacks,
+    )
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
@@ -277,7 +283,7 @@ def main():
     )
     flask_thread.start()
     LOGGER.info(
-        f"Hyperion now listening on {hyperion_port} ({'IN DEV' if dev_mode else ''})"
+        f"Hyperion now listening on {hyperion_port} ({'IN DEV' if args.dev_mode else ''})"
     )
     runner.wait_on_queue()
     flask_thread.join()
