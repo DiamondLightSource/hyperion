@@ -226,7 +226,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )
-    test_rotation_params.hyperion_params.detector_params.current_energy_ev = (
+    test_rotation_params.hyperion_params.detector_params.expected_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )
 

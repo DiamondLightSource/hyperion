@@ -2,9 +2,6 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "type": "object",
     "properties": {
-        "current_energy_ev": {
-            "type": "number"
-        },
         "directory": {
             "type": "string"
         },
@@ -21,5 +18,5 @@
             "type": "string"
         }
     },
-    "minProperties": 6
+    "minProperties": 5
 }

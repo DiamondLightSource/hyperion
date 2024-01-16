@@ -21,11 +21,11 @@ from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params im
 
 
 @pytest.fixture
-def wait_for_robot_load_composite(
-    smargon,
-):
+def wait_for_robot_load_composite(smargon, dcm):
     composite = MagicMock()
     composite.smargon = smargon
+    composite.dcm = dcm
+    composite.dcm.energy_in_kev.user_readback.sim_put(11.105)
     return composite
 
 
@@ -45,6 +45,10 @@ def wait_for_robot_load_then_centre_params():
     return WaitForRobotLoadThenCentreInternalParameters(**params)
 
 
+def dummy_set_energy_plan(energy, composite):
+    return (yield Msg("set_energy_plan"))
+
+
 @patch(
     "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
@@ -58,6 +62,11 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
 ):
     RE = RunEngine()
+
+    # async def do_nothing_and_return_current_energy(_):
+    #     return 11.105
+
+    # RE.register_command("set_energy_plan", do_nothing_and_return_current_energy)
     RE(
         wait_for_robot_load_then_centre(
             wait_for_robot_load_composite, wait_for_robot_load_then_centre_params
@@ -72,6 +81,8 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
         assert value == getattr(wait_for_robot_load_composite, name)
 
     assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
+    assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
+    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
 
 
 @patch(
@@ -79,14 +90,19 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 )
 @patch(
     "hyperion.experiment_plans.wait_for_robot_load_then_centre_plan.set_energy_plan",
-    MagicMock(return_value=iter([Msg("set_energy_plan")])),
+    MagicMock(side_effect=dummy_set_energy_plan),
 )
-def test_when_plan_run_energy_change_executes(
+def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
     mock_centring_plan: MagicMock,
     wait_for_robot_load_composite: WaitForRobotLoadThenCentreComposite,
     wait_for_robot_load_then_centre_params: WaitForRobotLoadThenCentreInternalParameters,
     sim_run_engine,
 ):
+    sim_run_engine.add_handler(
+        "read",
+        "dcm_energy_in_kev",
+        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+    )
     messages = sim_run_engine.simulate_plan(
         wait_for_robot_load_then_centre(
             wait_for_robot_load_composite, wait_for_robot_load_then_centre_params
@@ -95,6 +111,11 @@ def test_when_plan_run_energy_change_executes(
     sim_run_engine.assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "set_energy_plan"
     )
+    params_passed: PinCentreThenXrayCentreInternalParameters = (
+        mock_centring_plan.call_args[0][1]
+    )
+    assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
+    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
 
 
 @patch(
@@ -110,6 +131,11 @@ def test_wait_for_robot_load_then_centre_doesnt_set_energy_if_not_specified(
     wait_for_robot_load_then_centre_params_no_energy: WaitForRobotLoadThenCentreInternalParameters,
     sim_run_engine,
 ):
+    sim_run_engine.add_handler(
+        "read",
+        "dcm_energy_in_kev",
+        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+    )
     messages = sim_run_engine.simulate_plan(
         wait_for_robot_load_then_centre(
             wait_for_robot_load_composite,
@@ -117,6 +143,11 @@ def test_wait_for_robot_load_then_centre_doesnt_set_energy_if_not_specified(
         )
     )
     assert not any(msg for msg in messages if msg.command == "set_energy_plan")
+    params_passed: PinCentreThenXrayCentreInternalParameters = (
+        mock_centring_plan.call_args[0][1]
+    )
+    assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11105
+    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
 
 
 def run_simulating_smargon_wait(

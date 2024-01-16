@@ -101,6 +101,11 @@ class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
         all_params["upper_left"] = np.zeros(3, dtype=np.int32)
+        all_params["expected_energy_ev"] = (
+            experiment_params.requested_energy_kev * 1000
+            if experiment_params.requested_energy_kev
+            else None
+        )
         return WaitForRobotLoadThenCentreHyperionParameters(
             **extract_hyperion_params_from_flat_dict(
                 all_params, cls._hyperion_param_key_definitions()
