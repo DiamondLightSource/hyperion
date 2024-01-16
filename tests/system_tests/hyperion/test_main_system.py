@@ -283,21 +283,32 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
     check_status_in_response(response, Status.SUCCESS)
 
 
-def test_cli_args_parse():
-    argv[1:] = ["--dev", "--logging-level=DEBUG"]
+@pytest.mark.parametrize(
+    ["arg_list", "parsed_arg_values"],
+    [
+        (["--dev", "--logging-level=DEBUG"], ("DEBUG", True, False, False, False)),
+        (["--logging-level=INFO"], ("INFO", False, False, False, False)),
+        (
+            [
+                "--dev",
+                "--logging-level=INFO",
+                "--skip-startup-connection",
+                "--external-callbacks",
+                "--verbose-event-logging",
+            ],
+            ("INFO", True, True, True, True),
+        ),
+        (["--external-callbacks", "--logging-level=WARNING"], ("WARNING", False, False, False, True)),
+    ],
+)
+def test_cli_args_parse(arg_list, parsed_arg_values):
+    argv[1:] = arg_list
     test_args = parse_cli_args()
-    assert test_args == ("DEBUG", False, True, False)
-    argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
-    test_args = parse_cli_args()
-    assert test_args == ("DEBUG", True, True, False)
-    argv[1:] = [
-        "--dev",
-        "--logging-level=DEBUG",
-        "--verbose-event-logging",
-        "--skip-startup-connection",
-    ]
-    test_args = parse_cli_args()
-    assert test_args == ("DEBUG", True, True, True)
+    assert test_args.logging_level == parsed_arg_values[0]
+    assert test_args.dev_mode == parsed_arg_values[1]
+    assert test_args.verbose_event_logging == parsed_arg_values[2]
+    assert test_args.skip_startup_connection == parsed_arg_values[3]
+    assert test_args.use_external_callbacks == parsed_arg_values[4]
 
 
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected():

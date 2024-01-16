@@ -55,7 +55,7 @@ def parse_cli_args() -> HyperionArgs:
         help="Skip connecting to EPICS PVs on startup",
     )
     parser.add_argument(
-        "--external_callbacks",
+        "--external-callbacks",
         action="store_true",
         help="Run the external hyperion-callbacks service and publish events over ZMQ",
     )

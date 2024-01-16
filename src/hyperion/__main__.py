@@ -73,16 +73,19 @@ class BlueskyRunner:
         skip_startup_connection=False,
         use_external_callbacks: bool = False,
     ) -> None:
-        self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
         self.RE = RE
-        self.skip_startup_connection = skip_startup_connection
         self.context = context
-        self.use_external_callbacks = use_external_callbacks
         RE.subscribe(self.aperture_change_callback)
-        RE.subscribe(self.publisher)
+
+        self.use_external_callbacks = use_external_callbacks
+        if self.use_external_callbacks:
+            self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
+            RE.subscribe(self.publisher)
+
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
+        self.skip_startup_connection = skip_startup_connection
         if not self.skip_startup_connection:
             for plan_name in PLAN_REGISTRY:
                 PLAN_REGISTRY[plan_name]["setup"](context)
