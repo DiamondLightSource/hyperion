@@ -10,6 +10,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
+from dodal.devices.det_resolution import resolution
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
@@ -49,6 +50,7 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
 from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
     WaitForRobotLoadThenCentreInternalParameters,
 )
+from hyperion.utils.utils import convert_eV_to_angstrom
 
 
 @dataclasses.dataclass
@@ -144,6 +146,13 @@ def wait_for_robot_load_then_centre(
         parameters.hyperion_params.detector_params.expected_energy_ev = (
             parameters.experiment_params.requested_energy_kev * 1000
         )
+
+    wavelength_angstroms = convert_eV_to_angstrom(actual_energy_ev)
+    parameters.hyperion_params.ispyb_params.resolution = resolution(
+        parameters.hyperion_params.detector_params,
+        wavelength_angstroms,
+        parameters.experiment_params.detector_distance,
+    )
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
