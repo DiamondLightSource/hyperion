@@ -474,7 +474,7 @@ def test_ispyb_deposition_comment_correct(
 
 
 @patch("ispyb.open", autospec=True)
-def test_ispyb_deposition_rounds_to_int(
+def test_ispyb_deposition_rounds_position_to_int(
     mock_ispyb_conn: MagicMock,
     dummy_ispyb: Store2DGridscanInIspyb,
 ):
@@ -494,6 +494,44 @@ def test_ispyb_deposition_rounds_to_int(
     assert upserted_param_value_list[29] == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
         "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [3200,1700]."
+    )
+
+
+@pytest.mark.parametrize(
+    ["raw", "rounded"],
+    [
+        (0.0012345, "1.2"),
+        (0.020000000, "20.0"),
+        (0.01999999, "20.0"),
+        (0.015257, "15.3"),
+        (0.0001234, "0.1"),
+        (0.0017345, "1.7"),
+        (0.0019945, "2.0"),
+    ],
+)
+@patch(
+    "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.oav_utils.bottom_right_from_top_left",
+    autospec=True,
+)
+def test_ispyb_deposition_rounds_box_size_int(
+    bottom_right_from_top_left: MagicMock,
+    dummy_ispyb: Store2DGridscanInIspyb,
+    dummy_params: GridscanInternalParameters,
+    raw,
+    rounded,
+):
+    bottom_right_from_top_left.return_value = dummy_ispyb.upper_left = [0, 0, 0]
+    dummy_ispyb.ispyb_params = MagicMock()
+    dummy_ispyb.full_params = dummy_params
+    dummy_ispyb.y_steps = dummy_ispyb.full_params.experiment_params.x_steps = 0
+
+    dummy_ispyb.y_step_size = (
+        dummy_ispyb.full_params.experiment_params.x_step_size
+    ) = raw
+
+    assert dummy_ispyb._construct_comment() == (
+        "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
+        f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."
     )
 
 
