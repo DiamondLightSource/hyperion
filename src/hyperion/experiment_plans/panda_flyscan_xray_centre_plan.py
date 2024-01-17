@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 from typing import TYPE_CHECKING, Any
 
 import bluesky.plan_stubs as bps
@@ -11,21 +10,11 @@ from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.attenuator import Attenuator
-from dodal.devices.backlight import Backlight
-from dodal.devices.eiger import EigerDetector
-from dodal.devices.flux import Flux
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.panda_fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params,
 )
-from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon, StubPosition
-from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
-from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra import Zebra
-from ophyd_async.panda import PandA
+from dodal.devices.smargon import StubPosition
 
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
@@ -45,6 +34,9 @@ from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    FlyScanXRayCentreComposite,
+)
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
@@ -58,55 +50,21 @@ from hyperion.parameters.constants import (
     SIM_BEAMLINE,
 )
 from hyperion.tracing import TRACER
-from hyperion.utils.aperturescatterguard import (
-    load_default_aperture_scatterguard_positions_if_unset,
-)
 from hyperion.utils.context import device_composite_from_context, setup_context
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-        PandaGridscanInternalParameters as GridscanInternalParameters,
+        PandAGridscanInternalParameters as GridscanInternalParameters,
     )
+from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from dodal.devices.zocalo import (
     ZOCALO_READING_PLAN_NAME,
-    ZocaloResults,
     get_processing_result,
 )
 
 PANDA_SETUP_PATH = (
     "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_base.yaml"
 )
-
-
-@dataclasses.dataclass
-class FlyScanXRayCentreComposite:
-    """All devices which are directly or indirectly required by this plan"""
-
-    aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
-    backlight: Backlight
-    eiger: EigerDetector
-    panda_fast_grid_scan: PandAFastGridScan
-    flux: Flux
-    s4_slit_gaps: S4SlitGaps
-    smargon: Smargon
-    undulator: Undulator
-    synchrotron: Synchrotron
-    xbpm_feedback: XBPMFeedback
-    panda: PandA
-    zebra: Zebra
-    zocalo: ZocaloResults
-
-    @property
-    def sample_motors(self) -> Smargon:
-        """Convenience alias with a more user-friendly name"""
-        return self.smargon
-
-    def __post_init__(self):
-        """Ensure that aperture positions are loaded whenever this class is created."""
-        load_default_aperture_scatterguard_positions_if_unset(
-            self.aperture_scatterguard
-        )
 
 
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
@@ -116,8 +74,9 @@ def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
 
 def set_aperture_for_bbox_size(
     aperture_device: ApertureScatterguard,
-    bbox_size: list[int],
+    bbox_size: list[int] | np.ndarray,
 ):
+    assert aperture_device.aperture_positions is not None
     # bbox_size is [x,y,z], for i03 we only care about x
     if bbox_size[0] < 2:
         aperture_size_positions = aperture_device.aperture_positions.MEDIUM
@@ -201,6 +160,7 @@ def run_gridscan(
     fgs_motors = fgs_composite.panda_fast_grid_scan
 
     LOGGER.info("Setting fgs params")
+    assert isinstance(parameters.experiment_params, PandAGridScanParams)
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
 
     yield from wait_for_gridscan_valid(fgs_motors)
@@ -279,6 +239,8 @@ def run_gridscan_and_move(
         fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
         time_between_x_steps_ms,
     )
+
+    assert isinstance(parameters.experiment_params, PandAGridScanParams)
 
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
@@ -388,7 +350,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     RE = RunEngine({})
-    RE.waiting_hook = ProgressBarManager()
+    RE.waiting_hook = ProgressBarManager()  # type: ignore
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
         GridscanInternalParameters,
     )

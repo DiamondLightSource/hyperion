@@ -116,7 +116,7 @@ def set_zebra_shutter_to_manual(
 
 
 def make_trigger_safe(zebra: Zebra, group="make_zebra_safe", wait=False):
-    yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=wait)
+    yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=wait, group=group)
 
 
 def setup_zebra_for_panda_flyscan(

@@ -29,9 +29,6 @@ from ophyd_async.core.async_status import AsyncStatus
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
-from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite as PandaFlyScanXrayCentreComposite,
-)
 from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
@@ -51,7 +48,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandaGridscanInternalParameters,
+    PandAGridscanInternalParameters,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -153,7 +150,7 @@ def test_fgs_params():
 
 @pytest.fixture
 def test_panda_fgs_params():
-    return PandaGridscanInternalParameters(**raw_params_from_file())
+    return PandAGridscanInternalParameters(**raw_params_from_file())
 
 
 @pytest.fixture
@@ -445,6 +442,8 @@ def fake_fgs_composite(
         xbpm_feedback=xbpm_feedback,
         zebra=i03.zebra(fake_with_ophyd_sim=True),
         zocalo=zocalo,
+        panda=MagicMock(),
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -469,6 +468,10 @@ def fake_fgs_composite(
     gridscan_result.set_finished()
     fake_composite.fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
     fake_composite.fast_grid_scan.complete = MagicMock(return_value=gridscan_result)
+    fake_composite.panda_fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
+    fake_composite.panda_fast_grid_scan.complete = MagicMock(
+        return_value=gridscan_result
+    )
 
     test_result = {
         "centre_of_mass": [6, 6, 6],
@@ -489,76 +492,6 @@ def fake_fgs_composite(
     fake_composite.zocalo.timeout_s = 3
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
-
-    return fake_composite
-
-
-@pytest.fixture
-def fake_panda_fgs_composite(
-    smargon: Smargon,
-    test_fgs_params: GridscanInternalParameters,
-    RE: RunEngine,
-    done_status,
-):
-    fake_composite = PandaFlyScanXrayCentreComposite(
-        aperture_scatterguard=i03.aperture_scatterguard(fake_with_ophyd_sim=True),
-        attenuator=i03.attenuator(fake_with_ophyd_sim=True),
-        backlight=i03.backlight(fake_with_ophyd_sim=True),
-        eiger=i03.eiger(fake_with_ophyd_sim=True),
-        flux=i03.flux(fake_with_ophyd_sim=True),
-        s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
-        smargon=smargon,
-        undulator=i03.undulator(fake_with_ophyd_sim=True),
-        synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
-        xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
-        zebra=i03.zebra(fake_with_ophyd_sim=True),
-        zocalo=i03.zocalo(),
-        panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
-        panda=MagicMock(),  # PandA ophyd sim doesn't contain all the signals we need
-    )
-
-    fake_composite.eiger.stage = MagicMock(return_value=done_status)
-    fake_composite.eiger.set_detector_parameters(
-        test_fgs_params.hyperion_params.detector_params
-    )
-    fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore
-    fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
-    fake_composite.eiger.odin.check_odin_state = lambda: True
-    fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.aperture.z.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.scatterguard.x.user_setpoint._use_limits = (
-        False
-    )
-    fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
-        False
-    )
-    gridscan_start = DeviceStatus(device=fake_composite.panda_fast_grid_scan)
-    gridscan_start.set_finished()
-    gridscan_result = GridScanCompleteStatus(device=fake_composite.panda_fast_grid_scan)
-    gridscan_result.set_finished()
-    fake_composite.panda_fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
-    fake_composite.panda_fast_grid_scan.complete = MagicMock(
-        return_value=gridscan_result
-    )
-
-    test_result = {
-        "centre_of_mass": [6, 6, 6],
-        "max_voxel": [5, 5, 5],
-        "max_count": 123456,
-        "n_voxels": 321,
-        "total_count": 999999,
-        "bounding_box": [[3, 3, 3], [9, 9, 9]],
-    }
-
-    @AsyncStatus.wrap
-    async def mock_complete(result):
-        await fake_composite.zocalo._put_results([result], MagicMock())
-
-    fake_composite.zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
-    fake_composite.zocalo.timeout_s = 3
-    fake_composite.panda_fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
-    fake_composite.panda_fast_grid_scan.position_counter.sim_put(0)  # type: ignore
 
     return fake_composite
 

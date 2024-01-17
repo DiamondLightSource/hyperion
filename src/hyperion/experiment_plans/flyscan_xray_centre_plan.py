@@ -17,6 +17,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 from dodal.devices.flux import Flux
+from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
@@ -29,6 +30,7 @@ from dodal.devices.zocalo.zocalo_results import (
     ZocaloResults,
     get_processing_result,
 )
+from ophyd_async.panda import PandA
 
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
@@ -85,6 +87,8 @@ class FlyScanXRayCentreComposite:
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zocalo: ZocaloResults
+    panda: PandA
+    panda_fast_grid_scan: PandAFastGridScan
 
     @property
     def sample_motors(self) -> Smargon:

@@ -20,8 +20,10 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_pre_collection,
 )
 from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
+)
+from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
     panda_flyscan_xray_centre,
     read_hardware_for_ispyb_pre_collection,
     run_gridscan,
@@ -48,7 +50,7 @@ from hyperion.parameters.constants import (
     GRIDSCAN_OUTER_PLAN,
 )
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandaGridscanInternalParameters,
+    PandAGridscanInternalParameters,
 )
 
 from ...system_tests.external_interaction.conftest import (
@@ -63,6 +65,13 @@ from .conftest import (
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
 )
+
+
+@pytest.fixture
+def RE_with_subs(RE: RunEngine, mock_subscriptions):
+    for cb in list(mock_subscriptions):
+        RE.subscribe(cb)
+    yield RE, mock_subscriptions
 
 
 @pytest.fixture
@@ -90,7 +99,7 @@ class TestFlyscanXrayCentrePlan:
 
     def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
         self,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
         assert (
             test_panda_fgs_params.hyperion_params.detector_params.detector_size_constants.det_type_string
@@ -100,7 +109,7 @@ class TestFlyscanXrayCentrePlan:
         raw_params_dict["hyperion_params"]["detector_params"][
             "detector_size_constants"
         ] = EIGER_TYPE_EIGER2_X_4M
-        params: PandaGridscanInternalParameters = PandaGridscanInternalParameters(
+        params: PandAGridscanInternalParameters = PandAGridscanInternalParameters(
             **raw_params_dict
         )
         det_dimension = (
@@ -116,29 +125,29 @@ class TestFlyscanXrayCentrePlan:
 
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
         RE: RunEngine,
         ispyb_plan,
     ):
         undulator_test_value = 1.234
 
-        fake_panda_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
+        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
 
         synchrotron_test_value = "test"
-        fake_panda_fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(  # type: ignore
+        fake_fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(  # type: ignore
             synchrotron_test_value
         )
 
         transmission_test_value = 0.01
-        fake_panda_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)  # type: ignore
+        fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)  # type: ignore
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
-        fake_panda_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
-        fake_panda_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)  # type: ignore
+        fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
+        fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)  # type: ignore
         flux_test_value = 10.0
-        fake_panda_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
+        fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
@@ -150,11 +159,11 @@ class TestFlyscanXrayCentrePlan:
 
         RE(
             ispyb_plan(
-                fake_panda_fgs_composite.undulator,
-                fake_panda_fgs_composite.synchrotron,
-                fake_panda_fgs_composite.s4_slit_gaps,
-                fake_panda_fgs_composite.attenuator,
-                fake_panda_fgs_composite.flux,
+                fake_fgs_composite.undulator,
+                fake_fgs_composite.synchrotron,
+                fake_fgs_composite.s4_slit_gaps,
+                fake_fgs_composite.attenuator,
+                fake_fgs_composite.flux,
             )
         )
         params = test_ispyb_callback.params
@@ -194,47 +203,44 @@ class TestFlyscanXrayCentrePlan:
         move_x_y_z: MagicMock,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
         mock_subscriptions: XrayCentreCallbackCollection,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
         RE: RunEngine,
     ):
         set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-        mock_zocalo_trigger(fake_panda_fgs_composite.zocalo, TEST_RESULT_LARGE)
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
 
-        mock_zocalo_trigger(fake_panda_fgs_composite.zocalo, TEST_RESULT_MEDIUM)
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_MEDIUM)
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
 
-        mock_zocalo_trigger(fake_panda_fgs_composite.zocalo, TEST_RESULT_SMALL)
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_SMALL)
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
 
-        assert (
-            fake_panda_fgs_composite.aperture_scatterguard.aperture_positions
-            is not None
-        )
+        assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
-            *(fake_panda_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
+            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
         )
         ap_call_medium = call(
-            *(fake_panda_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
+            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
         )
 
         move_aperture.assert_has_calls(
@@ -242,14 +248,14 @@ class TestFlyscanXrayCentrePlan:
         )
 
         mv_call_large = call(
-            fake_panda_fgs_composite.sample_motors,
+            fake_fgs_composite.sample_motors,
             0.05,
             pytest.approx(0.15),
             0.25,
             wait=True,
         )
         mv_call_medium = call(
-            fake_panda_fgs_composite.sample_motors,
+            fake_fgs_composite.sample_motors,
             0.05,
             pytest.approx(0.15),
             0.25,
@@ -263,8 +269,8 @@ class TestFlyscanXrayCentrePlan:
     def test_results_passed_to_move_motors(
         self,
         bps_abs_set: MagicMock,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
         RE: RunEngine,
     ):
         from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
@@ -274,21 +280,21 @@ class TestFlyscanXrayCentrePlan:
                 np.array([1, 2, 3])
             )
         )
-        RE(move_x_y_z(fake_panda_fgs_composite.sample_motors, *motor_position))
+        RE(move_x_y_z(fake_fgs_composite.sample_motors, *motor_position))
         bps_abs_set.assert_has_calls(
             [
                 call(
-                    fake_panda_fgs_composite.sample_motors.x,
+                    fake_fgs_composite.sample_motors.x,
                     motor_position[0],
                     group="move_x_y_z",
                 ),
                 call(
-                    fake_panda_fgs_composite.sample_motors.y,
+                    fake_fgs_composite.sample_motors.y,
                     motor_position[1],
                     group="move_x_y_z",
                 ),
                 call(
-                    fake_panda_fgs_composite.sample_motors.z,
+                    fake_fgs_composite.sample_motors.z,
                     motor_position[2],
                     group="move_x_y_z",
                 ),
@@ -319,8 +325,8 @@ class TestFlyscanXrayCentrePlan:
         move_aperture: MagicMock,
         RE: RunEngine,
         mock_subscriptions: XrayCentreCallbackCollection,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
         mock_subscriptions.zocalo_handler.activity_gated_start(
             self.td.test_start_document
@@ -330,7 +336,7 @@ class TestFlyscanXrayCentrePlan:
         )
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
@@ -361,8 +367,8 @@ class TestFlyscanXrayCentrePlan:
         aperture_set: MagicMock,
         RE: RunEngine,
         mock_subscriptions: XrayCentreCallbackCollection,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
@@ -370,12 +376,12 @@ class TestFlyscanXrayCentrePlan:
 
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
         assert (
-            fake_panda_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 1
         )
 
@@ -403,8 +409,8 @@ class TestFlyscanXrayCentrePlan:
         aperture_set: MagicMock,
         RE: RunEngine,
         mock_subscriptions: XrayCentreCallbackCollection,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
@@ -416,7 +422,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
@@ -446,17 +452,17 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         RE: RunEngine,
         mock_subscriptions: XrayCentreCallbackCollection,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
-        mock_zocalo_trigger(fake_panda_fgs_composite.zocalo, [])
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         RE.subscribe(mock_subscriptions.ispyb_handler)
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
@@ -480,16 +486,16 @@ class TestFlyscanXrayCentrePlan:
     )
     def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
         self,
-        setup_panda_for_flyscan: MagicMock,
+        mock_setup_panda_for_flyscan: MagicMock,
         move_xyz: MagicMock,
         mock_mv: MagicMock,
-        RE: RunEngine,
-        mock_subscriptions: XrayCentreCallbackCollection,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
+        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        test_panda_fgs_params: PandAGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
-        fake_panda_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        RE, mock_subscriptions = RE_with_subs
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         initial_x_y_z = np.array(
             [
                 random.uniform(-0.5, 0.5),
@@ -497,17 +503,16 @@ class TestFlyscanXrayCentrePlan:
                 random.uniform(-0.5, 0.5),
             ]
         )
-        fake_panda_fgs_composite.smargon.x.user_readback.sim_put(initial_x_y_z[0])  # type: ignore
-        fake_panda_fgs_composite.smargon.y.user_readback.sim_put(initial_x_y_z[1])  # type: ignore
-        fake_panda_fgs_composite.smargon.z.user_readback.sim_put(initial_x_y_z[2])  # type: ignore
+        fake_fgs_composite.smargon.x.user_readback.sim_put(initial_x_y_z[0])  # type: ignore
+        fake_fgs_composite.smargon.y.user_readback.sim_put(initial_x_y_z[1])  # type: ignore
+        fake_fgs_composite.smargon.z.user_readback.sim_put(initial_x_y_z[2])  # type: ignore
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
-        mock_zocalo_trigger(fake_panda_fgs_composite.zocalo, [])
-        RE.subscribe(mock_subscriptions.ispyb_handler)
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
@@ -531,19 +536,19 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         RE: RunEngine,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
         class MoveException(Exception):
             pass
 
-        mock_zocalo_trigger(fake_panda_fgs_composite.zocalo, [])
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         move_xyz.side_effect = MoveException()
 
         with pytest.raises(MoveException):
-            RE(run_gridscan_and_move(fake_panda_fgs_composite, test_panda_fgs_params))
+            RE(run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params))
         assert (
-            fake_panda_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 0
         )
 
@@ -565,12 +570,12 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         mock_subscriptions: XrayCentreCallbackCollection,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
         RE: RunEngine,
         done_status,
     ):
-        fake_panda_fgs_composite.aperture_scatterguard.set = MagicMock(
+        fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
         test_panda_fgs_params.experiment_params.set_stub_offsets = False
@@ -583,12 +588,12 @@ class TestFlyscanXrayCentrePlan:
 
         RE(
             run_gridscan_and_move(
-                fake_panda_fgs_composite,
+                fake_fgs_composite,
                 test_panda_fgs_params,
             )
         )
         assert (
-            fake_panda_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 0
         )
 
@@ -660,24 +665,22 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_kickoff,
         mock_abs_set,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
         mock_subscriptions: XrayCentreCallbackCollection,
         RE: RunEngine,
     ):
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
-        fake_panda_fgs_composite.eiger.disarm_detector = mock_parent.disarm
+        fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
 
-        fake_panda_fgs_composite.eiger.filewriters_finished = Status(done=True, success=True)  # type: ignore
-        fake_panda_fgs_composite.eiger.odin.check_odin_state = MagicMock(
-            return_value=True
-        )
-        fake_panda_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)  # type: ignore
-        fake_panda_fgs_composite.eiger.stage = MagicMock(
+        fake_fgs_composite.eiger.filewriters_finished = Status(done=True, success=True)  # type: ignore
+        fake_fgs_composite.eiger.odin.check_odin_state = MagicMock(return_value=True)
+        fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)  # type: ignore
+        fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
         )
-        fake_panda_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
+        fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
         with patch(
             "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
@@ -689,11 +692,7 @@ class TestFlyscanXrayCentrePlan:
             "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
-            RE(
-                panda_flyscan_xray_centre(
-                    fake_panda_fgs_composite, test_panda_fgs_params
-                )
-            )
+            RE(panda_flyscan_xray_centre(fake_fgs_composite, test_panda_fgs_params))
 
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
@@ -709,16 +708,16 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_complete,
         mock_wait,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
         RE: RunEngine,
     ):
-        fake_panda_fgs_composite.eiger.stage = MagicMock()
-        fake_panda_fgs_composite.eiger.unstage = MagicMock()
+        fake_fgs_composite.eiger.stage = MagicMock()
+        fake_fgs_composite.eiger.unstage = MagicMock()
 
-        RE(run_gridscan(fake_panda_fgs_composite, test_panda_fgs_params))
-        fake_panda_fgs_composite.eiger.stage.assert_called_once()
-        fake_panda_fgs_composite.eiger.unstage.assert_called_once()
+        RE(run_gridscan(fake_fgs_composite, test_panda_fgs_params))
+        fake_fgs_composite.eiger.stage.assert_called_once()
+        fake_fgs_composite.eiger.unstage.assert_called_once()
 
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.bps.wait",
@@ -732,8 +731,8 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_complete,
         mock_wait,
-        fake_panda_fgs_composite: FlyScanXRayCentreComposite,
-        test_panda_fgs_params: PandaGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_panda_fgs_params: PandAGridscanInternalParameters,
         RE: RunEngine,
     ):
         class CompleteException(Exception):
@@ -741,24 +740,24 @@ class TestFlyscanXrayCentrePlan:
 
         mock_complete.side_effect = CompleteException()
 
-        fake_panda_fgs_composite.eiger.stage = MagicMock(
+        fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
         )
 
-        fake_panda_fgs_composite.eiger.odin.check_odin_state = MagicMock()
+        fake_fgs_composite.eiger.odin.check_odin_state = MagicMock()
 
-        fake_panda_fgs_composite.eiger.disarm_detector = MagicMock()
-        fake_panda_fgs_composite.eiger.disable_roi_mode = MagicMock()
+        fake_fgs_composite.eiger.disarm_detector = MagicMock()
+        fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
 
         # Without the complete finishing we will not get all the images
-        fake_panda_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1  # type: ignore
+        fake_fgs_composite.eiger.ALL_FRAMES_TIMEOUT = 0.1  # type: ignore
 
         # Want to get the underlying completion error, not the one raised from unstage
         with pytest.raises(CompleteException):
-            RE(run_gridscan(fake_panda_fgs_composite, test_panda_fgs_params))
+            RE(run_gridscan(fake_fgs_composite, test_panda_fgs_params))
 
-        fake_panda_fgs_composite.eiger.disable_roi_mode.assert_called()
-        fake_panda_fgs_composite.eiger.disarm_detector.assert_called()
+        fake_fgs_composite.eiger.disable_roi_mode.assert_called()
+        fake_fgs_composite.eiger.disarm_detector.assert_called()
 
 
 @patch(
@@ -767,8 +766,8 @@ class TestFlyscanXrayCentrePlan:
 )
 def test_if_smargon_speed_over_limit_then_log_error(
     mock_log: MagicMock,
-    test_panda_fgs_params: PandaGridscanInternalParameters,
-    fake_panda_fgs_composite: FlyScanXRayCentreComposite,
+    test_panda_fgs_params: PandAGridscanInternalParameters,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
     RE: RunEngine,
 ):
     mock_log.error.side_effect = Exception("End test")
@@ -776,7 +775,7 @@ def test_if_smargon_speed_over_limit_then_log_error(
     test_panda_fgs_params.hyperion_params.detector_params.exposure_time = 0.01
 
     with pytest.raises(Exception):
-        RE(run_gridscan_and_move(fake_panda_fgs_composite, test_panda_fgs_params))
+        RE(run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params))
 
     mock_log.error.assert_called_once()
 

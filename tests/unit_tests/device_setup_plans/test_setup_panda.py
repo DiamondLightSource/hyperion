@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from dodal.devices.panda_fast_grid_scan import PandaGridScanParams
+from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from ophyd_async.panda import SeqTrigger
 
 from hyperion.device_setup_plans.setup_panda import (
@@ -37,7 +37,7 @@ def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
 
     if plan == "setup":
         sim.simulate_plan(
-            setup_panda_for_flyscan(mock_panda, "path", PandaGridScanParams(), 1, 1, 1)
+            setup_panda_for_flyscan(mock_panda, "path", PandAGridScanParams(), 1, 1, 1)
         )
     elif plan == "disarm":
         sim.simulate_plan(disarm_panda_for_gridscan(mock_panda))
@@ -89,7 +89,7 @@ def test_setup_panda_correctly_configures_table(
     to look like [0,1,0,0,1,0]
     """
 
-    params = PandaGridScanParams(
+    params = PandAGridScanParams(
         x_steps=x_steps,
         x_step_size=x_step_size,
         x_start=x_start,

@@ -3,40 +3,28 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from dodal.devices.detector import DetectorParams, TriggerMode
+from dodal.devices.detector import TriggerMode
 from dodal.devices.fast_grid_scan import GridAxis
-from dodal.devices.panda_fast_grid_scan import PandaGridScanParams as GridScanParams
+from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from pydantic import validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
-    GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     GridscanIspybParams,
 )
 from hyperion.parameters.internal_parameters import (
-    HyperionParameters,
     InternalParameters,
     extract_experiment_params_from_flat_dict,
     extract_hyperion_params_from_flat_dict,
 )
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanHyperionParameters,
+)
 
 
-class GridscanHyperionParameters(HyperionParameters):
-    ispyb_params: GridscanIspybParams = GridscanIspybParams(
-        **GRIDSCAN_ISPYB_PARAM_DEFAULTS
-    )
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {
-            **DetectorParams.Config.json_encoders,
-            **GridscanIspybParams.Config.json_encoders,
-        }
-
-
-class PandaGridscanInternalParameters(InternalParameters):
-    experiment_params: GridScanParams
+class PandAGridscanInternalParameters(InternalParameters):
+    experiment_params: PandAGridScanParams
     hyperion_params: GridscanHyperionParameters
 
     class Config:
@@ -60,9 +48,9 @@ class PandaGridscanInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
-        return GridScanParams(
+        return PandAGridScanParams(
             **extract_experiment_params_from_flat_dict(
-                GridScanParams, experiment_params
+                PandAGridScanParams, experiment_params
             )
         )
 
@@ -70,7 +58,7 @@ class PandaGridscanInternalParameters(InternalParameters):
     def _preprocess_hyperion_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
     ):
-        experiment_params: GridScanParams = values["experiment_params"]
+        experiment_params: PandAGridScanParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])
         all_params["omega_increment"] = 0

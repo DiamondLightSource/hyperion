@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Callable, TypedDict, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.panda_fast_grid_scan import PandaGridScanParams
+from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 import hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
@@ -33,7 +33,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandaGridscanInternalParameters,
+    PandAGridscanInternalParameters,
 )
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
@@ -81,8 +81,8 @@ EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanPara
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "panda_flyscan_xray_centre": {
         "setup": panda_flyscan_xray_centre_plan.create_devices,
-        "internal_param_type": PandaGridscanInternalParameters,
-        "experiment_param_type": PandaGridScanParams,
+        "internal_param_type": PandAGridscanInternalParameters,
+        "experiment_param_type": PandAGridScanParams,
         "callback_collection_type": XrayCentreCallbackCollection,
     },
     "flyscan_xray_centre": {

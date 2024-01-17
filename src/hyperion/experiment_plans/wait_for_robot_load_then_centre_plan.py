@@ -15,7 +15,7 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -24,6 +24,7 @@ from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.panda import PandA
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -68,6 +69,8 @@ class WaitForRobotLoadThenCentreComposite:
     undulator: Undulator
     zebra: Zebra
     zocalo: ZocaloResults
+    panda: PandA
+    panda_fast_grid_scan: PandAFastGridScan
 
     # SetEnergyComposite fields
     vfm: FocusingMirror
@@ -142,6 +145,8 @@ def wait_for_robot_load_then_centre_plan(
         xbpm_feedback=composite.xbpm_feedback,
         zebra=composite.zebra,
         zocalo=composite.zocalo,
+        panda=composite.panda,
+        panda_fast_grid_scan=composite.panda_fast_grid_scan,
     )
     yield from pin_centre_then_xray_centre_plan(
         grid_detect_then_xray_centre_composite, pin_centre_params
