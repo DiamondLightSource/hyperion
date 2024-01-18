@@ -324,7 +324,7 @@ def test_cli_args_parse(arg_list, parsed_arg_values):
 @patch("hyperion.__main__.Publisher")
 @patch("hyperion.__main__.setup_context")
 @pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
-def test_blueskyrunner_uses_cli_args_correctly(
+def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     setup_context: MagicMock,
     zmq_publisher: MagicMock,
     set_up_logging_handlers: MagicMock,
