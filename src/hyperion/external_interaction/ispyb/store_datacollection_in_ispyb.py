@@ -414,8 +414,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
             "Hyperion: Xray centring - Diffraction grid scan of "
             f"{self.full_params.experiment_params.x_steps} by "
             f"{self.y_steps} images in "
-            f"{self.full_params.experiment_params.x_step_size*1e3} um by "
-            f"{self.y_step_size*1e3} um steps. "
+            f"{(self.full_params.experiment_params.x_step_size*1e3):.1f} um by "
+            f"{(self.y_step_size*1e3):.1f} um steps. "
             f"Top left (px): [{int(self.upper_left[0])},{int(self.upper_left[1])}], "
             f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
         )

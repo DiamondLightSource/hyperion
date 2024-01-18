@@ -159,6 +159,7 @@ def run_gridscan(
         "plan_name": GRIDSCAN_MAIN_PLAN,
     },
 ):
+    yield from bps.stage(fgs_composite.zocalo)  # clear any stale processing results
     sample_motors = fgs_composite.sample_motors
 
     # Currently gridscan only works for omega 0, see #
