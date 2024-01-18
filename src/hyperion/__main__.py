@@ -62,14 +62,6 @@ class ErrorStatusAndMessage(StatusAndMessage):
 
 
 class BlueskyRunner:
-    command_queue: "Queue[Command]" = Queue()
-    current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
-    last_run_aborted: bool = False
-    aperture_change_callback = ApertureChangeCallback()
-    RE: RunEngine
-    skip_startup_connection: bool
-    context: BlueskyContext
-
     def __init__(
         self,
         RE: RunEngine,
@@ -77,6 +69,10 @@ class BlueskyRunner:
         skip_startup_connection=False,
         use_external_callbacks: bool = False,
     ) -> None:
+        self.command_queue: "Queue[Command]" = Queue()
+        self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
+        self.last_run_aborted: bool = False
+        self.aperture_change_callback = ApertureChangeCallback()
         self.RE = RE
         self.context = context
         self.subscribed_per_plan_callbacks: list[int] = []
