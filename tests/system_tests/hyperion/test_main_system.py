@@ -10,6 +10,7 @@ from time import sleep
 from typing import Any, Callable, Optional
 from unittest.mock import MagicMock, patch
 
+import flask
 import pytest
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator import Attenuator
@@ -20,11 +21,16 @@ from hyperion.__main__ import (
     Actions,
     BlueskyRunner,
     Status,
+    compose_start_args,
     create_app,
+    create_targets,
     setup_context,
 )
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
+from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
+)
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
 from hyperion.parameters.cli import parse_cli_args
@@ -283,27 +289,27 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
     check_status_in_response(response, Status.SUCCESS)
 
 
-@pytest.mark.parametrize(
-    ["arg_list", "parsed_arg_values"],
-    [
-        (["--dev", "--logging-level=DEBUG"], ("DEBUG", True, False, False, False)),
-        (["--logging-level=INFO"], ("INFO", False, False, False, False)),
-        (
-            [
-                "--dev",
-                "--logging-level=INFO",
-                "--skip-startup-connection",
-                "--external-callbacks",
-                "--verbose-event-logging",
-            ],
-            ("INFO", True, True, True, True),
-        ),
-        (
-            ["--external-callbacks", "--logging-level=WARNING"],
-            ("WARNING", False, False, False, True),
-        ),
-    ],
-)
+test_argument_combinations = [
+    (["--dev", "--logging-level=DEBUG"], ("DEBUG", True, False, False, False)),
+    (["--logging-level=INFO"], ("INFO", False, False, False, False)),
+    (
+        [
+            "--dev",
+            "--logging-level=INFO",
+            "--skip-startup-connection",
+            "--external-callbacks",
+            "--verbose-event-logging",
+        ],
+        ("INFO", True, True, True, True),
+    ),
+    (
+        ["--external-callbacks", "--logging-level=WARNING"],
+        ("WARNING", False, False, False, True),
+    ),
+]
+
+
+@pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
 def test_cli_args_parse(arg_list, parsed_arg_values):
     argv[1:] = arg_list
     test_args = parse_cli_args()
@@ -312,6 +318,68 @@ def test_cli_args_parse(arg_list, parsed_arg_values):
     assert test_args.verbose_event_logging == parsed_arg_values[2]
     assert test_args.skip_startup_connection == parsed_arg_values[3]
     assert test_args.use_external_callbacks == parsed_arg_values[4]
+
+
+@patch("hyperion.__main__.set_up_logging_handlers")
+@patch("hyperion.__main__.Publisher")
+@patch("hyperion.__main__.setup_context")
+@pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
+def test_blueskyrunner_uses_cli_args_correctly(
+    setup_context: MagicMock,
+    zmq_publisher: MagicMock,
+    set_up_logging_handlers: MagicMock,
+    arg_list,
+    parsed_arg_values,
+):
+    mock_params = MagicMock()
+    mock_params.hyperion_params.experiment_type = "test_experiment"
+    mock_param_class = MagicMock()
+    mock_param_class.from_json.return_value = mock_params
+    callback_class_mock = MagicMock(
+        spec=AbstractPlanCallbackCollection, name="mock_callback_class"
+    )
+    callback_class_mock.setup.return_value = []
+    TEST_REGISTRY = {
+        "test_experiment": {
+            "setup": MagicMock(),
+            "internal_param_type": mock_param_class,
+            "experiment_param_type": MagicMock(),
+            "callback_collection_type": callback_class_mock,
+        }
+    }
+
+    @dataclass
+    class MockCommand:
+        action: Actions
+        devices: Any = None
+        experiment: Any = None
+        parameters: Any = None
+        callbacks: Any = None
+
+    with flask.Flask(__name__).test_request_context() as flask_context, patch.dict(
+        "hyperion.__main__.PLAN_REGISTRY",
+        TEST_REGISTRY,
+        clear=True,
+    ), patch("hyperion.__main__.Command", MockCommand):
+        flask_context.request.data = b"{}"  # type: ignore
+        argv[1:] = arg_list
+        app, runner, port, dev_mode = create_targets()
+        runner_thread = threading.Thread(target=runner.wait_on_queue, daemon=True)
+        runner_thread.start()
+        assert dev_mode == parsed_arg_values[1]
+
+        mock_context = MagicMock()
+        mock_context.plan_functions = {"test_experiment": MagicMock()}
+
+        mock_start_args = compose_start_args(
+            mock_context, "test_experiment", callback_class_mock
+        )
+        runner.start(*mock_start_args)
+
+        runner.shutdown()
+        runner_thread.join()
+        assert (zmq_publisher.call_count == 1) == parsed_arg_values[4]
+        assert (callback_class_mock.setup.call_count == 1) != parsed_arg_values[4]
 
 
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected():

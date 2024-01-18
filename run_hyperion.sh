@@ -162,7 +162,7 @@ if [[ $START == 1 ]]; then
         hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
     fi
 
-    echo "$(date) Waiting for Hyperion to boot"
+    echo "$(date) Waiting for Hyperion to start"
 
     for i in {1..30}
     do
