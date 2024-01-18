@@ -143,13 +143,15 @@ if [[ $START == 1 ]]; then
     h_commands=()
     for i in "${!h_only_args[@]}"
     do
-        if [ "${h_only_args[$i]}" != false ]; then h_commands+="${h_only_arg_strings[$i]} "; fi;
+        if [ "${h_only_args[$i]}" != false ]; then 
+            h_commands+="${h_only_arg_strings[$i]} ";
+        fi;
     done
     cb_commands=()
     for i in "${!h_and_cb_args[@]}"
     do
         if [ "${h_and_cb_args[$i]}" != false ]; then 
-            cb_commands+="${h_and_cb_arg_strings[$i]} ";
+            h_commands+="${h_and_cb_arg_strings[$i]} ";
             cb_commands+="${h_and_cb_arg_strings[$i]} ";
         fi;
     done
