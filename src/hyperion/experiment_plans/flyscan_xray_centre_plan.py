@@ -25,6 +25,7 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import (
     ZOCALO_READING_PLAN_NAME,
+    ZOCALO_STAGE_GROUP,
     ZocaloResults,
     get_processing_result,
 )
@@ -193,7 +194,6 @@ def run_gridscan(
         else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
     )
     def do_fgs():
-        yield from bps.wait()  # Wait for all moves to complete
         # Check topup gate
         dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000.0
         total_exposure = (
@@ -205,6 +205,9 @@ def run_gridscan(
             30.0,
         )
         yield from bps.kickoff(fgs_motors)
+        yield from bps.wait(
+            ZOCALO_STAGE_GROUP
+        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
         yield from bps.complete(fgs_motors, wait=True)
 
     LOGGER.info("Waiting for arming to finish")
