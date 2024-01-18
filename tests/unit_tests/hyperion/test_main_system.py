@@ -323,6 +323,25 @@ def test_cli_args_parse(arg_list, parsed_arg_values):
     assert test_args.use_external_callbacks == parsed_arg_values[4]
 
 
+mock_params = MagicMock()
+mock_params.hyperion_params.experiment_type = "test_experiment"
+mock_param_class = MagicMock()
+mock_param_class.from_json.return_value = mock_params
+callback_class_mock = MagicMock(
+    spec=AbstractPlanCallbackCollection, name="mock_callback_class"
+)
+callback_class_mock.setup.return_value = []
+TEST_REGISTRY = {
+    "test_experiment": {
+        "setup": MagicMock(),
+        "internal_param_type": mock_param_class,
+        "experiment_param_type": MagicMock(),
+        "callback_collection_type": callback_class_mock,
+    }
+}
+
+
+@patch.dict("hyperion.__main__.PLAN_REGISTRY", TEST_REGISTRY, clear=True)
 @patch("hyperion.__main__.set_up_logging_handlers")
 @patch("hyperion.__main__.Publisher")
 @patch("hyperion.__main__.setup_context")
@@ -334,22 +353,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     arg_list,
     parsed_arg_values,
 ):
-    mock_params = MagicMock()
-    mock_params.hyperion_params.experiment_type = "test_experiment"
-    mock_param_class = MagicMock()
-    mock_param_class.from_json.return_value = mock_params
-    callback_class_mock = MagicMock(
-        spec=AbstractPlanCallbackCollection, name="mock_callback_class"
-    )
-    callback_class_mock.setup.return_value = []
-    TEST_REGISTRY = {
-        "test_experiment": {
-            "setup": MagicMock(),
-            "internal_param_type": mock_param_class,
-            "experiment_param_type": MagicMock(),
-            "callback_collection_type": callback_class_mock,
-        }
-    }
+    callback_class_mock.setup.call_count = 0
 
     @dataclass
     class MockCommand:
@@ -359,11 +363,9 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
         parameters: Any = None
         callbacks: Any = None
 
-    with flask.Flask(__name__).test_request_context() as flask_context, patch.dict(
-        "hyperion.__main__.PLAN_REGISTRY",
-        TEST_REGISTRY,
-        clear=True,
-    ), patch("hyperion.__main__.Command", MockCommand):
+    with flask.Flask(__name__).test_request_context() as flask_context, patch(
+        "hyperion.__main__.Command", MockCommand
+    ):
         flask_context.request.data = b"{}"  # type: ignore
         argv[1:] = arg_list
         app, runner, port, dev_mode = create_targets()
