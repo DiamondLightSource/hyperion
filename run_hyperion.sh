@@ -164,8 +164,8 @@ if [[ $START == 1 ]]; then
 
     for i in {1..30}
     do
-        curl --head -X GET http://localhost:5005/status >/dev/null
         echo "$(date)"
+        curl --head -X GET http://localhost:5005/status >/dev/null
         ret_value=$?
         if [ $ret_value -ne 0 ]; then
             sleep 1
