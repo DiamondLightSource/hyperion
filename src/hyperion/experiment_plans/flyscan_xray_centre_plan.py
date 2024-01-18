@@ -159,7 +159,6 @@ def run_gridscan(
         "plan_name": GRIDSCAN_MAIN_PLAN,
     },
 ):
-    yield from bps.stage(fgs_composite.zocalo)  # clear any stale processing results
     sample_motors = fgs_composite.sample_motors
 
     # Currently gridscan only works for omega 0, see #
@@ -239,8 +238,13 @@ def run_gridscan_and_move(
     yield from setup_zebra_for_gridscan(fgs_composite.zebra)
 
     LOGGER.info("Starting grid scan")
-
+    yield from bps.stage(
+        fgs_composite.zocalo
+    )  # connect to zocalo and make sure the queue is clear
     yield from run_gridscan(fgs_composite, parameters)
+    yield from bps.unstage(
+        fgs_composite.zocalo
+    )  # make sure we don't consume any other results
 
     LOGGER.info("Grid scan finished, getting results.")
 
