@@ -101,6 +101,9 @@ class MockRunEngine:
     def subscribe(self, *args):
         pass
 
+    def unsubscribe(self, *args):
+        pass
+
 
 @dataclass
 class ClientAndRunEngine:
@@ -364,6 +367,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
         flask_context.request.data = b"{}"  # type: ignore
         argv[1:] = arg_list
         app, runner, port, dev_mode = create_targets()
+        runner.RE = MagicMock()
         runner_thread = threading.Thread(target=runner.wait_on_queue, daemon=True)
         runner_thread.start()
         assert dev_mode == parsed_arg_values[1]
