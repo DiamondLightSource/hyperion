@@ -35,7 +35,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-from ..external_interaction.conftest import (  # noqa
+from ..external_interaction.conftest import (  # noqa  # noqa
     fetch_comment,
     zocalo_env,
 )
@@ -50,6 +50,7 @@ def params():
 
 @pytest.fixture
 def fgs_composite():
+    # todo this might need fixing
     composite = FlyScanXRayCentreComposite(
         attenuator=i03.attenuator(),
         aperture_scatterguard=i03.aperture_scatterguard(),
