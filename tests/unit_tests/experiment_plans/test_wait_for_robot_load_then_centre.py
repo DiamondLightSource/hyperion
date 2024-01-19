@@ -63,10 +63,6 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 ):
     RE = RunEngine()
 
-    # async def do_nothing_and_return_current_energy(_):
-    #     return 11.105
-
-    # RE.register_command("set_energy_plan", do_nothing_and_return_current_energy)
     RE(
         wait_for_robot_load_then_centre(
             wait_for_robot_load_composite, wait_for_robot_load_then_centre_params

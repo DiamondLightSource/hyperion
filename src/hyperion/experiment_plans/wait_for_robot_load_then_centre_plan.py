@@ -124,11 +124,6 @@ def wait_for_robot_load_then_centre_plan(
             set_energy_composite,
         )
 
-    actual_energy_ev = 1000 * (yield from bps.rd(composite.dcm.energy_in_kev))
-    parameters.hyperion_params.ispyb_params.current_energy_ev = actual_energy_ev
-    if not parameters.experiment_params.requested_energy_kev:
-        parameters.hyperion_params.detector_params.expected_energy_ev = actual_energy_ev
-
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
     params_json = json.loads(parameters.json())
@@ -165,9 +160,14 @@ def wait_for_robot_load_then_centre(
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
 
+    actual_energy_ev = 1000 * (yield from bps.rd(composite.dcm.energy_in_kev))
+    parameters.hyperion_params.ispyb_params.current_energy_ev = actual_energy_ev
+    if not parameters.experiment_params.requested_energy_kev:
+        parameters.hyperion_params.detector_params.expected_energy_ev = actual_energy_ev
+
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    return start_preparing_data_collection_then_do_plan(
+    yield from start_preparing_data_collection_then_do_plan(
         eiger,
         composite.detector_motion,
         parameters.experiment_params.detector_distance,
