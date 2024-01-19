@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from hyperion.external_interaction.callbacks.ispyb_callback_base import \
-    BaseISPyBCallback
+from hyperion.external_interaction.callbacks.ispyb_callback_base import (
+    BaseISPyBCallback,
+)
 from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds, StoreRotationInIspyb)
+    IspybIds,
+    StoreRotationInIspyb,
+)
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import (ROTATION_OUTER_PLAN,
-                                           ROTATION_PLAN_MAIN)
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import \
-    RotationInternalParameters
+from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
