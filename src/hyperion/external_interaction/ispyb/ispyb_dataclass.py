@@ -13,6 +13,8 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     "current_energy_ev": 12700,
+    # populate later depending on if requested energy is specified
+    "expected_energy_ev": None,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     "upper_left": [0, 0, 0],
     "position": [0, 0, 0],
