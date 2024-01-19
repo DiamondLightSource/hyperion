@@ -52,7 +52,7 @@ def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct
 
 @pytest.fixture()
 def null_plan():
-    yield from bps.null()
+    return bps.null()
 
 
 def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_returned(
@@ -60,14 +60,16 @@ def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_retu
 ):
     detector_motion = MagicMock()
     RE = RunEngine()
-    detector_motion.z.set = MagicMock(return_value=Status(done=True, success=False))
+    status = Status(done=True, success=False)
+    detector_motion.z.set = MagicMock(return_value=status)
 
-    with pytest.raises(FailedStatus):
+    with pytest.raises(FailedStatus) as e:
         RE(
             start_preparing_data_collection_then_do_plan(
                 mock_eiger, detector_motion, 100, null_plan
             )
         )
+    assert e.value.args[0] is status
 
     mock_eiger.async_stage.assert_called_once()
     detector_motion.z.set.assert_called_once()
