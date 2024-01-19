@@ -35,6 +35,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
+
 from ..external_interaction.conftest import (  # noqa
     fetch_comment,
     zocalo_env,
@@ -137,13 +138,14 @@ def test_read_hardware_for_ispyb_pre_collection(
     slit_gaps = fgs_composite.s4_slit_gaps
     attenuator = fgs_composite.attenuator
     flux = fgs_composite.flux
+    aperture_scatterguard = fgs_composite.aperture_scatterguard
 
     @bpp.run_decorator()
-    def read_run(u, s, g, a, f):
-        yield from read_hardware_for_ispyb_pre_collection(u, s, g)
+    def read_run(u, s, g, a, f, ap_sg):
+        yield from read_hardware_for_ispyb_pre_collection(u, s, g, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(a, f)
 
-    RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux))
+    RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux, aperture_scatterguard))
 
 
 @pytest.mark.s03

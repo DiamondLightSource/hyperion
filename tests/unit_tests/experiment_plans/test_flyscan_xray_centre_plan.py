@@ -73,8 +73,8 @@ def ispyb_plan(test_fgs_params):
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, ap_sg):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(attn, fl)
 
     return standalone_read_hardware_for_ispyb
