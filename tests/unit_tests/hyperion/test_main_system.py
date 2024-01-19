@@ -152,6 +152,7 @@ def test_env(request):
 
     runner.shutdown()
     runner_thread.join(timeout=3)
+    del mock_run_engine
 
 
 def wait_for_run_engine_status(
@@ -249,10 +250,12 @@ def test_given_started_when_stopped_and_started_again_then_runs(
 ):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     test_env.client.put(STOP_ENDPOINT)
+    test_env.mock_run_engine.RE_takes_time = True
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.SUCCESS)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.BUSY)
+    test_env.mock_run_engine.RE_takes_time = False
 
 
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
