@@ -65,7 +65,6 @@ class MockRunEngine:
         self.RE_takes_time = True
         self.aborting_takes_time = False
         self.error: Optional[Exception] = None
-        self.test_name = "test"
         self.test_name = test_name
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
