@@ -9,8 +9,6 @@ import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.panda_fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params,
 )
@@ -33,9 +31,10 @@ from hyperion.device_setup_plans.setup_zebra import (
 from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
-from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
+    set_aperture_for_bbox_size,
+    wait_for_gridscan_valid,
 )
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -70,49 +69,6 @@ PANDA_SETUP_PATH = (
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
     return device_composite_from_context(context, FlyScanXRayCentreComposite)
-
-
-def set_aperture_for_bbox_size(
-    aperture_device: ApertureScatterguard,
-    bbox_size: list[int] | np.ndarray,
-):
-    assert aperture_device.aperture_positions is not None
-    # bbox_size is [x,y,z], for i03 we only care about x
-    if bbox_size[0] < 2:
-        aperture_size_positions = aperture_device.aperture_positions.MEDIUM
-        selected_aperture = "MEDIUM_APERTURE"
-    else:
-        aperture_size_positions = aperture_device.aperture_positions.LARGE
-        selected_aperture = "LARGE_APERTURE"
-    LOGGER.info(
-        f"Setting aperture to {selected_aperture} ({aperture_size_positions}) based on bounding box size {bbox_size}."
-    )
-
-    @bpp.set_run_key_decorator("change_aperture")
-    @bpp.run_decorator(
-        md={"subplan_name": "change_aperture", "aperture_size": selected_aperture}
-    )
-    def set_aperture():
-        yield from bps.abs_set(aperture_device, aperture_size_positions)
-
-    yield from set_aperture()
-
-
-def wait_for_gridscan_valid(fgs_motors: PandAFastGridScan, timeout=0.5):
-    LOGGER.info("Waiting for valid fgs_params")
-    SLEEP_PER_CHECK = 0.1
-    times_to_check = int(timeout / SLEEP_PER_CHECK)
-    for _ in range(times_to_check):
-        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
-        pos_counter = yield from bps.rd(fgs_motors.position_counter)
-        LOGGER.debug(
-            f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
-        )
-        if not scan_invalid:
-            LOGGER.info("Gridscan scan valid and position counter reset")
-            return
-        yield from bps.sleep(SLEEP_PER_CHECK)
-    raise WarningException("Scan invalid - pin too long/short/bent and out of range")
 
 
 def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
