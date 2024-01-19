@@ -6,40 +6,31 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.beamlines.beamline_parameters import (
-    BEAMLINE_PARAMETER_PATHS,
-    GDABeamlineParameters,
-)
+from dodal.beamlines.beamline_parameters import (BEAMLINE_PARAMETER_PATHS,
+                                                 GDABeamlineParameters)
 from dodal.devices.aperturescatterguard import AperturePositions
 from ophyd.status import Status
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
-    read_hardware_for_ispyb_pre_collection,
-)
+    read_hardware_for_ispyb_pre_collection)
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
-    flyscan_xray_centre,
-    run_gridscan,
-    run_gridscan_and_move,
-)
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
-)
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import IspybIds
-from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
+    FlyScanXRayCentreComposite, flyscan_xray_centre, run_gridscan,
+    run_gridscan_and_move)
+from hyperion.external_interaction.callbacks.xray_centre.callback_collection import \
+    XrayCentreCallbackCollection
+from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import \
+    IspybIds
+from hyperion.parameters.constants import \
+    DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
 from hyperion.parameters.constants import SIM_BEAMLINE
-from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.external_parameters import \
+    from_file as default_raw_params
+from hyperion.parameters.plan_specific.gridscan_internal_params import \
+    GridscanInternalParameters
 
-
-from ..external_interaction.conftest import (  # noqa
-    fetch_comment,
-    zocalo_env,
-)
+from ..external_interaction.conftest import fetch_comment, zocalo_env  # noqa
 
 
 @pytest.fixture
