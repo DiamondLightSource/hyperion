@@ -153,5 +153,3 @@ def test_disarm_panda_disables_correct_blocks():
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions("disarm")
     assert num_of_sets == 3
     assert num_of_waits == 1
-
-    ...

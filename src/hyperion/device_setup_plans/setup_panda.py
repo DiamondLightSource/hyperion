@@ -1,15 +1,27 @@
+from enum import Enum
+
 import bluesky.plan_stubs as bps
-import numpy as np
 from blueapi.core import MsgGenerator
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from ophyd_async.core import load_device
-from ophyd_async.panda import PandA, SeqTable, SeqTrigger
+from ophyd_async.panda import (
+    PandA,
+    SeqTable,
+    SeqTableRow,
+    SeqTrigger,
+    seq_table_from_rows,
+)
 
 from hyperion.log import LOGGER
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
 DETECTOR_TRIGGER_WIDTH = 1e-8
+
+
+class Enabled(Enum):
+    ENABLED = "ONE"
+    DISABLED = "ZERO"
 
 
 def get_seq_table(
@@ -35,68 +47,56 @@ def get_seq_table(
 
     sample_velocity_mm_per_s = parameters.x_step_size * 1e-3 / time_between_x_steps_ms
 
-    table = SeqTable(
-        repeats=np.array([1, 1, 1, 1, 1, 1]).astype(np.uint16),
-        trigger=(
-            SeqTrigger.BITA_1,
-            SeqTrigger.POSA_GT,
-            SeqTrigger.POSA_GT,
-            SeqTrigger.BITA_1,
-            SeqTrigger.POSA_LT,
-            SeqTrigger.POSA_LT,
-        ),
-        position=np.array(
-            [
-                0,
-                (parameters.x_start * MM_TO_ENCODER_COUNTS),
-                (parameters.x_start * MM_TO_ENCODER_COUNTS)
-                + (
-                    parameters.x_step_size
-                    * (
-                        parameters.x_steps - 1
-                    )  # x_start is the first trigger point, so we need to travel to x_steps-1 for the final triger point
-                    * MM_TO_ENCODER_COUNTS
-                    + (MM_TO_ENCODER_COUNTS * (parameters.x_step_size / 2))
-                ),
-                0,
-                (parameters.x_start * MM_TO_ENCODER_COUNTS)
-                + (
-                    parameters.x_step_size
-                    * (parameters.x_steps - 1)
-                    * MM_TO_ENCODER_COUNTS
-                    + (
-                        sample_velocity_mm_per_s
-                        * exposure_time_s
-                        * MM_TO_ENCODER_COUNTS
-                    )
-                ),
-                (
-                    parameters.x_start * MM_TO_ENCODER_COUNTS
-                    - (MM_TO_ENCODER_COUNTS * (parameters.x_step_size / 2))
-                    + (
-                        sample_velocity_mm_per_s
-                        * exposure_time_s
-                        * MM_TO_ENCODER_COUNTS
-                    )
-                ),
-            ],
-            dtype=np.int32,
-        ),
-        time1=np.array([0, 0, 0, 0, 0, 0]).astype(np.uint32),
-        outa1=np.array([0, 1, 0, 0, 1, 0]).astype(np.bool_),
-        outb1=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        outc1=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        outd1=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        oute1=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        outf1=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        time2=np.array([1, 1, 1, 1, 1, 1]).astype(np.uint32),
-        outa2=np.array([0, 1, 0, 0, 1, 0]).astype(np.bool_),
-        outb2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        outc2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        outd2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        oute2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
-        outf2=np.array([0, 0, 0, 0, 0, 0]).astype(np.bool_),
+    row1 = SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1)
+    row2 = SeqTableRow(
+        trigger=SeqTrigger.POSA_GT,
+        position=int(parameters.x_start * MM_TO_ENCODER_COUNTS),
+        time2=1,
+        outa1=True,
+        outa2=True,
     )
+    row3 = SeqTableRow(
+        position=int(
+            (parameters.x_start * MM_TO_ENCODER_COUNTS)
+            + (
+                parameters.x_step_size
+                * (
+                    parameters.x_steps - 1
+                )  # x_start is the first trigger point, so we need to travel to x_steps-1 for the final triger point
+                * MM_TO_ENCODER_COUNTS
+                + (MM_TO_ENCODER_COUNTS * (parameters.x_step_size / 2))
+            )
+        ),
+        trigger=SeqTrigger.POSA_GT,
+        time2=1,
+    )
+
+    row4 = SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1)
+
+    row5 = SeqTableRow(
+        trigger=SeqTrigger.POSA_LT,
+        position=(parameters.x_start * MM_TO_ENCODER_COUNTS)
+        + (
+            parameters.x_step_size * (parameters.x_steps - 1) * MM_TO_ENCODER_COUNTS
+            + (sample_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS)
+        ),
+        time2=1,
+        outa1=True,
+        outa2=True,
+    )
+
+    row6 = SeqTableRow(
+        trigger=SeqTrigger.POSA_LT,
+        position=parameters.x_start * MM_TO_ENCODER_COUNTS
+        - (MM_TO_ENCODER_COUNTS * (parameters.x_step_size / 2))
+        + (sample_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS),
+        time2=1,
+    )
+
+    rows = [row1, row2, row3, row4, row5, row6]
+
+    table = seq_table_from_rows(*rows)
+
     return table
 
 
@@ -129,22 +129,25 @@ def setup_panda_for_flyscan(
 
     LOGGER.info(f"Setting Panda sequencer values: {str(table)}")
 
-    yield from bps.abs_set(panda.seq[1].table, table)
+    yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
-    yield from arm_panda_for_gridscan(panda)
+    yield from arm_panda_for_gridscan(
+        panda,
+    )
+
+    yield from bps.wait(group="panda-config", timeout=GENERAL_TIMEOUT)
 
 
 def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
-    yield from bps.abs_set(panda.seq[1].enable, "ONE", group=group)  # type: ignore
-    yield from bps.abs_set(panda.pulse[1].enable, "ONE", group=group)  # type: ignore
-    yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
+    yield from bps.abs_set(panda.seq[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
+    yield from bps.abs_set(panda.pulse[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
 
 
 def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenerator:
-    yield from bps.abs_set(panda.seq[1].enable, "ZERO", group=group)
+    yield from bps.abs_set(panda.seq[1].enable, Enabled.DISABLED.value, group=group)
     yield from bps.abs_set(
-        panda.clock[1].enable, "ZERO", group=group
+        panda.clock[1].enable, Enabled.DISABLED.value, group=group
     )  # While disarming the clock shouldn't be necessery,
     # it will stop the eiger continuing to trigger if something in the sequencer table goes wrong
-    yield from bps.abs_set(panda.pulse[1].enable, "ZERO", group=group)
+    yield from bps.abs_set(panda.pulse[1].enable, Enabled.DISABLED.value, group=group)
     yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)

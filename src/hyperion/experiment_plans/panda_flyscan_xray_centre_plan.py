@@ -223,7 +223,6 @@ def run_gridscan_and_move(
         DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
     )
 
-    # Check smargon speed. Exposure time in s, x_step_size in mm. TODO: discuss best place to do this
     smargon_speed = (
         parameters.experiment_params.x_step_size * 1e3 / time_between_x_steps_ms
     )
