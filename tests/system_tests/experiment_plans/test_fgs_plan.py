@@ -35,7 +35,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-from ..external_interaction.conftest import (  # noqa  # noqa
+from ..external_interaction.conftest import (  # noqa
     fetch_comment,
     zocalo_env,
 )

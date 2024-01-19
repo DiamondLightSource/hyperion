@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 class RotationScanComposite:
     """All devices which are directly or indirectly required by this plan"""
 
-    aperture_scatterguard: ApertureScatterguard
+    aperture_scatterguard:ApertureScatterguard
     attenuator: Attenuator
     backlight: Backlight
     dcm: DCM
@@ -206,7 +206,7 @@ def rotation_scan_plan(
         composite.undulator,
         composite.synchrotron,
         composite.s4_slit_gaps,
-        composite.aperture_scatterguard,
+        composite.aperture_scatterguard
     )
     yield from read_hardware_for_ispyb_during_collection(
         composite.attenuator, composite.flux, composite.dcm

@@ -20,7 +20,7 @@ def read_hardware_for_ispyb_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
-    aperture_scatterguard: ApertureScatterguard,
+    aperture_scatterguard:ApertureScatterguard
 ):
     LOGGER.info("Reading status of beamline parameters for ispyb deposition.")
     yield from bps.create(
@@ -28,7 +28,7 @@ def read_hardware_for_ispyb_pre_collection(
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.current_gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
-    yield from bps.read(aperture_scatterguard.ap_name)
+    yield from bps.read(aperture_scatterguard.aperture_name)
     yield from bps.read(s4_slit_gaps.xgap)
     yield from bps.read(s4_slit_gaps.ygap)
     yield from bps.save()
