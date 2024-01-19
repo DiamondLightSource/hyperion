@@ -115,7 +115,12 @@ def RE():
     RE.subscribe(
         VerbosePlanExecutionLoggingCallback()
     )  # log all events at INFO for easier debugging
-    return RE
+    yield RE
+    try:
+        RE.halt()
+    except Exception:
+        pass
+    del RE
 
 
 def mock_set(motor: EpicsMotor, val):

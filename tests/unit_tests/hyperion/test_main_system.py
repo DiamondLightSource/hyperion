@@ -61,12 +61,11 @@ autospec_patch = functools.partial(patch, autospec=True, spec_set=True)
 
 
 class MockRunEngine:
-    RE_takes_time = True
-    aborting_takes_time = False
-    error: Optional[Exception] = None
-    test_name = "test"
-
     def __init__(self, test_name):
+        self.RE_takes_time = True
+        self.aborting_takes_time = False
+        self.error: Optional[Exception] = None
+        self.test_name = "test"
         self.test_name = test_name
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
