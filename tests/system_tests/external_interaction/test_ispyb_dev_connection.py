@@ -167,6 +167,7 @@ def test_ispyb_deposition_in_rotation_plan(
     composite = RotationScanComposite(
         attenuator=attenuator,
         backlight=fake_create_devices["backlight"],
+        dcm=fake_create_devices["dcm"],
         detector_motion=fake_create_devices["detector_motion"],
         eiger=fake_create_devices["eiger"],
         flux=flux,

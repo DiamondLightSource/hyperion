@@ -3,7 +3,7 @@
     "type": "object",
     "properties": {
         "expected_energy_ev": {
-            "type": "number"
+            "type": ["number", "null"]
         },
         "directory": {
             "type": "string"

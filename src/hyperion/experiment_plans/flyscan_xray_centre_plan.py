@@ -13,6 +13,7 @@ from bluesky.utils import ProgressBarManager
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.DCM import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
@@ -77,6 +78,7 @@ class FlyScanXRayCentreComposite:
     aperture_scatterguard: ApertureScatterguard
     attenuator: Attenuator
     backlight: Backlight
+    dcm: DCM
     eiger: EigerDetector
     fast_grid_scan: FastGridScan
     flux: Flux
@@ -184,8 +186,7 @@ def run_gridscan(
             fgs_composite.s4_slit_gaps,
         )
         yield from read_hardware_for_ispyb_during_collection(
-            fgs_composite.attenuator,
-            fgs_composite.flux,
+            fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
 
     fgs_motors = fgs_composite.fast_grid_scan

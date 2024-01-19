@@ -138,6 +138,7 @@ class TestData:
         "data": {
             "attenuator_actual_transmission": 1,
             "flux_flux_reading": 10,
+            "dcm_energy_in_kev": 11.105,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,

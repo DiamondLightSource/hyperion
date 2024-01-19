@@ -7,6 +7,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.DCM import DCM
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -59,10 +60,12 @@ def do_rotation_main_plan_for_tests(
     sim_zeb,
     sim_bl,
     sim_det,
+    sim_dcm,
 ):
     devices = RotationScanComposite(
         attenuator=sim_att,
         backlight=sim_bl,
+        dcm=sim_dcm,
         detector_motion=sim_det,
         eiger=MagicMock(),
         flux=sim_flux,
@@ -135,6 +138,7 @@ def setup_and_run_rotation_plan_for_tests(
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
     flux: Flux,
+    dcm: DCM,
 ):
     from functools import partial
 
@@ -189,6 +193,7 @@ def setup_and_run_rotation_plan_for_tests(
             zebra,
             backlight,
             detector_motion,
+            dcm,
         )
 
     return {
@@ -221,6 +226,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
     flux: Flux,
+    dcm: DCM,
 ):
     return setup_and_run_rotation_plan_for_tests(
         RE_with_subs,
@@ -235,6 +241,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
         s4_slit_gaps,
         undulator,
         flux,
+        dcm,
     )
 
 
@@ -252,6 +259,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
     flux: Flux,
+    dcm: DCM,
 ):
     return setup_and_run_rotation_plan_for_tests(
         RE_with_subs,
@@ -266,6 +274,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
         s4_slit_gaps,
         undulator,
         flux,
+        dcm,
     )
 
 
@@ -313,6 +322,7 @@ def test_rotation_scan(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
+    dcm: DCM,
 ):
     RE, mock_rotation_subscriptions = RE_with_subs
     zebra.pc.arm.armed.set(False)
@@ -330,6 +340,7 @@ def test_rotation_scan(
         composite = RotationScanComposite(
             attenuator=attenuator,
             backlight=backlight,
+            dcm=dcm,
             detector_motion=detector_motion,
             eiger=eiger,
             flux=MagicMock(),
@@ -445,6 +456,7 @@ def test_cleanup_happens(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
+    dcm: DCM,
 ):
     RE, mock_rotation_subscriptions = RE_with_subs
 
@@ -458,6 +470,7 @@ def test_cleanup_happens(
     composite = RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,
         flux=MagicMock(),
@@ -506,6 +519,7 @@ def test_acceleration_offset_calculated_correctly(
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
     flux: Flux,
+    dcm: DCM,
 ):
     smargon.omega.acceleration.sim_put(0.2)  # type: ignore
     setup_and_run_rotation_plan_for_tests(
@@ -521,6 +535,7 @@ def test_acceleration_offset_calculated_correctly(
         s4_slit_gaps,
         undulator,
         flux,
+        dcm,
     )
 
     expected_start_angle = (

@@ -12,6 +12,7 @@ from dodal.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.DCM import DCM
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
@@ -145,7 +146,11 @@ def beamline_parameters():
 
 @pytest.fixture
 def test_fgs_params():
-    return GridscanInternalParameters(**raw_params_from_file())
+    return GridscanInternalParameters(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/test_internal_parameter_defaults.json"
+        )
+    )
 
 
 @pytest.fixture
@@ -387,6 +392,7 @@ def fake_create_rotation_devices(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
+    dcm: DCM,
     done_status,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
@@ -401,6 +407,7 @@ def fake_create_rotation_devices(
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
+        dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,
         flux=flux,
@@ -435,6 +442,7 @@ def fake_fgs_composite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=i03.backlight(fake_with_ophyd_sim=True),
+        dcm=i03.dcm(fake_with_ophyd_sim=True),
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
         fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),

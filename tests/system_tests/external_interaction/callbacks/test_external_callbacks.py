@@ -233,6 +233,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     composite = RotationScanComposite(
         attenuator=attenuator,
         backlight=fake_create_devices["backlight"],
+        dcm=fake_create_devices["dcm"],
         detector_motion=fake_create_devices["detector_motion"],
         eiger=fake_create_devices["eiger"],
         flux=flux,

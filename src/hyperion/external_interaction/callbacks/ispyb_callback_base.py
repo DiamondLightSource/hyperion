@@ -101,6 +101,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.params.hyperion_params.ispyb_params.flux = doc["data"][
                 "flux_flux_reading"
             ]
+            self.params.hyperion_params.ispyb_params.current_energy_ev = doc["data"][
+                "dcm_energy_in_kev"
+            ]
 
             ISPYB_LOGGER.info("Creating ispyb entry.")
             self.ispyb_ids = self.ispyb.begin_deposition()
