@@ -35,11 +35,6 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-from ..external_interaction.conftest import (  # noqa
-    fetch_comment,
-    zocalo_env,
-)
-
 
 @pytest.fixture
 def params():

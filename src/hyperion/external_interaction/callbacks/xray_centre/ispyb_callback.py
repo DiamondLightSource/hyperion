@@ -7,21 +7,16 @@ import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents.event import Event
 
-from hyperion.external_interaction.callbacks.ispyb_callback_base import (
-    BaseISPyBCallback,
-)
+from hyperion.external_interaction.callbacks.ispyb_callback_base import \
+    BaseISPyBCallback
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
-    Store2DGridscanInIspyb,
-    Store3DGridscanInIspyb,
-    StoreGridscanInIspyb,
-)
+    IspybIds, Store2DGridscanInIspyb, Store3DGridscanInIspyb,
+    StoreGridscanInIspyb)
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.plan_specific.gridscan_internal_params import \
+    GridscanInternalParameters
 
 
 class GridscanISPyBCallback(BaseISPyBCallback):
