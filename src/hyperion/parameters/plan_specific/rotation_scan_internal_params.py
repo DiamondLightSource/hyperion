@@ -77,7 +77,7 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
             return False
         return True
 
-    def get_num_images(self):
+    def get_num_images(self)-> int:
         return int(self.rotation_angle / self.image_width)
 
 
@@ -153,4 +153,4 @@ class RotationInternalParameters(InternalParameters):
         size = (
             self.hyperion_params.detector_params.detector_size_constants.det_size_pixels
         )
-        return (self.experiment_params.get_num_images(), size.width, size.height)
+        return (self.experiment_params.get_num_images(), int(size.width), int(size.height))
