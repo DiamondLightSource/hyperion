@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import bluesky.plan_stubs as bps
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -18,6 +19,7 @@ def read_hardware_for_ispyb_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
+    aperture_scatterguard:ApertureScatterguard
 ):
     LOGGER.info("Reading status of beamline parameters for ispyb deposition.")
     yield from bps.create(
@@ -25,6 +27,7 @@ def read_hardware_for_ispyb_pre_collection(
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.current_gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
+    yield from bps.read(aperture_scatterguard.aperture_name)
     yield from bps.read(s4_slit_gaps.xgap)
     yield from bps.read(s4_slit_gaps.ygap)
     yield from bps.save()

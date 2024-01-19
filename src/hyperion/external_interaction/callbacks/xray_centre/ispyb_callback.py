@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from time import time
+from typing import List, Tuple
 
 import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
@@ -72,16 +73,16 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 proc_time = time() - self.processing_start_time
                 crystal_summary = f"Zocalo processing took {proc_time:.2f} s. "
 
-            bboxes = []
+            bboxes: List[np.ndarray] = []
             ISPYB_LOGGER.info(f"Amending comment based on Zocalo reading doc: {doc}")
             raw_results = doc["data"]["zocalo-results"]
             if len(raw_results) > 0:
                 for n, res in enumerate(raw_results):
-                    bboxes.append(
-                        np.array(res["bounding_box"][1])
-                        - np.array(res["bounding_box"][0])
+                    bounding_box = res["bounding_box"]
+                    diff = np.subtract(
+                        np.array(bounding_box[1]), np.array(bounding_box[0])
                     )
-
+                    bboxes.append(diff)
                     nicely_formatted_com = [
                         f"{np.round(com,2)}" for com in res["centre_of_mass"]
                     ]

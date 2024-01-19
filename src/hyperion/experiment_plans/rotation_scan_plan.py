@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector import DetectorParams
@@ -42,6 +43,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 from hyperion.utils.context import device_composite_from_context
 
+
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
         RotationInternalParameters,
@@ -52,6 +54,7 @@ if TYPE_CHECKING:
 class RotationScanComposite:
     """All devices which are directly or indirectly required by this plan"""
 
+    aperture_scatterguard:ApertureScatterguard
     attenuator: Attenuator
     backlight: Backlight
     detector_motion: DetectorMotion
@@ -202,6 +205,7 @@ def rotation_scan_plan(
         composite.undulator,
         composite.synchrotron,
         composite.s4_slit_gaps,
+        composite.aperture_scatterguard
     )
     yield from read_hardware_for_ispyb_during_collection(
         composite.attenuator,
