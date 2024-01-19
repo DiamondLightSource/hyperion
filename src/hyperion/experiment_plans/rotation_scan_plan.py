@@ -21,33 +21,40 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
 from ophyd.epics_motor import EpicsMotor
 
-from hyperion.device_setup_plans.check_topup import \
-    check_topup_and_wait_if_necessary
+from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import (
-    cleanup_sample_environment, move_x_y_z, setup_sample_environment)
+    cleanup_sample_environment,
+    move_x_y_z,
+    setup_sample_environment,
+)
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
-    read_hardware_for_ispyb_pre_collection)
-from hyperion.device_setup_plans.setup_zebra import (arm_zebra, disarm_zebra,
-                                                     make_trigger_safe,
-                                                     setup_zebra_for_rotation)
+    read_hardware_for_ispyb_pre_collection,
+)
+from hyperion.device_setup_plans.setup_zebra import (
+    arm_zebra,
+    disarm_zebra,
+    make_trigger_safe,
+    setup_zebra_for_rotation,
+)
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import (ROTATION_OUTER_PLAN,
-                                           ROTATION_PLAN_MAIN)
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import \
-    RotationScanParams
+from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationScanParams,
+)
 from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
-    from hyperion.parameters.plan_specific.rotation_scan_internal_params import \
-        RotationInternalParameters
+    from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+        RotationInternalParameters,
+    )
 
 
 @dataclasses.dataclass
 class RotationScanComposite:
     """All devices which are directly or indirectly required by this plan"""
 
-    aperture_scatterguard:ApertureScatterguard
+    aperture_scatterguard: ApertureScatterguard
     attenuator: Attenuator
     backlight: Backlight
     dcm: DCM
@@ -199,7 +206,7 @@ def rotation_scan_plan(
         composite.undulator,
         composite.synchrotron,
         composite.s4_slit_gaps,
-        composite.aperture_scatterguard
+        composite.aperture_scatterguard,
     )
     yield from read_hardware_for_ispyb_during_collection(
         composite.attenuator, composite.flux, composite.dcm

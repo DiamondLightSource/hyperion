@@ -149,7 +149,11 @@ def test_read_hardware_for_ispyb_pre_collection(
         yield from read_hardware_for_ispyb_pre_collection(u, s, g, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
-    RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux, dcm, aperture_scatterguard))
+    RE(
+        read_run(
+            undulator, synchrotron, slit_gaps, attenuator, flux,dcm, aperture_scatterguard
+        )
+    )
 
 
 @pytest.mark.s03
