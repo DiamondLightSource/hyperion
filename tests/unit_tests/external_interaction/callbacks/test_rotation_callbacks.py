@@ -346,9 +346,11 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb.return_value.begin_deposition.side_effect = random_ids
 
     test_cases = zip(
-        ["abc", "abc", "abc", "def", "abc", "def", "def"],
-        [False, True, True, False, False, False, True],
+        ["abc", "abc", "abc", "def", "abc", "def", "def", "xyz", "hij", "hij", "hij"],
+        [False, True, True, False, False, False, True, False, False, True, True],
     )
+
+    last_dcgid = None
 
     for sample_id, same_dcgid in test_cases:
         params.hyperion_params.ispyb_params.sample_id = sample_id
@@ -363,5 +365,8 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
 
         if same_dcgid:
             assert rotation_ispyb.call_args.args[2] is not None
+            assert rotation_ispyb.call_args.args[2] is last_dcgid
         else:
             assert rotation_ispyb.call_args.args[2] is None
+
+        last_dcgid = cb[0].ispyb_ids.data_collection_group_id
