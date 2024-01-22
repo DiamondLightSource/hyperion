@@ -149,6 +149,10 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
 def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
+    LOGGER.info("Tidying up Zocalo")
+    yield from bps.unstage(
+        fgs_composite.zocalo
+    )  # make sure we don't consume any other results
 
 
 @bpp.set_run_key_decorator(GRIDSCAN_MAIN_PLAN)
@@ -242,12 +246,9 @@ def run_gridscan_and_move(
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
-        fgs_composite.zocalo
+        fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
     )  # connect to zocalo and make sure the queue is clear
     yield from run_gridscan(fgs_composite, parameters)
-    yield from bps.unstage(
-        fgs_composite.zocalo
-    )  # make sure we don't consume any other results
 
     LOGGER.info("Grid scan finished, getting results.")
 
