@@ -332,36 +332,26 @@ def random_ids() -> IspybIds:
     )
 
 
-class TestScanBundling:
-    @pytest.fixture(scope="class")
-    def persistent_cb(self):
-        cb = [RotationISPyBCallback()]
-        cb[0].active = True
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    autospec=True,
+)
+def test_ispyb_reuses_dcgid_on_same_sampleID(
+    rotation_ispyb: MagicMock,
+    RE: RunEngine,
+    params: RotationInternalParameters,
+):
+    cb = [RotationISPyBCallback()]
+    cb[0].active = True
+    rotation_ispyb.return_value.begin_deposition.side_effect = random_ids
 
-        return cb
+    test_cases = zip(
+        ["abc", "abc", "abc", "def", "abc", "def", "def"],
+        [False, True, True, False, False, False, True],
+    )
 
-    @pytest.mark.parametrize(
-        ["sampleID", "same_DCGID"],
-        zip(
-            ["abc", "abc", "abc", "def", "abc", "def", "def"],
-            [False, True, True, False, False, False, True],
-        ),
-    )
-    @patch(
-        "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
-        autospec=True,
-    )
-    def test_ispyb_reuses_dcgid_on_same_sampleID(
-        self,
-        rotation_ispyb: MagicMock,
-        RE: RunEngine,
-        params: RotationInternalParameters,
-        persistent_cb,
-        sampleID: str,
-        same_DCGID: bool,
-    ):
-        params.hyperion_params.ispyb_params.sample_id = sampleID
-        rotation_ispyb.return_value.begin_deposition.side_effect = random_ids
+    for sample_id, same_dcgid in test_cases:
+        params.hyperion_params.ispyb_params.sample_id = sample_id
 
         def after_open_do(callbacks: list[RotationISPyBCallback]):
             assert callbacks[0].uid_to_finalize_on is None
@@ -369,9 +359,9 @@ class TestScanBundling:
         def after_main_do(callbacks: list[RotationISPyBCallback]):
             assert callbacks[0].uid_to_finalize_on is not None
 
-        RE(fake_rotation_scan(params, persistent_cb, after_open_do, after_main_do))
+        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 
-        if same_DCGID:
+        if same_dcgid:
             assert rotation_ispyb.call_args.args[2] is not None
         else:
             assert rotation_ispyb.call_args.args[2] is None
