@@ -19,7 +19,9 @@ def test_getting_data_for_ispyb():
     undulator = Undulator(f"{SIM_INSERTION_PREFIX}-MO-SERVC-01:", name="undulator")
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     slit_gaps = S4SlitGaps(f"{SIM_BEAMLINE}-AL-SLITS-04:", name="slits")
-    aperture_scatterguard= ApertureScatterguard(prefix=f"{SIM_BEAMLINE}-AL-APSG-04:", name="ao_sg")
+    aperture_scatterguard = ApertureScatterguard(
+        prefix=f"{SIM_BEAMLINE}-AL-APSG-04:", name="ao_sg"
+    )
     attenuator = i03.attenuator(fake_with_ophyd_sim=True)
     flux = i03.flux(fake_with_ophyd_sim=True)
     dcm = i03.dcm(fake_with_ophyd_sim=True)
