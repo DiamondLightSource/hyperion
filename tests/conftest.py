@@ -9,7 +9,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import beamline_utils, i03
 from dodal.beamlines.beamline_parameters import GDABeamlineParameters
-from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -388,6 +388,7 @@ def fake_create_rotation_devices(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
+    aperture_scatterguard: ApertureScatterguard,
     flux: Flux,
     undulator: Undulator,
     synchrotron: Synchrotron,
@@ -412,6 +413,7 @@ def fake_create_rotation_devices(
         eiger=eiger,
         flux=flux,
         smargon=smargon,
+        aperture_scatterguard=aperture_scatterguard,
         undulator=undulator,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
