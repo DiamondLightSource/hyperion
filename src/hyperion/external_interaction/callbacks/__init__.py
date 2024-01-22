@@ -4,3 +4,6 @@ execution of an experimental plan.
 
 Callbacks used for the Hyperion fast grid scan are prefixed with 'FGS'.
 """
+from .__main__ import main
+
+__all__ = ["main"]

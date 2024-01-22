@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+import os
+from unittest.mock import patch
 
 import pytest
 
@@ -12,6 +13,7 @@ from hyperion.external_interaction.callbacks.rotation.callback_collection import
     RotationCallbackCollection,
 )
 from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+    IspybIds,
     Store2DGridscanInIspyb,
     Store3DGridscanInIspyb,
     StoreGridscanInIspyb,
@@ -49,7 +51,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dcid = dummy_ispyb.begin_deposition()
     dummy_ispyb.end_deposition("fail", "could not connect to devices")
     assert (
-        fetch_comment(dcid.data_collection_ids[0])
+        fetch_comment(dcid.data_collection_ids[0])  # type: ignore
         == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
     )
 
@@ -59,8 +61,8 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d: Store3DGridscanInIspyb, fetch_comment
 ):
     dcid = dummy_ispyb_3d.begin_deposition()
-    dcid1 = dcid[0][0]
-    dcid2 = dcid[0][1]
+    dcid1 = dcid.data_collection_ids[0]  # type: ignore
+    dcid2 = dcid.data_collection_ids[1]  # type: ignore
     dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
     assert (
         fetch_comment(dcid1)
@@ -88,11 +90,11 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     test_params = GridscanInternalParameters(**default_raw_params())
     test_params.hyperion_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
     ispyb: StoreGridscanInIspyb = StoreClass(DEV_ISPYB_DATABASE_CFG, test_params)
-    dc_ids, grid_ids, dcg_id = ispyb.begin_deposition()
+    ispyb_ids: IspybIds = ispyb.begin_deposition()
 
-    assert len(dc_ids) == exp_num_of_grids
-    assert len(grid_ids) == exp_num_of_grids
-    assert isinstance(dcg_id, int)
+    assert len(ispyb_ids.data_collection_ids) == exp_num_of_grids  # type: ignore
+    assert len(ispyb_ids.grid_ids) == exp_num_of_grids  # type: ignore
+    assert isinstance(ispyb_ids.data_collection_group_id, int)
 
     expected_comments = [
         (
@@ -114,7 +116,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     else:
         ispyb.end_deposition("success", "")
 
-    for grid_no, dc_id in enumerate(dc_ids):
+    for grid_no, dc_id in enumerate(ispyb_ids.data_collection_ids):
         assert fetch_comment(dc_id) == expected_comments[grid_no]
 
 
@@ -138,6 +140,7 @@ def test_ispyb_deposition_in_rotation_plan(
     synchrotron,
     s4_slit_gaps,
     flux,
+    fake_create_devices,
 ):
     test_wl = 0.71
     test_bs_x = 0.023
@@ -152,32 +155,29 @@ def test_ispyb_deposition_in_rotation_plan(
     test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )
+    test_rotation_params.hyperion_params.detector_params.current_energy_ev = (
+        convert_angstrom_to_eV(test_wl)
+    )
+
+    os.environ["ISPYB_CONFIG_PATH"] = DEV_ISPYB_DATABASE_CFG
     callbacks = RotationCallbackCollection.setup()
-    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = DEV_ISPYB_DATABASE_CFG
+    for cb in list(callbacks):
+        RE.subscribe(cb)
 
     composite = RotationScanComposite(
         attenuator=attenuator,
-        backlight=MagicMock(),
-        detector_motion=MagicMock(),
-        eiger=MagicMock(),
+        backlight=fake_create_devices["backlight"],
+        detector_motion=fake_create_devices["detector_motion"],
+        eiger=fake_create_devices["eiger"],
         flux=flux,
-        smargon=MagicMock(),
+        smargon=fake_create_devices["smargon"],
         undulator=undulator,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
-        zebra=MagicMock(),
+        zebra=fake_create_devices["zebra"],
     )
 
-    with (
-        patch(
-            "bluesky.preprocessors.__read_and_stash_a_motor",
-            fake_read,
-        ),
-        patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
-            lambda: callbacks,
-        ),
-    ):
+    with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
         RE(
             rotation_scan(
                 composite,
@@ -185,7 +185,8 @@ def test_ispyb_deposition_in_rotation_plan(
             )
         )
 
-    dcid = callbacks.ispyb_handler.ispyb_ids[0]
+    dcid = callbacks.ispyb_handler.ispyb_ids.data_collection_ids
+    assert dcid is not None
     comment = fetch_comment(dcid)
     assert comment == "Hyperion rotation scan"
     wavelength = fetch_datacollection_attribute(dcid, "wavelength")

@@ -1,53 +1,13 @@
-from typing import Any, Callable
 from unittest.mock import MagicMock
 
-import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
-from ophyd.sim import SynAxis
 
-from hyperion.external_interaction.callbacks.plan_reactive_callback import (
-    PlanReactiveCallback,
-)
-
-
-class TestCallback(PlanReactiveCallback):
-    def __init__(self, *, emit: Callable[..., Any] | None = None) -> None:
-        super().__init__(emit=emit)
-        self.activity_gated_start = MagicMock()
-        self.activity_gated_descriptor = MagicMock()
-        self.activity_gated_event = MagicMock()
-        self.activity_gated_stop = MagicMock()
-
-
-@pytest.fixture
-def mocked_test_callback():
-    t = TestCallback()
-    return t
-
-
-@pytest.fixture
-def RE_with_mock_callback(mocked_test_callback):
-    RE = RunEngine()
-    RE.subscribe(mocked_test_callback)
-    yield RE, mocked_test_callback
-
-
-def get_test_plan(callback_name):
-    s = SynAxis(name="fake_signal")
-
-    @bpp.run_decorator(md={"activate_callbacks": [callback_name]})
-    def test_plan():
-        yield from bps.create()
-        yield from bps.read(s)
-        yield from bps.save()
-
-    return test_plan, s
+from ..conftest import MockReactiveCallback, get_test_plan
 
 
 def test_activity_gated_functions_not_called_when_inactive(
-    mocked_test_callback: TestCallback,
+    mocked_test_callback: MockReactiveCallback,
 ):
     mocked_test_callback.start({})  # type: ignore
     mocked_test_callback.activity_gated_start.assert_not_called()  # type: ignore
@@ -60,7 +20,7 @@ def test_activity_gated_functions_not_called_when_inactive(
 
 
 def test_activity_gated_functions_called_when_active(
-    mocked_test_callback: TestCallback,
+    mocked_test_callback: MockReactiveCallback,
 ):
     mocked_test_callback.active = True
     mocked_test_callback.start({})  # type: ignore
@@ -75,13 +35,13 @@ def test_activity_gated_functions_called_when_active(
 
 def test_activates_on_appropriate_start_doc(mocked_test_callback):
     assert mocked_test_callback.active is False
-    mocked_test_callback.start({"activate_callbacks": ["TestCallback"]})
+    mocked_test_callback.start({"activate_callbacks": ["MockReactiveCallback"]})
     assert mocked_test_callback.active is True
 
 
 def test_deactivates_on_inappropriate_start_doc(mocked_test_callback):
     assert mocked_test_callback.active is False
-    mocked_test_callback.start({"activate_callbacks": ["TestCallback"]})
+    mocked_test_callback.start({"activate_callbacks": ["MockReactiveCallback"]})
     assert mocked_test_callback.active is True
     mocked_test_callback.start({"activate_callbacks": ["TestNotCallback"]})
     assert mocked_test_callback.active is False
@@ -89,7 +49,9 @@ def test_deactivates_on_inappropriate_start_doc(mocked_test_callback):
 
 def test_deactivates_on_appropriate_stop_doc_uid(mocked_test_callback):
     assert mocked_test_callback.active is False
-    mocked_test_callback.start({"activate_callbacks": ["TestCallback"], "uid": "foo"})
+    mocked_test_callback.start(
+        {"activate_callbacks": ["MockReactiveCallback"], "uid": "foo"}
+    )
     assert mocked_test_callback.active is True
     mocked_test_callback.stop({"run_start": "foo"})
     assert mocked_test_callback.active is False
@@ -97,15 +59,19 @@ def test_deactivates_on_appropriate_stop_doc_uid(mocked_test_callback):
 
 def test_doesnt_deactivate_on_inappropriate_stop_doc_uid(mocked_test_callback):
     assert mocked_test_callback.active is False
-    mocked_test_callback.start({"activate_callbacks": ["TestCallback"], "uid": "foo"})
+    mocked_test_callback.start(
+        {"activate_callbacks": ["MockReactiveCallback"], "uid": "foo"}
+    )
     assert mocked_test_callback.active is True
     mocked_test_callback.stop({"run_start": "bar"})
     assert mocked_test_callback.active is True
 
 
-def test_activates_on_metadata(RE_with_mock_callback: tuple[RunEngine, TestCallback]):
+def test_activates_on_metadata(
+    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback]
+):
     RE, callback = RE_with_mock_callback
-    RE(get_test_plan("TestCallback")[0]())
+    RE(get_test_plan("MockReactiveCallback")[0]())
     callback.activity_gated_start.assert_called_once()
     callback.activity_gated_descriptor.assert_called_once()
     callback.activity_gated_event.assert_called_once()
@@ -113,16 +79,16 @@ def test_activates_on_metadata(RE_with_mock_callback: tuple[RunEngine, TestCallb
 
 
 def test_deactivates_after_closing(
-    RE_with_mock_callback: tuple[RunEngine, TestCallback]
+    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback]
 ):
     RE, callback = RE_with_mock_callback
     assert callback.active is False
-    RE(get_test_plan("TestCallback")[0]())
+    RE(get_test_plan("MockReactiveCallback")[0]())
     assert callback.active is False
 
 
 def test_doesnt_activate_on_wrong_metadata(
-    RE_with_mock_callback: tuple[RunEngine, TestCallback]
+    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback]
 ):
     RE, callback = RE_with_mock_callback
     RE(get_test_plan("TestNotCallback")[0]())
@@ -130,3 +96,23 @@ def test_doesnt_activate_on_wrong_metadata(
     callback.activity_gated_descriptor.assert_not_called()  # type: ignore
     callback.activity_gated_event.assert_not_called()  # type: ignore
     callback.activity_gated_stop.assert_not_called()  # type: ignore
+
+
+def test_cb_logs_and_raises_exception():
+    cb = MockReactiveCallback()
+    cb.active = True
+
+    class MockTestException(Exception):
+        ...
+
+    e = MockTestException()
+
+    def mock_excepting_func(_):
+        raise e
+
+    cb.log = MagicMock()
+
+    with pytest.raises(MockTestException):
+        cb._run_activity_gated(mock_excepting_func, {"start": "test"})
+
+    cb.log.exception.assert_called_with(e)

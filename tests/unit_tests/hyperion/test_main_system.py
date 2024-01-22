@@ -20,7 +20,6 @@ from hyperion.__main__ import (
     Actions,
     BlueskyRunner,
     Status,
-    cli_arg_parse,
     create_app,
     setup_context,
 )
@@ -28,6 +27,7 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
+from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -61,12 +61,10 @@ autospec_patch = functools.partial(patch, autospec=True, spec_set=True)
 
 
 class MockRunEngine:
-    RE_takes_time = True
-    aborting_takes_time = False
-    error: Optional[Exception] = None
-    test_name = "test"
-
     def __init__(self, test_name):
+        self.RE_takes_time = True
+        self.aborting_takes_time = False
+        self.error: Optional[Exception] = None
         self.test_name = test_name
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
@@ -154,6 +152,7 @@ def test_env(request):
 
     runner.shutdown()
     runner_thread.join(timeout=3)
+    del mock_run_engine
 
 
 def wait_for_run_engine_status(
@@ -251,10 +250,12 @@ def test_given_started_when_stopped_and_started_again_then_runs(
 ):
     test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     test_env.client.put(STOP_ENDPOINT)
+    test_env.mock_run_engine.RE_takes_time = True
     response = test_env.client.put(START_ENDPOINT, data=TEST_PARAMS)
     check_status_in_response(response, Status.SUCCESS)
     response = test_env.client.get(STATUS_ENDPOINT)
     check_status_in_response(response, Status.BUSY)
+    test_env.mock_run_engine.RE_takes_time = False
 
 
 def test_when_started_n_returnstatus_interrupted_bc_RE_aborted_thn_error_reptd(
@@ -285,10 +286,10 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
 
 def test_cli_args_parse():
     argv[1:] = ["--dev", "--logging-level=DEBUG"]
-    test_args = cli_arg_parse()
+    test_args = parse_cli_args()
     assert test_args == ("DEBUG", False, True, False)
     argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
-    test_args = cli_arg_parse()
+    test_args = parse_cli_args()
     assert test_args == ("DEBUG", True, True, False)
     argv[1:] = [
         "--dev",
@@ -296,7 +297,7 @@ def test_cli_args_parse():
         "--verbose-event-logging",
         "--skip-startup-connection",
     ]
-    test_args = cli_arg_parse()
+    test_args = parse_cli_args()
     assert test_args == ("DEBUG", True, True, True)
 
 
@@ -431,7 +432,13 @@ def test_warn_exception_during_plan_causes_warning_in_log(
     assert caplog.records[-1].levelname == "WARNING"
 
 
-def test_when_context_created_then_contains_expected_number_of_plans():
+@patch(
+    "dodal.devices.DCM.get_beamline_parameters",
+    return_value={"DCM_Perp_Offset_FIXED": 111},
+)
+def test_when_context_created_then_contains_expected_number_of_plans(
+    get_beamline_parameters,
+):
     with patch.dict(os.environ, {"BEAMLINE": "i03"}):
         context = setup_context(wait_for_connection=False)
 

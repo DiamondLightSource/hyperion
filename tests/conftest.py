@@ -67,7 +67,7 @@ def pytest_runtest_setup(item):
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print(f"Initialising Hyperion logger for tests at {log_level}")
-                set_up_logging_handlers(logger=LOGGER, **log_params)
+                set_up_logging_handlers(**log_params)
         if ISPYB_LOGGER.handlers == []:
             print(f"Initialising ISPyB logger for tests at {log_level}")
             set_up_logging_handlers(
@@ -115,10 +115,16 @@ def RE():
     RE.subscribe(
         VerbosePlanExecutionLoggingCallback()
     )  # log all events at INFO for easier debugging
-    return RE
+    yield RE
+    try:
+        RE.halt()
+    except Exception:
+        pass
+    del RE
 
 
 def mock_set(motor: EpicsMotor, val):
+    motor.user_setpoint.sim_put(val)  # type: ignore
     motor.user_readback.sim_put(val)  # type: ignore
     return Status(done=True, success=True)
 
@@ -179,6 +185,7 @@ def smargon() -> Generator[Smargon, None, None]:
     smargon.y.user_setpoint._use_limits = False
     smargon.z.user_setpoint._use_limits = False
     smargon.omega.user_setpoint._use_limits = False
+    smargon.omega.velocity._use_limits = False
 
     # Initial positions, needed for stub_offsets
     smargon.stub_offsets.center_at_current_position.disp.sim_put(0)  # type: ignore
@@ -247,6 +254,13 @@ def attenuator():
 
 
 @pytest.fixture
+def xbpm_feedback(done_status):
+    xbpm = i03.xbpm_feedback(fake_with_ophyd_sim=True)
+    xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
+    return xbpm
+
+
+@pytest.fixture
 def dcm():
     dcm = i03.dcm(fake_with_ophyd_sim=True)
     dcm.pitch_in_mrad.user_setpoint._use_limits = False
@@ -282,13 +296,20 @@ def vfm_mirror_voltages():
 
 
 @pytest.fixture
-def hfm():
-    return i03.hfm(fake_with_ophyd_sim=True)
+def xbpm_feedback():
+    yield i03.xbpm_feedback(fake_with_ophyd_sim=True)
+    beamline_utils.clear_devices()
 
 
 @pytest.fixture
-def aperture_scatterguard():
-    return i03.aperture_scatterguard(
+def undulator_dcm():
+    yield i03.undulator_dcm(fake_with_ophyd_sim=True)
+    beamline_utils.clear_devices()
+
+
+@pytest.fixture
+def aperture_scatterguard(done_status):
+    ap_sg = i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,
         aperture_positions=AperturePositions(
             LARGE=(0, 1, 2, 3, 4),
@@ -297,6 +318,11 @@ def aperture_scatterguard():
             ROBOT_LOAD=(15, 16, 17, 18, 19),
         ),
     )
+    ap_sg.aperture.z.motor_done_move.sim_put(1)  # type: ignore
+    with patch_motor(ap_sg.aperture.x), patch_motor(ap_sg.aperture.y), patch_motor(
+        ap_sg.aperture.z
+    ), patch_motor(ap_sg.scatterguard.x), patch_motor(ap_sg.scatterguard.y):
+        yield ap_sg
 
 
 @pytest.fixture()
@@ -380,16 +406,29 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
+def zocalo(done_status):
+    zoc = i03.zocalo(fake_with_ophyd_sim=True)
+    zoc.stage = MagicMock(return_value=done_status)
+    zoc.unstage = MagicMock(return_value=done_status)
+    return zoc
+
+
+@pytest.fixture
 def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: GridscanInternalParameters,
     RE: RunEngine,
     done_status,
+    attenuator,
+    xbpm_feedback,
+    aperture_scatterguard,
+    zocalo,
 ):
     fake_composite = FlyScanXRayCentreComposite(
-        aperture_scatterguard=i03.aperture_scatterguard(fake_with_ophyd_sim=True),
-        attenuator=i03.attenuator(fake_with_ophyd_sim=True),
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
         backlight=i03.backlight(fake_with_ophyd_sim=True),
+        # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
         fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),
         flux=i03.flux(fake_with_ophyd_sim=True),
@@ -397,9 +436,9 @@ def fake_fgs_composite(
         smargon=smargon,
         undulator=i03.undulator(fake_with_ophyd_sim=True),
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
-        xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
+        xbpm_feedback=xbpm_feedback,
         zebra=i03.zebra(fake_with_ophyd_sim=True),
-        zocalo=i03.zocalo(),
+        zocalo=zocalo,
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -436,7 +475,7 @@ def fake_fgs_composite(
 
     @AsyncStatus.wrap
     async def mock_complete(result):
-        await fake_composite.zocalo._put_results([result])
+        await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
 
     fake_composite.zocalo.trigger = MagicMock(
         side_effect=partial(mock_complete, test_result)

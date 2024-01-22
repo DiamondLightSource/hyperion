@@ -1,11 +1,29 @@
 from __future__ import annotations
 
+import dataclasses
 import json
 
 import bluesky.plan_stubs as bps
 from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.backlight import Backlight
+from dodal.devices.DCM import DCM
+from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.flux import Flux
+from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
+from dodal.devices.undulator_dcm import UndulatorDCM
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra import Zebra
+from dodal.devices.zocalo import ZocaloResults
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -16,6 +34,10 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_centre_then_xray_centre_plan,
 )
+from hyperion.experiment_plans.set_energy_plan import (
+    SetEnergyComposite,
+    set_energy_plan,
+)
 from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
@@ -25,10 +47,39 @@ from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params im
 )
 
 
-def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
+@dataclasses.dataclass
+class WaitForRobotLoadThenCentreComposite:
+    # common fields
+    xbpm_feedback: XBPMFeedback
+    attenuator: Attenuator
+
+    # GridDetectThenXRayCentreComposite fields
+    aperture_scatterguard: ApertureScatterguard
+    backlight: Backlight
+    detector_motion: DetectorMotion
+    eiger: EigerDetector
+    fast_grid_scan: FastGridScan
+    flux: Flux
+    oav: OAV
+    pin_tip_detection: PinTipDetection
+    smargon: Smargon
+    synchrotron: Synchrotron
+    s4_slit_gaps: S4SlitGaps
+    undulator: Undulator
+    zebra: Zebra
+    zocalo: ZocaloResults
+
+    # SetEnergyComposite fields
+    vfm: FocusingMirror
+    vfm_mirror_voltages: VFMMirrorVoltages
+    dcm: DCM
+    undulator_dcm: UndulatorDCM
+
+
+def create_devices(context: BlueskyContext) -> WaitForRobotLoadThenCentreComposite:
     from hyperion.utils.context import device_composite_from_context
 
-    return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
+    return device_composite_from_context(context, WaitForRobotLoadThenCentreComposite)
 
 
 def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
@@ -51,18 +102,54 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
 
 
 def wait_for_robot_load_then_centre_plan(
-    composite: GridDetectThenXRayCentreComposite,
+    composite: WaitForRobotLoadThenCentreComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ):
+    set_energy_composite = SetEnergyComposite(
+        vfm=composite.vfm,
+        vfm_mirror_voltages=composite.vfm_mirror_voltages,
+        dcm=composite.dcm,
+        undulator_dcm=composite.undulator_dcm,
+        xbpm_feedback=composite.xbpm_feedback,
+        attenuator=composite.attenuator,
+    )
+
+    if parameters.experiment_params.requested_energy_kev:
+        yield from set_energy_plan(
+            parameters.experiment_params.requested_energy_kev,
+            set_energy_composite,
+        )
+
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
     params_json = json.loads(parameters.json())
     pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
-    yield from pin_centre_then_xray_centre_plan(composite, pin_centre_params)
+
+    grid_detect_then_xray_centre_composite = GridDetectThenXRayCentreComposite(
+        aperture_scatterguard=composite.aperture_scatterguard,
+        attenuator=composite.attenuator,
+        backlight=composite.backlight,
+        detector_motion=composite.detector_motion,
+        eiger=composite.eiger,
+        fast_grid_scan=composite.fast_grid_scan,
+        flux=composite.flux,
+        oav=composite.oav,
+        pin_tip_detection=composite.pin_tip_detection,
+        smargon=composite.smargon,
+        synchrotron=composite.synchrotron,
+        s4_slit_gaps=composite.s4_slit_gaps,
+        undulator=composite.undulator,
+        xbpm_feedback=composite.xbpm_feedback,
+        zebra=composite.zebra,
+        zocalo=composite.zocalo,
+    )
+    yield from pin_centre_then_xray_centre_plan(
+        grid_detect_then_xray_centre_composite, pin_centre_params
+    )
 
 
 def wait_for_robot_load_then_centre(
-    composite: GridDetectThenXRayCentreComposite,
+    composite: WaitForRobotLoadThenCentreComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger

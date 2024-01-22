@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable
 
 from bluesky.callbacks import CallbackBase
@@ -12,7 +13,14 @@ if TYPE_CHECKING:
 
 
 class PlanReactiveCallback(CallbackBase):
-    def __init__(self, *, emit: Callable[..., Any] | None = None) -> None:
+    log: Logger  # type: ignore # this is initialised to None and not annotated in the superclass
+
+    def __init__(
+        self,
+        log: Logger,
+        *,
+        emit: Callable[..., Any] | None = None,
+    ) -> None:
         """A callback base class which can be left permanently subscribed to a plan, and
         will 'activate' and 'deactivate' at the start and end of a plan which provides
         metadata to trigger this.
@@ -26,38 +34,65 @@ class PlanReactiveCallback(CallbackBase):
         override 'start' etc. should include a call to super().start(...) etc.
         The logic of how activation is triggered will change to a more readable, version
         in the future (https://github.com/DiamondLightSource/hyperion/issues/964)."""
+
         super().__init__(emit=emit)
         self.active = False
         self.activity_uid = 0
+        self.log = log
+
+    def _run_activity_gated(self, func, doc, override=False):
+        # Runs `func` if self.active is True or overide is true. Override can be used
+        # to run the function even after setting self.active to False, i.e. in the last
+        # handler of a run.
+
+        running_gated_function = override or self.active
+        if not running_gated_function:
+            return doc
+        try:
+            return func(doc)
+        except Exception as e:
+            self.log.exception(e)
+            raise
 
     def start(self, doc: RunStart) -> RunStart | None:
         callbacks_to_activate = doc.get("activate_callbacks")
         if callbacks_to_activate:
-            self.active = type(self).__name__ in callbacks_to_activate
+            activate = type(self).__name__ in callbacks_to_activate
+            self.active = activate
+            self.log.info(
+                f"{'' if activate else 'not'} activating {type(self).__name__}"
+            )
             self.activity_uid = doc.get("uid")
-        return self.activity_gated_start(doc) if self.active else doc
+        return self._run_activity_gated(self.activity_gated_start, doc)
 
     def descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
-        return self.activity_gated_descriptor(doc) if self.active else doc
+        return self._run_activity_gated(self.activity_gated_descriptor, doc)
 
     def event(self, doc: Event) -> Event | None:
-        return self.activity_gated_event(doc) if self.active else doc
+        return self._run_activity_gated(self.activity_gated_event, doc)
 
     def stop(self, doc: RunStop) -> RunStop | None:
         do_stop = self.active
         if doc.get("run_start") == self.activity_uid:
             self.active = False
             self.activity_uid = 0
-        return self.activity_gated_stop(doc) if do_stop else doc
+        return (
+            self._run_activity_gated(self.activity_gated_stop, doc, override=True)
+            if do_stop
+            else doc
+        )
 
     def activity_gated_start(self, doc: RunStart):
-        return None
+        return doc
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
-        return None
+        return doc
 
     def activity_gated_event(self, doc: Event):
-        return None
+        return doc
 
     def activity_gated_stop(self, doc: RunStop):
-        return None
+        return doc
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} with id: {hex(id(self))}>"

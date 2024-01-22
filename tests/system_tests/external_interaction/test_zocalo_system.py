@@ -27,6 +27,9 @@ from .conftest import (
 """
 If fake-zocalo system tests are failing, check that the RMQ instance is set up right:
 
+- Open the RMQ webpage specified when you start the fake zocalo and login with the
+provided credentials
+
 - go to the admin panel and under the 'exchanges' tab ensure that there is a 'results'
 exchange for the zocalo vhost (other settings can be left blank)
 

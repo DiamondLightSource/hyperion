@@ -48,8 +48,7 @@ TEST_SHUTTER_OPENING_DEGREES = 2.5
 
 
 def do_rotation_main_plan_for_tests(
-    run_engine,
-    callbacks,
+    run_eng_w_subs,
     sim_und,
     sim_synch,
     sim_slits,
@@ -73,15 +72,11 @@ def do_rotation_main_plan_for_tests(
         s4_slit_gaps=sim_slits,
         zebra=sim_zeb,
     )
-
+    run_engine, _ = run_eng_w_subs
     with (
         patch(
             "bluesky.preprocessors.__read_and_stash_a_motor",
             fake_read,
-        ),
-        patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
-            lambda: callbacks,
         ),
         patch("dodal.beamlines.i03.undulator", lambda: sim_und),
         patch("dodal.beamlines.i03.synchrotron", lambda: sim_synch),
@@ -98,26 +93,29 @@ def do_rotation_main_plan_for_tests(
 
 
 @pytest.fixture
+def RE_with_subs(
+    RE: RunEngine, mock_rotation_subscriptions: RotationCallbackCollection
+):
+    for cb in mock_rotation_subscriptions:
+        RE.subscribe(cb)
+    return RE, mock_rotation_subscriptions
+
+
+@pytest.fixture
 def run_full_rotation_plan(
-    RE: RunEngine,
+    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
     test_rotation_params: RotationInternalParameters,
-    fake_create_rotation_devices,
     attenuator: Attenuator,
-    mock_rotation_subscriptions: RotationCallbackCollection,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
     flux: Flux,
+    fake_create_rotation_devices,
 ):
-    with (
-        patch(
-            "bluesky.preprocessors.__read_and_stash_a_motor",
-            fake_read,
-        ),
-        patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
-            lambda: mock_rotation_subscriptions,
-        ),
+    RE, mock_rotation_subscriptions = RE_with_subs
+    with patch(
+        "bluesky.preprocessors.__read_and_stash_a_motor",
+        fake_read,
     ):
         RE(rotation_scan(fake_create_rotation_devices, test_rotation_params))
 
@@ -125,7 +123,7 @@ def run_full_rotation_plan(
 
 
 def setup_and_run_rotation_plan_for_tests(
-    RE: RunEngine,
+    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
     test_params: RotationInternalParameters,
     smargon: Smargon,
     zebra: Zebra,
@@ -133,7 +131,6 @@ def setup_and_run_rotation_plan_for_tests(
     attenuator: Attenuator,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    mock_rotation_subscriptions: RotationCallbackCollection,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
@@ -181,8 +178,7 @@ def setup_and_run_rotation_plan_for_tests(
 
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
-            RE,
-            mock_rotation_subscriptions,
+            RE_with_subs,
             undulator,
             synchrotron,
             s4_slit_gaps,
@@ -196,7 +192,7 @@ def setup_and_run_rotation_plan_for_tests(
         )
 
     return {
-        "RE": RE,
+        "RE_with_subs": RE_with_subs,
         "test_rotation_params": test_params,
         "smargon": smargon,
         "zebra": zebra,
@@ -204,7 +200,6 @@ def setup_and_run_rotation_plan_for_tests(
         "attenuator": attenuator,
         "detector_motion": detector_motion,
         "backlight": backlight,
-        "mock_rotation_subscriptions": mock_rotation_subscriptions,
         "synchrotron": synchrotron,
         "s4_slit_gaps": s4_slit_gaps,
         "undulator": undulator,
@@ -214,7 +209,7 @@ def setup_and_run_rotation_plan_for_tests(
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_standard(
-    RE: RunEngine,
+    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
     test_rotation_params: RotationInternalParameters,
     smargon: Smargon,
     zebra: Zebra,
@@ -222,14 +217,13 @@ def setup_and_run_rotation_plan_for_tests_standard(
     attenuator: Attenuator,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    mock_rotation_subscriptions: RotationCallbackCollection,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
     flux: Flux,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE,
+        RE_with_subs,
         test_rotation_params,
         smargon,
         zebra,
@@ -237,7 +231,6 @@ def setup_and_run_rotation_plan_for_tests_standard(
         attenuator,
         detector_motion,
         backlight,
-        mock_rotation_subscriptions,
         synchrotron,
         s4_slit_gaps,
         undulator,
@@ -247,7 +240,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_nomove(
-    RE: RunEngine,
+    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
     test_rotation_params_nomove: RotationInternalParameters,
     smargon: Smargon,
     zebra: Zebra,
@@ -255,14 +248,13 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     attenuator: Attenuator,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    mock_rotation_subscriptions: RotationCallbackCollection,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
     flux: Flux,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE,
+        RE_with_subs,
         test_rotation_params_nomove,
         smargon,
         zebra,
@@ -270,7 +262,6 @@ def setup_and_run_rotation_plan_for_tests_nomove(
         attenuator,
         detector_motion,
         backlight,
-        mock_rotation_subscriptions,
         synchrotron,
         s4_slit_gaps,
         undulator,
@@ -314,7 +305,7 @@ def test_move_to_end(smargon: Smargon, RE):
 @patch("hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan", autospec=True)
 def test_rotation_scan(
     plan: MagicMock,
-    RE,
+    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
     test_rotation_params,
     smargon: Smargon,
     zebra: Zebra,
@@ -322,8 +313,8 @@ def test_rotation_scan(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
-    mock_rotation_subscriptions: RotationCallbackCollection,
 ):
+    RE, mock_rotation_subscriptions = RE_with_subs
     zebra.pc.arm.armed.set(False)
     with (
         patch("dodal.beamlines.i03.smargon", return_value=smargon),
@@ -334,10 +325,6 @@ def test_rotation_scan(
         patch(
             "hyperion.experiment_plans.rotation_scan_plan.DetectorMotion",
             return_value=detector_motion,
-        ),
-        patch(
-            "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
-            lambda: mock_rotation_subscriptions,
         ),
     ):
         composite = RotationScanComposite(
@@ -359,7 +346,10 @@ def test_rotation_scan(
 
 
 def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests_standard) -> None:
-    RE: RunEngine = setup_and_run_rotation_plan_for_tests_standard["RE"]
+    RE_with_subs: tuple[
+        RunEngine, RotationCallbackCollection
+    ] = setup_and_run_rotation_plan_for_tests_standard["RE_with_subs"]
+    RE, _ = RE_with_subs
     assert RE._exit_status == "success"
 
 
@@ -433,7 +423,7 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
 def test_cleanup_happens(
     bps_wait: MagicMock,
     cleanup_plan: MagicMock,
-    RE,
+    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
     test_rotation_params,
     smargon: Smargon,
     zebra: Zebra,
@@ -441,8 +431,9 @@ def test_cleanup_happens(
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
-    mock_rotation_subscriptions: RotationCallbackCollection,
 ):
+    RE, mock_rotation_subscriptions = RE_with_subs
+
     class MyTestException(Exception):
         pass
 
@@ -473,17 +464,13 @@ def test_cleanup_happens(
         )
         cleanup_plan.assert_not_called()
     # check that failure is handled in composite plan
-    with patch(
-        "hyperion.experiment_plans.rotation_scan_plan.RotationCallbackCollection.setup",
-        lambda: mock_rotation_subscriptions,
-    ):
-        with pytest.raises(MyTestException) as exc:
-            RE(
-                rotation_scan(
-                    composite,
-                    test_rotation_params,
-                )
+    with pytest.raises(MyTestException) as exc:
+        RE(
+            rotation_scan(
+                composite,
+                test_rotation_params,
             )
+        )
         assert "Experiment fails because this is a test" in exc.value.args[0]
         cleanup_plan.assert_called_once()
 
@@ -493,7 +480,7 @@ def test_cleanup_happens(
 )
 def test_acceleration_offset_calculated_correctly(
     mock_move_to_start: MagicMock,
-    RE: RunEngine,
+    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
     test_rotation_params: RotationInternalParameters,
     smargon: Smargon,
     zebra: Zebra,
@@ -501,7 +488,6 @@ def test_acceleration_offset_calculated_correctly(
     attenuator: Attenuator,
     detector_motion: DetectorMotion,
     backlight: Backlight,
-    mock_rotation_subscriptions: RotationCallbackCollection,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     undulator: Undulator,
@@ -509,7 +495,7 @@ def test_acceleration_offset_calculated_correctly(
 ):
     smargon.omega.acceleration.sim_put(0.2)  # type: ignore
     setup_and_run_rotation_plan_for_tests(
-        RE,
+        RE_with_subs,
         test_rotation_params,
         smargon,
         zebra,
@@ -517,7 +503,6 @@ def test_acceleration_offset_calculated_correctly(
         attenuator,
         detector_motion,
         backlight,
-        mock_rotation_subscriptions,
         synchrotron,
         s4_slit_gaps,
         undulator,

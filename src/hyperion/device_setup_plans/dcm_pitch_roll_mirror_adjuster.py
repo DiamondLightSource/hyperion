@@ -1,10 +1,7 @@
 import json
 
 import bluesky.plan_stubs as bps
-from dodal.beamlines.beamline_parameters import (
-    GDABeamlineParameters,
-)
-from dodal.devices.DCM import DCM, fixed_offset_from_beamline_params
+from dodal.devices.DCM import DCM
 from dodal.devices.focusing_mirror import (
     FocusingMirror,
     MirrorStripe,
@@ -74,7 +71,6 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     dcm: DCM,
     vfm: FocusingMirror,
     vfm_mirror_voltages: VFMMirrorVoltages,
-    beamline_parameters: GDABeamlineParameters,
     energy_kev,
 ):
     """Beamline energy-change post-adjustments : Adjust DCM and VFM directly from lookup tables.
@@ -106,7 +102,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     LOGGER.info("Waiting for DCM roll adjust to complete...")
 
     # DCM Perp pitch
-    offset_mm = fixed_offset_from_beamline_params(beamline_parameters)
+    offset_mm = dcm.fixed_offset_mm
     LOGGER.info(f"Adjusting DCM offset to {offset_mm} mm")
     yield from bps.abs_set(dcm.offset_in_mm, offset_mm, group=DCM_GROUP)
 

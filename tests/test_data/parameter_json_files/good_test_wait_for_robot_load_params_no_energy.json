@@ -38,8 +38,6 @@
         "omega_start": 0,
         "exposure_time": 0.004,
         "detector_distance": 255,
-        "snapshot_dir": "/tmp",
-        "use_ophyd_pin_tip_detect": true,
-        "requested_energy_kev": 11.1
+        "snapshot_dir": "/tmp"
     }
 }

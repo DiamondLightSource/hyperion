@@ -23,8 +23,9 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
-from dodal.devices.zocalo import (
+from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
+    ZOCALO_STAGE_GROUP,
     ZocaloResults,
     get_processing_result,
 )
@@ -148,6 +149,10 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
 def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
+    LOGGER.info("Tidying up Zocalo")
+    yield from bps.unstage(
+        fgs_composite.zocalo
+    )  # make sure we don't consume any other results
 
 
 @bpp.set_run_key_decorator(GRIDSCAN_MAIN_PLAN)
@@ -193,7 +198,6 @@ def run_gridscan(
         else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
     )
     def do_fgs():
-        yield from bps.wait()  # Wait for all moves to complete
         # Check topup gate
         dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000.0
         total_exposure = (
@@ -205,6 +209,9 @@ def run_gridscan(
             30.0,
         )
         yield from bps.kickoff(fgs_motors)
+        yield from bps.wait(
+            ZOCALO_STAGE_GROUP
+        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
         yield from bps.complete(fgs_motors, wait=True)
 
     LOGGER.info("Waiting for arming to finish")
@@ -238,7 +245,9 @@ def run_gridscan_and_move(
     yield from setup_zebra_for_gridscan(fgs_composite.zebra)
 
     LOGGER.info("Starting grid scan")
-
+    yield from bps.stage(
+        fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
+    )  # connect to zocalo and make sure the queue is clear
     yield from run_gridscan(fgs_composite, parameters)
 
     LOGGER.info("Grid scan finished, getting results.")
@@ -295,11 +304,6 @@ def flyscan_xray_centre(
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
     composite.zocalo.zocalo_environment = parameters.hyperion_params.zocalo_environment
 
-    subscriptions = XrayCentreCallbackCollection.setup()
-
-    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
-        list(subscriptions)  # must be the outermost decorator to receive the metadata
-    )
     @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
