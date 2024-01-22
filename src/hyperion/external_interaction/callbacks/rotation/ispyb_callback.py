@@ -59,9 +59,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 )
                 else None
             )
-            self.ispyb: StoreRotationInIspyb = StoreRotationInIspyb(
-                self.ispyb_config, self.params, dcgid
-            )
+            self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
             self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
         self.ispyb_ids: IspybIds = IspybIds()
         ISPYB_LOGGER.info("ISPYB handler received start document.")
