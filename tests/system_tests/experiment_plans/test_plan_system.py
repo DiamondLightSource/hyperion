@@ -19,7 +19,9 @@ def test_getting_data_for_ispyb():
     undulator = Undulator(f"{SIM_INSERTION_PREFIX}-MO-SERVC-01:", name="undulator")
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     slit_gaps = S4SlitGaps(f"{SIM_BEAMLINE}-AL-SLITS-04:", name="slits")
-    aperture_scatterguard= ApertureScatterguard(prefix=f"{SIM_BEAMLINE}-AL-APSG-04:", name="ao_sg")
+    aperture_scatterguard = ApertureScatterguard(
+        prefix=f"{SIM_BEAMLINE}-AL-APSG-04:", name="ao_sg"
+    )
     attenuator = i03.attenuator(fake_with_ophyd_sim=True)
     flux = i03.flux(fake_with_ophyd_sim=True)
     # waiting step
@@ -34,8 +36,8 @@ def test_getting_data_for_ispyb():
     RE = RunEngine()
 
     @bpp.run_decorator()
-    def standalone_read_hardware(und, syn, slits, att, flux, dcm):
+    def standalone_read_hardware(und, syn, slits, att, flux, dcm, aperture_scatterguard):
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, aperture_scatterguard)
         yield from read_hardware_for_ispyb_during_collection(att, flux, dcm)
 
-    RE(standalone_read_hardware(undulator, synchrotron, slit_gaps, attenuator, flux, dcm))
+    RE(standalone_read_hardware(undulator, synchrotron, slit_gaps, attenuator, flux, dcm, aperture_scatterguard))
