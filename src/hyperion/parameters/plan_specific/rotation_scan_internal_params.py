@@ -152,8 +152,4 @@ class RotationInternalParameters(InternalParameters):
         size = (
             self.hyperion_params.detector_params.detector_size_constants.det_size_pixels
         )
-        return (
-            self.experiment_params.get_num_images(),
-            int(size.width),
-            int(size.height),
-        )
+        return (self.experiment_params.get_num_images(), size.width, size.height)
