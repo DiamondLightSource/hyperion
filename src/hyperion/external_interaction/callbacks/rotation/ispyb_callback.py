@@ -74,4 +74,5 @@ class RotationISPyBCallback(BaseISPyBCallback):
 
     def activity_gated_stop(self, doc: dict):
         if doc.get("run_start") == self.uid_to_finalize_on:
+            self.uid_to_finalize_on = None
             super().activity_gated_stop(doc)

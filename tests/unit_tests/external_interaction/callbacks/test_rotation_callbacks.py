@@ -1,4 +1,6 @@
 import os
+from functools import partial
+from random import randrange
 from typing import Callable
 from unittest.mock import MagicMock, patch
 
@@ -15,6 +17,9 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
 )
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
+)
+from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -57,7 +62,7 @@ def activate_callbacks(cbs: RotationCallbackCollection | XrayCentreCallbackColle
 
 def fake_rotation_scan(
     params: RotationInternalParameters,
-    subscriptions: RotationCallbackCollection,
+    subscriptions: RotationCallbackCollection | list[RotationISPyBCallback],
     after_open_do: Callable | None = None,
     after_main_do: Callable | None = None,
 ):
@@ -316,3 +321,57 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         autospec=True,
     ):
         RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+
+
+def random_ids() -> IspybIds:
+    rand_100 = partial(randrange, 100)
+    return IspybIds(
+        data_collection_group_id=rand_100(),
+        data_collection_ids=(rand_100(), rand_100()),
+        grid_ids=None,
+    )
+
+
+class TestScanBundling:
+    @pytest.fixture(scope="class")
+    def persistent_cb(self):
+        cb = [RotationISPyBCallback()]
+        cb[0].active = True
+
+        return cb
+
+    @pytest.mark.parametrize(
+        ["sampleID", "same_DCGID"],
+        zip(
+            ["abc", "abc", "abc", "def", "abc", "def", "def"],
+            [False, True, True, False, False, False, True],
+        ),
+    )
+    @patch(
+        "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+        autospec=True,
+    )
+    def test_ispyb_reuses_dcgid_on_same_sampleID(
+        self,
+        rotation_ispyb: MagicMock,
+        RE: RunEngine,
+        params: RotationInternalParameters,
+        persistent_cb,
+        sampleID: str,
+        same_DCGID: bool,
+    ):
+        params.hyperion_params.ispyb_params.sample_id = sampleID
+        rotation_ispyb.return_value.begin_deposition.side_effect = random_ids
+
+        def after_open_do(callbacks: list[RotationISPyBCallback]):
+            assert callbacks[0].uid_to_finalize_on is None
+
+        def after_main_do(callbacks: list[RotationISPyBCallback]):
+            assert callbacks[0].uid_to_finalize_on is not None
+
+        RE(fake_rotation_scan(params, persistent_cb, after_open_do, after_main_do))
+
+        if same_DCGID:
+            assert rotation_ispyb.call_args.args[2] is not None
+        else:
+            assert rotation_ispyb.call_args.args[2] is None

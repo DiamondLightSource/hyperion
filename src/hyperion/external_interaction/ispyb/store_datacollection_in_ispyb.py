@@ -53,7 +53,7 @@ class StoreInIspyb(ABC):
         self.run_number: int
         self.omega_start: float
         self.xtal_snapshots: list[str]
-        self.data_collection_group_id: int
+        self.data_collection_group_id: int | None
 
     @abstractmethod
     def _store_scan_data(self, conn: Connector) -> tuple:
@@ -261,8 +261,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         )  # type:ignore # the validator always makes this int
         self.omega_start = self.detector_params.omega_start
         self.data_collection_id: int | None = None
-        if dcgid:
-            self.data_collection_group_id = dcgid
+        self.data_collection_group_id = dcgid
 
         if self.ispyb_params.xtal_snapshots_omega_start:
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start[:3]
