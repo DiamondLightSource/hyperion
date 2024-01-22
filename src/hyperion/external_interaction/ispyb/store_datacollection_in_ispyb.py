@@ -246,14 +246,23 @@ class StoreInIspyb(ABC):
 
 
 class StoreRotationInIspyb(StoreInIspyb):
-    def __init__(self, ispyb_config, parameters: RotationInternalParameters) -> None:
+    def __init__(
+        self,
+        ispyb_config,
+        parameters: RotationInternalParameters,
+        dcgid: int | None = None,
+    ) -> None:
         super().__init__(ispyb_config, "SAD")
         self.full_params: RotationInternalParameters = parameters
         self.ispyb_params: RotationIspybParams = parameters.hyperion_params.ispyb_params
         self.detector_params = parameters.hyperion_params.detector_params
-        self.run_number = self.detector_params.run_number
+        self.run_number = (
+            self.detector_params.run_number
+        )  # type:ignore # the validator always makes this int
         self.omega_start = self.detector_params.omega_start
         self.data_collection_id: int | None = None
+        if dcgid:
+            self.data_collection_group_id = dcgid
 
         if self.ispyb_params.xtal_snapshots_omega_start:
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start[:3]
@@ -278,15 +287,17 @@ class StoreRotationInIspyb(StoreInIspyb):
         return params
 
     def _store_scan_data(self, conn: Connector):
-        data_collection_group_id = self._store_data_collection_group_table(conn)
-        self.data_collection_group_id = data_collection_group_id
+        if not self.data_collection_group_id:
+            self.data_collection_group_id = self._store_data_collection_group_table(
+                conn
+            )
         data_collection_id = self._store_data_collection_table(
-            conn, data_collection_group_id
+            conn, self.data_collection_group_id
         )
         self.data_collection_id = data_collection_id
         self._store_position_table(conn, data_collection_id)
 
-        return data_collection_id, data_collection_group_id
+        return data_collection_id, self.data_collection_group_id
 
     def begin_deposition(self) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
@@ -347,7 +358,9 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self.full_params = full_params
         self.ispyb_params = full_params.hyperion_params.ispyb_params
         self.detector_params = full_params.hyperion_params.detector_params
-        self.run_number = self.detector_params.run_number
+        self.run_number = (
+            self.detector_params.run_number
+        )  # type:ignore # the validator always makes this int
         self.omega_start = self.detector_params.omega_start
         self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
         self.upper_left = [
