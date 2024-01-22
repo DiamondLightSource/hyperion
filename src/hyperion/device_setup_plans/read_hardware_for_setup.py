@@ -19,7 +19,7 @@ def read_hardware_for_ispyb_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
-    aperture_scatterguard:ApertureScatterguard
+    aperture_scatterguard: ApertureScatterguard,
 ):
     LOGGER.info("Reading status of beamline parameters for ispyb deposition.")
     yield from bps.create(
