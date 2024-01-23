@@ -14,8 +14,14 @@
         "omega_start": {
             "type": "number"
         },
+        "use_ophyd_pin_tip_detect": {
+            "type": "boolean"
+        },
         "requested_energy_kev": {
-            "type": ["number", "null"]
+            "type": [
+                "number",
+                "null"
+            ]
         }
     },
     "required": [

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
+from dodal.devices.areadetector.plugins.MXSC import MXSC
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
@@ -32,7 +33,7 @@ def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_re
 
     oav.mxsc.pin_tip.trigger = MagicMock(return_value=NullStatus())
 
-    result = RE(move_pin_into_view(oav, smargon))
+    result = RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     oav.mxsc.pin_tip.trigger.assert_called_once()
     assert smargon.x.user_readback.get() == 0
@@ -57,7 +58,7 @@ def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargo
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
-    result = RE(move_pin_into_view(oav, smargon))
+    result = RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     assert smargon.x.user_readback.get() == DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)
@@ -81,7 +82,7 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
 
     smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
 
-    result = RE(move_pin_into_view(oav, smargon))
+    result = RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     assert smargon.x.user_readback.get() == -DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)
@@ -102,7 +103,7 @@ def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
     smargon.x.user_readback.sim_put(-1.8)  # type: ignore
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon, max_steps=1))
+        RE(move_pin_into_view(oav.mxsc.pin_tip, smargon, max_steps=1))
 
     assert smargon.x.user_readback.get() == -2
 
@@ -124,7 +125,7 @@ def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     smargon.x.user_readback.sim_put(1.8)  # type: ignore
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon, max_steps=1))
+        RE(move_pin_into_view(oav.mxsc.pin_tip, smargon, max_steps=1))
 
     assert smargon.x.user_readback.get() == 2
 
@@ -140,7 +141,7 @@ def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_posit
     smargon.x.user_readback.sim_put(0)  # type: ignore
 
     with pytest.raises(WarningException):
-        RE(move_pin_into_view(oav, smargon))
+        RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     assert smargon.x.user_readback.get() == 1
 
@@ -160,7 +161,7 @@ def return_pixel(pixel, *args):
 
 
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
+    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found_ad_mxsc",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(
@@ -190,18 +191,22 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     RE,
 ):
     smargon.omega.user_readback.sim_put(0)  # type: ignore
-    mock_oav = MagicMock(spec=OAV)
+    mock_oav: OAV = MagicMock(spec=OAV)
+    mock_oav.mxsc = MagicMock(spec=MXSC)
     mock_oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     mock_oav.parameters.micronsPerXPixel = 2.87
     mock_oav.parameters.micronsPerYPixel = 2.87
     composite = PinTipCentringComposite(
-        backlight=MagicMock(), oav=mock_oav, smargon=smargon
+        backlight=MagicMock(),
+        oav=mock_oav,
+        smargon=smargon,
+        pin_tip_detection=MagicMock(),
     )
     RE(pin_tip_centre_plan(composite, 50, test_config_files["oav_config_json"]))
 
-    mock_setup_oav.assert_called_once()
+    assert mock_setup_oav.call_count == 2
 
     assert len(get_move.call_args_list) == 2
 
@@ -212,3 +217,55 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
 
     args, _ = get_move.call_args_list[1]
     assert args[1] == (217, 200)
+
+
+@patch(
+    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found_ophyd",
+    new=partial(return_pixel, (200, 200)),
+)
+@patch(
+    "hyperion.experiment_plans.pin_tip_centring_plan.get_move_required_so_that_beam_is_at_pixel",
+    autospec=True,
+)
+@patch(
+    "hyperion.experiment_plans.pin_tip_centring_plan.move_pin_into_view",
+)
+@patch(
+    "hyperion.experiment_plans.pin_tip_centring_plan.pre_centring_setup_oav",
+    autospec=True,
+)
+@patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", autospec=True)
+@patch(
+    "hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
+    autospec=True,
+)
+def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_expected_plans_called(
+    move_smargon,
+    mock_sleep,
+    mock_setup_oav,
+    mock_move_into_view,
+    get_move: MagicMock,
+    smargon: Smargon,
+    test_config_files,
+    RE,
+):
+    smargon.omega.user_readback.sim_put(0)  # type: ignore
+    mock_oav: OAV = MagicMock(spec=OAV)
+    mock_oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    mock_oav.parameters.micronsPerXPixel = 2.87
+    mock_oav.parameters.micronsPerYPixel = 2.87
+    mock_ophyd_pin_tip_detection = MagicMock()
+    composite = PinTipCentringComposite(
+        backlight=MagicMock(),
+        oav=mock_oav,
+        smargon=smargon,
+        pin_tip_detection=mock_ophyd_pin_tip_detection,
+    )
+    mock_move_into_view.side_effect = partial(return_pixel, (100, 100))
+    RE(pin_tip_centre_plan(composite, 50, test_config_files["oav_config_json"], True))
+
+    mock_move_into_view.assert_called_once_with(mock_ophyd_pin_tip_detection, smargon)
+
+    assert mock_setup_oav.call_count == 2
