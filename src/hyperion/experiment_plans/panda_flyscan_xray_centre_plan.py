@@ -13,6 +13,10 @@ from dodal.devices.panda_fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params,
 )
 from dodal.devices.smargon import StubPosition
+from dodal.devices.zocalo.zocalo_results import (
+    ZOCALO_READING_PLAN_NAME,
+    ZOCALO_STAGE_GROUP,
+)
 
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
@@ -57,7 +61,6 @@ if TYPE_CHECKING:
     )
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from dodal.devices.zocalo import (
-    ZOCALO_READING_PLAN_NAME,
     get_processing_result,
 )
 
@@ -210,7 +213,9 @@ def run_gridscan_and_move(
     yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra)
 
     LOGGER.info("Starting grid scan")
-
+    yield from bps.stage(
+        fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
+    )  # connect to zocalo and make sure the queue is clear
     yield from run_gridscan(fgs_composite, parameters)
 
     LOGGER.info("Grid scan finished, getting results.")
