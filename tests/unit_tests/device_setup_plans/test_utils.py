@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 import pytest
 from bluesky import FailedStatus
 from bluesky import plan_stubs as bps
-from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from ophyd.status import Status
 
@@ -26,7 +25,7 @@ class TestException(Exception):
 
 
 def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct_exception_returned(
-    mock_eiger,
+    mock_eiger, RE
 ):
     def my_plan():
         yield from bps.null()
@@ -34,8 +33,6 @@ def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct
 
     eiger = mock_eiger
     detector_motion = MagicMock()
-
-    RE = RunEngine()
 
     with pytest.raises(TestException):
         RE(
@@ -56,10 +53,9 @@ def null_plan():
 
 
 def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_returned(
-    mock_eiger, null_plan
+    mock_eiger, null_plan, RE
 ):
     detector_motion = MagicMock()
-    RE = RunEngine()
     status = Status(done=True, success=False)
     detector_motion.z.set = MagicMock(return_value=status)
 
@@ -77,20 +73,19 @@ def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_retu
 
 
 def test_given_detector_move_fails_then_eiger_disarmed_and_correct_exception_returned(
-    mock_eiger, null_plan
+    mock_eiger, null_plan, RE
 ):
     detector_motion = MagicMock()
-    RE = RunEngine()
-    detector_motion.shutter.set = MagicMock(
-        return_value=Status(done=True, success=False)
-    )
+    status = Status(done=True, success=False)
+    detector_motion.shutter.set = MagicMock(return_value=status)
 
-    with pytest.raises(FailedStatus):
+    with pytest.raises(FailedStatus) as e:
         RE(
             start_preparing_data_collection_then_do_plan(
                 mock_eiger, detector_motion, 100, null_plan
             )
         )
+    assert e.value.args[0] is status
 
     mock_eiger.async_stage.assert_called_once()
     detector_motion.z.set.assert_called_once()
