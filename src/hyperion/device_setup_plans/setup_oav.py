@@ -182,18 +182,15 @@ def wait_for_tip_to_be_found_ad_mxsc(
     pin_tip = mxsc.pin_tip
     yield from bps.trigger(pin_tip, wait=True)
     found_tip = yield from bps.rd(pin_tip)
-    assert found_tip is int
     if found_tip == pin_tip.INVALID_POSITION:
         top_edge = yield from bps.rd(mxsc.top)
         bottom_edge = yield from bps.rd(mxsc.bottom)
-        try:
-            LOGGER.info(
-                f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
-            )
-        except AttributeError:
-            raise WarningException(
-                f"No pin found after {pin_tip.validity_timeout.get()} seconds"
-            )
+        LOGGER.info(
+            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
+        )
+        raise WarningException(
+            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
+        )
     return found_tip
 
 
