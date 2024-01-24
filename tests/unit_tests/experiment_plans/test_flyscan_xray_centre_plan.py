@@ -137,14 +137,14 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(
+        fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
             transmission_test_value
-        )  # type: ignore
+        )
 
         current_energy_ev_test_value = 12.05
-        fake_fgs_composite.dcm.energy_in_kev.user_readback.sim_put(
+        fake_fgs_composite.dcm.energy_in_kev.user_readback.sim_put(  # type: ignore
             current_energy_ev_test_value
-        )  # type: ignore
+        )
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
