@@ -1,5 +1,6 @@
 import random
 import types
+from typing import Callable
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
