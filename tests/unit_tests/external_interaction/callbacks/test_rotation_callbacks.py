@@ -1,6 +1,4 @@
 import os
-from functools import partial
-from random import randrange
 from typing import Callable
 from unittest.mock import MagicMock, patch
 
@@ -323,15 +321,19 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 
 
-def random_ids() -> IspybIds:
-    rand_100 = partial(randrange, 100)
-    return IspybIds(
-        data_collection_group_id=rand_100(),
-        data_collection_ids=(rand_100(), rand_100()),
-        grid_ids=None,
-    )
+ids = [
+    IspybIds(data_collection_group_id=23, data_collection_ids=45, grid_ids=None),
+    IspybIds(data_collection_group_id=24, data_collection_ids=48, grid_ids=None),
+    IspybIds(data_collection_group_id=25, data_collection_ids=51, grid_ids=None),
+    IspybIds(data_collection_group_id=26, data_collection_ids=111, grid_ids=None),
+    IspybIds(data_collection_group_id=27, data_collection_ids=238476, grid_ids=None),
+    IspybIds(data_collection_group_id=36, data_collection_ids=189765, grid_ids=None),
+    IspybIds(data_collection_group_id=39, data_collection_ids=0, grid_ids=None),
+    IspybIds(data_collection_group_id=43, data_collection_ids=89, grid_ids=None),
+]
 
 
+@pytest.mark.parametrize("ispyb_ids", ids)
 @patch(
     "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
     autospec=True,
@@ -340,10 +342,11 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb: MagicMock,
     RE: RunEngine,
     params: RotationInternalParameters,
+    ispyb_ids,
 ):
     cb = [RotationISPyBCallback()]
     cb[0].active = True
-    rotation_ispyb.return_value.begin_deposition.side_effect = random_ids
+    rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
 
     test_cases = zip(
         ["abc", "abc", "abc", "def", "abc", "def", "def", "xyz", "hij", "hij", "hij"],

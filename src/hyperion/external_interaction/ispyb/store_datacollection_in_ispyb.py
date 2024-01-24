@@ -250,7 +250,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         self,
         ispyb_config,
         parameters: RotationInternalParameters,
-        dcgid: int | None = None,
+        datacollection_group_id: int | None = None,
     ) -> None:
         super().__init__(ispyb_config, "SAD")
         self.full_params: RotationInternalParameters = parameters
@@ -261,7 +261,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         )  # type:ignore # the validator always makes this int
         self.omega_start = self.detector_params.omega_start
         self.data_collection_id: int | None = None
-        self.data_collection_group_id = dcgid
+        self.data_collection_group_id = datacollection_group_id
 
         if self.ispyb_params.xtal_snapshots_omega_start:
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start[:3]
