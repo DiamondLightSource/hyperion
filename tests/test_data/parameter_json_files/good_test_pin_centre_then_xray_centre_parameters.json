@@ -43,6 +43,7 @@
         "omega_start": 0.0,
         "tip_offset_microns": 108.9,
         "grid_width_microns": 290.6,
-        "oav_centring_file": "tests/test_data/test_OAVCentring.json"
+        "oav_centring_file": "tests/test_data/test_OAVCentring.json",
+        "use_ophyd_pin_tip_detect": true
     }
 }
