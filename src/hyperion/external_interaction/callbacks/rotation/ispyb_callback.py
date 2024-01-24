@@ -17,6 +17,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 
 if TYPE_CHECKING:
     from event_model.documents.event import Event
+    from event_model.documents.run_start import RunStart
+    from event_model.documents.run_stop import RunStop
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -44,7 +46,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         assert isinstance(self.ispyb_ids.data_collection_ids, int)
         self._append_to_comment(self.ispyb_ids.data_collection_ids, comment)
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
@@ -70,7 +72,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
-    def activity_gated_stop(self, doc: dict):
+    def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.uid_to_finalize_on:
             self.uid_to_finalize_on = None
             super().activity_gated_stop(doc)
