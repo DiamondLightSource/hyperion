@@ -182,15 +182,19 @@ def run_gridscan_and_move(
         DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
     )
 
+    smargon_speed_limit_mm_per_s = yield from bps.rd(
+        fgs_composite.smargon.x_speed_limit_mm_per_s
+    )
+
     smargon_speed = (
         parameters.experiment_params.x_step_size * 1e3 / time_between_x_steps_ms
     )
-    if smargon_speed > 10:
+    if smargon_speed > smargon_speed_limit_mm_per_s:
         LOGGER.error(
             f"Smargon speed was calculated from x step size\
                                   {parameters.experiment_params.x_step_size} and\
                                       time_between_x_steps_ms {time_between_x_steps_ms} as\
-                                          {smargon_speed}. The smargon's speed limit is 10 mm/s."
+                                          {smargon_speed}. The smargon's speed limit is {smargon_speed_limit_mm_per_s} mm/s."
         )
 
     yield from bps.mv(

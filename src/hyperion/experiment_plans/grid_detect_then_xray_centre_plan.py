@@ -190,18 +190,6 @@ def detect_grid_and_do_gridscan(
     )
     parameters.hyperion_params.ispyb_params.upper_left = out_upper_left
 
-    if parameters.experiment_params.use_panda:
-        grid_params = grid_params_callback.get_panda_grid_parameters()
-
-        flyscan_xray_centre_parameters = (
-            create_parameters_for_panda_flyscan_xray_centre(parameters, grid_params)
-        )
-    else:
-        grid_params = grid_params_callback.get_grid_parameters()
-        flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
-            parameters, grid_params
-        )
-
     yield from bps.abs_set(composite.backlight, Backlight.OUT)
 
     LOGGER.info(
@@ -210,24 +198,6 @@ def detect_grid_and_do_gridscan(
     yield from bps.abs_set(
         composite.aperture_scatterguard,
         composite.aperture_scatterguard.aperture_positions.SMALL,
-    )
-
-    flyscan_composite = FlyScanXRayCentreComposite(
-        aperture_scatterguard=composite.aperture_scatterguard,
-        attenuator=composite.attenuator,
-        backlight=composite.backlight,
-        eiger=composite.eiger,
-        fast_grid_scan=composite.fast_grid_scan,
-        flux=composite.flux,
-        s4_slit_gaps=composite.s4_slit_gaps,
-        smargon=composite.smargon,
-        undulator=composite.undulator,
-        synchrotron=composite.synchrotron,
-        xbpm_feedback=composite.xbpm_feedback,
-        zebra=composite.zebra,
-        zocalo=composite.zocalo,
-        panda=composite.panda,
-        panda_fast_grid_scan=composite.panda_fast_grid_scan,
     )
 
     if parameters.experiment_params.use_panda:
@@ -264,6 +234,24 @@ def detect_grid_and_do_gridscan(
         grid_params = grid_params_callback.get_grid_parameters()
         flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
             parameters, grid_params
+        )
+
+        flyscan_composite = FlyScanXRayCentreComposite(
+            aperture_scatterguard=composite.aperture_scatterguard,
+            attenuator=composite.attenuator,
+            backlight=composite.backlight,
+            eiger=composite.eiger,
+            fast_grid_scan=composite.fast_grid_scan,
+            flux=composite.flux,
+            s4_slit_gaps=composite.s4_slit_gaps,
+            smargon=composite.smargon,
+            undulator=composite.undulator,
+            synchrotron=composite.synchrotron,
+            xbpm_feedback=composite.xbpm_feedback,
+            zebra=composite.zebra,
+            zocalo=composite.zocalo,
+            panda=composite.panda,
+            panda_fast_grid_scan=composite.panda_fast_grid_scan,
         )
 
         yield from flyscan_xray_centre(
