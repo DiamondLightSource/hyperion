@@ -1,5 +1,6 @@
 import random
 import types
+from typing import Callable
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
@@ -64,6 +65,7 @@ from .conftest import (
 )
 
 
+# todo add typing for the params?
 @pytest.fixture
 def ispyb_plan(test_fgs_params):
     @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
@@ -125,7 +127,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
-        ispyb_plan,
+        ispyb_plan: Callable[[GridscanInternalParameters], None],
     ):
         undulator_test_value = 1.234
 

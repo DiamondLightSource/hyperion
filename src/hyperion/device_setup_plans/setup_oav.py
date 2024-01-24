@@ -147,6 +147,8 @@ def calculate_x_y_z_of_pixel(
 ) -> np.ndarray:
     beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
 
+    assert oav_params.micronsPerXPixel
+    assert oav_params.micronsPerYPixel
     return current_x_y_z + camera_coordinates_to_xyz(
         beam_distance_px[0],
         beam_distance_px[1],
@@ -180,15 +182,18 @@ def wait_for_tip_to_be_found_ad_mxsc(
     pin_tip = mxsc.pin_tip
     yield from bps.trigger(pin_tip, wait=True)
     found_tip = yield from bps.rd(pin_tip)
+    assert found_tip is int
     if found_tip == pin_tip.INVALID_POSITION:
         top_edge = yield from bps.rd(mxsc.top)
         bottom_edge = yield from bps.rd(mxsc.bottom)
-        LOGGER.info(
-            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
-        )
-        raise WarningException(
-            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
-        )
+        try:
+            LOGGER.info(
+                f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
+            )
+        except AttributeError:
+            raise WarningException(
+                f"No pin found after {pin_tip.validity_timeout.get()} seconds"
+            )
     return found_tip
 
 
