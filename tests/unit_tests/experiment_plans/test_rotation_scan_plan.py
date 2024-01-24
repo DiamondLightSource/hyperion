@@ -89,6 +89,7 @@ def do_rotation_main_plan_for_tests(
         patch("dodal.beamlines.i03.s4_slit_gaps", lambda: sim_slits),
         patch("dodal.beamlines.i03.flux", lambda: sim_flux),
         patch("dodal.beamlines.i03.attenuator", lambda: sim_att),
+        patch("dodal.beamlines.i03.aperture_scatterguard", lambda: sim_ap_sg),
     ):
         run_engine(
             rotation_scan_plan(
