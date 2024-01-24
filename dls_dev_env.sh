@@ -16,6 +16,8 @@ source .venv/bin/activate
 
 pip install -e .[dev]
 
+pre-commit install
+
 # Ensure we use a local version of dodal
 if [ ! -d "../dodal" ]; then
   git clone git@github.com:DiamondLightSource/dodal.git ../dodal

@@ -42,6 +42,10 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
     # Whether to set the stub offsets after centering
     set_stub_offsets: bool = False
 
+    # Whether to use the ophyd device for tip centring rather than the area detector
+    # plugin
+    use_ophyd_pin_tip_detect: bool = False
+
     def get_num_images(self):
         return 0
 

@@ -115,7 +115,12 @@ def RE():
     RE.subscribe(
         VerbosePlanExecutionLoggingCallback()
     )  # log all events at INFO for easier debugging
-    return RE
+    yield RE
+    try:
+        RE.halt()
+    except Exception:
+        pass
+    del RE
 
 
 def mock_set(motor: EpicsMotor, val):
@@ -396,6 +401,14 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
+def zocalo(done_status):
+    zoc = i03.zocalo(fake_with_ophyd_sim=True)
+    zoc.stage = MagicMock(return_value=done_status)
+    zoc.unstage = MagicMock(return_value=done_status)
+    return zoc
+
+
+@pytest.fixture
 def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: GridscanInternalParameters,
@@ -404,6 +417,7 @@ def fake_fgs_composite(
     attenuator,
     xbpm_feedback,
     aperture_scatterguard,
+    zocalo,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -419,7 +433,7 @@ def fake_fgs_composite(
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
         xbpm_feedback=xbpm_feedback,
         zebra=i03.zebra(fake_with_ophyd_sim=True),
-        zocalo=i03.zocalo(),
+        zocalo=zocalo,
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)

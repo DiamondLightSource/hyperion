@@ -15,6 +15,7 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -60,6 +61,7 @@ class WaitForRobotLoadThenCentreComposite:
     fast_grid_scan: FastGridScan
     flux: Flux
     oav: OAV
+    pin_tip_detection: PinTipDetection
     smargon: Smargon
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
@@ -132,6 +134,7 @@ def wait_for_robot_load_then_centre_plan(
         fast_grid_scan=composite.fast_grid_scan,
         flux=composite.flux,
         oav=composite.oav,
+        pin_tip_detection=composite.pin_tip_detection,
         smargon=composite.smargon,
         synchrotron=composite.synchrotron,
         s4_slit_gaps=composite.s4_slit_gaps,

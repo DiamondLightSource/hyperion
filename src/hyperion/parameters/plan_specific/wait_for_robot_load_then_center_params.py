@@ -46,6 +46,10 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     snapshot_dir: str
     requested_energy_kev: Optional[float] = None
 
+    # Whether to use the ophyd device for tip centring rather than the area detector
+    # plugin
+    use_ophyd_pin_tip_detect: bool = False
+
     def get_num_images(self):
         return 0
 

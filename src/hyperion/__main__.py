@@ -69,10 +69,12 @@ class BlueskyRunner:
         skip_startup_connection=False,
         use_external_callbacks: bool = False,
     ) -> None:
-        self.command_queue: "Queue[Command]" = Queue()
+        self.command_queue: Queue[Command] = Queue()
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
         self.last_run_aborted: bool = False
         self.aperture_change_callback = ApertureChangeCallback()
+        self.context: BlueskyContext
+
         self.RE = RE
         self.context = context
         self.subscribed_per_plan_callbacks: list[int] = []
