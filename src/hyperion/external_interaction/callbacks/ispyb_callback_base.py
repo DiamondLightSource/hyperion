@@ -26,6 +26,9 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 
 if TYPE_CHECKING:
     from event_model.documents.event import Event
+    from event_model.documents.event_descriptor import EventDescriptor
+    from event_model.documents.run_start import RunStart
+    from event_model.documents.run_stop import RunStop
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
@@ -39,7 +42,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             None
         )
         self.ispyb: StoreInIspyb
-        self.descriptors: Dict[str, dict] = {}
+        self.descriptors: Dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
         if (
             self.ispyb_config == SIM_ISPYB_CONFIG
@@ -54,12 +57,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.ispyb_ids: IspybIds = IspybIds()
         self.log = ISPYB_LOGGER
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.debug("ISPyB Callback Start Triggered")
         if self.uid_to_finalize_on is None:
             self.uid_to_finalize_on = doc.get("uid")
 
-    def activity_gated_descriptor(self, doc: dict):
+    def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
 
     def activity_gated_event(self, doc: Event):
@@ -103,7 +106,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.ispyb_ids = self.ispyb.begin_deposition()
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
-    def activity_gated_stop(self, doc: dict):
+    def activity_gated_stop(self, doc: RunStop):
         """Subclasses must check that they are recieving a stop document for the correct
         uid to use this method!"""
         assert isinstance(
@@ -114,7 +117,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
             doc.get("exit_status") or "Exit status not available in stop document!"
         )
         reason = doc.get("reason") or ""
-
         set_dcgid_tag(None)
         try:
             self.ispyb.end_deposition(exit_status, reason)

@@ -208,6 +208,19 @@ def test_store_rotation_scan(
     )
 
 
+@pytest.mark.parametrize("dcgid", [2, 45, 61, 88, 13, 25])
+@patch("ispyb.open", new_callable=mock_open)
+def test_store_rotation_scan_uses_supplied_dcgid(
+    ispyb_conn, dummy_rotation_params, dcgid
+):
+    ispyb_conn.return_value.mx_acquisition = MagicMock()
+    ispyb_conn.return_value.core = mock()
+    store_in_ispyb = StoreRotationInIspyb(
+        SIM_ISPYB_CONFIG, dummy_rotation_params, dcgid
+    )
+    assert store_in_ispyb.begin_deposition().data_collection_group_id == dcgid
+
+
 @patch("ispyb.open", new_callable=mock_open)
 def test_store_rotation_scan_failures(
     ispyb_conn,

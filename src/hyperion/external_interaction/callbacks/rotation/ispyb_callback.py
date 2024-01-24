@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
@@ -12,6 +14,11 @@ from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAI
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+
+if TYPE_CHECKING:
+    from event_model.documents.event import Event
+    from event_model.documents.run_start import RunStart
+    from event_model.documents.run_stop import RunStop
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -31,29 +38,41 @@ class RotationISPyBCallback(BaseISPyBCallback):
     Usually used as part of a RotationCallbackCollection.
     """
 
+    def __init__(self) -> None:
+        super().__init__()
+        self.last_sample_id: str | None = None
+
     def append_to_comment(self, comment: str):
         assert isinstance(self.ispyb_ids.data_collection_ids, int)
         self._append_to_comment(self.ispyb_ids.data_collection_ids, comment)
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.params = RotationInternalParameters.from_json(json_params)
-            self.ispyb: StoreRotationInIspyb = StoreRotationInIspyb(
-                self.ispyb_config, self.params
+            dcgid = (
+                self.ispyb_ids.data_collection_group_id
+                if (
+                    self.params.hyperion_params.ispyb_params.sample_id
+                    == self.last_sample_id
+                )
+                else None
             )
+            self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
+            self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
         self.ispyb_ids: IspybIds = IspybIds()
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
 
-    def activity_gated_event(self, doc: dict):
+    def activity_gated_event(self, doc: Event):
         super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
-    def activity_gated_stop(self, doc: dict):
+    def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.uid_to_finalize_on:
+            self.uid_to_finalize_on = None
             super().activity_gated_stop(doc)

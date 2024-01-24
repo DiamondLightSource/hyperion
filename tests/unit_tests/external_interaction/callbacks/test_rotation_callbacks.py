@@ -16,6 +16,9 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
+from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
@@ -57,7 +60,7 @@ def activate_callbacks(cbs: RotationCallbackCollection | XrayCentreCallbackColle
 
 def fake_rotation_scan(
     params: RotationInternalParameters,
-    subscriptions: RotationCallbackCollection,
+    subscriptions: RotationCallbackCollection | list[RotationISPyBCallback],
     after_open_do: Callable | None = None,
     after_main_do: Callable | None = None,
 ):
@@ -316,3 +319,57 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         autospec=True,
     ):
         RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+
+
+ids = [
+    IspybIds(data_collection_group_id=23, data_collection_ids=45, grid_ids=None),
+    IspybIds(data_collection_group_id=24, data_collection_ids=48, grid_ids=None),
+    IspybIds(data_collection_group_id=25, data_collection_ids=51, grid_ids=None),
+    IspybIds(data_collection_group_id=26, data_collection_ids=111, grid_ids=None),
+    IspybIds(data_collection_group_id=27, data_collection_ids=238476, grid_ids=None),
+    IspybIds(data_collection_group_id=36, data_collection_ids=189765, grid_ids=None),
+    IspybIds(data_collection_group_id=39, data_collection_ids=0, grid_ids=None),
+    IspybIds(data_collection_group_id=43, data_collection_ids=89, grid_ids=None),
+]
+
+
+@pytest.mark.parametrize("ispyb_ids", ids)
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    autospec=True,
+)
+def test_ispyb_reuses_dcgid_on_same_sampleID(
+    rotation_ispyb: MagicMock,
+    RE: RunEngine,
+    params: RotationInternalParameters,
+    ispyb_ids,
+):
+    cb = [RotationISPyBCallback()]
+    cb[0].active = True
+    rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
+
+    test_cases = zip(
+        ["abc", "abc", "abc", "def", "abc", "def", "def", "xyz", "hij", "hij", "hij"],
+        [False, True, True, False, False, False, True, False, False, True, True],
+    )
+
+    last_dcgid = None
+
+    for sample_id, same_dcgid in test_cases:
+        params.hyperion_params.ispyb_params.sample_id = sample_id
+
+        def after_open_do(callbacks: list[RotationISPyBCallback]):
+            assert callbacks[0].uid_to_finalize_on is None
+
+        def after_main_do(callbacks: list[RotationISPyBCallback]):
+            assert callbacks[0].uid_to_finalize_on is not None
+
+        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+
+        if same_dcgid:
+            assert rotation_ispyb.call_args.args[2] is not None
+            assert rotation_ispyb.call_args.args[2] is last_dcgid
+        else:
+            assert rotation_ispyb.call_args.args[2] is None
+
+        last_dcgid = cb[0].ispyb_ids.data_collection_group_id
