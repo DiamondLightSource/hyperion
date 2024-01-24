@@ -37,6 +37,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 from .conftest import fake_read
 
 if TYPE_CHECKING:
+    from dodal.devices.aperturescatterguard import ApertureScatterguard
     from dodal.devices.attenuator import Attenuator
     from dodal.devices.backlight import Backlight
     from dodal.devices.detector_motion import DetectorMotion
@@ -61,6 +62,7 @@ def do_rotation_main_plan_for_tests(
     sim_bl,
     sim_det,
     sim_dcm,
+    sim_ap_sg,
 ):
     devices = RotationScanComposite(
         attenuator=sim_att,
@@ -74,6 +76,7 @@ def do_rotation_main_plan_for_tests(
         synchrotron=sim_synch,
         s4_slit_gaps=sim_slits,
         zebra=sim_zeb,
+        aperture_scatterguard=sim_ap_sg,
     )
     run_engine, _ = run_eng_w_subs
     with (
@@ -139,6 +142,7 @@ def setup_and_run_rotation_plan_for_tests(
     undulator: Undulator,
     flux: Flux,
     dcm: DCM,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     from functools import partial
 
@@ -194,6 +198,7 @@ def setup_and_run_rotation_plan_for_tests(
             backlight,
             detector_motion,
             dcm,
+            aperture_scatterguard,
         )
 
     return {
@@ -227,6 +232,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
     undulator: Undulator,
     flux: Flux,
     dcm: DCM,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     return setup_and_run_rotation_plan_for_tests(
         RE_with_subs,
@@ -242,6 +248,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
         undulator,
         flux,
         dcm,
+        aperture_scatterguard,
     )
 
 
@@ -260,6 +267,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     undulator: Undulator,
     flux: Flux,
     dcm: DCM,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     return setup_and_run_rotation_plan_for_tests(
         RE_with_subs,
@@ -275,6 +283,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
         undulator,
         flux,
         dcm,
+        aperture_scatterguard,
     )
 
 
@@ -323,6 +332,7 @@ def test_rotation_scan(
     backlight: Backlight,
     attenuator: Attenuator,
     dcm: DCM,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     RE, mock_rotation_subscriptions = RE_with_subs
     zebra.pc.arm.armed.set(False)
@@ -349,6 +359,7 @@ def test_rotation_scan(
             synchrotron=MagicMock(),
             s4_slit_gaps=MagicMock(),
             zebra=zebra,
+            aperture_scatterguard=aperture_scatterguard,
         )
         RE(rotation_scan(composite, test_rotation_params))
 
@@ -457,6 +468,7 @@ def test_cleanup_happens(
     backlight: Backlight,
     attenuator: Attenuator,
     dcm: DCM,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     RE, mock_rotation_subscriptions = RE_with_subs
 
@@ -479,6 +491,7 @@ def test_cleanup_happens(
         synchrotron=MagicMock(),
         s4_slit_gaps=MagicMock(),
         zebra=zebra,
+        aperture_scatterguard=aperture_scatterguard,
     )
 
     # check main subplan part fails
@@ -520,6 +533,7 @@ def test_acceleration_offset_calculated_correctly(
     undulator: Undulator,
     flux: Flux,
     dcm: DCM,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     smargon.omega.acceleration.sim_put(0.2)  # type: ignore
     setup_and_run_rotation_plan_for_tests(
@@ -536,6 +550,7 @@ def test_acceleration_offset_calculated_correctly(
         undulator,
         flux,
         dcm,
+        aperture_scatterguard,
     )
 
     expected_start_angle = (
