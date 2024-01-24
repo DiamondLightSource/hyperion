@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import fields
+from typing import Any, Generator
+
+from bluesky.callbacks import CallbackBase
 
 
 class AbstractPlanCallbackCollection(ABC):
@@ -13,10 +16,10 @@ class AbstractPlanCallbackCollection(ABC):
 
     @classmethod
     @abstractmethod
-    def setup(cls):
+    def setup(cls) -> AbstractPlanCallbackCollection:
         ...
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[CallbackBase, Any, None]:
         for field in fields(self):  # type: ignore # subclasses must be dataclass
             yield getattr(self, field.name)
 
@@ -24,4 +27,4 @@ class AbstractPlanCallbackCollection(ABC):
 class NullPlanCallbackCollection(AbstractPlanCallbackCollection):
     @classmethod
     def setup(cls):
-        pass
+        return cls()

@@ -5,11 +5,13 @@ import json
 import os
 import threading
 from dataclasses import dataclass
+from queue import Queue
 from sys import argv
 from time import sleep
 from typing import Any, Callable, Optional
 from unittest.mock import MagicMock, patch
 
+import flask
 import pytest
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator import Attenuator
@@ -21,10 +23,14 @@ from hyperion.__main__ import (
     BlueskyRunner,
     Status,
     create_app,
+    create_targets,
     setup_context,
 )
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
+from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
+)
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
 from hyperion.parameters.cli import parse_cli_args
@@ -93,6 +99,9 @@ class MockRunEngine:
     def subscribe(self, *args):
         pass
 
+    def unsubscribe(self, *args):
+        pass
+
 
 @dataclass
 class ClientAndRunEngine:
@@ -107,20 +116,20 @@ def mock_dict_values(d: dict):
 TEST_EXPTS = {
     "test_experiment": {
         "setup": MagicMock(),
-        "run": MagicMock(),
         "internal_param_type": MagicMock(),
         "experiment_param_type": MagicMock(),
+        "callback_collection_type": MagicMock(),
     },
     "test_experiment_no_internal_param_type": {
         "setup": MagicMock(),
-        "run": MagicMock(),
         "experiment_param_type": MagicMock(),
+        "callback_collection_type": MagicMock(),
     },
     "fgs_real_params": {
         "setup": MagicMock(),
-        "run": MagicMock(),
         "internal_param_type": GridscanInternalParameters,
         "experiment_param_type": MagicMock(),
+        "callback_collection_type": MagicMock(),
     },
 }
 
@@ -130,7 +139,7 @@ def test_env(request):
     mock_run_engine = MockRunEngine(test_name=repr(request))
     mock_context = BlueskyContext()
     real_plans_and_test_exps = dict(
-        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS
+        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS  # type: ignore
     )
     mock_context.plan_functions = {
         k: MagicMock() for k in real_plans_and_test_exps.keys()
@@ -284,21 +293,99 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
     check_status_in_response(response, Status.SUCCESS)
 
 
-def test_cli_args_parse():
-    argv[1:] = ["--dev", "--logging-level=DEBUG"]
+test_argument_combinations = [
+    (["--dev", "--logging-level=DEBUG"], ("DEBUG", True, False, False, False)),
+    (["--logging-level=INFO"], ("INFO", False, False, False, False)),
+    (
+        [
+            "--dev",
+            "--logging-level=INFO",
+            "--skip-startup-connection",
+            "--external-callbacks",
+            "--verbose-event-logging",
+        ],
+        ("INFO", True, True, True, True),
+    ),
+    (
+        ["--external-callbacks", "--logging-level=WARNING"],
+        ("WARNING", False, False, False, True),
+    ),
+]
+
+
+@pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
+def test_cli_args_parse(arg_list, parsed_arg_values):
+    argv[1:] = arg_list
     test_args = parse_cli_args()
-    assert test_args == ("DEBUG", False, True, False)
-    argv[1:] = ["--dev", "--logging-level=DEBUG", "--verbose-event-logging"]
-    test_args = parse_cli_args()
-    assert test_args == ("DEBUG", True, True, False)
-    argv[1:] = [
-        "--dev",
-        "--logging-level=DEBUG",
-        "--verbose-event-logging",
-        "--skip-startup-connection",
-    ]
-    test_args = parse_cli_args()
-    assert test_args == ("DEBUG", True, True, True)
+    assert test_args.logging_level == parsed_arg_values[0]
+    assert test_args.dev_mode == parsed_arg_values[1]
+    assert test_args.verbose_event_logging == parsed_arg_values[2]
+    assert test_args.skip_startup_connection == parsed_arg_values[3]
+    assert test_args.use_external_callbacks == parsed_arg_values[4]
+
+
+@patch("hyperion.__main__.set_up_logging_handlers")
+@patch("hyperion.__main__.Publisher")
+@patch("hyperion.__main__.setup_context")
+@pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
+def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
+    setup_context: MagicMock,
+    zmq_publisher: MagicMock,
+    set_up_logging_handlers: MagicMock,
+    arg_list,
+    parsed_arg_values,
+):
+    mock_params = MagicMock()
+    mock_params.hyperion_params.experiment_type = "test_experiment"
+    mock_param_class = MagicMock()
+    mock_param_class.from_json.return_value = mock_params
+    callback_class_mock = MagicMock(
+        spec=AbstractPlanCallbackCollection, name="mock_callback_class"
+    )
+    callback_class_mock.setup.return_value = [1, 2, 3]
+    TEST_REGISTRY = {
+        "test_experiment": {
+            "setup": MagicMock(),
+            "internal_param_type": mock_param_class,
+            "experiment_param_type": MagicMock(),
+            "callback_collection_type": callback_class_mock,
+        }
+    }
+
+    @dataclass
+    class MockCommand:
+        action: Actions
+        devices: Any = None
+        experiment: Any = None
+        parameters: Any = None
+        callbacks: Any = None
+
+    with (
+        flask.Flask(__name__).test_request_context() as flask_context,
+        patch("hyperion.__main__.Command", MockCommand),
+        patch.dict("hyperion.__main__.PLAN_REGISTRY", TEST_REGISTRY, clear=True),
+    ):
+        flask_context.request.data = b"{}"  # type: ignore
+        argv[1:] = arg_list
+        app, runner, port, dev_mode = create_targets()
+        runner.RE = MagicMock()
+        runner.command_queue = Queue()
+        runner_thread = threading.Thread(target=runner.wait_on_queue, daemon=True)
+        runner_thread.start()
+        assert dev_mode == parsed_arg_values[1]
+
+        mock_context = MagicMock()
+        mock_context.plan_functions = {"test_experiment": MagicMock()}
+        runner.command_queue.put(
+            MockCommand(action=Actions.START, devices={}, experiment="test_experiment", parameters={}, callbacks=callback_class_mock), block=True  # type: ignore
+        )
+        runner.shutdown()
+        runner_thread.join()
+        assert (zmq_publisher.call_count == 1) == parsed_arg_values[4]
+        if parsed_arg_values[4]:
+            assert runner.RE.subscribe.call_count == 0
+        else:
+            assert runner.RE.subscribe.call_count == 3
 
 
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected():
@@ -364,7 +451,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(None, None, "flyscan_xray_centre")
+        runner.start(None, None, "flyscan_xray_centre", None)  # type: ignore
         mock_setup.assert_called_once()
         runner.shutdown()
 
@@ -376,26 +463,26 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
         {
             "flyscan_xray_centre": {
                 "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
+                "internal_param_type": MagicMock(),
+                "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "rotation_scan": {
                 "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
+                "internal_param_type": MagicMock(),
+                "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "other_plan": {
                 "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
+                "internal_param_type": MagicMock(),
+                "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "yet_another_plan": {
                 "setup": mock_setup,
-                "run": MagicMock(),
-                "param_type": MagicMock(),
+                "internal_param_type": MagicMock(),
+                "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
         },

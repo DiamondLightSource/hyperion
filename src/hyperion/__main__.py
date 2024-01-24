@@ -14,6 +14,9 @@ from pydantic.dataclasses import dataclass
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
+from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
+)
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
 )
@@ -36,6 +39,7 @@ class Command:
     devices: Optional[Any] = None
     experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
     parameters: Optional[InternalParameters] = None
+    callbacks: Optional[type[AbstractPlanCallbackCollection]] = None
 
 
 @dataclass
@@ -59,7 +63,11 @@ class ErrorStatusAndMessage(StatusAndMessage):
 
 class BlueskyRunner:
     def __init__(
-        self, RE: RunEngine, context: BlueskyContext, skip_startup_connection=False
+        self,
+        RE: RunEngine,
+        context: BlueskyContext,
+        skip_startup_connection=False,
+        use_external_callbacks: bool = False,
     ) -> None:
         self.command_queue: Queue[Command] = Queue()
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
@@ -67,15 +75,20 @@ class BlueskyRunner:
         self.aperture_change_callback = ApertureChangeCallback()
         self.context: BlueskyContext
 
-        self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
         self.RE = RE
-        self.skip_startup_connection = skip_startup_connection
         self.context = context
+        self.subscribed_per_plan_callbacks: list[int] = []
         RE.subscribe(self.aperture_change_callback)
-        RE.subscribe(self.publisher)
+
+        self.use_external_callbacks = use_external_callbacks
+        if self.use_external_callbacks:
+            self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
+            RE.subscribe(self.publisher)
+
         if VERBOSE_EVENT_LOGGING:
             RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
+        self.skip_startup_connection = skip_startup_connection
         if not self.skip_startup_connection:
             for plan_name in PLAN_REGISTRY:
                 PLAN_REGISTRY[plan_name]["setup"](context)
@@ -85,6 +98,7 @@ class BlueskyRunner:
         experiment: Callable,
         parameters: InternalParameters,
         plan_name: str,
+        callback_type: Optional[type[AbstractPlanCallbackCollection]],
     ) -> StatusAndMessage:
         LOGGER.info(f"Started with parameters: {parameters}")
 
@@ -98,7 +112,7 @@ class BlueskyRunner:
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
             self.command_queue.put(
-                Command(Actions.START, devices, experiment, parameters)
+                Command(Actions.START, devices, experiment, parameters, callback_type)
             )
             return StatusAndMessage(Status.SUCCESS)
 
@@ -136,6 +150,14 @@ class BlueskyRunner:
                 if command.experiment is None:
                     raise ValueError("No experiment provided for START")
                 try:
+                    if (
+                        not self.use_external_callbacks
+                        and command.callbacks
+                        and (cbs := list(command.callbacks.setup()))
+                    ):
+                        self.subscribed_per_plan_callbacks += [
+                            self.RE.subscribe(cb) for cb in cbs
+                        ]
                     with TRACER.start_span("do_run"):
                         self.RE(command.experiment(command.devices, command.parameters))
 
@@ -156,6 +178,39 @@ class BlueskyRunner:
                         self.last_run_aborted = False
                     else:
                         self.current_status = ErrorStatusAndMessage(exception)
+                finally:
+                    [
+                        self.RE.unsubscribe(cb)
+                        for cb in self.subscribed_per_plan_callbacks
+                    ]
+
+
+def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions):
+    experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
+    if experiment_registry_entry is None:
+        raise PlanNotFound(f"Experiment plan '{plan_name}' not found in registry.")
+
+    experiment_internal_param_type = experiment_registry_entry.get(
+        "internal_param_type"
+    )
+    callback_type = experiment_registry_entry.get("callback_collection_type")
+    plan = context.plan_functions.get(plan_name)
+    if experiment_internal_param_type is None:
+        raise PlanNotFound(
+            f"Corresponding internal param type for '{plan_name}' not found in registry."
+        )
+    if plan is None:
+        raise PlanNotFound(
+            f"Experiment plan '{plan_name}' not found in context. Context has {context.plan_functions.keys()}"
+        )
+
+    parameters = experiment_internal_param_type.from_json(request.data)
+    if plan_name != parameters.hyperion_params.experiment_type:
+        raise PlanNotFound(
+            f"Wrong experiment parameters ({parameters.hyperion_params.experiment_type}) "
+            f"for plan endpoint {plan_name}."
+        )
+    return plan, parameters, plan_name, callback_type
 
 
 class RunExperiment(Resource):
@@ -168,32 +223,12 @@ class RunExperiment(Resource):
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.START.value:
             try:
-                experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
-                if experiment_registry_entry is None:
-                    raise PlanNotFound(
-                        f"Experiment plan '{plan_name}' not found in registry."
-                    )
-
-                experiment_internal_param_type: InternalParameters = (
-                    experiment_registry_entry.get("internal_param_type")
+                plan, params, plan_name, callback_type = compose_start_args(
+                    self.context, plan_name, action
                 )
-                plan = self.context.plan_functions.get(plan_name)
-                if experiment_internal_param_type is None:
-                    raise PlanNotFound(
-                        f"Corresponding internal param type for '{plan_name}' not found in registry."
-                    )
-                if plan is None:
-                    raise PlanNotFound(
-                        f"Experiment plan '{plan_name}' not found in context. Context has {self.context.plan_functions.keys()}"
-                    )
-
-                parameters = experiment_internal_param_type.from_json(request.data)
-                if plan_name != parameters.hyperion_params.experiment_type:
-                    raise PlanNotFound(
-                        f"Wrong experiment parameters ({parameters.hyperion_params.experiment_type}) "
-                        f"for plan endpoint {plan_name}."
-                    )
-                status_and_message = self.runner.start(plan, parameters, plan_name)
+                status_and_message = self.runner.start(
+                    plan, params, plan_name, callback_type
+                )
             except Exception as e:
                 status_and_message = ErrorStatusAndMessage(e)
                 LOGGER.error(format_exception(e))
@@ -231,12 +266,15 @@ def create_app(
     test_config=None,
     RE: RunEngine = RunEngine({}),
     skip_startup_connection: bool = False,
+    use_external_callbacks: bool = False,
 ) -> Tuple[Flask, BlueskyRunner]:
     context = setup_context(
         wait_for_connection=not skip_startup_connection,
     )
 
-    runner = BlueskyRunner(RE, context=context)
+    runner = BlueskyRunner(
+        RE, context=context, use_external_callbacks=use_external_callbacks
+    )
     app = Flask(__name__)
     if test_config:
         app.config.update(test_config)
@@ -254,29 +292,30 @@ def create_app(
     return app, runner
 
 
-def main():
+def create_targets():
     hyperion_port = 5005
-    (
-        logging_level,
-        VERBOSE_EVENT_LOGGING,
-        dev_mode,
-        skip_startup_connection,
-    ) = parse_cli_args()
+    args = parse_cli_args()
     set_up_logging_handlers(
-        logger=LOGGER, logging_level=logging_level, dev_mode=bool(dev_mode)
+        logger=LOGGER, logging_level=args.logging_level, dev_mode=args.dev_mode
     )
-    app, runner = create_app(skip_startup_connection=bool(skip_startup_connection))
+    app, runner = create_app(
+        skip_startup_connection=args.skip_startup_connection,
+        use_external_callbacks=args.use_external_callbacks,
+    )
+    return app, runner, hyperion_port, args.dev_mode
+
+
+def main():
+    app, runner, port, dev_mode = create_targets()
     atexit.register(runner.shutdown)
     flask_thread = threading.Thread(
         target=lambda: app.run(
-            host="0.0.0.0", port=hyperion_port, debug=True, use_reloader=False
+            host="0.0.0.0", port=port, debug=True, use_reloader=False
         ),
         daemon=True,
     )
     flask_thread.start()
-    LOGGER.info(
-        f"Hyperion now listening on {hyperion_port} ({'IN DEV' if dev_mode else ''})"
-    )
+    LOGGER.info(f"Hyperion now listening on {port} ({'IN DEV' if dev_mode else ''})")
     runner.wait_on_queue()
     flask_thread.join()
 

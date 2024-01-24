@@ -257,7 +257,8 @@ def attenuator():
 def xbpm_feedback(done_status):
     xbpm = i03.xbpm_feedback(fake_with_ophyd_sim=True)
     xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
-    return xbpm
+    yield xbpm
+    beamline_utils.clear_devices()
 
 
 @pytest.fixture
@@ -292,12 +293,6 @@ def vfm_mirror_voltages():
     voltages = i03.vfm_mirror_voltages(fake_with_ophyd_sim=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     yield voltages
-    beamline_utils.clear_devices()
-
-
-@pytest.fixture
-def xbpm_feedback():
-    yield i03.xbpm_feedback(fake_with_ophyd_sim=True)
     beamline_utils.clear_devices()
 
 

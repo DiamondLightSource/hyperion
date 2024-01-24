@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable, Union
+from typing import Callable, TypedDict, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 import hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
 import hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
@@ -13,6 +14,7 @@ from hyperion.experiment_plans import (
     wait_for_robot_load_then_centre_plan,
 )
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
+    AbstractPlanCallbackCollection,
     NullPlanCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
@@ -54,8 +56,24 @@ def do_nothing():
     pass
 
 
+class ExperimentRegistryEntry(TypedDict):
+    setup: Callable
+    internal_param_type: (
+        type[
+            GridscanInternalParameters
+            | GridScanWithEdgeDetectInternalParameters
+            | RotationInternalParameters
+            | PinCentreThenXrayCentreInternalParameters
+            | SteppedGridScanInternalParameters
+            | WaitForRobotLoadThenCentreInternalParameters
+        ]
+    )
+    experiment_param_type: type[AbstractExperimentParameterBase]
+    callback_collection_type: type[AbstractPlanCallbackCollection]
+
+
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
-PLAN_REGISTRY: dict[str, dict[str, Callable]] = {
+PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "flyscan_xray_centre": {
         "setup": flyscan_xray_centre_plan.create_devices,
         "internal_param_type": GridscanInternalParameters,
