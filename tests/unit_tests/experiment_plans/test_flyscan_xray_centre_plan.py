@@ -1,6 +1,5 @@
 import random
 import types
-from typing import Callable
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
@@ -127,7 +126,8 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
-        ispyb_plan: Callable[[GridscanInternalParameters], None],
+        # ispyb_plan: Callable[[GridscanInternalParameters], None],
+        ispyb_plan,
     ):
         undulator_test_value = 1.234
 
@@ -163,6 +163,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.s4_slit_gaps,
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
+                fake_fgs_composite.aperture_scatterguard,
             )
         )
         params = test_ispyb_callback.params
