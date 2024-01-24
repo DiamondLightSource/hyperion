@@ -28,12 +28,14 @@ def start_preparing_data_collection_then_do_plan(
      * Opening the detect shutter
      If the plan fails it will disarm the eiger.
     """
-    yield from bps.abs_set(eiger.do_arm, 1, group=group)
 
-    yield from set_detector_z_position(detector_motion, detector_distance, group)
-    yield from set_shutter(detector_motion, ShutterState.OPEN, group)
+    def wrapped_plan():
+        yield from bps.abs_set(eiger.do_arm, 1, group=group)
+        yield from set_detector_z_position(detector_motion, detector_distance, group)
+        yield from set_shutter(detector_motion, ShutterState.OPEN, group)
+        yield from plan_to_run
 
     yield from bpp.contingency_wrapper(
-        plan_to_run,
+        wrapped_plan(),
         except_plan=lambda e: (yield from bps.stop(eiger)),
     )
