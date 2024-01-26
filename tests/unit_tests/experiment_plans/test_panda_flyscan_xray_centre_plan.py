@@ -87,9 +87,9 @@ def ispyb_plan(test_panda_fgs_params):
             "hyperion_internal_parameters": test_panda_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
+    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm):
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
-        yield from read_hardware_for_ispyb_during_collection(attn, fl)
+        yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
 
@@ -168,6 +168,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.s4_slit_gaps,
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
+                fake_fgs_composite.dcm,
             )
         )
         params = test_ispyb_callback.params

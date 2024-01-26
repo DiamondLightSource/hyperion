@@ -112,8 +112,7 @@ def run_gridscan(
             fgs_composite.s4_slit_gaps,
         )
         yield from read_hardware_for_ispyb_during_collection(
-            fgs_composite.attenuator,
-            fgs_composite.flux,
+            fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
 
     fgs_motors = fgs_composite.panda_fast_grid_scan
