@@ -5,17 +5,17 @@ from pydantic.dataclasses import dataclass
 
 @dataclass
 class CallbackArgs:
-    logging_level: str
-    dev_mode: bool
+    logging_level: str = "INFO"
+    dev_mode: bool = False
 
 
 @dataclass
 class HyperionArgs:
-    logging_level: str
-    dev_mode: bool
-    use_external_callbacks: bool
-    verbose_event_logging: bool
-    skip_startup_connection: bool
+    logging_level: str = "INFO"
+    dev_mode: bool = False
+    use_external_callbacks: bool = False
+    verbose_event_logging: bool = False
+    skip_startup_connection: bool = False
 
 
 def add_callback_relevant_args(parser: argparse.ArgumentParser) -> None:
@@ -37,7 +37,9 @@ def parse_callback_cli_args() -> CallbackArgs:
     parser = argparse.ArgumentParser()
     add_callback_relevant_args(parser)
     args = parser.parse_args()
-    return CallbackArgs(logging_level=args.logging_level, dev_mode=args.dev)
+    return CallbackArgs(
+        logging_level=args.logging_level or "INFO", dev_mode=args.dev or False
+    )
 
 
 def parse_cli_args() -> HyperionArgs:
@@ -61,9 +63,9 @@ def parse_cli_args() -> HyperionArgs:
     )
     args = parser.parse_args()
     return HyperionArgs(
-        logging_level=args.logging_level,
-        verbose_event_logging=args.verbose_event_logging,
-        dev_mode=args.dev,
-        skip_startup_connection=args.skip_startup_connection,
-        use_external_callbacks=args.external_callbacks,
+        logging_level=args.logging_level or "INFO",
+        verbose_event_logging=args.verbose_event_logging or False,
+        dev_mode=args.dev or False,
+        skip_startup_connection=args.skip_startup_connection or False,
+        use_external_callbacks=args.external_callbacks or False,
     )

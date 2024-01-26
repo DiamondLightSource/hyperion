@@ -50,10 +50,13 @@ def set_up_logging_handlers(
     logger.handlers.clear()
     logger.filters.clear()
     dodal_logger.filters.clear()
+    print(
+        f"setting up handler with level {logging_level} dev mode {dev_mode} path {filename}"
+    )
     handlers = setup_dodal_logging(
-        logging_level,
-        dev_mode,
-        _get_logging_file_path(filename),
+        logging_level=logging_level,
+        dev_mode=dev_mode,
+        logging_path=_get_logging_file_path(filename),
         file_handler_logging_level="DEBUG",
         logger=logger,
     )

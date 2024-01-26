@@ -135,9 +135,9 @@ if [[ $START == 1 ]]; then
                                     ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
                                     ["EXTERNAL_CALLBACK_SERVICE"]="--external-callbacks")
 
-    declare -A h_and_cb_args(           ["IN_DEV"]="$IN_DEV"
+    declare -A h_and_cb_args=(           ["IN_DEV"]="$IN_DEV"
                                         ["LOGGING_LEVEL"]="$LOGGING_LEVEL" )
-    declare -A h_and_cb_arg_strings(    ["IN_DEV"]="--dev"
+    declare -A h_and_cb_arg_strings=(    ["IN_DEV"]="--dev"
                                         ["LOGGING_LEVEL"]="--logging-level=$LOGGING_LEVEL" )
 
     h_commands=()
