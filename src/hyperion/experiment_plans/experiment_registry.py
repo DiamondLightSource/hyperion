@@ -84,7 +84,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": grid_detect_then_xray_centre_plan.create_devices,
         "internal_param_type": GridScanWithEdgeDetectInternalParameters,
         "experiment_param_type": GridScanWithEdgeDetectParams,
-        "callback_collection_type": NullPlanCallbackCollection,
+        "callback_collection_type": XrayCentreCallbackCollection,
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
@@ -96,7 +96,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
         "internal_param_type": PinCentreThenXrayCentreInternalParameters,
         "experiment_param_type": PinCentreThenXrayCentreParams,
-        "callback_collection_type": NullPlanCallbackCollection,
+        "callback_collection_type": XrayCentreCallbackCollection,
     },
     "stepped_grid_scan": {
         "setup": stepped_grid_scan_plan.create_devices,
@@ -108,7 +108,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": wait_for_robot_load_then_centre_plan.create_devices,
         "internal_param_type": WaitForRobotLoadThenCentreInternalParameters,
         "experiment_param_type": WaitForRobotLoadThenCentreParams,
-        "callback_collection_type": NullPlanCallbackCollection,
+        "callback_collection_type": XrayCentreCallbackCollection,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())
