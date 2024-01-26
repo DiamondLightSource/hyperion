@@ -100,9 +100,9 @@ def test_setup_panda_correctly_configures_table(
 
     np.testing.assert_array_equal(table["time2"], np.ones(6))
 
-    safety_factor = (params.x_step_size * MM_TO_ENCODER_COUNTS) / 2
+    safe_distance = int((params.x_step_size * MM_TO_ENCODER_COUNTS) / 2)
 
-    correction_distance = (
+    exposure_distance = int(
         (params.x_step_size / time_between_x_steps_ms)
         * 1e-3
         * exposure_time_s
@@ -117,14 +117,14 @@ def test_setup_panda_correctly_configures_table(
                 params.x_start * MM_TO_ENCODER_COUNTS,
                 (params.x_start + (params.x_steps - 1) * params.x_step_size)
                 * MM_TO_ENCODER_COUNTS
-                + safety_factor,
+                + safe_distance,
                 0,
                 (params.x_start + (params.x_steps - 1) * params.x_step_size)
                 * MM_TO_ENCODER_COUNTS
-                + correction_distance,
+                + exposure_distance,
                 params.x_start * MM_TO_ENCODER_COUNTS
-                - safety_factor
-                + correction_distance,
+                - safe_distance
+                + exposure_distance,
             ],
             dtype=np.int32,
         ),
