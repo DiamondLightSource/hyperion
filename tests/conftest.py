@@ -150,7 +150,11 @@ def test_fgs_params():
 
 @pytest.fixture
 def test_panda_fgs_params():
-    return PandAGridscanInternalParameters(**raw_params_from_file())
+    return PandAGridscanInternalParameters(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/panda_test_parameters.json"
+        )
+    )
 
 
 @pytest.fixture

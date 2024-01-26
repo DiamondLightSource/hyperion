@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.1",
+    "params_version": "4.0.3",
     "hyperion_params": {
         "beamline": "BL03I",
         "insertion_prefix": "SR03I",
@@ -70,6 +70,8 @@
         "z2_start": 0.0,
         "exposure_time": 0.02,
         "detector_distance": 100.0,
-        "omega_start": 90.0
+        "omega_start": 90.0,
+        "set_stub_offsets": true
+
     }
 }

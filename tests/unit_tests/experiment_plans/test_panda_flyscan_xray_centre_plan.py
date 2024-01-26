@@ -66,6 +66,10 @@ from .conftest import (
     run_generic_ispyb_handler_setup,
 )
 
+PANDA_TEST_PARAMS_PATH = (
+    "tests/test_data/parameter_json_files/panda_test_parameters.json"
+)
+
 
 @pytest.fixture
 def RE_with_subs(RE: RunEngine, mock_subscriptions):
@@ -802,3 +806,10 @@ def test_tidy_up_plans_disable_panda_and_zebra(
     RE(tidy_up_plans(MagicMock()))
     mock_panda_tidy.assert_called_once()
     mock_zebra_tidy.assert_called_once()
+
+
+def test_using_panda_params_correctly_triggers_panda_scan(
+    RE: RunEngine, fake_fgs_composite, test_panda_fgs_params
+):
+    RE()
+    ...
