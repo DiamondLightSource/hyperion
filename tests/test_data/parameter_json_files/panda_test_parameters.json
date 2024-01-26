@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.3",
+    "params_version": "4.0.2",
     "hyperion_params": {
         "beamline": "BL03I",
         "insertion_prefix": "SR03I",
@@ -56,22 +56,22 @@
         }
     },
     "experiment_params": {
-        "x_steps": 100,
+        "x_steps": 40,
         "y_steps": 20,
-        "z_steps": 30,
-        "x_step_size": 0.02,
-        "y_step_size": 0.02,
-        "z_step_size": 0.02,
-        "run_up_distance_mm": 0.1,
+        "z_steps": 10,
+        "x_step_size": 0.1,
+        "y_step_size": 0.1,
+        "z_step_size": 0.1,
         "x_start": 0.0,
         "y1_start": 0.0,
         "y2_start": 0.0,
         "z1_start": 0.0,
         "z2_start": 0.0,
-        "exposure_time": 0.02,
         "detector_distance": 100.0,
-        "omega_start": 90.0,
-        "set_stub_offsets": true
+        "omega_start": 0.0,
+        "exposure_time": 0.1,
+        "set_stub_offsets": true,
+        "run_up_distance_mm": 0.1
 
     }
 }

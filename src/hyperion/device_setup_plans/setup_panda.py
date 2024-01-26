@@ -79,7 +79,6 @@ def get_seq_table(
             time2=1,
         )
     )
-    parameters.x_step_size
 
     rows.append(SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1))
     rows.append(
@@ -151,9 +150,7 @@ def setup_panda_for_flyscan(
 
     yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
-    yield from arm_panda_for_gridscan(
-        panda,
-    )
+    yield from arm_panda_for_gridscan(panda, group="panda-config")
 
     yield from bps.wait(group="panda-config", timeout=GENERAL_TIMEOUT)
 
