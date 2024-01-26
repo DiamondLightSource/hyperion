@@ -301,9 +301,7 @@ def create_app(
 def create_targets():
     hyperion_port = 5005
     args = parse_cli_args()
-    set_up_logging_handlers(
-        logger=LOGGER, logging_level=args.logging_level, dev_mode=args.dev_mode
-    )
+    set_up_logging_handlers(logging_level=args.logging_level, dev_mode=args.dev_mode)
     if not args.use_external_callbacks:
         setup_callback_logging(parse_callback_cli_args())
     app, runner = create_app(

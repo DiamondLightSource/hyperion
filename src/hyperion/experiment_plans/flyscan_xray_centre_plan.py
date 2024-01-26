@@ -203,16 +203,22 @@ def run_gridscan(
         total_exposure = (
             parameters.experiment_params.get_num_images() * dwell_time_in_s
         )  # Expected exposure time for full scan
+        LOGGER.info("waiting for topup if necessary...")
         yield from check_topup_and_wait_if_necessary(
             fgs_composite.synchrotron,
             total_exposure,
             30.0,
         )
+        LOGGER.info("kicking off FGS")
         yield from bps.kickoff(fgs_motors)
+        LOGGER.info("waiting for zocalo stage group")
         yield from bps.wait(
             ZOCALO_STAGE_GROUP
         )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        LOGGER.info("completing FGS")
         yield from bps.complete(fgs_motors, wait=True)
+
+
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
@@ -220,7 +226,7 @@ def run_gridscan(
 
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()
-
+    LOGGER.info("completed FGS, setting z_steps to 0")
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
