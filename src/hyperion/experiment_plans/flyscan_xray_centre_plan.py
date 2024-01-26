@@ -211,14 +211,12 @@ def run_gridscan(
         )
         LOGGER.info("kicking off FGS")
         yield from bps.kickoff(fgs_motors)
-        LOGGER.info("waiting for zocalo stage group")
+        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
         yield from bps.wait(
             ZOCALO_STAGE_GROUP
         )  # Make sure ZocaloResults queue is clear and ready to accept our new data
         LOGGER.info("completing FGS")
         yield from bps.complete(fgs_motors, wait=True)
-
-
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
@@ -226,7 +224,6 @@ def run_gridscan(
 
     with TRACER.start_span("do_fgs"):
         yield from do_fgs()
-    LOGGER.info("completed FGS, setting z_steps to 0")
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
