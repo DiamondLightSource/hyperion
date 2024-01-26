@@ -15,6 +15,9 @@
                     "$ref": "experiment_schemas/grid_scan_params_schema.json"
                 },
                 {
+                    "$ref": "experiment_schemas/panda_grid_scan_params_schema.json"
+                },
+                {
                     "$ref": "experiment_schemas/rotation_scan_params_schema.json"
                 },
                 {
