@@ -662,10 +662,15 @@ class TestFlyscanXrayCentrePlan:
         autospec=True,
         spec_set=True,
     )
+    @patch(
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
+        autospec=True,
+    )
     def test_when_grid_scan_ran_then_eiger_disarmed_before_zocalo_end(
         self,
         nexuswriter,
         wait_for_valid,
+        mock_setup_panda_for_flyscan,
         mock_mv,
         mock_complete,
         mock_kickoff,

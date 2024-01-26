@@ -12,7 +12,7 @@
             "prefix": "panda_test",
             "run_number": 336,
             "use_roi_mode": false,
-            "det_dist_to_beam_converter_path": "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+            "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
         },
         "ispyb_params": {
             "current_energy_ev": 12700,
