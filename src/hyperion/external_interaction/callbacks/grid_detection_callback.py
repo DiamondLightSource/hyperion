@@ -2,6 +2,7 @@ import numpy as np
 from bluesky.callbacks import CallbackBase
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 
 from hyperion.device_setup_plans.setup_oav import calculate_x_y_z_of_pixel
 from hyperion.log import LOGGER
@@ -59,6 +60,22 @@ class GridDetectionCallback(CallbackBase):
     def get_grid_parameters(self) -> GridScanParams:
         return GridScanParams(
             dwell_time_ms=self.exposure_time * 1000,
+            x_start=self.start_positions[0][0],
+            y1_start=self.start_positions[0][1],
+            y2_start=self.start_positions[0][1],
+            z1_start=self.start_positions[1][2],
+            z2_start=self.start_positions[1][2],
+            x_steps=self.box_numbers[0][0],
+            y_steps=self.box_numbers[0][1],
+            z_steps=self.box_numbers[1][1],
+            x_step_size=self.x_step_size_mm,
+            y_step_size=self.y_step_size_mm,
+            z_step_size=self.z_step_size_mm,
+            set_stub_offsets=self.set_stub_offsets,
+        )
+
+    def get_panda_grid_parameters(self) -> PandAGridScanParams:
+        return PandAGridScanParams(
             x_start=self.start_positions[0][0],
             y1_start=self.start_positions[0][1],
             y2_start=self.start_positions[0][1],

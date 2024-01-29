@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable
+from typing import Callable, Union
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -31,6 +31,9 @@ from hyperion.parameters.constants import (
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
+)
+from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
+    PandAGridscanInternalParameters,
 )
 
 
@@ -67,7 +70,8 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
 
 
 def run_generic_ispyb_handler_setup(
-    ispyb_handler: GridscanISPyBCallback, params: GridscanInternalParameters
+    ispyb_handler: GridscanISPyBCallback,
+    params: Union[GridscanInternalParameters, PandAGridscanInternalParameters],
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
     happens at the start of the outer plan."""

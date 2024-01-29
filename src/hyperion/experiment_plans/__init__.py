@@ -6,6 +6,9 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import flyscan_xray_cent
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
+from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
+    panda_flyscan_xray_centre,
+)
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_tip_centre_then_xray_centre,
 )
@@ -20,4 +23,5 @@ __all__ = [
     "rotation_scan",
     "pin_tip_centre_then_xray_centre",
     "wait_for_robot_load_then_centre",
+    "panda_flyscan_xray_centre",
 ]

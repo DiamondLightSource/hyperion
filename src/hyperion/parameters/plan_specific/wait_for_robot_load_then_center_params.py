@@ -45,6 +45,7 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     omega_start: float
     snapshot_dir: str
     requested_energy_kev: Optional[float] = None
+    use_panda: bool = False
 
     # Whether to use the ophyd device for tip centring rather than the area detector
     # plugin

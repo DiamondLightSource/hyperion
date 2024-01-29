@@ -47,6 +47,9 @@ from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import 
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
+    PandAGridscanInternalParameters,
+)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -143,6 +146,15 @@ def beamline_parameters():
 @pytest.fixture
 def test_fgs_params():
     return GridscanInternalParameters(**raw_params_from_file())
+
+
+@pytest.fixture
+def test_panda_fgs_params():
+    return PandAGridscanInternalParameters(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/panda_test_parameters.json"
+        )
+    )
 
 
 @pytest.fixture
@@ -434,6 +446,8 @@ def fake_fgs_composite(
         xbpm_feedback=xbpm_feedback,
         zebra=i03.zebra(fake_with_ophyd_sim=True),
         zocalo=zocalo,
+        panda=MagicMock(),
+        panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -458,6 +472,10 @@ def fake_fgs_composite(
     gridscan_result.set_finished()
     fake_composite.fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
     fake_composite.fast_grid_scan.complete = MagicMock(return_value=gridscan_result)
+    fake_composite.panda_fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
+    fake_composite.panda_fast_grid_scan.complete = MagicMock(
+        return_value=gridscan_result
+    )
 
     test_result = {
         "centre_of_mass": [6, 6, 6],
@@ -513,7 +531,10 @@ class RunEngineSimulator:
         )
 
     def add_handler(
-        self, commands: Sequence[str], obj_name: str, handler: Callable[[Msg], object]
+        self,
+        commands: Sequence[str],
+        obj_name: Optional[str],
+        handler: Callable[[Msg], object],
     ):
         """Add the specified handler for a particular message
         Args:
