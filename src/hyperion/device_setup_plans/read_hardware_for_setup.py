@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import bluesky.plan_stubs as bps
 from dodal.devices.attenuator import Attenuator
+from dodal.devices.DCM import DCM
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron
@@ -30,9 +31,12 @@ def read_hardware_for_ispyb_pre_collection(
     yield from bps.save()
 
 
-def read_hardware_for_ispyb_during_collection(attenuator: Attenuator, flux: Flux):
+def read_hardware_for_ispyb_during_collection(
+    attenuator: Attenuator, flux: Flux, dcm: DCM
+):
     LOGGER.info("Reading status of beamline parameters for ispyb deposition.")
     yield from bps.create(name=ISPYB_TRANSMISSION_FLUX_READ_PLAN)
     yield from bps.read(attenuator.actual_transmission)
     yield from bps.read(flux.flux_reading)
+    yield from bps.rd(dcm.energy_in_kev)
     yield from bps.save()

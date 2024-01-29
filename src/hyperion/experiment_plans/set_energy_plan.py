@@ -5,7 +5,9 @@
     * reenable feedback
 """
 import dataclasses
+from typing import Any, Generator
 
+from bluesky import Msg
 from bluesky import plan_stubs as bps
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.DCM import DCM
@@ -45,6 +47,11 @@ def _set_energy_plan(
         energy_kev,
     )
     yield from bps.wait(group=UNDULATOR_GROUP)
+
+
+def read_energy(composite: SetEnergyComposite) -> Generator[Msg, Any, float]:
+    """Obtain the energy in kev"""
+    return (yield from bps.rd(composite.dcm.energy_in_kev))  # type: ignore
 
 
 def set_energy_plan(

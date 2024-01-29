@@ -8,6 +8,7 @@ import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.DCM import DCM
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
@@ -54,6 +55,7 @@ class RotationScanComposite:
 
     attenuator: Attenuator
     backlight: Backlight
+    dcm: DCM
     detector_motion: DetectorMotion
     eiger: EigerDetector
     flux: Flux
@@ -204,8 +206,7 @@ def rotation_scan_plan(
         composite.s4_slit_gaps,
     )
     yield from read_hardware_for_ispyb_during_collection(
-        composite.attenuator,
-        composite.flux,
+        composite.attenuator, composite.flux, composite.dcm
     )
     LOGGER.info(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"

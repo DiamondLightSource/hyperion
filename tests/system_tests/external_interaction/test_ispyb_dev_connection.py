@@ -155,7 +155,7 @@ def test_ispyb_deposition_in_rotation_plan(
     test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )
-    test_rotation_params.hyperion_params.detector_params.current_energy_ev = (
+    test_rotation_params.hyperion_params.detector_params.expected_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )
 
@@ -167,6 +167,7 @@ def test_ispyb_deposition_in_rotation_plan(
     composite = RotationScanComposite(
         attenuator=attenuator,
         backlight=fake_create_devices["backlight"],
+        dcm=fake_create_devices["dcm"],
         detector_motion=fake_create_devices["detector_motion"],
         eiger=fake_create_devices["eiger"],
         flux=flux,

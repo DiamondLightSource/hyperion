@@ -25,6 +25,7 @@ def devices():
     return RotationScanComposite(
         attenuator=i03.attenuator(),
         backlight=i03.backlight(),
+        dcm=i03.dcm(fake_with_ophyd_sim=True),
         detector_motion=i03.detector_motion(fake_with_ophyd_sim=True),
         eiger=i03.eiger(),
         flux=i03.flux(fake_with_ophyd_sim=True),

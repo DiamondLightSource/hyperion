@@ -58,6 +58,7 @@ BASIC_PRE_SETUP_DOC = {
 BASIC_POST_SETUP_DOC = {
     "attenuator_actual_transmission": 0,
     "flux_flux_reading": 10,
+    "dcm_energy_in_kev": 11.105,
 }
 
 
@@ -163,12 +164,13 @@ def fake_read(obj, initial_positions, _):
 
 
 @pytest.fixture
-def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_files):
+def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_files, dcm):
     magic_mock = MagicMock(autospec=True)
     magic_mock.oav = oav
     magic_mock.smargon = smargon
     magic_mock.detector_motion = detector_motion
     magic_mock.zocalo = make_fake_device(ZocaloResults)()
+    magic_mock.dcm = dcm
     scan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
     magic_mock.fast_grid_scan = scan
     magic_mock.synchrotron = synchrotron

@@ -6,7 +6,9 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.beamlines.i03 import DAQ_CONFIGURATION_PATH
 from dodal.devices.attenuator import Attenuator
+from dodal.devices.DCM import DCM
 from dodal.devices.flux import Flux
 from ophyd.sim import make_fake_device
 
@@ -66,6 +68,9 @@ def fake_rotation_scan(
 ):
     attenuator = make_fake_device(Attenuator)(name="attenuator")
     flux = make_fake_device(Flux)(name="flux")
+    dcm = make_fake_device(DCM)(
+        name="dcm", daq_configuration_path=DAQ_CONFIGURATION_PATH
+    )
 
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
@@ -86,7 +91,7 @@ def fake_rotation_scan(
             }
         )
         def fake_main_plan():
-            yield from read_hardware_for_ispyb_during_collection(attenuator, flux)
+            yield from read_hardware_for_ispyb_during_collection(attenuator, flux, dcm)
             if after_main_do:
                 after_main_do(subscriptions)
             yield from bps.sleep(0)
