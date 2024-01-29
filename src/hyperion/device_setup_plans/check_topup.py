@@ -41,6 +41,7 @@ def _delay_to_avoid_topup(total_run_time, time_to_topup):
 
 
 def wait_for_topup_complete(synchrotron):
+    LOGGER.info("Waiting for topup to complete")
     start = yield from bps.rd(synchrotron.top_up.start_countdown)
     while start == COUNTDOWN_DURING_TOPUP:
         yield from bps.sleep(0.1)

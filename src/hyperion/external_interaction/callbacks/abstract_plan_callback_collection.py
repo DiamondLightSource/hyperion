@@ -28,3 +28,6 @@ class NullPlanCallbackCollection(AbstractPlanCallbackCollection):
     @classmethod
     def setup(cls):
         return cls()
+
+    def __iter__(self):
+        yield from ()
