@@ -3,7 +3,7 @@ from __future__ import annotations
 import bluesky.plan_stubs as bps
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import Smargon
 
 from hyperion.log import LOGGER

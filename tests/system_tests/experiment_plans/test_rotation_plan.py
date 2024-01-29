@@ -14,7 +14,7 @@ from hyperion.experiment_plans.rotation_scan_plan import (
 
 if TYPE_CHECKING:
     from dodal.devices.backlight import Backlight  # noqa
-    from dodal.devices.detector_motion import DetectorMotion  # noqa
+    from dodal.devices.detector.detector_motion import DetectorMotion  # noqa
     from dodal.devices.eiger import EigerDetector  # noqa
     from dodal.devices.smargon import Smargon
     from dodal.devices.zebra import Zebra  # noqa
