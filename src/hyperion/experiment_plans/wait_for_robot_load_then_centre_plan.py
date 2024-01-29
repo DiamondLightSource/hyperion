@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from typing import cast
 
 import bluesky.plan_stubs as bps
 from blueapi.core import BlueskyContext, MsgGenerator
@@ -38,6 +39,7 @@ from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
 )
 from hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
+    read_energy,
     set_energy_plan,
 )
 from hyperion.log import LOGGER
@@ -109,19 +111,10 @@ def wait_for_robot_load_then_centre_plan(
     composite: WaitForRobotLoadThenCentreComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ):
-    set_energy_composite = SetEnergyComposite(
-        vfm=composite.vfm,
-        vfm_mirror_voltages=composite.vfm_mirror_voltages,
-        dcm=composite.dcm,
-        undulator_dcm=composite.undulator_dcm,
-        xbpm_feedback=composite.xbpm_feedback,
-        attenuator=composite.attenuator,
-    )
-
     if parameters.experiment_params.requested_energy_kev:
         yield from set_energy_plan(
             parameters.experiment_params.requested_energy_kev,
-            set_energy_composite,
+            cast(SetEnergyComposite, composite),
         )
 
     yield from wait_for_smargon_not_disabled(composite.smargon)
@@ -129,28 +122,8 @@ def wait_for_robot_load_then_centre_plan(
     params_json = json.loads(parameters.json())
     pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
 
-    grid_detect_then_xray_centre_composite = GridDetectThenXRayCentreComposite(
-        aperture_scatterguard=composite.aperture_scatterguard,
-        attenuator=composite.attenuator,
-        backlight=composite.backlight,
-        detector_motion=composite.detector_motion,
-        eiger=composite.eiger,
-        fast_grid_scan=composite.fast_grid_scan,
-        flux=composite.flux,
-        oav=composite.oav,
-        pin_tip_detection=composite.pin_tip_detection,
-        smargon=composite.smargon,
-        synchrotron=composite.synchrotron,
-        s4_slit_gaps=composite.s4_slit_gaps,
-        undulator=composite.undulator,
-        xbpm_feedback=composite.xbpm_feedback,
-        zebra=composite.zebra,
-        zocalo=composite.zocalo,
-        panda=composite.panda,
-        panda_fast_grid_scan=composite.panda_fast_grid_scan,
-    )
     yield from pin_centre_then_xray_centre_plan(
-        grid_detect_then_xray_centre_composite, pin_centre_params
+        cast(GridDetectThenXRayCentreComposite, composite), pin_centre_params
     )
 
 
@@ -160,9 +133,21 @@ def wait_for_robot_load_then_centre(
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
 
+    actual_energy_ev = 1000 * (
+        yield from read_energy(cast(SetEnergyComposite, composite))
+    )
+
+    parameters.hyperion_params.ispyb_params.current_energy_ev = actual_energy_ev
+    if not parameters.experiment_params.requested_energy_kev:
+        parameters.hyperion_params.detector_params.expected_energy_ev = actual_energy_ev
+    else:
+        parameters.hyperion_params.detector_params.expected_energy_ev = (
+            parameters.experiment_params.requested_energy_kev * 1000
+        )
+
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    return start_preparing_data_collection_then_do_plan(
+    yield from start_preparing_data_collection_then_do_plan(
         eiger,
         composite.detector_motion,
         parameters.experiment_params.detector_distance,

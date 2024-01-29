@@ -19,6 +19,7 @@ def test_getting_data_for_ispyb():
     slit_gaps = S4SlitGaps(f"{SIM_BEAMLINE}-AL-SLITS-04:", name="slits")
     attenuator = i03.attenuator(fake_with_ophyd_sim=True)
     flux = i03.flux(fake_with_ophyd_sim=True)
+    dcm = i03.dcm(fake_with_ophyd_sim=True)
 
     undulator.wait_for_connection()
     synchrotron.wait_for_connection()
@@ -31,6 +32,6 @@ def test_getting_data_for_ispyb():
     @bpp.run_decorator()
     def standalone_read_hardware(und, syn, slits, att, flux):
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
-        yield from read_hardware_for_ispyb_during_collection(att, flux)
+        yield from read_hardware_for_ispyb_during_collection(att, flux, dcm)
 
     RE(standalone_read_hardware(undulator, synchrotron, slit_gaps, attenuator, flux))

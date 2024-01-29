@@ -60,6 +60,7 @@ def test_rotation_parameters_load_from_file():
     detector_params = internal_parameters.hyperion_params.detector_params
 
     assert detector_params.detector_size_constants == EIGER2_X_16M_SIZE
+    assert detector_params.expected_energy_ev == 100
 
 
 def test_rotation_parameters_enum_interpretation():

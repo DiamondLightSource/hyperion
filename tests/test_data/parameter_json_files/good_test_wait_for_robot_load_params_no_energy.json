@@ -1,12 +1,11 @@
 {
-    "params_version": "4.0.2",
+    "params_version": "4.0.3",
     "hyperion_params": {
         "zocalo_environment": "artemis",
         "beamline": "BL03I",
         "insertion_prefix": "SR03S",
         "experiment_type": "wait_for_robot_load_then_centre",
         "detector_params": {
-            "current_energy_ev": 100,
             "directory": "/tmp/",
             "prefix": "file_name",
             "run_number": 0,

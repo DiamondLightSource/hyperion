@@ -11,6 +11,7 @@ from bluesky import preprocessors as bpp
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.DCM import DCM
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
@@ -80,6 +81,7 @@ class GridDetectThenXRayCentreComposite:
     aperture_scatterguard: ApertureScatterguard
     attenuator: Attenuator
     backlight: Backlight
+    dcm: DCM
     detector_motion: DetectorMotion
     eiger: EigerDetector
     fast_grid_scan: FastGridScan
@@ -216,6 +218,7 @@ def detect_grid_and_do_gridscan(
         zocalo=composite.zocalo,
         panda=composite.panda,
         fast_grid_scan=composite.fast_grid_scan,
+        dcm=composite.dcm,
     )
 
     if parameters.experiment_params.use_panda:

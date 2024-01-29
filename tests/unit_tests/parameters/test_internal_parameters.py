@@ -175,7 +175,7 @@ def test_hyperion_params_eq(raw_params):
     assert hyperion_params_1 != hyperion_params_2
 
     hyperion_params_2 = copy.deepcopy(hyperion_params_1)
-    hyperion_params_2.detector_params.current_energy_ev = 99999
+    hyperion_params_2.detector_params.expected_energy_ev = 99999
     assert hyperion_params_1 != hyperion_params_2
 
     hyperion_params_2 = copy.deepcopy(hyperion_params_1)

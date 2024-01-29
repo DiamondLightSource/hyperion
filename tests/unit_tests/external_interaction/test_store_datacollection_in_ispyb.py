@@ -13,7 +13,7 @@ from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     StoreRotationInIspyb,
 )
 from hyperion.parameters.constants import SIM_ISPYB_CONFIG
-from hyperion.parameters.external_parameters import from_file as default_raw_params
+from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -108,6 +108,12 @@ EMPTY_DATA_COLLECTION_PARAMS = {
     "c2lens": None,
     "c3lens": None,
 }
+
+
+def default_raw_params(
+    json_file="tests/test_data/parameter_json_files/test_internal_parameter_defaults.json",
+):
+    return from_file(json_file)
 
 
 @pytest.fixture

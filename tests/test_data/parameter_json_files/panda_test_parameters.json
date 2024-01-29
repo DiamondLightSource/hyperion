@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.2",
+    "params_version": "4.0.3",
     "hyperion_params": {
         "beamline": "BL03I",
         "insertion_prefix": "SR03I",
@@ -7,14 +7,15 @@
         "zocalo_environment": "artemis",
         "experiment_type": "panda_flyscan_xray_centre",
         "detector_params": {
-            "current_energy_ev": 12700,
+            "expected_energy_ev": 12700,
             "directory": "/dls/i03/data/2023/cm33866-5/test_hyperion",
             "prefix": "panda_test",
             "run_number": 336,
             "use_roi_mode": false,
-            "det_dist_to_beam_converter_path": "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+            "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
         },
         "ispyb_params": {
+            "current_energy_ev": 12700,
             "visit_path": "/dls/i03/data/2023/cm33866-5/",
             "microns_per_pixel_x": 1.0,
             "microns_per_pixel_y": 1.0,

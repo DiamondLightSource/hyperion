@@ -73,9 +73,9 @@ def ispyb_plan(test_fgs_params):
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl):
+    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm):
         yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
-        yield from read_hardware_for_ispyb_during_collection(attn, fl)
+        yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
 
@@ -137,7 +137,14 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)  # type: ignore
+        fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
+            transmission_test_value
+        )
+
+        current_energy_ev_test_value = 12.05
+        fake_fgs_composite.dcm.energy_in_kev.user_readback.sim_put(  # type: ignore
+            current_energy_ev_test_value
+        )
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
@@ -161,6 +168,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.s4_slit_gaps,
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
+                fake_fgs_composite.dcm,
             )
         )
         params = test_ispyb_callback.params
@@ -177,6 +185,10 @@ class TestFlyscanXrayCentrePlan:
             == transmission_test_value
         )
         assert params.hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
+        assert (
+            params.hyperion_params.ispyb_params.current_energy_ev
+            == current_energy_ev_test_value
+        )
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"

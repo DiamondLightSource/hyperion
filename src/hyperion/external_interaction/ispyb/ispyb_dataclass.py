@@ -13,6 +13,8 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
     "current_energy_ev": 12700,
+    # populate later depending on if requested energy is specified
+    "expected_energy_ev": None,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     "upper_left": [0, 0, 0],
     "position": [0, 0, 0],
@@ -39,26 +41,9 @@ class IspybParams(BaseModel):
     microns_per_pixel_y: float
     position: np.ndarray
 
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {np.ndarray: lambda a: a.tolist()}
-
-    def dict(self, **kwargs):
-        as_dict = super().dict(**kwargs)
-        as_dict["position"] = as_dict["position"].tolist()
-        return as_dict
-
-    @validator("position", pre=True)
-    def _parse_position(
-        cls, position: list[int | float] | np.ndarray, values: Dict[str, Any]
-    ) -> np.ndarray:
-        assert len(position) == 3
-        if isinstance(position, np.ndarray):
-            return position
-        return np.array(position)
-
     transmission_fraction: float
-    current_energy_ev: float
+    # populated by wait_for_robot_load_then_centre
+    current_energy_ev: Optional[float]
     beam_size_x: float
     beam_size_y: float
     focal_spot_size_x: float
@@ -77,6 +62,24 @@ class IspybParams(BaseModel):
     slit_gap_size_y: Optional[float] = None
     xtal_snapshots_omega_start: Optional[list[str]] = None
     xtal_snapshots_omega_end: Optional[list[str]] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {np.ndarray: lambda a: a.tolist()}
+
+    def dict(self, **kwargs):
+        as_dict = super().dict(**kwargs)
+        as_dict["position"] = as_dict["position"].tolist()
+        return as_dict
+
+    @validator("position", pre=True)
+    def _parse_position(
+        cls, position: list[int | float] | np.ndarray, values: Dict[str, Any]
+    ) -> np.ndarray:
+        assert len(position) == 3
+        if isinstance(position, np.ndarray):
+            return position
+        return np.array(position)
 
     @validator("transmission_fraction")
     def _transmission_not_percentage(cls, transmission_fraction: float):

@@ -2,8 +2,8 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "type": "object",
     "properties": {
-        "current_energy_ev": {
-            "type": "number"
+        "expected_energy_ev": {
+            "type": ["number", "null"]
         },
         "directory": {
             "type": "string"
@@ -21,5 +21,11 @@
             "type": "string"
         }
     },
-    "minProperties": 6
+    "required": [
+        "directory",
+        "prefix",
+        "run_number",
+        "use_roi_mode",
+        "det_dist_to_beam_converter_path"
+    ]
 }
