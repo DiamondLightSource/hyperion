@@ -7,7 +7,7 @@ import subprocess
 from functools import partial
 from sys import stderr, stdout
 
-SETUP_CFG_PATTERN = re.compile("(.*?)(@(.*))?\n")
+SETUP_CFG_PATTERN = re.compile("(.*?)\\s*(@(.*))?\n")
 PIP = "pip"
 
 
@@ -20,9 +20,7 @@ def normalize(package_name: str):
 
 
 def fetch_pin_versions() -> dict[str, str]:
-    process = subprocess.run(
-        [PIP, "freeze"], capture_output=True, encoding=locale.getpreferredencoding()
-    )
+    process = run_pip_freeze()
     if process.returncode == 0:
         output = process.stdout
         lines = output.split("\n")
@@ -40,21 +38,29 @@ def fetch_pin_versions() -> dict[str, str]:
         exit(1)
 
 
+def run_pip_freeze():
+    process = subprocess.run(
+        [PIP, "freeze"], capture_output=True, encoding=locale.getpreferredencoding()
+    )
+    return process
+
+
 def process_setup_cfg(input_fname, output_fname, dependency_processor):
     with open(input_fname) as input_file:
         with open(output_fname, "w") as output_file:
-            while line := input_file.readline():
-                output_file.write(line)
-                if line.startswith("install_requires"):
-                    break
+            process_files(input_file, output_file, dependency_processor)
 
-            while (line := input_file.readline()) and not line.isspace():
-                dependency_processor(line, output_file)
 
-            output_file.write(line)
-
-            while line := input_file.readline():
-                output_file.write(line)
+def process_files(input_file, output_file, dependency_processor):
+    while line := input_file.readline():
+        output_file.write(line)
+        if line.startswith("install_requires"):
+            break
+    while (line := input_file.readline()) and not line.isspace():
+        dependency_processor(line, output_file)
+    output_file.write(line)
+    while line := input_file.readline():
+        output_file.write(line)
 
 
 def strip_comment(line: str):
