@@ -141,9 +141,9 @@ class TestFlyscanXrayCentrePlan:
             transmission_test_value
         )
 
-        current_energy_ev_test_value = 12.05
+        current_energy_kev_test_value = 12.05
         fake_fgs_composite.dcm.energy_in_kev.user_readback.sim_put(  # type: ignore
-            current_energy_ev_test_value
+            current_energy_kev_test_value
         )
 
         xgap_test_value = 0.1234
@@ -187,7 +187,7 @@ class TestFlyscanXrayCentrePlan:
         assert params.hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
         assert (
             params.hyperion_params.ispyb_params.current_energy_ev
-            == current_energy_ev_test_value
+            == current_energy_kev_test_value * 1000
         )
 
     @patch(
