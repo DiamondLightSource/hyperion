@@ -566,7 +566,9 @@ class RunEngineSimulator:
             )
         )
 
-    def add_wait_handler(self, handler: Callable[[Msg], None], group: str = "any"):
+    def add_wait_handler(
+        self, handler: Callable[[Msg], None], group: str = "any"
+    ) -> None:
         """Add a wait handler for a particular message
         Args:
             handler: a lambda that accepts a Msg, use this to execute any code that simulates something that's
@@ -581,7 +583,7 @@ class RunEngineSimulator:
             )
         )
 
-    def fire_callback(self, document_name, document):
+    def fire_callback(self, document_name: str, document) -> None:
         """Fire all the callbacks registered for this document type in order to simulate something happening
         Args:
              document_name: document name as defined in the Bluesky Message Protocol 'subscribe' call,
