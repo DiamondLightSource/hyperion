@@ -262,7 +262,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
             "activate_callbacks": [
                 "RotationZocaloCallback",
                 "RotationISPyBCallback",
-                "RotationNexusCallback",
+                "RotationNexusFileCallback",
             ],
         }
     )
