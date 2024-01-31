@@ -7,13 +7,14 @@ import pytest
 
 
 @pytest.fixture
-def pinned_versions():
+def patched_run_pip_freeze():
     with patch("pin_versions.run_pip_freeze") as run_pip_freeze:
         with open("test_data/pip_freeze.txt") as freeze_output:
             mock_process = MagicMock()
             run_pip_freeze.return_value = mock_process
             mock_process.stdout = freeze_output.read()
             mock_process.returncode = 0
+        yield run_pip_freeze
 
 
 @pytest.mark.parametrize(
@@ -56,7 +57,7 @@ def test_unpin():
 
 
 @patch("pin_versions.stdout")
-def test_write_commit_message(mock_stdout, pinned_versions):
+def test_write_commit_message(mock_stdout, patched_run_pip_freeze):
     installed_versions = pin_versions.fetch_pin_versions()
     pin_versions.write_commit_message(installed_versions)
     mock_stdout.write.assert_called_once_with(
@@ -64,7 +65,7 @@ def test_write_commit_message(mock_stdout, pinned_versions):
     )
 
 
-def test_pin(pinned_versions):
+def test_pin(patched_run_pip_freeze):
     installed_versions = pin_versions.fetch_pin_versions()
     with io.StringIO() as output_file:
         with open("test_data/setup.cfg.unpinned") as input_file:
