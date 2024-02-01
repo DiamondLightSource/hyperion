@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, override
 
 import numpy as np
 from dodal.devices.detector import DetectorParams
@@ -78,6 +78,7 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
             and limits.z.is_within(self.z)
         )
 
+    @override
     def get_num_images(self) -> int:
         return int(self.rotation_angle / self.image_width)
 

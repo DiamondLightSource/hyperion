@@ -164,7 +164,9 @@ class TestFlyscanXrayCentrePlan:
         RE.subscribe(test_ispyb_callback)
 
         aperture_name_test_value = "test_name"
-        fake_fgs_composite.aperture_scatterguard.ap_name = aperture_name_test_value
+        fake_fgs_composite.aperture_scatterguard.aperture_name = (
+            aperture_name_test_value
+        )
 
         RE(
             ispyb_plan(
