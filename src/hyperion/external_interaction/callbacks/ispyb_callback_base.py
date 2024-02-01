@@ -84,7 +84,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_current_gap"
             ]
-            self.params.hyperion_params.ispyb_params.ap_name = doc["data"][
+            self.params.hyperion_params.ispyb_params.aperture_name = doc["data"][
                 "aperture_scatterguard"
             ]
             self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][

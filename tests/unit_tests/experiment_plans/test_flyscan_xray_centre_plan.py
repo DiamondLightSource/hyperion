@@ -126,7 +126,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
-        # ispyb_plan: Callable[[GridscanInternalParameters], None],
         ispyb_plan,
     ):
         undulator_test_value = 1.234
@@ -163,6 +162,9 @@ class TestFlyscanXrayCentrePlan:
         )
         RE.subscribe(test_ispyb_callback)
 
+        aperture_name_test_value = "test_name"
+        fake_fgs_composite.aperture_scatterguard.ap_name = aperture_name_test_value
+
         RE(
             ispyb_plan(
                 fake_fgs_composite.undulator,
@@ -177,6 +179,7 @@ class TestFlyscanXrayCentrePlan:
         params = test_ispyb_callback.params
 
         assert params.hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
+        assert params.hyperion_params.ispyb_params.aperture_name == aperture_name_test_value  # type: ignore
         assert (
             params.hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
             == synchrotron_test_value

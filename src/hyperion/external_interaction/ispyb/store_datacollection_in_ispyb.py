@@ -210,8 +210,6 @@ class StoreInIspyb(ABC):
         params["imgprefix"] = self.detector_params.prefix
         params["imgsuffix"] = EIGER_FILE_SUFFIX
 
-        params["aperture_scatterguard"] = self.ispyb_params.ap_name
-
         # Both overlap and n_passes included for backwards compatibility,
         # planned to be removed later
         params["n_passes"] = 1
