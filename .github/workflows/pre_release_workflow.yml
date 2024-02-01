@@ -1,0 +1,38 @@
+name: pre_release_workflow
+on:
+  workflow_dispatch:
+    inputs:
+      tagName:
+        description: 'Tag to create'
+        required: true
+        type: string
+        default: 'vX.Y.Z'
+jobs:
+  pin_dependency_versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          architecture: x64
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: Reset pinned hash versions
+        run: .github/workflows/pin_versions.py --unpin
+      - name: Install with latest dependencies
+        run: pip install -e .[dev]
+      - id: pin_versions
+        name: Pin Versions
+        run: |
+          MSG=$(.github/workflows/pin_versions.py)
+          echo "COMMIT_MESSAGE=\"$MSG\"" >> "$GITHUB_OUTPUT"
+      - name: Add setup.cfg
+        run: git add setup.cfg
+      - name: Commit changes
+        run: |
+          git config --global user.name "GitHub Workflow"
+          git config --global user.email "robert.tuck@diamond.ac.uk"
+          git commit -m ${{steps.pin_versions.outputs.COMMIT_MESSAGE}}
+          git tag ${{inputs.tagName}}
+          git push origin ${{inputs.tagName}}
