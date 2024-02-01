@@ -83,6 +83,7 @@ def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
         panda=MagicMock(),
         panda_fast_grid_scan=MagicMock(),
         dcm=MagicMock(),
+        robot=MagicMock(),
     )
 
 

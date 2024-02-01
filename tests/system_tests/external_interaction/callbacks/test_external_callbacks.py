@@ -211,6 +211,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     synchrotron,
     s4_slit_gaps,
     flux,
+    robot,
     fake_create_devices,
 ):
     test_wl = 0.71
@@ -242,6 +243,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         zebra=fake_create_devices["zebra"],
+        robot=robot,
     )
 
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):

@@ -57,6 +57,7 @@ def fgs_composite():
         eiger=i03.eiger(),
         fast_grid_scan=i03.fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
+        robot=i03.robot(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(),
         smargon=i03.smargon(),
         undulator=i03.undulator(),
@@ -138,13 +139,14 @@ def test_read_hardware_for_ispyb_pre_collection(
     attenuator = fgs_composite.attenuator
     flux = fgs_composite.flux
     dcm = fgs_composite.dcm
+    robot = fgs_composite.robot
 
     @bpp.run_decorator()
-    def read_run(u, s, g, a, f, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(u, s, g)
+    def read_run(u, s, g, r, a, f, dcm):
+        yield from read_hardware_for_ispyb_pre_collection(u, s, g, r)
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
-    RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux, dcm))
+    RE(read_run(undulator, synchrotron, slit_gaps, robot, attenuator, flux, dcm))
 
 
 @pytest.mark.s03

@@ -93,6 +93,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"][
                 "s4_slit_gaps_ygap"
             ]
+            self.params.hyperion_params.ispyb_params.sample_barcode = doc["data"][
+                "robot-barcode"
+            ]
 
         if event_descriptor.get("name") == ISPYB_TRANSMISSION_FLUX_READ_PLAN:
             self.params.hyperion_params.ispyb_params.transmission_fraction = doc[

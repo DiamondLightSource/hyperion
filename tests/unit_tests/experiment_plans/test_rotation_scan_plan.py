@@ -11,6 +11,7 @@ from dodal.devices.DCM import DCM
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -61,6 +62,7 @@ def do_rotation_main_plan_for_tests(
     sim_bl,
     sim_det,
     sim_dcm,
+    sim_robot,
 ):
     devices = RotationScanComposite(
         attenuator=sim_att,
@@ -74,6 +76,7 @@ def do_rotation_main_plan_for_tests(
         synchrotron=sim_synch,
         s4_slit_gaps=sim_slits,
         zebra=sim_zeb,
+        robot=sim_robot,
     )
     run_engine, _ = run_eng_w_subs
     with (
@@ -139,6 +142,7 @@ def setup_and_run_rotation_plan_for_tests(
     undulator: Undulator,
     flux: Flux,
     dcm: DCM,
+    robot: BartRobot,
 ):
     from functools import partial
 
@@ -194,6 +198,7 @@ def setup_and_run_rotation_plan_for_tests(
             backlight,
             detector_motion,
             dcm,
+            robot,
         )
 
     return {
@@ -227,6 +232,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
     undulator: Undulator,
     flux: Flux,
     dcm: DCM,
+    robot: BartRobot,
 ):
     return setup_and_run_rotation_plan_for_tests(
         RE_with_subs,
@@ -242,6 +248,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
         undulator,
         flux,
         dcm,
+        robot,
     )
 
 
@@ -260,6 +267,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     undulator: Undulator,
     flux: Flux,
     dcm: DCM,
+    robot: BartRobot,
 ):
     return setup_and_run_rotation_plan_for_tests(
         RE_with_subs,
@@ -275,6 +283,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
         undulator,
         flux,
         dcm,
+        robot,
     )
 
 
@@ -323,6 +332,7 @@ def test_rotation_scan(
     backlight: Backlight,
     attenuator: Attenuator,
     dcm: DCM,
+    robot: BartRobot,
 ):
     RE, mock_rotation_subscriptions = RE_with_subs
     zebra.pc.arm.armed.set(False)
@@ -349,6 +359,7 @@ def test_rotation_scan(
             synchrotron=MagicMock(),
             s4_slit_gaps=MagicMock(),
             zebra=zebra,
+            robot=robot,
         )
         RE(rotation_scan(composite, test_rotation_params))
 
@@ -457,6 +468,7 @@ def test_cleanup_happens(
     backlight: Backlight,
     attenuator: Attenuator,
     dcm: DCM,
+    robot: BartRobot,
 ):
     RE, mock_rotation_subscriptions = RE_with_subs
 
@@ -479,6 +491,7 @@ def test_cleanup_happens(
         synchrotron=MagicMock(),
         s4_slit_gaps=MagicMock(),
         zebra=zebra,
+        robot=robot,
     )
 
     # check main subplan part fails
@@ -520,6 +533,7 @@ def test_acceleration_offset_calculated_correctly(
     undulator: Undulator,
     flux: Flux,
     dcm: DCM,
+    robot: BartRobot,
 ):
     smargon.omega.acceleration.sim_put(0.2)  # type: ignore
     setup_and_run_rotation_plan_for_tests(
@@ -536,6 +550,7 @@ def test_acceleration_offset_calculated_correctly(
         undulator,
         flux,
         dcm,
+        robot,
     )
 
     expected_start_angle = (

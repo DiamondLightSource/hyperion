@@ -54,6 +54,7 @@ BASIC_PRE_SETUP_DOC = {
     "synchrotron_machine_status_synchrotron_mode": 0,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
+    "robot-barcode": "BARCODE",
 }
 BASIC_POST_SETUP_DOC = {
     "attenuator_actual_transmission": 0,

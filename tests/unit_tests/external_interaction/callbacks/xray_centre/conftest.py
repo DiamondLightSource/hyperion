@@ -126,6 +126,7 @@ class TestData:
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron_machine_status_synchrotron_mode": "test",
             "undulator_current_gap": 1.234,
+            "robot-barcode": "BARCODE",
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,
