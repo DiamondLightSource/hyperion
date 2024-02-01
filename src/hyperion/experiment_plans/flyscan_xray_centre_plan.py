@@ -215,6 +215,7 @@ def run_gridscan(
             30.0,
         )
         LOGGER.info("kicking off FGS")
+        yield from bps.wait()  # Wait for all moves with no assigned group
         yield from bps.kickoff(fgs_motors)
         LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
         yield from bps.wait(
