@@ -109,7 +109,6 @@ def fxc_composite():
     return composite
 
 
-@pytest.mark.s03
 def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
     assert fxc_composite.aperture_scatterguard
     assert fxc_composite.backlight
