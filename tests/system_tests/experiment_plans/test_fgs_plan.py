@@ -35,7 +35,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-from ..external_interaction.conftest import (  # noqa
+from ..external_interaction.conftest import (  # noqa  # noqa  # noqa
     fetch_comment,
     zocalo_env,
 )
@@ -50,6 +50,7 @@ def params():
 
 @pytest.fixture
 def fgs_composite():
+    # todo this might need fixing
     composite = FlyScanXRayCentreComposite(
         attenuator=i03.attenuator(),
         aperture_scatterguard=i03.aperture_scatterguard(),
@@ -144,13 +145,19 @@ def test_read_hardware_for_ispyb_pre_collection(
     aperture_scatterguard = fgs_composite.aperture_scatterguard
 
     @bpp.run_decorator()
-    def read_run(u, s, g, a, f,dcm, ap_sg):
+    def read_run(u, s, g, a, f, dcm, ap_sg):
         yield from read_hardware_for_ispyb_pre_collection(u, s, g, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
     RE(
         read_run(
-            undulator, synchrotron, slit_gaps, attenuator, flux,dcm, aperture_scatterguard
+            undulator,
+            synchrotron,
+            slit_gaps,
+            attenuator,
+            flux,
+            dcm,
+            aperture_scatterguard,
         )
     )
 

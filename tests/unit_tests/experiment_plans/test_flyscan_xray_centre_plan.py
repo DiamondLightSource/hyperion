@@ -126,6 +126,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
+        # ispyb_plan: Callable[[GridscanInternalParameters], None],
         ispyb_plan,
     ):
         undulator_test_value = 1.234
