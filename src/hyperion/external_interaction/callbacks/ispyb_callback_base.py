@@ -87,6 +87,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"
             ]
+            self.params.hyperion_params.ispyb_params.aperture_name = doc["data"][
+                "aperture_scatterguard"
+            ]
             self.params.hyperion_params.ispyb_params.slit_gap_size_x = doc["data"][
                 "s4_slit_gaps_xgap"
             ]

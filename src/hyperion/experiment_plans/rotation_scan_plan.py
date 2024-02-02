@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
 class RotationScanComposite:
     """All devices which are directly or indirectly required by this plan"""
 
+    aperture_scatterguard: ApertureScatterguard
     attenuator: Attenuator
     backlight: Backlight
     dcm: DCM
@@ -204,6 +206,7 @@ def rotation_scan_plan(
         composite.undulator,
         composite.synchrotron,
         composite.s4_slit_gaps,
+        composite.aperture_scatterguard,
     )
     yield from read_hardware_for_ispyb_during_collection(
         composite.attenuator, composite.flux, composite.dcm

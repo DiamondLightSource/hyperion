@@ -9,7 +9,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import beamline_utils, i03
 from dodal.beamlines.beamline_parameters import GDABeamlineParameters
-from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -390,6 +390,7 @@ def fake_create_rotation_devices(
     attenuator: Attenuator,
     flux: Flux,
     undulator: Undulator,
+    aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
@@ -413,6 +414,7 @@ def fake_create_rotation_devices(
         flux=flux,
         smargon=smargon,
         undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
@@ -564,7 +566,9 @@ class RunEngineSimulator:
             )
         )
 
-    def add_wait_handler(self, handler: Callable[[Msg], None], group: str = "any"):
+    def add_wait_handler(
+        self, handler: Callable[[Msg], None], group: str = "any"
+    ) -> None:
         """Add a wait handler for a particular message
         Args:
             handler: a lambda that accepts a Msg, use this to execute any code that simulates something that's
@@ -579,7 +583,7 @@ class RunEngineSimulator:
             )
         )
 
-    def fire_callback(self, document_name, document):
+    def fire_callback(self, document_name, document) -> None:
         """Fire all the callbacks registered for this document type in order to simulate something happening
         Args:
              document_name: document name as defined in the Bluesky Message Protocol 'subscribe' call,

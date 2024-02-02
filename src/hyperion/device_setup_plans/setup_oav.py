@@ -147,6 +147,8 @@ def calculate_x_y_z_of_pixel(
 ) -> np.ndarray:
     beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
 
+    assert oav_params.micronsPerXPixel
+    assert oav_params.micronsPerYPixel
     return current_x_y_z + camera_coordinates_to_xyz(
         beam_distance_px[0],
         beam_distance_px[1],

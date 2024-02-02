@@ -55,6 +55,7 @@ class IspybParams(BaseModel):
     sample_barcode: Optional[str] = None
 
     # Optional from GDA as populated by Ophyd
+    aperture_name: Optional[float] = None
     flux: Optional[float] = None
     undulator_gap: Optional[float] = None
     synchrotron_mode: Optional[str] = None

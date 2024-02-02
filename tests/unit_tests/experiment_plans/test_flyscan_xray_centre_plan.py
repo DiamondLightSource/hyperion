@@ -73,8 +73,8 @@ def ispyb_plan(test_fgs_params):
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm, ap_sg):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -153,6 +153,11 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
+        aperture_name_test_value = "test_name"
+        fake_fgs_composite.aperture_scatterguard.aperture_name = (
+            aperture_name_test_value
+        )
+
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
         test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
@@ -178,6 +183,8 @@ class TestFlyscanXrayCentrePlan:
             params.hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
             == synchrotron_test_value
         )
+
+        assert params.hyperion_params.ispyb_params.aperture_name == aperture_name_test_value  # type: ignore
         assert params.hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
         assert params.hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
         assert (

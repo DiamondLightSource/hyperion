@@ -34,6 +34,7 @@ def devices():
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(),
         zebra=i03.zebra(),
+        aperture_scatterguard=i03.aperture_scatterguard(),
     )
 
 
