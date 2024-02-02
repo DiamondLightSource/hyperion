@@ -25,8 +25,6 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
-    run_gridscan,
-    run_gridscan_and_move,
 )
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -49,6 +47,7 @@ from ..external_interaction.conftest import (  # noqa
 def params():
     params = GridscanInternalParameters(**default_raw_params())
     params.hyperion_params.beamline = SIM_BEAMLINE
+    params.hyperion_params.zocalo_environment = "dev_artemis"
     yield params
 
 
@@ -60,7 +59,6 @@ def RE():
 @pytest.fixture()
 def callbacks(params):
     callbacks = XrayCentreCallbackCollection.setup()
-    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
     yield callbacks
 
 
@@ -118,28 +116,6 @@ def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
     assert fxc_composite.backlight
 
 
-@pytest.mark.skip(reason="Broken due to eiger issues in s03")
-@pytest.mark.s03
-@patch("bluesky.plan_stubs.wait", autospec=True)
-@patch("bluesky.plan_stubs.kickoff", autospec=True)
-@patch("bluesky.plan_stubs.complete", autospec=True)
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.wait_for_gridscan_valid",
-    autospec=True,
-)
-def test_run_gridscan(
-    wait_for_gridscan_valid: MagicMock,
-    complete: MagicMock,
-    kickoff: MagicMock,
-    wait: MagicMock,
-    params: GridscanInternalParameters,
-    RE: RunEngine,
-    fxc_composite: FlyScanXRayCentreComposite,
-):
-    # Would be better to use flyscan_xray_centre instead but eiger doesn't work well in S03
-    RE(run_gridscan(fxc_composite, params))
-
-
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
@@ -156,8 +132,10 @@ def test_run_gridscan_and_move(
     params: GridscanInternalParameters,
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
+    callbacks,
 ):
-    RE(run_gridscan_and_move(fxc_composite, params))
+    [RE.subscribe(cb) for cb in callbacks]
+    RE(flyscan_xray_centre(fxc_composite, params))
 
 
 @pytest.mark.s03
