@@ -154,9 +154,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
         aperture_name_test_value = "test_name"
-        fake_fgs_composite.aperture_scatterguard.aperture_name = (
-            aperture_name_test_value
-        )
+        fake_fgs_composite.aperture_scatterguard.ap_name.sim_put(aperture_name_test_value)  # type: ignore
 
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
