@@ -66,6 +66,10 @@ def callbacks(params):
 
 @pytest.fixture
 def fxc_composite():
+    with patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"), patch(
+        "dodal.devices.zocalo.zocalo_results.workflows.recipe"
+    ), patch("dodal.devices.zocalo.zocalo_results.workflows.recipe"):
+        zocalo = i03.zocalo()
     composite = FlyScanXRayCentreComposite(
         attenuator=i03.attenuator(),
         aperture_scatterguard=i03.aperture_scatterguard(),
@@ -82,7 +86,7 @@ def fxc_composite():
         synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
         xbpm_feedback=i03.xbpm_feedback(fake_with_ophyd_sim=True),
         zebra=i03.zebra(),
-        zocalo=MagicMock(),
+        zocalo=zocalo,
     )
 
     gda_beamline_parameters = GDABeamlineParameters.from_file(
@@ -151,9 +155,9 @@ def test_run_gridscan_and_move(
     wait: MagicMock,
     params: GridscanInternalParameters,
     RE: RunEngine,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fxc_composite: FlyScanXRayCentreComposite,
 ):
-    RE(run_gridscan_and_move(fgs_composite, params))
+    RE(run_gridscan_and_move(fxc_composite, params))
 
 
 @pytest.mark.s03
