@@ -141,7 +141,14 @@ def run_gridscan(
             total_exposure,
             30.0,
         )
+        yield from bps.wait()  # Wait for all moves with no explicitly signed group
+        LOGGER.info("kicking off FGS")
         yield from bps.kickoff(fgs_motors)
+        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
+        yield from bps.wait(
+            ZOCALO_STAGE_GROUP
+        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        LOGGER.info("completing FGS")
         yield from bps.complete(fgs_motors, wait=True)
 
     LOGGER.info("Waiting for arming to finish")
@@ -178,7 +185,7 @@ def run_gridscan_and_move(
     DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
     time_between_x_steps_ms = (
-        DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
+        (DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time) *1e3
     )
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
@@ -195,6 +202,8 @@ def run_gridscan_and_move(
                                       time_between_x_steps_ms {time_between_x_steps_ms} as\
                                           {smargon_speed}. The smargon's speed limit is {smargon_speed_limit_mm_per_s} mm/s."
         )
+    else:
+        LOGGER.info(f"Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s")
 
     yield from bps.mv(
         fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
@@ -274,11 +283,8 @@ def panda_flyscan_xray_centre(
     """
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    subscriptions = XrayCentreCallbackCollection.setup()
+    composite.zocalo.zocalo_environment = parameters.hyperion_params.zocalo_environment
 
-    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
-        list(subscriptions)  # must be the outermost decorator to receive the metadata
-    )
     @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={

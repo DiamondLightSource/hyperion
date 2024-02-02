@@ -16,7 +16,7 @@ from hyperion.log import LOGGER
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
-DETECTOR_TRIGGER_WIDTH = 1e-8
+DETECTOR_TRIGGER_WIDTH = 1e-4
 
 
 class Enabled(Enum):
@@ -140,9 +140,11 @@ def setup_panda_for_flyscan(
         panda.inenc[1].setp, initial_x * MM_TO_ENCODER_COUNTS, wait=True  # type: ignore
     )
 
-    yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms)  # type: ignore
+    LOGGER.info(f"Setting clock to period {time_between_x_steps_ms}")
 
-    yield from bps.abs_set(panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH)
+    yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms, group="panda-config")  # type: ignore
+
+    yield from bps.abs_set(panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config")
 
     table = get_seq_table(parameters, time_between_x_steps_ms, exposure_time_s)
 
