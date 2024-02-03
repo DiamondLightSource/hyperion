@@ -178,8 +178,8 @@ def test_rotation_scan(
     composite = fake_create_rotation_devices
     RE(rotation_scan(composite, test_rotation_params))
 
-    composite.eiger.stage.assert_called()
-    composite.eiger.unstage.assert_called()
+    composite.eiger.stage.assert_called()  # type: ignore
+    composite.eiger.unstage.assert_called()  # type: ignore
 
 
 def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests_standard) -> None:
@@ -259,7 +259,7 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     assert expt_params.z is None
     for motor in [smargon.phi, smargon.chi, smargon.x, smargon.y, smargon.z]:
         assert motor.user_readback.get() == 0
-        motor.set.assert_not_called()
+        motor.set.assert_not_called()  # type: ignore
 
 
 @patch("hyperion.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)
