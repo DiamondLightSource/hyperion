@@ -130,7 +130,6 @@ def run_gridscan(
         else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
     )
     def do_fgs():
-        yield from bps.wait()  # Wait for all moves to complete
         # Check topup gate
         total_exposure = (
             parameters.experiment_params.get_num_images()
@@ -141,7 +140,11 @@ def run_gridscan(
             total_exposure,
             30.0,
         )
-        yield from bps.wait()  # Wait for all moves with no explicitly signed group
+
+
+        LOGGER.info("Wait for all moves with no assigned group")
+        yield from bps.wait()
+
         LOGGER.info("kicking off FGS")
         yield from bps.kickoff(fgs_motors)
         LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
