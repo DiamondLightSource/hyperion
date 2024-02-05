@@ -87,8 +87,8 @@ def ispyb_plan(test_panda_fgs_params):
             "hyperion_internal_parameters": test_panda_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm, ap_sg):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -169,6 +169,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
                 fake_fgs_composite.dcm,
+                fake_fgs_composite.aperture_scatterguard,
             )
         )
         params = test_ispyb_callback.params
@@ -242,10 +243,14 @@ class TestFlyscanXrayCentrePlan:
 
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
+            *(
+                fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
+            )
         )
         ap_call_medium = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
+            *(
+                fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
+            )
         )
 
         move_aperture.assert_has_calls(

@@ -87,9 +87,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][
                 "synchrotron_machine_status_synchrotron_mode"
             ]
-            self.params.hyperion_params.ispyb_params.aperture_name = doc["data"][
-                "aperture_scatterguard"
-            ]
             self.params.hyperion_params.ispyb_params.slit_gap_size_x = doc["data"][
                 "s4_slit_gaps_xgap"
             ]
@@ -112,7 +109,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.ispyb_ids = self.ispyb.begin_deposition()
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
-    def activity_gated_stop(self, doc: RunStop):
+    def activity_gated_stop(self, doc: RunStop) -> None:
         """Subclasses must check that they are recieving a stop document for the correct
         uid to use this method!"""
         assert isinstance(
@@ -131,7 +128,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"
             )
 
-    def _append_to_comment(self, id: int, comment: str):
+    def _append_to_comment(self, id: int, comment: str) -> None:
         assert isinstance(self.ispyb, StoreInIspyb)
         try:
             self.ispyb.append_to_comment(id, comment)

@@ -42,11 +42,11 @@ class RotationISPyBCallback(BaseISPyBCallback):
         super().__init__()
         self.last_sample_id: str | None = None
 
-    def append_to_comment(self, comment: str):
+    def append_to_comment(self, comment: str) -> None:
         assert isinstance(self.ispyb_ids.data_collection_ids, int)
         self._append_to_comment(self.ispyb_ids.data_collection_ids, comment)
 
-    def activity_gated_start(self, doc: RunStart):
+    def activity_gated_start(self, doc: RunStart) -> None:
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
@@ -68,11 +68,11 @@ class RotationISPyBCallback(BaseISPyBCallback):
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
 
-    def activity_gated_event(self, doc: Event):
+    def activity_gated_event(self, doc: Event) -> None:
         super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
-    def activity_gated_stop(self, doc: RunStop):
+    def activity_gated_stop(self, doc: RunStop) -> None:
         if doc.get("run_start") == self.uid_to_finalize_on:
             self.uid_to_finalize_on = None
             super().activity_gated_stop(doc)

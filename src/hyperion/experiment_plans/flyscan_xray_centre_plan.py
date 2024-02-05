@@ -117,10 +117,10 @@ def set_aperture_for_bbox_size(
     assert aperture_device.aperture_positions is not None
     if bbox_size[0] < 2:
         aperture_size_positions = aperture_device.aperture_positions.MEDIUM
-        selected_aperture = "MEDIUM_APERTURE"
+        selected_aperture = "Medium"
     else:
         aperture_size_positions = aperture_device.aperture_positions.LARGE
-        selected_aperture = "LARGE_APERTURE"
+        selected_aperture = "Large"
     LOGGER.info(
         f"Setting aperture to {selected_aperture} ({aperture_size_positions}) based on bounding box size {bbox_size}."
     )
@@ -135,7 +135,7 @@ def set_aperture_for_bbox_size(
     yield from set_aperture()
 
 
-def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
+def wait_for_gridscan_valid(fgs_motors: FastGridScan | PandAFastGridScan, timeout=0.5):
     LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)

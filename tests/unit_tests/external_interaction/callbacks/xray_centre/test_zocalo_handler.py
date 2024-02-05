@@ -69,16 +69,16 @@ class TestXrayCentreZocaloHandler:
             td.test_run_gridscan_start_document
         )
         callbacks.ispyb_handler.activity_gated_descriptor(
-            td.test_descriptor_document_pre_data_collection
-        )  # type: ignore
+            td.test_descriptor_document_pre_data_collection  # type: ignore
+        )
         callbacks.ispyb_handler.activity_gated_event(
-            td.test_event_document_pre_data_collection
+            td.test_event_document_pre_data_collection  # type: ignore
         )
         callbacks.ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_during_data_collection  # type: ignore
         )
         callbacks.ispyb_handler.activity_gated_event(
-            td.test_event_document_during_data_collection
+            td.test_event_document_during_data_collection  # type: ignore
         )
         callbacks.zocalo_handler.activity_gated_start(td.test_do_fgs_start_document)
         callbacks.ispyb_handler.activity_gated_stop(td.test_stop_document)
