@@ -13,6 +13,7 @@ from scanspec.specs import Line
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
 )
+from hyperion.log import LOGGER
 from hyperion.parameters.internal_parameters import (
     InternalParameters,
     extract_experiment_params_from_flat_dict,
@@ -48,6 +49,12 @@ class PandAGridscanInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
+
+        #Force first grid scan to have even number of rows so next row starts at same point
+        if experiment_params['y_steps'] % 2:
+            experiment_params['y_steps'] += 1
+            LOGGER.debug(f"Making Y steps an even number by increasing it to {experiment_params['y_steps']}")
+
         return PandAGridScanParams(
             **extract_experiment_params_from_flat_dict(
                 PandAGridScanParams, experiment_params

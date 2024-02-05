@@ -274,3 +274,31 @@ def test_internal_params_eq():
     internal_params_2 = copy.deepcopy(internal_params)
     internal_params_2.hyperion_params.experiment_type = "not_real_experiment"
     assert internal_params != internal_params_2
+
+def test_y_steps_must_be_even():
+
+    params = external_parameters.from_file(
+        "tests/test_data/parameter_json_files/test_parameters.json"
+    )
+    params['experiment_params']['y_steps'] = 11
+
+    internal_params = GridscanInternalParameters(**params)
+
+    assert internal_params.experiment_params.y_steps == 12
+
+def test_panda_y_steps_must_be_even():
+
+    params = external_parameters.from_file(
+        "tests/test_data/parameter_json_files/test_parameters.json"
+    )
+    params['experiment_params']['y_steps'] = 11
+
+    from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
+        PandAGridscanInternalParameters,
+    )
+
+    internal_params = PandAGridscanInternalParameters(**params)
+
+    assert internal_params.experiment_params.y_steps == 12
+
+
