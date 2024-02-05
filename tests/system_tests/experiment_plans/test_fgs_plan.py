@@ -267,21 +267,59 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
 
 
 @pytest.mark.s03
-@patch("bps.plan_stubs.wait")
-@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
-def test_complete_xray_centre_plan_and_returned_centre(
-    complete: MagicMock,
-    kickoff: MagicMock,
+def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,
     params: GridscanInternalParameters,
     callbacks,
+    done_status,
 ):
+    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
+    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
+
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
     params.hyperion_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+
+    params.experiment_params.set_stub_offsets = False
+
+    # Currently s03 calls anything with z_steps > 1 invalid
+    params.experiment_params.z_steps = 1
+
+    RE(reset_positions(fxc_composite.smargon))
+
+    def zocalo_trigger():
+        fxc_composite.zocalo._raw_results_received.put({"results": []})
+        return done_status
+
+    # [RE.subscribe(cb) for cb in callbacks]
+    fxc_composite.zocalo.trigger = MagicMock(side_effect=zocalo_trigger)
+    RE(flyscan_xray_centre(fxc_composite, params))
+
+    # The following numbers are derived from the centre returned in fake_zocalo
+    assert fxc_composite.sample_motors.x.user_readback.get() == pytest.approx(-1)
+    assert fxc_composite.sample_motors.y.user_readback.get() == pytest.approx(-1)
+    assert fxc_composite.sample_motors.z.user_readback.get() == pytest.approx(-1)
+
+
+@pytest.mark.s03
+def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
+    RE: RunEngine,
+    fxc_composite: FlyScanXRayCentreComposite,
+    zocalo_env: None,
+    params: GridscanInternalParameters,
+    callbacks,
+    done_status,
+):
+    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
+    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
+
+    params.hyperion_params.detector_params.directory = "./tmp"
+    params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
+    params.hyperion_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+
+    params.experiment_params.set_stub_offsets = False
 
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 1
