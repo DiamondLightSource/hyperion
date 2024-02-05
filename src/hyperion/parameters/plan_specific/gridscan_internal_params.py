@@ -61,7 +61,7 @@ class GridscanInternalParameters(InternalParameters):
         experiment_params: dict[str, Any],
     ):
 
-        #Force first grid scan to have even number of rows so next row starts at same point
+        #Force first grid scan to have even number of rows so next grid starts at same point
         if experiment_params['y_steps']%2:
             experiment_params['y_steps'] += 1
             LOGGER.debug(f"Making Y steps an even number by increasing it to {experiment_params['y_steps']}")
