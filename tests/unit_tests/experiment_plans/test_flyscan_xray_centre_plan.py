@@ -153,8 +153,12 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-        aperture_name_test_value = "test_name"
-        fake_fgs_composite.aperture_scatterguard.selected_aperture.put(aperture_name_test_value)  # type: ignore
+        aperture_name_test_value = "Large"
+        # todo that is quite wrong as the signal value should be a full object, not a string literal
+        # test_aperture =
+        fake_fgs_composite.aperture_scatterguard.selected_aperture.put(
+            aperture_name_test_value
+        )
 
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True

@@ -10,7 +10,10 @@ import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+    SingleAperturePosition,
+)
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -115,22 +118,25 @@ def set_aperture_for_bbox_size(
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
     assert aperture_device.aperture_positions is not None
-    if bbox_size[0] < 2:
-        aperture_size_positions = aperture_device.aperture_positions.MEDIUM
-        selected_aperture = "Medium"
-    else:
-        aperture_size_positions = aperture_device.aperture_positions.LARGE
-        selected_aperture = "Large"
+
+    new_selected_aperture: SingleAperturePosition = (
+        aperture_device.aperture_positions.MEDIUM
+        if bbox_size[0] < 2
+        else aperture_device.aperture_positions.LARGE
+    )
     LOGGER.info(
-        f"Setting aperture to {selected_aperture} ({aperture_size_positions}) based on bounding box size {bbox_size}."
+        f"Setting aperture to {new_selected_aperture.name} ({new_selected_aperture.location}) based on bounding box size {bbox_size}."
     )
 
     @bpp.set_run_key_decorator("change_aperture")
     @bpp.run_decorator(
-        md={"subplan_name": "change_aperture", "aperture_size": selected_aperture}
+        md={
+            "subplan_name": "change_aperture",
+            "aperture_size": new_selected_aperture.name,
+        }
     )
     def set_aperture():
-        yield from bps.abs_set(aperture_device, aperture_size_positions)
+        yield from bps.abs_set(aperture_device.selected_aperture, new_selected_aperture)
 
     yield from set_aperture()
 
