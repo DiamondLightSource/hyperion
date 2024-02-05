@@ -243,14 +243,10 @@ class TestFlyscanXrayCentrePlan:
 
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
-            *(
-                fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
-            )
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
         )
         ap_call_medium = call(
-            *(
-                fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
-            )
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
         )
 
         move_aperture.assert_has_calls(
