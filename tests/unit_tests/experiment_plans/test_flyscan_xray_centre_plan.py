@@ -157,16 +157,15 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-        # todo that is quite wrong as the signal value should be a full object, not a string literal
         test_aperture = SingleAperturePosition(
             name="Large",
             radius_microns=100,
             location=ApertureFiveDimensionalLocation(
-                aperture_x=1,
-                aperture_y=2,
-                aperture_z=3,
-                scatterguard_x=4,
-                scatterguard_y=5,
+                aperture_x=0,
+                aperture_y=1.1,  # only here departs from the Large position described in conftest.py fixture
+                aperture_z=2,
+                scatterguard_x=3,
+                scatterguard_y=4,
             ),
         )
         fake_fgs_composite.aperture_scatterguard.selected_aperture.put(
@@ -262,18 +261,10 @@ class TestFlyscanXrayCentrePlan:
 
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
-            *(
-                list(
-                    fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
-                )
-            )
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
         )
         ap_call_medium = call(
-            *(
-                list(
-                    fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
-                )
-            )
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
         )
 
         move_aperture.assert_has_calls(
