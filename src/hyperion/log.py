@@ -1,13 +1,17 @@
 import logging
 from os import environ
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
+from dodal.log import (
+    ERROR_LOG_BUFFER_LINES,
+    integrate_bluesky_and_ophyd_logging,
+    set_up_all_logging_handlers,
+)
 from dodal.log import LOGGER as dodal_logger
-from dodal.log import set_up_logging_handlers as setup_dodal_logging
 
 LOGGER = logging.getLogger("Hyperion")
-LOGGER.setLevel(logging.DEBUG)
+LOGGER.setLevel("DEBUG")
 LOGGER.parent = dodal_logger
 
 ISPYB_LOGGER = logging.getLogger("Hyperion ISPyB and Zocalo callbacks")
@@ -37,45 +41,26 @@ def set_dcgid_tag(dcgid):
     dc_group_id_filter.dc_group_id = dcgid
 
 
-def set_up_logging_handlers(
-    logger=dodal_logger,
-    logging_level: str | None = "INFO",
-    dev_mode: bool = False,
-    filename="hyperion.txt",
-) -> List[logging.Handler]:
-    """Set up the logging level and instances for user chosen level of logging.
-
-    Mode defaults to production and can be switched to dev with the --dev flag on run.
-    """
-    logger.handlers.clear()
-    logger.filters.clear()
-    dodal_logger.filters.clear()
-    print(
-        f"setting up handler with level {logging_level} dev mode {dev_mode} path {filename}"
+def do_default_logging_setup(dev_mode=False):
+    handlers = set_up_all_logging_handlers(
+        dodal_logger,
+        _get_logging_dir(),
+        "hyperion.log",
+        dev_mode,
+        ERROR_LOG_BUFFER_LINES,
     )
-    handlers = setup_dodal_logging(
-        logging_level=logging_level,
-        dev_mode=dev_mode,
-        logging_path=_get_logging_file_path(filename),
-        file_handler_logging_level="DEBUG",
-        logger=logger,
-    )
-    for handler in handlers:
-        handler.addFilter(dc_group_id_filter)
-
-    return handlers
+    integrate_bluesky_and_ophyd_logging(handlers)
+    handlers["graylog_handler"].addFilter(dc_group_id_filter)
 
 
-def _get_logging_file_path(filename: str) -> Path:
+def _get_logging_dir() -> Path:
     """Get the path to write the hyperion log files to.
 
     If the HYPERION_LOG_DIR environment variable exists then logs will be put in here.
     If no environment variable is found it will default it to the ./tmp/dev directory.
-    If the directories needed don't exist they will be created.
 
     Returns:
         logging_path (Path): Path to the log file for the file handler to write to.
     """
     logging_path = Path(environ.get("HYPERION_LOG_DIR") or "./tmp/dev/")
-    Path(logging_path).mkdir(parents=True, exist_ok=True)
-    return logging_path / Path(filename)
+    return logging_path

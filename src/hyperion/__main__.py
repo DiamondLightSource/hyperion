@@ -27,7 +27,7 @@ from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
 from hyperion.log import LOGGER, set_up_logging_handlers
-from hyperion.parameters.cli import parse_callback_cli_args, parse_cli_args
+from hyperion.parameters.cli import parse_callback_dev_mode_arg, parse_cli_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
@@ -301,9 +301,9 @@ def create_app(
 def create_targets():
     hyperion_port = 5005
     args = parse_cli_args()
-    set_up_logging_handlers(logging_level=args.logging_level, dev_mode=args.dev_mode)
+    set_up_logging_handlers(dev_mode=args.dev_mode)
     if not args.use_external_callbacks:
-        setup_callback_logging(parse_callback_cli_args())
+        setup_callback_logging(parse_callback_dev_mode_arg())
     app, runner = create_app(
         skip_startup_connection=args.skip_startup_connection,
         use_external_callbacks=args.use_external_callbacks,

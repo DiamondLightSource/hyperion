@@ -76,14 +76,14 @@ def pytest_runtest_setup(item):
             print(f"Initialising ISPyB logger for tests at {log_level}")
             set_up_logging_handlers(
                 **log_params,
-                filename="hyperion_ispyb_callback.txt",
+                filename="hyperion_ispyb_callback.log",
                 logger=ISPYB_LOGGER,
             )
         if NEXUS_LOGGER.handlers == []:
             print(f"Initialising nexus logger for tests at {log_level}")
             set_up_logging_handlers(
                 **log_params,
-                filename="hyperion_nexus_callback.txt",
+                filename="hyperion_nexus_callback.log",
                 logger=NEXUS_LOGGER,
             )
     else:
