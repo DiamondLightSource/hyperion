@@ -22,7 +22,7 @@ def read_hardware_for_ispyb_pre_collection(
     s4_slit_gaps: S4SlitGaps,
     robot: BartRobot,
 ):
-    LOGGER.info("Reading status of beamline for ispyb deposition, pre colection.")
+    LOGGER.info("Reading status of beamline for ispyb deposition, pre collection.")
     yield from bps.create(
         name=ISPYB_HARDWARE_READ_PLAN
     )  # gives name to event *descriptor* document

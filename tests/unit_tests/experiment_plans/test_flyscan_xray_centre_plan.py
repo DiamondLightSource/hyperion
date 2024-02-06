@@ -24,7 +24,6 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
-    read_hardware_for_ispyb_pre_collection,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_gridscan_valid,
