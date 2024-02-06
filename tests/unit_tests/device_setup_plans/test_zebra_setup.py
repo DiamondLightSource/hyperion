@@ -92,7 +92,7 @@ class MyException(Exception):
 def test_when_first_try_fails_then_bluesky_retry_tries_again(RE, done_status):
     mock_device = MagicMock()
 
-    @bluesky_retry()
+    @bluesky_retry
     def my_plan(value):
         yield from bps.abs_set(mock_device, value)
 
@@ -106,7 +106,7 @@ def test_when_first_try_fails_then_bluesky_retry_tries_again(RE, done_status):
 def test_when_all_tries_fail_then_bluesky_retry_throws_error(RE, done_status):
     mock_device = MagicMock()
 
-    @bluesky_retry()
+    @bluesky_retry
     def my_plan(value):
         yield from bps.abs_set(mock_device, value)
 
