@@ -139,9 +139,17 @@ def grid_detection_main_plan(
 
         LOGGER.info(f"Drawing snapshot {grid_width_pixels} by {grid_height_px}")
 
+        y_steps: int = math.ceil(grid_height_px / box_size_y_pixels)
+
+        #FGS motion script moves sample to initial X position for start of second grid, so we need an even number of
+        #rows during the first grid to ensure that any position tracking done in the software is consistent
+        if y_steps%2 and angle == 0:
+            y_steps+=1
+            LOGGER.debug(f"Making number of grid Y steps an event number by increasing to {y_steps}")
+
         boxes = (
             math.ceil(grid_width_pixels / box_size_x_pixels),
-            math.ceil(grid_height_px / box_size_y_pixels),
+            y_steps,
         )
         box_numbers.append(boxes)
 

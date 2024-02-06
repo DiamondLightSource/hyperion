@@ -44,7 +44,7 @@ def _fake_grid_detection(
 
     # first grid detection: x * y
     oav.snapshot.num_boxes_x.put(10)
-    oav.snapshot.num_boxes_y.put(3)
+    oav.snapshot.num_boxes_y.put(4)
     yield from bps.create("snapshot_to_ispyb")
     yield from bps.read(oav.snapshot)
     yield from bps.read(smargon)
@@ -185,7 +185,6 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_oav_callback = OavSnapshotCallback()
     mock_oav_callback.snapshot_filenames = [["a", "b", "c"], ["d", "e", "f"]]
     mock_oav_callback.out_upper_left = [[1, 2], [1, 3]]
-
     mock_oav_callback_init.return_value = mock_oav_callback
 
     mock_grid_detection_plan.side_effect = _fake_grid_detection

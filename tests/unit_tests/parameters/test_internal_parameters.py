@@ -23,6 +23,7 @@ from hyperion.parameters.internal_parameters import (
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
     GridscanInternalParameters,
+    OddNumberException,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -282,9 +283,8 @@ def test_y_steps_must_be_even():
     )
     params['experiment_params']['y_steps'] = 11
 
-    internal_params = GridscanInternalParameters(**params)
-
-    assert internal_params.experiment_params.y_steps == 12
+    with pytest.raises(OddNumberException):
+        GridscanInternalParameters(**params)
 
 def test_panda_y_steps_must_be_even():
 
@@ -297,8 +297,7 @@ def test_panda_y_steps_must_be_even():
         PandAGridscanInternalParameters,
     )
 
-    internal_params = PandAGridscanInternalParameters(**params)
-
-    assert internal_params.experiment_params.y_steps == 12
+    with pytest.raises(OddNumberException):
+        PandAGridscanInternalParameters(**params)
 
 

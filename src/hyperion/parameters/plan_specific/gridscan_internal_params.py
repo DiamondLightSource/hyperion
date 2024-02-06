@@ -13,7 +13,6 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     GridscanIspybParams,
 )
-from hyperion.log import LOGGER
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
@@ -21,6 +20,9 @@ from hyperion.parameters.internal_parameters import (
     extract_hyperion_params_from_flat_dict,
 )
 
+
+class OddNumberException(Exception):
+    pass
 
 class GridscanHyperionParameters(HyperionParameters):
     ispyb_params: GridscanIspybParams = GridscanIspybParams(
@@ -61,10 +63,10 @@ class GridscanInternalParameters(InternalParameters):
         experiment_params: dict[str, Any],
     ):
 
-        #Force first grid scan to have even number of rows so next grid starts at same point
+        #FGS motion script moves sample to initial X position for start of second grid, so we need an even number of
+        #rows during the first grid to ensure that any position tracking done in the software is consistent
         if experiment_params['y_steps']%2:
-            experiment_params['y_steps'] += 1
-            LOGGER.debug(f"Making Y steps an even number by increasing it to {experiment_params['y_steps']}")
+            raise OddNumberException("The number of Y steps must be even")
 
         return GridScanParams(
             **extract_experiment_params_from_flat_dict(

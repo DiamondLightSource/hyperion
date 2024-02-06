@@ -254,7 +254,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     assert my_grid_params.y_step_size == pytest.approx(0.02)
     assert my_grid_params.z_step_size == pytest.approx(0.02)
     assert my_grid_params.x_steps == pytest.approx(9)
-    assert my_grid_params.y_steps == pytest.approx(1)
+    assert my_grid_params.y_steps == pytest.approx(2)
     assert my_grid_params.z_steps == pytest.approx(1)
     assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
 
