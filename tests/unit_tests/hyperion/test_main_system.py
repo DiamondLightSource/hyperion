@@ -145,17 +145,23 @@ def test_env(request):
         k: MagicMock() for k in real_plans_and_test_exps.keys()
     }
 
-    with patch.dict(
-        "hyperion.__main__.PLAN_REGISTRY",
-        real_plans_and_test_exps,
-    ), patch("hyperion.__main__.setup_context", MagicMock(return_value=mock_context)):
+    with (
+        patch.dict(
+            "hyperion.__main__.PLAN_REGISTRY",
+            real_plans_and_test_exps,
+        ),
+        patch("hyperion.__main__.setup_context", MagicMock(return_value=mock_context)),
+    ):
         app, runner = create_app({"TESTING": True}, mock_run_engine, True)  # type: ignore
 
     runner_thread = threading.Thread(target=runner.wait_on_queue)
     runner_thread.start()
-    with app.test_client() as client, patch.dict(
-        "hyperion.__main__.PLAN_REGISTRY",
-        real_plans_and_test_exps,
+    with (
+        app.test_client() as client,
+        patch.dict(
+            "hyperion.__main__.PLAN_REGISTRY",
+            real_plans_and_test_exps,
+        ),
     ):
         yield ClientAndRunEngine(client, mock_run_engine)
 

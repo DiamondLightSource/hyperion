@@ -144,7 +144,9 @@ def setup_panda_for_flyscan(
 
     yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms, group="panda-config")  # type: ignore
 
-    yield from bps.abs_set(panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config")
+    yield from bps.abs_set(
+        panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
+    )
 
     table = get_seq_table(parameters, time_between_x_steps_ms, exposure_time_s)
 

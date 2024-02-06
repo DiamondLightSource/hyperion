@@ -544,9 +544,9 @@ def test_ispyb_deposition_rounds_box_size_int(
     dummy_ispyb.full_params = dummy_params
     dummy_ispyb.y_steps = dummy_ispyb.full_params.experiment_params.x_steps = 0
 
-    dummy_ispyb.y_step_size = (
-        dummy_ispyb.full_params.experiment_params.x_step_size
-    ) = raw
+    dummy_ispyb.y_step_size = dummy_ispyb.full_params.experiment_params.x_step_size = (
+        raw
+    )
 
     assert dummy_ispyb._construct_comment() == (
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "

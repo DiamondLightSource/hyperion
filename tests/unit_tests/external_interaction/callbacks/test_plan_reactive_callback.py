@@ -102,8 +102,7 @@ def test_cb_logs_and_raises_exception():
     cb = MockReactiveCallback()
     cb.active = True
 
-    class MockTestException(Exception):
-        ...
+    class MockTestException(Exception): ...
 
     e = MockTestException()
 
