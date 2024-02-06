@@ -135,8 +135,8 @@ def mock_set(motor: EpicsMotor, val):
     return Status(done=True, success=True)
 
 
-def patch_motor(motor):
-    return patch.object(motor, "set", partial(mock_set, motor))
+def patch_motor(motor: EpicsMotor):
+    return patch.object(motor, "set", MagicMock(side_effect=partial(mock_set, motor)))
 
 
 @pytest.fixture
@@ -214,13 +214,19 @@ def smargon() -> Generator[Smargon, None, None]:
 
     with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
         smargon.y
-    ), patch_motor(smargon.z):
+    ), patch_motor(smargon.z), patch_motor(smargon.chi), patch_motor(smargon.phi):
         yield smargon
 
 
 @pytest.fixture
 def zebra():
-    return i03.zebra(fake_with_ophyd_sim=True)
+    zebra = i03.zebra(fake_with_ophyd_sim=True)
+    mock_arm = MagicMock(
+        side_effect=zebra.pc.arm.armed.set,
+        return_value=Status(done=True, success=True),
+    )
+    with patch.object(zebra.pc.arm.arm_set, "set", mock_arm):
+        return i03.zebra(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
