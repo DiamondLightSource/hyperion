@@ -20,7 +20,7 @@ from hyperion.parameters.internal_parameters import (
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
-    OddNumberException,
+    YStepOddNumberException,
 )
 
 
@@ -53,7 +53,7 @@ class PandAGridscanInternalParameters(InternalParameters):
         #FGS motion script moves sample to initial X position for start of second grid, so we need an even number of
         #rows during the first grid to ensure that any position tracking done in the software is consistent
         if experiment_params['y_steps']%2:
-            raise OddNumberException("The number of Y steps must be even")
+            raise YStepOddNumberException("The number of Y steps must be even")
 
         return PandAGridScanParams(
             **extract_experiment_params_from_flat_dict(
