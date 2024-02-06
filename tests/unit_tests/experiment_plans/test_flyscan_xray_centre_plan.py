@@ -6,6 +6,10 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.aperturescatterguard import (
+    ApertureFiveDimensionalLocation,
+    SingleAperturePosition,
+)
 from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -153,11 +157,20 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-        aperture_name_test_value = "Large"
         # todo that is quite wrong as the signal value should be a full object, not a string literal
-        # test_aperture =
+        test_aperture = SingleAperturePosition(
+            name="Large",
+            radius_microns=100,
+            location=ApertureFiveDimensionalLocation(
+                aperture_x=1,
+                aperture_y=2,
+                aperture_z=3,
+                scatterguard_x=4,
+                scatterguard_y=5,
+            ),
+        )
         fake_fgs_composite.aperture_scatterguard.selected_aperture.put(
-            aperture_name_test_value
+            test_aperture.location
         )
 
         test_ispyb_callback = GridscanISPyBCallback()
@@ -187,7 +200,7 @@ class TestFlyscanXrayCentrePlan:
             == synchrotron_test_value
         )
 
-        assert params.hyperion_params.ispyb_params.aperture_name == aperture_name_test_value  # type: ignore
+        assert params.hyperion_params.ispyb_params.aperture_name == "Large"  # type: ignore
         assert params.hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
         assert params.hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
         assert (
@@ -250,12 +263,16 @@ class TestFlyscanXrayCentrePlan:
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
             *(
-                fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
+                list(
+                    fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
+                )
             )
         )
         ap_call_medium = call(
             *(
-                fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
+                list(
+                    fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
+                )
             )
         )
 
