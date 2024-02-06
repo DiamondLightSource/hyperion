@@ -162,7 +162,7 @@ class TestFlyscanXrayCentrePlan:
             radius_microns=100,
             location=ApertureFiveDimensionalLocation(
                 aperture_x=0,
-                aperture_y=1.1,  # only here departs from the Large position described in conftest.py fixture
+                aperture_y=1.0005,  # only here departs from the Large position described in conftest.py fixture
                 aperture_z=2,
                 scatterguard_x=3,
                 scatterguard_y=4,
