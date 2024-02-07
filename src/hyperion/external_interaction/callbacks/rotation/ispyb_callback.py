@@ -61,6 +61,8 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 )
                 else None
             )
+            if self.params.experiment_params.get_num_images() < 200:
+                dcgid = None 
             self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
             self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
         self.ispyb_ids: IspybIds = IspybIds()
