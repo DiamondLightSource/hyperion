@@ -49,7 +49,7 @@ def do_default_logging_setup(dev_mode=False):
         dev_mode,
         ERROR_LOG_BUFFER_LINES,
     )
-    integrate_bluesky_and_ophyd_logging(handlers)
+    integrate_bluesky_and_ophyd_logging(dodal_logger, handlers)
     handlers["graylog_handler"].addFilter(dc_group_id_filter)
 
 
