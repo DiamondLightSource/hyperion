@@ -7,6 +7,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+    IspybIds,
     Store3DGridscanInIspyb,
 )
 from hyperion.log import (
@@ -34,8 +35,13 @@ def mock_emits():
 
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
     mock = Store3DGridscanInIspyb("", params)
-    mock.store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
+    mock._store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
     mock.update_scan_with_end_time_and_status = MagicMock(return_value=None)
+    mock.begin_deposition = MagicMock(
+        return_value=IspybIds(
+            data_collection_group_id=DCG_ID, data_collection_ids=DC_IDS
+        )
+    )
     return mock
 
 

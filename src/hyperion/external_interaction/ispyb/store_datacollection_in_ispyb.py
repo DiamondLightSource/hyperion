@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import dodal.devices.oav.utils as oav_utils
 import ispyb
@@ -9,6 +9,7 @@ import ispyb.sqlalchemy
 from dodal.devices.detector import DetectorParams
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
+from ispyb.strictordereddict import StrictOrderedDict
 from numpy import ndarray
 from pydantic import BaseModel
 
@@ -69,8 +70,12 @@ class StoreInIspyb(ABC):
     ) -> dict[str, Any]:
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def begin_deposition(self) -> IspybIds:
+        pass
+
+    @abstractmethod
+    def update_deposition(self) -> IspybIds:
         pass
 
     @abstractmethod
@@ -173,21 +178,33 @@ class StoreInIspyb(ABC):
         params["sampleid"] = self.ispyb_params.sample_id
         params["sample_barcode"] = self.ispyb_params.sample_barcode
 
-        return mx_acquisition.upsert_data_collection_group(list(params.values()))
+        return self._upsert_data_collection_group(conn, params)
+
+    @staticmethod
+    def _upsert_data_collection_group(
+        conn: Connector, params: StrictOrderedDict
+    ) -> int:
+        return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
+
+    @staticmethod
+    def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
+        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
 
     @TRACER.start_as_current_span("store_ispyb_data_collection_table")
     def _store_data_collection_table(
-        self, conn: Connector, data_collection_group_id: int
+        self,
+        conn: Connector,
+        data_collection_group_id: int,
+        data_collection_id: Optional[int] = None,
     ) -> int:
-        assert (
-            self.ispyb_params is not None
-            and self.detector_params is not None
-            and self.xtal_snapshots is not None
-        )
+        assert self.ispyb_params is not None and self.detector_params is not None
 
         mx_acquisition: MXAcquisition = conn.mx_acquisition
 
         params = mx_acquisition.get_data_collection_params()
+
+        if data_collection_id:
+            params["id"] = data_collection_id
 
         params["visitid"] = get_session_id_from_visit(conn, self.get_visit_string())
         params["parentid"] = data_collection_group_id
@@ -224,7 +241,7 @@ class StoreInIspyb(ABC):
             self.detector_params.detector_distance
         )
         params["xbeam"], params["ybeam"] = beam_position
-        if len(self.xtal_snapshots) == 3:
+        if self.xtal_snapshots and len(self.xtal_snapshots) == 3:
             (
                 params["xtal_snapshot1"],
                 params["xtal_snapshot2"],
@@ -242,7 +259,7 @@ class StoreInIspyb(ABC):
 
         params = self._mutate_data_collection_params_for_experiment(params)
 
-        return mx_acquisition.upsert_data_collection(list(params.values()))
+        return self._upsert_data_collection(conn, params)
 
 
 class StoreRotationInIspyb(StoreInIspyb):
@@ -286,19 +303,34 @@ class StoreRotationInIspyb(StoreInIspyb):
         return params
 
     def _store_scan_data(self, conn: Connector):
-        if not self.data_collection_group_id:
-            self.data_collection_group_id = self._store_data_collection_group_table(
-                conn
-            )
-        data_collection_id = self._store_data_collection_table(
-            conn, self.data_collection_group_id
-        )
-        self.data_collection_id = data_collection_id
-        self._store_position_table(conn, data_collection_id)
+        assert (
+            self.data_collection_group_id
+        ), "Attempted to store scan data without a collection group"
+        assert (
+            self.data_collection_id
+        ), "Attempted to store scan data without a collection"
+        self._store_data_collection_group_table(conn)
+        self._store_data_collection_table(conn, self.data_collection_group_id)
+        self._store_position_table(conn, self.data_collection_id)
 
-        return data_collection_id, self.data_collection_group_id
+        return self.data_collection_id, self.data_collection_group_id
 
     def begin_deposition(self) -> IspybIds:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            if not self.data_collection_group_id:
+                self.data_collection_group_id = self._store_data_collection_group_table(
+                    conn
+                )
+            if not self.data_collection_id:
+                self.data_collection_id = self._store_data_collection_table(
+                    conn, self.data_collection_group_id
+                )
+        return IspybIds(
+            data_collection_group_id=self.data_collection_group_id,
+            data_collection_ids=self.data_collection_id,
+        )
+
+    def update_deposition(self) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
             ids = self._store_scan_data(conn)
@@ -331,7 +363,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self.data_collection_ids: tuple[int, ...] | None = None
         self.grid_ids: tuple[int, ...] | None = None
 
-    def begin_deposition(self):
+    def update_deposition(self):
         assert (
             self.full_params is not None
         ), "StoreGridscanInIspyb failed to get parameters."
@@ -339,7 +371,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
             self.data_collection_ids,
             self.grid_ids,
             self.data_collection_group_id,
-        ) = self.store_grid_scan(self.full_params)
+        ) = self._store_grid_scan(self.full_params)
         return IspybIds(
             data_collection_ids=self.data_collection_ids,
             data_collection_group_id=self.data_collection_group_id,
@@ -353,10 +385,9 @@ class StoreGridscanInIspyb(StoreInIspyb):
         for id in self.data_collection_ids:
             self._end_deposition(id, success, reason)
 
-    def store_grid_scan(self, full_params: GridscanInternalParameters):
+    def _store_grid_scan(self, full_params: GridscanInternalParameters):
         self.full_params = full_params
         self.ispyb_params = full_params.hyperion_params.ispyb_params
-        self.detector_params = full_params.hyperion_params.detector_params
         self.run_number = (
             self.detector_params.run_number
         )  # type:ignore # the validator always makes this int
@@ -437,12 +468,39 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
     def __init__(self, ispyb_config: str, parameters: GridscanInternalParameters):
         super().__init__(ispyb_config, "Mesh3D", parameters)
 
-    def _store_scan_data(self, conn: Connector):
-        data_collection_group_id = self._store_data_collection_group_table(conn)
+    def begin_deposition(self) -> IspybIds:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            self.detector_params = self.full_params.hyperion_params.detector_params
+            self.run_number = self.detector_params.run_number
+            self.data_collection_group_id = self._store_data_collection_group_table(
+                conn
+            )
+            self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
+            self.data_collection_ids = [
+                self._store_data_collection_table(conn, self.data_collection_group_id)
+            ]
+            return IspybIds(
+                data_collection_group_id=self.data_collection_group_id,
+                data_collection_ids=self.data_collection_ids,
+            )
 
-        data_collection_id_1 = self._store_data_collection_table(
-            conn, data_collection_group_id
-        )
+    def _store_scan_data(self, conn: Connector):
+        assert (
+            self.data_collection_group_id
+        ), "Attempted to store scan data without a collection group"
+        assert (
+            self.data_collection_ids
+        ), "Attempted to store scan data without at least one collection"
+
+        data_collection_group_id = self.data_collection_group_id
+        if len(self.data_collection_ids) != 1:
+            data_collection_id_1 = self._store_data_collection_table(
+                conn, data_collection_group_id
+            )
+        else:
+            data_collection_id_1 = self._store_data_collection_table(
+                conn, data_collection_group_id, self.data_collection_ids[0]
+            )
 
         self._store_position_table(conn, data_collection_id_1)
 
@@ -486,15 +544,38 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
     def __init__(self, ispyb_config: str, parameters: GridscanInternalParameters):
         super().__init__(ispyb_config, "mesh", parameters)
 
+    def begin_deposition(self) -> IspybIds:
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            self.detector_params = self.full_params.hyperion_params.detector_params
+            self.run_number = self.detector_params.run_number
+            self.data_collection_group_id = self._store_data_collection_group_table(
+                conn
+            )
+            self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
+            self.data_collection_ids = [
+                self._store_data_collection_table(conn, self.data_collection_group_id)
+            ]
+            return IspybIds(
+                data_collection_group_id=self.data_collection_group_id,
+                data_collection_ids=self.data_collection_ids,
+            )
+
     def _store_scan_data(self, conn: Connector):
-        data_collection_group_id = self._store_data_collection_group_table(conn)
+        assert (
+            self.data_collection_group_id
+        ), "Attempted to store scan data without a collection group"
+        assert (
+            self.data_collection_ids
+        ), "Attempted to store scan data without a collection"
+
+        self._store_data_collection_group_table(conn)
 
         data_collection_id = self._store_data_collection_table(
-            conn, data_collection_group_id
+            conn, self.data_collection_group_id, self.data_collection_ids[0]
         )
 
         self._store_position_table(conn, data_collection_id)
 
         grid_id = self._store_grid_info_table(conn, data_collection_id)
 
-        return [data_collection_id], [grid_id], data_collection_group_id
+        return [data_collection_id], [grid_id], self.data_collection_group_id

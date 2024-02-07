@@ -1,5 +1,5 @@
 from copy import deepcopy
-from unittest.mock import MagicMock, Mock, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
 import pytest
@@ -122,6 +122,7 @@ def dummy_params():
     dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 0.8
     dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 0.8
+    dummy_params.hyperion_params.detector_params.run_number = 0
     return dummy_params
 
 
@@ -137,8 +138,19 @@ def dummy_rotation_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params):
-    store_in_ispyb_2d = Store2DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
-    return store_in_ispyb_2d
+    return Store2DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
+
+
+@pytest.fixture
+def dummy_ispyb_with_hooks(dummy_ispyb):
+    # Convenience hooks for asserting ispyb calls
+    dummy_ispyb._upsert_data_collection_group = MagicMock(
+        return_value=(TEST_DATA_COLLECTION_GROUP_ID)
+    )
+    dummy_ispyb._upsert_data_collection = MagicMock(
+        return_value=TEST_DATA_COLLECTION_IDS[0]
+    )
+    return dummy_ispyb
 
 
 @pytest.fixture
@@ -151,6 +163,79 @@ def dummy_rotation_ispyb(dummy_rotation_params):
 def dummy_ispyb_3d(dummy_params):
     store_in_ispyb_3d = Store3DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
     return store_in_ispyb_3d
+
+
+@pytest.fixture
+def base_ispyb_conn():
+    with patch("ispyb.open", mock_open()) as ispyb_connection:
+        mock_mx_acquisition = MagicMock()
+        mock_mx_acquisition.get_data_collection_group_params.side_effect = (
+            lambda: deepcopy(MXAcquisition.get_data_collection_group_params())
+        )
+
+        mock_mx_acquisition.get_data_collection_params.side_effect = lambda: deepcopy(
+            MXAcquisition.get_data_collection_params()
+        )
+        ispyb_connection.return_value.mx_acquisition = mock_mx_acquisition
+        mock_core = MagicMock()
+        mock_core.retrieve_visit_id.return_value = TEST_SESSION_ID
+        ispyb_connection.return_value.core = mock_core
+        yield ispyb_connection
+
+
+@pytest.fixture
+def ispyb_conn(base_ispyb_conn):
+    return base_ispyb_conn
+
+
+def remap_upsert_columns(keys: list, values: list):
+    return dict(zip(keys, values))
+
+
+@pytest.fixture
+def ispyb_conn_with_2x2_collections_and_grid_info(base_ispyb_conn):
+    def upsert_data_collection(values):
+        kvpairs = remap_upsert_columns(
+            MXAcquisition.get_data_collection_params(), values
+        )
+        if kvpairs["id"]:
+            return kvpairs["id"]
+        else:
+            upsert_data_collection.i += 1
+            return TEST_DATA_COLLECTION_IDS[upsert_data_collection.i]
+
+    upsert_data_collection.i = -1
+
+    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection.side_effect = (
+        upsert_data_collection
+    )
+    base_ispyb_conn.return_value.mx_acquisition.update_dc_position.return_value = (
+        TEST_POSITION_ID
+    )
+    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
+        TEST_DATA_COLLECTION_GROUP_ID
+    )
+    base_ispyb_conn.return_value.mx_acquisition.upsert_dc_grid.return_value = (
+        TEST_GRID_INFO_ID
+    )
+    return base_ispyb_conn
+
+
+@pytest.fixture
+def ispyb_conn_with_1_collection(base_ispyb_conn):
+    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection.return_value = (
+        TEST_DATA_COLLECTION_IDS[0]
+    )
+    base_ispyb_conn.return_value.mx_acquisition.update_dc_position.return_value = (
+        TEST_POSITION_ID
+    )
+    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
+        TEST_DATA_COLLECTION_GROUP_ID
+    )
+    base_ispyb_conn.return_value.mx_acquisition.upsert_dc_grid.return_value = (
+        TEST_GRID_INFO_ID
+    )
+    return base_ispyb_conn
 
 
 @patch("ispyb.open", new_callable=mock_open)
@@ -203,12 +288,17 @@ def test_store_rotation_scan(
 
     assert dummy_rotation_ispyb.experiment_type == "SAD"
 
+    assert dummy_rotation_ispyb.begin_deposition() == IspybIds(
+        data_collection_ids=TEST_DATA_COLLECTION_IDS[0],
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+    )
+
     assert dummy_rotation_ispyb._store_scan_data(ispyb_conn()) == (
         TEST_DATA_COLLECTION_IDS[0],
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    assert dummy_rotation_ispyb.begin_deposition() == IspybIds(
+    assert dummy_rotation_ispyb.update_deposition() == IspybIds(
         data_collection_ids=TEST_DATA_COLLECTION_IDS[0],
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
@@ -225,6 +315,7 @@ def test_store_rotation_scan_uses_supplied_dcgid(
         SIM_ISPYB_CONFIG, dummy_rotation_params, dcgid
     )
     assert store_in_ispyb.begin_deposition().data_collection_group_id == dcgid
+    assert store_in_ispyb.update_deposition().data_collection_group_id == dcgid
 
 
 @patch("ispyb.open", new_callable=mock_open)
@@ -251,63 +342,54 @@ def test_store_rotation_scan_failures(
         warning.assert_called_once_with("No xtal snapshot paths sent to ISPyB!")
 
 
-@patch("ispyb.open", new_callable=mock_open)
-def test_store_grid_scan(ispyb_conn, dummy_ispyb, dummy_params):
-    ispyb_conn.return_value.mx_acquisition = mock()
-    ispyb_conn.return_value.core = mock()
+def test_begin_deposition(ispyb_conn, dummy_ispyb_with_hooks, dummy_params):
+    assert dummy_ispyb_with_hooks.begin_deposition() == IspybIds(
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+        data_collection_ids=[TEST_DATA_COLLECTION_IDS[0]],
+    )
 
+    actual_params = dummy_ispyb_with_hooks._upsert_data_collection_group.mock_calls[
+        0
+    ].args[1]
+    assert actual_params["parentid"] == TEST_SESSION_ID
+    assert actual_params["experimenttype"] == "mesh"
+    assert (
+        actual_params["sampleid"] == dummy_params.hyperion_params.ispyb_params.sample_id
+    )
+    assert (
+        actual_params["sample_barcode"]
+        == dummy_params.hyperion_params.ispyb_params.sample_barcode
+    )
+    # TODO test collection data here also
+
+
+def test_store_grid_scan(ispyb_conn_with_1_collection, dummy_ispyb, dummy_params):
+    ispyb_conn = ispyb_conn_with_1_collection
     when(dummy_ispyb)._store_position_table(
         ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
     ).thenReturn(TEST_POSITION_ID)
-    when(dummy_ispyb)._store_data_collection_group_table(ispyb_conn()).thenReturn(
-        TEST_DATA_COLLECTION_GROUP_ID
-    )
-    when(dummy_ispyb)._store_data_collection_table(
-        ispyb_conn(), TEST_DATA_COLLECTION_GROUP_ID
-    ).thenReturn(TEST_DATA_COLLECTION_IDS[0])
     when(dummy_ispyb)._store_grid_info_table(
         ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
     ).thenReturn(TEST_GRID_INFO_ID)
 
     assert dummy_ispyb.experiment_type == "mesh"
 
-    assert dummy_ispyb.store_grid_scan(dummy_params) == (
+    assert dummy_ispyb.begin_deposition() == IspybIds(
+        data_collection_ids=[TEST_DATA_COLLECTION_IDS[0]],
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+    )
+    assert dummy_ispyb._store_grid_scan(dummy_params) == (
         [TEST_DATA_COLLECTION_IDS[0]],
         [TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
     )
 
 
-@patch("ispyb.open", new_callable=mock_open)
 def test_store_3d_grid_scan(
-    ispyb_conn,
+    ispyb_conn_with_2x2_collections_and_grid_info,
     dummy_ispyb_3d: Store3DGridscanInIspyb,
     dummy_params: GridscanInternalParameters,
 ):
-    ispyb_conn.return_value.mx_acquisition = mock()
-    ispyb_conn.return_value.core = mock()
-
-    when(dummy_ispyb_3d)._store_position_table(
-        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
-    ).thenReturn(TEST_POSITION_ID)
-    when(dummy_ispyb_3d)._store_position_table(
-        ispyb_conn(), TEST_DATA_COLLECTION_IDS[1]
-    ).thenReturn(TEST_POSITION_ID)
-    when(dummy_ispyb_3d)._store_data_collection_group_table(ispyb_conn()).thenReturn(
-        TEST_DATA_COLLECTION_GROUP_ID
-    )
-
-    when(dummy_ispyb_3d)._store_grid_info_table(
-        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
-    ).thenReturn(TEST_GRID_INFO_ID)
-    when(dummy_ispyb_3d)._store_grid_info_table(
-        ispyb_conn(), TEST_DATA_COLLECTION_IDS[1]
-    ).thenReturn(TEST_GRID_INFO_ID)
-
-    dummy_ispyb_3d._store_data_collection_table = Mock(
-        side_effect=TEST_DATA_COLLECTION_IDS
-    )
-
     x = 0
     y = 1
     z = 2
@@ -317,10 +399,15 @@ def test_store_3d_grid_scan(
 
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
 
-    assert dummy_ispyb_3d.store_grid_scan(dummy_params) == (
-        TEST_DATA_COLLECTION_IDS,
-        [TEST_GRID_INFO_ID, TEST_GRID_INFO_ID],
-        TEST_DATA_COLLECTION_GROUP_ID,
+    assert dummy_ispyb_3d.begin_deposition() == IspybIds(
+        data_collection_ids=[TEST_DATA_COLLECTION_IDS[0]],
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+    )
+
+    assert dummy_ispyb_3d.update_deposition() == IspybIds(
+        data_collection_ids=TEST_DATA_COLLECTION_IDS,
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+        grid_ids=[TEST_GRID_INFO_ID, TEST_GRID_INFO_ID],
     )
 
     assert (
@@ -363,11 +450,11 @@ def setup_mock_return_values(ispyb_conn):
     mx_acquisition.upsert_dc_grid.return_value = TEST_GRID_INFO_ID
 
 
-@patch("ispyb.open", autospec=True)
-def test_param_keys(ispyb_conn, dummy_ispyb, dummy_params):
-    setup_mock_return_values(ispyb_conn)
-
-    assert dummy_ispyb.store_grid_scan(dummy_params) == (
+def test_param_keys(
+    ispyb_conn_with_2x2_collections_and_grid_info, dummy_ispyb, dummy_params
+):
+    dummy_ispyb.begin_deposition()
+    assert dummy_ispyb._store_grid_scan(dummy_params) == (
         [TEST_DATA_COLLECTION_IDS[0]],
         [TEST_GRID_INFO_ID],
         TEST_DATA_COLLECTION_GROUP_ID,
@@ -378,20 +465,20 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
     ispyb_conn, dummy_ispyb, dummy_params, test_function, test_group=False
 ):
     setup_mock_return_values(ispyb_conn)
-
-    dummy_ispyb.store_grid_scan(dummy_params)
+    dummy_ispyb.begin_deposition()
+    dummy_ispyb._store_grid_scan(dummy_params)
 
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
     upsert_data_collection_arg_list = (
-        mx_acquisition.upsert_data_collection.call_args_list[0][0]
+        mx_acquisition.upsert_data_collection.call_args_list[1][0]
     )
     actual = upsert_data_collection_arg_list[0]
     assert test_function(MXAcquisition.get_data_collection_params(), actual)
 
     if test_group:
         upsert_data_collection_group_arg_list = (
-            mx_acquisition.upsert_data_collection_group.call_args_list[0][0]
+            mx_acquisition.upsert_data_collection_group.call_args_list[1][0]
         )
         actual = upsert_data_collection_group_arg_list[0]
         assert test_function(MXAcquisition.get_data_collection_group_params(), actual)
@@ -428,61 +515,59 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     )
 
 
-@patch("ispyb.open", autospec=True)
 def test_fail_result_run_results_in_bad_run_status(
-    mock_ispyb_conn: MagicMock,
+    ispyb_conn_with_2x2_collections_and_grid_info: MagicMock,
     dummy_ispyb: Store2DGridscanInIspyb,
 ):
-    setup_mock_return_values(mock_ispyb_conn)
+    mock_ispyb_conn = ispyb_conn_with_2x2_collections_and_grid_info
     mock_mx_aquisition = (
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
 
     dummy_ispyb.begin_deposition()
+    dummy_ispyb.update_deposition()
     dummy_ispyb.end_deposition("fail", "test specifies failure")
 
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
-    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
-        0
-    ]
-    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
+    end_deposition_upsert_args = mock_upsert_data_collection_calls[2][0]
+    upserted_param_value_list = end_deposition_upsert_args[0]
     assert "DataCollection Unsuccessful" in upserted_param_value_list
     assert "DataCollection Successful" not in upserted_param_value_list
 
 
-@patch("ispyb.open", autospec=True)
 def test_no_exception_during_run_results_in_good_run_status(
-    mock_ispyb_conn: MagicMock,
+    ispyb_conn_with_2x2_collections_and_grid_info: MagicMock,
     dummy_ispyb: Store2DGridscanInIspyb,
 ):
+    mock_ispyb_conn = ispyb_conn_with_2x2_collections_and_grid_info
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
+
     dummy_ispyb.begin_deposition()
+    dummy_ispyb.update_deposition()
     dummy_ispyb.end_deposition("success", "")
+
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
-    mock_upsert_data_collection_second_call_args = mock_upsert_data_collection_calls[1][
-        0
-    ]
-    upserted_param_value_list = mock_upsert_data_collection_second_call_args[0]
+    end_deposition_upsert_args = mock_upsert_data_collection_calls[2][0]
+    upserted_param_value_list = end_deposition_upsert_args[0]
     assert "DataCollection Unsuccessful" not in upserted_param_value_list
     assert "DataCollection Successful" in upserted_param_value_list
 
 
-@patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_comment_correct(
-    mock_ispyb_conn: MagicMock,
+    ispyb_conn_with_2x2_collections_and_grid_info: MagicMock,
     dummy_ispyb: Store2DGridscanInIspyb,
 ):
-    setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
-        mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+        ispyb_conn_with_2x2_collections_and_grid_info.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
     dummy_ispyb.begin_deposition()
+    dummy_ispyb.update_deposition()
     mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
 
     upserted_param_value_list = mock_upsert_call_args[0]
@@ -507,7 +592,8 @@ def test_ispyb_deposition_rounds_position_to_int(
         [0.01, 100, 50]
     )
     dummy_ispyb.begin_deposition()
-    mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
+    dummy_ispyb.update_deposition()
+    mock_upsert_call_args = mock_upsert_data_collection.call_args_list[1][0]
 
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
@@ -554,19 +640,20 @@ def test_ispyb_deposition_rounds_box_size_int(
     )
 
 
-@patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_comment_for_3D_correct(
-    mock_ispyb_conn: MagicMock,
+    ispyb_conn_with_2x2_collections_and_grid_info: MagicMock,
     dummy_ispyb_3d: Store3DGridscanInIspyb,
 ):
-    setup_mock_return_values(mock_ispyb_conn)
+    mock_ispyb_conn = ispyb_conn_with_2x2_collections_and_grid_info
     mock_mx_aquisition = (
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_dc = mock_mx_aquisition.upsert_data_collection
     dummy_ispyb_3d.begin_deposition()
-    first_upserted_param_value_list = mock_upsert_dc.call_args_list[0][0][0]
-    second_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
+    dummy_ispyb_3d.update_deposition()
+
+    first_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
+    second_upserted_param_value_list = mock_upsert_dc.call_args_list[2][0][0]
     assert first_upserted_param_value_list[29] == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
         "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."

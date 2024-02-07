@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
+from bluesky import FailedStatus
 from bluesky.run_engine import RunEngine
 from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
@@ -87,6 +88,11 @@ def RE_with_subs(RE: RunEngine, mock_subscriptions):
     yield RE, mock_subscriptions
 
 
+@pytest.fixture
+def mock_ispyb():
+    return MagicMock()
+
+
 @patch(
     "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
     modified_store_grid_scan_mock,
@@ -119,6 +125,23 @@ class TestFlyscanXrayCentrePlan:
     ):
         plan = run_gridscan(MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
+
+    def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
+        self, RE: RunEngine, fake_fgs_composite, test_fgs_params, mock_ispyb
+    ):
+        ispyb_callback = GridscanISPyBCallback()
+        RE.subscribe(ispyb_callback)
+
+        with patch(
+            "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.ispyb",
+            mock_ispyb,
+        ):
+            with patch.object(
+                fake_fgs_composite.sample_motors.omega, "set"
+            ) as mock_set:
+                mock_set.return_value = FailedStatus(AssertionError("Test Exception"))
+
+                RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,

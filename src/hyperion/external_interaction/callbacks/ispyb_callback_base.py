@@ -106,7 +106,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
 
             ISPYB_LOGGER.info("Creating ispyb entry.")
-            self.ispyb_ids = self.ispyb.begin_deposition()
+            self.ispyb_ids = self.ispyb.update_deposition()
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
     def activity_gated_stop(self, doc: RunStop):
