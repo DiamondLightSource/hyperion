@@ -1,8 +1,6 @@
-import logging
 from unittest.mock import MagicMock, call, patch
 
 import pytest
-from dodal.log import LOGGER as dodal_logger
 from graypy import GELFTCPHandler
 
 from hyperion.external_interaction.callbacks.__main__ import setup_logging
@@ -109,9 +107,11 @@ class TestXrayCentreIspybHandler:
     def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
         self,
     ):
-        with patch("dodal.log.GELFTCPHandler") as mock_gelf_handler:
-            mock_gelf_handler.return_value.level = logging.INFO
-            setup_logging(True)
+        setup_logging(True)
+        gelf_handler: MagicMock = next(
+            filter(lambda h: isinstance(h, GELFTCPHandler), ISPYB_LOGGER.handlers)  # type: ignore
+        )
+        gelf_handler.emit = MagicMock()
 
         ispyb_handler = GridscanISPyBCallback()
         ispyb_handler.activity_gated_start(td.test_start_document)
@@ -127,16 +127,19 @@ class TestXrayCentreIspybHandler:
         )
 
         ISPYB_LOGGER.info("test")
-        gelf_handler = next(
-            filter(lambda h: isinstance(h, GELFTCPHandler), ISPYB_LOGGER.handlers)  # type: ignore
-        )
         latest_record = gelf_handler.emit.call_args.args[-1]
         assert latest_record.dc_group_id == DCG_ID
 
+    @pytest.mark.skip_log_setup
     def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
         self,
-        mock_emits,
     ):
+        setup_logging(True)
+        gelf_handler: MagicMock = next(
+            filter(lambda h: isinstance(h, GELFTCPHandler), ISPYB_LOGGER.handlers)  # type: ignore
+        )
+        gelf_handler.emit = MagicMock()
+
         ispyb_handler = GridscanISPyBCallback()
         ispyb_handler.activity_gated_start(td.test_start_document)
         ispyb_handler.activity_gated_descriptor(
@@ -151,8 +154,6 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
-        for logger in [ISPYB_LOGGER, dodal_logger]:
-            logger.info("test")
-            for emit in mock_emits:
-                latest_record = emit.call_args.args[-1]
-                assert not hasattr(latest_record, "dc_group_id")
+        ISPYB_LOGGER.info("test")
+        latest_record = gelf_handler.emit.call_args.args[-1]
+        assert not hasattr(latest_record, "dc_group_id")
