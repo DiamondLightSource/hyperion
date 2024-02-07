@@ -55,14 +55,15 @@ def setup_logging(dev_mode: bool):
         (ISPYB_LOGGER, "hyperion_ispyb_callback.txt"),
         (NEXUS_LOGGER, "hyperion_nexus_callback.txt"),
     ]:
-        handlers = set_up_all_logging_handlers(
-            logger,
-            _get_logging_dir(),
-            filename,
-            dev_mode,
-            error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
-        )
-        handlers["graylog_handler"].addFilter(dc_group_id_filter)
+        if logger.handlers == []:
+            handlers = set_up_all_logging_handlers(
+                logger,
+                _get_logging_dir(),
+                filename,
+                dev_mode,
+                error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
+            )
+            handlers["graylog_handler"].addFilter(dc_group_id_filter)
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
