@@ -287,15 +287,15 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
     cb.zocalo_handler.zocalo_interactor.run_end = MagicMock()
 
     def after_open_do(callbacks: RotationCallbackCollection):
-        callbacks.ispyb_handler.ispyb.begin_deposition.assert_called_once()
-        callbacks.ispyb_handler.ispyb.update_deposition.assert_not_called()
+        callbacks.ispyb_handler.ispyb.begin_deposition.assert_called_once()  # pyright: ignore
+        callbacks.ispyb_handler.ispyb.update_deposition.assert_not_called()  # pyright: ignore
 
     def after_main_do(callbacks: RotationCallbackCollection):
         # cb.ispyb_handler.ispyb_ids = IspybIds(
         #     data_collection_ids=0, data_collection_group_id=0
         # )
-        callbacks.ispyb_handler.ispyb.update_deposition.assert_called_once()
-        cb.zocalo_handler.zocalo_interactor.run_end.assert_not_called()
+        callbacks.ispyb_handler.ispyb.update_deposition.assert_called_once()  # pyright: ignore
+        cb.zocalo_handler.zocalo_interactor.run_end.assert_not_called()  # pyright: ignore
 
     RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 

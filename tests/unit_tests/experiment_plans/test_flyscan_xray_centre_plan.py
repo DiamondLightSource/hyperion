@@ -136,6 +136,7 @@ class TestFlyscanXrayCentrePlan:
         ispyb_callback = GridscanISPyBCallback()
         RE.subscribe(ispyb_callback)
 
+        error = None
         with pytest.raises(FailedStatus) as exc:
             with patch(
                 "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.ispyb",
@@ -150,7 +151,7 @@ class TestFlyscanXrayCentrePlan:
                     RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
         assert exc.value.args[0] is error
-        ispyb_callback.ispyb.end_deposition.assert_called_once_with(
+        ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # pyright: ignore
             "fail", "Test Exception"
         )
 

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import Sequence
 from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
@@ -21,7 +22,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
-TEST_DATA_COLLECTION_IDS = [12, 13]
+TEST_DATA_COLLECTION_IDS = (12, 13)
 TEST_DATA_COLLECTION_GROUP_ID = 34
 TEST_GRID_INFO_ID = 56
 TEST_POSITION_ID = 78
@@ -188,7 +189,7 @@ def ispyb_conn(base_ispyb_conn):
     return base_ispyb_conn
 
 
-def remap_upsert_columns(keys: list, values: list):
+def remap_upsert_columns(keys: Sequence[str], values: list):
     return dict(zip(keys, values))
 
 
@@ -196,15 +197,15 @@ def remap_upsert_columns(keys: list, values: list):
 def ispyb_conn_with_2x2_collections_and_grid_info(base_ispyb_conn):
     def upsert_data_collection(values):
         kvpairs = remap_upsert_columns(
-            MXAcquisition.get_data_collection_params(), values
+            list(MXAcquisition.get_data_collection_params()), values
         )
         if kvpairs["id"]:
             return kvpairs["id"]
         else:
-            upsert_data_collection.i += 1
-            return TEST_DATA_COLLECTION_IDS[upsert_data_collection.i]
+            upsert_data_collection.i += 1  # pyright: ignore
+            return TEST_DATA_COLLECTION_IDS[upsert_data_collection.i]  # pyright: ignore
 
-    upsert_data_collection.i = -1
+    upsert_data_collection.i = -1  # pyright: ignore
 
     base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection.side_effect = (
         upsert_data_collection
@@ -345,7 +346,7 @@ def test_store_rotation_scan_failures(
 def test_begin_deposition(ispyb_conn, dummy_ispyb_with_hooks, dummy_params):
     assert dummy_ispyb_with_hooks.begin_deposition() == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
-        data_collection_ids=[TEST_DATA_COLLECTION_IDS[0]],
+        data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
     )
 
     actual_params = dummy_ispyb_with_hooks._upsert_data_collection_group.mock_calls[
@@ -375,7 +376,7 @@ def test_store_grid_scan(ispyb_conn_with_1_collection, dummy_ispyb, dummy_params
     assert dummy_ispyb.experiment_type == "mesh"
 
     assert dummy_ispyb.begin_deposition() == IspybIds(
-        data_collection_ids=[TEST_DATA_COLLECTION_IDS[0]],
+        data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
     assert dummy_ispyb._store_grid_scan(dummy_params) == (
@@ -400,14 +401,14 @@ def test_store_3d_grid_scan(
     assert dummy_ispyb_3d.experiment_type == "Mesh3D"
 
     assert dummy_ispyb_3d.begin_deposition() == IspybIds(
-        data_collection_ids=[TEST_DATA_COLLECTION_IDS[0]],
+        data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
 
     assert dummy_ispyb_3d.update_deposition() == IspybIds(
         data_collection_ids=TEST_DATA_COLLECTION_IDS,
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
-        grid_ids=[TEST_GRID_INFO_ID, TEST_GRID_INFO_ID],
+        grid_ids=(TEST_GRID_INFO_ID, TEST_GRID_INFO_ID),
     )
 
     assert (

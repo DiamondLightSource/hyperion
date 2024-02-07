@@ -17,7 +17,7 @@ from hyperion.log import (
 
 from .conftest import TestData
 
-DC_IDS = [1, 2]
+DC_IDS = (1, 2)
 DCG_ID = 4
 td = TestData()
 

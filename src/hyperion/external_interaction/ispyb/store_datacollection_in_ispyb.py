@@ -316,19 +316,22 @@ class StoreRotationInIspyb(StoreInIspyb):
         return self.data_collection_id, self.data_collection_group_id
 
     def begin_deposition(self) -> IspybIds:
+        # prevent pyright + black fighting
+        # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             if not self.data_collection_group_id:
                 self.data_collection_group_id = self._store_data_collection_group_table(
-                    conn
+                    conn  # type: ignore
                 )
             if not self.data_collection_id:
                 self.data_collection_id = self._store_data_collection_table(
-                    conn, self.data_collection_group_id
+                    conn, self.data_collection_group_id  # type: ignore
                 )
         return IspybIds(
             data_collection_group_id=self.data_collection_group_id,
             data_collection_ids=self.data_collection_id,
         )
+        # fmt: on
 
     def update_deposition(self) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
@@ -469,20 +472,24 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         super().__init__(ispyb_config, "Mesh3D", parameters)
 
     def begin_deposition(self) -> IspybIds:
+        # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            self.detector_params = self.full_params.hyperion_params.detector_params
-            self.run_number = self.detector_params.run_number
+            self.detector_params = (  # pyright: ignore
+                self.full_params.hyperion_params.detector_params
+            )
+            self.run_number = self.detector_params.run_number  # pyright: ignore
             self.data_collection_group_id = self._store_data_collection_group_table(
-                conn
+                conn  # pyright: ignore
             )
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
-            self.data_collection_ids = [
-                self._store_data_collection_table(conn, self.data_collection_group_id)
-            ]
+            self.data_collection_ids = (
+                self._store_data_collection_table(conn, self.data_collection_group_id),  # pyright: ignore
+            )
             return IspybIds(
                 data_collection_group_id=self.data_collection_group_id,
                 data_collection_ids=self.data_collection_ids,
             )
+        # fmt: on
 
     def _store_scan_data(self, conn: Connector):
         assert (
@@ -545,20 +552,22 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
         super().__init__(ispyb_config, "mesh", parameters)
 
     def begin_deposition(self) -> IspybIds:
+        # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            self.detector_params = self.full_params.hyperion_params.detector_params
-            self.run_number = self.detector_params.run_number
+            self.detector_params = self.full_params.hyperion_params.detector_params  # type: ignore
+            self.run_number = self.detector_params.run_number  # pyright: ignore
             self.data_collection_group_id = self._store_data_collection_group_table(
-                conn
+                conn  # pyright: ignore
             )
             self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
-            self.data_collection_ids = [
-                self._store_data_collection_table(conn, self.data_collection_group_id)
-            ]
+            self.data_collection_ids = (
+                self._store_data_collection_table(conn, self.data_collection_group_id),  # pyright: ignore
+            )
             return IspybIds(
                 data_collection_group_id=self.data_collection_group_id,
                 data_collection_ids=self.data_collection_ids,
             )
+        # fmt: on
 
     def _store_scan_data(self, conn: Connector):
         assert (
