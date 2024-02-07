@@ -127,21 +127,32 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(plan, types.GeneratorType)
 
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
-        self, RE: RunEngine, fake_fgs_composite, test_fgs_params, mock_ispyb
+        self,
+        RE: RunEngine,
+        fake_fgs_composite,
+        test_fgs_params,
+        mock_ispyb,
     ):
         ispyb_callback = GridscanISPyBCallback()
         RE.subscribe(ispyb_callback)
 
-        with patch(
-            "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.ispyb",
-            mock_ispyb,
-        ):
-            with patch.object(
-                fake_fgs_composite.sample_motors.omega, "set"
-            ) as mock_set:
-                mock_set.return_value = FailedStatus(AssertionError("Test Exception"))
+        with pytest.raises(FailedStatus) as exc:
+            with patch(
+                "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.ispyb",
+                mock_ispyb,
+            ):
+                with patch.object(
+                    fake_fgs_composite.sample_motors.omega, "set"
+                ) as mock_set:
+                    error = AssertionError("Test Exception")
+                    mock_set.return_value = FailedStatus(error)
 
-                RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+                    RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        assert exc.value.args[0] is error
+        ispyb_callback.ispyb.end_deposition.assert_called_once_with(
+            "fail", "Test Exception"
+        )
 
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,

@@ -70,7 +70,7 @@ class StoreInIspyb(ABC):
     ) -> dict[str, Any]:
         pass
 
-    # @abstractmethod
+    @abstractmethod
     def begin_deposition(self) -> IspybIds:
         pass
 

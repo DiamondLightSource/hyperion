@@ -44,6 +44,18 @@ def init_cbs_with_docs_and_mock_zocalo_and_ispyb(
     callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
 
 
+def init_cbs_with_docs_and_mock_zocalo_but_no_ispyb(
+    callbacks: XrayCentreCallbackCollection, dcids=(0, 0), dcgid=4
+):
+    with patch(
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
+        lambda _, __: modified_store_grid_scan_mock(dcids=dcids, dcgid=dcgid),
+    ):
+        callbacks.zocalo_handler.activity_gated_start(td.test_start_document)
+    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
+    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
+
+
 class TestXrayCentreZocaloHandler:
     def test_execution_of_run_gridscan_triggers_zocalo_calls(
         self,
@@ -108,7 +120,7 @@ class TestXrayCentreZocaloHandler:
         dummy_params,
     ):
         callbacks = XrayCentreCallbackCollection.setup()
-        init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks)
+        init_cbs_with_docs_and_mock_zocalo_but_no_ispyb(callbacks)
 
         with pytest.raises(ISPyBDepositionNotMade):
             callbacks.zocalo_handler.activity_gated_start(td.test_do_fgs_start_document)
