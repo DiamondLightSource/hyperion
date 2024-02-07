@@ -6,7 +6,6 @@ SKIP_STARTUP_CONNECTION=false
 VERBOSE_EVENT_LOGGING=false
 IN_DEV=false
 EXTERNAL_CALLBACK_SERVICE=false
-LOGGING_LEVEL="INFO"
 
 for option in "$@"; do
     case $option in
@@ -31,9 +30,6 @@ for option in "$@"; do
             ;;
         --external-callbacks)
             EXTERNAL_CALLBACK_SERVICE=true
-            ;;
-        --logging-level=*)
-            LOGGING_LEVEL="${option#*=}"
             ;;
 
         --help|--info|--h)
@@ -71,13 +67,6 @@ check_user () {
         exit 1
     fi
 }
-
-#Check valid logging level was chosen
-if [[ "$LOGGING_LEVEL" != "INFO" && "$LOGGING_LEVEL" != "CRITICAL" && "$LOGGING_LEVEL" != "ERROR" 
-    && "$LOGGING_LEVEL" != "WARNING" && "$LOGGING_LEVEL" != "DEBUG" ]]; then
-    echo "Invalid logging level selected, defaulting to INFO"
-    LOGGING_LEVEL="INFO"
-fi
 
 if [ -z "${BEAMLINE}" ]; then
     echo "BEAMLINE parameter not set, assuming running on a dev machine."
@@ -135,10 +124,8 @@ if [[ $START == 1 ]]; then
                                     ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
                                     ["EXTERNAL_CALLBACK_SERVICE"]="--external-callbacks")
 
-    declare -A h_and_cb_args=(           ["IN_DEV"]="$IN_DEV"
-                                        ["LOGGING_LEVEL"]="$LOGGING_LEVEL" )
-    declare -A h_and_cb_arg_strings=(    ["IN_DEV"]="--dev"
-                                        ["LOGGING_LEVEL"]="--logging-level=$LOGGING_LEVEL" )
+    declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
+    declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
 
     h_commands=()
     for i in "${!h_only_args[@]}"
