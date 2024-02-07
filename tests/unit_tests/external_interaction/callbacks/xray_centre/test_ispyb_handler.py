@@ -3,43 +3,22 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 from dodal.log import LOGGER as dodal_logger
-from dodal.log import set_up_all_logging_handlers
 from graypy import GELFTCPHandler
 
+from hyperion.external_interaction.callbacks.__main__ import setup_logging
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     Store3DGridscanInIspyb,
 )
-from hyperion.log import ISPYB_LOGGER, _get_logging_dir
+from hyperion.log import ISPYB_LOGGER
 
 from .conftest import TestData
 
 DC_IDS = [1, 2]
 DCG_ID = 4
 td = TestData()
-
-
-@pytest.fixture
-def mock_emits():
-    handlers: list[logging.Handler] = list(
-        set_up_all_logging_handlers(
-            dodal_logger, _get_logging_dir(), "hyperion", True, 10000
-        ).values()
-    )  # type: ignore
-    handlers.extend(
-        list(
-            set_up_all_logging_handlers(
-                ISPYB_LOGGER, _get_logging_dir(), "hyperion", True, 10000
-            ).values()
-        )  # type: ignore
-    )
-    for h in handlers:
-        h.emit = MagicMock()
-    emits = [h.emit for h in handlers]
-
-    yield emits
 
 
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
@@ -128,8 +107,12 @@ class TestXrayCentreIspybHandler:
 
     @pytest.mark.skip_log_setup
     def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
-        self, mock_emits
+        self,
     ):
+        with patch("dodal.log.GELFTCPHandler") as mock_gelf_handler:
+            mock_gelf_handler.return_value.level = logging.INFO
+            setup_logging(True)
+
         ispyb_handler = GridscanISPyBCallback()
         ispyb_handler.activity_gated_start(td.test_start_document)
         ispyb_handler.activity_gated_descriptor(
@@ -143,13 +126,12 @@ class TestXrayCentreIspybHandler:
             td.test_event_document_during_data_collection
         )
 
-        for logger in [ISPYB_LOGGER, dodal_logger]:
-            logger.info("test")
-            gelf_handler = next(
-                filter(lambda h: isinstance(h, GELFTCPHandler), logger.handlers)  # type: ignore
-            )
-            latest_record = gelf_handler.emit.call_args.args[-1]
-            assert latest_record.dc_group_id == DCG_ID
+        ISPYB_LOGGER.info("test")
+        gelf_handler = next(
+            filter(lambda h: isinstance(h, GELFTCPHandler), ISPYB_LOGGER.handlers)  # type: ignore
+        )
+        latest_record = gelf_handler.emit.call_args.args[-1]
+        assert latest_record.dc_group_id == DCG_ID
 
     def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
         self,
