@@ -5,8 +5,10 @@ from typing import TYPE_CHECKING
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+)
+from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag

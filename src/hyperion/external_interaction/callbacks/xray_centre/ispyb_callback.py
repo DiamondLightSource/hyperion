@@ -10,11 +10,17 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
-    Store2DGridscanInIspyb,
-    Store3DGridscanInIspyb,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
     StoreGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
+    Store2DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
+    Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN

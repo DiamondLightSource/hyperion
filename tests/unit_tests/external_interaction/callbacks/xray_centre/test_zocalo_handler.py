@@ -6,7 +6,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import IspybIds
+from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -76,7 +76,9 @@ class TestXrayCentreZocaloHandler:
 
         callbacks = XrayCentreCallbackCollection.setup()
         init_cbs_with_docs_and_mock_zocalo_and_ispyb(callbacks, dc_ids, dcg_id)
-        callbacks.ispyb_handler.activity_gated_start(td.test_run_gridscan_start_document)  # type: ignore
+        callbacks.ispyb_handler.activity_gated_start(
+            td.test_run_gridscan_start_document
+        )  # type: ignore
         callbacks.zocalo_handler.activity_gated_start(
             td.test_run_gridscan_start_document
         )

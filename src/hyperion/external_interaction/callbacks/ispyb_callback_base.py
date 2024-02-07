@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Dict, Optional
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
     DEV_ISPYB_DATABASE_CFG,

@@ -7,10 +7,16 @@ import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import mock, when
 
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+)
+from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
 )
 from hyperion.parameters.constants import SIM_ISPYB_CONFIG
@@ -616,7 +622,7 @@ def test_ispyb_deposition_rounds_position_to_int(
     ],
 )
 @patch(
-    "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.oav_utils.bottom_right_from_top_left",
+    "hyperion.external_interaction.ispyb.gridscan_ispyb_store.oav_utils.bottom_right_from_top_left",
     autospec=True,
 )
 def test_ispyb_deposition_rounds_box_size_int(

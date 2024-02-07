@@ -38,9 +38,11 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
@@ -139,7 +141,7 @@ class TestFlyscanXrayCentrePlan:
         error = None
         with pytest.raises(FailedStatus) as exc:
             with patch(
-                "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.ispyb",
+                "hyperion.external_interaction.ispyb.ispyb_store.ispyb",
                 mock_ispyb,
             ):
                 with patch.object(
