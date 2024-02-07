@@ -24,7 +24,12 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
 from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
     XrayCentreZocaloCallback,
 )
-from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER, _get_logging_dir
+from hyperion.log import (
+    ISPYB_LOGGER,
+    NEXUS_LOGGER,
+    _get_logging_dir,
+    dc_group_id_filter,
+)
 from hyperion.parameters.cli import parse_callback_dev_mode_arg
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS
 
@@ -46,21 +51,19 @@ def setup_callbacks():
 
 
 def setup_logging(dev_mode: bool):
-    set_up_all_logging_handlers(
-        logger=ISPYB_LOGGER,
-        logging_path=_get_logging_dir(),
-        dev_mode=dev_mode,
-        filename="hyperion_ispyb_callback.txt",
-        error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
-    )
-    set_up_all_logging_handlers(
-        logger=NEXUS_LOGGER,
-        logging_path=_get_logging_dir(),
-        dev_mode=dev_mode,
-        filename="hyperion_nexus_callback.txt",
-        error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
-    )
-    log_info(f"Loggers initialised with arguments: {dev_mode}")
+    for logger, filename in [
+        (ISPYB_LOGGER, "hyperion_ispyb_callback.txt"),
+        (NEXUS_LOGGER, "hyperion_nexus_callback.txt"),
+    ]:
+        handlers = set_up_all_logging_handlers(
+            logger,
+            _get_logging_dir(),
+            filename,
+            dev_mode,
+            error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
+        )
+        handlers["graylog_handler"].addFilter(dc_group_id_filter)
+    log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
     log_debug("nexgen logger added to nexus logger")

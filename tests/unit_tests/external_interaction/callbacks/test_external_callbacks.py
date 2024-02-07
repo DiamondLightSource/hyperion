@@ -13,7 +13,6 @@ from hyperion.external_interaction.callbacks.__main__ import (
     setup_threads,
 )
 from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER
-from hyperion.parameters.cli import CallbackArgs
 
 
 @patch(
@@ -47,7 +46,7 @@ def test_setup_callbacks():
 @pytest.mark.skip_log_setup
 @patch(
     "hyperion.external_interaction.callbacks.__main__.parse_callback_cli_args",
-    return_value=CallbackArgs(logging_level="DEBUG", dev_mode=True),
+    return_value=True,
 )
 def test_setup_logging(parse_callback_cli_args):
     assert len(ISPYB_LOGGER.handlers) == 0

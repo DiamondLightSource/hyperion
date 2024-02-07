@@ -41,7 +41,6 @@ from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
     IspybIds,
     Store3DGridscanInIspyb,
 )
-from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
     GRIDSCAN_OUTER_PLAN,
@@ -210,7 +209,6 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
     ):
         RE, _ = RE_with_subs
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
@@ -393,7 +391,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(
@@ -529,7 +526,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(
