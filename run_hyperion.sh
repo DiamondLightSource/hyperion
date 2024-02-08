@@ -57,6 +57,7 @@ done
 kill_active_apps () {
     echo "Killing active instances of hyperion and hyperion-callbacks..."
     pkill -e -f "python.*hyperion"
+    pkill -e -f "SCREEN.*hyperion"
     echo "done."
 }
 
@@ -144,7 +145,7 @@ if [[ $START == 1 ]]; then
     done
 
     unset PYEPICS_LIBCA
-    hyperion `echo $h_commands;`>$start_log_path 2>&1 &
+    screen -S hyperion-debug -d -m hyperion `echo $h_commands;`>$start_log_path &
     if [ $EXTERNAL_CALLBACK_SERVICE == true ]; then
         hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
     fi
