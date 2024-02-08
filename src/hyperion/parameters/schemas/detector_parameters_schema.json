@@ -24,7 +24,6 @@
     "required": [
         "directory",
         "prefix",
-        "run_number",
         "use_roi_mode",
         "det_dist_to_beam_converter_path"
     ]

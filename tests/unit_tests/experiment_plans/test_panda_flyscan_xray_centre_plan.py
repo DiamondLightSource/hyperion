@@ -679,8 +679,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
         mock_subscriptions: XrayCentreCallbackCollection,
-        RE: RunEngine,
+        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
     ):
+        RE, mock_subscriptions = RE_with_subs
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
