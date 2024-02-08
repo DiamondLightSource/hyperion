@@ -52,7 +52,7 @@ def move_x_y_z(
     """Move the x, y, and z axes of the given smargon to the specified position. All
     axes are optional."""
 
-    LOGGER.info(f"Moving smargon to x, y, z: {(x,y,z)}")
+    LOGGER.info(f"Moving smargon to x, y, z: {(x, y, z)}")
     if x:
         yield from bps.abs_set(smargon.x, x, group=group)
     if y:

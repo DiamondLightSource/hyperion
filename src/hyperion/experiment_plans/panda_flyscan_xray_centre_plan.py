@@ -142,7 +142,6 @@ def run_gridscan(
             30.0,
         )
 
-
         LOGGER.info("Wait for all moves with no assigned group")
         yield from bps.wait()
 
@@ -189,8 +188,8 @@ def run_gridscan_and_move(
     DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
     time_between_x_steps_ms = (
-        (DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time) *1e3
-    )
+        DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
+    ) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         fgs_composite.smargon.x_speed_limit_mm_per_s
