@@ -1,7 +1,8 @@
 from functools import partial
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
+from bluesky import plan_stubs as bps
 from dodal.beamlines import i03
 from dodal.devices.zebra import (
     IN3_TTL,
@@ -17,6 +18,7 @@ from ophyd.status import Status
 
 from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
+    bluesky_retry,
     disarm_zebra,
     set_zebra_shutter_to_manual,
     setup_zebra_for_gridscan,
@@ -81,3 +83,37 @@ def test_zebra_arm_disarm(
     with pytest.raises(Exception):
         zebra.pc.arm.armed.set(1)
         RE(disarm_zebra(zebra, 0.2))
+
+
+class MyException(Exception):
+    pass
+
+
+def test_when_first_try_fails_then_bluesky_retry_tries_again(RE, done_status):
+    mock_device = MagicMock()
+
+    @bluesky_retry
+    def my_plan(value):
+        yield from bps.abs_set(mock_device, value)
+
+    mock_device.set.side_effect = [MyException(), done_status]
+
+    RE(my_plan(10))
+
+    assert mock_device.set.mock_calls == [call(10), call(10)]
+
+
+def test_when_all_tries_fail_then_bluesky_retry_throws_error(RE, done_status):
+    mock_device = MagicMock()
+
+    @bluesky_retry
+    def my_plan(value):
+        yield from bps.abs_set(mock_device, value)
+
+    exception_2 = MyException()
+    mock_device.set.side_effect = [MyException(), exception_2]
+
+    with pytest.raises(MyException) as e:
+        RE(my_plan(10))
+
+    assert e.value == exception_2
