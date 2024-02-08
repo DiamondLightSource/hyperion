@@ -1,6 +1,7 @@
 import os
 from contextlib import contextmanager
 from typing import Literal
+from unittest.mock import patch
 
 import h5py
 import numpy as np
@@ -234,6 +235,14 @@ def test_nexus_writer_writes_width_and_height_correctly(
     assert (
         single_dummy_file.detector.detector_params.image_size[1] == PIXELS_X_EIGER2_X_4M
     )
+
+
+@patch.dict(os.environ, {"BEAMLINE": "I03"})
+def test_nexus_writer_writes_beamline_name_correctly(
+    test_fgs_params,
+):
+    nexus_writer = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(1))
+    assert nexus_writer.source.beamline == "I03"
 
 
 def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]):
