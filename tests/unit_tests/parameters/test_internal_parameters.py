@@ -276,15 +276,6 @@ def test_internal_params_eq():
     internal_params_2.hyperion_params.experiment_type = "not_real_experiment"
     assert internal_params != internal_params_2
 
-def test_y_steps_must_be_even():
-
-    params = external_parameters.from_file(
-        "tests/test_data/parameter_json_files/test_parameters.json"
-    )
-    params['experiment_params']['y_steps'] = 11
-
-    with pytest.raises(YStepOddNumberException):
-        GridscanInternalParameters(**params)
 
 def test_panda_y_steps_must_be_even():
 

@@ -63,11 +63,6 @@ class GridscanInternalParameters(InternalParameters):
         experiment_params: dict[str, Any],
     ):
 
-        #FGS motion script moves sample to initial X position for start of second grid, so we need an even number of
-        #rows during the first grid to ensure that any position tracking done in the software is consistent
-        if experiment_params['y_steps']%2:
-            raise YStepOddNumberException("The number of Y steps must be even")
-
         return GridScanParams(
             **extract_experiment_params_from_flat_dict(
                 GridScanParams, experiment_params
