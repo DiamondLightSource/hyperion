@@ -159,14 +159,12 @@ class InternalParameters(BaseModel):
     def _preprocess_experiment_params(
         cls,
         experiment_params: dict[str, Any],
-    ) -> AbstractExperimentParameterBase:
-        ...
+    ) -> AbstractExperimentParameterBase: ...
 
     @abstractmethod
     def _preprocess_hyperion_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
-    ) -> HyperionParameters:
-        ...
+    ) -> HyperionParameters: ...
 
     @abstractmethod
     def get_scan_points(cls) -> dict[str, list]:

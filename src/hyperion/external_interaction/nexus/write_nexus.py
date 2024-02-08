@@ -2,6 +2,7 @@
 Define beamline parameters for I03, Eiger detector and give an example of writing a
 gridscan.
 """
+
 from __future__ import annotations
 
 import math

@@ -210,7 +210,7 @@ def rotation_scan_plan(
     )
     LOGGER.info(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
-        f" s, setting rotation speed to {image_width_deg/exposure_time_s} deg/s"
+        f" s, setting rotation speed to {image_width_deg / exposure_time_s} deg/s"
     )
     yield from set_speed(
         composite.smargon.omega, image_width_deg, exposure_time_s, wait=True

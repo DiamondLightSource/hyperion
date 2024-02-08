@@ -83,10 +83,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                     )
 
                     nicely_formatted_com = [
-                        f"{np.round(com,2)}" for com in res["centre_of_mass"]
+                        f"{np.round(com, 2)}" for com in res["centre_of_mass"]
                     ]
                     crystal_summary += (
-                        f"Crystal {n+1}: "
+                        f"Crystal {n + 1}: "
                         f"Strength {res['total_count']}; "
                         f"Position (grid boxes) {nicely_formatted_com}; "
                         f"Size (grid boxes) {bboxes[n]}; "
