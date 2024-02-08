@@ -188,7 +188,7 @@ def run_gridscan_and_move(
 
     time_between_x_steps_ms = (
         DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
-    )
+    ) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         fgs_composite.smargon.x_speed_limit_mm_per_s
@@ -204,6 +204,8 @@ def run_gridscan_and_move(
                                       time_between_x_steps_ms {time_between_x_steps_ms} as\
                                           {smargon_speed}. The smargon's speed limit is {smargon_speed_limit_mm_per_s} mm/s."
         )
+    else:
+        LOGGER.info(f"Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s")
 
     yield from bps.mv(
         fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
@@ -283,11 +285,8 @@ def panda_flyscan_xray_centre(
     """
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    subscriptions = XrayCentreCallbackCollection.setup()
+    composite.zocalo.zocalo_environment = parameters.hyperion_params.zocalo_environment
 
-    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
-        list(subscriptions)  # must be the outermost decorator to receive the metadata
-    )
     @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={

@@ -1,4 +1,8 @@
+from functools import wraps
+from typing import Callable
+
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 from dodal.devices.zebra import (
     DISCONNECT,
     IN1_TTL,
@@ -20,6 +24,31 @@ from dodal.devices.zebra import (
 from hyperion.log import LOGGER
 
 
+def bluesky_retry(func: Callable):
+    """Decorator that will retry the decorated plan if it fails.
+
+    Use this with care as it knows nothing about the state of the world when things fail.
+    If it is possible that your plan fails when the beamline is in a transient state that
+    the plan could not act on do not use this decorator without doing some more intelligent
+    clean up.
+
+    You should avoid using this decorator often in general production as it hides errors,
+    instead it should be used only for debugging these underlying errors.
+    """
+
+    @wraps(func)
+    def newfunc(*args, **kwargs):
+        def log_and_retry(exception):
+            LOGGER.error(f"Function {func.__name__} failed with {exception}, retrying")
+            yield from func(*args, **kwargs)
+
+        yield from bpp.contingency_wrapper(
+            func(*args, **kwargs), except_plan=log_and_retry, auto_raise=False
+        )
+
+    return newfunc
+
+
 def arm_zebra(zebra: Zebra):
     yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
 
@@ -28,6 +57,7 @@ def disarm_zebra(zebra: Zebra):
     yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, wait=True)
 
 
+@bluesky_retry
 def setup_zebra_for_rotation(
     zebra: Zebra,
     axis: I03Axes = I03Axes.OMEGA,
@@ -93,6 +123,7 @@ def setup_zebra_for_rotation(
         yield from bps.wait(group)
 
 
+@bluesky_retry
 def setup_zebra_for_gridscan(
     zebra: Zebra, group="setup_zebra_for_gridscan", wait=False
 ):
@@ -105,6 +136,7 @@ def setup_zebra_for_gridscan(
         yield from bps.wait(group)
 
 
+@bluesky_retry
 def set_zebra_shutter_to_manual(
     zebra: Zebra, group="set_zebra_shutter_to_manual", wait=False
 ):
@@ -115,10 +147,12 @@ def set_zebra_shutter_to_manual(
         yield from bps.wait(group)
 
 
+@bluesky_retry
 def make_trigger_safe(zebra: Zebra, group="make_zebra_safe", wait=False):
     yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=wait, group=group)
 
 
+@bluesky_retry
 def setup_zebra_for_panda_flyscan(
     zebra: Zebra, group="setup_zebra_for_panda_flyscan", wait=False
 ):
