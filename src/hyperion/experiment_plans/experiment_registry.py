@@ -63,16 +63,14 @@ def do_nothing():
 
 class ExperimentRegistryEntry(TypedDict):
     setup: Callable
-    internal_param_type: (
-        type[
-            GridscanInternalParameters
-            | GridScanWithEdgeDetectInternalParameters
-            | RotationInternalParameters
-            | PinCentreThenXrayCentreInternalParameters
-            | SteppedGridScanInternalParameters
-            | WaitForRobotLoadThenCentreInternalParameters
-        ]
-    )
+    internal_param_type: type[
+        GridscanInternalParameters
+        | GridScanWithEdgeDetectInternalParameters
+        | RotationInternalParameters
+        | PinCentreThenXrayCentreInternalParameters
+        | SteppedGridScanInternalParameters
+        | WaitForRobotLoadThenCentreInternalParameters
+    ]
     experiment_param_type: type[AbstractExperimentParameterBase]
     callback_collection_type: type[AbstractPlanCallbackCollection]
 
