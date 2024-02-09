@@ -82,7 +82,7 @@ class StoreInIspyb(ABC):
                 data_collection_id, comment, delimiter
             )
 
-    def get_visit_string(self) -> str:
+    def _get_visit_string(self) -> str:
         assert (
             self.ispyb_params and self.detector_params
         ), "StoreInISPyB didn't acquire params"
@@ -96,7 +96,7 @@ class StoreInIspyb(ABC):
             )
         return visit_path_match
 
-    def update_scan_with_end_time_and_status(
+    def _update_scan_with_end_time_and_status(
         self,
         end_time: str,
         run_status: str,
@@ -136,7 +136,7 @@ class StoreInIspyb(ABC):
             run_status = "DataCollection Successful"
         current_time = get_current_time_string()
         assert self.data_collection_group_id is not None
-        self.update_scan_with_end_time_and_status(
+        self._update_scan_with_end_time_and_status(
             current_time,
             run_status,
             reason,
@@ -158,12 +158,17 @@ class StoreInIspyb(ABC):
 
         return mx_acquisition.update_dc_position(list(params.values()))
 
-    def _store_data_collection_group_table(self, conn: Connector) -> int:
+    def _store_data_collection_group_table(
+        self, conn: Connector, data_collection_group_id: Optional[int] = None
+    ) -> int:
         assert self.ispyb_params is not None
         mx_acquisition: MXAcquisition = conn.mx_acquisition
 
         params = mx_acquisition.get_data_collection_group_params()
-        params["parentid"] = get_session_id_from_visit(conn, self.get_visit_string())
+        if data_collection_group_id:
+            params["id"] = data_collection_group_id
+
+        params["parentid"] = get_session_id_from_visit(conn, self._get_visit_string())
         params["experimenttype"] = self.experiment_type
         params["sampleid"] = self.ispyb_params.sample_id
         params["sample_barcode"] = self.ispyb_params.sample_barcode
@@ -196,7 +201,7 @@ class StoreInIspyb(ABC):
         if data_collection_id:
             params["id"] = data_collection_id
 
-        params["visitid"] = get_session_id_from_visit(conn, self.get_visit_string())
+        params["visitid"] = get_session_id_from_visit(conn, self._get_visit_string())
         params["parentid"] = data_collection_group_id
         params["sampleid"] = self.ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR

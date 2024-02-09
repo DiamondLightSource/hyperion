@@ -38,7 +38,7 @@ def mock_emits():
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
     mock = Store3DGridscanInIspyb("", params)
     mock._store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
-    mock.update_scan_with_end_time_and_status = MagicMock(return_value=None)
+    mock._update_scan_with_end_time_and_status = MagicMock(return_value=None)
     mock.begin_deposition = MagicMock(
         return_value=IspybIds(
             data_collection_group_id=DCG_ID, data_collection_ids=DC_IDS
@@ -73,7 +73,7 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
-        ispyb_handler.ispyb.update_scan_with_end_time_and_status.assert_has_calls(
+        ispyb_handler.ispyb._update_scan_with_end_time_and_status.assert_has_calls(
             [
                 call(
                     td.DUMMY_TIME_STRING,
@@ -86,7 +86,7 @@ class TestXrayCentreIspybHandler:
             ]
         )
         assert (
-            ispyb_handler.ispyb.update_scan_with_end_time_and_status.call_count
+            ispyb_handler.ispyb._update_scan_with_end_time_and_status.call_count
             == len(DC_IDS)
         )
 
@@ -107,7 +107,7 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
-        ispyb_handler.ispyb.update_scan_with_end_time_and_status.assert_has_calls(
+        ispyb_handler.ispyb._update_scan_with_end_time_and_status.assert_has_calls(
             [
                 call(
                     td.DUMMY_TIME_STRING,
@@ -120,7 +120,7 @@ class TestXrayCentreIspybHandler:
             ]
         )
         assert (
-            ispyb_handler.ispyb.update_scan_with_end_time_and_status.call_count
+            ispyb_handler.ispyb._update_scan_with_end_time_and_status.call_count
             == len(DC_IDS)
         )
 

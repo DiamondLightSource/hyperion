@@ -38,6 +38,24 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self.data_collection_ids: tuple[int, ...] | None = None
         self.grid_ids: tuple[int, ...] | None = None
 
+    def begin_deposition(self) -> IspybIds:
+        # fmt: off
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            self.detector_params = self.full_params.hyperion_params.detector_params  # type: ignore
+            self.run_number = self.detector_params.run_number  # pyright: ignore
+            self.data_collection_group_id = self._store_data_collection_group_table(
+                conn  # pyright: ignore
+            )
+            self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
+            self.data_collection_ids = (
+                self._store_data_collection_table(conn, self.data_collection_group_id),  # pyright: ignore
+            )
+            return IspybIds(
+                data_collection_group_id=self.data_collection_group_id,
+                data_collection_ids=self.data_collection_ids,
+            )
+        # fmt: on
+
     def update_deposition(self):
         assert (
             self.full_params is not None
