@@ -25,22 +25,24 @@ class StoreRotationInIspyb(StoreInIspyb):
     ) -> None:
         super().__init__(ispyb_config, "SAD")
         self.full_params: RotationInternalParameters = parameters
-        self.ispyb_params: RotationIspybParams = parameters.hyperion_params.ispyb_params
-        self.detector_params = parameters.hyperion_params.detector_params
-        self.run_number = (
-            self.detector_params.run_number
+        self._ispyb_params: RotationIspybParams = (
+            parameters.hyperion_params.ispyb_params
+        )
+        self._detector_params = parameters.hyperion_params.detector_params
+        self._run_number = (
+            self._detector_params.run_number
         )  # type:ignore # the validator always makes this int
-        self.omega_start = self.detector_params.omega_start
-        self.data_collection_id: int | None = None
-        self.data_collection_group_id = datacollection_group_id
+        self._omega_start = self._detector_params.omega_start
+        self._data_collection_id: int | None = None
+        self._data_collection_group_id = datacollection_group_id
 
-        if self.ispyb_params.xtal_snapshots_omega_start:
-            self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start[:3]
+        if self._ispyb_params.xtal_snapshots_omega_start:
+            self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start[:3]
             ISPYB_LOGGER.info(
-                f"Using rotation scan snapshots {self.xtal_snapshots} for ISPyB deposition"
+                f"Using rotation scan snapshots {self._xtal_snapshots} for ISPyB deposition"
             )
         else:
-            self.xtal_snapshots = []
+            self._xtal_snapshots = []
             ISPYB_LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
 
     def _mutate_data_collection_params_for_experiment(
@@ -58,34 +60,34 @@ class StoreRotationInIspyb(StoreInIspyb):
 
     def _store_scan_data(self, conn: Connector):
         assert (
-            self.data_collection_group_id
+            self._data_collection_group_id
         ), "Attempted to store scan data without a collection group"
         assert (
-            self.data_collection_id
+            self._data_collection_id
         ), "Attempted to store scan data without a collection"
-        self._store_data_collection_group_table(conn, self.data_collection_group_id)
+        self._store_data_collection_group_table(conn, self._data_collection_group_id)
         self._store_data_collection_table(
-            conn, self.data_collection_group_id, self.data_collection_id
+            conn, self._data_collection_group_id, self._data_collection_id
         )
-        self._store_position_table(conn, self.data_collection_id)
+        self._store_position_table(conn, self._data_collection_id)
 
-        return self.data_collection_id, self.data_collection_group_id
+        return self._data_collection_id, self._data_collection_group_id
 
     def begin_deposition(self) -> IspybIds:
         # prevent pyright + black fighting
         # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            if not self.data_collection_group_id:
-                self.data_collection_group_id = self._store_data_collection_group_table(
+            if not self._data_collection_group_id:
+                self._data_collection_group_id = self._store_data_collection_group_table(
                     conn  # type: ignore
                 )
-            if not self.data_collection_id:
-                self.data_collection_id = self._store_data_collection_table(
-                    conn, self.data_collection_group_id  # type: ignore
+            if not self._data_collection_id:
+                self._data_collection_id = self._store_data_collection_table(
+                    conn, self._data_collection_group_id  # type: ignore
                 )
         return IspybIds(
-            data_collection_group_id=self.data_collection_group_id,
-            data_collection_ids=self.data_collection_id,
+            data_collection_group_id=self._data_collection_group_id,
+            data_collection_ids=self._data_collection_id,
         )
         # fmt: on
 
@@ -97,9 +99,9 @@ class StoreRotationInIspyb(StoreInIspyb):
 
     def end_deposition(self, success: str, reason: str):
         assert (
-            self.data_collection_id is not None
+            self._data_collection_id is not None
         ), "Can't end ISPyB deposition, data_collection IDs is missing"
-        self._end_deposition(self.data_collection_id, success, reason)
+        self._end_deposition(self._data_collection_id, success, reason)
 
     def _construct_comment(self) -> str:
         return "Hyperion rotation scan"

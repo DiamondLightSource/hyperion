@@ -16,20 +16,20 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
 
     def _store_scan_data(self, conn: Connector):
         assert (
-            self.data_collection_group_id
+            self._data_collection_group_id
         ), "Attempted to store scan data without a collection group"
         assert (
-            self.data_collection_ids
+            self._data_collection_ids
         ), "Attempted to store scan data without a collection"
 
-        self._store_data_collection_group_table(conn, self.data_collection_group_id)
+        self._store_data_collection_group_table(conn, self._data_collection_group_id)
 
         data_collection_id = self._store_data_collection_table(
-            conn, self.data_collection_group_id, self.data_collection_ids[0]
+            conn, self._data_collection_group_id, self._data_collection_ids[0]
         )
 
         self._store_position_table(conn, data_collection_id)
 
         grid_id = self._store_grid_info_table(conn, data_collection_id)
 
-        return [data_collection_id], [grid_id], self.data_collection_group_id
+        return [data_collection_id], [grid_id], self._data_collection_group_id

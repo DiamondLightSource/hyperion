@@ -30,29 +30,31 @@ class StoreGridscanInIspyb(StoreInIspyb):
     ) -> None:
         super().__init__(ispyb_config, experiment_type)
         self.full_params: GridscanInternalParameters = parameters
-        self.ispyb_params: GridscanIspybParams = parameters.hyperion_params.ispyb_params
-        self.upper_left: list[int] | ndarray = self.ispyb_params.upper_left
+        self._ispyb_params: GridscanIspybParams = (
+            parameters.hyperion_params.ispyb_params
+        )
+        self.upper_left: list[int] | ndarray = self._ispyb_params.upper_left
         self.y_steps: int = self.full_params.experiment_params.y_steps
         self.y_step_size: float = self.full_params.experiment_params.y_step_size
-        self.omega_start = 0
-        self.data_collection_ids: tuple[int, ...] | None = None
+        self._omega_start = 0
+        self._data_collection_ids: tuple[int, ...] | None = None
         self.grid_ids: tuple[int, ...] | None = None
 
     def begin_deposition(self) -> IspybIds:
         # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            self.detector_params = self.full_params.hyperion_params.detector_params  # type: ignore
-            self.run_number = self.detector_params.run_number  # pyright: ignore
-            self.data_collection_group_id = self._store_data_collection_group_table(
+            self._detector_params = self.full_params.hyperion_params.detector_params  # type: ignore
+            self._run_number = self._detector_params.run_number  # pyright: ignore
+            self._data_collection_group_id = self._store_data_collection_group_table(
                 conn  # pyright: ignore
             )
-            self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
-            self.data_collection_ids = (
-                self._store_data_collection_table(conn, self.data_collection_group_id),  # pyright: ignore
+            self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start or []
+            self._data_collection_ids = (
+                self._store_data_collection_table(conn, self._data_collection_group_id),  # pyright: ignore
             )
             return IspybIds(
-                data_collection_group_id=self.data_collection_group_id,
-                data_collection_ids=self.data_collection_ids,
+                data_collection_group_id=self._data_collection_group_id,
+                data_collection_ids=self._data_collection_ids,
             )
         # fmt: on
 
@@ -61,34 +63,34 @@ class StoreGridscanInIspyb(StoreInIspyb):
             self.full_params is not None
         ), "StoreGridscanInIspyb failed to get parameters."
         (
-            self.data_collection_ids,
+            self._data_collection_ids,
             self.grid_ids,
-            self.data_collection_group_id,
+            self._data_collection_group_id,
         ) = self._store_grid_scan(self.full_params)
         return IspybIds(
-            data_collection_ids=self.data_collection_ids,
-            data_collection_group_id=self.data_collection_group_id,
+            data_collection_ids=self._data_collection_ids,
+            data_collection_group_id=self._data_collection_group_id,
             grid_ids=self.grid_ids,
         )
 
     def end_deposition(self, success: str, reason: str):
         assert (
-            self.data_collection_ids is not None
+            self._data_collection_ids is not None
         ), "Can't end ISPyB deposition, data_collection IDs are missing"
-        for id in self.data_collection_ids:
+        for id in self._data_collection_ids:
             self._end_deposition(id, success, reason)
 
     def _store_grid_scan(self, full_params: GridscanInternalParameters):
         self.full_params = full_params
-        self.ispyb_params = full_params.hyperion_params.ispyb_params
-        self.run_number = (
-            self.detector_params.run_number
+        self._ispyb_params = full_params.hyperion_params.ispyb_params
+        self._run_number = (
+            self._detector_params.run_number
         )  # type:ignore # the validator always makes this int
-        self.omega_start = self.detector_params.omega_start
-        self.xtal_snapshots = self.ispyb_params.xtal_snapshots_omega_start or []
+        self._omega_start = self._detector_params.omega_start
+        self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start or []
         self.upper_left = [
-            int(self.ispyb_params.upper_left[0]),
-            int(self.ispyb_params.upper_left[1]),
+            int(self._ispyb_params.upper_left[0]),
+            int(self._ispyb_params.upper_left[1]),
         ]
         self.y_steps = full_params.experiment_params.y_steps
         self.y_step_size = full_params.experiment_params.y_step_size
@@ -102,14 +104,14 @@ class StoreGridscanInIspyb(StoreInIspyb):
     ) -> dict[str, Any]:
         assert self.full_params and self.y_steps
         params["axis_range"] = 0
-        params["axis_end"] = self.omega_start
+        params["axis_end"] = self._omega_start
         params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
         return params
 
     def _store_grid_info_table(
         self, conn: Connector, ispyb_data_collection_id: int
     ) -> int:
-        assert self.ispyb_params is not None
+        assert self._ispyb_params is not None
         assert self.full_params is not None
         assert self.upper_left is not None
 
@@ -120,8 +122,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
         params["dyinmm"] = self.y_step_size
         params["stepsx"] = self.full_params.experiment_params.x_steps
         params["stepsy"] = self.y_steps
-        params["micronsPerPixelX"] = self.ispyb_params.microns_per_pixel_x
-        params["micronsperpixely"] = self.ispyb_params.microns_per_pixel_y
+        params["micronsPerPixelX"] = self._ispyb_params.microns_per_pixel_x
+        params["micronsperpixely"] = self._ispyb_params.microns_per_pixel_y
         params["snapshotoffsetxpixel"], params["snapshotoffsetypixel"] = self.upper_left
         params["orientation"] = Orientation.HORIZONTAL.value
         params["snaked"] = True
@@ -130,7 +132,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def _construct_comment(self) -> str:
         assert (
-            self.ispyb_params is not None
+            self._ispyb_params is not None
             and self.full_params is not None
             and self.upper_left is not None
             and self.y_step_size is not None
@@ -143,8 +145,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
             self.y_steps,
             self.full_params.experiment_params.x_step_size,
             self.y_step_size,
-            self.ispyb_params.microns_per_pixel_x,
-            self.ispyb_params.microns_per_pixel_y,
+            self._ispyb_params.microns_per_pixel_x,
+            self._ispyb_params.microns_per_pixel_y,
         )
         return (
             "Hyperion: Xray centring - Diffraction grid scan of "
