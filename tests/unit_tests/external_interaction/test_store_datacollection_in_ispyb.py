@@ -488,7 +488,7 @@ def test_ispyb_deposition_comment_correct(
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
-        "in 100.0 um by 100.0 um steps. With aperture size None. Top left (px): [100,100], bottom right (px): [3300,1700]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
     )
 
 
@@ -512,7 +512,7 @@ def test_ispyb_deposition_rounds_position_to_int(
     upserted_param_value_list = mock_upsert_call_args[0]
     assert upserted_param_value_list[29] == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
-        "in 100.0 um by 100.0 um steps. With aperture size None. Top left (px): [0,100], bottom right (px): [3200,1700]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [3200,1700]."
     )
 
 
@@ -548,17 +548,15 @@ def test_ispyb_deposition_rounds_box_size_int(
 ):
     bottom_right_from_top_left.return_value = dummy_ispyb.upper_left = [0, 0, 0]
     dummy_ispyb.ispyb_params = MagicMock()
-    dummy_ispyb.ispyb_params.aperture_name = aperture_name
     dummy_ispyb.full_params = dummy_params
     dummy_ispyb.y_steps = dummy_ispyb.full_params.experiment_params.x_steps = 0
-
     dummy_ispyb.y_step_size = dummy_ispyb.full_params.experiment_params.x_step_size = (
         raw
     )
 
     assert dummy_ispyb._construct_comment() == (
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
-        f"{rounded} um by {rounded} um steps. With aperture size {aperture_name}. Top left (px): [0,0], bottom right (px): [0,0]."
+        f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."
     )
 
 
@@ -577,11 +575,11 @@ def test_ispyb_deposition_comment_for_3D_correct(
     second_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
     assert first_upserted_param_value_list[29] == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
-        "in 100.0 um by 100.0 um steps. With aperture size None. Top left (px): [100,100], bottom right (px): [3300,1700]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
     )
     assert second_upserted_param_value_list[29] == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 images "
-        "in 100.0 um by 100.0 um steps. With aperture size None. Top left (px): [100,50], bottom right (px): [3300,850]."
+        "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
     )
 
 

@@ -311,7 +311,10 @@ class StoreRotationInIspyb(StoreInIspyb):
         self._end_deposition(self.data_collection_id, success, reason)
 
     def _construct_comment(self) -> str:
-        return "Hyperion rotation scan"
+        return f"""
+                ({self.full_params.experiment_params.x}, {self.full_params.experiment_params.y}, {self.full_params.experiment_params.z})
+                Aperture: {self.ispyb_params.aperture_name}
+                """
 
 
 class StoreGridscanInIspyb(StoreInIspyb):

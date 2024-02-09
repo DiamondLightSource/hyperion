@@ -198,8 +198,6 @@ class TestFlyscanXrayCentrePlan:
             params.hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
             == synchrotron_test_value
         )
-        assert params.hyperion_params.ispyb_params.aperture_name == test_aperture.name
-
         assert params.hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
         assert params.hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
         assert (
