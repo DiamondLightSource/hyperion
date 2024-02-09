@@ -105,7 +105,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 doc["data"]["dcm_energy_in_kev"] * 1000
             )
 
-            ISPYB_LOGGER.info("Creating ispyb entry.")
+            ISPYB_LOGGER.info("Updating ispyb entry.")
             self.ispyb_ids = self.ispyb.update_deposition()
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 

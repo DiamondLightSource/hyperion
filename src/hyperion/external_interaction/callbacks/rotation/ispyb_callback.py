@@ -77,6 +77,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 )
                 self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
             self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
+            ISPYB_LOGGER.info("Beginning ispyb deposition")
             self.ispyb_ids = self.ispyb.begin_deposition()
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
