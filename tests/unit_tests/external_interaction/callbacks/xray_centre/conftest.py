@@ -45,7 +45,7 @@ def mock_ispyb_store_grid_scan():
 @pytest.fixture
 def mock_ispyb_update_time_and_status():
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.update_scan_with_end_time_and_status"
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb._update_scan_with_end_time_and_status"
     ) as p:
         yield p
 
