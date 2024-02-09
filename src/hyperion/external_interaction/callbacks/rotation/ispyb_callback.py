@@ -61,8 +61,18 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 )
                 else None
             )
-            if self.params.experiment_params.get_num_images() < 200:
-                dcgid = None 
+            n_images = self.params.experiment_params.get_num_images()
+            if n_images < 200:
+                ISPYB_LOGGER.info(
+                    f"Collection has {n_images} images - treating as a screening collection - new DCG"
+                )
+                dcgid = None
+                self.last_sample_id = None
+            else:
+                ISPYB_LOGGER.info(
+                    f"Collection has {n_images} images - treating as a genuine dataset - storing sampleID to bundle images"
+                )
+                self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
             self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
             self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
         self.ispyb_ids: IspybIds = IspybIds()
