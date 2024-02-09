@@ -63,8 +63,10 @@ class StoreRotationInIspyb(StoreInIspyb):
         assert (
             self.data_collection_id
         ), "Attempted to store scan data without a collection"
-        self._store_data_collection_group_table(conn)
-        self._store_data_collection_table(conn, self.data_collection_group_id)
+        self._store_data_collection_group_table(conn, self.data_collection_group_id)
+        self._store_data_collection_table(
+            conn, self.data_collection_group_id, self.data_collection_id
+        )
         self._store_position_table(conn, self.data_collection_id)
 
         return self.data_collection_id, self.data_collection_group_id

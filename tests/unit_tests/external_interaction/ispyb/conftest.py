@@ -46,6 +46,8 @@ def dummy_rotation_params():
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
+    dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
+    dummy_params.hyperion_params.ispyb_params.sample_barcode = TEST_BARCODE
     return dummy_params
 
 
@@ -159,3 +161,12 @@ def ispyb_conn_with_1_collection(base_ispyb_conn):
 @pytest.fixture
 def dummy_2d_gridscan_ispyb(dummy_params):
     return Store2DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
+
+
+def mx_acquisition_from_conn(mock_ispyb_conn) -> MXAcquisition:
+    return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+
+
+def assert_upsert_call_with(call, param_template, expected: dict):
+    actual = remap_upsert_columns(list(param_template), call.args[0])
+    assert actual == dict(param_template | expected)

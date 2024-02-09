@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from ispyb.sp.mxacquisition import MXAcquisition
 from mockito import when
 
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
@@ -20,7 +19,8 @@ from unit_tests.external_interaction.ispyb.conftest import (
     TEST_POSITION_ID,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
-    remap_upsert_columns,
+    assert_upsert_call_with,
+    mx_acquisition_from_conn,
 )
 
 EXPECTED_START_TIME = "2024-02-08 14:03:59"
@@ -59,10 +59,6 @@ def test_ispyb_deposition_comment_for_3D_correct(
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 images "
         "in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
     )
-
-
-def mx_acquisition_from_conn(mock_ispyb_conn) -> MXAcquisition:
-    return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
 
 def test_store_3d_grid_scan(
@@ -117,11 +113,6 @@ def test_store_3d_grid_scan(
 def dict_to_ordered_params(param_template, kv_pairs: dict):
     param_template |= kv_pairs
     return list(param_template.values())
-
-
-def assert_upsert_call_with(call, param_template, expected: dict):
-    actual = remap_upsert_columns(list(param_template), call.args[0])
-    assert actual == dict(param_template | expected)
 
 
 @patch(
