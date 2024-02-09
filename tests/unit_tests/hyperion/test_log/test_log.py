@@ -136,3 +136,18 @@ def test_callback_loggers_log_to_own_files(
     assert nexus_filehandler.baseFilename != hyperion_filehandler.baseFilename  # type: ignore
     assert ispyb_filehandler.baseFilename != hyperion_filehandler.baseFilename  # type: ignore
     assert ispyb_filehandler.baseFilename != nexus_filehandler.baseFilename  # type: ignore
+
+
+@pytest.mark.skip_log_setup
+def test_log_writes_debug_file_on_error(clear_and_mock_loggers):
+    mock_filehandler_emit, _ = clear_and_mock_loggers
+    log.do_default_logging_setup(dev_mode=True)
+    log.LOGGER.debug("debug_message_1")
+    log.LOGGER.debug("debug_message_2")
+    mock_filehandler_emit.assert_not_called()
+    log.LOGGER.error("error happens")
+    assert len(mock_filehandler_emit.mock_calls) == 4
+    messages = [call.args[0].message for call in mock_filehandler_emit.mock_calls]
+    assert "debug_message_1" in messages
+    assert "debug_message_2" in messages
+    assert "error happens" in messages
