@@ -66,11 +66,24 @@ class StoreRotationInIspyb(StoreInIspyb):
         assert (
             self._data_collection_id
         ), "Attempted to store scan data without a collection"
-        self._store_data_collection_group_table(conn, self._data_collection_group_id)
-        self._store_data_collection_table(
-            conn, self._data_collection_group_id, self._data_collection_id
+        self._store_data_collection_group_table(
+            conn,
+            self._ispyb_params,
+            self._detector_params,
+            self._data_collection_group_id,
         )
-        self._store_position_table(conn, self._data_collection_id)
+        self._store_data_collection_table(
+            conn,
+            self._data_collection_group_id,
+            self._construct_comment,
+            self._ispyb_params,
+            self._detector_params,
+            self._omega_start,
+            self._run_number,
+            self._xtal_snapshots,
+            self._data_collection_id,
+        )
+        self._store_position_table(conn, self._data_collection_id, self._ispyb_params)
 
         return self._data_collection_id, self._data_collection_group_id
 
@@ -79,13 +92,14 @@ class StoreRotationInIspyb(StoreInIspyb):
         # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             if not self._data_collection_group_id:
-                self._data_collection_group_id = self._store_data_collection_group_table(
-                    conn  # type: ignore
-                )
+                self._data_collection_group_id = self._store_data_collection_group_table(conn, self._ispyb_params,
+                                                                                         self._detector_params)
             if not self._data_collection_id:
-                self._data_collection_id = self._store_data_collection_table(
-                    conn, self._data_collection_group_id  # type: ignore
-                )
+                self._data_collection_id = self._store_data_collection_table(conn, self._data_collection_group_id,
+                                                                             self._construct_comment,
+                                                                             self._ispyb_params, self._detector_params,
+                                                                             self._omega_start, self._run_number,
+                                                                             self._xtal_snapshots)
         return IspybIds(
             data_collection_group_id=self._data_collection_group_id,
             data_collection_ids=(self._data_collection_id,),

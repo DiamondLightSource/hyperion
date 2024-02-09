@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from graypy import GELFTCPHandler
@@ -25,7 +25,7 @@ td = TestData()
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
     mock = Store3DGridscanInIspyb("", params)
     mock._store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
-    mock._update_scan_with_end_time_and_status = MagicMock(return_value=None)
+    mock.end_deposition = MagicMock(return_value=None)
     mock.begin_deposition = MagicMock(
         return_value=IspybIds(
             data_collection_group_id=DCG_ID, data_collection_ids=DC_IDS
@@ -61,21 +61,8 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
-        ispyb_handler.ispyb._update_scan_with_end_time_and_status.assert_has_calls(
-            [
-                call(
-                    td.DUMMY_TIME_STRING,
-                    td.BAD_ISPYB_RUN_STATUS,
-                    "could not connect to devices",
-                    id,
-                    DCG_ID,
-                )
-                for id in DC_IDS
-            ]
-        )
-        assert (
-            ispyb_handler.ispyb._update_scan_with_end_time_and_status.call_count
-            == len(DC_IDS)
+        ispyb_handler.ispyb.end_deposition.assert_called_once_with(
+            "fail", "could not connect to devices"
         )
 
     def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
@@ -95,22 +82,7 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
-        ispyb_handler.ispyb._update_scan_with_end_time_and_status.assert_has_calls(
-            [
-                call(
-                    td.DUMMY_TIME_STRING,
-                    td.GOOD_ISPYB_RUN_STATUS,
-                    "",
-                    id,
-                    DCG_ID,
-                )
-                for id in DC_IDS
-            ]
-        )
-        assert (
-            ispyb_handler.ispyb._update_scan_with_end_time_and_status.call_count
-            == len(DC_IDS)
-        )
+        ispyb_handler.ispyb.end_deposition.assert_called_once_with("success", "")
 
     @pytest.mark.skip_log_setup
     def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
