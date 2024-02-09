@@ -10,6 +10,7 @@ from dodal.beamlines.i03 import DAQ_CONFIGURATION_PATH
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.DCM import DCM
 from dodal.devices.flux import Flux
+from event_model import RunStart
 from ophyd.sim import make_fake_device
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -378,3 +379,46 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
             assert rotation_ispyb.call_args.args[2] is None
 
         last_dcgid = cb[0].ispyb_ids.data_collection_group_id
+
+
+n_images_store_id = [
+    (123, False),
+    (3600, True),
+    (1800, True),
+    (150, False),
+    (500, True),
+    (201, True),
+    (1, False),
+    (2000, True),
+    (2000, True),
+    (2000, True),
+    (123, False),
+    (3600, True),
+    (1800, True),
+    (123, False),
+    (1800, True),
+]
+
+
+@pytest.mark.parametrize("n_images,store_id", n_images_store_id)
+def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
+    n_images: int,
+    store_id: bool,
+    params: RotationInternalParameters,
+):
+    cb = RotationISPyBCallback()
+    cb.active = True
+
+    doc: RunStart = {
+        "time": 0,
+        "uid": "abc123",
+    }
+
+    params.hyperion_params.ispyb_params.sample_id = "SAMPLEID"
+    params.experiment_params.rotation_angle = n_images / 10
+    assert params.experiment_params.get_num_images() == n_images
+    doc["subplan_name"] = ROTATION_OUTER_PLAN
+    doc["hyperion_internal_parameters"] = params.json()
+
+    cb.start(doc)
+    assert (cb.last_sample_id == "SAMPLEID") is store_id
