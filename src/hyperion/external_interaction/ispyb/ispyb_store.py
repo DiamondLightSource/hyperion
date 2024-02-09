@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional
 
 import ispyb
 import ispyb.sqlalchemy
 from dodal.devices.detector import DetectorParams
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
-from ispyb.strictordereddict import StrictOrderedDict
 from pydantic import BaseModel
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
@@ -47,14 +46,6 @@ class StoreInIspyb(ABC):
         self._data_collection_group_id: int | None
 
     @abstractmethod
-    def _store_scan_data(self, conn: Connector) -> tuple:
-        pass
-
-    @abstractmethod
-    def _construct_comment(self) -> str:
-        pass
-
-    @abstractmethod
     def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
@@ -82,17 +73,17 @@ class StoreInIspyb(ABC):
                 data_collection_id, comment, delimiter
             )
 
-    def _get_visit_string(self) -> str:
-        assert (
-            self._ispyb_params and self._detector_params
-        ), "StoreInISPyB didn't acquire params"
-        visit_path_match = get_visit_string_from_path(self._ispyb_params.visit_path)
+    def _get_visit_string(
+        self, ispyb_params: IspybParams, detector_params: DetectorParams
+    ) -> str:
+        assert ispyb_params and detector_params, "StoreInISPyB didn't acquire params"
+        visit_path_match = get_visit_string_from_path(ispyb_params.visit_path)
         if visit_path_match:
             return visit_path_match
-        visit_path_match = get_visit_string_from_path(self._detector_params.directory)
+        visit_path_match = get_visit_string_from_path(detector_params.directory)
         if not visit_path_match:
             raise ValueError(
-                f"Visit not found from {self._ispyb_params.visit_path} or {self._detector_params.directory}"
+                f"Visit not found from {ispyb_params.visit_path} or {detector_params.directory}"
             )
         return visit_path_match
 
@@ -103,8 +94,10 @@ class StoreInIspyb(ABC):
         reason: str,
         data_collection_id: int,
         data_collection_group_id: int,
+        ispyb_params: IspybParams,
+        detector_params: DetectorParams,
     ) -> None:
-        assert self._ispyb_params is not None and self._detector_params is not None
+        assert ispyb_params is not None and detector_params is not None
         if reason is not None and reason != "":
             self.append_to_comment(data_collection_id, f"{run_status} reason: {reason}")
 
@@ -142,10 +135,12 @@ class StoreInIspyb(ABC):
             reason,
             dcid,
             self._data_collection_group_id,
+            self._ispyb_params,
+            self._detector_params,
         )
 
-    def _store_position_table(self, conn: Connector, dc_id: int) -> int:
-        assert self._ispyb_params is not None
+    def _store_position_table(self, conn: Connector, dc_id: int, ispyb_params) -> int:
+        assert ispyb_params is not None
         mx_acquisition: MXAcquisition = conn.mx_acquisition
         params = mx_acquisition.get_dc_position_params()
 
@@ -154,107 +149,125 @@ class StoreInIspyb(ABC):
             params["pos_x"],
             params["pos_y"],
             params["pos_z"],
-        ) = self._ispyb_params.position.tolist()
+        ) = ispyb_params.position.tolist()
 
         return mx_acquisition.update_dc_position(list(params.values()))
 
     def _store_data_collection_group_table(
-        self, conn: Connector, data_collection_group_id: Optional[int] = None
+        self,
+        conn: Connector,
+        ispyb_params,
+        detector_params,
+        data_collection_group_id: Optional[int] = None,
     ) -> int:
-        assert self._ispyb_params is not None
+        assert ispyb_params is not None
         mx_acquisition: MXAcquisition = conn.mx_acquisition
 
         params = mx_acquisition.get_data_collection_group_params()
         if data_collection_group_id:
             params["id"] = data_collection_group_id
 
-        params["parentid"] = get_session_id_from_visit(conn, self._get_visit_string())
+        params["parentid"] = get_session_id_from_visit(
+            conn, self._get_visit_string(ispyb_params, detector_params)
+        )
         params["experimenttype"] = self._experiment_type
-        params["sampleid"] = self._ispyb_params.sample_id
-        params["sample_barcode"] = self._ispyb_params.sample_barcode
+        params["sampleid"] = ispyb_params.sample_id
+        params["sample_barcode"] = ispyb_params.sample_barcode
 
-        return self._upsert_data_collection_group(conn, params)
-
-    @staticmethod
-    def _upsert_data_collection_group(
-        conn: Connector, params: StrictOrderedDict
-    ) -> int:
         return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
-
-    @staticmethod
-    def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
-        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
 
     @TRACER.start_as_current_span("store_ispyb_data_collection_table")
     def _store_data_collection_table(
         self,
         conn: Connector,
         data_collection_group_id: int,
+        comment_constructor,
+        ispyb_params,
+        detector_params,
+        omega_start,
+        run_number,
+        xtal_snapshots,
         data_collection_id: Optional[int] = None,
     ) -> int:
-        assert self._ispyb_params is not None and self._detector_params is not None
+        assert ispyb_params is not None and detector_params is not None
 
+        params = self.fill_common_data_collection_params(
+            comment_constructor,
+            conn,
+            data_collection_group_id,
+            data_collection_id,
+            detector_params,
+            ispyb_params,
+            omega_start,
+            run_number,
+            xtal_snapshots,
+        )
+
+        params = self._mutate_data_collection_params_for_experiment(params)
+
+        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
+
+    def fill_common_data_collection_params(
+        self,
+        comment_constructor,
+        conn,
+        data_collection_group_id,
+        data_collection_id,
+        detector_params,
+        ispyb_params,
+        omega_start,
+        run_number,
+        xtal_snapshots,
+    ):
         mx_acquisition: MXAcquisition = conn.mx_acquisition
-
         params = mx_acquisition.get_data_collection_params()
-
         if data_collection_id:
             params["id"] = data_collection_id
-
-        params["visitid"] = get_session_id_from_visit(conn, self._get_visit_string())
+        params["visitid"] = get_session_id_from_visit(
+            conn, self._get_visit_string(ispyb_params, detector_params)
+        )
         params["parentid"] = data_collection_group_id
-        params["sampleid"] = self._ispyb_params.sample_id
+        params["sampleid"] = ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
-        params["axis_start"] = self._omega_start
-        params["focal_spot_size_at_samplex"] = self._ispyb_params.focal_spot_size_x
-        params["focal_spot_size_at_sampley"] = self._ispyb_params.focal_spot_size_y
-        params["slitgap_vertical"] = self._ispyb_params.slit_gap_size_y
-        params["slitgap_horizontal"] = self._ispyb_params.slit_gap_size_x
-        params["beamsize_at_samplex"] = self._ispyb_params.beam_size_x
-        params["beamsize_at_sampley"] = self._ispyb_params.beam_size_y
+        params["axis_start"] = omega_start
+        params["focal_spot_size_at_samplex"] = ispyb_params.focal_spot_size_x
+        params["focal_spot_size_at_sampley"] = ispyb_params.focal_spot_size_y
+        params["slitgap_vertical"] = ispyb_params.slit_gap_size_y
+        params["slitgap_horizontal"] = ispyb_params.slit_gap_size_x
+        params["beamsize_at_samplex"] = ispyb_params.beam_size_x
+        params["beamsize_at_sampley"] = ispyb_params.beam_size_y
         # Ispyb wants the transmission in a percentage, we use fractions
-        params["transmission"] = self._ispyb_params.transmission_fraction * 100
-        params["comments"] = self._construct_comment()
-        params["data_collection_number"] = self._run_number
-        params["detector_distance"] = self._detector_params.detector_distance
-        params["exp_time"] = self._detector_params.exposure_time
-        params["imgdir"] = self._detector_params.directory
-        params["imgprefix"] = self._detector_params.prefix
+        params["transmission"] = ispyb_params.transmission_fraction * 100
+        params["comments"] = comment_constructor()
+        params["data_collection_number"] = run_number
+        params["detector_distance"] = detector_params.detector_distance
+        params["exp_time"] = detector_params.exposure_time
+        params["imgdir"] = detector_params.directory
+        params["imgprefix"] = detector_params.prefix
         params["imgsuffix"] = EIGER_FILE_SUFFIX
-
         # Both overlap and n_passes included for backwards compatibility,
         # planned to be removed later
         params["n_passes"] = 1
         params["overlap"] = 0
-
-        params["flux"] = self._ispyb_params.flux
-        params["omegastart"] = self._omega_start
+        params["flux"] = ispyb_params.flux
+        params["omegastart"] = omega_start
         params["start_image_number"] = 1
-        params["resolution"] = self._ispyb_params.resolution
-        params["wavelength"] = self._ispyb_params.wavelength_angstroms
-        beam_position = self._detector_params.get_beam_position_mm(
-            self._detector_params.detector_distance
+        params["resolution"] = ispyb_params.resolution
+        params["wavelength"] = ispyb_params.wavelength_angstroms
+        beam_position = detector_params.get_beam_position_mm(
+            detector_params.detector_distance
         )
         params["xbeam"], params["ybeam"] = beam_position
-        if self._xtal_snapshots and len(self._xtal_snapshots) == 3:
+        if xtal_snapshots and len(xtal_snapshots) == 3:
             (
                 params["xtal_snapshot1"],
                 params["xtal_snapshot2"],
                 params["xtal_snapshot3"],
-            ) = self._xtal_snapshots
-        params["synchrotron_mode"] = self._ispyb_params.synchrotron_mode
-        params["undulator_gap1"] = self._ispyb_params.undulator_gap
+            ) = xtal_snapshots
+        params["synchrotron_mode"] = ispyb_params.synchrotron_mode
+        params["undulator_gap1"] = ispyb_params.undulator_gap
         params["starttime"] = get_current_time_string()
-
         # temporary file template until nxs filewriting is integrated and we can use
         # that file name
-        params["file_template"] = (
-            f"{self._detector_params.prefix}_{self._run_number}_master.h5"
-        )
-
-        params = cast(
-            StrictOrderedDict,
-            self._mutate_data_collection_params_for_experiment(params),
-        )
-
-        return self._upsert_data_collection(conn, params)
+        params["file_template"] = f"{detector_params.prefix}_{run_number}_master.h5"
+        return params

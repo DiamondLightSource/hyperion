@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pytest
 from mockito import when
 
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
@@ -26,18 +25,6 @@ from .conftest import (
 
 EXPECTED_START_TIME = "2024-02-08 14:03:59"
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
-
-
-@pytest.fixture
-def dummy_3d_gridscan_ispyb_with_hooks(dummy_3d_gridscan_ispyb):
-    # Convenience hooks for asserting ispyb calls
-    dummy_3d_gridscan_ispyb._upsert_data_collection_group = MagicMock(
-        return_value=(TEST_DATA_COLLECTION_GROUP_ID)
-    )
-    dummy_3d_gridscan_ispyb._upsert_data_collection = MagicMock(
-        return_value=TEST_DATA_COLLECTION_IDS[0]
-    )
-    return dummy_3d_gridscan_ispyb
 
 
 def test_ispyb_deposition_comment_for_3D_correct(
@@ -455,7 +442,7 @@ def test_store_grid_scan(
 ):
     ispyb_conn = ispyb_conn_with_1_collection
     when(dummy_2d_gridscan_ispyb)._store_position_table(
-        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
+        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0], dummy_2d_gridscan_ispyb._ispyb_params
     ).thenReturn(TEST_POSITION_ID)
     when(dummy_2d_gridscan_ispyb)._store_grid_info_table(
         ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]

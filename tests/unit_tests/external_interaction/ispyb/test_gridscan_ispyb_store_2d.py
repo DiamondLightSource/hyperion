@@ -116,18 +116,6 @@ EMPTY_DATA_COLLECTION_PARAMS = {
 
 
 @pytest.fixture
-def dummy_2d_gridscan_ispyb_with_hooks(dummy_2d_gridscan_ispyb):
-    # Convenience hooks for asserting ispyb calls
-    dummy_2d_gridscan_ispyb._upsert_data_collection_group = MagicMock(
-        return_value=(TEST_DATA_COLLECTION_GROUP_ID)
-    )
-    dummy_2d_gridscan_ispyb._upsert_data_collection = MagicMock(
-        return_value=TEST_DATA_COLLECTION_IDS[0]
-    )
-    return dummy_2d_gridscan_ispyb
-
-
-@pytest.fixture
 def ispyb_conn(base_ispyb_conn):
     return base_ispyb_conn
 
@@ -577,7 +565,13 @@ def test_ispyb_deposition_rounds_box_size_int(
         dummy_2d_gridscan_ispyb.full_params.experiment_params.x_step_size
     ) = raw
 
-    assert dummy_2d_gridscan_ispyb._construct_comment() == (
+    assert dummy_2d_gridscan_ispyb._construct_comment(
+        dummy_2d_gridscan_ispyb._ispyb_params,
+        dummy_2d_gridscan_ispyb.full_params,
+        dummy_2d_gridscan_ispyb.upper_left,
+        dummy_2d_gridscan_ispyb.y_step_size,
+        dummy_2d_gridscan_ispyb.y_steps,
+    ) == (
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
         f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."
     )

@@ -22,29 +22,74 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             self._data_collection_ids
         ), "Attempted to store scan data without at least one collection"
 
-        self._store_data_collection_group_table(conn, self._data_collection_group_id)
+        self._store_data_collection_group_table(
+            conn,
+            self._ispyb_params,
+            self._detector_params,
+            self._data_collection_group_id,
+        )
 
         data_collection_group_id = self._data_collection_group_id
         if len(self._data_collection_ids) != 1:
             data_collection_id_1 = self._store_data_collection_table(
-                conn, data_collection_group_id
+                conn,
+                data_collection_group_id,
+                lambda: self._construct_comment(
+                    self._ispyb_params,
+                    self.full_params,
+                    self.upper_left,
+                    self.y_step_size,
+                    self.y_steps,
+                ),
+                self._ispyb_params,
+                self._detector_params,
+                self._omega_start,
+                self._run_number,
+                self._xtal_snapshots,
             )
         else:
             data_collection_id_1 = self._store_data_collection_table(
-                conn, data_collection_group_id, self._data_collection_ids[0]
+                conn,
+                data_collection_group_id,
+                lambda: self._construct_comment(
+                    self._ispyb_params,
+                    self.full_params,
+                    self.upper_left,
+                    self.y_step_size,
+                    self.y_steps,
+                ),
+                self._ispyb_params,
+                self._detector_params,
+                self._omega_start,
+                self._run_number,
+                self._xtal_snapshots,
+                self._data_collection_ids[0],
             )
 
-        self._store_position_table(conn, data_collection_id_1)
+        self._store_position_table(conn, data_collection_id_1, self._ispyb_params)
 
         grid_id_1 = self._store_grid_info_table(conn, data_collection_id_1)
 
         self.__prepare_second_scan_params()
 
         data_collection_id_2 = self._store_data_collection_table(
-            conn, data_collection_group_id
+            conn,
+            data_collection_group_id,
+            lambda: self._construct_comment(
+                self._ispyb_params,
+                self.full_params,
+                self.upper_left,
+                self.y_step_size,
+                self.y_steps,
+            ),
+            self._ispyb_params,
+            self._detector_params,
+            self._omega_start,
+            self._run_number,
+            self._xtal_snapshots,
         )
 
-        self._store_position_table(conn, data_collection_id_2)
+        self._store_position_table(conn, data_collection_id_2, self._ispyb_params)
 
         grid_id_2 = self._store_grid_info_table(conn, data_collection_id_2)
 
