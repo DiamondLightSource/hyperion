@@ -224,7 +224,7 @@ def run_gridscan_and_move(
     )
 
     LOGGER.info("Setting up Zebra for panda flyscan")
-    yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra)
+    yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra, wait=True)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
