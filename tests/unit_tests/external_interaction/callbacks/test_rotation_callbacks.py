@@ -417,8 +417,8 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
     params.hyperion_params.ispyb_params.sample_id = "SAMPLEID"
     params.experiment_params.rotation_angle = n_images / 10
     assert params.experiment_params.get_num_images() == n_images
-    doc["subplan_name"] = ROTATION_OUTER_PLAN
-    doc["hyperion_internal_parameters"] = params.json()
+    doc["subplan_name"] = ROTATION_OUTER_PLAN  # type: ignore
+    doc["hyperion_internal_parameters"] = params.json()  # type: ignore
 
     cb.start(doc)
     assert (cb.last_sample_id == "SAMPLEID") is store_id
