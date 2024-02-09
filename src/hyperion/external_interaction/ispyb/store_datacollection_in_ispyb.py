@@ -428,7 +428,6 @@ class StoreGridscanInIspyb(StoreInIspyb):
             f"{self.y_steps} images in "
             f"{(self.full_params.experiment_params.x_step_size * 1e3):.1f} um by "
             f"{(self.y_step_size * 1e3):.1f} um steps. "
-            f"With aperture size {(self.ispyb_params.aperture_name)}. "
             f"Top left (px): [{int(self.upper_left[0])},{int(self.upper_left[1])}], "
             f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
         )
