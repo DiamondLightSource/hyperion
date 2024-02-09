@@ -45,12 +45,14 @@ class StoreGridscanInIspyb(StoreInIspyb):
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             self._detector_params = self.full_params.hyperion_params.detector_params  # type: ignore
             self._run_number = self._detector_params.run_number  # pyright: ignore
-            self._data_collection_group_id = self._store_data_collection_group_table(
-                conn  # pyright: ignore
-            )
+            self._data_collection_group_id = self._store_data_collection_group_table(conn, self._ispyb_params,
+                                                                                     self._detector_params)
             self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start or []
             self._data_collection_ids = (
-                self._store_data_collection_table(conn, self._data_collection_group_id),  # pyright: ignore
+                self._store_data_collection_table(conn, self._data_collection_group_id, lambda: self._construct_comment(
+                    self._ispyb_params, self.full_params, self.upper_left, self.y_step_size, self.y_steps),
+                                                  self._ispyb_params, self._detector_params, self._omega_start,
+                                                  self._run_number, self._xtal_snapshots),  # pyright: ignore
             )
             return IspybIds(
                 data_collection_group_id=self._data_collection_group_id,
@@ -130,30 +132,32 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
         return mx_acquisition.upsert_dc_grid(list(params.values()))
 
-    def _construct_comment(self) -> str:
+    def _construct_comment(
+        self, ispyb_params, full_params, upper_left, y_step_size, y_steps
+    ) -> str:
         assert (
-            self._ispyb_params is not None
-            and self.full_params is not None
-            and self.upper_left is not None
-            and self.y_step_size is not None
-            and self.y_steps is not None
+            ispyb_params is not None
+            and full_params is not None
+            and upper_left is not None
+            and y_step_size is not None
+            and y_steps is not None
         ), "StoreGridScanInIspyb failed to get parameters"
 
         bottom_right = oav_utils.bottom_right_from_top_left(
-            self.upper_left,  # type: ignore
-            self.full_params.experiment_params.x_steps,
-            self.y_steps,
-            self.full_params.experiment_params.x_step_size,
-            self.y_step_size,
-            self._ispyb_params.microns_per_pixel_x,
-            self._ispyb_params.microns_per_pixel_y,
+            upper_left,  # type: ignore
+            full_params.experiment_params.x_steps,
+            y_steps,
+            full_params.experiment_params.x_step_size,
+            y_step_size,
+            ispyb_params.microns_per_pixel_x,
+            ispyb_params.microns_per_pixel_y,
         )
         return (
             "Hyperion: Xray centring - Diffraction grid scan of "
-            f"{self.full_params.experiment_params.x_steps} by "
-            f"{self.y_steps} images in "
-            f"{(self.full_params.experiment_params.x_step_size * 1e3):.1f} um by "
-            f"{(self.y_step_size * 1e3):.1f} um steps. "
-            f"Top left (px): [{int(self.upper_left[0])},{int(self.upper_left[1])}], "
+            f"{full_params.experiment_params.x_steps} by "
+            f"{y_steps} images in "
+            f"{(full_params.experiment_params.x_step_size * 1e3):.1f} um by "
+            f"{(y_step_size * 1e3):.1f} um steps. "
+            f"Top left (px): [{int(upper_left[0])},{int(upper_left[1])}], "
             f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
         )
