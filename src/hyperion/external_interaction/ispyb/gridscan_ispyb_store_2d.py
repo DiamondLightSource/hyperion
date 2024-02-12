@@ -44,7 +44,6 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
 
         collection_id = self._data_collection_ids[0]
         assert self._ispyb_params is not None and self._detector_params is not None
-        xy_data_collection_info = self.with_axis_info(xy_data_collection_info)
         params = self.fill_common_data_collection_params(
             constructor,
             conn,
