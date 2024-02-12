@@ -176,7 +176,9 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     assert gridscan_params.x_start == pytest.approx(0.0005)
     assert gridscan_params.y1_start == pytest.approx(
         -0.0001
-        - box_size_y_pixels / 2 * composite.oav.parameters.micronsPerYPixel * 1e-6
+        - (
+            (box_size_y_pixels / 2) * composite.oav.parameters.micronsPerYPixel * 1e-3
+        )  # microns to mm
     )
     assert gridscan_params.z1_start == pytest.approx(-0.0001)
 
@@ -221,9 +223,8 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     test_config_files,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
-
     composite, _ = fake_devices
-
+    box_size_microns = 20
     cb = GridDetectionCallback(composite.oav.parameters, 0.5, True)
     RE.subscribe(cb)
 
@@ -252,8 +253,12 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     )
 
     assert my_grid_params.x_start == pytest.approx(-0.7942199999999999)
-    assert my_grid_params.y1_start == pytest.approx(-0.53984)
-    assert my_grid_params.y2_start == pytest.approx(-0.53984)
+    assert my_grid_params.y1_start == pytest.approx(
+        -0.53984 - (box_size_microns * 1e-3 / 2)
+    )
+    assert my_grid_params.y2_start == pytest.approx(
+        -0.53984 - (box_size_microns * 1e-3 / 2)
+    )
     assert my_grid_params.z1_start == pytest.approx(-0.53984)
     assert my_grid_params.z2_start == pytest.approx(-0.53984)
     assert my_grid_params.x_step_size == pytest.approx(0.02)
