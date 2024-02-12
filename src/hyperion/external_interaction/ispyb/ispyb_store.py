@@ -8,6 +8,7 @@ import ispyb.sqlalchemy
 from dodal.devices.detector import DetectorParams
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
+from ispyb.strictordereddict import StrictOrderedDict
 from pydantic import BaseModel
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
@@ -35,15 +36,16 @@ class IspybIds(BaseModel):
 
 
 class StoreInIspyb(ABC):
-    def __init__(self, ispyb_config: str, experiment_type: str) -> None:
+    def __init__(self, ispyb_config: str) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
-        self._experiment_type = experiment_type
         self._ispyb_params: IspybParams
         self._detector_params: DetectorParams
-        self._run_number: int
-        self._omega_start: float
-        self._xtal_snapshots: list[str]
         self._data_collection_group_id: int | None
+
+    @property
+    @abstractmethod
+    def experiment_type(self):
+        pass
 
     @abstractmethod
     def _mutate_data_collection_params_for_experiment(
@@ -170,13 +172,17 @@ class StoreInIspyb(ABC):
         params["parentid"] = get_session_id_from_visit(
             conn, self._get_visit_string(ispyb_params, detector_params)
         )
-        params["experimenttype"] = self._experiment_type
+        params["experimenttype"] = self.experiment_type
         params["sampleid"] = ispyb_params.sample_id
         params["sample_barcode"] = ispyb_params.sample_barcode
 
         return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
 
-    @TRACER.start_as_current_span("store_ispyb_data_collection_table")
+    @staticmethod
+    @TRACER.start_as_current_span("_upsert_data_collection")
+    def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
+        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
+
     def _store_data_collection_table(
         self,
         conn: Connector,
@@ -205,7 +211,7 @@ class StoreInIspyb(ABC):
 
         params = self._mutate_data_collection_params_for_experiment(params)
 
-        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
+        return self._upsert_data_collection(conn, params)
 
     def fill_common_data_collection_params(
         self,
