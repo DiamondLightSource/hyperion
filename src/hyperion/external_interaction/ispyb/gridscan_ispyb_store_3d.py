@@ -38,7 +38,6 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         )
 
         data_collection_group_id = self._data_collection_group_id
-        xy_data_collection_info = self.with_axis_info(xy_data_collection_info)
         if len(self._data_collection_ids) != 1:
             data_collection_id_1 = self._store_data_collection_table(
                 conn,
@@ -67,11 +66,10 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
 
         grid_id_1 = self._store_grid_info_table(conn, data_collection_id_1)
 
-        xz_data_collection_info = self.__prepare_second_scan_params(
+        xz_data_collection_info = self._populate_xz_data_collection_info(
             xy_data_collection_info
         )
 
-        xz_data_collection_info = self.with_axis_info(xz_data_collection_info)
         data_collection_id_2 = self._store_data_collection_table(
             conn,
             data_collection_group_id,
@@ -93,7 +91,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             data_collection_group_id,
         )
 
-    def __prepare_second_scan_params(
+    def _populate_xz_data_collection_info(
         self, xy_data_collection_info: DataCollectionInfo
     ) -> DataCollectionInfo:
         assert (
@@ -113,4 +111,12 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             self.full_params.experiment_params.z_steps,
             self.full_params.experiment_params.z_step_size,
         )
-        return DataCollectionInfo(omega_start, run_number, xtal_snapshots)
+        info = DataCollectionInfo(
+            omega_start,
+            run_number,
+            xtal_snapshots,
+            self.full_params.experiment_params.x_steps * self._grid_scan_state.y_steps,
+            0,
+            omega_start,
+        )
+        return info
