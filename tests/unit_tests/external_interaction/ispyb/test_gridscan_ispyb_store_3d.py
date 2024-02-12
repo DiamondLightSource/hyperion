@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from mockito import when
 
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
@@ -16,7 +15,6 @@ from .conftest import (
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_GRID_INFO_IDS,
-    TEST_POSITION_ID,
     TEST_SAMPLE_ID,
     TEST_SESSION_ID,
     assert_upsert_call_with,
@@ -74,20 +72,6 @@ def test_store_3d_grid_scan(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         grid_ids=TEST_GRID_INFO_IDS,
     )
-
-    assert (
-        dummy_3d_gridscan_ispyb._grid_scan_state.y_step_size
-        == dummy_params.experiment_params.z_step_size
-    )
-    assert (
-        dummy_3d_gridscan_ispyb._grid_scan_state.y_steps
-        == dummy_params.experiment_params.z_steps
-    )
-
-    assert dummy_3d_gridscan_ispyb._grid_scan_state.upper_left is not None
-
-    assert dummy_3d_gridscan_ispyb._grid_scan_state.upper_left[0] == x
-    assert dummy_3d_gridscan_ispyb._grid_scan_state.upper_left[1] == z
 
 
 def dict_to_ordered_params(param_template, kv_pairs: dict):
@@ -425,28 +409,4 @@ def test_end_deposition_happy_path(
             "endtime": EXPECTED_END_TIME,
             "runstatus": "DataCollection Successful",
         },
-    )
-
-
-def test_store_grid_scan(
-    ispyb_conn_with_1_collection, dummy_2d_gridscan_ispyb, dummy_params
-):
-    ispyb_conn = ispyb_conn_with_1_collection
-    when(dummy_2d_gridscan_ispyb)._store_position_table(
-        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0], dummy_2d_gridscan_ispyb._ispyb_params
-    ).thenReturn(TEST_POSITION_ID)
-    when(dummy_2d_gridscan_ispyb)._store_grid_info_table(
-        ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
-    ).thenReturn(TEST_GRID_INFO_IDS[0])
-
-    assert dummy_2d_gridscan_ispyb.experiment_type == "mesh"
-
-    assert dummy_2d_gridscan_ispyb.begin_deposition() == IspybIds(
-        data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
-        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
-    )
-    assert dummy_2d_gridscan_ispyb._store_grid_scan(dummy_params) == (
-        [TEST_DATA_COLLECTION_IDS[0]],
-        [TEST_GRID_INFO_IDS[0]],
-        TEST_DATA_COLLECTION_GROUP_ID,
     )

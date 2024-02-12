@@ -19,9 +19,7 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
         return "mesh"
 
     def _store_scan_data(
-        self,
-        conn: Connector,
-        xy_data_collection_info,
+        self, conn: Connector, xy_data_collection_info, grid_scan_info
     ):
         assert (
             self._data_collection_group_id
@@ -37,15 +35,15 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
             self._data_collection_group_id,
         )
 
-        def constructor():
+        def comment_constructor():
             return self._construct_comment(
-                self._ispyb_params, self.full_params, self._grid_scan_state
+                self._ispyb_params, self.full_params, grid_scan_info
             )
 
         collection_id = self._data_collection_ids[0]
         assert self._ispyb_params is not None and self._detector_params is not None
         params = self.fill_common_data_collection_params(
-            constructor,
+            comment_constructor,
             conn,
             self._data_collection_group_id,
             collection_id,
@@ -57,6 +55,6 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
 
         self._store_position_table(conn, data_collection_id, self._ispyb_params)
 
-        grid_id = self._store_grid_info_table(conn, data_collection_id)
+        grid_id = self._store_grid_info_table(conn, data_collection_id, grid_scan_info)
 
         return [data_collection_id], [grid_id], self._data_collection_group_id
