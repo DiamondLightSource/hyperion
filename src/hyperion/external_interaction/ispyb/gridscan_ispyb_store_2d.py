@@ -12,7 +12,11 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 
 class Store2DGridscanInIspyb(StoreGridscanInIspyb):
     def __init__(self, ispyb_config: str, parameters: GridscanInternalParameters):
-        super().__init__(ispyb_config, "mesh", parameters)
+        super().__init__(ispyb_config, parameters)
+
+    @property
+    def experiment_type(self):
+        return "mesh"
 
     def _store_scan_data(self, conn: Connector):
         assert (
@@ -29,23 +33,26 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
             self._data_collection_group_id,
         )
 
-        data_collection_id = self._store_data_collection_table(
+        def constructor():
+            return self._construct_comment(
+                self._ispyb_params, self.full_params, self._grid_scan_state
+            )
+
+        collection_id = self._data_collection_ids[0]
+        assert self._ispyb_params is not None and self._detector_params is not None
+        params = self.fill_common_data_collection_params(
+            constructor,
             conn,
             self._data_collection_group_id,
-            lambda: self._construct_comment(
-                self._ispyb_params,
-                self.full_params,
-                self.upper_left,
-                self.y_step_size,
-                self.y_steps,
-            ),
-            self._ispyb_params,
+            collection_id,
             self._detector_params,
+            self._ispyb_params,
             self._omega_start,
             self._run_number,
             self._xtal_snapshots,
-            self._data_collection_ids[0],
         )
+        params = self._mutate_data_collection_params_for_experiment(params)
+        data_collection_id = self._upsert_data_collection(conn, params)
 
         self._store_position_table(conn, data_collection_id, self._ispyb_params)
 

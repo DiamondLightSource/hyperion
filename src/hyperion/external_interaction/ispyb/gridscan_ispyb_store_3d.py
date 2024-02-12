@@ -3,6 +3,7 @@ from __future__ import annotations
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
+    GridScanState,
     StoreGridscanInIspyb,
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -12,7 +13,11 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 
 class Store3DGridscanInIspyb(StoreGridscanInIspyb):
     def __init__(self, ispyb_config: str, parameters: GridscanInternalParameters):
-        super().__init__(ispyb_config, "Mesh3D", parameters)
+        super().__init__(ispyb_config, parameters)
+
+    @property
+    def experiment_type(self):
+        return "Mesh3D"
 
     def _store_scan_data(self, conn: Connector):
         assert (
@@ -35,11 +40,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
                 conn,
                 data_collection_group_id,
                 lambda: self._construct_comment(
-                    self._ispyb_params,
-                    self.full_params,
-                    self.upper_left,
-                    self.y_step_size,
-                    self.y_steps,
+                    self._ispyb_params, self.full_params, self._grid_scan_state
                 ),
                 self._ispyb_params,
                 self._detector_params,
@@ -52,11 +53,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
                 conn,
                 data_collection_group_id,
                 lambda: self._construct_comment(
-                    self._ispyb_params,
-                    self.full_params,
-                    self.upper_left,
-                    self.y_step_size,
-                    self.y_steps,
+                    self._ispyb_params, self.full_params, self._grid_scan_state
                 ),
                 self._ispyb_params,
                 self._detector_params,
@@ -76,11 +73,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             conn,
             data_collection_group_id,
             lambda: self._construct_comment(
-                self._ispyb_params,
-                self.full_params,
-                self.upper_left,
-                self.y_step_size,
-                self.y_steps,
+                self._ispyb_params, self.full_params, self._grid_scan_state
             ),
             self._ispyb_params,
             self._detector_params,
@@ -109,9 +102,11 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         self._omega_start += 90
         self._run_number += 1
         self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_end or []
-        self.upper_left = [
-            int(self._ispyb_params.upper_left[0]),
-            int(self._ispyb_params.upper_left[2]),
-        ]
-        self.y_steps = self.full_params.experiment_params.z_steps
-        self.y_step_size = self.full_params.experiment_params.z_step_size
+        self._grid_scan_state = GridScanState(
+            [
+                int(self._ispyb_params.upper_left[0]),
+                int(self._ispyb_params.upper_left[2]),
+            ],
+            self.full_params.experiment_params.z_steps,
+            self.full_params.experiment_params.z_step_size,
+        )

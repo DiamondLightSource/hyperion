@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from abc import abstractmethod
+from dataclasses import dataclass
 from typing import Any
 
 import ispyb
@@ -21,22 +23,32 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 
 
+@dataclass
+class GridScanState:
+    upper_left: list[int] | ndarray
+    y_steps: int
+    y_step_size: float
+
+
 class StoreGridscanInIspyb(StoreInIspyb):
     def __init__(
         self,
         ispyb_config: str,
-        experiment_type: str,
         parameters: GridscanInternalParameters,
     ) -> None:
-        super().__init__(ispyb_config, experiment_type)
+        super().__init__(ispyb_config)
         self.full_params: GridscanInternalParameters = parameters
         self._ispyb_params: GridscanIspybParams = (
             parameters.hyperion_params.ispyb_params
         )
-        self.upper_left: list[int] | ndarray = self._ispyb_params.upper_left
-        self.y_steps: int = self.full_params.experiment_params.y_steps
-        self.y_step_size: float = self.full_params.experiment_params.y_step_size
-        self._omega_start = 0
+        self._grid_scan_state = GridScanState(
+            self._ispyb_params.upper_left,
+            self.full_params.experiment_params.y_steps,
+            self.full_params.experiment_params.y_step_size,
+        )
+        self._run_number: int
+        self._omega_start: float = 0
+        self._xtal_snapshots: list[str]
         self._data_collection_ids: tuple[int, ...] | None = None
         self.grid_ids: tuple[int, ...] | None = None
 
@@ -48,11 +60,25 @@ class StoreGridscanInIspyb(StoreInIspyb):
             self._data_collection_group_id = self._store_data_collection_group_table(conn, self._ispyb_params,
                                                                                      self._detector_params)
             self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start or []
+
+            def constructor():
+                return self._construct_comment(self._ispyb_params, self.full_params, self._grid_scan_state)
+
+            assert self._ispyb_params is not None and self._detector_params is not None
+            params = self.fill_common_data_collection_params(
+                constructor,
+                conn,
+                self._data_collection_group_id,
+                None,
+                self._detector_params,
+                self._ispyb_params,
+                self._omega_start,
+                self._run_number,
+                self._xtal_snapshots,
+            )
+            params = self._mutate_data_collection_params_for_experiment(params)
             self._data_collection_ids = (
-                self._store_data_collection_table(conn, self._data_collection_group_id, lambda: self._construct_comment(
-                    self._ispyb_params, self.full_params, self.upper_left, self.y_step_size, self.y_steps),
-                                                  self._ispyb_params, self._detector_params, self._omega_start,
-                                                  self._run_number, self._xtal_snapshots),  # pyright: ignore
+                self._upsert_data_collection(conn, params),  # pyright: ignore
             )
             return IspybIds(
                 data_collection_group_id=self._data_collection_group_id,
@@ -90,24 +116,34 @@ class StoreGridscanInIspyb(StoreInIspyb):
         )  # type:ignore # the validator always makes this int
         self._omega_start = self._detector_params.omega_start
         self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start or []
-        self.upper_left = [
-            int(self._ispyb_params.upper_left[0]),
-            int(self._ispyb_params.upper_left[1]),
-        ]
-        self.y_steps = full_params.experiment_params.y_steps
-        self.y_step_size = full_params.experiment_params.y_step_size
+        self._grid_scan_state = GridScanState(
+            [
+                int(self._ispyb_params.upper_left[0]),
+                int(self._ispyb_params.upper_left[1]),
+            ],
+            full_params.experiment_params.y_steps,
+            full_params.experiment_params.y_step_size,
+        )
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
             return self._store_scan_data(conn)
 
+    @abstractmethod
+    def _store_scan_data(self):
+        pass
+
     def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
-        assert self.full_params and self.y_steps
+        assert (
+            self.full_params and self._grid_scan_state and self._grid_scan_state.y_steps
+        )
         params["axis_range"] = 0
         params["axis_end"] = self._omega_start
-        params["n_images"] = self.full_params.experiment_params.x_steps * self.y_steps
+        params["n_images"] = (
+            self.full_params.experiment_params.x_steps * self._grid_scan_state.y_steps
+        )
         return params
 
     def _store_grid_info_table(
@@ -115,49 +151,48 @@ class StoreGridscanInIspyb(StoreInIspyb):
     ) -> int:
         assert self._ispyb_params is not None
         assert self.full_params is not None
-        assert self.upper_left is not None
+        assert self._grid_scan_state.upper_left is not None
 
         mx_acquisition: MXAcquisition = conn.mx_acquisition
         params = mx_acquisition.get_dc_grid_params()
         params["parentid"] = ispyb_data_collection_id
         params["dxinmm"] = self.full_params.experiment_params.x_step_size
-        params["dyinmm"] = self.y_step_size
+        params["dyinmm"] = self._grid_scan_state.y_step_size
         params["stepsx"] = self.full_params.experiment_params.x_steps
-        params["stepsy"] = self.y_steps
+        params["stepsy"] = self._grid_scan_state.y_steps
         params["micronsPerPixelX"] = self._ispyb_params.microns_per_pixel_x
         params["micronsperpixely"] = self._ispyb_params.microns_per_pixel_y
-        params["snapshotoffsetxpixel"], params["snapshotoffsetypixel"] = self.upper_left
+        (
+            params["snapshotoffsetxpixel"],
+            params["snapshotoffsetypixel"],
+        ) = self._grid_scan_state.upper_left
         params["orientation"] = Orientation.HORIZONTAL.value
         params["snaked"] = True
 
         return mx_acquisition.upsert_dc_grid(list(params.values()))
 
-    def _construct_comment(
-        self, ispyb_params, full_params, upper_left, y_step_size, y_steps
-    ) -> str:
+    def _construct_comment(self, ispyb_params, full_params, grid_scan_state) -> str:
         assert (
             ispyb_params is not None
             and full_params is not None
-            and upper_left is not None
-            and y_step_size is not None
-            and y_steps is not None
+            and grid_scan_state is not None
         ), "StoreGridScanInIspyb failed to get parameters"
 
         bottom_right = oav_utils.bottom_right_from_top_left(
-            upper_left,  # type: ignore
+            grid_scan_state.upper_left,  # type: ignore
             full_params.experiment_params.x_steps,
-            y_steps,
+            grid_scan_state.y_steps,
             full_params.experiment_params.x_step_size,
-            y_step_size,
+            grid_scan_state.y_step_size,
             ispyb_params.microns_per_pixel_x,
             ispyb_params.microns_per_pixel_y,
         )
         return (
             "Hyperion: Xray centring - Diffraction grid scan of "
             f"{full_params.experiment_params.x_steps} by "
-            f"{y_steps} images in "
+            f"{grid_scan_state.y_steps} images in "
             f"{(full_params.experiment_params.x_step_size * 1e3):.1f} um by "
-            f"{(y_step_size * 1e3):.1f} um steps. "
-            f"Top left (px): [{int(upper_left[0])},{int(upper_left[1])}], "
+            f"{(grid_scan_state.y_step_size * 1e3):.1f} um steps. "
+            f"Top left (px): [{int(grid_scan_state.upper_left[0])},{int(grid_scan_state.upper_left[1])}], "
             f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
         )

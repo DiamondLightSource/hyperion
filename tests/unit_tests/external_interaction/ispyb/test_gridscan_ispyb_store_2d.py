@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store import GridScanState
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
 )
@@ -550,27 +551,28 @@ def test_ispyb_deposition_rounds_box_size_int(
     raw,
     rounded,
 ):
-    bottom_right_from_top_left.return_value = dummy_2d_gridscan_ispyb.upper_left = [
+    dummy_2d_gridscan_ispyb.full_params.experiment_params.x_steps = 0
+    dummy_2d_gridscan_ispyb.full_params.experiment_params.x_step_size = raw
+    dummy_2d_gridscan_ispyb._grid_scan_state = GridScanState(
+        [
+            0,
+            0,
+            0,
+        ],
         0,
-        0,
-        0,
-    ]
+        raw,
+    )
+    bottom_right_from_top_left.return_value = (
+        dummy_2d_gridscan_ispyb._grid_scan_state.upper_left
+    )
+
     dummy_2d_gridscan_ispyb._ispyb_params = MagicMock()
     dummy_2d_gridscan_ispyb.full_params = dummy_params
-    dummy_2d_gridscan_ispyb.y_steps = (
-        dummy_2d_gridscan_ispyb.full_params.experiment_params.x_steps
-    ) = 0
-
-    dummy_2d_gridscan_ispyb.y_step_size = (
-        dummy_2d_gridscan_ispyb.full_params.experiment_params.x_step_size
-    ) = raw
 
     assert dummy_2d_gridscan_ispyb._construct_comment(
         dummy_2d_gridscan_ispyb._ispyb_params,
         dummy_2d_gridscan_ispyb.full_params,
-        dummy_2d_gridscan_ispyb.upper_left,
-        dummy_2d_gridscan_ispyb.y_step_size,
-        dummy_2d_gridscan_ispyb.y_steps,
+        dummy_2d_gridscan_ispyb._grid_scan_state,
     ) == (
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
         f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."
@@ -605,7 +607,7 @@ def test_mutate_params_gridscan(
 ):
     fgs_dict = deepcopy(EMPTY_DATA_COLLECTION_PARAMS)
 
-    dummy_3d_gridscan_ispyb.y_steps = 5
+    dummy_3d_gridscan_ispyb._grid_scan_state.y_steps = 5
 
     fgs_transformed = (
         dummy_3d_gridscan_ispyb._mutate_data_collection_params_for_experiment(fgs_dict)

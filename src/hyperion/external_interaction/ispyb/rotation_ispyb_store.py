@@ -24,27 +24,33 @@ class StoreRotationInIspyb(StoreInIspyb):
         datacollection_group_id: int | None = None,
         experiment_type: str = "SAD",
     ) -> None:
-        super().__init__(ispyb_config, experiment_type)
+        super().__init__(ispyb_config)
+        self._experiment_type = experiment_type
         self.full_params: RotationInternalParameters = parameters
         self._ispyb_params: RotationIspybParams = (  # pyright: ignore
             parameters.hyperion_params.ispyb_params
         )
         self._detector_params = parameters.hyperion_params.detector_params
-        self._run_number = (
+        self._run_number: int = (
             self._detector_params.run_number
         )  # type:ignore # the validator always makes this int
-        self._omega_start = self._detector_params.omega_start
+        self._omega_start: float = self._detector_params.omega_start
         self._data_collection_id: int | None = None
         self._data_collection_group_id = datacollection_group_id
 
+    def _get_xtal_snapshots(self):
         if self._ispyb_params.xtal_snapshots_omega_start:
-            self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start[:3]
+            xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start[:3]
             ISPYB_LOGGER.info(
-                f"Using rotation scan snapshots {self._xtal_snapshots} for ISPyB deposition"
+                f"Using rotation scan snapshots {xtal_snapshots} for ISPyB deposition"
             )
+            return xtal_snapshots
         else:
-            self._xtal_snapshots = []
             ISPYB_LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
+
+    @property
+    def experiment_type(self):
+        return self._experiment_type
 
     def _mutate_data_collection_params_for_experiment(
         self, params: dict[str, Any]
@@ -80,7 +86,7 @@ class StoreRotationInIspyb(StoreInIspyb):
             self._detector_params,
             self._omega_start,
             self._run_number,
-            self._xtal_snapshots,
+            self._get_xtal_snapshots(),
             self._data_collection_id,
         )
         self._store_position_table(conn, self._data_collection_id, self._ispyb_params)
@@ -99,7 +105,7 @@ class StoreRotationInIspyb(StoreInIspyb):
                                                                              self._construct_comment,
                                                                              self._ispyb_params, self._detector_params,
                                                                              self._omega_start, self._run_number,
-                                                                             self._xtal_snapshots)
+                                                                             self._get_xtal_snapshots())
         return IspybIds(
             data_collection_group_id=self._data_collection_group_id,
             data_collection_ids=(self._data_collection_id,),
