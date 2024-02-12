@@ -62,7 +62,7 @@ def test_store_3d_grid_scan(
     hyperion_params.ispyb_params.upper_left = np.array([x, y, z])
     dummy_params.experiment_params.z_step_size = 0.2
 
-    assert dummy_3d_gridscan_ispyb._experiment_type == "Mesh3D"
+    assert dummy_3d_gridscan_ispyb.experiment_type == "Mesh3D"
 
     assert dummy_3d_gridscan_ispyb.begin_deposition() == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
@@ -88,15 +88,18 @@ def test_store_3d_grid_scan(
         == hyperion_params.ispyb_params.xtal_snapshots_omega_end
     )
     assert (
-        dummy_3d_gridscan_ispyb.y_step_size
+        dummy_3d_gridscan_ispyb._grid_scan_state.y_step_size
         == dummy_params.experiment_params.z_step_size
     )
-    assert dummy_3d_gridscan_ispyb.y_steps == dummy_params.experiment_params.z_steps
+    assert (
+        dummy_3d_gridscan_ispyb._grid_scan_state.y_steps
+        == dummy_params.experiment_params.z_steps
+    )
 
-    assert dummy_3d_gridscan_ispyb.upper_left is not None
+    assert dummy_3d_gridscan_ispyb._grid_scan_state.upper_left is not None
 
-    assert dummy_3d_gridscan_ispyb.upper_left[0] == x
-    assert dummy_3d_gridscan_ispyb.upper_left[1] == z
+    assert dummy_3d_gridscan_ispyb._grid_scan_state.upper_left[0] == x
+    assert dummy_3d_gridscan_ispyb._grid_scan_state.upper_left[1] == z
 
 
 def dict_to_ordered_params(param_template, kv_pairs: dict):
@@ -448,7 +451,7 @@ def test_store_grid_scan(
         ispyb_conn(), TEST_DATA_COLLECTION_IDS[0]
     ).thenReturn(TEST_GRID_INFO_IDS[0])
 
-    assert dummy_2d_gridscan_ispyb._experiment_type == "mesh"
+    assert dummy_2d_gridscan_ispyb.experiment_type == "mesh"
 
     assert dummy_2d_gridscan_ispyb.begin_deposition() == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),

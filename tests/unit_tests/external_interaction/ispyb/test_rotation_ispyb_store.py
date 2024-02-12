@@ -260,15 +260,11 @@ def test_end_deposition_happy_path(
     assert len(mx_acq.upsert_data_collection.mock_calls) == 1
 
 
-@patch("ispyb.open", new_callable=mock_open)
 def test_store_rotation_scan_failures(
-    ispyb_conn,
+    ispyb_conn_with_2x2_collections_and_grid_info,
     dummy_rotation_ispyb: StoreRotationInIspyb,
     dummy_rotation_params: RotationInternalParameters,
 ):
-    ispyb_conn.return_value.mx_acquisition = mock()
-    ispyb_conn.return_value.core = mock()
-
     dummy_rotation_ispyb._data_collection_id = None
 
     with pytest.raises(AssertionError):
@@ -281,6 +277,7 @@ def test_store_rotation_scan_failures(
         ispyb_no_snapshots = StoreRotationInIspyb(  # noqa
             CONST.SIM.ISPYB_CONFIG, dummy_rotation_params
         )
+        ispyb_no_snapshots.begin_deposition()
         warning.assert_called_once_with("No xtal snapshot paths sent to ISPyB!")
 
 
