@@ -18,7 +18,11 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
     def experiment_type(self):
         return "mesh"
 
-    def _store_scan_data(self, conn: Connector):
+    def _store_scan_data(
+        self,
+        conn: Connector,
+        xy_data_collection_info,
+    ):
         assert (
             self._data_collection_group_id
         ), "Attempted to store scan data without a collection group"
@@ -40,6 +44,7 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
 
         collection_id = self._data_collection_ids[0]
         assert self._ispyb_params is not None and self._detector_params is not None
+        xy_data_collection_info = self.with_axis_info(xy_data_collection_info)
         params = self.fill_common_data_collection_params(
             constructor,
             conn,
@@ -47,11 +52,8 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
             collection_id,
             self._detector_params,
             self._ispyb_params,
-            self._omega_start,
-            self._run_number,
-            self._xtal_snapshots,
+            xy_data_collection_info,
         )
-        params = self._mutate_data_collection_params_for_experiment(params)
         data_collection_id = self._upsert_data_collection(conn, params)
 
         self._store_position_table(conn, data_collection_id, self._ispyb_params)

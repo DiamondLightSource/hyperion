@@ -76,18 +76,6 @@ def test_store_3d_grid_scan(
     )
 
     assert (
-        dummy_3d_gridscan_ispyb._omega_start
-        == hyperion_params.detector_params.omega_start + 90
-    )
-    assert (
-        dummy_3d_gridscan_ispyb._run_number
-        == hyperion_params.detector_params.run_number + 1  # pyright: ignore
-    )
-    assert (
-        dummy_3d_gridscan_ispyb._xtal_snapshots
-        == hyperion_params.ispyb_params.xtal_snapshots_omega_end
-    )
-    assert (
         dummy_3d_gridscan_ispyb._grid_scan_state.y_step_size
         == dummy_params.experiment_params.z_step_size
     )

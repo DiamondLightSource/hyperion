@@ -1,4 +1,3 @@
-from copy import deepcopy
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -21,9 +20,6 @@ from .conftest import (
     TEST_SESSION_ID,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
-)
-from .test_gridscan_ispyb_store_2d import (
-    EMPTY_DATA_COLLECTION_PARAMS,
 )
 
 EXPECTED_START_TIME = "2024-02-08 14:03:59"
@@ -293,21 +289,3 @@ def test_store_rotation_scan_uses_supplied_dcgid(
     )
     assert store_in_ispyb.begin_deposition().data_collection_group_id == dcgid
     assert store_in_ispyb.update_deposition().data_collection_group_id == dcgid
-
-
-@patch("ispyb.open", new_callable=mock_open)
-def test_mutate_params_rotation(
-    ispyb_conn,
-    dummy_rotation_ispyb: StoreRotationInIspyb,
-    dummy_rotation_params: RotationInternalParameters,
-):
-    rotation_dict = deepcopy(EMPTY_DATA_COLLECTION_PARAMS)
-
-    rotation_transformed = (
-        dummy_rotation_ispyb._mutate_data_collection_params_for_experiment(
-            rotation_dict
-        )
-    )
-    assert rotation_transformed["axis_range"] == 0.1
-    assert rotation_transformed["axis_end"] == 180.0
-    assert rotation_transformed["n_images"] == 1800
