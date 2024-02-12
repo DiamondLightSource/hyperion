@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store import GridScanState
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store import GridScanInfo
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
 )
@@ -547,9 +547,9 @@ def test_ispyb_deposition_rounds_box_size_int(
     raw,
     rounded,
 ):
-    dummy_2d_gridscan_ispyb.full_params.experiment_params.x_steps = 0
-    dummy_2d_gridscan_ispyb.full_params.experiment_params.x_step_size = raw
-    dummy_2d_gridscan_ispyb._grid_scan_state = GridScanState(
+    dummy_params.experiment_params.x_steps = 0
+    dummy_params.experiment_params.x_step_size = raw
+    grid_scan_info = GridScanInfo(
         [
             0,
             0,
@@ -558,17 +558,12 @@ def test_ispyb_deposition_rounds_box_size_int(
         0,
         raw,
     )
-    bottom_right_from_top_left.return_value = (
-        dummy_2d_gridscan_ispyb._grid_scan_state.upper_left
-    )
-
-    dummy_2d_gridscan_ispyb._ispyb_params = MagicMock()
-    dummy_2d_gridscan_ispyb.full_params = dummy_params
+    bottom_right_from_top_left.return_value = grid_scan_info.upper_left
 
     assert dummy_2d_gridscan_ispyb._construct_comment(
-        dummy_2d_gridscan_ispyb._ispyb_params,
-        dummy_2d_gridscan_ispyb.full_params,
-        dummy_2d_gridscan_ispyb._grid_scan_state,
+        MagicMock(),
+        dummy_params,
+        grid_scan_info,
     ) == (
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
         f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."

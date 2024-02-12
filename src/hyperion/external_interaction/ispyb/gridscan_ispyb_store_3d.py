@@ -3,7 +3,7 @@ from __future__ import annotations
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
-    GridScanState,
+    GridScanInfo,
     StoreGridscanInIspyb,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import DataCollectionInfo
@@ -21,7 +21,10 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         return "Mesh3D"
 
     def _store_scan_data(
-        self, conn: Connector, xy_data_collection_info: DataCollectionInfo
+        self,
+        conn: Connector,
+        xy_data_collection_info: DataCollectionInfo,
+        grid_scan_info: GridScanInfo,
     ):
         assert (
             self._data_collection_group_id
@@ -43,7 +46,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
                 conn,
                 data_collection_group_id,
                 lambda: self._construct_comment(
-                    self._ispyb_params, self.full_params, self._grid_scan_state
+                    self._ispyb_params, self.full_params, grid_scan_info
                 ),
                 self._ispyb_params,
                 self._detector_params,
@@ -54,7 +57,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
                 conn,
                 data_collection_group_id,
                 lambda: self._construct_comment(
-                    self._ispyb_params, self.full_params, self._grid_scan_state
+                    self._ispyb_params, self.full_params, grid_scan_info
                 ),
                 self._ispyb_params,
                 self._detector_params,
@@ -64,17 +67,28 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
 
         self._store_position_table(conn, data_collection_id_1, self._ispyb_params)
 
-        grid_id_1 = self._store_grid_info_table(conn, data_collection_id_1)
+        grid_id_1 = self._store_grid_info_table(
+            conn, data_collection_id_1, grid_scan_info
+        )
+
+        grid_scan_info = GridScanInfo(
+            [
+                int(self._ispyb_params.upper_left[0]),
+                int(self._ispyb_params.upper_left[2]),
+            ],
+            self.full_params.experiment_params.z_steps,
+            self.full_params.experiment_params.z_step_size,
+        )
 
         xz_data_collection_info = self._populate_xz_data_collection_info(
-            xy_data_collection_info
+            xy_data_collection_info, grid_scan_info
         )
 
         data_collection_id_2 = self._store_data_collection_table(
             conn,
             data_collection_group_id,
             lambda: self._construct_comment(
-                self._ispyb_params, self.full_params, self._grid_scan_state
+                self._ispyb_params, self.full_params, grid_scan_info
             ),
             self._ispyb_params,
             self._detector_params,
@@ -83,7 +97,9 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
 
         self._store_position_table(conn, data_collection_id_2, self._ispyb_params)
 
-        grid_id_2 = self._store_grid_info_table(conn, data_collection_id_2)
+        grid_id_2 = self._store_grid_info_table(
+            conn, data_collection_id_2, grid_scan_info
+        )
 
         return (
             [data_collection_id_1, data_collection_id_2],
@@ -92,7 +108,9 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         )
 
     def _populate_xz_data_collection_info(
-        self, xy_data_collection_info: DataCollectionInfo
+        self,
+        xy_data_collection_info: DataCollectionInfo,
+        grid_scan_info: GridScanInfo,
     ) -> DataCollectionInfo:
         assert (
             xy_data_collection_info.omega_start is not None
@@ -103,19 +121,11 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         omega_start = xy_data_collection_info.omega_start + 90
         run_number = xy_data_collection_info.run_number + 1
         xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_end or []
-        self._grid_scan_state = GridScanState(
-            [
-                int(self._ispyb_params.upper_left[0]),
-                int(self._ispyb_params.upper_left[2]),
-            ],
-            self.full_params.experiment_params.z_steps,
-            self.full_params.experiment_params.z_step_size,
-        )
         info = DataCollectionInfo(
             omega_start,
             run_number,
             xtal_snapshots,
-            self.full_params.experiment_params.x_steps * self._grid_scan_state.y_steps,
+            self.full_params.experiment_params.x_steps * grid_scan_info.y_steps,
             0,
             omega_start,
         )
