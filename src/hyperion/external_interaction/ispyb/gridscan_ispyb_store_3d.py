@@ -6,6 +6,7 @@ from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
     GridScanState,
     StoreGridscanInIspyb,
 )
+from hyperion.external_interaction.ispyb.ispyb_store import DataCollectionInfo
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -19,7 +20,9 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
     def experiment_type(self):
         return "Mesh3D"
 
-    def _store_scan_data(self, conn: Connector):
+    def _store_scan_data(
+        self, conn: Connector, xy_data_collection_info: DataCollectionInfo
+    ):
         assert (
             self._data_collection_group_id
         ), "Attempted to store scan data without a collection group"
@@ -35,6 +38,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         )
 
         data_collection_group_id = self._data_collection_group_id
+        xy_data_collection_info = self.with_axis_info(xy_data_collection_info)
         if len(self._data_collection_ids) != 1:
             data_collection_id_1 = self._store_data_collection_table(
                 conn,
@@ -44,9 +48,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
                 ),
                 self._ispyb_params,
                 self._detector_params,
-                self._omega_start,
-                self._run_number,
-                self._xtal_snapshots,
+                xy_data_collection_info,
             )
         else:
             data_collection_id_1 = self._store_data_collection_table(
@@ -57,9 +59,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
                 ),
                 self._ispyb_params,
                 self._detector_params,
-                self._omega_start,
-                self._run_number,
-                self._xtal_snapshots,
+                xy_data_collection_info,
                 self._data_collection_ids[0],
             )
 
@@ -67,8 +67,11 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
 
         grid_id_1 = self._store_grid_info_table(conn, data_collection_id_1)
 
-        self.__prepare_second_scan_params()
+        xz_data_collection_info = self.__prepare_second_scan_params(
+            xy_data_collection_info
+        )
 
+        xz_data_collection_info = self.with_axis_info(xz_data_collection_info)
         data_collection_id_2 = self._store_data_collection_table(
             conn,
             data_collection_group_id,
@@ -77,9 +80,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             ),
             self._ispyb_params,
             self._detector_params,
-            self._omega_start,
-            self._run_number,
-            self._xtal_snapshots,
+            xz_data_collection_info,
         )
 
         self._store_position_table(conn, data_collection_id_2, self._ispyb_params)
@@ -92,16 +93,18 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             data_collection_group_id,
         )
 
-    def __prepare_second_scan_params(self):
+    def __prepare_second_scan_params(
+        self, xy_data_collection_info: DataCollectionInfo
+    ) -> DataCollectionInfo:
         assert (
-            self._omega_start is not None
-            and self._run_number is not None
+            xy_data_collection_info.omega_start is not None
+            and xy_data_collection_info.run_number is not None
             and self._ispyb_params is not None
             and self.full_params is not None
         ), "StoreGridscanInIspyb failed to get parameters"
-        self._omega_start += 90
-        self._run_number += 1
-        self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_end or []
+        omega_start = xy_data_collection_info.omega_start + 90
+        run_number = xy_data_collection_info.run_number + 1
+        xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_end or []
         self._grid_scan_state = GridScanState(
             [
                 int(self._ispyb_params.upper_left[0]),
@@ -110,3 +113,4 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             self.full_params.experiment_params.z_steps,
             self.full_params.experiment_params.z_step_size,
         )
+        return DataCollectionInfo(omega_start, run_number, xtal_snapshots)

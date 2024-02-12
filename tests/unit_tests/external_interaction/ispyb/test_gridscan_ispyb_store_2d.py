@@ -1,5 +1,4 @@
-from copy import deepcopy
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -8,9 +7,6 @@ from ispyb.sp.mxacquisition import MXAcquisition
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store import GridScanState
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
-)
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
@@ -597,20 +593,3 @@ def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_t
     _test_when_grid_scan_stored_then_data_present_in_upserts(
         ispyb_conn, dummy_2d_gridscan_ispyb, dummy_params, test_number_of_steps
     )
-
-
-@patch("ispyb.open", new_callable=mock_open)
-def test_mutate_params_gridscan(
-    ispyb_conn,
-    dummy_3d_gridscan_ispyb: Store3DGridscanInIspyb,
-    dummy_params: GridscanInternalParameters,
-):
-    fgs_dict = deepcopy(EMPTY_DATA_COLLECTION_PARAMS)
-
-    dummy_3d_gridscan_ispyb._grid_scan_state.y_steps = 5
-
-    fgs_transformed = (
-        dummy_3d_gridscan_ispyb._mutate_data_collection_params_for_experiment(fgs_dict)
-    )
-    assert fgs_transformed["axis_range"] == 0
-    assert fgs_transformed["n_images"] == 200

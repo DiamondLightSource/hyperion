@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional
 
 import ispyb
 import ispyb.sqlalchemy
@@ -35,6 +36,18 @@ class IspybIds(BaseModel):
     grid_ids: tuple[int, ...] | None = None
 
 
+@dataclass()
+class DataCollectionInfo:
+    omega_start: float
+    run_number: int
+    xtal_snapshots: list[str] | None
+
+    n_images: Optional[int] = None
+    axis_range: Optional[float] = None
+    axis_end: Optional[float] = None
+    kappa_start: Optional[float] = None
+
+
 class StoreInIspyb(ABC):
     def __init__(self, ispyb_config: str) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
@@ -45,12 +58,6 @@ class StoreInIspyb(ABC):
     @property
     @abstractmethod
     def experiment_type(self):
-        pass
-
-    @abstractmethod
-    def _mutate_data_collection_params_for_experiment(
-        self, params: dict[str, Any]
-    ) -> dict[str, Any]:
         pass
 
     @abstractmethod
@@ -190,9 +197,7 @@ class StoreInIspyb(ABC):
         comment_constructor,
         ispyb_params,
         detector_params,
-        omega_start,
-        run_number,
-        xtal_snapshots,
+        data_collection_info: DataCollectionInfo,
         data_collection_id: Optional[int] = None,
     ) -> int:
         assert ispyb_params is not None and detector_params is not None
@@ -204,12 +209,8 @@ class StoreInIspyb(ABC):
             data_collection_id,
             detector_params,
             ispyb_params,
-            omega_start,
-            run_number,
-            xtal_snapshots,
+            data_collection_info,
         )
-
-        params = self._mutate_data_collection_params_for_experiment(params)
 
         return self._upsert_data_collection(conn, params)
 
@@ -221,9 +222,7 @@ class StoreInIspyb(ABC):
         data_collection_id,
         detector_params,
         ispyb_params,
-        omega_start,
-        run_number,
-        xtal_snapshots,
+        data_collection_info: DataCollectionInfo,
     ):
         mx_acquisition: MXAcquisition = conn.mx_acquisition
         params = mx_acquisition.get_data_collection_params()
@@ -235,7 +234,7 @@ class StoreInIspyb(ABC):
         params["parentid"] = data_collection_group_id
         params["sampleid"] = ispyb_params.sample_id
         params["detectorid"] = I03_EIGER_DETECTOR
-        params["axis_start"] = omega_start
+        params["axis_start"] = data_collection_info.omega_start
         params["focal_spot_size_at_samplex"] = ispyb_params.focal_spot_size_x
         params["focal_spot_size_at_sampley"] = ispyb_params.focal_spot_size_y
         params["slitgap_vertical"] = ispyb_params.slit_gap_size_y
@@ -245,7 +244,7 @@ class StoreInIspyb(ABC):
         # Ispyb wants the transmission in a percentage, we use fractions
         params["transmission"] = ispyb_params.transmission_fraction * 100
         params["comments"] = comment_constructor()
-        params["data_collection_number"] = run_number
+        params["data_collection_number"] = data_collection_info.run_number
         params["detector_distance"] = detector_params.detector_distance
         params["exp_time"] = detector_params.exposure_time
         params["imgdir"] = detector_params.directory
@@ -256,7 +255,7 @@ class StoreInIspyb(ABC):
         params["n_passes"] = 1
         params["overlap"] = 0
         params["flux"] = ispyb_params.flux
-        params["omegastart"] = omega_start
+        params["omegastart"] = data_collection_info.omega_start
         params["start_image_number"] = 1
         params["resolution"] = ispyb_params.resolution
         params["wavelength"] = ispyb_params.wavelength_angstroms
@@ -264,16 +263,26 @@ class StoreInIspyb(ABC):
             detector_params.detector_distance
         )
         params["xbeam"], params["ybeam"] = beam_position
-        if xtal_snapshots and len(xtal_snapshots) == 3:
+        if (
+            data_collection_info.xtal_snapshots
+            and len(data_collection_info.xtal_snapshots) == 3
+        ):
             (
                 params["xtal_snapshot1"],
                 params["xtal_snapshot2"],
                 params["xtal_snapshot3"],
-            ) = xtal_snapshots
+            ) = data_collection_info.xtal_snapshots
         params["synchrotron_mode"] = ispyb_params.synchrotron_mode
         params["undulator_gap1"] = ispyb_params.undulator_gap
         params["starttime"] = get_current_time_string()
         # temporary file template until nxs filewriting is integrated and we can use
         # that file name
-        params["file_template"] = f"{detector_params.prefix}_{run_number}_master.h5"
+        params[
+            "file_template"
+        ] = f"{detector_params.prefix}_{data_collection_info.run_number}_master.h5"
+        params["axis_range"] = data_collection_info.axis_range
+        params["axis_end"] = data_collection_info.axis_end
+        params["n_images"] = data_collection_info.n_images
+        params["kappastart"] = data_collection_info.kappa_start
+
         return params

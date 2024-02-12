@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any
 
 import ispyb
 from dodal.devices.oav import utils as oav_utils
@@ -15,6 +14,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     Orientation,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
+    DataCollectionInfo,
     IspybIds,
     StoreInIspyb,
 )
@@ -46,25 +46,25 @@ class StoreGridscanInIspyb(StoreInIspyb):
             self.full_params.experiment_params.y_steps,
             self.full_params.experiment_params.y_step_size,
         )
-        self._run_number: int
-        self._omega_start: float = 0
-        self._xtal_snapshots: list[str]
         self._data_collection_ids: tuple[int, ...] | None = None
         self.grid_ids: tuple[int, ...] | None = None
+
+    def _get_xtal_snapshots(self):
+        return self._ispyb_params.xtal_snapshots_omega_start or []
 
     def begin_deposition(self) -> IspybIds:
         # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             self._detector_params = self.full_params.hyperion_params.detector_params  # type: ignore
-            self._run_number = self._detector_params.run_number  # pyright: ignore
             self._data_collection_group_id = self._store_data_collection_group_table(conn, self._ispyb_params,
                                                                                      self._detector_params)
-            self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start or []
 
             def constructor():
                 return self._construct_comment(self._ispyb_params, self.full_params, self._grid_scan_state)
 
             assert self._ispyb_params is not None and self._detector_params is not None
+            data_collection_info = DataCollectionInfo(0, self._detector_params.run_number, self._get_xtal_snapshots())
+            data_collection_info = self.with_axis_info(data_collection_info)
             params = self.fill_common_data_collection_params(
                 constructor,
                 conn,
@@ -72,11 +72,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
                 None,
                 self._detector_params,
                 self._ispyb_params,
-                self._omega_start,
-                self._run_number,
-                self._xtal_snapshots,
+                data_collection_info
             )
-            params = self._mutate_data_collection_params_for_experiment(params)
             self._data_collection_ids = (
                 self._upsert_data_collection(conn, params),  # pyright: ignore
             )
@@ -111,11 +108,6 @@ class StoreGridscanInIspyb(StoreInIspyb):
     def _store_grid_scan(self, full_params: GridscanInternalParameters):
         self.full_params = full_params
         self._ispyb_params = full_params.hyperion_params.ispyb_params  # pyright: ignore
-        self._run_number = (
-            self._detector_params.run_number
-        )  # type:ignore # the validator always makes this int
-        self._omega_start = self._detector_params.omega_start
-        self._xtal_snapshots = self._ispyb_params.xtal_snapshots_omega_start or []
         self._grid_scan_state = GridScanState(
             [
                 int(self._ispyb_params.upper_left[0]),
@@ -125,26 +117,27 @@ class StoreGridscanInIspyb(StoreInIspyb):
             full_params.experiment_params.y_step_size,
         )
 
+        xy_data_collection_info = DataCollectionInfo(
+            self._detector_params.omega_start,
+            self._detector_params.run_number,
+            self._get_xtal_snapshots(),
+        )
+
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
-            return self._store_scan_data(conn)
+            return self._store_scan_data(conn, xy_data_collection_info)
 
     @abstractmethod
-    def _store_scan_data(self):
+    def _store_scan_data(self, conn, xtal_snapshots):
         pass
 
-    def _mutate_data_collection_params_for_experiment(
-        self, params: dict[str, Any]
-    ) -> dict[str, Any]:
-        assert (
-            self.full_params and self._grid_scan_state and self._grid_scan_state.y_steps
-        )
-        params["axis_range"] = 0
-        params["axis_end"] = self._omega_start
-        params["n_images"] = (
+    def with_axis_info(self, data_collection_info):
+        data_collection_info.axis_range = 0
+        data_collection_info.axis_end = data_collection_info.omega_start
+        data_collection_info.n_images = (
             self.full_params.experiment_params.x_steps * self._grid_scan_state.y_steps
         )
-        return params
+        return data_collection_info
 
     def _store_grid_info_table(
         self, conn: Connector, ispyb_data_collection_id: int
