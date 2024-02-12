@@ -50,9 +50,9 @@ class PandAGridscanInternalParameters(InternalParameters):
         experiment_params: dict[str, Any],
     ):
 
-        #FGS motion script moves sample to initial X position for start of second grid, so we need an even number of
-        #rows during the first grid to ensure that any position tracking done in the software is consistent
-        if experiment_params['y_steps']%2:
+        # Panda not configured to run a half complete snake so enforce even rows on first grid
+        # See https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning#motion-program-summary
+        if experiment_params["y_steps"] % 2:
             raise YStepOddNumberException("The number of Y steps must be even")
 
         return PandAGridScanParams(
