@@ -267,6 +267,13 @@ def flux():
 
 
 @pytest.fixture
+def ophyd_pin_tip_detection():
+    RunEngine()  # A RE is needed to start the bluesky loop
+    pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
+    return pin_tip_detection
+
+
+@pytest.fixture
 def attenuator():
     with patch(
         "dodal.devices.attenuator.await_value",
