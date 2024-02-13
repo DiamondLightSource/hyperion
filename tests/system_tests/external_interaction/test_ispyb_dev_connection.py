@@ -59,10 +59,10 @@ def test_ispyb_get_comment_from_collection_correctly(fetch_comment: Callable[...
 
 @pytest.mark.s03
 def test_ispyb_deposition_comment_correct_on_failure(
-    dummy_ispyb: Store2DGridscanInIspyb, fetch_comment: Callable[..., Any]
+    dummy_ispyb: Store2DGridscanInIspyb, fetch_comment: Callable[..., Any], dumm_params
 ):
-    dcid = dummy_ispyb.begin_deposition()
-    dummy_ispyb.end_deposition("fail", "could not connect to devices")
+    dcid = dummy_ispyb.begin_deposition(dummy_params)
+    dummy_ispyb.end_deposition("fail", "could not connect to devices", dummy_params)
     assert (
         fetch_comment(dcid.data_collection_ids[0])  # type: ignore
         == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
@@ -71,12 +71,14 @@ def test_ispyb_deposition_comment_correct_on_failure(
 
 @pytest.mark.s03
 def test_ispyb_deposition_comment_correct_for_3D_on_failure(
-    dummy_ispyb_3d: Store3DGridscanInIspyb, fetch_comment: Callable[..., Any]
+    dummy_ispyb_3d: Store3DGridscanInIspyb,
+    fetch_comment: Callable[..., Any],
+    dummy_params,
 ):
-    dcid = dummy_ispyb_3d.begin_deposition()
+    dcid = dummy_ispyb_3d.begin_deposition(dummy_params)
     dcid1 = dcid.data_collection_ids[0]  # type: ignore
     dcid2 = dcid.data_collection_ids[1]  # type: ignore
-    dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
+    dummy_ispyb_3d.end_deposition("fail", "could not connect to devices", dummy_params)
     assert (
         fetch_comment(dcid1)
         == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
@@ -102,13 +104,14 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     exp_num_of_grids: Literal[1, 2],
     success: bool,
     fetch_comment: Callable[..., Any],
+    dummy_params,
 ):
     test_params = GridscanInternalParameters(**default_raw_params())
     test_params.hyperion_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
     ispyb: StoreGridscanInIspyb = StoreClass(
         CONST.SIM.DEV_ISPYB_DATABASE_CFG, test_params
     )
-    ispyb_ids: IspybIds = ispyb.begin_deposition()
+    ispyb_ids: IspybIds = ispyb.begin_deposition(dummy_params)
 
     assert len(ispyb_ids.data_collection_ids) == exp_num_of_grids  # type: ignore
     assert len(ispyb_ids.grid_ids) == exp_num_of_grids  # type: ignore
@@ -126,9 +129,9 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     ]
 
     if success:
-        ispyb.end_deposition("success", "")
+        ispyb.end_deposition("success", "", dummy_params)
     else:
-        ispyb.end_deposition("fail", "In error")
+        ispyb.end_deposition("fail", "In error", dummy_params)
         expected_comments = [
             e + " DataCollection Unsuccessful reason: In error"
             for e in expected_comments

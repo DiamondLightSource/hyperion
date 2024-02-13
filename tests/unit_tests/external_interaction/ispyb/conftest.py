@@ -137,25 +137,8 @@ def remap_upsert_columns(keys: Sequence[str], values: list):
 
 @pytest.fixture
 def dummy_rotation_ispyb(dummy_rotation_params):
-    store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG, dummy_rotation_params)
+    store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG)
     return store_in_ispyb
-
-
-@pytest.fixture
-def ispyb_conn_with_1_collection(base_ispyb_conn):
-    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection.return_value = (
-        TEST_DATA_COLLECTION_IDS[0]
-    )
-    base_ispyb_conn.return_value.mx_acquisition.update_dc_position.return_value = (
-        TEST_POSITION_ID
-    )
-    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
-        TEST_DATA_COLLECTION_GROUP_ID
-    )
-    base_ispyb_conn.return_value.mx_acquisition.upsert_dc_grid.return_value = (
-        TEST_GRID_INFO_IDS[0]
-    )
-    return base_ispyb_conn
 
 
 @pytest.fixture

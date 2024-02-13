@@ -80,14 +80,13 @@ class RotationISPyBCallback(BaseISPyBCallback):
             if experiment_type:
                 self.ispyb = StoreRotationInIspyb(
                     self.ispyb_config,
-                    self.params,
                     dcgid,
                     experiment_type,
                 )
             else:
-                self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
+                self.ispyb = StoreRotationInIspyb(self.ispyb_config, dcgid)
             ISPYB_LOGGER.info("Beginning ispyb deposition")
-            self.ispyb_ids = self.ispyb.begin_deposition()
+            self.ispyb_ids = self.ispyb.begin_deposition(self.params)
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
