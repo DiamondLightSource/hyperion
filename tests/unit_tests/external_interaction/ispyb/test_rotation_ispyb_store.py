@@ -25,6 +25,47 @@ from .conftest import (
 EXPECTED_START_TIME = "2024-02-08 14:03:59"
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
 
+EXPECTED_DATA_COLLECTION = {
+    "visitid": TEST_SESSION_ID,
+    "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+    "sampleid": TEST_SAMPLE_ID,
+    "detectorid": 78,
+    "axisstart": 0.0,
+    "axisrange": 0.1,
+    "axisend": 180,
+    "focal_spot_size_at_samplex": 1.0,
+    "focal_spot_size_at_sampley": 1.0,
+    "slitgap_vertical": 1,
+    "slitgap_horizontal": 1,
+    "beamsize_at_samplex": 1,
+    "beamsize_at_sampley": 1,
+    "transmission": 100.0,
+    "comments": "Hyperion rotation scan",
+    "data_collection_number": 0,
+    "detector_distance": 100.0,
+    "exp_time": 0.1,
+    "imgdir": "/tmp/",
+    "imgprefix": "file_name",
+    "imgsuffix": "h5",
+    "n_passes": 1,
+    "overlap": 0,
+    "flux": 10.0,
+    "omegastart": 0,
+    "start_image_number": 1,
+    "resolution": 1.0,  # deferred
+    "wavelength": 123.98419840550369,
+    "xbeam": 150.0,
+    "ybeam": 160.0,
+    "xtal_snapshot1": "test_1_y",
+    "xtal_snapshot2": "test_2_y",
+    "xtal_snapshot3": "test_3_y",
+    "synchrotron_mode": None,
+    "starttime": EXPECTED_START_TIME,
+    "filetemplate": "file_name_0_master.h5",
+    "nimages": 1800,
+    "kappastart": 0,
+}
+
 
 @pytest.fixture
 def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
@@ -61,46 +102,31 @@ def test_begin_deposition(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        {
-            "visitid": TEST_SESSION_ID,
-            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-            "sampleid": TEST_SAMPLE_ID,
-            "detectorid": 78,
-            "axisstart": 0.0,
-            "axisrange": 0.1,
-            "axisend": 180,
-            "focal_spot_size_at_samplex": 1.0,
-            "focal_spot_size_at_sampley": 1.0,
-            "slitgap_vertical": 1,
-            "slitgap_horizontal": 1,
-            "beamsize_at_samplex": 1,
-            "beamsize_at_sampley": 1,
-            "transmission": 100.0,
-            "comments": "Hyperion rotation scan",
-            "data_collection_number": 0,
-            "detector_distance": 100.0,
-            "exp_time": 0.1,
-            "imgdir": "/tmp/",
-            "imgprefix": "file_name",
-            "imgsuffix": "h5",
-            "n_passes": 1,
-            "overlap": 0,
-            "flux": 10.0,
-            "omegastart": 0,
-            "start_image_number": 1,
-            "resolution": 1.0,  # deferred
-            "wavelength": 123.98419840550369,
-            "xbeam": 150.0,
-            "ybeam": 160.0,
-            "xtal_snapshot1": "test_1_y",
-            "xtal_snapshot2": "test_2_y",
-            "xtal_snapshot3": "test_3_y",
-            "synchrotron_mode": None,
-            "starttime": EXPECTED_START_TIME,
-            "filetemplate": "file_name_0_master.h5",
-            "nimages": 1800,
-            "kappastart": 0,
-        },
+        EXPECTED_DATA_COLLECTION,
+    )
+
+
+@patch(
+    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    new=MagicMock(return_value=EXPECTED_START_TIME),
+)
+def test_begin_deposition_with_group_id_doesnt_insert(
+    ispyb_conn_with_2x2_collections_and_grid_info,
+    dummy_rotation_params,
+):
+    dummy_rotation_ispyb = StoreRotationInIspyb(
+        SIM_ISPYB_CONFIG, dummy_rotation_params, TEST_DATA_COLLECTION_GROUP_ID
+    )
+    assert dummy_rotation_ispyb.begin_deposition() == IspybIds(
+        data_collection_ids=TEST_DATA_COLLECTION_IDS[0],
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+    )
+    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    mx_acq.upsert_data_collection_group.assert_not_called()
+    assert_upsert_call_with(
+        mx_acq.upsert_data_collection.mock_calls[0],
+        mx_acq.get_data_collection_params(),
+        EXPECTED_DATA_COLLECTION,
     )
 
 
@@ -162,46 +188,61 @@ def test_update_deposition(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
+        EXPECTED_DATA_COLLECTION
+        | {
+            "id": TEST_DATA_COLLECTION_IDS[0],
+        },
+    )
+
+    assert_upsert_call_with(
+        mx_acq.update_dc_position.mock_calls[0],
+        mx_acq.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "visitid": TEST_SESSION_ID,
-            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+            "pos_x": dummy_rotation_params.hyperion_params.ispyb_params.position[0],
+            "pos_y": dummy_rotation_params.hyperion_params.ispyb_params.position[1],
+            "pos_z": dummy_rotation_params.hyperion_params.ispyb_params.position[2],
+        },
+    )
+
+
+@patch(
+    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    new=MagicMock(return_value=EXPECTED_START_TIME),
+)
+def test_update_deposition_with_group_id_updates(
+    ispyb_conn_with_2x2_collections_and_grid_info,
+    dummy_rotation_params,
+):
+    dummy_rotation_ispyb = StoreRotationInIspyb(
+        SIM_ISPYB_CONFIG, dummy_rotation_params, TEST_DATA_COLLECTION_GROUP_ID
+    )
+    dummy_rotation_ispyb.begin_deposition()
+    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    mx_acq.upsert_data_collection_group.reset_mock()
+    mx_acq.upsert_data_collection.reset_mock()
+
+    assert dummy_rotation_ispyb.update_deposition() == IspybIds(
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+        data_collection_ids=TEST_DATA_COLLECTION_IDS[0],
+    )
+    assert_upsert_call_with(
+        mx_acq.upsert_data_collection_group.mock_calls[0],
+        mx_acq.get_data_collection_group_params(),
+        {
+            "id": TEST_DATA_COLLECTION_GROUP_ID,
+            "parentid": TEST_SESSION_ID,
+            "experimenttype": "SAD",
             "sampleid": TEST_SAMPLE_ID,
-            "detectorid": 78,
-            "axisstart": 0.0,
-            "axisrange": 0.1,
-            "axisend": 180,
-            "focal_spot_size_at_samplex": 1.0,
-            "focal_spot_size_at_sampley": 1.0,
-            "slitgap_vertical": 1,
-            "slitgap_horizontal": 1,
-            "beamsize_at_samplex": 1,
-            "beamsize_at_sampley": 1,
-            "transmission": 100.0,
-            "comments": "Hyperion rotation scan",
-            "data_collection_number": 0,
-            "detector_distance": 100.0,
-            "exp_time": 0.1,
-            "imgdir": "/tmp/",
-            "imgprefix": "file_name",
-            "imgsuffix": "h5",
-            "n_passes": 1,
-            "overlap": 0,
-            "flux": 10.0,
-            "omegastart": 0,
-            "start_image_number": 1,
-            "resolution": 1.0,  # deferred
-            "wavelength": 123.98419840550369,
-            "xbeam": 150.0,
-            "ybeam": 160.0,
-            "xtal_snapshot1": "test_1_y",
-            "xtal_snapshot2": "test_2_y",
-            "xtal_snapshot3": "test_3_y",
-            "synchrotron_mode": None,
-            "starttime": EXPECTED_START_TIME,
-            "filetemplate": "file_name_0_master.h5",
-            "nimages": 1800,
-            "kappastart": 0,
+            "sample_barcode": TEST_BARCODE,  # deferred
+        },
+    )
+    assert_upsert_call_with(
+        mx_acq.upsert_data_collection.mock_calls[0],
+        mx_acq.get_data_collection_params(),
+        EXPECTED_DATA_COLLECTION
+        | {
+            "id": TEST_DATA_COLLECTION_IDS[0],
         },
     )
 
