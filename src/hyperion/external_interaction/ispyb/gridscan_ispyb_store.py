@@ -82,7 +82,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def _store_grid_scan(self, full_params: GridscanInternalParameters):
         self.full_params = full_params
-        self._ispyb_params = full_params.hyperion_params.ispyb_params
+        self._ispyb_params = full_params.hyperion_params.ispyb_params  # pyright: ignore
         self._run_number = (
             self._detector_params.run_number
         )  # type:ignore # the validator always makes this int

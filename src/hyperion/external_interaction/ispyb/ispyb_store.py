@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import ispyb
 import ispyb.sqlalchemy
@@ -252,6 +252,9 @@ class StoreInIspyb(ABC):
             f"{self._detector_params.prefix}_{self._run_number}_master.h5"
         )
 
-        params = self._mutate_data_collection_params_for_experiment(params)
+        params = cast(
+            StrictOrderedDict,
+            self._mutate_data_collection_params_for_experiment(params),
+        )
 
         return self._upsert_data_collection(conn, params)

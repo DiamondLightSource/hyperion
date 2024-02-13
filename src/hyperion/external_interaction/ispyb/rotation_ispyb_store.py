@@ -25,7 +25,7 @@ class StoreRotationInIspyb(StoreInIspyb):
     ) -> None:
         super().__init__(ispyb_config, "SAD")
         self.full_params: RotationInternalParameters = parameters
-        self._ispyb_params: RotationIspybParams = (
+        self._ispyb_params: RotationIspybParams = (  # pyright: ignore
             parameters.hyperion_params.ispyb_params
         )
         self._detector_params = parameters.hyperion_params.detector_params

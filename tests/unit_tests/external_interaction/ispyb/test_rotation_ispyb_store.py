@@ -234,7 +234,7 @@ def test_store_rotation_scan_failures(
     ispyb_conn.return_value.mx_acquisition = mock()
     ispyb_conn.return_value.core = mock()
 
-    dummy_rotation_ispyb.data_collection_id = None
+    dummy_rotation_ispyb._data_collection_id = None
 
     with pytest.raises(AssertionError):
         dummy_rotation_ispyb.end_deposition("", "")

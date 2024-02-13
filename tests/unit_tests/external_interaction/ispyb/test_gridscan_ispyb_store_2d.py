@@ -144,9 +144,11 @@ def test_begin_deposition(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
     )
 
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    mx_acq: MagicMock = mx_acquisition_from_conn(
+        ispyb_conn_with_2x2_collections_and_grid_info
+    )
     assert_upsert_call_with(
-        mx_acq.upsert_data_collection_group.mock_calls[0],
+        mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
         mx_acq.get_data_collection_group_params(),
         {
             "parentid": TEST_SESSION_ID,
@@ -219,7 +221,7 @@ def test_update_deposition(
 
     assert dummy_2d_gridscan_ispyb.update_deposition() == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
-        data_collection_ids=[TEST_DATA_COLLECTION_IDS[0]],
+        data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         grid_ids=(TEST_GRID_INFO_IDS[0],),
     )
 
@@ -333,7 +335,9 @@ def test_end_deposition_happy_path(
 ):
     dummy_2d_gridscan_ispyb.begin_deposition()
     dummy_2d_gridscan_ispyb.update_deposition()
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    mx_acq: MagicMock = mx_acquisition_from_conn(
+        ispyb_conn_with_2x2_collections_and_grid_info
+    )
     assert len(mx_acq.upsert_data_collection_group.mock_calls) == 2
     assert len(mx_acq.upsert_data_collection.mock_calls) == 2
     assert len(mx_acq.upsert_dc_grid.mock_calls) == 1
@@ -563,7 +567,7 @@ def test_ispyb_deposition_rounds_box_size_int(
         0,
         0,
     ]
-    dummy_2d_gridscan_ispyb.ispyb_params = MagicMock()
+    dummy_2d_gridscan_ispyb._ispyb_params = MagicMock()
     dummy_2d_gridscan_ispyb.full_params = dummy_params
     dummy_2d_gridscan_ispyb.y_steps = (
         dummy_2d_gridscan_ispyb.full_params.experiment_params.x_steps

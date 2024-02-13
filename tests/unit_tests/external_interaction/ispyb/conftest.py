@@ -115,9 +115,9 @@ def ispyb_conn_with_2x2_collections_and_grid_info(base_ispyb_conn):
         if kvpairs["id"]:
             return kvpairs["id"]
         else:
-            return next(upsert_dc_grid.i)
+            return next(upsert_dc_grid.i)  # pyright: ignore
 
-    upsert_dc_grid.i = iter(TEST_GRID_INFO_IDS)
+    upsert_dc_grid.i = iter(TEST_GRID_INFO_IDS)  # pyright: ignore
 
     base_ispyb_conn.return_value.mx_acquisition.upsert_dc_grid.side_effect = (
         upsert_dc_grid
@@ -163,7 +163,7 @@ def dummy_2d_gridscan_ispyb(dummy_params):
     return Store2DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
 
 
-def mx_acquisition_from_conn(mock_ispyb_conn) -> MXAcquisition:
+def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:
     return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
 
