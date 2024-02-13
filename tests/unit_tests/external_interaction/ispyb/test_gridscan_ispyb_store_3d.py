@@ -11,7 +11,8 @@ from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-from unit_tests.external_interaction.ispyb.conftest import (
+
+from .conftest import (
     TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,

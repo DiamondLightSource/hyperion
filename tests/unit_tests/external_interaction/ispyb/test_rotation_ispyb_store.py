@@ -12,7 +12,8 @@ from hyperion.parameters.constants import SIM_ISPYB_CONFIG
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-from unit_tests.external_interaction.ispyb.conftest import (
+
+from .conftest import (
     TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
@@ -21,7 +22,7 @@ from unit_tests.external_interaction.ispyb.conftest import (
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
-from unit_tests.external_interaction.ispyb.test_gridscan_ispyb_store_2d import (
+from .test_gridscan_ispyb_store_2d import (
     EMPTY_DATA_COLLECTION_PARAMS,
 )
 
