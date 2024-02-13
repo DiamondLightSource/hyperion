@@ -410,6 +410,10 @@ n_images_store_id = [
 
 
 @pytest.mark.parametrize("n_images,store_id", n_images_store_id)
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    new=MagicMock(),
+)
 def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
     n_images: int,
     store_id: bool,
