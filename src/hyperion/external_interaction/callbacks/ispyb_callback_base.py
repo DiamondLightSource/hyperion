@@ -106,7 +106,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
 
             ISPYB_LOGGER.info("Updating ispyb entry.")
-            self.ispyb_ids = self.ispyb.update_deposition()
+            self.ispyb_ids = self.ispyb.update_deposition(self.params)
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return doc
 
@@ -123,7 +123,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         reason = doc.get("reason") or ""
         set_dcgid_tag(None)
         try:
-            self.ispyb.end_deposition(exit_status, reason)
+            self.ispyb.end_deposition(exit_status, reason, self.params)
         except Exception as e:
             ISPYB_LOGGER.warning(
                 f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"

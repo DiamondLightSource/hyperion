@@ -18,6 +18,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -47,7 +48,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
     def _get_xtal_snapshots(self):
         return self._ispyb_params.xtal_snapshots_omega_start or []
 
-    def begin_deposition(self) -> IspybIds:
+    def begin_deposition(self, internal_params: InternalParameters) -> IspybIds:
         # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None
@@ -84,7 +85,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
             )
         # fmt: on
 
-    def update_deposition(self):
+    def update_deposition(self, internal_params):
         assert (
             self.full_params is not None
         ), "StoreGridscanInIspyb failed to get parameters."
@@ -94,12 +95,14 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self.grid_ids = ispyb_ids.grid_ids
         return ispyb_ids
 
-    def end_deposition(self, success: str, reason: str):
+    def end_deposition(self, success: str, reason: str, internal_params):
         assert (
             self._data_collection_ids
         ), "Can't end ISPyB deposition, data_collection IDs are missing"
         for id in self._data_collection_ids:
-            self._end_deposition(id, success, reason)
+            self._end_deposition(
+                id, success, reason, self._ispyb_params, self._detector_params
+            )
 
     def _store_grid_scan(self, full_params: GridscanInternalParameters) -> IspybIds:
         self.full_params = full_params
