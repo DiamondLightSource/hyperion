@@ -21,6 +21,7 @@ from hyperion.external_interaction.ispyb.ispyb_utils import (
     get_visit_string_from_path,
 )
 from hyperion.log import ISPYB_LOGGER
+from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -61,15 +62,17 @@ class StoreInIspyb(ABC):
         pass
 
     @abstractmethod
-    def begin_deposition(self) -> IspybIds:
+    def begin_deposition(self, internal_params: InternalParameters) -> IspybIds:
         pass
 
     @abstractmethod
-    def update_deposition(self) -> IspybIds:
+    def update_deposition(self, internal_params: InternalParameters) -> IspybIds:
         pass
 
     @abstractmethod
-    def end_deposition(self, success: str, reason: str):
+    def end_deposition(
+        self, success: str, reason: str, internal_params: InternalParameters
+    ):
         pass
 
     def append_to_comment(
@@ -123,7 +126,9 @@ class StoreInIspyb(ABC):
 
             mx_acquisition.upsert_data_collection(list(params.values()))
 
-    def _end_deposition(self, dcid: int, success: str, reason: str):
+    def _end_deposition(
+        self, dcid: int, success: str, reason: str, ispyb_params, detector_params
+    ):
         """Write the end of data_collection data.
         Args:
             success (str): The success of the run, could be fail or abort
@@ -144,8 +149,8 @@ class StoreInIspyb(ABC):
             reason,
             dcid,
             self._data_collection_group_id,
-            self._ispyb_params,
-            self._detector_params,
+            ispyb_params,
+            detector_params,
         )
 
     def _store_position_table(self, conn: Connector, dc_id: int, ispyb_params) -> int:

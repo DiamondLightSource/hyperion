@@ -71,7 +71,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 if self.params.experiment_params.is_3d_grid_scan
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
-            self.ispyb_ids = self.ispyb.begin_deposition()
+            self.ispyb_ids = self.ispyb.begin_deposition(self.params)
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)

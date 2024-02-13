@@ -391,10 +391,10 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 
         if same_dcgid:
-            assert rotation_ispyb.call_args.args[2] is not None
-            assert rotation_ispyb.call_args.args[2] is last_dcgid
+            assert rotation_ispyb.call_args.args[1] is not None
+            assert rotation_ispyb.call_args.args[1] is last_dcgid
         else:
-            assert rotation_ispyb.call_args.args[2] is None
+            assert rotation_ispyb.call_args.args[1] is None
 
         last_dcgid = cb[0].ispyb_ids.data_collection_group_id
 

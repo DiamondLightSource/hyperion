@@ -28,12 +28,13 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
 def test_ispyb_deposition_comment_for_3D_correct(
     ispyb_conn_with_2x2_collections_and_grid_info: MagicMock,
     dummy_3d_gridscan_ispyb: Store3DGridscanInIspyb,
+    dummy_params,
 ):
     mock_ispyb_conn = ispyb_conn_with_2x2_collections_and_grid_info
     mock_mx_aquisition = mx_acquisition_from_conn(mock_ispyb_conn)
     mock_upsert_dc = mock_mx_aquisition.upsert_data_collection
-    dummy_3d_gridscan_ispyb.begin_deposition()
-    dummy_3d_gridscan_ispyb.update_deposition()
+    dummy_3d_gridscan_ispyb.begin_deposition(dummy_params)
+    dummy_3d_gridscan_ispyb.update_deposition(dummy_params)
 
     first_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
     second_upserted_param_value_list = mock_upsert_dc.call_args_list[2][0][0]
@@ -62,12 +63,12 @@ def test_store_3d_grid_scan(
 
     assert dummy_3d_gridscan_ispyb.experiment_type == "Mesh3D"
 
-    assert dummy_3d_gridscan_ispyb.begin_deposition() == IspybIds(
+    assert dummy_3d_gridscan_ispyb.begin_deposition(dummy_params) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
 
-    assert dummy_3d_gridscan_ispyb.update_deposition() == IspybIds(
+    assert dummy_3d_gridscan_ispyb.update_deposition(dummy_params) == IspybIds(
         data_collection_ids=TEST_DATA_COLLECTION_IDS,
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         grid_ids=TEST_GRID_INFO_IDS,
@@ -88,7 +89,7 @@ def test_begin_deposition(
     dummy_3d_gridscan_ispyb: Store3DGridscanInIspyb,
     dummy_params: GridscanInternalParameters,
 ):
-    assert dummy_3d_gridscan_ispyb.begin_deposition() == IspybIds(
+    assert dummy_3d_gridscan_ispyb.begin_deposition(dummy_params) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
@@ -169,12 +170,12 @@ def test_update_deposition(
     dummy_params.hyperion_params.ispyb_params.upper_left = np.array([x, y, z])
     dummy_params.experiment_params.z_step_size = 0.2
 
-    dummy_3d_gridscan_ispyb.begin_deposition()
+    dummy_3d_gridscan_ispyb.begin_deposition(dummy_params)
     mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
     mx_acq.upsert_data_collection_group.assert_called_once()
     mx_acq.upsert_data_collection.assert_called_once()
 
-    actual_rows = dummy_3d_gridscan_ispyb.update_deposition()
+    actual_rows = dummy_3d_gridscan_ispyb.update_deposition(dummy_params)
 
     assert actual_rows == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
@@ -367,15 +368,15 @@ def test_end_deposition_happy_path(
     dummy_3d_gridscan_ispyb,
     dummy_params,
 ):
-    dummy_3d_gridscan_ispyb.begin_deposition()
-    dummy_3d_gridscan_ispyb.update_deposition()
+    dummy_3d_gridscan_ispyb.begin_deposition(dummy_params)
+    dummy_3d_gridscan_ispyb.update_deposition(dummy_params)
     mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
     assert len(mx_acq.upsert_data_collection_group.mock_calls) == 2
     assert len(mx_acq.upsert_data_collection.mock_calls) == 3
     assert len(mx_acq.upsert_dc_grid.mock_calls) == 2
 
     get_current_time.return_value = EXPECTED_END_TIME
-    dummy_3d_gridscan_ispyb.end_deposition("success", "Test succeeded")
+    dummy_3d_gridscan_ispyb.end_deposition("success", "Test succeeded", dummy_params)
     assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
         (
             TEST_DATA_COLLECTION_IDS[0],
