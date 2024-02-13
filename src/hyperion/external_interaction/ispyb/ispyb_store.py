@@ -39,7 +39,7 @@ class IspybIds(BaseModel):
 @dataclass()
 class DataCollectionInfo:
     omega_start: float
-    run_number: int
+    run_number: int | None
     xtal_snapshots: list[str] | None
 
     n_images: Optional[int] = None
@@ -57,7 +57,7 @@ class StoreInIspyb(ABC):
 
     @property
     @abstractmethod
-    def experiment_type(self):
+    def experiment_type(self) -> str:
         pass
 
     @abstractmethod
@@ -277,9 +277,9 @@ class StoreInIspyb(ABC):
         params["starttime"] = get_current_time_string()
         # temporary file template until nxs filewriting is integrated and we can use
         # that file name
-        params[
-            "file_template"
-        ] = f"{detector_params.prefix}_{data_collection_info.run_number}_master.h5"
+        params["file_template"] = (
+            f"{detector_params.prefix}_{data_collection_info.run_number}_master.h5"
+        )
         params["axis_range"] = data_collection_info.axis_range
         params["axis_end"] = data_collection_info.axis_end
         params["n_images"] = data_collection_info.n_images
