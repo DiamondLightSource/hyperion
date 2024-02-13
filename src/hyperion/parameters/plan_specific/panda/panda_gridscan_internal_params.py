@@ -20,7 +20,7 @@ from hyperion.parameters.internal_parameters import (
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
-    YStepOddNumberException,
+    OddYStepsException,
 )
 
 
@@ -52,8 +52,8 @@ class PandAGridscanInternalParameters(InternalParameters):
 
         # Panda not configured to run a half complete snake so enforce even rows on first grid
         # See https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning#motion-program-summary
-        if experiment_params["y_steps"] % 2:
-            raise YStepOddNumberException("The number of Y steps must be even")
+        if experiment_params["y_steps"] % 2 and experiment_params["z_steps"] > 0:
+            raise OddYStepsException("The number of Y steps must be even")
 
         return PandAGridScanParams(
             **extract_experiment_params_from_flat_dict(

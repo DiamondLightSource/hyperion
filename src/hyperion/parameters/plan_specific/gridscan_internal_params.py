@@ -21,8 +21,9 @@ from hyperion.parameters.internal_parameters import (
 )
 
 
-class YStepOddNumberException(Exception):
+class OddYStepsException(Exception):
     pass
+
 
 class GridscanHyperionParameters(HyperionParameters):
     ispyb_params: GridscanIspybParams = GridscanIspybParams(
