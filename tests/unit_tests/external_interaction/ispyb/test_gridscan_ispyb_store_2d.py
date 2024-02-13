@@ -372,12 +372,10 @@ def test_param_keys(
     ispyb_conn_with_2x2_collections_and_grid_info, dummy_2d_gridscan_ispyb, dummy_params
 ):
     dummy_2d_gridscan_ispyb.begin_deposition()
-    assert dummy_2d_gridscan_ispyb._store_grid_scan(dummy_params) == (
-        [TEST_DATA_COLLECTION_IDS[0]],
-        [
-            TEST_GRID_INFO_IDS[0],
-        ],
-        TEST_DATA_COLLECTION_GROUP_ID,
+    assert dummy_2d_gridscan_ispyb._store_grid_scan(dummy_params) == IspybIds(
+        data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+        grid_ids=(TEST_GRID_INFO_IDS[0],),
     )
 
 

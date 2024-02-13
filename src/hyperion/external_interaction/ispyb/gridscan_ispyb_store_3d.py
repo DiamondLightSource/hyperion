@@ -6,7 +6,7 @@ from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
     GridScanInfo,
     StoreGridscanInIspyb,
 )
-from hyperion.external_interaction.ispyb.ispyb_store import DataCollectionInfo
+from hyperion.external_interaction.ispyb.ispyb_store import DataCollectionInfo, IspybIds
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -25,7 +25,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         conn: Connector,
         xy_data_collection_info: DataCollectionInfo,
         grid_scan_info: GridScanInfo,
-    ):
+    ) -> IspybIds:
         assert (
             self._data_collection_group_id
         ), "Attempted to store scan data without a collection group"
@@ -101,10 +101,10 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             conn, data_collection_id_2, grid_scan_info
         )
 
-        return (
-            [data_collection_id_1, data_collection_id_2],
-            [grid_id_1, grid_id_2],
-            data_collection_group_id,
+        return IspybIds(
+            data_collection_ids=(data_collection_id_1, data_collection_id_2),
+            grid_ids=(grid_id_1, grid_id_2),
+            data_collection_group_id=data_collection_group_id,
         )
 
     def _populate_xz_data_collection_info(

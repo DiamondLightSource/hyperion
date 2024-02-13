@@ -92,6 +92,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         # prevent pyright + black fighting
         # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None
             if not self._data_collection_group_id:
                 self._data_collection_group_id = self._store_data_collection_group_table(conn, self._ispyb_params,
                                                                                          self._detector_params)
