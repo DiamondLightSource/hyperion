@@ -14,6 +14,7 @@ from dodal.devices.det_dim_constants import (
 from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
+from ophyd_async.core import set_sim_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -23,7 +24,6 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
-    read_hardware_for_ispyb_pre_collection,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_gridscan_valid,
@@ -73,8 +73,8 @@ def ispyb_plan(test_fgs_params):
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+    def standalone_read_hardware_for_ispyb(und, syn, slits, robot, attn, fl, dcm):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -153,6 +153,8 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
+        set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
+
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
         test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
@@ -166,29 +168,32 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.undulator,
                 fake_fgs_composite.synchrotron,
                 fake_fgs_composite.s4_slit_gaps,
+                fake_fgs_composite.robot,
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
                 fake_fgs_composite.dcm,
             )
         )
-        params = test_ispyb_callback.params
+        hyperion_params = test_ispyb_callback.params.hyperion_params
 
-        assert params.hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
+            hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
             == synchrotron_test_value
         )
-        assert params.hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
-        assert params.hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.transmission_fraction  # type: ignore
+            hyperion_params.ispyb_params.transmission_fraction  # type: ignore
             == transmission_test_value
         )
-        assert params.hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.current_energy_ev
+            hyperion_params.ispyb_params.current_energy_ev
             == current_energy_kev_test_value * 1000
         )
+
+        assert hyperion_params.ispyb_params.sample_barcode == "BARCODE"
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
