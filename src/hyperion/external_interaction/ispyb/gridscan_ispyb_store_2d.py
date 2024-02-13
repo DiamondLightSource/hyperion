@@ -3,8 +3,10 @@ from __future__ import annotations
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
+    GridScanInfo,
     StoreGridscanInIspyb,
 )
+from hyperion.external_interaction.ispyb.ispyb_store import DataCollectionInfo, IspybIds
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -15,12 +17,15 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
         super().__init__(ispyb_config, parameters)
 
     @property
-    def experiment_type(self):
+    def experiment_type(self) -> str:
         return "mesh"
 
     def _store_scan_data(
-        self, conn: Connector, xy_data_collection_info, grid_scan_info
-    ):
+        self,
+        conn: Connector,
+        xy_data_collection_info: DataCollectionInfo,
+        grid_scan_info: GridScanInfo,
+    ) -> IspybIds:
         assert (
             self._data_collection_group_id
         ), "Attempted to store scan data without a collection group"
@@ -57,4 +62,8 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
 
         grid_id = self._store_grid_info_table(conn, data_collection_id, grid_scan_info)
 
-        return [data_collection_id], [grid_id], self._data_collection_group_id
+        return IspybIds(
+            data_collection_group_id=self._data_collection_group_id,
+            data_collection_ids=(data_collection_id,),
+            grid_ids=(grid_id,),
+        )

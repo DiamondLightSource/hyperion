@@ -50,6 +50,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
     def begin_deposition(self) -> IspybIds:
         # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None
             self._detector_params = self.full_params.hyperion_params.detector_params  # type: ignore
             self._data_collection_group_id = self._store_data_collection_group_table(conn, self._ispyb_params,
                                                                                      self._detector_params)
@@ -87,16 +88,11 @@ class StoreGridscanInIspyb(StoreInIspyb):
         assert (
             self.full_params is not None
         ), "StoreGridscanInIspyb failed to get parameters."
-        (
-            self._data_collection_ids,
-            self.grid_ids,
-            self._data_collection_group_id,
-        ) = self._store_grid_scan(self.full_params)
-        return IspybIds(
-            data_collection_ids=self._data_collection_ids,
-            data_collection_group_id=self._data_collection_group_id,
-            grid_ids=self.grid_ids,
-        )
+        ispyb_ids = self._store_grid_scan(self.full_params)
+        self._data_collection_ids = ispyb_ids.data_collection_ids  # pyright: ignore
+        self._data_collection_group_id = ispyb_ids.data_collection_group_id
+        self.grid_ids = ispyb_ids.grid_ids
+        return ispyb_ids
 
     def end_deposition(self, success: str, reason: str):
         assert (
@@ -105,7 +101,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         for id in self._data_collection_ids:
             self._end_deposition(id, success, reason)
 
-    def _store_grid_scan(self, full_params: GridscanInternalParameters):
+    def _store_grid_scan(self, full_params: GridscanInternalParameters) -> IspybIds:
         self.full_params = full_params
         self._ispyb_params = full_params.hyperion_params.ispyb_params  # pyright: ignore
         grid_scan_info = GridScanInfo(
@@ -137,10 +133,10 @@ class StoreGridscanInIspyb(StoreInIspyb):
     @abstractmethod
     def _store_scan_data(
         self,
-        conn,
+        conn: Connector,
         xy_data_collection_info: DataCollectionInfo,
         grid_scan_info: GridScanInfo,
-    ):
+    ) -> IspybIds:
         pass
 
     def _store_grid_info_table(

@@ -24,7 +24,13 @@ td = TestData()
 
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
     mock = Store3DGridscanInIspyb("", params)
-    mock._store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
+    mock._store_grid_scan = MagicMock(
+        return_value=IspybIds(
+            data_collection_ids=DC_IDS,
+            data_collection_group_id=DCG_ID,
+            grid_ids=None,
+        )
+    )
     mock.end_deposition = MagicMock(return_value=None)
     mock.begin_deposition = MagicMock(
         return_value=IspybIds(
@@ -57,7 +63,7 @@ class TestXrayCentreIspybHandler:
             td.test_descriptor_document_during_data_collection
         )
         ispyb_handler.activity_gated_event(
-            td.test_event_document_during_data_collection
+            td.test_event_document_during_data_collection  # pyright: ignore
         )
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
