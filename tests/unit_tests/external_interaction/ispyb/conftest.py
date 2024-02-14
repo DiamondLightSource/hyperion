@@ -127,7 +127,7 @@ def ispyb_conn_with_2x2_collections_and_grid_info(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_3d_gridscan_ispyb(dummy_params):
-    store_in_ispyb_3d = Store3DGridscanInIspyb(CONST.SIM.ISPYB_CONFIG, dummy_params)
+    store_in_ispyb_3d = Store3DGridscanInIspyb(CONST.SIM.ISPYB_CONFIG)
     return store_in_ispyb_3d
 
 
@@ -143,7 +143,7 @@ def dummy_rotation_ispyb(dummy_rotation_params):
 
 @pytest.fixture
 def dummy_2d_gridscan_ispyb(dummy_params):
-    return Store2DGridscanInIspyb(CONST.SIM.ISPYB_CONFIG, dummy_params)
+    return Store2DGridscanInIspyb(CONST.SIM.ISPYB_CONFIG)
 
 
 def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:

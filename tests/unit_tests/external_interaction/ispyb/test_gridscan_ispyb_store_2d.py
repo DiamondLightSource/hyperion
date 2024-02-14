@@ -372,7 +372,11 @@ def test_param_keys(
     ispyb_conn_with_2x2_collections_and_grid_info, dummy_2d_gridscan_ispyb, dummy_params
 ):
     dummy_2d_gridscan_ispyb.begin_deposition(dummy_params)
-    assert dummy_2d_gridscan_ispyb._store_grid_scan(dummy_params) == IspybIds(
+    assert dummy_2d_gridscan_ispyb._store_grid_scan(
+        dummy_params,
+        dummy_params.hyperion_params.ispyb_params,
+        dummy_params.hyperion_params.detector_params,
+    ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         grid_ids=(TEST_GRID_INFO_IDS[0],),
@@ -384,7 +388,11 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 ):
     setup_mock_return_values(ispyb_conn)
     dummy_ispyb.begin_deposition(dummy_params)
-    dummy_ispyb._store_grid_scan(dummy_params)
+    dummy_ispyb._store_grid_scan(
+        dummy_params,
+        dummy_params.hyperion_params.ispyb_params,
+        dummy_params.hyperion_params.detector_params,
+    )
 
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
@@ -513,10 +521,7 @@ def test_ispyb_deposition_rounds_position_to_int(
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
-    assert dummy_2d_gridscan_ispyb.full_params is not None
-    dummy_2d_gridscan_ispyb.full_params.hyperion_params.ispyb_params.upper_left = (
-        np.array([0.01, 100, 50])
-    )
+    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([0.01, 100, 50])
     dummy_2d_gridscan_ispyb.begin_deposition(dummy_params)
     dummy_2d_gridscan_ispyb.update_deposition(dummy_params)
     mock_upsert_call_args = mock_upsert_data_collection.call_args_list[1][0]

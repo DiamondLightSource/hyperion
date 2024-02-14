@@ -73,10 +73,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             json_params = doc.get("hyperion_internal_parameters")
             self.params = GridscanInternalParameters.from_json(json_params)
             self.ispyb = (
-                Store3DGridscanInIspyb(self.ispyb_config, self.params)
+                Store3DGridscanInIspyb(self.ispyb_config)
                 # XXX Does this parameter even exist any more?
                 if self.params.experiment_params.is_3d_grid_scan
-                else Store2DGridscanInIspyb(self.ispyb_config, self.params)
+                else Store2DGridscanInIspyb(self.ispyb_config)
             )
             self.ispyb_ids = self.ispyb.begin_deposition(self.params)
         return super().activity_gated_start(doc)

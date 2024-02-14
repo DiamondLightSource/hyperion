@@ -117,12 +117,12 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params) -> Store2DGridscanInIspyb:
-    return Store2DGridscanInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, dummy_params)
+    return Store2DGridscanInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
 
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> Store3DGridscanInIspyb:
-    return Store3DGridscanInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, dummy_params)
+    return Store3DGridscanInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
 
 
 @pytest.fixture
