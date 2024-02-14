@@ -6,7 +6,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.beamlines.i03 import DAQ_CONFIGURATION_PATH
+from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.DCM import DCM
 from dodal.devices.flux import Flux
@@ -72,7 +72,7 @@ def fake_rotation_scan(
     attenuator = make_fake_device(Attenuator)(name="attenuator")
     flux = make_fake_device(Flux)(name="flux")
     dcm = make_fake_device(DCM)(
-        name="dcm", daq_configuration_path=DAQ_CONFIGURATION_PATH
+        name="dcm", daq_configuration_path=i03.DAQ_CONFIGURATION_PATH
     )
 
     @bpp.subs_decorator(list(subscriptions))
