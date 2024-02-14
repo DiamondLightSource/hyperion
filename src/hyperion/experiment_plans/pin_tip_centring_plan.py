@@ -46,10 +46,10 @@ def trigger_and_return_pin_tip(
 ) -> Generator[Msg, None, Pixel]:
     if isinstance(pin_tip, PinTipDetection):
         tip_x_y_px = yield from bps.rd(pin_tip)
-        LOGGER.info("Pin tip not found, waiting a second and trying again")
 
         if tip_x_y_px == pin_tip.INVALID_POSITION:
             # Wait a second and then retry
+            LOGGER.info("Pin tip not found, waiting a second and trying again")
             yield from bps.sleep(1)
             tip_x_y_px = yield from bps.rd(pin_tip)
     else:
