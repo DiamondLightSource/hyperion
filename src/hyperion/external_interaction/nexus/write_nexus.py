@@ -2,11 +2,13 @@
 Define beamline parameters for I03, Eiger detector and give an example of writing a
 gridscan.
 """
+
 from __future__ import annotations
 
 import math
 from pathlib import Path
 
+from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Detector, Goniometer, Source
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
 
@@ -47,7 +49,7 @@ class NexusWriter:
         self.beam, self.attenuator = create_beam_and_attenuator_parameters(
             parameters.hyperion_params.ispyb_params
         )
-        self.source: Source = Source(parameters.hyperion_params.beamline)
+        self.source: Source = Source(get_beamline_name("S03"))
         self.directory: Path = Path(
             parameters.hyperion_params.detector_params.directory
         )

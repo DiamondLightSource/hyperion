@@ -21,6 +21,10 @@ from hyperion.parameters.internal_parameters import (
 )
 
 
+class OddYStepsException(Exception):
+    pass
+
+
 class GridscanHyperionParameters(HyperionParameters):
     ispyb_params: GridscanIspybParams = GridscanIspybParams(
         **GRIDSCAN_ISPYB_PARAM_DEFAULTS
@@ -59,6 +63,7 @@ class GridscanInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
+
         return GridScanParams(
             **extract_experiment_params_from_flat_dict(
                 GridScanParams, experiment_params

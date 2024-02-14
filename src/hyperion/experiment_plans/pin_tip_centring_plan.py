@@ -44,10 +44,19 @@ def create_devices(context: BlueskyContext) -> PinTipCentringComposite:
 def trigger_and_return_pin_tip(
     pin_tip: PinTipDetect | PinTipDetection,
 ) -> Generator[Msg, None, Pixel]:
-    yield from bps.trigger(pin_tip, wait=True)
-    tip_x_y_px = yield from bps.rd(pin_tip)
+    if isinstance(pin_tip, PinTipDetection):
+        tip_x_y_px = yield from bps.rd(pin_tip)
+
+        if tip_x_y_px == pin_tip.INVALID_POSITION:
+            # Wait a second and then retry
+            LOGGER.info("Pin tip not found, waiting a second and trying again")
+            yield from bps.sleep(1)
+            tip_x_y_px = yield from bps.rd(pin_tip)
+    else:
+        yield from bps.trigger(pin_tip, wait=True)
+        tip_x_y_px = yield from bps.rd(pin_tip)
     LOGGER.info(f"Pin tip found at {tip_x_y_px}")
-    return tip_x_y_px
+    return tip_x_y_px  # type: ignore
 
 
 def move_pin_into_view(

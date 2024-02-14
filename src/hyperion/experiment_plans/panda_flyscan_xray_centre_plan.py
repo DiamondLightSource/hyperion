@@ -110,6 +110,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.robot,
         )
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
@@ -140,7 +141,6 @@ def run_gridscan(
             total_exposure,
             30.0,
         )
-
 
         LOGGER.info("Wait for all moves with no assigned group")
         yield from bps.wait()
@@ -188,8 +188,8 @@ def run_gridscan_and_move(
     DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
     time_between_x_steps_ms = (
-        (DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time) *1e3
-    )
+        DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
+    ) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
         fgs_composite.smargon.x_speed_limit_mm_per_s
@@ -225,7 +225,7 @@ def run_gridscan_and_move(
     )
 
     LOGGER.info("Setting up Zebra for panda flyscan")
-    yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra)
+    yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra, wait=True)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(

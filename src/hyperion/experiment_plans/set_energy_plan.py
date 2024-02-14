@@ -4,6 +4,7 @@
     * Adjust DCM and mirrors for the new energy
     * reenable feedback
 """
+
 import dataclasses
 from typing import Any, Generator
 

@@ -13,6 +13,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import DetectorParams, EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -59,6 +60,7 @@ class RotationScanComposite:
     detector_motion: DetectorMotion
     eiger: EigerDetector
     flux: Flux
+    robot: BartRobot
     smargon: Smargon
     undulator: Undulator
     synchrotron: Synchrotron
@@ -204,13 +206,14 @@ def rotation_scan_plan(
         composite.undulator,
         composite.synchrotron,
         composite.s4_slit_gaps,
+        composite.robot,
     )
     yield from read_hardware_for_ispyb_during_collection(
         composite.attenuator, composite.flux, composite.dcm
     )
     LOGGER.info(
         f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
-        f" s, setting rotation speed to {image_width_deg/exposure_time_s} deg/s"
+        f" s, setting rotation speed to {image_width_deg / exposure_time_s} deg/s"
     )
     yield from set_speed(
         composite.smargon.omega, image_width_deg, exposure_time_s, wait=True

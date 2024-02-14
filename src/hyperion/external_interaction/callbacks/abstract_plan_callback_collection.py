@@ -16,8 +16,7 @@ class AbstractPlanCallbackCollection(ABC):
 
     @classmethod
     @abstractmethod
-    def setup(cls) -> AbstractPlanCallbackCollection:
-        ...
+    def setup(cls) -> AbstractPlanCallbackCollection: ...
 
     def __iter__(self) -> Generator[CallbackBase, Any, None]:
         for field in fields(self):  # type: ignore # subclasses must be dataclass
