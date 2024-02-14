@@ -5,8 +5,10 @@ from typing import TYPE_CHECKING
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+)
+from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
@@ -41,6 +43,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def __init__(self) -> None:
         super().__init__()
         self.last_sample_id: str | None = None
+        self.ispyb_ids: IspybIds = IspybIds()
 
     def append_to_comment(self, comment: str):
         assert isinstance(self.ispyb_ids.data_collection_ids, int)
@@ -74,7 +77,8 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 )
                 self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
             self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
-        self.ispyb_ids: IspybIds = IspybIds()
+            ISPYB_LOGGER.info("Beginning ispyb deposition")
+            self.ispyb_ids = self.ispyb.begin_deposition()
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.uid_to_finalize_on = doc.get("uid")

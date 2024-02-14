@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
+from bluesky import FailedStatus
 from bluesky.run_engine import RunEngine
 from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
@@ -37,9 +38,11 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
@@ -87,6 +90,11 @@ def RE_with_subs(RE: RunEngine, mock_subscriptions):
     yield RE, mock_subscriptions
 
 
+@pytest.fixture
+def mock_ispyb():
+    return MagicMock()
+
+
 @patch(
     "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
     modified_store_grid_scan_mock,
@@ -119,6 +127,35 @@ class TestFlyscanXrayCentrePlan:
     ):
         plan = run_gridscan(MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
+
+    def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
+        self,
+        RE: RunEngine,
+        fake_fgs_composite,
+        test_fgs_params,
+        mock_ispyb,
+    ):
+        ispyb_callback = GridscanISPyBCallback()
+        RE.subscribe(ispyb_callback)
+
+        error = None
+        with pytest.raises(FailedStatus) as exc:
+            with patch(
+                "hyperion.external_interaction.ispyb.ispyb_store.ispyb",
+                mock_ispyb,
+            ):
+                with patch.object(
+                    fake_fgs_composite.sample_motors.omega, "set"
+                ) as mock_set:
+                    error = AssertionError("Test Exception")
+                    mock_set.return_value = FailedStatus(error)
+
+                    RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        assert exc.value.args[0] is error
+        ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # pyright: ignore
+            "fail", "Test Exception"
+        )
 
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,

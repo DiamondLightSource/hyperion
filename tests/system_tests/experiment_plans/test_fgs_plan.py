@@ -27,7 +27,7 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import IspybIds
+from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params

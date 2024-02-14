@@ -10,8 +10,10 @@ from ispyb.sqlalchemy import DataCollection
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
 )
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG

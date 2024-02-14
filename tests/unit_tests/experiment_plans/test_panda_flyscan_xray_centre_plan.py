@@ -41,9 +41,11 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
@@ -145,7 +147,9 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)  # type: ignore
+        fake_fgs_composite.attenuator.actual_transmission.sim_put(
+            transmission_test_value
+        )  # type: ignore
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345

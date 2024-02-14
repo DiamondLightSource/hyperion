@@ -26,9 +26,11 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
+)
+from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
 )
 from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
@@ -258,39 +260,46 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     "hyperion.external_interaction.callbacks.rotation.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb"
+)
 def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zocalo(
+    mock_store_in_ispyb_class,
     zocalo,
     nexus_writer,
     RE: RunEngine,
     params: RotationInternalParameters,
     test_start_doc,
 ):
+    mock_store_in_ispyb_instance = MagicMock(spec=StoreInIspyb)
+    mock_store_in_ispyb_instance.begin_deposition.return_value = IspybIds(
+        data_collection_group_id=0, data_collection_ids=0
+    )
+    mock_store_in_ispyb_instance.update_deposition.return_value = IspybIds(
+        data_collection_group_id=0, data_collection_ids=0
+    )
+    mock_store_in_ispyb_class.return_value = mock_store_in_ispyb_instance
     nexus_writer.return_value.full_filename = "test_full_filename"
     cb = RotationCallbackCollection.setup()
     activate_callbacks(cb)
     cb.nexus_handler.activity_gated_start(test_start_doc)
-    cb.ispyb_handler.activity_gated_start(test_start_doc)
     cb.zocalo_handler.activity_gated_start(test_start_doc)
-    cb.ispyb_handler.ispyb = MagicMock(spec=StoreInIspyb)
 
     cb.zocalo_handler.zocalo_interactor.run_start = MagicMock()
     cb.zocalo_handler.zocalo_interactor.run_end = MagicMock()
 
     def after_open_do(callbacks: RotationCallbackCollection):
-        callbacks.ispyb_handler.ispyb.begin_deposition.assert_not_called()
+        callbacks.ispyb_handler.ispyb.begin_deposition.assert_called_once()  # pyright: ignore
+        callbacks.ispyb_handler.ispyb.update_deposition.assert_not_called()  # pyright: ignore
 
     def after_main_do(callbacks: RotationCallbackCollection):
-        cb.ispyb_handler.ispyb_ids = IspybIds(
-            data_collection_ids=0, data_collection_group_id=0
-        )
-        callbacks.ispyb_handler.ispyb.begin_deposition.assert_called_once()
-        cb.zocalo_handler.zocalo_interactor.run_end.assert_not_called()
+        # cb.ispyb_handler.ispyb_ids = IspybIds(
+        #     data_collection_ids=0, data_collection_group_id=0
+        # )
+        callbacks.ispyb_handler.ispyb.update_deposition.assert_called_once()  # pyright: ignore
+        cb.zocalo_handler.zocalo_interactor.run_end.assert_not_called()  # pyright: ignore
 
-    with patch(
-        "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
-        autospec=True,
-    ):
-        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+    RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 
     cb.zocalo_handler.zocalo_interactor.run_end.assert_called_once()
 
@@ -401,6 +410,10 @@ n_images_store_id = [
 
 
 @pytest.mark.parametrize("n_images,store_id", n_images_store_id)
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    new=MagicMock(),
+)
 def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
     n_images: int,
     store_id: bool,

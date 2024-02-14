@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Dict, Optional
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import (
     DEV_ISPYB_DATABASE_CFG,
@@ -108,8 +108,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 doc["data"]["dcm_energy_in_kev"] * 1000
             )
 
-            ISPYB_LOGGER.info("Creating ispyb entry.")
-            self.ispyb_ids = self.ispyb.begin_deposition()
+            ISPYB_LOGGER.info("Updating ispyb entry.")
+            self.ispyb_ids = self.ispyb.update_deposition()
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
 
     def activity_gated_stop(self, doc: RunStop):
