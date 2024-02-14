@@ -22,9 +22,9 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
         conn: Connector,
         xy_data_collection_info: DataCollectionInfo,
         grid_scan_info: GridScanInfo,
+        full_params,
         ispyb_params,
         detector_params,
-        full_params,
     ) -> IspybIds:
         assert (
             self._data_collection_group_id
@@ -41,7 +41,7 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
         )
 
         def comment_constructor():
-            return self._construct_comment(ispyb_params, full_params, grid_scan_info)
+            return self._construct_comment(full_params, ispyb_params, grid_scan_info)
 
         collection_id = self._data_collection_ids[0]
         assert ispyb_params is not None and detector_params is not None
@@ -50,8 +50,8 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
             conn,
             self._data_collection_group_id,
             collection_id,
-            detector_params,
             ispyb_params,
+            detector_params,
             xy_data_collection_info,
         )
         data_collection_id = self._upsert_data_collection(conn, params)

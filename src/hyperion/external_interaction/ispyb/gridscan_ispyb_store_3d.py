@@ -22,9 +22,9 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         conn: Connector,
         xy_data_collection_info: DataCollectionInfo,
         grid_scan_info: GridScanInfo,
+        full_params,
         ispyb_params,
         detector_params,
-        full_params,
     ) -> IspybIds:
         assert (
             self._data_collection_group_id
@@ -46,7 +46,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
                 conn,
                 data_collection_group_id,
                 lambda: self._construct_comment(
-                    ispyb_params, full_params, grid_scan_info
+                    full_params, ispyb_params, grid_scan_info
                 ),
                 ispyb_params,
                 detector_params,
@@ -57,7 +57,7 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
                 conn,
                 data_collection_group_id,
                 lambda: self._construct_comment(
-                    ispyb_params, full_params, grid_scan_info
+                    full_params, ispyb_params, grid_scan_info
                 ),
                 ispyb_params,
                 detector_params,
@@ -85,13 +85,13 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         )
 
         xz_data_collection_info = self._populate_xz_data_collection_info(
-            xy_data_collection_info, grid_scan_info, ispyb_params, full_params
+            xy_data_collection_info, grid_scan_info, full_params, ispyb_params
         )
 
         data_collection_id_2 = self._store_data_collection_table(
             conn,
             data_collection_group_id,
-            lambda: self._construct_comment(ispyb_params, full_params, grid_scan_info),
+            lambda: self._construct_comment(full_params, ispyb_params, grid_scan_info),
             ispyb_params,
             detector_params,
             xz_data_collection_info,
@@ -117,8 +117,8 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         self,
         xy_data_collection_info: DataCollectionInfo,
         grid_scan_info: GridScanInfo,
-        ispyb_params,
         full_params,
+        ispyb_params,
     ) -> DataCollectionInfo:
         assert (
             xy_data_collection_info.omega_start is not None
