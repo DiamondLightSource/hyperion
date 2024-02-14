@@ -14,6 +14,7 @@ from dodal.devices.det_dim_constants import (
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
+from ophyd_async.core import set_sim_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -40,9 +41,11 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
@@ -87,8 +90,8 @@ def ispyb_plan(test_panda_fgs_params):
             "hyperion_internal_parameters": test_panda_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+    def standalone_read_hardware_for_ispyb(und, syn, slits, robot, attn, fl, dcm):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -144,7 +147,9 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(transmission_test_value)  # type: ignore
+        fake_fgs_composite.attenuator.actual_transmission.sim_put(
+            transmission_test_value
+        )  # type: ignore
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
@@ -152,6 +157,8 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)  # type: ignore
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
+
+        set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
 
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
@@ -166,6 +173,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.undulator,
                 fake_fgs_composite.synchrotron,
                 fake_fgs_composite.s4_slit_gaps,
+                fake_fgs_composite.robot,
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
                 fake_fgs_composite.dcm,
@@ -185,6 +193,8 @@ class TestFlyscanXrayCentrePlan:
             == transmission_test_value
         )
         assert params.hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
+
+        assert params.hyperion_params.ispyb_params.sample_barcode == "BARCODE"
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"

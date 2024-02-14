@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
+from bluesky import FailedStatus
 from bluesky.run_engine import RunEngine
 from dodal.devices.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
@@ -14,6 +15,7 @@ from dodal.devices.det_dim_constants import (
 from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
+from ophyd_async.core import set_sim_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -23,7 +25,6 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
-    read_hardware_for_ispyb_pre_collection,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_gridscan_valid,
@@ -37,9 +38,11 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
@@ -73,8 +76,8 @@ def ispyb_plan(test_fgs_params):
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+    def standalone_read_hardware_for_ispyb(und, syn, slits, robot, attn, fl, dcm):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -85,6 +88,11 @@ def RE_with_subs(RE: RunEngine, mock_subscriptions):
     for cb in list(mock_subscriptions):
         RE.subscribe(cb)
     yield RE, mock_subscriptions
+
+
+@pytest.fixture
+def mock_ispyb():
+    return MagicMock()
 
 
 @patch(
@@ -120,6 +128,35 @@ class TestFlyscanXrayCentrePlan:
         plan = run_gridscan(MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
 
+    def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
+        self,
+        RE: RunEngine,
+        fake_fgs_composite,
+        test_fgs_params,
+        mock_ispyb,
+    ):
+        ispyb_callback = GridscanISPyBCallback()
+        RE.subscribe(ispyb_callback)
+
+        error = None
+        with pytest.raises(FailedStatus) as exc:
+            with patch(
+                "hyperion.external_interaction.ispyb.ispyb_store.ispyb",
+                mock_ispyb,
+            ):
+                with patch.object(
+                    fake_fgs_composite.sample_motors.omega, "set"
+                ) as mock_set:
+                    error = AssertionError("Test Exception")
+                    mock_set.return_value = FailedStatus(error)
+
+                    RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        assert exc.value.args[0] is error
+        ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # pyright: ignore
+            "fail", "Test Exception"
+        )
+
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
@@ -153,6 +190,8 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
+        set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
+
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
         test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
@@ -166,29 +205,32 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.undulator,
                 fake_fgs_composite.synchrotron,
                 fake_fgs_composite.s4_slit_gaps,
+                fake_fgs_composite.robot,
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
                 fake_fgs_composite.dcm,
             )
         )
-        params = test_ispyb_callback.params
+        hyperion_params = test_ispyb_callback.params.hyperion_params
 
-        assert params.hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
+            hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
             == synchrotron_test_value
         )
-        assert params.hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
-        assert params.hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.transmission_fraction  # type: ignore
+            hyperion_params.ispyb_params.transmission_fraction  # type: ignore
             == transmission_test_value
         )
-        assert params.hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.current_energy_ev
+            hyperion_params.ispyb_params.current_energy_ev
             == current_energy_kev_test_value * 1000
         )
+
+        assert hyperion_params.ispyb_params.sample_barcode == "BARCODE"
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
