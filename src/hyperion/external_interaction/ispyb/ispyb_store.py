@@ -52,8 +52,6 @@ class DataCollectionInfo:
 class StoreInIspyb(ABC):
     def __init__(self, ispyb_config: str) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
-        self._ispyb_params: IspybParams
-        self._detector_params: DetectorParams
         self._data_collection_group_id: int | None
 
     @property
@@ -212,8 +210,8 @@ class StoreInIspyb(ABC):
             conn,
             data_collection_group_id,
             data_collection_id,
-            detector_params,
             ispyb_params,
+            detector_params,
             data_collection_info,
         )
 
@@ -225,8 +223,8 @@ class StoreInIspyb(ABC):
         conn,
         data_collection_group_id,
         data_collection_id,
-        detector_params,
         ispyb_params,
+        detector_params,
         data_collection_info: DataCollectionInfo,
     ):
         mx_acquisition: MXAcquisition = conn.mx_acquisition

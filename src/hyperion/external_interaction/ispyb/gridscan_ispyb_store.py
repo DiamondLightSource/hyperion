@@ -58,20 +58,13 @@ class StoreGridscanInIspyb(StoreInIspyb):
             )
 
             def constructor():
-                return self._construct_comment(ispyb_params, full_params, grid_scan_info)
+                return self._construct_comment(full_params, ispyb_params, grid_scan_info)
 
             assert ispyb_params is not None and detector_params is not None
-            data_collection_info = self._populate_xy_data_collection_info(grid_scan_info, detector_params,
-                                                                          full_params, ispyb_params)
-            params = self.fill_common_data_collection_params(
-                constructor,
-                conn,
-                self._data_collection_group_id,
-                None,
-                detector_params,
-                ispyb_params,
-                data_collection_info
-            )
+            data_collection_info = self._populate_xy_data_collection_info(grid_scan_info, full_params, ispyb_params,
+                                                                          detector_params)
+            params = self.fill_common_data_collection_params(constructor, conn, self._data_collection_group_id, None,
+                                                             ispyb_params, detector_params, data_collection_info)
             self._data_collection_ids = (
                 self._upsert_data_collection(conn, params),  # pyright: ignore
             )
@@ -117,7 +110,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         )
 
         xy_data_collection_info = self._populate_xy_data_collection_info(
-            grid_scan_info, detector_params, full_params, ispyb_params
+            grid_scan_info, full_params, ispyb_params, detector_params
         )
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
@@ -126,13 +119,13 @@ class StoreGridscanInIspyb(StoreInIspyb):
                 conn,
                 xy_data_collection_info,
                 grid_scan_info,
+                full_params,
                 ispyb_params,
                 detector_params,
-                full_params,
             )
 
     def _populate_xy_data_collection_info(
-        self, grid_scan_info: GridScanInfo, detector_params, full_params, ispyb_params
+        self, grid_scan_info: GridScanInfo, full_params, ispyb_params, detector_params
     ):
         info = DataCollectionInfo(
             detector_params.omega_start,
@@ -150,9 +143,9 @@ class StoreGridscanInIspyb(StoreInIspyb):
         conn: Connector,
         xy_data_collection_info: DataCollectionInfo,
         grid_scan_info: GridScanInfo,
+        full_params,
         ispyb_params,
         detector_params,
-        full_params,
     ) -> IspybIds:
         pass
 
@@ -186,7 +179,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
         return mx_acquisition.upsert_dc_grid(list(params.values()))
 
-    def _construct_comment(self, ispyb_params, full_params, grid_scan_info) -> str:
+    def _construct_comment(self, full_params, ispyb_params, grid_scan_info) -> str:
         assert (
             ispyb_params is not None
             and full_params is not None

@@ -57,7 +57,7 @@ class StoreRotationInIspyb(StoreInIspyb):
         return "SAD"
 
     def _store_scan_data(
-        self, conn: Connector, ispyb_params, detector_params, full_params
+        self, conn: Connector, full_params, ispyb_params, detector_params
     ):
         assert (
             self._data_collection_group_id
@@ -117,9 +117,9 @@ class StoreRotationInIspyb(StoreInIspyb):
             assert conn is not None, "Failed to connect to ISPyB"
             ids = self._store_scan_data(
                 conn,
+                full_params,
                 full_params.hyperion_params.ispyb_params,
                 full_params.hyperion_params.detector_params,
-                full_params,
             )
             return IspybIds(data_collection_ids=ids[0], data_collection_group_id=ids[1])
 
