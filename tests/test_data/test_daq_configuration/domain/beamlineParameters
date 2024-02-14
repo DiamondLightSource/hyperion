@@ -1,0 +1,140 @@
+#
+#
+BeamLine BL03S
+
+## Test data for device instantiation
+BLSE=FB
+
+## BPFB (Beam Position FeedBack)
+## HALF (default) only off during data collection
+## FULL only off for XBPM2 during attenuation optimisation, fluo when trans < 2% and wedged MAD
+## UNAVAILABLE (not default) prevents xbpm_feedback.py trying to access EPICS IOC that may not be running
+BPFB=FULL
+## Note: only beamline scientists control whether feedback is enabled
+## via the XBPM feedback EDM screen in Synoptic
+
+# DCM parameters
+DCM_Perp_Offset_FIXED = 25.6
+#
+# beamstop
+#
+parked_x = 4.49
+parked_y = -50.0
+parked_y_plate = -50.5
+parked_z = -49.5
+parked_z_robot = 30.0
+
+in_beam_z_MIN_START_POS = 60.0
+
+
+#Aperture - Scatterguard positions
+# 100 micron ap
+miniap_x_LARGE_APERTURE = 2.389
+miniap_y_LARGE_APERTURE = 40.986
+miniap_z_LARGE_APERTURE = 15.8
+
+sg_x_LARGE_APERTURE = 5.25
+sg_y_LARGE_APERTURE = 4.43
+
+# 50 micron ap
+miniap_x_MEDIUM_APERTURE = 2.384
+miniap_y_MEDIUM_APERTURE = 44.967
+miniap_z_MEDIUM_APERTURE = 15.8
+sg_x_MEDIUM_APERTURE = 5.285
+sg_y_MEDIUM_APERTURE = 0.46
+
+# 20 micron ap
+miniap_x_SMALL_APERTURE = 2.430
+miniap_y_SMALL_APERTURE = 48.974
+miniap_z_SMALL_APERTURE = 15.8
+sg_x_SMALL_APERTURE = 5.3375
+sg_y_SMALL_APERTURE = -3.55
+
+# Robot load
+miniap_x_ROBOT_LOAD = 2.386
+miniap_y_ROBOT_LOAD = 31.40
+miniap_z_ROBOT_LOAD = 15.8
+sg_x_ROBOT_LOAD = 5.25
+sg_y_ROBOT_LOAD = 4.43
+
+# manual mount
+miniap_x_MANUAL_LOAD = -4.91
+miniap_y_MANUAL_LOAD = -49.0
+miniap_z_MANUAL_LOAD = -10.0
+
+sg_x_MANUAL_LOAD = -4.7
+sg_y_MANUAL_LOAD = 1.8
+
+miniap_x_SCIN_MOVE = -4.91
+# prion setting
+#miniap_x_SCIN_MOVE = 0.0
+sg_x_SCIN_MOVE = -4.75
+
+scin_y_SCIN_IN = 100.855
+scin_y_SCIN_OUT = -0.02
+scin_z_SCIN_IN = 101.5115
+
+
+scin_z_SCIN_OUT = 0.1
+
+#distance to move gonx,y,z when scintillator is put in with standard pins
+# For old gonio:
+gon_x_SCIN_OUT_DISTANCE = 1.0
+# For SmarGon:
+gon_x_SCIN_OUT_DISTANCE_smargon = 1
+
+gon_y_SCIN_OUT_DISTANCE = 2.0
+gon_z_SCIN_OUT_DISTANCE = -0.5
+
+# StandardEnergy on i03 is 12700eV
+StandardEnergy = 12700
+
+keyence_max_attempts = 1
+# Move gonio 100 microns, see difference in keyence values
+# Then do 100/difference, put that number below
+# Sign may change between Smargon and MiniKappa
+keyence_slopeYToX = 2.5
+keyence_slopeYToY = -2.5
+keyence_slopeXToZ = 3.23
+
+YAGSamX = 1022 
+YAGSamY = -98.0
+YAGSamZ = -147
+YAGOmega = 0.0
+
+#ipin value must be < ipin_threshold above background for data collection
+ipin_threshold = 0.1
+
+# energy thresholds for mirror stripes
+#  - first threshold is between bare/Rh stripes (e.g. 7000)
+#  - second threshold is between Rh/Pt stripes (e.g. 18000)
+mirror_threshold_bare_rh = 6900
+mirror_threshold_rh_pt   = 30000
+
+# flux conversion factors
+flux_factor_no_aperture     = 1
+flux_factor_LARGE_APERTURE  = 0.738
+flux_factor_MEDIUM_APERTURE = 0.36
+flux_factor_SMALL_APERTURE  = 0.084
+flux_factor_no_aperture_plate     = 1
+flux_factor_LARGE_APERTURE_plate  = 0.738
+flux_factor_MEDIUM_APERTURE_plate = 0.36
+flux_factor_SMALL_APERTURE_plate  = 0.084
+
+#Deadtime settings
+fluorescence_analyser_deadtimeThreshold=0.002 # used by edge scans
+fluorescence_spectrum_deadtimeThreshold=0.0005 # used by spectrum
+
+#Other settings
+fluorescence_attenuation_low_roi = 100
+fluorescence_attenuation_high_roi = 2048
+attenuation_optimisation_optimisation_cycles = 10
+attenuation_optimisation_start_transmission = 0.1 # per cent
+fluorescence_mca_sca_offset = 400
+
+#Total count settings
+attenuation_optimisation_multiplier = 2
+attenuation_optimisation_target_count = 2000
+attenuation_optimisation_upper_limit = 50000
+attenuation_optimisation_lower_limit = 20000
+
