@@ -22,8 +22,8 @@ DCG_ID = 4
 td = TestData()
 
 
-def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
-    mock = Store3DGridscanInIspyb("", params)
+def mock_store_in_ispyb(config, *args, **kwargs) -> Store3DGridscanInIspyb:
+    mock = Store3DGridscanInIspyb("")
     mock._store_grid_scan = MagicMock(
         return_value=IspybIds(
             data_collection_ids=DC_IDS,
