@@ -17,7 +17,7 @@ from dodal.devices.smargon import Smargon
 from hyperion.device_setup_plans.setup_oav import (
     get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
-    wait_for_tip_to_be_found_ad_mxsc,
+    wait_for_tip_to_be_found,
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import (
@@ -114,7 +114,7 @@ def grid_detection_main_plan(
         # See #673 for improvements
         yield from bps.sleep(OAV_REFRESH_DELAY)
 
-        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found_ad_mxsc(oav.mxsc)
+        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(oav.mxsc.pin_tip)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 

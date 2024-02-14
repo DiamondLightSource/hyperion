@@ -104,7 +104,7 @@ def test_trigger_and_return_pin_tip_works_for_AD_pin_tip_detection(
 def test_trigger_and_return_pin_tip_works_for_ophyd_pin_tip_detection(
     ophyd_pin_tip_detection: PinTipDetection, RE: RunEngine
 ):
-    ophyd_pin_tip_detection._get_tip_position = AsyncMock(return_value=((100, 200), 0))
+    ophyd_pin_tip_detection._get_tip_position = AsyncMock(return_value=(100, 200))
     re_result = RE(trigger_and_return_pin_tip(ophyd_pin_tip_detection))
     assert re_result.plan_result == (100, 200)  # type: ignore
 
@@ -182,7 +182,7 @@ def return_pixel(pixel, *args):
 
 
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found_ad_mxsc",
+    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(
@@ -241,7 +241,7 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
 
 
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found_ophyd",
+    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(

@@ -284,9 +284,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 )
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-@patch(
-    "hyperion.experiment_plans.oav_grid_detection_plan.wait_for_tip_to_be_found_ad_mxsc"
-)
+@patch("hyperion.experiment_plans.oav_grid_detection_plan.wait_for_tip_to_be_found")
 @patch("hyperion.experiment_plans.oav_grid_detection_plan.LOGGER")
 def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     fake_logger: MagicMock,

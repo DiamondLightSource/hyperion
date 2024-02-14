@@ -4,7 +4,7 @@ from typing import Generator, Tuple
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import Msg
-from dodal.devices.areadetector.plugins.MXSC import MXSC
+from dodal.devices.areadetector.plugins.MXSC import MXSC, PinTipDetect
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
@@ -174,37 +174,13 @@ def get_move_required_so_that_beam_is_at_pixel(
     return calculate_x_y_z_of_pixel(current_motor_xyz, current_angle, pixel, oav_params)
 
 
-def wait_for_tip_to_be_found_ad_mxsc(
-    mxsc: MXSC,
-) -> Generator[Msg, None, Tuple[int, int]]:
-    pin_tip = mxsc.pin_tip
-    yield from bps.trigger(pin_tip, wait=True)
-    found_tip = yield from bps.rd(pin_tip)
-    if found_tip == pin_tip.INVALID_POSITION:
-        top_edge = yield from bps.rd(mxsc.top)
-        bottom_edge = yield from bps.rd(mxsc.bottom)
-        LOGGER.info(
-            f"No tip found with top/bottom of {list(top_edge), list(bottom_edge)}"
-        )
-        raise WarningException(
-            f"No pin found after {pin_tip.validity_timeout.get()} seconds"
-        )
-    return found_tip
-
-
-def wait_for_tip_to_be_found_ophyd(
-    ophyd_pin_tip_detection: PinTipDetection,
-) -> Generator[Msg, None, Tuple[int, int]]:
+def wait_for_tip_to_be_found(
+    ophyd_pin_tip_detection: PinTipDetection | PinTipDetect,
+) -> Generator[Msg, None, Pixel]:
+    yield from bps.trigger(ophyd_pin_tip_detection, wait=True)
     found_tip = yield from bps.rd(ophyd_pin_tip_detection)
-
-    LOGGER.info("Pin tip not found, waiting a second and trying again")
-
     if found_tip == ophyd_pin_tip_detection.INVALID_POSITION:
-        # Wait a second and then retry
-        yield from bps.sleep(1)
-        found_tip = yield from bps.rd(ophyd_pin_tip_detection)
-
-    if found_tip == ophyd_pin_tip_detection.INVALID_POSITION:
-        raise WarningException("No pin found")
+        timeout = yield from bps.rd(ophyd_pin_tip_detection.validity_timeout)
+        raise WarningException(f"No pin found after {timeout} seconds")
 
     return found_tip  # type: ignore
