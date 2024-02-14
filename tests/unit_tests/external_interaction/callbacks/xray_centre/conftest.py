@@ -38,7 +38,7 @@ def mock_ispyb_get_time():
 @pytest.fixture
 def mock_ispyb_store_grid_scan():
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.store_grid_scan"
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb._store_grid_scan"
     ) as p:
         yield p
 
@@ -46,7 +46,7 @@ def mock_ispyb_store_grid_scan():
 @pytest.fixture
 def mock_ispyb_update_time_and_status():
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.update_scan_with_end_time_and_status"
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb._update_scan_with_end_time_and_status"
     ) as p:
         yield p
 
@@ -127,6 +127,7 @@ class TestData:
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron_machine_status_synchrotron_mode": "test",
             "undulator_current_gap": 1.234,
+            "robot-barcode": "BARCODE",
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,

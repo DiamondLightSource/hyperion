@@ -12,11 +12,17 @@ from hyperion.experiment_plans.rotation_scan_plan import (
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
-    Store2DGridscanInIspyb,
-    Store3DGridscanInIspyb,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
     StoreGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
+    Store2DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
+    Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
 from hyperion.parameters.external_parameters import from_file as default_raw_params
@@ -140,6 +146,7 @@ def test_ispyb_deposition_in_rotation_plan(
     synchrotron,
     s4_slit_gaps,
     flux,
+    robot,
     fake_create_devices,
 ):
     test_wl = 0.71
@@ -176,6 +183,7 @@ def test_ispyb_deposition_in_rotation_plan(
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         zebra=fake_create_devices["zebra"],
+        robot=robot,
     )
 
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):

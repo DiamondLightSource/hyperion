@@ -20,6 +20,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -97,6 +98,7 @@ class GridDetectThenXRayCentreComposite:
     zocalo: ZocaloResults
     panda: PandA
     panda_fast_grid_scan: PandAFastGridScan
+    robot: BartRobot
 
     def __post_init__(self):
         """Ensure that aperture positions are loaded whenever this class is created."""
@@ -219,6 +221,7 @@ def detect_grid_and_do_gridscan(
         panda=composite.panda,
         fast_grid_scan=composite.fast_grid_scan,
         dcm=composite.dcm,
+        robot=composite.robot,
     )
 
     if parameters.experiment_params.use_panda:

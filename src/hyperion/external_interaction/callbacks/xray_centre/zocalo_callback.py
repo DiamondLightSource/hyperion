@@ -14,7 +14,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import IspybIds
+from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (

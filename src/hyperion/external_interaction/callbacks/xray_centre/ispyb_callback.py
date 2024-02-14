@@ -10,11 +10,17 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
-    Store2DGridscanInIspyb,
-    Store3DGridscanInIspyb,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
     StoreGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
+    Store2DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
+    Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
@@ -61,9 +67,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             self.params = GridscanInternalParameters.from_json(json_params)
             self.ispyb = (
                 Store3DGridscanInIspyb(self.ispyb_config, self.params)
+                # XXX Does this parameter even exist any more?
                 if self.params.experiment_params.is_3d_grid_scan
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
+            self.ispyb_ids = self.ispyb.begin_deposition()
 
     def activity_gated_event(self, doc: Event):
         super().activity_gated_event(doc)

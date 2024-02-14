@@ -19,6 +19,7 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 from dodal.devices.flux import Flux
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
+from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
@@ -91,6 +92,7 @@ class FlyScanXRayCentreComposite:
     zocalo: ZocaloResults
     panda: PandA
     panda_fast_grid_scan: PandAFastGridScan
+    robot: BartRobot
 
     @property
     def sample_motors(self) -> Smargon:
@@ -184,6 +186,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.robot,
         )
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
