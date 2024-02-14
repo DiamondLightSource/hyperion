@@ -36,7 +36,7 @@ def init_cbs_with_docs_and_mock_zocalo_and_ispyb(
 ):
     with patch(
         "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
-        lambda _, __: modified_store_grid_scan_mock(dcids=dcids, dcgid=dcgid),
+        lambda _: modified_store_grid_scan_mock(dcids=dcids, dcgid=dcgid),
     ):
         callbacks.ispyb_handler.activity_gated_start(td.test_start_document)
 
