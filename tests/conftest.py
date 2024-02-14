@@ -57,7 +57,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
-MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
+i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 
 def _destroy_loggers(loggers):

@@ -6,6 +6,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.DCM import DCM
 from dodal.devices.flux import Flux
@@ -37,7 +38,6 @@ from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-from tests.conftest import MOCK_DAQ_CONFIG_PATH
 
 
 @pytest.fixture
@@ -71,7 +71,9 @@ def fake_rotation_scan(
 ):
     attenuator = make_fake_device(Attenuator)(name="attenuator")
     flux = make_fake_device(Flux)(name="flux")
-    dcm = make_fake_device(DCM)(name="dcm", daq_configuration_path=MOCK_DAQ_CONFIG_PATH)
+    dcm = make_fake_device(DCM)(
+        name="dcm", daq_configuration_path=i03.DAQ_CONFIGURATION_PATH
+    )
 
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
