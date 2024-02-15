@@ -116,7 +116,7 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     # Don't use the fluorescence detector
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
     if wait:
         yield from bps.wait(group)
@@ -129,7 +129,7 @@ def setup_zebra_for_gridscan(
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
 
     if wait:
         yield from bps.wait(group)

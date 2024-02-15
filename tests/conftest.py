@@ -59,6 +59,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
+i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
+
 
 def _destroy_loggers(loggers):
     for logger in loggers:
@@ -270,6 +272,13 @@ def oav():
 @pytest.fixture
 def flux():
     return i03.flux(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def ophyd_pin_tip_detection():
+    RunEngine()  # A RE is needed to start the bluesky loop
+    pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
+    return pin_tip_detection
 
 
 @pytest.fixture

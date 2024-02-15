@@ -137,11 +137,24 @@ def grid_detection_main_plan(
         max_y = max(filtered_bottom)
         grid_height_px = max_y - min_y
 
+        y_steps: int = math.ceil(grid_height_px / box_size_y_pixels)
+
+        # Panda not configured to run a half complete snake so enforce even rows on first grid
+        # See https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning#motion-program-summary
+        if y_steps % 2 and angle == 0:
+            LOGGER.debug(
+                f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels/2}"
+            )
+            y_steps += 1
+            min_y -= box_size_y_pixels / 2
+            max_y += box_size_y_pixels / 2
+            grid_height_px += 1
+
         LOGGER.info(f"Drawing snapshot {grid_width_pixels} by {grid_height_px}")
 
         boxes = (
             math.ceil(grid_width_pixels / box_size_x_pixels),
-            math.ceil(grid_height_px / box_size_y_pixels),
+            y_steps,
         )
         box_numbers.append(boxes)
 
