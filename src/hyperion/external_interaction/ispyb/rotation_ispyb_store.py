@@ -5,7 +5,10 @@ from typing import cast
 import ispyb
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 
-from hyperion.external_interaction.ispyb.data_model import DataCollectionInfo
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionInfo,
+    ScanDataInfo,
+)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -58,20 +61,24 @@ class StoreRotationInIspyb(StoreInIspyb):
         return self._experiment_type
 
     def _store_scan_data(
-        self, conn: Connector, full_params, ispyb_params, detector_params
+        self,
+        conn: Connector,
+        full_params,
+        ispyb_params,
+        detector_params,
+        data_collection_group_id,
+        data_collection_id,
     ):
         assert (
-            self._data_collection_group_id
+            data_collection_group_id
         ), "Attempted to store scan data without a collection group"
-        assert (
-            self._data_collection_id
-        ), "Attempted to store scan data without a collection"
+        assert data_collection_id, "Attempted to store scan data without a collection"
         assert ispyb_params is not None and detector_params is not None
         dcg_info = populate_data_collection_group(
             self.experiment_type, conn, detector_params, ispyb_params
         )
         self._store_data_collection_group_table(
-            conn, dcg_info, self._data_collection_group_id
+            conn, dcg_info, data_collection_group_id
         )
         data_collection_info = self._populate_data_collection_info_for_rotation(
             ispyb_params, detector_params, full_params
@@ -79,21 +86,23 @@ class StoreRotationInIspyb(StoreInIspyb):
         populate_remaining_data_collection_info(
             _construct_comment_for_rotation_scan,
             conn,
-            self._data_collection_group_id,
+            data_collection_group_id,
             data_collection_info,
             detector_params,
             ispyb_params,
         )
-        self._store_data_collection_table(
-            conn, self._data_collection_id, data_collection_info
-        )
-        self._store_position_table(
-            conn,
-            populate_data_collection_position_info(ispyb_params),
-            self._data_collection_id,
+        scan_data_info = ScanDataInfo(
+            data_collection_info=data_collection_info,
+            data_collection_position_info=populate_data_collection_position_info(
+                ispyb_params
+            ),
         )
 
-        return self._data_collection_id, self._data_collection_group_id
+        self._data_collection_id, _ = self._store_single_scan_data(
+            conn, scan_data_info, data_collection_id
+        )
+
+        return self._data_collection_id, data_collection_group_id
 
     def begin_deposition(self, internal_params: InternalParameters) -> IspybIds:
         # prevent pyright + black fighting
@@ -136,7 +145,11 @@ class StoreRotationInIspyb(StoreInIspyb):
                 full_params,
                 full_params.hyperion_params.ispyb_params,
                 full_params.hyperion_params.detector_params,
+                self._data_collection_group_id,
+                self._data_collection_id,
             )
+            self._data_collection_group_id = ids[1]
+            self._data_collection_id = ids[0]
             return IspybIds(
                 data_collection_ids=(ids[0],), data_collection_group_id=ids[1]
             )

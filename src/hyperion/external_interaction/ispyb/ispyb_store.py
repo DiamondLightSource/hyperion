@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import ispyb
 import ispyb.sqlalchemy
@@ -167,6 +167,38 @@ class StoreInIspyb(ABC):
         )
         return self._upsert_data_collection(conn, params)
 
+    def _store_single_scan_data(
+        self, conn, scan_data_info, data_collection_id=None
+    ) -> Tuple[int, int]:
+        data_collection_id = self._store_data_collection_table(
+            conn, data_collection_id, scan_data_info.data_collection_info
+        )
+
+        if scan_data_info.data_collection_position_info:
+            self._store_position_table(
+                conn,
+                scan_data_info.data_collection_position_info,
+                data_collection_id,
+            )
+
+        grid_id = None
+        if scan_data_info.data_collection_grid_info:
+            grid_id = self._store_grid_info_table(
+                conn,
+                data_collection_id,
+                scan_data_info.data_collection_grid_info,
+            )
+        return data_collection_id, grid_id
+
+    def _store_grid_info_table(
+        self, conn: Connector, ispyb_data_collection_id: int, dc_grid_info
+    ) -> int:
+        mx_acquisition: MXAcquisition = conn.mx_acquisition
+        params = mx_acquisition.get_dc_grid_params()
+        params |= dc_grid_info.as_dict()
+        params["parentid"] = ispyb_data_collection_id
+        return mx_acquisition.upsert_dc_grid(list(params.values()))
+
     def fill_common_data_collection_params(
         self, conn, data_collection_id, data_collection_info: DataCollectionInfo
     ) -> DataCollectionInfo:
@@ -227,6 +259,7 @@ def populate_remaining_data_collection_info(
     # temporary file template until nxs filewriting is integrated and we can use
     # that file name
     data_collection_info.file_template = f"{detector_params.prefix}_{data_collection_info.data_collection_number}_master.h5"
+    return data_collection_info
 
 
 def populate_data_collection_position_info(ispyb_params):
