@@ -6,7 +6,6 @@ import bluesky.preprocessors as bpp
 from dodal.devices.zebra import (
     DISCONNECT,
     IN1_TTL,
-    IN2_TTL,
     IN3_TTL,
     IN4_TTL,
     OR1,
@@ -117,7 +116,7 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     # Don't use the fluorescence detector
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
     if wait:
         yield from bps.wait(group)
@@ -130,7 +129,7 @@ def setup_zebra_for_gridscan(
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
 
     if wait:
         yield from bps.wait(group)
@@ -156,13 +155,11 @@ def make_trigger_safe(zebra: Zebra, group="make_zebra_safe", wait=False):
 def setup_zebra_for_panda_flyscan(
     zebra: Zebra, group="setup_zebra_for_panda_flyscan", wait=False
 ):
-    yield from bps.abs_set(
-        zebra.output.out_pvs[TTL_DETECTOR], IN1_TTL, group=group
-    )  # Forwards eiger trigger signal from panda
+    # Forwards eiger trigger signal from panda
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN1_TTL, group=group)
 
-    yield from bps.abs_set(
-        zebra.output.out_pvs[TTL_SHUTTER], IN2_TTL, group=group
-    )  # Forwards shutter trigger signal from panda
+    # Forwards signal from PPMAC to fast shutter. High while panda PLC is running
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL, group=group)
 
     yield from bps.abs_set(zebra.output.out_pvs[3], DISCONNECT, group=group)
 

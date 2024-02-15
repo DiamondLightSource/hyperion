@@ -27,7 +27,7 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import IspybIds
+from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
 from hyperion.parameters.constants import SIM_BEAMLINE
 from hyperion.parameters.external_parameters import from_file as default_raw_params
@@ -58,6 +58,7 @@ def fgs_composite():
         eiger=i03.eiger(),
         fast_grid_scan=i03.fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
+        robot=i03.robot(fake_with_ophyd_sim=True),
         panda=i03.panda(fake_with_ophyd_sim=True),
         panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(),
@@ -142,10 +143,11 @@ def test_read_hardware_for_ispyb_pre_collection(
     flux = fgs_composite.flux
     dcm = fgs_composite.dcm
     aperture_scatterguard = fgs_composite.aperture_scatterguard
+    robot = fgs_composite.robot
 
     @bpp.run_decorator()
-    def read_run(u, s, g, a, f, dcm, ap_sg):
-        yield from read_hardware_for_ispyb_pre_collection(u, s, g, ap_sg)
+    def read_run(u, s, g, r, a, f, dcm, ap_sg):
+        yield from read_hardware_for_ispyb_pre_collection(u, s, g, r, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
     RE(
@@ -153,6 +155,7 @@ def test_read_hardware_for_ispyb_pre_collection(
             undulator,
             synchrotron,
             slit_gaps,
+            robot,
             attenuator,
             flux,
             dcm,

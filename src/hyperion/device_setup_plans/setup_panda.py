@@ -162,9 +162,11 @@ def setup_panda_for_flyscan(
 def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
     yield from bps.abs_set(panda.seq[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.pulse[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
+    yield from bps.abs_set(panda.counter[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
 
 
 def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenerator:
+    yield from bps.abs_set(panda.counter[1].enable, Enabled.DISABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.seq[1].enable, Enabled.DISABLED.value, group=group)
     yield from bps.abs_set(
         panda.clock[1].enable, Enabled.DISABLED.value, group=group

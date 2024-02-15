@@ -22,6 +22,7 @@ from dodal.devices.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
 from dodal.devices.flux import Flux
+from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -30,6 +31,7 @@ from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from ophyd.epics_motor import EpicsMotor
 from ophyd.status import DeviceStatus, Status
+from ophyd_async.core import set_sim_value
 from ophyd_async.core.async_status import AsyncStatus
 
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -59,6 +61,8 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+
+i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 
 def _destroy_loggers(loggers):
@@ -272,6 +276,20 @@ def flux():
 
 
 @pytest.fixture
+def ophyd_pin_tip_detection():
+    RunEngine()  # A RE is needed to start the bluesky loop
+    pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
+    return pin_tip_detection
+
+
+@pytest.fixture
+def robot():
+    robot = i03.robot(fake_with_ophyd_sim=True)
+    set_sim_value(robot.barcode.bare_signal, ["BARCODE"])
+    return robot
+
+
+@pytest.fixture
 def attenuator():
     with patch(
         "dodal.devices.attenuator.await_value",
@@ -421,6 +439,7 @@ def fake_create_rotation_devices(
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
+    robot: BartRobot,
     done_status,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
@@ -445,6 +464,7 @@ def fake_create_rotation_devices(
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
+        robot=robot,
     )
 
 
@@ -485,6 +505,7 @@ def fake_fgs_composite(
         zocalo=zocalo,
         panda=MagicMock(),
         panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
+        robot=i03.robot(fake_with_ophyd_sim=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -533,6 +554,8 @@ def fake_fgs_composite(
     fake_composite.zocalo.timeout_s = 3
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
+
+    set_sim_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
 
     return fake_composite
 

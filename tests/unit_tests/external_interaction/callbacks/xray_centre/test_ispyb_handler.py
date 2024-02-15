@@ -6,8 +6,11 @@ from dodal.log import LOGGER as dodal_logger
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.log import (
     ISPYB_LOGGER,
@@ -16,7 +19,7 @@ from hyperion.log import (
 
 from .conftest import TestData
 
-DC_IDS = [1, 2]
+DC_IDS = (1, 2)
 DCG_ID = 4
 td = TestData()
 
@@ -34,13 +37,18 @@ def mock_emits():
 
 def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
     mock = Store3DGridscanInIspyb("", params)
-    mock.store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
-    mock.update_scan_with_end_time_and_status = MagicMock(return_value=None)
+    mock._store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
+    mock._update_scan_with_end_time_and_status = MagicMock(return_value=None)
+    mock.begin_deposition = MagicMock(
+        return_value=IspybIds(
+            data_collection_group_id=DCG_ID, data_collection_ids=DC_IDS
+        )
+    )
     return mock
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.store_datacollection_in_ispyb.get_current_time_string",
+    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
     MagicMock(return_value=td.DUMMY_TIME_STRING),
 )
 @patch(
@@ -65,7 +73,7 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
-        ispyb_handler.ispyb.update_scan_with_end_time_and_status.assert_has_calls(
+        ispyb_handler.ispyb._update_scan_with_end_time_and_status.assert_has_calls(
             [
                 call(
                     td.DUMMY_TIME_STRING,
@@ -78,7 +86,7 @@ class TestXrayCentreIspybHandler:
             ]
         )
         assert (
-            ispyb_handler.ispyb.update_scan_with_end_time_and_status.call_count
+            ispyb_handler.ispyb._update_scan_with_end_time_and_status.call_count
             == len(DC_IDS)
         )
 
@@ -99,7 +107,7 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
-        ispyb_handler.ispyb.update_scan_with_end_time_and_status.assert_has_calls(
+        ispyb_handler.ispyb._update_scan_with_end_time_and_status.assert_has_calls(
             [
                 call(
                     td.DUMMY_TIME_STRING,
@@ -112,7 +120,7 @@ class TestXrayCentreIspybHandler:
             ]
         )
         assert (
-            ispyb_handler.ispyb.update_scan_with_end_time_and_status.call_count
+            ispyb_handler.ispyb._update_scan_with_end_time_and_status.call_count
             == len(DC_IDS)
         )
 
