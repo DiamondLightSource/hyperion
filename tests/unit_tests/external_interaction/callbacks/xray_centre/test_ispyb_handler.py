@@ -19,22 +19,23 @@ from .conftest import TestData
 
 DC_IDS = (1, 2)
 DCG_ID = 4
+DC_GRID_IDS = (11, 12)
 td = TestData()
 
 
 def mock_store_in_ispyb(config, *args, **kwargs) -> Store3DGridscanInIspyb:
-    mock = Store3DGridscanInIspyb("")
-    mock._store_grid_scan = MagicMock(
-        return_value=IspybIds(
-            data_collection_ids=DC_IDS,
-            data_collection_group_id=DCG_ID,
-            grid_ids=None,
-        )
-    )
+    mock = MagicMock(spec=Store3DGridscanInIspyb)
     mock.end_deposition = MagicMock(return_value=None)
     mock.begin_deposition = MagicMock(
         return_value=IspybIds(
             data_collection_group_id=DCG_ID, data_collection_ids=DC_IDS
+        )
+    )
+    mock.update_deposition = MagicMock(
+        return_value=IspybIds(
+            data_collection_group_id=DCG_ID,
+            data_collection_ids=DC_IDS,
+            grid_ids=DC_GRID_IDS,
         )
     )
     mock.append_to_comment = MagicMock()
