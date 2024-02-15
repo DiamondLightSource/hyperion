@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from event_model.documents import Event, EventDescriptor, RunStop
 
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -80,7 +81,7 @@ class TestData:
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
     GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
     BAD_ISPYB_RUN_STATUS: str = "DataCollection Unsuccessful"
-    test_start_document: dict = {
+    test_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -90,7 +91,7 @@ class TestData:
         "subplan_name": GRIDSCAN_OUTER_PLAN,
         "hyperion_internal_parameters": dummy_params().json(),
     }
-    test_run_gridscan_start_document: dict = {
+    test_run_gridscan_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -99,7 +100,7 @@ class TestData:
         "plan_name": GRIDSCAN_AND_MOVE,
         "subplan_name": GRIDSCAN_MAIN_PLAN,
     }
-    test_do_fgs_start_document: dict = {
+    test_do_fgs_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -108,17 +109,17 @@ class TestData:
         "plan_name": GRIDSCAN_AND_MOVE,
         "subplan_name": "do_fgs",
     }
-    test_descriptor_document_pre_data_collection: dict = {
+    test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": ISPYB_HARDWARE_READ_PLAN,
-    }
-    test_descriptor_document_during_data_collection: dict = {
+    }  # type: ignore
+    test_descriptor_document_during_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN,
-    }
-    test_event_document_pre_data_collection: dict = {
+    }  # type: ignore
+    test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.828203,
         "data": {
@@ -133,7 +134,7 @@ class TestData:
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8173",
         "filled": {},
     }
-    test_event_document_during_data_collection: dict = {
+    test_event_document_during_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 2666604299.928203,
         "data": {
@@ -146,7 +147,7 @@ class TestData:
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "filled": {},
     }
-    test_stop_document: dict = {
+    test_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604300.0310638,
         "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
@@ -154,25 +155,23 @@ class TestData:
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
     }
-    test_run_gridscan_stop_document: dict = {
+    test_run_gridscan_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604300.0310638,
         "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
         "exit_status": "success",
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": GRIDSCAN_MAIN_PLAN,
     }
-    test_do_fgs_gridscan_stop_document: dict = {
+    test_do_fgs_gridscan_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604300.0310638,
         "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
         "exit_status": "success",
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": "do_fgs",
     }
-    test_failed_stop_document: dict = {
+    test_failed_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604300.0310638,
         "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
@@ -180,12 +179,11 @@ class TestData:
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
     }
-    test_run_gridscan_failed_stop_document: dict = {
+    test_run_gridscan_failed_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604300.0310638,
         "uid": "65b2bde5-5740-42d7-9047-e860e06fbe15",
         "exit_status": "fail",
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": GRIDSCAN_MAIN_PLAN,
     }

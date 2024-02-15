@@ -24,6 +24,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
+from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.status import DeviceStatus, Status
 from ophyd_async.core import set_sim_value
@@ -41,7 +42,8 @@ from hyperion.log import (
     ISPYB_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
-    set_up_logging_handlers,
+    _get_logging_dir,
+    do_default_logging_setup,
 )
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -69,26 +71,28 @@ def _destroy_loggers(loggers):
 
 def pytest_runtest_setup(item):
     markers = [m.name for m in item.own_markers]
-    log_level = "DEBUG" if item.config.option.debug_logging else "INFO"
-    log_params = {"logging_level": log_level, "dev_mode": True}
     if "skip_log_setup" not in markers:
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
-                print(f"Initialising Hyperion logger for tests at {log_level}")
-                set_up_logging_handlers(**log_params)
+                print("Initialising Hyperion logger for tests")
+                do_default_logging_setup(dev_mode=True)
         if ISPYB_LOGGER.handlers == []:
-            print(f"Initialising ISPyB logger for tests at {log_level}")
-            set_up_logging_handlers(
-                **log_params,
-                filename="hyperion_ispyb_callback.txt",
-                logger=ISPYB_LOGGER,
+            print("Initialising ISPyB logger for tests")
+            set_up_all_logging_handlers(
+                ISPYB_LOGGER,
+                _get_logging_dir(),
+                "hyperion_ispyb_callback.log",
+                True,
+                10000,
             )
         if NEXUS_LOGGER.handlers == []:
-            print(f"Initialising nexus logger for tests at {log_level}")
-            set_up_logging_handlers(
-                **log_params,
-                filename="hyperion_nexus_callback.txt",
-                logger=NEXUS_LOGGER,
+            print("Initialising nexus logger for tests")
+            set_up_all_logging_handlers(
+                NEXUS_LOGGER,
+                _get_logging_dir(),
+                "hyperion_ispyb_callback.log",
+                True,
+                10000,
             )
     else:
         print("Skipping log setup for log test - deleting existing handlers")

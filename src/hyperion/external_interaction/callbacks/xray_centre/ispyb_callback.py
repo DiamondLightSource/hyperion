@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from time import time
+from typing import TYPE_CHECKING
 
 import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
-from event_model.documents.event import Event
 
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
@@ -27,6 +27,9 @@ from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+if TYPE_CHECKING:
+    from event_model import Event, RunStop
 
 
 class GridscanISPyBCallback(BaseISPyBCallback):
@@ -108,7 +111,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
-    def activity_gated_stop(self, doc: dict):
+    def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.uid_to_finalize_on:
             ISPYB_LOGGER.info(
                 "ISPyB callback received stop document corresponding to start document "
