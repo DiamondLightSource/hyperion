@@ -4,7 +4,10 @@ import numpy as np
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store import GridScanInfo
+from hyperion.external_interaction.ispyb.data_model import GridScanInfo
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
+    _construct_comment_for_gridscan,
+)
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
 )
@@ -569,7 +572,7 @@ def test_ispyb_deposition_rounds_box_size_int(
     )
     bottom_right_from_top_left.return_value = grid_scan_info.upper_left
 
-    assert dummy_2d_gridscan_ispyb._construct_comment(
+    assert _construct_comment_for_gridscan(
         dummy_params, MagicMock(), grid_scan_info
     ) == (
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
