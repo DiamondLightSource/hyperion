@@ -6,7 +6,6 @@ from typing import cast
 import ispyb
 from dodal.devices.oav import utils as oav_utils
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
-from ispyb.sp.mxacquisition import MXAcquisition
 
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
@@ -96,6 +95,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
             full_params,
             full_params.hyperion_params.ispyb_params,
             full_params.hyperion_params.detector_params,
+            self._data_collection_group_id,
+            self._data_collection_ids,
         )
         self._data_collection_ids = ispyb_ids.data_collection_ids  # pyright: ignore
         self._data_collection_group_id = ispyb_ids.data_collection_group_id
@@ -113,7 +114,12 @@ class StoreGridscanInIspyb(StoreInIspyb):
             self._end_deposition(id, success, reason, ispyb_params, detector_params)
 
     def _store_grid_scan(
-        self, full_params: GridscanInternalParameters, ispyb_params, detector_params
+        self,
+        full_params: GridscanInternalParameters,
+        ispyb_params,
+        detector_params,
+        data_collection_group_id,
+        data_collection_ids,
     ) -> IspybIds:
         assert ispyb_params.upper_left is not None
         grid_scan_info = GridScanInfo(
@@ -131,6 +137,14 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
+            dcg_info = populate_data_collection_group(
+                self.experiment_type, conn, detector_params, ispyb_params
+            )
+
+            self._store_data_collection_group_table(
+                conn, dcg_info, data_collection_group_id
+            )
+
             return self._store_scan_data(
                 conn,
                 xy_data_collection_info,
@@ -138,6 +152,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
                 full_params,
                 ispyb_params,
                 detector_params,
+                data_collection_group_id,
+                data_collection_ids,
             )
 
     @abstractmethod
@@ -149,17 +165,10 @@ class StoreGridscanInIspyb(StoreInIspyb):
         full_params,
         ispyb_params,
         detector_params,
+        data_collection_group_id,
+        data_collection_ids,
     ) -> IspybIds:
         pass
-
-    def _store_grid_info_table(
-        self, conn: Connector, ispyb_data_collection_id: int, dc_grid_info
-    ) -> int:
-        mx_acquisition: MXAcquisition = conn.mx_acquisition
-        params = mx_acquisition.get_dc_grid_params()
-        params |= dc_grid_info.as_dict()
-        params["parentid"] = ispyb_data_collection_id
-        return mx_acquisition.upsert_dc_grid(list(params.values()))
 
 
 def _construct_comment_for_gridscan(full_params, ispyb_params, grid_scan_info) -> str:

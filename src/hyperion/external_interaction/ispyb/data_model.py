@@ -92,9 +92,9 @@ class GridScanInfo:
     y_step_size: float
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ScanDataInfo:
-    data_collection_id: Optional[int]
-    grid_scan_info: Optional[GridScanInfo]
     data_collection_info: DataCollectionInfo
-    data_collection_position_info: Optional[DataCollectionPositionInfo]
+    data_collection_id: Optional[int] = None
+    data_collection_position_info: Optional[DataCollectionPositionInfo] = None
+    data_collection_grid_info: Optional[DataCollectionGridInfo] = None

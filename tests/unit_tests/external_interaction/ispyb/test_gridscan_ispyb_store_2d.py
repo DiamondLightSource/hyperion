@@ -379,6 +379,8 @@ def test_param_keys(
         dummy_params,
         dummy_params.hyperion_params.ispyb_params,
         dummy_params.hyperion_params.detector_params,
+        TEST_DATA_COLLECTION_GROUP_ID,
+        (TEST_DATA_COLLECTION_IDS[0],),
     ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
@@ -395,6 +397,8 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
         dummy_params,
         dummy_params.hyperion_params.ispyb_params,
         dummy_params.hyperion_params.detector_params,
+        TEST_DATA_COLLECTION_GROUP_ID,
+        (TEST_DATA_COLLECTION_IDS[0],),
     )
 
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
