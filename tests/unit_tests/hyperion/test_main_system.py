@@ -336,8 +336,12 @@ def test_cli_args_parse(arg_list, parsed_arg_values):
 @patch("hyperion.__main__.do_default_logging_setup")
 @patch("hyperion.__main__.Publisher")
 @patch("hyperion.__main__.setup_context")
+@patch("dodal.log.GELFTCPHandler.emit")
+@patch("dodal.log.TimedRotatingFileHandler.emit")
 @pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
 def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
+    filehandler_emit,
+    graylog_emit,
     setup_context: MagicMock,
     zmq_publisher: MagicMock,
     set_up_logging_handlers: MagicMock,
