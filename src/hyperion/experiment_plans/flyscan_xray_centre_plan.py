@@ -255,7 +255,7 @@ def run_gridscan_and_move(
         ]
     )
 
-    yield from setup_zebra_for_gridscan(fgs_composite.zebra)
+    yield from setup_zebra_for_gridscan(fgs_composite.zebra, wait=True)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
