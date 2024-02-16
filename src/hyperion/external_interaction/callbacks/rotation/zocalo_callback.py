@@ -49,10 +49,14 @@ class RotationZocaloCallback(PlanReactiveCallback):
 
     def activity_gated_stop(self, doc: dict):
         if self.run_uid and doc.get("run_start") == self.run_uid:
+            self.run_uid = None
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
             if self.ispyb.ispyb_ids.data_collection_ids is not None:
+                ISPYB_LOGGER.info(
+                    f"Zocalo callback submitting job {self.ispyb.ispyb_ids.data_collection_ids}"
+                )
                 assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, int)
                 self.zocalo_interactor.run_start(
                     self.ispyb.ispyb_ids.data_collection_ids
