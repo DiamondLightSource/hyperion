@@ -61,7 +61,7 @@ from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
 )
-from ..external_interaction.callbacks.xray_centre.conftest import TestData
+from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
     mock_zocalo_trigger,
     modified_interactor_mock,

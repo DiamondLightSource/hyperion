@@ -51,7 +51,6 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
 
         xy_data_collection_info = populate_remaining_data_collection_info(
             comment_constructor,
-            conn,
             data_collection_group_id,
             xy_data_collection_info,
             detector_params,

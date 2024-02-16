@@ -9,8 +9,10 @@ from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
+    DataCollectionGroupInfo,
     DataCollectionInfo,
     GridScanInfo,
+    ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     Orientation,
@@ -51,7 +53,12 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self._data_collection_ids: tuple[int, ...] | None = None
         self.grid_ids: tuple[int, ...] | None = None
 
-    def begin_deposition(self, internal_params: InternalParameters) -> IspybIds:
+    def begin_deposition(
+        self,
+        internal_params: InternalParameters,
+        data_collection_group_info: DataCollectionGroupInfo = None,
+        scan_data_info: ScanDataInfo = None,
+    ) -> IspybIds:
         full_params = cast(GridscanInternalParameters, internal_params)
         ispyb_params = full_params.hyperion_params.ispyb_params
         detector_params = full_params.hyperion_params.detector_params
@@ -61,7 +68,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None
             detector_params = full_params.hyperion_params.detector_params  # type: ignore
-            dcg_info = populate_data_collection_group(self.experiment_type, conn, detector_params, ispyb_params)
+            dcg_info = populate_data_collection_group(self.experiment_type, detector_params, ispyb_params)
             self._data_collection_group_id = self._store_data_collection_group_table(conn, dcg_info)
 
             grid_scan_info = GridScanInfo(
@@ -76,8 +83,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
             assert ispyb_params is not None and detector_params is not None
             data_collection_info = _populate_xy_data_collection_info(grid_scan_info, full_params, ispyb_params,
                                                                      detector_params)
-            populate_remaining_data_collection_info(constructor, conn, self._data_collection_group_id,
-                                                    data_collection_info, detector_params, ispyb_params)
+            populate_remaining_data_collection_info(constructor, self._data_collection_group_id, data_collection_info,
+                                                    detector_params, ispyb_params)
             params = self.fill_common_data_collection_params(conn, None, data_collection_info)
             self._data_collection_ids = (
                 self._upsert_data_collection(conn, params),  # pyright: ignore
@@ -104,14 +111,11 @@ class StoreGridscanInIspyb(StoreInIspyb):
         return ispyb_ids
 
     def end_deposition(self, success: str, reason: str, internal_params):
-        full_params = cast(GridscanInternalParameters, internal_params)
-        ispyb_params = full_params.hyperion_params.ispyb_params
-        detector_params = full_params.hyperion_params.detector_params
         assert (
             self._data_collection_ids
         ), "Can't end ISPyB deposition, data_collection IDs are missing"
         for id in self._data_collection_ids:
-            self._end_deposition(id, success, reason, ispyb_params, detector_params)
+            self._end_deposition(id, success, reason)
 
     def _store_grid_scan(
         self,
@@ -138,7 +142,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
             dcg_info = populate_data_collection_group(
-                self.experiment_type, conn, detector_params, ispyb_params
+                self.experiment_type, detector_params, ispyb_params
             )
 
             self._store_data_collection_group_table(
