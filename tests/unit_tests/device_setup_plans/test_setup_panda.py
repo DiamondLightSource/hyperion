@@ -96,7 +96,7 @@ def test_setup_panda_correctly_configures_table(
     to look like [0,1,0,0,1,0]
     """
 
-    smargon_speed_mm_per_s = get_smargon_speed(x_step_size, time_between_x_steps_ms)
+    sample_velocity_mm_per_s = get_smargon_speed(x_step_size, time_between_x_steps_ms)
     params = PandAGridScanParams(
         x_steps=x_steps,
         x_step_size=x_step_size,
@@ -105,14 +105,14 @@ def test_setup_panda_correctly_configures_table(
     )
 
     table = get_seq_table(
-        params, time_between_x_steps_ms, exposure_time_s, smargon_speed_mm_per_s
+        params, time_between_x_steps_ms, exposure_time_s, sample_velocity_mm_per_s
     )
     np.testing.assert_array_equal(table["time2"], np.ones(6))
 
     safe_distance = int((params.x_step_size * MM_TO_ENCODER_COUNTS) / 2)
 
     exposure_distance = int(
-        smargon_speed_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
+        sample_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
     )
 
     np.testing.assert_array_equal(
