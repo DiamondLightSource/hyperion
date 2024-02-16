@@ -34,6 +34,7 @@ class RotationZocaloCallback(PlanReactiveCallback):
     def activity_gated_start(self, doc: dict):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
+            self.run_uid = doc.get("uid")
             ISPYB_LOGGER.info(
                 "Zocalo callback recieved start document with experiment parameters."
             )
@@ -43,9 +44,6 @@ class RotationZocaloCallback(PlanReactiveCallback):
             zocalo_environment = params.hyperion_params.zocalo_environment
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
-
-        if self.run_uid is None:
-            self.run_uid = doc.get("uid")
 
     def activity_gated_stop(self, doc: dict):
         if self.run_uid and doc.get("run_start") == self.run_uid:
