@@ -83,7 +83,7 @@ def ispyb_plan(test_fgs_params):
     def standalone_read_hardware_for_ispyb(
         und, syn, slits, robot, attn, fl, dcm, ap_sg
     ):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot, ap_sg)
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg, robot)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
