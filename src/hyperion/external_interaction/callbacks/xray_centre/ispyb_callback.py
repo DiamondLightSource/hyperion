@@ -72,6 +72,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 else Store2DGridscanInIspyb(self.ispyb_config)
             )
             self.ispyb_ids = self.ispyb.begin_deposition(self.params)
+            set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
@@ -109,7 +110,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 self.ispyb_ids.data_collection_ids[0], crystal_summary
             )
 
-        set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
         return doc
 
     def activity_gated_stop(self, doc: RunStop):

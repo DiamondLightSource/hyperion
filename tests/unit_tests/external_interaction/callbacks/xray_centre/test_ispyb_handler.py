@@ -15,7 +15,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.log import ISPYB_LOGGER
 
-from .conftest import TestData
+from ..conftest import TestData
 
 DC_IDS = (1, 2)
 DCG_ID = 4

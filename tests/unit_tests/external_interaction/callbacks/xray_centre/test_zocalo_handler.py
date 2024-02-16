@@ -13,7 +13,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 
 from ....experiment_plans.conftest import modified_store_grid_scan_mock
-from ....external_interaction.callbacks.xray_centre.conftest import TestData
+from ..conftest import TestData
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}

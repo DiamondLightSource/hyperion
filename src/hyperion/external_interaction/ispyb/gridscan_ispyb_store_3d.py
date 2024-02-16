@@ -53,7 +53,6 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
 
         xy_data_collection_info = populate_remaining_data_collection_info(
             xy_comment_constructor,
-            conn,
             data_collection_group_id,
             xy_data_collection_info,
             detector_params,
@@ -88,7 +87,6 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
 
         xz_data_collection_info = populate_remaining_data_collection_info(
             xz_comment_constructor,
-            conn,
             data_collection_group_id,
             xz_data_collection_info,
             detector_params,

@@ -18,16 +18,18 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-from .conftest import (
-    TEST_BARCODE,
+from ..conftest import (
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_GRID_INFO_IDS,
     TEST_POSITION_ID,
-    TEST_SAMPLE_ID,
     TEST_SESSION_ID,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
+)
+from .conftest import (
+    TEST_BARCODE,
+    TEST_SAMPLE_ID,
 )
 
 EXPECTED_START_TIME = "2024-02-08 14:03:59"
@@ -124,17 +126,13 @@ def ispyb_conn(base_ispyb_conn):
     "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_begin_deposition(
-    ispyb_conn_with_2x2_collections_and_grid_info, dummy_2d_gridscan_ispyb, dummy_params
-):
+def test_begin_deposition(mock_ispyb_conn, dummy_2d_gridscan_ispyb, dummy_params):
     assert dummy_2d_gridscan_ispyb.begin_deposition(dummy_params) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
     )
 
-    mx_acq: MagicMock = mx_acquisition_from_conn(
-        ispyb_conn_with_2x2_collections_and_grid_info
-    )
+    mx_acq: MagicMock = mx_acquisition_from_conn(mock_ispyb_conn)
     assert_upsert_call_with(
         mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
         mx_acq.get_data_collection_group_params(),
@@ -199,11 +197,9 @@ def test_begin_deposition(
     "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_update_deposition(
-    ispyb_conn_with_2x2_collections_and_grid_info, dummy_2d_gridscan_ispyb, dummy_params
-):
+def test_update_deposition(mock_ispyb_conn, dummy_2d_gridscan_ispyb, dummy_params):
     dummy_2d_gridscan_ispyb.begin_deposition(dummy_params)
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.assert_called_once()
     mx_acq.upsert_data_collection.assert_called_once()
 
@@ -317,15 +313,13 @@ def test_update_deposition(
 )
 def test_end_deposition_happy_path(
     get_current_time,
-    ispyb_conn_with_2x2_collections_and_grid_info,
+    mock_ispyb_conn,
     dummy_2d_gridscan_ispyb,
     dummy_params,
 ):
     dummy_2d_gridscan_ispyb.begin_deposition(dummy_params)
     dummy_2d_gridscan_ispyb.update_deposition(dummy_params)
-    mx_acq: MagicMock = mx_acquisition_from_conn(
-        ispyb_conn_with_2x2_collections_and_grid_info
-    )
+    mx_acq: MagicMock = mx_acquisition_from_conn(mock_ispyb_conn)
     assert len(mx_acq.upsert_data_collection_group.mock_calls) == 2
     assert len(mx_acq.upsert_data_collection.mock_calls) == 2
     assert len(mx_acq.upsert_dc_grid.mock_calls) == 1
@@ -371,9 +365,7 @@ def setup_mock_return_values(ispyb_conn):
     mx_acquisition.upsert_dc_grid.return_value = TEST_GRID_INFO_IDS[0]
 
 
-def test_param_keys(
-    ispyb_conn_with_2x2_collections_and_grid_info, dummy_2d_gridscan_ispyb, dummy_params
-):
+def test_param_keys(mock_ispyb_conn, dummy_2d_gridscan_ispyb, dummy_params):
     dummy_2d_gridscan_ispyb.begin_deposition(dummy_params)
     assert dummy_2d_gridscan_ispyb._store_grid_scan(
         dummy_params,
@@ -451,11 +443,11 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
 
 
 def test_fail_result_run_results_in_bad_run_status(
-    ispyb_conn_with_2x2_collections_and_grid_info: MagicMock,
+    mock_ispyb_conn: MagicMock,
     dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
     dummy_params,
 ):
-    mock_ispyb_conn = ispyb_conn_with_2x2_collections_and_grid_info
+    mock_ispyb_conn = mock_ispyb_conn
     mock_mx_aquisition = (
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
@@ -475,11 +467,11 @@ def test_fail_result_run_results_in_bad_run_status(
 
 
 def test_no_exception_during_run_results_in_good_run_status(
-    ispyb_conn_with_2x2_collections_and_grid_info: MagicMock,
+    mock_ispyb_conn: MagicMock,
     dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
     dummy_params,
 ):
-    mock_ispyb_conn = ispyb_conn_with_2x2_collections_and_grid_info
+    mock_ispyb_conn = mock_ispyb_conn
     setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
@@ -498,13 +490,11 @@ def test_no_exception_during_run_results_in_good_run_status(
 
 
 def test_ispyb_deposition_comment_correct(
-    ispyb_conn_with_2x2_collections_and_grid_info: MagicMock,
+    mock_ispyb_conn: MagicMock,
     dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
     dummy_params,
 ):
-    mock_mx_aquisition = (
-        ispyb_conn_with_2x2_collections_and_grid_info.return_value.mx_acquisition
-    )
+    mock_mx_aquisition = mock_ispyb_conn.return_value.mx_acquisition
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
     dummy_2d_gridscan_ispyb.begin_deposition(dummy_params)
     dummy_2d_gridscan_ispyb.update_deposition(dummy_params)

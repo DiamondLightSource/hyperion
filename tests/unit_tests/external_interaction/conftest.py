@@ -1,11 +1,13 @@
 import os
-from typing import Any, Callable
-from unittest.mock import MagicMock
+from copy import deepcopy
+from typing import Any, Callable, Sequence
+from unittest.mock import MagicMock, mock_open, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from ispyb.sp.mxacquisition import MXAcquisition
 from ophyd.sim import SynAxis
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
@@ -20,6 +22,11 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 from hyperion.utils.utils import convert_angstrom_to_eV
+from unit_tests.external_interaction.ispyb.conftest import (
+    TEST_BARCODE,
+    TEST_SAMPLE_ID,
+    default_raw_params,
+)
 
 
 class MockReactiveCallback(PlanReactiveCallback):
@@ -96,3 +103,99 @@ def test_fgs_params(request):
     )
     params.hyperion_params.detector_params.prefix = "dummy"
     yield params
+
+
+@pytest.fixture
+def mock_ispyb_conn(base_ispyb_conn):
+    def upsert_data_collection(values):
+        kvpairs = remap_upsert_columns(
+            list(MXAcquisition.get_data_collection_params()), values
+        )
+        if kvpairs["id"]:
+            return kvpairs["id"]
+        else:
+            return next(upsert_data_collection.i)  # pyright: ignore
+
+    upsert_data_collection.i = iter(TEST_DATA_COLLECTION_IDS)  # pyright: ignore
+
+    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection.side_effect = (
+        upsert_data_collection
+    )
+    base_ispyb_conn.return_value.mx_acquisition.update_dc_position.return_value = (
+        TEST_POSITION_ID
+    )
+    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
+        TEST_DATA_COLLECTION_GROUP_ID
+    )
+
+    def upsert_dc_grid(values):
+        kvpairs = remap_upsert_columns(list(MXAcquisition.get_dc_grid_params()), values)
+        if kvpairs["id"]:
+            return kvpairs["id"]
+        else:
+            return next(upsert_dc_grid.i)  # pyright: ignore
+
+    upsert_dc_grid.i = iter(TEST_GRID_INFO_IDS)  # pyright: ignore
+
+    base_ispyb_conn.return_value.mx_acquisition.upsert_dc_grid.side_effect = (
+        upsert_dc_grid
+    )
+    return base_ispyb_conn
+
+
+def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:
+    return mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+
+
+def assert_upsert_call_with(call, param_template, expected: dict):
+    actual = remap_upsert_columns(list(param_template), call.args[0])
+    assert actual == dict(param_template | expected)
+
+
+TEST_DATA_COLLECTION_IDS = (12, 13)
+TEST_DATA_COLLECTION_GROUP_ID = 34
+TEST_GRID_INFO_IDS = (56, 57)
+TEST_POSITION_ID = 78
+TEST_SESSION_ID = 90
+EXPECTED_START_TIME = "2024-02-08 14:03:59"
+EXPECTED_END_TIME = "2024-02-08 14:04:01"
+
+
+def remap_upsert_columns(keys: Sequence[str], values: list):
+    return dict(zip(keys, values))
+
+
+@pytest.fixture
+def base_ispyb_conn():
+    with patch("ispyb.open", mock_open()) as ispyb_connection:
+        mock_mx_acquisition = MagicMock()
+        mock_mx_acquisition.get_data_collection_group_params.side_effect = (
+            lambda: deepcopy(MXAcquisition.get_data_collection_group_params())
+        )
+
+        mock_mx_acquisition.get_data_collection_params.side_effect = lambda: deepcopy(
+            MXAcquisition.get_data_collection_params()
+        )
+        mock_mx_acquisition.get_dc_position_params.side_effect = lambda: deepcopy(
+            MXAcquisition.get_dc_position_params()
+        )
+        mock_mx_acquisition.get_dc_grid_params.side_effect = lambda: deepcopy(
+            MXAcquisition.get_dc_grid_params()
+        )
+        ispyb_connection.return_value.mx_acquisition = mock_mx_acquisition
+        mock_core = MagicMock()
+        mock_core.retrieve_visit_id.return_value = TEST_SESSION_ID
+        ispyb_connection.return_value.core = mock_core
+        yield ispyb_connection
+
+
+@pytest.fixture
+def dummy_rotation_params():
+    dummy_params = RotationInternalParameters(
+        **default_raw_params(
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        )
+    )
+    dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
+    dummy_params.hyperion_params.ispyb_params.sample_barcode = TEST_BARCODE
+    return dummy_params

@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from numpy import ndarray
 
@@ -8,7 +8,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 
 @dataclass()
 class DataCollectionGroupInfo:
-    parent_id: int
+    visit_string: str
     experiment_type: str
     sample_id: Optional[str]
     sample_barcode: Optional[str]
@@ -28,7 +28,7 @@ class DataCollectionInfo:
     kappa_start: Optional[float] = None
 
     parent_id: Optional[int] = None
-    visit_id: Any = None
+    visit_string: str = None
     sample_id: Optional[str] = None
     detector_id: Optional[int] = None
     axis_start: Optional[float] = None
