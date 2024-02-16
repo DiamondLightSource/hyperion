@@ -15,6 +15,10 @@ from hyperion.device_setup_plans.setup_panda import (
 from ...conftest import RunEngineSimulator
 
 
+def get_smargon_speed(x_step_size_mm: float, time_between_x_steps_ms: float) -> float:
+    return x_step_size_mm / time_between_x_steps_ms
+
+
 def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
     num_of_sets = 0
     num_of_waits = 0
@@ -36,8 +40,11 @@ def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
     )
 
     if plan == "setup":
+        smargon_speed = get_smargon_speed(0.1, 1)
         sim.simulate_plan(
-            setup_panda_for_flyscan(mock_panda, "path", PandAGridScanParams(), 1, 1, 1)
+            setup_panda_for_flyscan(
+                mock_panda, "path", PandAGridScanParams(), 1, 1, 1, smargon_speed
+            )
         )
     elif plan == "disarm":
         sim.simulate_plan(disarm_panda_for_gridscan(mock_panda))
@@ -89,6 +96,7 @@ def test_setup_panda_correctly_configures_table(
     to look like [0,1,0,0,1,0]
     """
 
+    smargon_speed_mm_per_s = get_smargon_speed(x_step_size, time_between_x_steps_ms)
     params = PandAGridScanParams(
         x_steps=x_steps,
         x_step_size=x_step_size,
@@ -96,17 +104,15 @@ def test_setup_panda_correctly_configures_table(
         run_up_distance_mm=run_up_distance_mm,
     )
 
-    table = get_seq_table(params, time_between_x_steps_ms, exposure_time_s)
-
+    table = get_seq_table(
+        params, time_between_x_steps_ms, exposure_time_s, smargon_speed_mm_per_s
+    )
     np.testing.assert_array_equal(table["time2"], np.ones(6))
 
     safe_distance = int((params.x_step_size * MM_TO_ENCODER_COUNTS) / 2)
 
     exposure_distance = int(
-        (params.x_step_size / time_between_x_steps_ms)
-        * 1e-3
-        * exposure_time_s
-        * MM_TO_ENCODER_COUNTS
+        smargon_speed_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
     )
 
     np.testing.assert_array_equal(

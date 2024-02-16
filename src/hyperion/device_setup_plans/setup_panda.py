@@ -25,7 +25,10 @@ class Enabled(Enum):
 
 
 def get_seq_table(
-    parameters: PandAGridScanParams, time_between_x_steps_ms, exposure_time_s
+    parameters: PandAGridScanParams,
+    time_between_x_steps_ms,
+    exposure_time_s,
+    smargon_speed_mm_per_s,
 ) -> SeqTable:
     """
 
@@ -46,8 +49,6 @@ def get_seq_table(
         For a more detailed explanation and a diagram, see https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning
     """
 
-    sample_velocity_mm_per_s = parameters.x_step_size * 1e-3 / time_between_x_steps_ms
-
     safe_distance_x_counts = int(MM_TO_ENCODER_COUNTS * parameters.x_step_size / 2)
 
     start_of_grid_x_counts = int(parameters.x_start * MM_TO_ENCODER_COUNTS)
@@ -59,7 +60,7 @@ def get_seq_table(
     )
 
     exposure_distance_x_counts = int(
-        sample_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
+        smargon_speed_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
     )
 
     rows = [SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1)]
@@ -113,6 +114,7 @@ def setup_panda_for_flyscan(
     initial_x: float,
     exposure_time_s: float,
     time_between_x_steps_ms: float,
+    smargon_speed_mm_per_s: float,
 ) -> MsgGenerator:
     """Configures the PandA device for a flyscan.
     Sets PVs from a yaml file, calibrates the encoder, and
@@ -148,7 +150,9 @@ def setup_panda_for_flyscan(
         panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
     )
 
-    table = get_seq_table(parameters, time_between_x_steps_ms, exposure_time_s)
+    table = get_seq_table(
+        parameters, time_between_x_steps_ms, exposure_time_s, smargon_speed_mm_per_s
+    )
 
     LOGGER.info(f"Setting PandA sequencer values: {str(table)}")
 
