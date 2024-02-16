@@ -3,27 +3,33 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 from mockito import mock
 
-from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+    populate_data_collection_group,
+    populate_data_collection_position_info,
+    populate_remaining_data_collection_info,
+)
 from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
+    construct_comment_for_rotation_scan,
+    populate_data_collection_info_for_rotation,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
 
-from .conftest import (
-    TEST_BARCODE,
+from ..conftest import (
+    EXPECTED_END_TIME,
+    EXPECTED_START_TIME,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
-    TEST_SAMPLE_ID,
     TEST_SESSION_ID,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
-
-EXPECTED_START_TIME = "2024-02-08 14:03:59"
-EXPECTED_END_TIME = "2024-02-08 14:04:01"
+from .conftest import (
+    TEST_BARCODE,
+    TEST_SAMPLE_ID,
+)
 
 EXPECTED_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,
@@ -68,6 +74,47 @@ EXPECTED_DATA_COLLECTION = {
 
 
 @pytest.fixture
+def dummy_rotation_data_collection_group_info(dummy_rotation_params):
+    return populate_data_collection_group(
+        "SAD",
+        dummy_rotation_params.hyperion_params.detector_params,
+        dummy_rotation_params.hyperion_params.ispyb_params,
+    )
+
+
+@pytest.fixture
+@patch(
+    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    new=MagicMock(return_value=EXPECTED_START_TIME),
+)
+def scan_data_info_for_begin(dummy_rotation_params):
+    scan_data_info = ScanDataInfo(
+        data_collection_info=populate_remaining_data_collection_info(
+            construct_comment_for_rotation_scan,
+            None,
+            populate_data_collection_info_for_rotation(
+                dummy_rotation_params.hyperion_params.ispyb_params,
+                dummy_rotation_params.hyperion_params.detector_params,
+                dummy_rotation_params,
+            ),
+            dummy_rotation_params.hyperion_params.detector_params,
+            dummy_rotation_params.hyperion_params.ispyb_params,
+        )
+    )
+    return scan_data_info
+
+
+@pytest.fixture
+def scan_data_info_for_update(scan_data_info_for_begin, dummy_rotation_params):
+    scan_data_info_for_begin.data_collection_position_info = (
+        populate_data_collection_position_info(
+            dummy_rotation_params.hyperion_params.ispyb_params
+        )
+    )
+    return scan_data_info_for_begin
+
+
+@pytest.fixture
 def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
     store_in_ispyb = StoreRotationInIspyb(
         CONST.SIM.ISPYB_CONFIG, None, "Characterization"
@@ -80,15 +127,21 @@ def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_begin_deposition(
-    ispyb_conn_with_2x2_collections_and_grid_info,
+    mock_ispyb_conn,
     dummy_rotation_ispyb,
     dummy_rotation_params,
+    dummy_rotation_data_collection_group_info,
+    scan_data_info_for_begin,
 ):
-    assert dummy_rotation_ispyb.begin_deposition(dummy_rotation_params) == IspybIds(
+    assert dummy_rotation_ispyb.begin_deposition(
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_begin,
+    ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     assert_upsert_call_with(
         mx_acq.upsert_data_collection_group.mock_calls[0],
         mx_acq.get_data_collection_group_params(),
@@ -111,17 +164,23 @@ def test_begin_deposition(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_begin_deposition_with_group_id_doesnt_insert(
-    ispyb_conn_with_2x2_collections_and_grid_info,
+    mock_ispyb_conn,
     dummy_rotation_params,
+    dummy_rotation_data_collection_group_info,
+    scan_data_info_for_begin,
 ):
     dummy_rotation_ispyb = StoreRotationInIspyb(
         CONST.SIM.ISPYB_CONFIG, TEST_DATA_COLLECTION_GROUP_ID
     )
-    assert dummy_rotation_ispyb.begin_deposition(dummy_rotation_params) == IspybIds(
+    assert dummy_rotation_ispyb.begin_deposition(
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_begin,
+    ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.assert_not_called()
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
@@ -135,17 +194,22 @@ def test_begin_deposition_with_group_id_doesnt_insert(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_begin_deposition_with_alternate_experiment_type(
-    ispyb_conn_with_2x2_collections_and_grid_info,
+    mock_ispyb_conn,
     dummy_rotation_ispyb_with_experiment_type,
     dummy_rotation_params,
+    dummy_rotation_data_collection_group_info,
+    scan_data_info_for_begin,
 ):
+    dummy_rotation_data_collection_group_info.experiment_type = "Characterization"
     assert dummy_rotation_ispyb_with_experiment_type.begin_deposition(
-        dummy_rotation_params
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_begin,
     ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     assert_upsert_call_with(
         mx_acq.upsert_data_collection_group.mock_calls[0],
         mx_acq.get_data_collection_group_params(),
@@ -163,16 +227,27 @@ def test_begin_deposition_with_alternate_experiment_type(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_update_deposition(
-    ispyb_conn_with_2x2_collections_and_grid_info,
+    mock_ispyb_conn,
     dummy_rotation_ispyb,
     dummy_rotation_params,
+    dummy_rotation_data_collection_group_info,
+    scan_data_info_for_begin,
+    scan_data_info_for_update,
 ):
-    dummy_rotation_ispyb.begin_deposition(dummy_rotation_params)
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    dummy_rotation_ispyb.begin_deposition(
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_begin,
+    )
+    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.reset_mock()
     mx_acq.upsert_data_collection.reset_mock()
 
-    assert dummy_rotation_ispyb.update_deposition(dummy_rotation_params) == IspybIds(
+    assert dummy_rotation_ispyb.update_deposition(
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_update,
+    ) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
     )
@@ -213,18 +288,29 @@ def test_update_deposition(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_update_deposition_with_group_id_updates(
-    ispyb_conn_with_2x2_collections_and_grid_info,
+    mock_ispyb_conn,
     dummy_rotation_params,
+    dummy_rotation_data_collection_group_info,
+    scan_data_info_for_begin,
+    scan_data_info_for_update,
 ):
     dummy_rotation_ispyb = StoreRotationInIspyb(
         CONST.SIM.ISPYB_CONFIG, TEST_DATA_COLLECTION_GROUP_ID
     )
-    dummy_rotation_ispyb.begin_deposition(dummy_rotation_params)
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    dummy_rotation_ispyb.begin_deposition(
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_begin,
+    )
+    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.reset_mock()
     mx_acq.upsert_data_collection.reset_mock()
 
-    assert dummy_rotation_ispyb.update_deposition(dummy_rotation_params) == IspybIds(
+    assert dummy_rotation_ispyb.update_deposition(
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_update,
+    ) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
     )
@@ -266,21 +352,30 @@ def test_update_deposition_with_group_id_updates(
 )
 def test_end_deposition_happy_path(
     get_current_time,
-    ispyb_conn_with_2x2_collections_and_grid_info,
+    mock_ispyb_conn,
     dummy_rotation_ispyb,
     dummy_rotation_params,
+    dummy_rotation_data_collection_group_info,
+    scan_data_info_for_begin,
+    scan_data_info_for_update,
 ):
-    dummy_rotation_ispyb.begin_deposition(dummy_rotation_params)
-    dummy_rotation_ispyb.update_deposition(dummy_rotation_params)
-    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    dummy_rotation_ispyb.begin_deposition(
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_begin,
+    )
+    dummy_rotation_ispyb.update_deposition(
+        dummy_rotation_params,
+        dummy_rotation_data_collection_group_info,
+        scan_data_info_for_update,
+    )
+    mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.reset_mock()
     mx_acq.upsert_data_collection.reset_mock()
     mx_acq.upsert_dc_grid.reset_mock()
 
     get_current_time.return_value = EXPECTED_END_TIME
-    dummy_rotation_ispyb.end_deposition(
-        "success", "Test succeeded", dummy_rotation_params
-    )
+    dummy_rotation_ispyb.end_deposition("success", "Test succeeded", None)
     assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
         (
             TEST_DATA_COLLECTION_IDS[0],
@@ -302,37 +397,55 @@ def test_end_deposition_happy_path(
 
 
 def test_store_rotation_scan_failures(
-    ispyb_conn_with_2x2_collections_and_grid_info,
-    dummy_rotation_ispyb: StoreRotationInIspyb,
-    dummy_rotation_params: RotationInternalParameters,
+    mock_ispyb_conn, dummy_rotation_ispyb: StoreRotationInIspyb
 ):
     dummy_rotation_ispyb._data_collection_id = None
 
     with pytest.raises(AssertionError):
-        dummy_rotation_ispyb.end_deposition("", "", dummy_rotation_params)
+        dummy_rotation_ispyb.end_deposition("", "", None)
 
+
+def test_populate_data_collection_info_for_rotation_checks_snapshots(
+    dummy_rotation_params, dummy_rotation_data_collection_group_info
+):
     with patch("hyperion.log.ISPYB_LOGGER.warning", autospec=True) as warning:
         dummy_rotation_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = (
             None
         )
-        ispyb_no_snapshots = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG)  # noqa
-        ispyb_no_snapshots.begin_deposition(dummy_rotation_params)
+        populate_data_collection_info_for_rotation(
+            dummy_rotation_params.hyperion_params.ispyb_params,
+            dummy_rotation_params.hyperion_params.detector_params,
+            dummy_rotation_params,
+        )
         warning.assert_called_once_with("No xtal snapshot paths sent to ISPyB!")
 
 
 @pytest.mark.parametrize("dcgid", [2, 45, 61, 88, 13, 25])
 @patch("ispyb.open", new_callable=mock_open)
 def test_store_rotation_scan_uses_supplied_dcgid(
-    ispyb_conn, dummy_rotation_params, dcgid
+    ispyb_conn,
+    dummy_rotation_params,
+    dcgid,
+    dummy_rotation_data_collection_group_info,
+    scan_data_info_for_begin,
+    scan_data_info_for_update,
 ):
     ispyb_conn.return_value.mx_acquisition = MagicMock()
     ispyb_conn.return_value.core = mock()
     store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG, dcgid)
     assert (
-        store_in_ispyb.begin_deposition(dummy_rotation_params).data_collection_group_id
+        store_in_ispyb.begin_deposition(
+            dummy_rotation_params,
+            dummy_rotation_data_collection_group_info,
+            scan_data_info_for_begin,
+        ).data_collection_group_id
         == dcgid
     )
     assert (
-        store_in_ispyb.update_deposition(dummy_rotation_params).data_collection_group_id
+        store_in_ispyb.update_deposition(
+            dummy_rotation_params,
+            dummy_rotation_data_collection_group_info,
+            scan_data_info_for_update,
+        ).data_collection_group_id
         == dcgid
     )

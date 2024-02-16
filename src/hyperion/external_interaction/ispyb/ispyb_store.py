@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Optional, Tuple
 
 import ispyb
 import ispyb.sqlalchemy
-from dodal.devices.detector import DetectorParams
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
@@ -16,9 +15,7 @@ from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
     DataCollectionPositionInfo,
-)
-from hyperion.external_interaction.ispyb.ispyb_dataclass import (
-    IspybParams,
+    ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_utils import (
     get_current_time_string,
@@ -53,7 +50,12 @@ class StoreInIspyb(ABC):
         pass
 
     @abstractmethod
-    def begin_deposition(self, internal_params: InternalParameters) -> IspybIds:
+    def begin_deposition(
+        self,
+        internal_params: InternalParameters,
+        data_collection_group_info: DataCollectionGroupInfo = None,
+        scan_data_info: ScanDataInfo = None,
+    ) -> IspybIds:
         pass
 
     @abstractmethod
@@ -83,10 +85,7 @@ class StoreInIspyb(ABC):
         reason: str,
         data_collection_id: int,
         data_collection_group_id: int,
-        ispyb_params: IspybParams,
-        detector_params: DetectorParams,
     ) -> None:
-        assert ispyb_params is not None and detector_params is not None
         if reason is not None and reason != "":
             self.append_to_comment(data_collection_id, f"{run_status} reason: {reason}")
 
@@ -103,9 +102,7 @@ class StoreInIspyb(ABC):
 
             mx_acquisition.upsert_data_collection(list(params.values()))
 
-    def _end_deposition(
-        self, dcid: int, success: str, reason: str, ispyb_params, detector_params
-    ):
+    def _end_deposition(self, dcid: int, success: str, reason: str):
         """Write the end of data_collection data.
         Args:
             success (str): The success of the run, could be fail or abort
@@ -121,13 +118,7 @@ class StoreInIspyb(ABC):
         current_time = get_current_time_string()
         assert self._data_collection_group_id is not None
         self._update_scan_with_end_time_and_status(
-            current_time,
-            run_status,
-            reason,
-            dcid,
-            self._data_collection_group_id,
-            ispyb_params,
-            detector_params,
+            current_time, run_status, reason, dcid, self._data_collection_group_id
         )
 
     def _store_position_table(
@@ -142,15 +133,18 @@ class StoreInIspyb(ABC):
         return mx_acquisition.update_dc_position(list(params.values()))
 
     def _store_data_collection_group_table(
-        self, conn: Connector, dcg_info, data_collection_group_id: Optional[int] = None
+        self,
+        conn: Connector,
+        dcg_info: DataCollectionGroupInfo,
+        data_collection_group_id: Optional[int] = None,
     ) -> int:
         mx_acquisition: MXAcquisition = conn.mx_acquisition
 
         params = mx_acquisition.get_data_collection_group_params()
         if data_collection_group_id:
             params["id"] = data_collection_group_id
-
-        params |= asdict(dcg_info)
+        params["parent_id"] = get_session_id_from_visit(conn, dcg_info.visit_string)
+        params |= {k: v for k, v in asdict(dcg_info).items() if k != "visit_string"}
 
         return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
 
@@ -207,21 +201,24 @@ class StoreInIspyb(ABC):
 
         if data_collection_id:
             params["id"] = data_collection_id
-        params |= asdict(data_collection_info)
+        params["visit_id"] = get_session_id_from_visit(
+            conn, data_collection_info.visit_string
+        )
+        params |= {
+            k: v for k, v in asdict(data_collection_info).items() if k != "visit_string"
+        }
+
         return params
 
 
 def populate_remaining_data_collection_info(
     comment_constructor,
-    conn,
     data_collection_group_id,
     data_collection_info: DataCollectionInfo,
     detector_params,
     ispyb_params,
 ):
-    data_collection_info.visit_id = get_session_id_from_visit(
-        conn, get_visit_string(ispyb_params, detector_params)
-    )
+    get_visit_string(ispyb_params, detector_params)
     data_collection_info.parent_id = data_collection_group_id
     data_collection_info.sample_id = ispyb_params.sample_id
     data_collection_info.detector_id = I03_EIGER_DETECTOR
@@ -271,13 +268,9 @@ def populate_data_collection_position_info(ispyb_params):
     return dc_pos_info
 
 
-def populate_data_collection_group(
-    experiment_type, conn, detector_params, ispyb_params
-):
+def populate_data_collection_group(experiment_type, detector_params, ispyb_params):
     dcg_info = DataCollectionGroupInfo(
-        parent_id=get_session_id_from_visit(
-            conn, get_visit_string(ispyb_params, detector_params)
-        ),
+        visit_string=get_visit_string(ispyb_params, detector_params),
         experiment_type=experiment_type,
         sample_id=ispyb_params.sample_id,
         sample_barcode=ispyb_params.sample_barcode,

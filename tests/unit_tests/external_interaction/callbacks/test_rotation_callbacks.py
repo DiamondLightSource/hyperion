@@ -90,6 +90,7 @@ def fake_rotation_scan(
     dcm = make_fake_device(DCM)(
         name="dcm", daq_configuration_path=i03.DAQ_CONFIGURATION_PATH
     )
+    dcm.energy_in_kev.user_readback.sim_put(12.1)
     eiger = make_fake_device(EigerDetector)(name="eiger")
 
     @bpp.subs_decorator(list(subscriptions))

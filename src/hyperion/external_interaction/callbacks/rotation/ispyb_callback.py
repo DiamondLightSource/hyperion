@@ -5,11 +5,17 @@ from typing import TYPE_CHECKING, Any, Callable
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+    populate_data_collection_group,
+    populate_data_collection_position_info,
+    populate_remaining_data_collection_info,
 )
 from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
+    construct_comment_for_rotation_scan,
+    populate_data_collection_info_for_rotation,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import CONST
@@ -86,11 +92,57 @@ class RotationISPyBCallback(BaseISPyBCallback):
             else:
                 self.ispyb = StoreRotationInIspyb(self.ispyb_config, dcgid)
             ISPYB_LOGGER.info("Beginning ispyb deposition")
-            self.ispyb_ids = self.ispyb.begin_deposition(self.params)
+            data_collection_group_info = populate_data_collection_group(
+                self.ispyb.experiment_type,
+                self.params.hyperion_params.detector_params,
+                self.params.hyperion_params.ispyb_params,
+            )
+            data_collection_info = populate_data_collection_info_for_rotation(
+                self.params.hyperion_params.ispyb_params,
+                self.params.hyperion_params.detector_params,
+                self.params,
+            )
+            data_collection_info = populate_remaining_data_collection_info(
+                construct_comment_for_rotation_scan,
+                dcgid,
+                data_collection_info,
+                self.params.hyperion_params.detector_params,
+                self.params.hyperion_params.ispyb_params,
+            )
+            scan_data_info = ScanDataInfo(
+                data_collection_info=data_collection_info,
+            )
+            self.ispyb_ids = self.ispyb.begin_deposition(
+                self.params, data_collection_group_info, scan_data_info
+            )
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
         return super().activity_gated_start(doc)
+
+    def update_deposition(self, params):
+        dcg_info = populate_data_collection_group(
+            self.ispyb.experiment_type,
+            params.hyperion_params.detector_params,
+            params.hyperion_params.ispyb_params,
+        )
+        scan_data_info = ScanDataInfo(
+            data_collection_info=populate_remaining_data_collection_info(
+                construct_comment_for_rotation_scan,
+                self.ispyb_ids.data_collection_group_id,
+                populate_data_collection_info_for_rotation(
+                    params.hyperion_params.ispyb_params,
+                    params.hyperion_params.detector_params,
+                    params,
+                ),
+                params.hyperion_params.detector_params,
+                params.hyperion_params.ispyb_params,
+            ),
+            data_collection_position_info=populate_data_collection_position_info(
+                params.hyperion_params.ispyb_params
+            ),
+        )
+        return self.ispyb.update_deposition(params, dcg_info, scan_data_info)
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)

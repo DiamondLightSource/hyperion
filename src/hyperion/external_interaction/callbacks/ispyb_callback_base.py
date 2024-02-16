@@ -105,9 +105,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
 
             ISPYB_LOGGER.info("Updating ispyb entry.")
-            self.ispyb_ids = self.ispyb.update_deposition(self.params)
+            self.ispyb_ids = self.update_deposition(self.params)
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
+
+    def update_deposition(self, params):
+        return self.ispyb.update_deposition(params)
 
     def activity_gated_stop(self, doc: RunStop) -> None:
         """Subclasses must check that they are recieving a stop document for the correct

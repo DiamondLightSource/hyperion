@@ -11,7 +11,7 @@ from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds, StoreInIspyb
 from hyperion.parameters.constants import CONST
 
-from .xray_centre.conftest import TestData
+from .conftest import TestData
 
 EXPECTED_DCID = 100
 EXPECTED_RUN_START_MESSAGE = {"event": "start", "ispyb_dcid": EXPECTED_DCID}
