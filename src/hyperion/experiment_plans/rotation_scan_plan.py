@@ -191,6 +191,7 @@ def rotation_scan_plan(
         shutter_opening_deg=shutter_opening_degrees,
         shutter_opening_s=expt_params.shutter_opening_time_s,
         group="setup_zebra",
+        wait=True,
     )
 
     LOGGER.info("wait for any previous moves...")
