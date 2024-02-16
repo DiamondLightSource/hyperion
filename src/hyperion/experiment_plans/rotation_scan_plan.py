@@ -240,6 +240,8 @@ def rotation_scan_plan(
         acceleration_offset,
     )
 
+    LOGGER.info("Waiting for pending ungrouped moves to finish")
+    yield from bps.wait()
     LOGGER.info(f"resetting omega velocity to {DEFAULT_MAX_VELOCITY}")
     yield from bps.abs_set(composite.smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
 
