@@ -4,6 +4,7 @@ SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_HARDWARE_READ_PLAN = "ispyb_reading_hardware"
 ISPYB_TRANSMISSION_FLUX_READ_PLAN = "ispyb_update_transmission_flux"
+NEXUS_READ_PLAN = "nexus_read_plan"
 SIM_ZOCALO_ENV = "dev_artemis"
 
 CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)

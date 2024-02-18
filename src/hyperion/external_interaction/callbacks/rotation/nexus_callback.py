@@ -1,16 +1,23 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Dict
+
 import numpy as np
+from numpy.typing import DTypeLike
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
-from hyperion.parameters.constants import ROTATION_OUTER_PLAN
+from hyperion.parameters.constants import NEXUS_READ_PLAN, ROTATION_OUTER_PLAN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+
+if TYPE_CHECKING:
+    from event_model.documents.event import Event
+    from event_model.documents.event_descriptor import EventDescriptor
 
 
 class RotationNexusFileCallback(PlanReactiveCallback):
@@ -33,7 +40,29 @@ class RotationNexusFileCallback(PlanReactiveCallback):
         self.run_uid: str | None = None
         self.parameters: RotationInternalParameters | None = None
         self.writer: NexusWriter | None = None
-        self.log = NEXUS_LOGGER
+        self.descriptors: Dict[str, EventDescriptor] = {}
+        self.data_bit_depth: DTypeLike = np.uint16
+
+    def activity_gated_descriptor(self, doc: EventDescriptor):
+        self.descriptors[doc["uid"]] = doc
+
+    def activity_gated_event(self, doc: Event):
+        event_descriptor = self.descriptors.get(doc["descriptor"])
+        if event_descriptor is None:
+            NEXUS_LOGGER.warning(
+                f"Rotation Nexus handler {self} received event doc {doc} and "
+                "has no corresponding descriptor record"
+            )
+            return
+        if event_descriptor.get("name") == NEXUS_READ_PLAN:
+            NEXUS_LOGGER.info("ISPyB handler received event from read hardware")
+            bit_depth = doc["data"]["eiger_bit_depth"]
+            if bit_depth == 16:
+                self.data_bit_depth = np.uint16
+            elif bit_depth == 32:
+                self.data_bit_depth = np.uint32
+            else:
+                NEXUS_LOGGER.error(f"Unknown detector bit depth {bit_depth}")
 
     def activity_gated_start(self, doc: dict):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
@@ -49,5 +78,5 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 self.parameters.get_scan_points(),
                 self.parameters.get_data_shape(),
             )
-            self.writer.create_nexus_file(np.uint32)
+            self.writer.create_nexus_file(self.data_bit_depth)
             NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")
