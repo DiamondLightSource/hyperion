@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import numpy as np
+
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -47,5 +49,5 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 self.parameters.get_scan_points(),
                 self.parameters.get_data_shape(),
             )
-            self.writer.create_nexus_file()
+            self.writer.create_nexus_file(np.uint32)
             NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")

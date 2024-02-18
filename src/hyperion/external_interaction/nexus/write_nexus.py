@@ -8,9 +8,11 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
+import numpy as np
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Detector, Goniometer, Source
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
+from numpy.typing import DTypeLike
 
 from hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
@@ -76,7 +78,7 @@ class NexusWriter:
             self.omega_start, self.scan_points, chi=chi
         )
 
-    def create_nexus_file(self):
+    def create_nexus_file(self, bit_depth: DTypeLike = np.uint16):
         """
         Creates a nexus file based on the parameters supplied when this obect was
         initialised.
@@ -103,8 +105,7 @@ class NexusWriter:
                 est_end_time=est_end_time,
             )
             NXmx_Writer.write_vds(
-                vds_offset=self.start_index,
-                vds_shape=vds_shape,
+                vds_offset=self.start_index, vds_shape=vds_shape, vds_dtype=bit_depth
             )
 
     def get_image_datafiles(self, max_images_per_file=1000):
