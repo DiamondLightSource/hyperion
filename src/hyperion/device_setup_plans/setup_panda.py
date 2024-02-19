@@ -25,10 +25,11 @@ class Enabled(Enum):
 
 
 def get_seq_table(
-    parameters: PandAGridScanParams, time_between_x_steps_ms, exposure_time_s
+    parameters: PandAGridScanParams,
+    exposure_distance_mm,
 ) -> SeqTable:
     """
-
+    -Exposure distance is the distance travelled by the sample each time the detector is exposed: exposure time * sample velocity
     -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
     -When we wait for the position to be greater/lower, give a safe distance (X_STEP_SIZE/2 * MM_TO_ENCODER counts) to ensure the final trigger point
     is captured
@@ -46,8 +47,6 @@ def get_seq_table(
         For a more detailed explanation and a diagram, see https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning
     """
 
-    sample_velocity_mm_per_s = parameters.x_step_size * 1e-3 / time_between_x_steps_ms
-
     safe_distance_x_counts = int(MM_TO_ENCODER_COUNTS * parameters.x_step_size / 2)
 
     start_of_grid_x_counts = int(parameters.x_start * MM_TO_ENCODER_COUNTS)
@@ -58,9 +57,7 @@ def get_seq_table(
         + (parameters.x_step_size * (parameters.x_steps - 1) * MM_TO_ENCODER_COUNTS)
     )
 
-    exposure_distance_x_counts = int(
-        sample_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
-    )
+    exposure_distance_x_counts = int(exposure_distance_mm * MM_TO_ENCODER_COUNTS)
 
     rows = [SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1)]
     rows.append(
@@ -113,6 +110,7 @@ def setup_panda_for_flyscan(
     initial_x: float,
     exposure_time_s: float,
     time_between_x_steps_ms: float,
+    sample_velocity_mm_per_s: float,
 ) -> MsgGenerator:
     """Configures the PandA device for a flyscan.
     Sets PVs from a yaml file, calibrates the encoder, and
@@ -148,7 +146,9 @@ def setup_panda_for_flyscan(
         panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
     )
 
-    table = get_seq_table(parameters, time_between_x_steps_ms, exposure_time_s)
+    exposure_distance_mm = sample_velocity_mm_per_s * exposure_time_s
+
+    table = get_seq_table(parameters, exposure_distance_mm)
 
     LOGGER.info(f"Setting PandA sequencer values: {str(table)}")
 

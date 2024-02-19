@@ -69,6 +69,10 @@ PANDA_SETUP_PATH = (
 )
 
 
+class SmargonSpeedException(Exception):
+    pass
+
+
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
     return device_composite_from_context(context, FlyScanXRayCentreComposite)
@@ -195,15 +199,15 @@ def run_gridscan_and_move(
         fgs_composite.smargon.x_speed_limit_mm_per_s
     )
 
-    smargon_speed = (
+    sample_velocity_mm_per_s = (
         parameters.experiment_params.x_step_size * 1e3 / time_between_x_steps_ms
     )
-    if smargon_speed > smargon_speed_limit_mm_per_s:
-        LOGGER.error(
+    if sample_velocity_mm_per_s > smargon_speed_limit_mm_per_s:
+        raise SmargonSpeedException(
             f"Smargon speed was calculated from x step size\
                                   {parameters.experiment_params.x_step_size} and\
                                       time_between_x_steps_ms {time_between_x_steps_ms} as\
-                                          {smargon_speed}. The smargon's speed limit is {smargon_speed_limit_mm_per_s} mm/s."
+                                          {sample_velocity_mm_per_s}. The smargon's speed limit is {smargon_speed_limit_mm_per_s} mm/s."
         )
     else:
         LOGGER.info(f"Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s")
@@ -222,6 +226,7 @@ def run_gridscan_and_move(
         initial_xyz[0],
         parameters.hyperion_params.detector_params.exposure_time,
         time_between_x_steps_ms,
+        sample_velocity_mm_per_s,
     )
 
     LOGGER.info("Setting up Zebra for panda flyscan")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from time import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from dodal.devices.zocalo import (
     ZocaloTrigger,
@@ -20,6 +20,9 @@ from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+if TYPE_CHECKING:
+    from event_model.documents import RunStart, RunStop
 
 
 class XrayCentreZocaloCallback(PlanReactiveCallback):
@@ -52,7 +55,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
         self.do_fgs_uid: Optional[str] = None
         self.ispyb: GridscanISPyBCallback = ispyb_handler
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.info("XRC Zocalo handler received start document.")
 
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
@@ -75,7 +78,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
-    def activity_gated_stop(self, doc: dict):
+    def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.do_fgs_uid:
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."

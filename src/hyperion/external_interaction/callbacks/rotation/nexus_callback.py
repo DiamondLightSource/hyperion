@@ -16,8 +16,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
-    from event_model.documents.event import Event
-    from event_model.documents.event_descriptor import EventDescriptor
+    from event_model.documents import Event, EventDescriptor, RunStart
 
 
 class RotationNexusFileCallback(PlanReactiveCallback):
@@ -64,7 +63,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             else:
                 NEXUS_LOGGER.error(f"Unknown detector bit depth {bit_depth}")
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             self.run_uid = doc.get("uid")
             json_params = doc.get("hyperion_internal_parameters")
