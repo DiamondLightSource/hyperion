@@ -224,7 +224,6 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
     ):
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
         RE(
             run_gridscan_and_move(
@@ -342,7 +341,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
         mock_subscriptions.zocalo_handler.activity_gated_start(
             self.td.test_start_document
         )
@@ -385,7 +383,6 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: PandAGridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
@@ -428,7 +425,6 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: PandAGridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
@@ -471,7 +467,6 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: PandAGridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
@@ -511,7 +506,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
         RE, mock_subscriptions = RE_with_subs
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         initial_x_y_z = np.array(
@@ -557,7 +551,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
 
         class MoveException(Exception):
             pass
@@ -595,7 +588,6 @@ class TestFlyscanXrayCentrePlan:
         RE: RunEngine,
         done_status,
     ):
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
@@ -695,7 +687,6 @@ class TestFlyscanXrayCentrePlan:
         mock_subscriptions: XrayCentreCallbackCollection,
         RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
     ):
-        fake_fgs_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)
         RE, mock_subscriptions = RE_with_subs
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
