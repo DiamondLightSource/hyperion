@@ -241,13 +241,9 @@ def rotation_scan_plan(
         acceleration_offset,
     )
 
-    LOGGER.info("Waiting for pending ungrouped moves to finish")
-    yield from bps.wait()
-    LOGGER.info(f"resetting omega velocity to {DEFAULT_MAX_VELOCITY}")
-    yield from bps.abs_set(composite.smargon.omega.velocity, DEFAULT_MAX_VELOCITY)
-
 
 def cleanup_plan(composite: RotationScanComposite, **kwargs):
+    LOGGER.info("Cleaning up after rotation scan")
     yield from cleanup_sample_environment(composite.detector_motion, group="cleanup")
     yield from bps.abs_set(
         composite.smargon.omega.velocity, DEFAULT_MAX_VELOCITY, group="cleanup"

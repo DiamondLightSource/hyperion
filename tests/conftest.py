@@ -425,12 +425,13 @@ def fake_create_rotation_devices(
     done_status,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+    mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
 
     mock_arm_disarm = MagicMock(
         side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
     )
     zebra.pc.arm.set = mock_arm_disarm
-    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
 
     return RotationScanComposite(
