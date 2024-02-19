@@ -74,7 +74,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             self.params = GridscanInternalParameters.from_json(json_params)
             self.ispyb = (
                 Store3DGridscanInIspyb(self.ispyb_config)
-                # XXX Does this parameter even exist any more?
                 if self.params.experiment_params.is_3d_grid_scan
                 else Store2DGridscanInIspyb(self.ispyb_config)
             )

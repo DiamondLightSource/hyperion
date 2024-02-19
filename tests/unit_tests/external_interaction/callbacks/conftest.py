@@ -3,10 +3,11 @@ from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from hyperion.parameters.constants import CONST
-from unit_tests.external_interaction.callbacks.xray_centre.conftest import dummy_params
-
-print(f"THIS MODULE IS {__name__}\n")
 from tests.conftest import create_dummy_scan_spec
+from unit_tests.external_interaction.callbacks.xray_centre.conftest import (
+    dummy_params,
+    dummy_params_2d,
+)
 
 
 @pytest.fixture
@@ -32,6 +33,16 @@ class TestData:
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         "hyperion_internal_parameters": dummy_params().json(),
+    }
+    test_gridscan2d_start_document = {
+        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+        "scan_id": 1,
+        "plan_type": "generator",
+        "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
+        "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+        "hyperion_internal_parameters": dummy_params_2d().json(),
     }
     test_rotation_start_main_document = {
         "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
