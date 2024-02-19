@@ -300,21 +300,25 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
 
 
 test_argument_combinations = [
-    (["--dev", "--logging-level=DEBUG"], ("DEBUG", True, False, False, False)),
-    (["--logging-level=INFO"], ("INFO", False, False, False, False)),
     (
         [
             "--dev",
-            "--logging-level=INFO",
+        ],
+        (True, False, False, False),
+    ),
+    ([], (False, False, False, False)),
+    (
+        [
+            "--dev",
             "--skip-startup-connection",
             "--external-callbacks",
             "--verbose-event-logging",
         ],
-        ("INFO", True, True, True, True),
+        (True, True, True, True),
     ),
     (
-        ["--external-callbacks", "--logging-level=WARNING"],
-        ("WARNING", False, False, False, True),
+        ["--external-callbacks"],
+        (False, False, False, True),
     ),
 ]
 
@@ -323,18 +327,21 @@ test_argument_combinations = [
 def test_cli_args_parse(arg_list, parsed_arg_values):
     argv[1:] = arg_list
     test_args = parse_cli_args()
-    assert test_args.logging_level == parsed_arg_values[0]
-    assert test_args.dev_mode == parsed_arg_values[1]
-    assert test_args.verbose_event_logging == parsed_arg_values[2]
-    assert test_args.skip_startup_connection == parsed_arg_values[3]
-    assert test_args.use_external_callbacks == parsed_arg_values[4]
+    assert test_args.dev_mode == parsed_arg_values[0]
+    assert test_args.verbose_event_logging == parsed_arg_values[1]
+    assert test_args.skip_startup_connection == parsed_arg_values[2]
+    assert test_args.use_external_callbacks == parsed_arg_values[3]
 
 
-@patch("hyperion.__main__.set_up_logging_handlers")
+@patch("hyperion.__main__.do_default_logging_setup")
 @patch("hyperion.__main__.Publisher")
 @patch("hyperion.__main__.setup_context")
+@patch("dodal.log.GELFTCPHandler.emit")
+@patch("dodal.log.TimedRotatingFileHandler.emit")
 @pytest.mark.parametrize(["arg_list", "parsed_arg_values"], test_argument_combinations)
 def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
+    filehandler_emit,
+    graylog_emit,
     setup_context: MagicMock,
     zmq_publisher: MagicMock,
     set_up_logging_handlers: MagicMock,
@@ -378,7 +385,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
         runner.command_queue = Queue()
         runner_thread = threading.Thread(target=runner.wait_on_queue, daemon=True)
         runner_thread.start()
-        assert dev_mode == parsed_arg_values[1]
+        assert dev_mode == parsed_arg_values[0]
 
         mock_context = MagicMock()
         mock_context.plan_functions = {"test_experiment": MagicMock()}
@@ -387,8 +394,8 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
         )
         runner.shutdown()
         runner_thread.join()
-        assert (zmq_publisher.call_count == 1) == parsed_arg_values[4]
-        if parsed_arg_values[4]:
+        assert (zmq_publisher.call_count == 1) == parsed_arg_values[3]
+        if parsed_arg_values[3]:
             assert runner.RE.subscribe.call_count == 0
         else:
             assert runner.RE.subscribe.call_count == 3

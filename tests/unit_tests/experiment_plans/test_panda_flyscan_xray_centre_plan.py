@@ -47,7 +47,6 @@ from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
     GRIDSCAN_OUTER_PLAN,
@@ -147,9 +146,9 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(
+        fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
             transmission_test_value
-        )  # type: ignore
+        )
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
@@ -223,7 +222,6 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: PandAGridscanInternalParameters,
         RE: RunEngine,
     ):
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
@@ -431,7 +429,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(mock_subscriptions.ispyb_handler)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -598,7 +595,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(

@@ -81,7 +81,7 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     )
     LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(
-        fgs_composite.zebra, group="panda_flyscan_tidy"
+        fgs_composite.zebra, group="panda_flyscan_tidy", wait=True
     )
 
     yield from bps.wait(group="panda_flyscan_tidy", timeout=10)
