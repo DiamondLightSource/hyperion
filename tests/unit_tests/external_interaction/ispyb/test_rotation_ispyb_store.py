@@ -3,17 +3,21 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 from mockito import mock
 
-from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
-from hyperion.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
+from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
-from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
-    StoreRotationInIspyb,
+from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     construct_comment_for_rotation_scan,
     populate_data_collection_info_for_rotation,
+)
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+)
+from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
+    StoreRotationInIspyb,
 )
 from hyperion.parameters.constants import SIM_ISPYB_CONFIG
 
@@ -82,7 +86,7 @@ def dummy_rotation_data_collection_group_info(dummy_rotation_params):
 
 @pytest.fixture
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def scan_data_info_for_begin(dummy_rotation_params):
@@ -113,7 +117,7 @@ def scan_data_info_for_update(scan_data_info_for_begin, dummy_rotation_params):
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_begin_deposition(
@@ -148,7 +152,7 @@ def test_begin_deposition(
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_begin_deposition_with_group_id_doesnt_insert(
@@ -176,7 +180,7 @@ def test_begin_deposition_with_group_id_doesnt_insert(
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_update_deposition(
@@ -235,7 +239,7 @@ def test_update_deposition(
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_update_deposition_with_group_id_updates(
@@ -296,8 +300,11 @@ def test_update_deposition_with_group_id_updates(
 
 
 @patch(
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
+    new=MagicMock(return_value=EXPECTED_START_TIME),
+)
+@patch(
     "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
-    return_value=EXPECTED_START_TIME,
 )
 def test_end_deposition_happy_path(
     get_current_time,
@@ -322,7 +329,7 @@ def test_end_deposition_happy_path(
     mx_acq.upsert_dc_grid.reset_mock()
 
     get_current_time.return_value = EXPECTED_END_TIME
-    dummy_rotation_ispyb.end_deposition("success", "Test succeeded", None)
+    dummy_rotation_ispyb.end_deposition("success", "Test succeeded")
     assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
         (
             TEST_DATA_COLLECTION_IDS[0],
@@ -349,7 +356,7 @@ def test_store_rotation_scan_failures(
     dummy_rotation_ispyb._data_collection_id = None
 
     with pytest.raises(AssertionError):
-        dummy_rotation_ispyb.end_deposition("", "", None)
+        dummy_rotation_ispyb.end_deposition("", "")
 
 
 def test_populate_data_collection_info_for_rotation_checks_snapshots(

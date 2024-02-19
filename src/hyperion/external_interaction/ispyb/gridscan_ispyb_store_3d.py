@@ -6,8 +6,6 @@ from typing import Sequence
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 
 from hyperion.external_interaction.ispyb.data_model import (
-    DataCollectionInfo,
-    GridScanInfo,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
@@ -30,9 +28,6 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
         self,
         conn: Connector,
         scan_data_infos: Sequence[ScanDataInfo],
-        full_params,
-        ispyb_params,
-        detector_params,
         data_collection_group_id,
         data_collection_ids,
     ) -> IspybIds:
@@ -61,31 +56,3 @@ class Store3DGridscanInIspyb(StoreGridscanInIspyb):
             grid_ids=tuple(grid_ids),
             data_collection_group_id=data_collection_group_id,
         )
-
-
-def populate_xz_data_collection_info(
-    grid_scan_info: GridScanInfo,
-    full_params,
-    ispyb_params,
-    detector_params,
-) -> DataCollectionInfo:
-    assert (
-        detector_params.omega_start is not None
-        and detector_params.run_number is not None
-        and ispyb_params is not None
-        and full_params is not None
-    ), "StoreGridscanInIspyb failed to get parameters"
-    omega_start = detector_params.omega_start + 90
-    run_number = detector_params.run_number + 1
-    xtal_snapshots = ispyb_params.xtal_snapshots_omega_end or []
-    info = DataCollectionInfo(
-        omega_start=omega_start,
-        data_collection_number=run_number,
-        n_images=full_params.experiment_params.x_steps * grid_scan_info.y_steps,
-        axis_range=0,
-        axis_end=omega_start,
-    )
-    info.xtal_snapshot1, info.xtal_snapshot2, info.xtal_snapshot3 = xtal_snapshots + [
-        None
-    ] * (3 - len(xtal_snapshots))
-    return info

@@ -16,7 +16,7 @@ from unit_tests.external_interaction.conftest import (
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_activity_gated_start_2d(mock_ispyb_conn):
@@ -84,7 +84,7 @@ def test_activity_gated_start_2d(mock_ispyb_conn):
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_activity_gated_start_3d(mock_ispyb_conn):
