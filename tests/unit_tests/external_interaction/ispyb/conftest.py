@@ -1,18 +1,18 @@
 import numpy as np
 import pytest
 
-from hyperion.external_interaction.ispyb.data_model import GridScanInfo
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
+from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
+    populate_data_collection_position_info,
+)
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     populate_data_collection_grid_info,
 )
+from hyperion.external_interaction.ispyb.data_model import GridScanInfo
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
 )
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
-)
-from hyperion.external_interaction.ispyb.ispyb_store import (
-    populate_data_collection_position_info,
 )
 from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,

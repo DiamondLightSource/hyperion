@@ -59,7 +59,7 @@ EXPECTED_DATA_COLLECTION = {
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_document):
@@ -85,7 +85,7 @@ def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_documen
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_activity_gated_event(
@@ -150,7 +150,7 @@ def test_activity_gated_event(
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document):

@@ -2,20 +2,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from hyperion.external_interaction.callbacks.ispyb_callback_base import (
-    BaseISPyBCallback,
-)
-from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
-from hyperion.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
+from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
-from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
-    StoreRotationInIspyb,
+from hyperion.external_interaction.callbacks.ispyb_callback_base import (
+    BaseISPyBCallback,
+)
+from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     construct_comment_for_rotation_scan,
     populate_data_collection_info_for_rotation,
+)
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
+)
+from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
+    StoreRotationInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import CONST

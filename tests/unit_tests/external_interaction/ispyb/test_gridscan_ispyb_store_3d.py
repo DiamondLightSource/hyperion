@@ -3,21 +3,23 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from hyperion.external_interaction.ispyb.data_model import GridScanInfo, ScanDataInfo
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
-    construct_comment_for_gridscan,
-    populate_data_collection_grid_info,
-    populate_xy_data_collection_info,
-)
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
-    populate_xz_data_collection_info,
-)
-from hyperion.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
+from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
+)
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
+    construct_comment_for_gridscan,
+    populate_data_collection_grid_info,
+    populate_xy_data_collection_info,
+    populate_xz_data_collection_info,
+)
+from hyperion.external_interaction.ispyb.data_model import GridScanInfo, ScanDataInfo
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
+    Store3DGridscanInIspyb,
+)
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -59,7 +61,7 @@ def dummy_collection_group_info(dummy_params_3d):
 
 @pytest.fixture
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def scan_data_info_for_begin(dummy_params_3d):
@@ -90,7 +92,7 @@ def scan_data_info_for_begin(dummy_params_3d):
 
 @pytest.fixture
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def scan_data_infos_for_update(scan_xy_data_info_for_update, dummy_params):
@@ -201,7 +203,7 @@ def dict_to_ordered_params(param_template, kv_pairs: dict):
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_begin_deposition(
@@ -281,7 +283,7 @@ def test_begin_deposition(
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_update_deposition(
@@ -485,8 +487,11 @@ def test_update_deposition(
 
 
 @patch(
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
+    new=MagicMock(return_value=EXPECTED_START_TIME),
+)
+@patch(
     "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
-    return_value=EXPECTED_START_TIME,
 )
 def test_end_deposition_happy_path(
     get_current_time,
@@ -509,7 +514,7 @@ def test_end_deposition_happy_path(
     assert len(mx_acq.upsert_dc_grid.mock_calls) == 2
 
     get_current_time.return_value = EXPECTED_END_TIME
-    dummy_3d_gridscan_ispyb.end_deposition("success", "Test succeeded", dummy_params_3d)
+    dummy_3d_gridscan_ispyb.end_deposition("success", "Test succeeded")
     assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
         (
             TEST_DATA_COLLECTION_IDS[0],

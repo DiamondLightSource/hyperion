@@ -43,7 +43,7 @@ def mock_store_in_ispyb(config, *args, **kwargs) -> Store3DGridscanInIspyb:
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     MagicMock(return_value=td.DUMMY_TIME_STRING),
 )
 @patch(
@@ -69,7 +69,7 @@ class TestXrayCentreIspybHandler:
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
         ispyb_handler.ispyb.end_deposition.assert_called_once_with(
-            "fail", "could not connect to devices", ispyb_handler.params
+            "fail", "could not connect to devices"
         )
 
     def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
@@ -89,9 +89,7 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
-        ispyb_handler.ispyb.end_deposition.assert_called_once_with(
-            "success", "", ispyb_handler.params
-        )
+        ispyb_handler.ispyb.end_deposition.assert_called_once_with("success", "")
 
     @pytest.mark.skip_log_setup
     def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
