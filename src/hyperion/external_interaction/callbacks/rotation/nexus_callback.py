@@ -52,23 +52,32 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 f"Rotation Nexus handler {self} received event doc {doc} and "
                 "has no corresponding descriptor record"
             )
-            return
+            return doc
         if event_descriptor.get("name") == NEXUS_READ_PLAN:
-            NEXUS_LOGGER.info("ISPyB handler received event from read hardware")
+            NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
             bit_depth = doc["data"]["eiger_bit_depth"]
-            if bit_depth == 16:
+            if bit_depth == 8:
+                self.data_bit_depth = np.uint8
+            elif bit_depth == 16:
                 self.data_bit_depth = np.uint16
             elif bit_depth == 32:
                 self.data_bit_depth = np.uint32
             else:
-                NEXUS_LOGGER.error(f"Unknown detector bit depth {bit_depth}")
+                NEXUS_LOGGER.error(
+                    f"Unknown detector bit depth {bit_depth}, assuming 16-bit"
+                )
+                self.data_bit_depth = np.uint16
+            assert self.writer is not None
+            self.writer.create_nexus_file(self.data_bit_depth)
+            NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")
+        return doc
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             self.run_uid = doc.get("uid")
             json_params = doc.get("hyperion_internal_parameters")
             NEXUS_LOGGER.info(
-                f"Nexus writer recieved start document with experiment parameters {json_params}"
+                f"Nexus writer received start document with experiment parameters {json_params}"
             )
             self.parameters = RotationInternalParameters.from_json(json_params)
             NEXUS_LOGGER.info("Setting up nexus file...")
@@ -77,5 +86,3 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 self.parameters.get_scan_points(),
                 self.parameters.get_data_shape(),
             )
-            self.writer.create_nexus_file(self.data_bit_depth)
-            NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")

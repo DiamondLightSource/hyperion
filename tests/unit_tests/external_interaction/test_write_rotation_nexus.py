@@ -2,13 +2,16 @@ import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import h5py
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.eiger import EigerDetector
 
+from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_nexus_writer,
+)
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
 )
@@ -46,7 +49,9 @@ def test_params(tmpdir):
 
 
 def fake_rotation_scan(
-    parameters: RotationInternalParameters, subscriptions: RotationCallbackCollection
+    parameters: RotationInternalParameters,
+    subscriptions: RotationCallbackCollection,
+    eiger: EigerDetector,
 ):
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
@@ -58,7 +63,7 @@ def fake_rotation_scan(
         }
     )
     def plan():
-        yield from bps.sleep(0)
+        yield from read_hardware_for_nexus_writer(eiger)
 
     return plan()
 
@@ -68,7 +73,7 @@ def fake_rotation_scan(
     autospec=True,
 )
 def test_rotation_scan_nexus_output_compared_to_existing_file(
-    zocalo, test_params: RotationInternalParameters, tmpdir
+    zocalo, test_params: RotationInternalParameters, tmpdir, eiger
 ):
     run_number = test_params.hyperion_params.detector_params.run_number
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
@@ -84,7 +89,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         "hyperion.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
         return_value=("test_time", "test_time"),
     ):
-        RE(fake_rotation_scan(test_params, cb))
+        RE(fake_rotation_scan(test_params, cb, eiger))
 
     assert os.path.isfile(nexus_filename)
     assert os.path.isfile(master_filename)
