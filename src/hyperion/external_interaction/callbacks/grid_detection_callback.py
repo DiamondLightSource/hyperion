@@ -1,16 +1,12 @@
-from typing import TYPE_CHECKING
-
 import numpy as np
 from bluesky.callbacks import CallbackBase
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from event_model.documents import Event
 
 from hyperion.device_setup_plans.setup_oav import calculate_x_y_z_of_pixel
 from hyperion.log import LOGGER
-
-if TYPE_CHECKING:
-    from event_model.documents import Event
 
 
 class GridDetectionCallback(CallbackBase):
