@@ -227,6 +227,7 @@ def test_full_rotation_plan_smargon_settings(
     expt_params = params.experiment_params
 
     omega_set: MagicMock = smargon.omega.set  # type: ignore
+    omega_velocity_set: MagicMock = smargon.omega.velocity.set  # type: ignore
     rotation_speed = (
         expt_params.image_width / params.hyperion_params.detector_params.exposure_time
     )
@@ -236,11 +237,13 @@ def test_full_rotation_plan_smargon_settings(
     assert smargon.x.user_readback.get() == expt_params.x
     assert smargon.y.user_readback.get() == expt_params.y
     assert smargon.z.user_readback.get() == expt_params.z
-    assert omega_set.call_count == 6
-    omega_set.assert_has_calls(
-        [call(DEFAULT_MAX_VELOCITY), call(rotation_speed), call(DEFAULT_MAX_VELOCITY)],
-        any_order=True,
-    )
+    assert omega_set.call_count == 2
+    assert omega_velocity_set.call_count == 3
+    assert omega_velocity_set.call_args_list == [
+        call(DEFAULT_MAX_VELOCITY),
+        call(rotation_speed),
+        call(DEFAULT_MAX_VELOCITY),
+    ]
 
 
 def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
