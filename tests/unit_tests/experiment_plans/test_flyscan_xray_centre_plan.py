@@ -159,7 +159,7 @@ class TestFlyscanXrayCentrePlan:
 
         assert exc.value.args[0] is error
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # pyright: ignore
-            "fail", "Test Exception", test_fgs_params
+            "fail", "Test Exception"
         )
 
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(

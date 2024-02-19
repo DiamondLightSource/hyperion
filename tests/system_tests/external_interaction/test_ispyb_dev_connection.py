@@ -55,7 +55,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: Store2DGridscanInIspyb, fetch_comment, dummy_params
 ):
     dcid = dummy_ispyb.begin_deposition()
-    dummy_ispyb.end_deposition("fail", "could not connect to devices", dummy_params)
+    dummy_ispyb.end_deposition("fail", "could not connect to devices")
     assert (
         fetch_comment(dcid.data_collection_ids[0])  # type: ignore
         == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
@@ -69,7 +69,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dcid = dummy_ispyb_3d.begin_deposition()
     dcid1 = dcid.data_collection_ids[0]  # type: ignore
     dcid2 = dcid.data_collection_ids[1]  # type: ignore
-    dummy_ispyb_3d.end_deposition("fail", "could not connect to devices", dummy_params)
+    dummy_ispyb_3d.end_deposition("fail", "could not connect to devices")
     assert (
         fetch_comment(dcid1)
         == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
@@ -114,13 +114,13 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     ]
 
     if not success:
-        ispyb.end_deposition("fail", "In error", dummy_params)
+        ispyb.end_deposition("fail", "In error")
         expected_comments = [
             e + " DataCollection Unsuccessful reason: In error"
             for e in expected_comments
         ]
     else:
-        ispyb.end_deposition("success", "", dummy_params)
+        ispyb.end_deposition("success", "")
 
     for grid_no, dc_id in enumerate(ispyb_ids.data_collection_ids):
         assert fetch_comment(dc_id) == expected_comments[grid_no]

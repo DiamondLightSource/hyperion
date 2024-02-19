@@ -28,9 +28,6 @@ class Store2DGridscanInIspyb(StoreGridscanInIspyb):
         self,
         conn: Connector,
         scan_data_infos: Sequence[ScanDataInfo],
-        full_params,
-        ispyb_params,
-        detector_params,
         data_collection_group_id,
         data_collection_ids,
     ) -> IspybIds:

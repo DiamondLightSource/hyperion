@@ -4,18 +4,20 @@ import numpy as np
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 
-from hyperion.external_interaction.ispyb.data_model import GridScanInfo, ScanDataInfo
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
+from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
+    populate_data_collection_group,
+    populate_remaining_data_collection_info,
+)
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
     populate_xy_data_collection_info,
 )
+from hyperion.external_interaction.ispyb.data_model import GridScanInfo, ScanDataInfo
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
-    populate_data_collection_group,
-    populate_remaining_data_collection_info,
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -134,7 +136,7 @@ def dummy_collection_group_info(dummy_params):
 
 @pytest.fixture
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def scan_data_info_for_begin(dummy_params):
@@ -237,7 +239,7 @@ def test_begin_deposition(
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_update_deposition(
@@ -361,9 +363,10 @@ def test_update_deposition(
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
-    return_value=EXPECTED_START_TIME,
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
+    new=MagicMock(return_value=EXPECTED_START_TIME),
 )
+@patch("hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string")
 def test_end_deposition_happy_path(
     get_current_time,
     mock_ispyb_conn,
@@ -385,7 +388,7 @@ def test_end_deposition_happy_path(
     assert len(mx_acq.upsert_dc_grid.mock_calls) == 1
 
     get_current_time.return_value = EXPECTED_END_TIME
-    dummy_2d_gridscan_ispyb.end_deposition("success", "Test succeeded", dummy_params)
+    dummy_2d_gridscan_ispyb.end_deposition("success", "Test succeeded")
     assert mx_acq.update_data_collection_append_comments.call_args_list[0] == (
         (
             TEST_DATA_COLLECTION_IDS[0],
@@ -555,9 +558,7 @@ def test_fail_result_run_results_in_bad_run_status(
     dummy_2d_gridscan_ispyb.update_deposition(
         dummy_params, dummy_collection_group_info, [scan_xy_data_info_for_update]
     )
-    dummy_2d_gridscan_ispyb.end_deposition(
-        "fail", "test specifies failure", dummy_params
-    )
+    dummy_2d_gridscan_ispyb.end_deposition("fail", "test specifies failure")
 
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     end_deposition_upsert_args = mock_upsert_data_collection_calls[2][0]
@@ -587,7 +588,7 @@ def test_no_exception_during_run_results_in_good_run_status(
     dummy_2d_gridscan_ispyb.update_deposition(
         dummy_params, dummy_collection_group_info, [scan_xy_data_info_for_update]
     )
-    dummy_2d_gridscan_ispyb.end_deposition("success", "", dummy_params)
+    dummy_2d_gridscan_ispyb.end_deposition("success", "")
 
     mock_upsert_data_collection_calls = mock_upsert_data_collection.call_args_list
     end_deposition_upsert_args = mock_upsert_data_collection_calls[2][0]
@@ -655,7 +656,7 @@ def test_ispyb_deposition_rounds_position_to_int(
     ],
 )
 @patch(
-    "hyperion.external_interaction.ispyb.gridscan_ispyb_store.oav_utils.bottom_right_from_top_left",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping.oav_utils.bottom_right_from_top_left",
     autospec=True,
 )
 def test_ispyb_deposition_rounds_box_size_int(
