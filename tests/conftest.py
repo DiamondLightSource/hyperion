@@ -535,6 +535,7 @@ def fake_fgs_composite(
     fake_composite.zocalo.timeout_s = 3
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
+    fake_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)  # type: ignore
 
     set_sim_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
 
