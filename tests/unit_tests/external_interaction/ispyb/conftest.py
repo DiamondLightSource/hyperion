@@ -1,29 +1,32 @@
 import numpy as np
 import pytest
 
+from hyperion.external_interaction.ispyb.data_model import GridScanInfo
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
+    populate_data_collection_grid_info,
+)
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
 )
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
 )
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    populate_data_collection_position_info,
+)
 from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-
-TEST_SAMPLE_ID = "0001"
-TEST_BARCODE = "12345A"
-
-
-def default_raw_params(
-    json_file="tests/test_data/parameter_json_files/test_internal_parameter_defaults.json",
-):
-    return from_file(json_file)
+from unit_tests.external_interaction.conftest import (
+    TEST_BARCODE,
+    TEST_DATA_COLLECTION_GROUP_ID,
+    TEST_SAMPLE_ID,
+    default_raw_params,
+)
 
 
 @pytest.fixture
@@ -53,3 +56,26 @@ def dummy_rotation_ispyb(dummy_rotation_params):
 @pytest.fixture
 def dummy_2d_gridscan_ispyb(dummy_params):
     return Store2DGridscanInIspyb(CONST.SIM.ISPYB_CONFIG)
+
+
+@pytest.fixture
+def scan_xy_data_info_for_update(dummy_params, scan_data_info_for_begin):
+    grid_scan_info = GridScanInfo(
+        dummy_params.hyperion_params.ispyb_params.upper_left,
+        dummy_params.experiment_params.y_steps,
+        dummy_params.experiment_params.y_step_size,
+    )
+    scan_data_info_for_begin.data_collection_info.parent_id = (
+        TEST_DATA_COLLECTION_GROUP_ID
+    )
+    scan_data_info_for_begin.data_collection_grid_info = (
+        populate_data_collection_grid_info(
+            dummy_params, grid_scan_info, dummy_params.hyperion_params.ispyb_params
+        )
+    )
+    scan_data_info_for_begin.data_collection_position_info = (
+        populate_data_collection_position_info(
+            dummy_params.hyperion_params.ispyb_params
+        )
+    )
+    return scan_data_info_for_begin

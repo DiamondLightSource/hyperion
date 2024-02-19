@@ -113,7 +113,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 data_collection_info=data_collection_info,
             )
             self.ispyb_ids = self.ispyb.begin_deposition(
-                self.params, data_collection_group_info, scan_data_info
+                data_collection_group_info, scan_data_info
             )
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_MAIN:

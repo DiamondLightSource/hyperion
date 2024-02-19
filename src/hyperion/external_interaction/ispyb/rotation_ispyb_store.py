@@ -12,7 +12,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.external_interaction.ispyb.ispyb_utils import get_xtal_snapshots
-from hyperion.parameters.internal_parameters import InternalParameters
 
 
 class StoreRotationInIspyb(StoreInIspyb):
@@ -33,7 +32,6 @@ class StoreRotationInIspyb(StoreInIspyb):
 
     def begin_deposition(
         self,
-        _: InternalParameters,
         data_collection_group_info: DataCollectionGroupInfo = None,
         scan_data_info: ScanDataInfo = None,
     ) -> IspybIds:

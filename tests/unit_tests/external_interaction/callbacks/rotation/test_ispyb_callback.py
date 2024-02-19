@@ -7,13 +7,14 @@ from unit_tests.external_interaction.callbacks.conftest import TestData
 from unit_tests.external_interaction.conftest import (
     EXPECTED_END_TIME,
     EXPECTED_START_TIME,
+    TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
+    TEST_SAMPLE_ID,
     TEST_SESSION_ID,
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
-from unit_tests.external_interaction.ispyb.conftest import TEST_SAMPLE_ID, TEST_BARCODE
 
 EXPECTED_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,

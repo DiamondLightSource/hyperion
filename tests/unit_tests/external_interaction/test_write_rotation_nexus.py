@@ -16,10 +16,10 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+from unit_tests.conftest import from_file
 
 TEST_EXAMPLE_NEXUS_FILE = Path("ins_8_5.nxs")
 TEST_DATA_DIRECTORY = Path("tests/test_data")

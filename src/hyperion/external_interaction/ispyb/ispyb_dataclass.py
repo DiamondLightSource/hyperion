@@ -94,9 +94,9 @@ class IspybParams(BaseModel):
 
     @property
     def wavelength_angstroms(self) -> float:
-        if self.current_energy_ev is None:
-            return 0.0
-        return convert_eV_to_angstrom(self.current_energy_ev)
+        if self.current_energy_ev:
+            return convert_eV_to_angstrom(self.current_energy_ev)
+        return 0.0
 
 
 class RobotLoadIspybParams(IspybParams): ...
