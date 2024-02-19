@@ -104,16 +104,15 @@ def test_setup_panda_correctly_configures_table(
         run_up_distance_mm=run_up_distance_mm,
     )
 
-    table = get_seq_table(
-        params, time_between_x_steps_ms, exposure_time_s, sample_velocity_mm_per_s
-    )
+    exposure_distance_mm = int(sample_velocity_mm_per_s * exposure_time_s)
+
+    table = get_seq_table(params, exposure_distance_mm)
+
     np.testing.assert_array_equal(table["time2"], np.ones(6))
 
     safe_distance = int((params.x_step_size * MM_TO_ENCODER_COUNTS) / 2)
 
-    exposure_distance = int(
-        sample_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
-    )
+    exposure_distance_counts = exposure_distance_mm * MM_TO_ENCODER_COUNTS
 
     np.testing.assert_array_equal(
         table["position"],
@@ -127,10 +126,10 @@ def test_setup_panda_correctly_configures_table(
                 0,
                 (params.x_start + (params.x_steps - 1) * params.x_step_size)
                 * MM_TO_ENCODER_COUNTS
-                + exposure_distance,
+                + exposure_distance_counts,
                 params.x_start * MM_TO_ENCODER_COUNTS
                 - safe_distance
-                + exposure_distance,
+                + exposure_distance_counts,
             ],
             dtype=np.int32,
         ),

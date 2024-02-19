@@ -69,6 +69,10 @@ PANDA_SETUP_PATH = (
 )
 
 
+class SmargonSpeedException(Exception):
+    pass
+
+
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
     return device_composite_from_context(context, FlyScanXRayCentreComposite)
@@ -199,7 +203,7 @@ def run_gridscan_and_move(
         parameters.experiment_params.x_step_size * 1e3 / time_between_x_steps_ms
     )
     if sample_velocity_mm_per_s > smargon_speed_limit_mm_per_s:
-        LOGGER.error(
+        raise SmargonSpeedException(
             f"Smargon speed was calculated from x step size\
                                   {parameters.experiment_params.x_step_size} and\
                                       time_between_x_steps_ms {time_between_x_steps_ms} as\

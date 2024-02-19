@@ -26,12 +26,9 @@ class Enabled(Enum):
 
 def get_seq_table(
     parameters: PandAGridScanParams,
-    time_between_x_steps_ms,
-    exposure_time_s,
-    sample_velocity_mm_per_s,
+    exposure_distance_mm,
 ) -> SeqTable:
     """
-
     -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
     -When we wait for the position to be greater/lower, give a safe distance (X_STEP_SIZE/2 * MM_TO_ENCODER counts) to ensure the final trigger point
     is captured
@@ -59,9 +56,7 @@ def get_seq_table(
         + (parameters.x_step_size * (parameters.x_steps - 1) * MM_TO_ENCODER_COUNTS)
     )
 
-    exposure_distance_x_counts = int(
-        sample_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
-    )
+    exposure_distance_x_counts = int(exposure_distance_mm * MM_TO_ENCODER_COUNTS)
 
     rows = [SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1)]
     rows.append(
@@ -150,9 +145,11 @@ def setup_panda_for_flyscan(
         panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
     )
 
-    table = get_seq_table(
-        parameters, time_between_x_steps_ms, exposure_time_s, sample_velocity_mm_per_s
+    exposure_distance_mm = (
+        sample_velocity_mm_per_s * exposure_time_s * MM_TO_ENCODER_COUNTS
     )
+
+    table = get_seq_table(parameters, exposure_distance_mm)
 
     LOGGER.info(f"Setting PandA sequencer values: {str(table)}")
 
