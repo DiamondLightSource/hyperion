@@ -16,8 +16,8 @@ from dodal.beamlines.beamline_parameters import (
 from dodal.devices.smargon import Smargon
 from dodal.utils import get_beamline_name
 
+import unit_tests.conftest
 from hyperion.log import LOGGER
-from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
     GRIDSCAN_MAIN_PLAN,
     SIM_BEAMLINE,
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         SteppedGridScanInternalParameters,
     )
 
-    parameters = SteppedGridScanInternalParameters(external_parameters.from_file())
+    parameters = SteppedGridScanInternalParameters(unit_tests.conftest.from_file())
 
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)

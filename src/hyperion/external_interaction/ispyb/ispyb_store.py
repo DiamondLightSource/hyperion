@@ -52,7 +52,6 @@ class StoreInIspyb(ABC):
     @abstractmethod
     def begin_deposition(
         self,
-        internal_params: InternalParameters,
         data_collection_group_info: DataCollectionGroupInfo = None,
         scan_data_info: ScanDataInfo = None,
     ) -> IspybIds:

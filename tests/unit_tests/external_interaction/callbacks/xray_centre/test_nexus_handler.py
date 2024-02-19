@@ -11,10 +11,10 @@ from hyperion.parameters.constants import (
     GRIDSCAN_MAIN_PLAN,
     ISPYB_HARDWARE_READ_PLAN,
 )
-from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from unit_tests.conftest import from_file as default_raw_params
 
 test_start_document = {
     "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
