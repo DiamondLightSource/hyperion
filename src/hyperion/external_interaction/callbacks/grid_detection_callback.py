@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 from bluesky.callbacks import CallbackBase
 from dodal.devices.fast_grid_scan import GridScanParams
@@ -6,6 +8,9 @@ from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 
 from hyperion.device_setup_plans.setup_oav import calculate_x_y_z_of_pixel
 from hyperion.log import LOGGER
+
+if TYPE_CHECKING:
+    from event_model.documents import Event
 
 
 class GridDetectionCallback(CallbackBase):
@@ -23,7 +28,7 @@ class GridDetectionCallback(CallbackBase):
         self.start_positions: list = []
         self.box_numbers: list = []
 
-    def event(self, doc):
+    def event(self, doc: Event):
         data = doc.get("data")
         top_left_x_px = data["oav_snapshot_top_left_x"]
         box_width_px = data["oav_snapshot_box_width"]
@@ -56,6 +61,7 @@ class GridDetectionCallback(CallbackBase):
         self.x_step_size_mm = box_width_px * self.oav_params.micronsPerXPixel / 1000
         self.y_step_size_mm = box_width_px * self.oav_params.micronsPerYPixel / 1000
         self.z_step_size_mm = box_width_px * self.oav_params.micronsPerYPixel / 1000
+        return doc
 
     def get_grid_parameters(self) -> GridScanParams:
         return GridScanParams(

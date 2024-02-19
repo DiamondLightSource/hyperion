@@ -6,10 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from bluesky.callbacks import CallbackBase
 
 if TYPE_CHECKING:
-    from event_model.documents.event import Event
-    from event_model.documents.event_descriptor import EventDescriptor
-    from event_model.documents.run_start import RunStart
-    from event_model.documents.run_stop import RunStop
+    from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 
 class PlanReactiveCallback(CallbackBase):
@@ -68,7 +65,7 @@ class PlanReactiveCallback(CallbackBase):
     def descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
         return self._run_activity_gated(self.activity_gated_descriptor, doc)
 
-    def event(self, doc: Event) -> Event | None:
+    def event(self, doc: Event) -> Event:
         return self._run_activity_gated(self.activity_gated_event, doc)
 
     def stop(self, doc: RunStop) -> RunStop | None:
@@ -82,16 +79,16 @@ class PlanReactiveCallback(CallbackBase):
             else doc
         )
 
-    def activity_gated_start(self, doc: RunStart):
+    def activity_gated_start(self, doc: RunStart) -> RunStart | None:
         return doc
 
-    def activity_gated_descriptor(self, doc: EventDescriptor):
+    def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
         return doc
 
-    def activity_gated_event(self, doc: Event):
+    def activity_gated_event(self, doc: Event) -> Event:
         return doc
 
-    def activity_gated_stop(self, doc: RunStop):
+    def activity_gated_stop(self, doc: RunStop) -> RunStop | None:
         return doc
 
     def __repr__(self) -> str:

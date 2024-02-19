@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -9,6 +11,9 @@ from hyperion.parameters.constants import ROTATION_OUTER_PLAN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+
+if TYPE_CHECKING:
+    from event_model.documents import RunStart
 
 
 class RotationNexusFileCallback(PlanReactiveCallback):
@@ -33,7 +38,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
         self.writer: NexusWriter | None = None
         self.log = NEXUS_LOGGER
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             self.run_uid = doc.get("uid")
             json_params = doc.get("hyperion_internal_parameters")

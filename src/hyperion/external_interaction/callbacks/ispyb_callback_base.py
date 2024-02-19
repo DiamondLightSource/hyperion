@@ -25,10 +25,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
-    from event_model.documents.event import Event
-    from event_model.documents.event_descriptor import EventDescriptor
-    from event_model.documents.run_start import RunStart
-    from event_model.documents.run_stop import RunStop
+    from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
@@ -65,7 +62,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
 
-    def activity_gated_event(self, doc: Event):
+    def activity_gated_event(self, doc: Event) -> Event:
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
         ISPYB_LOGGER.debug("ISPyB handler received event document.")
@@ -78,7 +75,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 f"Ispyb handler {self} recieved event doc {doc} and "
                 "has no corresponding descriptor record"
             )
-            return
+            return doc
         if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
             ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
@@ -111,6 +108,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info("Updating ispyb entry.")
             self.ispyb_ids = self.ispyb.update_deposition()
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
+        return doc
 
     def activity_gated_stop(self, doc: RunStop):
         """Subclasses must check that they are recieving a stop document for the correct
