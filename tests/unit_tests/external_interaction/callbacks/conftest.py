@@ -12,7 +12,10 @@ from hyperion.parameters.constants import (
     ROTATION_OUTER_PLAN,
     ROTATION_PLAN_MAIN,
 )
-from unit_tests.external_interaction.callbacks.xray_centre.conftest import dummy_params
+from unit_tests.external_interaction.callbacks.xray_centre.conftest import (
+    dummy_params,
+    dummy_params_2d,
+)
 
 
 @pytest.fixture
@@ -37,6 +40,16 @@ class TestData:
         "plan_name": GRIDSCAN_OUTER_PLAN,
         "subplan_name": GRIDSCAN_OUTER_PLAN,
         "hyperion_internal_parameters": dummy_params().json(),
+    }
+    test_gridscan2d_start_document = {
+        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+        "scan_id": 1,
+        "plan_type": "generator",
+        "plan_name": GRIDSCAN_OUTER_PLAN,
+        "subplan_name": GRIDSCAN_OUTER_PLAN,
+        "hyperion_internal_parameters": dummy_params_2d().json(),
     }
     test_rotation_start_main_document = {
         "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
