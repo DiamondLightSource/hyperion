@@ -67,3 +67,11 @@ def ispyb_handler():
 def dummy_params():
     dummy_params = GridscanInternalParameters(**default_raw_params())
     return dummy_params
+
+
+def dummy_params_2d():
+    return GridscanInternalParameters(
+        **default_raw_params(
+            "tests/test_data/parameter_json_files/test_parameter_defaults_2d.json"
+        )
+    )
