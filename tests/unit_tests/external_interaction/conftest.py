@@ -13,8 +13,6 @@ from ophyd.sim import SynAxis
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.parameters.external_parameters import from_file
-from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -22,11 +20,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 from hyperion.utils.utils import convert_angstrom_to_eV
-from unit_tests.external_interaction.ispyb.conftest import (
-    TEST_BARCODE,
-    TEST_SAMPLE_ID,
-    default_raw_params,
-)
+from unit_tests.conftest import from_file
+from unit_tests.conftest import from_file as default_raw_params
 
 
 class MockReactiveCallback(PlanReactiveCallback):
@@ -199,3 +194,13 @@ def dummy_rotation_params():
     dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
     dummy_params.hyperion_params.ispyb_params.sample_barcode = TEST_BARCODE
     return dummy_params
+
+
+TEST_SAMPLE_ID = "0001"
+TEST_BARCODE = "12345A"
+
+
+def default_raw_params(
+    json_file="tests/test_data/parameter_json_files/test_internal_parameter_defaults.json",
+):
+    return from_file(json_file)

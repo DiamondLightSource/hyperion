@@ -25,7 +25,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
-from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -33,6 +32,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 from hyperion.utils.utils import convert_angstrom_to_eV
+from unit_tests.conftest import from_file as default_raw_params
 
 from ...conftest import fake_read
 
@@ -54,7 +54,7 @@ def test_ispyb_get_comment_from_collection_correctly(fetch_comment):
 def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: Store2DGridscanInIspyb, fetch_comment, dummy_params
 ):
-    dcid = dummy_ispyb.begin_deposition(dummy_params)
+    dcid = dummy_ispyb.begin_deposition()
     dummy_ispyb.end_deposition("fail", "could not connect to devices", dummy_params)
     assert (
         fetch_comment(dcid.data_collection_ids[0])  # type: ignore
@@ -66,7 +66,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
 def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_ispyb_3d: Store3DGridscanInIspyb, fetch_comment, dummy_params
 ):
-    dcid = dummy_ispyb_3d.begin_deposition(dummy_params)
+    dcid = dummy_ispyb_3d.begin_deposition()
     dcid1 = dcid.data_collection_ids[0]  # type: ignore
     dcid2 = dcid.data_collection_ids[1]  # type: ignore
     dummy_ispyb_3d.end_deposition("fail", "could not connect to devices", dummy_params)
@@ -96,7 +96,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     test_params = GridscanInternalParameters(**default_raw_params())
     test_params.hyperion_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
     ispyb: StoreGridscanInIspyb = StoreClass(DEV_ISPYB_DATABASE_CFG, test_params)
-    ispyb_ids: IspybIds = ispyb.begin_deposition(dummy_params)
+    ispyb_ids: IspybIds = ispyb.begin_deposition()
 
     assert len(ispyb_ids.data_collection_ids) == exp_num_of_grids  # type: ignore
     assert len(ispyb_ids.grid_ids) == exp_num_of_grids  # type: ignore

@@ -103,7 +103,7 @@ def run_zocalo_with_dev_ispyb(
             )
             def inner_plan():
                 yield from bps.sleep(0)
-                zc.ispyb.ispyb_ids = zc.ispyb.ispyb.begin_deposition(dummy_params)
+                zc.ispyb.ispyb_ids = zc.ispyb.ispyb.begin_deposition()
                 assert isinstance(zc.ispyb.ispyb_ids.data_collection_ids, tuple)
                 for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
                     zc.zocalo_interactor.run_start(dcid)
