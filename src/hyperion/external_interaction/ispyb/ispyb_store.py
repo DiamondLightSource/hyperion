@@ -21,7 +21,6 @@ from hyperion.external_interaction.ispyb.ispyb_utils import (
     get_session_id_from_visit,
 )
 from hyperion.log import ISPYB_LOGGER
-from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -56,7 +55,11 @@ class StoreInIspyb(ABC):
         pass
 
     @abstractmethod
-    def update_deposition(self, internal_params: InternalParameters) -> IspybIds:
+    def update_deposition(
+        self,
+        data_collection_group_info: DataCollectionGroupInfo,
+        scan_data_info: ScanDataInfo,
+    ) -> IspybIds:
         pass
 
     @abstractmethod

@@ -199,7 +199,6 @@ def test_update_deposition(
     mx_acq.upsert_data_collection.reset_mock()
 
     assert dummy_rotation_ispyb.update_deposition(
-        dummy_rotation_params,
         dummy_rotation_data_collection_group_info,
         scan_data_info_for_update,
     ) == IspybIds(
@@ -260,7 +259,6 @@ def test_update_deposition_with_group_id_updates(
     mx_acq.upsert_data_collection.reset_mock()
 
     assert dummy_rotation_ispyb.update_deposition(
-        dummy_rotation_params,
         dummy_rotation_data_collection_group_info,
         scan_data_info_for_update,
     ) == IspybIds(
@@ -319,7 +317,6 @@ def test_end_deposition_happy_path(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
     )
     dummy_rotation_ispyb.update_deposition(
-        dummy_rotation_params,
         dummy_rotation_data_collection_group_info,
         scan_data_info_for_update,
     )
@@ -378,7 +375,6 @@ def test_populate_data_collection_info_for_rotation_checks_snapshots(
 @patch("ispyb.open", new_callable=mock_open)
 def test_store_rotation_scan_uses_supplied_dcgid(
     ispyb_conn,
-    dummy_rotation_params,
     dcgid,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
@@ -395,7 +391,6 @@ def test_store_rotation_scan_uses_supplied_dcgid(
     )
     assert (
         store_in_ispyb.update_deposition(
-            dummy_rotation_params,
             dummy_rotation_data_collection_group_info,
             scan_data_info_for_update,
         ).data_collection_group_id
