@@ -3,11 +3,29 @@ from __future__ import annotations
 import time
 from datetime import datetime, timedelta
 
+import numpy as np
 from dodal.devices.detector import DetectorParams
 from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Goniometer
 from nexgen.nxs_utils.Axes import TransformationType
+from numpy.typing import DTypeLike
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
+from hyperion.log import NEXUS_LOGGER
+
+
+def vds_type_based_on_bit_depth(detector_bit_depth: int) -> DTypeLike:
+    """Works out the datatype for the VDS, based on the bit depth from the detector."""
+    if detector_bit_depth == 8:
+        return np.uint8
+    elif detector_bit_depth == 16:
+        return np.uint16
+    elif detector_bit_depth == 32:
+        return np.uint32
+    else:
+        NEXUS_LOGGER.error(
+            f"Unknown detector bit depth {detector_bit_depth}, assuming 16-bit"
+        )
+        return np.uint16
 
 
 def create_goniometer_axes(

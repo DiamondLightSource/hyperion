@@ -8,6 +8,7 @@ from numpy.typing import DTypeLike
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from hyperion.external_interaction.nexus.nexus_utils import vds_type_based_on_bit_depth
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.constants import NEXUS_READ_PLAN, ROTATION_OUTER_PLAN
@@ -55,20 +56,9 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             return doc
         if event_descriptor.get("name") == NEXUS_READ_PLAN:
             NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
-            bit_depth = doc["data"]["eiger_bit_depth"]
-            if bit_depth == 8:
-                self.data_bit_depth = np.uint8
-            elif bit_depth == 16:
-                self.data_bit_depth = np.uint16
-            elif bit_depth == 32:
-                self.data_bit_depth = np.uint32
-            else:
-                NEXUS_LOGGER.error(
-                    f"Unknown detector bit depth {bit_depth}, assuming 16-bit"
-                )
-                self.data_bit_depth = np.uint16
+            vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
             assert self.writer is not None
-            self.writer.create_nexus_file(self.data_bit_depth)
+            self.writer.create_nexus_file(vds_data_type)
             NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")
         return doc
 
