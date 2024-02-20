@@ -401,6 +401,9 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
             assert runner.RE.subscribe.call_count == 3
 
 
+@pytest.mark.skip(
+    "Wait for connection doesn't play nice with ophyd-async. See https://github.com/DiamondLightSource/hyperion/issues/1159"
+)
 def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected():
     zebra = MagicMock(spec=Zebra)
     attenuator = MagicMock(spec=Attenuator)
