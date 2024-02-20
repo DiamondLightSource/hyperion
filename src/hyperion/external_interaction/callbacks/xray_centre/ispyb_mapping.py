@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dodal.devices.oav import utils as oav_utils
 
+from hyperion.external_interaction.callbacks.common.ispyb_mapping import GridScanInfo
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionInfo,
-    GridScanInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 

@@ -1,7 +1,5 @@
 from dataclasses import asdict, dataclass
-from typing import Optional, Union
-
-from numpy import ndarray
+from typing import Optional
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 
@@ -83,13 +81,6 @@ class DataCollectionGridInfo:
         d = asdict(self)
         d["orientation"] = self.orientation.value
         return d
-
-
-@dataclass
-class GridScanInfo:
-    upper_left: Union[list[int], ndarray]
-    y_steps: int
-    y_step_size: float
 
 
 @dataclass(kw_only=True)
