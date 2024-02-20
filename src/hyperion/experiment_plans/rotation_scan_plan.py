@@ -11,7 +11,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector_motion import DetectorMotion
-from dodal.devices.eiger import DetectorParams, EigerDetector
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -30,6 +30,7 @@ from hyperion.device_setup_plans.manipulate_sample import (
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
+    read_hardware_for_nexus_writer,
 )
 from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
@@ -76,7 +77,7 @@ def create_devices(context: BlueskyContext) -> RotationScanComposite:
 
 DEFAULT_DIRECTION = RotationDirection.NEGATIVE
 DEFAULT_MAX_VELOCITY = 120
-# Use a slightly larger time to accceleration than EPICS as it's better to be cautious
+# Use a slightly larger time to acceleration than EPICS as it's better to be cautious
 ACCELERATION_MARGIN = 1.5
 
 
@@ -112,7 +113,7 @@ def move_to_end_w_buffer(
     wait: bool = True,
     direction: RotationDirection = DEFAULT_DIRECTION,
 ):
-    """Excecutes a rotation scan by moving the rotation axis from the beginning to
+    """Executes a rotation scan by moving the rotation axis from the beginning to
     the end; The Zebra should have been set up to trigger the detector for this to work.
     Rotates through 'scan width' plus twice an "offset" to take into account
     acceleration at the start and deceleration at the end, plus the number of extra
@@ -202,6 +203,8 @@ def rotation_scan_plan(
     yield from bps.wait("setup_zebra")
 
     # get some information for the ispyb deposition and trigger the callback
+
+    yield from read_hardware_for_nexus_writer(composite.eiger)
 
     yield from read_hardware_for_ispyb_pre_collection(
         composite.undulator,

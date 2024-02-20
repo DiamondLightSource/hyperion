@@ -9,12 +9,14 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.DCM import DCM
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from event_model import RunStart
 from ophyd.sim import make_fake_device
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
+    read_hardware_for_nexus_writer,
 )
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
@@ -74,6 +76,7 @@ def fake_rotation_scan(
     dcm = make_fake_device(DCM)(
         name="dcm", daq_configuration_path=i03.DAQ_CONFIGURATION_PATH
     )
+    eiger = make_fake_device(EigerDetector)(name="eiger")
 
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
@@ -95,6 +98,7 @@ def fake_rotation_scan(
         )
         def fake_main_plan():
             yield from read_hardware_for_ispyb_during_collection(attenuator, flux, dcm)
+            yield from read_hardware_for_nexus_writer(eiger)
             if after_main_do:
                 after_main_do(subscriptions)
             yield from bps.sleep(0)
@@ -120,6 +124,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     ):
         cb = RotationCallbackCollection.setup()
         activate_callbacks(cb)
+        cb.nexus_handler.activity_gated_event = MagicMock(autospec=True)
         cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
         cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
         cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
@@ -134,6 +139,8 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     assert call_content_outer["hyperion_internal_parameters"] == params.json()
     call_content_inner = cb.nexus_handler.activity_gated_start.call_args_list[1].args[0]
     assert call_content_inner["subplan_name"] == ROTATION_PLAN_MAIN
+
+    assert cb.nexus_handler.activity_gated_event.call_count == 2
 
 
 @patch(
@@ -216,6 +223,7 @@ def test_zocalo_start_and_end_triggered_once(
     cb = RotationCallbackCollection.setup()
     activate_callbacks(cb)
     cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
+    cb.nexus_handler.activity_gated_event = MagicMock(autospec=True)
     cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
     cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
     cb.ispyb_handler.ispyb = MagicMock(spec=StoreRotationInIspyb)
@@ -313,6 +321,7 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
 ):
     cb = RotationCallbackCollection.setup()
     activate_callbacks(cb)
+    cb.nexus_handler.activity_gated_event = MagicMock(autospec=True)
     cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
     cb.ispyb_handler.activity_gated_start = MagicMock(
         autospec=True, side_effect=cb.ispyb_handler.activity_gated_start
