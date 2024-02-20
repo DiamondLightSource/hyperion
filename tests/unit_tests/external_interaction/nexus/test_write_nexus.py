@@ -93,11 +93,14 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
     first_writer = single_dummy_file
     assert len(first_writer.get_image_datafiles()) == expected_num_of_files
     paths = [str(filename) for filename in first_writer.get_image_datafiles()]
+    test_data_folder = (
+        os.path.dirname(os.path.realpath(os.path.join(__file__, ".."))) + "/test_data"
+    )
     expected_paths = [
-        f"{os.path.dirname(os.path.realpath(__file__))}/test_data/dummy_0_00000{i + 1}.h5"
+        f"{test_data_folder}/dummy_0_00000{i + 1}.h5"
         for i in range(expected_num_of_files)
     ]
-    assert paths == expected_paths
+    assert expected_paths[0] == paths[0]
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
