@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import re
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Union
 
 from dodal.devices.detector import DetectorParams
+from numpy import ndarray
 
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -117,3 +119,10 @@ def get_xtal_snapshots(ispyb_params):
         ISPYB_LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
         xtal_snapshots = []
     return xtal_snapshots + [None] * (3 - len(xtal_snapshots))
+
+
+@dataclass
+class GridScanInfo:
+    upper_left: Union[list[int], ndarray]
+    y_steps: int
+    y_step_size: float

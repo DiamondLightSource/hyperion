@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
+    GridScanInfo,
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
@@ -14,7 +15,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     populate_xy_data_collection_info,
     populate_xz_data_collection_info,
 )
-from hyperion.external_interaction.ispyb.data_model import GridScanInfo, ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
 )
@@ -156,7 +157,7 @@ def test_ispyb_deposition_comment_for_3D_correct(
         dummy_collection_group_info, scan_data_info_for_begin
     )
     dummy_3d_gridscan_ispyb.update_deposition(
-        dummy_params_3d, dummy_collection_group_info, scan_data_infos_for_update
+        dummy_collection_group_info, scan_data_infos_for_update
     )
 
     first_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
@@ -189,17 +190,12 @@ def test_store_3d_grid_scan(
     )
 
     assert dummy_3d_gridscan_ispyb.update_deposition(
-        dummy_params_3d, dummy_collection_group_info, scan_data_infos_for_update
+        dummy_collection_group_info, scan_data_infos_for_update
     ) == IspybIds(
         data_collection_ids=TEST_DATA_COLLECTION_IDS,
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         grid_ids=TEST_GRID_INFO_IDS,
     )
-
-
-def dict_to_ordered_params(param_template, kv_pairs: dict):
-    param_template |= kv_pairs
-    return list(param_template.values())
 
 
 @patch(
@@ -302,7 +298,7 @@ def test_update_deposition(
     mx_acq.upsert_data_collection.assert_called_once()
 
     actual_rows = dummy_3d_gridscan_ispyb.update_deposition(
-        dummy_params_3d, dummy_collection_group_info, scan_data_infos_for_update
+        dummy_collection_group_info, scan_data_infos_for_update
     )
 
     assert actual_rows == IspybIds(
@@ -506,7 +502,7 @@ def test_end_deposition_happy_path(
         dummy_collection_group_info, scan_data_info_for_begin
     )
     dummy_3d_gridscan_ispyb.update_deposition(
-        dummy_params_3d, dummy_collection_group_info, scan_data_infos_for_update
+        dummy_collection_group_info, scan_data_infos_for_update
     )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     assert len(mx_acq.upsert_data_collection_group.mock_calls) == 2

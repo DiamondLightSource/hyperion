@@ -51,9 +51,8 @@ class StoreRotationInIspyb(StoreInIspyb):
 
     def update_deposition(
         self,
-        internal_params,
-        data_collection_group_info: DataCollectionGroupInfo = None,
-        scan_data_info: ScanDataInfo = None,
+        data_collection_group_info: DataCollectionGroupInfo,
+        scan_data_info: ScanDataInfo,
     ) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"

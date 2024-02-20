@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
@@ -109,8 +110,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
 
+    @abstractmethod
     def update_deposition(self, params):
-        return self.ispyb.update_deposition(params)
+        pass
 
     def activity_gated_stop(self, doc: RunStop) -> None:
         """Subclasses must check that they are recieving a stop document for the correct

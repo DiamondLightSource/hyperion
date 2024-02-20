@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import Sequence, cast
+from itertools import zip_longest
+from typing import Sequence
 
 import ispyb
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
@@ -13,9 +13,6 @@ from hyperion.external_interaction.ispyb.data_model import (
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
-)
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
 )
 
 
@@ -47,17 +44,10 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def update_deposition(
         self,
-        internal_params,
         data_collection_group_info: DataCollectionGroupInfo = None,
         scan_data_infos: Sequence[ScanDataInfo] = (),
     ):
-        full_params = cast(GridscanInternalParameters, internal_params)
-        assert full_params is not None, "StoreGridscanInIspyb failed to get parameters."
-
         ispyb_ids = self._store_grid_scan(
-            full_params,
-            full_params.hyperion_params.ispyb_params,
-            full_params.hyperion_params.detector_params,
             self._data_collection_group_id,
             data_collection_group_info,
             self._data_collection_ids,
@@ -77,16 +67,11 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def _store_grid_scan(
         self,
-        full_params: GridscanInternalParameters,
-        ispyb_params,
-        detector_params,
         data_collection_group_id,
         dcg_info,
         data_collection_ids,
         scan_data_infos: Sequence[ScanDataInfo],
     ) -> IspybIds:
-        assert ispyb_params.upper_left is not None
-
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
 
@@ -98,7 +83,6 @@ class StoreGridscanInIspyb(StoreInIspyb):
                 conn, scan_data_infos, data_collection_group_id, data_collection_ids
             )
 
-    @abstractmethod
     def _store_scan_data(
         self,
         conn: Connector,
@@ -106,4 +90,24 @@ class StoreGridscanInIspyb(StoreInIspyb):
         data_collection_group_id,
         data_collection_ids,
     ) -> IspybIds:
-        pass
+        assert (
+            data_collection_group_id
+        ), "Attempted to store scan data without a collection group"
+        assert data_collection_ids, "Attempted to store scan data without a collection"
+
+        grid_ids = []
+        data_collection_ids_out = []
+        for scan_data_info, data_collection_id in zip_longest(
+            scan_data_infos, data_collection_ids
+        ):
+            data_collection_id, grid_id = self._store_single_scan_data(
+                conn, scan_data_info, data_collection_id
+            )
+            data_collection_ids_out.append(data_collection_id)
+            grid_ids.append(grid_id)
+
+        return IspybIds(
+            data_collection_ids=tuple(data_collection_ids_out),
+            grid_ids=tuple(grid_ids),
+            data_collection_group_id=data_collection_group_id,
+        )

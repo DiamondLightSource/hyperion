@@ -5,6 +5,7 @@ import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
+    GridScanInfo,
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
@@ -12,7 +13,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
     populate_xy_data_collection_info,
 )
-from hyperion.external_interaction.ispyb.data_model import GridScanInfo, ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
     Store2DGridscanInIspyb,
 )
@@ -257,7 +258,7 @@ def test_update_deposition(
     mx_acq.upsert_data_collection_group.assert_called_once()
     mx_acq.upsert_data_collection.assert_called_once()
     assert dummy_2d_gridscan_ispyb.update_deposition(
-        dummy_params, dummy_collection_group_info, [scan_data_info_for_begin]
+        dummy_collection_group_info, [scan_data_info_for_begin]
     ) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
@@ -380,7 +381,7 @@ def test_end_deposition_happy_path(
         dummy_collection_group_info, scan_data_info_for_begin
     )
     dummy_2d_gridscan_ispyb.update_deposition(
-        dummy_params, dummy_collection_group_info, [scan_xy_data_info_for_update]
+        dummy_collection_group_info, [scan_xy_data_info_for_update]
     )
     mx_acq: MagicMock = mx_acquisition_from_conn(mock_ispyb_conn)
     assert len(mx_acq.upsert_data_collection_group.mock_calls) == 2
@@ -440,7 +441,7 @@ def test_param_keys(
         dummy_collection_group_info, scan_data_info_for_begin
     )
     assert dummy_2d_gridscan_ispyb.update_deposition(
-        dummy_params, dummy_collection_group_info, [scan_xy_data_info_for_update]
+        dummy_collection_group_info, [scan_xy_data_info_for_update]
     ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
@@ -451,7 +452,6 @@ def test_param_keys(
 def _test_when_grid_scan_stored_then_data_present_in_upserts(
     ispyb_conn,
     dummy_ispyb,
-    dummy_params,
     test_function,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -461,7 +461,7 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
     setup_mock_return_values(ispyb_conn)
     dummy_ispyb.begin_deposition(dummy_collection_group_info, scan_data_info_for_begin)
     dummy_ispyb.update_deposition(
-        dummy_params, dummy_collection_group_info, [scan_data_info_for_update]
+        dummy_collection_group_info, [scan_data_info_for_update]
     )
 
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
@@ -501,7 +501,6 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     _test_when_grid_scan_stored_then_data_present_in_upserts(
         ispyb_conn,
         dummy_2d_gridscan_ispyb,
-        dummy_params,
         test_sample_id,
         dummy_collection_group_info,
         scan_data_info_for_begin,
@@ -529,7 +528,6 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     _test_when_grid_scan_stored_then_data_present_in_upserts(
         ispyb_conn,
         dummy_2d_gridscan_ispyb,
-        dummy_params,
         test_sample_id,
         dummy_collection_group_info,
         scan_data_info_for_begin,
@@ -556,7 +554,7 @@ def test_fail_result_run_results_in_bad_run_status(
         dummy_collection_group_info, scan_data_info_for_begin
     )
     dummy_2d_gridscan_ispyb.update_deposition(
-        dummy_params, dummy_collection_group_info, [scan_xy_data_info_for_update]
+        dummy_collection_group_info, [scan_xy_data_info_for_update]
     )
     dummy_2d_gridscan_ispyb.end_deposition("fail", "test specifies failure")
 
@@ -586,7 +584,7 @@ def test_no_exception_during_run_results_in_good_run_status(
         dummy_collection_group_info, scan_data_info_for_begin
     )
     dummy_2d_gridscan_ispyb.update_deposition(
-        dummy_params, dummy_collection_group_info, [scan_xy_data_info_for_update]
+        dummy_collection_group_info, [scan_xy_data_info_for_update]
     )
     dummy_2d_gridscan_ispyb.end_deposition("success", "")
 
@@ -611,7 +609,7 @@ def test_ispyb_deposition_comment_correct(
         dummy_collection_group_info, scan_data_info_for_begin
     )
     dummy_2d_gridscan_ispyb.update_deposition(
-        dummy_params, dummy_collection_group_info, [scan_xy_data_info_for_update]
+        dummy_collection_group_info, [scan_xy_data_info_for_update]
     )
     mock_upsert_call_args = mock_upsert_data_collection.call_args_list[0][0]
 
@@ -685,24 +683,3 @@ def test_ispyb_deposition_rounds_box_size_int(
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
         f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."
     )
-
-
-def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_then_num_images_correct(
-    dummy_params: GridscanInternalParameters,
-):
-    expected_number_of_steps = 200 * 3
-    dummy_params.experiment_params.x_steps = 200
-    dummy_params.experiment_params.y_steps = 3
-    grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
-        3,
-        dummy_params.experiment_params.y_step_size,
-    )
-    actual = populate_xy_data_collection_info(
-        grid_scan_info,
-        dummy_params,
-        dummy_params.hyperion_params.ispyb_params,
-        dummy_params.hyperion_params.detector_params,
-    )
-
-    assert actual.n_images == expected_number_of_steps

@@ -7,6 +7,7 @@ import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
+    GridScanInfo,
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
@@ -21,7 +22,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     populate_xz_data_collection_info,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.data_model import GridScanInfo, ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
     StoreGridscanInIspyb,
 )
@@ -180,9 +181,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         if self.is_3d_gridscan():
             scan_data_infos.append(self.populate_xz_scan_data_info(params))
 
-        return self.ispyb.update_deposition(
-            params, data_collection_group_info, scan_data_infos
-        )
+        return self.ispyb.update_deposition(data_collection_group_info, scan_data_infos)
 
     def populate_xy_scan_data_info(self, params):
         grid_scan_info = GridScanInfo(
