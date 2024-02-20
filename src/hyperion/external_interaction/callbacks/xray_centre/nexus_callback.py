@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -9,6 +11,9 @@ from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN, ISPYB_HARDWARE_RE
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+if TYPE_CHECKING:
+    from event_model.documents import EventDescriptor, RunStart
 
 
 class GridscanNexusFileCallback(PlanReactiveCallback):
@@ -38,7 +43,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         self.nexus_writer_2: NexusWriter | None = None
         self.log = NEXUS_LOGGER
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             json_params = doc.get("hyperion_internal_parameters")
             NEXUS_LOGGER.info(
@@ -47,7 +52,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             self.parameters = GridscanInternalParameters.from_json(json_params)
             self.run_start_uid = doc.get("uid")
 
-    def activity_gated_descriptor(self, doc):
+    def activity_gated_descriptor(self, doc: EventDescriptor):
         if doc.get("name") == ISPYB_HARDWARE_READ_PLAN:
             assert (
                 self.parameters is not None

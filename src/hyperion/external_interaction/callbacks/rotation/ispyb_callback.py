@@ -18,9 +18,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
-    from event_model.documents.event import Event
-    from event_model.documents.run_start import RunStart
-    from event_model.documents.run_stop import RunStop
+    from event_model.documents import Event, RunStart, RunStop
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -84,8 +82,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.uid_to_finalize_on = doc.get("uid")
 
     def activity_gated_event(self, doc: Event):
-        super().activity_gated_event(doc)
+        doc = super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
+        return doc
 
     def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.uid_to_finalize_on:

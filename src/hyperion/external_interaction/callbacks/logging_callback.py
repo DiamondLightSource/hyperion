@@ -12,6 +12,7 @@ class VerbosePlanExecutionLoggingCallback(CallbackBase):
 
     def event(self, doc):
         LOGGER.info(f"EVENT: {doc}")
+        return doc
 
     def stop(self, doc):
         LOGGER.info(f"STOP: {doc}")
