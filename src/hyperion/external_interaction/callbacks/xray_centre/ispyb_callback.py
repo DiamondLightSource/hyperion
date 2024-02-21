@@ -181,7 +181,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         if self.is_3d_gridscan():
             scan_data_infos.append(self.populate_xz_scan_data_info(params))
 
-        return self.ispyb.update_deposition(data_collection_group_info, scan_data_infos)
+        return self.ispyb.update_deposition(
+            self.ispyb_ids, data_collection_group_info, scan_data_infos
+        )
 
     def populate_xy_scan_data_info(self, params):
         grid_scan_info = GridScanInfo(

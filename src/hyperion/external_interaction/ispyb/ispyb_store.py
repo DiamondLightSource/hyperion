@@ -57,14 +57,36 @@ class StoreInIspyb(ABC):
     @abstractmethod
     def update_deposition(
         self,
+        ispyb_ids: IspybIds,
         data_collection_group_info: DataCollectionGroupInfo,
         scan_data_info: ScanDataInfo,
     ) -> IspybIds:
         pass
 
-    @abstractmethod
-    def end_deposition(self, success: str, reason: str):
-        pass
+    def end_deposition(self, ispyb_ids: IspybIds, success: str, reason: str):
+        assert (
+            ispyb_ids.data_collection_ids
+        ), "Can't end ISPyB deposition, data_collection IDs are missing"
+        assert (
+            ispyb_ids.data_collection_group_id is not None
+        ), "Cannot end ISPyB deposition without data collection group ID"
+
+        for id_ in ispyb_ids.data_collection_ids:
+            ISPYB_LOGGER.info(
+                f"End ispyb deposition with status '{success}' and reason '{reason}'."
+            )
+            if success == "fail" or success == "abort":
+                run_status = "DataCollection Unsuccessful"
+            else:
+                run_status = "DataCollection Successful"
+            current_time = get_current_time_string()
+            self._update_scan_with_end_time_and_status(
+                current_time,
+                run_status,
+                reason,
+                id_,
+                ispyb_ids.data_collection_group_id,
+            )
 
     def append_to_comment(
         self, data_collection_id: int, comment: str, delimiter: str = " "
@@ -99,25 +121,6 @@ class StoreInIspyb(ABC):
             params["run_status"] = run_status
 
             mx_acquisition.upsert_data_collection(list(params.values()))
-
-    def _end_deposition(self, dcid: int, success: str, reason: str):
-        """Write the end of data_collection data.
-        Args:
-            success (str): The success of the run, could be fail or abort
-            reason (str): If the run failed, the reason why
-        """
-        ISPYB_LOGGER.info(
-            f"End ispyb deposition with status '{success}' and reason '{reason}'."
-        )
-        if success == "fail" or success == "abort":
-            run_status = "DataCollection Unsuccessful"
-        else:
-            run_status = "DataCollection Successful"
-        current_time = get_current_time_string()
-        assert self._data_collection_group_id is not None
-        self._update_scan_with_end_time_and_status(
-            current_time, run_status, reason, dcid, self._data_collection_group_id
-        )
 
     def _store_position_table(
         self, conn: Connector, dc_pos_info, data_collection_id

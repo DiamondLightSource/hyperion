@@ -69,7 +69,13 @@ class TestXrayCentreIspybHandler:
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
         ispyb_handler.ispyb.end_deposition.assert_called_once_with(
-            "fail", "could not connect to devices"
+            IspybIds(
+                data_collection_group_id=DCG_ID,
+                data_collection_ids=DC_IDS,
+                grid_ids=DC_GRID_IDS,
+            ),
+            "fail",
+            "could not connect to devices",
         )
 
     def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
@@ -89,7 +95,15 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
-        ispyb_handler.ispyb.end_deposition.assert_called_once_with("success", "")
+        ispyb_handler.ispyb.end_deposition.assert_called_once_with(
+            IspybIds(
+                data_collection_group_id=DCG_ID,
+                data_collection_ids=DC_IDS,
+                grid_ids=DC_GRID_IDS,
+            ),
+            "success",
+            "",
+        )
 
     @pytest.mark.skip_log_setup
     def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(

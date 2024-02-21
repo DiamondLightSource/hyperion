@@ -127,7 +127,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         reason = doc.get("reason") or ""
         set_dcgid_tag(None)
         try:
-            self.ispyb.end_deposition(exit_status, reason)
+            self.ispyb.end_deposition(self.ispyb_ids, exit_status, reason)
         except Exception as e:
             ISPYB_LOGGER.warning(
                 f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"

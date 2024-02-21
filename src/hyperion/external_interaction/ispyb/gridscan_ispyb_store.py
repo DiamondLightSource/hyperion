@@ -44,8 +44,9 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def update_deposition(
         self,
+        ispyb_ids,
         data_collection_group_info: DataCollectionGroupInfo,
-        scan_data_infos: Sequence[ScanDataInfo] = (),
+        scan_data_infos: Sequence[ScanDataInfo],
     ):
         ispyb_ids = self._store_grid_scan(
             self._data_collection_group_id,
@@ -57,13 +58,6 @@ class StoreGridscanInIspyb(StoreInIspyb):
         self._data_collection_group_id = ispyb_ids.data_collection_group_id
         self.grid_ids = ispyb_ids.grid_ids
         return ispyb_ids
-
-    def end_deposition(self, success: str, reason: str):
-        assert (
-            self._data_collection_ids
-        ), "Can't end ISPyB deposition, data_collection IDs are missing"
-        for id in self._data_collection_ids:
-            self._end_deposition(id, success, reason)
 
     def _store_grid_scan(
         self,

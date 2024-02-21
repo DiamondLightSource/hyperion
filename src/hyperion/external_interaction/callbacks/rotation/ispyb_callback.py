@@ -146,7 +146,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 params.hyperion_params.ispyb_params
             ),
         )
-        return self.ispyb.update_deposition(dcg_info, scan_data_info)
+        return self.ispyb.update_deposition(self.ispyb_ids, dcg_info, scan_data_info)
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
