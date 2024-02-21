@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dodal.devices.zocalo import (
     ZocaloTrigger,
 )
@@ -17,6 +19,9 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
+if TYPE_CHECKING:
+    from event_model import RunStart, RunStop
+
 
 class RotationZocaloCallback(PlanReactiveCallback):
     """Simple callback which sends the ISPyB IDs for a rotation data collection to
@@ -31,9 +36,10 @@ class RotationZocaloCallback(PlanReactiveCallback):
         self.ispyb: RotationISPyBCallback = ispyb_handler
         self.run_uid = None
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
+            self.run_uid = doc.get("uid")
             ISPYB_LOGGER.info(
                 "Zocalo callback recieved start document with experiment parameters."
             )
@@ -44,15 +50,16 @@ class RotationZocaloCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
 
-        if self.run_uid is None:
-            self.run_uid = doc.get("uid")
-
-    def activity_gated_stop(self, doc: dict):
+    def activity_gated_stop(self, doc: RunStop):
         if self.run_uid and doc.get("run_start") == self.run_uid:
+            self.run_uid = None
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
             if self.ispyb.ispyb_ids.data_collection_ids is not None:
+                ISPYB_LOGGER.info(
+                    f"Zocalo callback submitting job {self.ispyb.ispyb_ids.data_collection_ids}"
+                )
                 assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, int)
                 self.zocalo_interactor.run_start(
                     self.ispyb.ispyb_ids.data_collection_ids

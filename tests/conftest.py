@@ -24,6 +24,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
+from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.status import DeviceStatus, Status
 from ophyd_async.core import set_sim_value
@@ -41,7 +42,8 @@ from hyperion.log import (
     ISPYB_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
-    set_up_logging_handlers,
+    _get_logging_dir,
+    do_default_logging_setup,
 )
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -69,26 +71,28 @@ def _destroy_loggers(loggers):
 
 def pytest_runtest_setup(item):
     markers = [m.name for m in item.own_markers]
-    log_level = "DEBUG" if item.config.option.debug_logging else "INFO"
-    log_params = {"logging_level": log_level, "dev_mode": True}
     if "skip_log_setup" not in markers:
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
-                print(f"Initialising Hyperion logger for tests at {log_level}")
-                set_up_logging_handlers(**log_params)
+                print("Initialising Hyperion logger for tests")
+                do_default_logging_setup(dev_mode=True)
         if ISPYB_LOGGER.handlers == []:
-            print(f"Initialising ISPyB logger for tests at {log_level}")
-            set_up_logging_handlers(
-                **log_params,
-                filename="hyperion_ispyb_callback.txt",
-                logger=ISPYB_LOGGER,
+            print("Initialising ISPyB logger for tests")
+            set_up_all_logging_handlers(
+                ISPYB_LOGGER,
+                _get_logging_dir(),
+                "hyperion_ispyb_callback.log",
+                True,
+                10000,
             )
         if NEXUS_LOGGER.handlers == []:
-            print(f"Initialising nexus logger for tests at {log_level}")
-            set_up_logging_handlers(
-                **log_params,
-                filename="hyperion_nexus_callback.txt",
-                logger=NEXUS_LOGGER,
+            print("Initialising nexus logger for tests")
+            set_up_all_logging_handlers(
+                NEXUS_LOGGER,
+                _get_logging_dir(),
+                "hyperion_ispyb_callback.log",
+                True,
+                10000,
             )
     else:
         print("Skipping log setup for log test - deleting existing handlers")
@@ -421,12 +425,13 @@ def fake_create_rotation_devices(
     done_status,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+    mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
 
     mock_arm_disarm = MagicMock(
         side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
     )
     zebra.pc.arm.set = mock_arm_disarm
-    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
 
     return RotationScanComposite(
@@ -531,6 +536,7 @@ def fake_fgs_composite(
     fake_composite.zocalo.timeout_s = 3
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
+    fake_composite.smargon.x_speed_limit_mm_per_s.sim_put(10)  # type: ignore
 
     set_sim_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
 

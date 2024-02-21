@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: Run Hyperion in dev mode",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "hyperion",
             "args": [
@@ -15,15 +15,15 @@
                 "--skip-startup-connection"
             ],
             "env": {
-                "EPICS_CA_SERVER_PORT": "5364"
+                "EPICS_CA_SERVER_PORT": "5364",
+                "BEAMLINE": "i03"
             },
             "subProcess": true,
             "justMyCode": false
-            
         },
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "preLaunchTask": "load_dials_env",
@@ -32,7 +32,7 @@
         },
         {
             "name": "Debug Unit Test",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
             "program": "${file}",

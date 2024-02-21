@@ -3,6 +3,7 @@ from __future__ import annotations
 import bluesky.plan_stubs as bps
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.DCM import DCM
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -13,6 +14,7 @@ from hyperion.log import LOGGER
 from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+    NEXUS_READ_PLAN,
 )
 
 
@@ -42,4 +44,10 @@ def read_hardware_for_ispyb_during_collection(
     yield from bps.read(attenuator.actual_transmission)
     yield from bps.read(flux.flux_reading)
     yield from bps.read(dcm.energy_in_kev)
+    yield from bps.save()
+
+
+def read_hardware_for_nexus_writer(detector: EigerDetector):
+    yield from bps.create(name=NEXUS_READ_PLAN)
+    yield from bps.read(detector.bit_depth)
     yield from bps.save()

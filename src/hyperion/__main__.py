@@ -26,8 +26,8 @@ from hyperion.external_interaction.callbacks.aperture_change_callback import (
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from hyperion.log import LOGGER, set_up_logging_handlers
-from hyperion.parameters.cli import parse_callback_cli_args, parse_cli_args
+from hyperion.log import LOGGER, do_default_logging_setup
+from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
@@ -85,6 +85,7 @@ class BlueskyRunner:
 
         self.use_external_callbacks = use_external_callbacks
         if self.use_external_callbacks:
+            LOGGER.info("Connecting to external callback ZMQ proxy...")
             self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
             RE.subscribe(self.publisher)
 
@@ -93,6 +94,7 @@ class BlueskyRunner:
 
         self.skip_startup_connection = skip_startup_connection
         if not self.skip_startup_connection:
+            LOGGER.info("Initialising dodal devices...")
             for plan_name in PLAN_REGISTRY:
                 PLAN_REGISTRY[plan_name]["setup"](context)
 
@@ -277,9 +279,11 @@ def create_app(
     context = setup_context(
         wait_for_connection=not skip_startup_connection,
     )
-
     runner = BlueskyRunner(
-        RE, context=context, use_external_callbacks=use_external_callbacks
+        RE,
+        context=context,
+        use_external_callbacks=use_external_callbacks,
+        skip_startup_connection=skip_startup_connection,
     )
     app = Flask(__name__)
     if test_config:
@@ -301,9 +305,9 @@ def create_app(
 def create_targets():
     hyperion_port = 5005
     args = parse_cli_args()
-    set_up_logging_handlers(logging_level=args.logging_level, dev_mode=args.dev_mode)
+    do_default_logging_setup(dev_mode=args.dev_mode)
     if not args.use_external_callbacks:
-        setup_callback_logging(parse_callback_cli_args())
+        setup_callback_logging(args.dev_mode)
     app, runner = create_app(
         skip_startup_connection=args.skip_startup_connection,
         use_external_callbacks=args.use_external_callbacks,

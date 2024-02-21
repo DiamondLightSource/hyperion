@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from time import time
+from typing import TYPE_CHECKING
 
 import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
-from event_model.documents.event import Event
 
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
@@ -27,6 +27,9 @@ from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+if TYPE_CHECKING:
+    from event_model import Event, RunStart, RunStop
 
 
 class GridscanISPyBCallback(BaseISPyBCallback):
@@ -53,7 +56,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.ispyb_ids: IspybIds = IspybIds()
         self.processing_start_time: float | None = None
 
-    def activity_gated_start(self, doc: dict):
+    def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_LOGGER.info(
@@ -71,7 +74,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids = self.ispyb.begin_deposition()
 
     def activity_gated_event(self, doc: Event):
-        super().activity_gated_event(doc)
+        doc = super().activity_gated_event(doc)
 
         event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == ZOCALO_READING_PLAN_NAME:
@@ -107,8 +110,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
 
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
+        return doc
 
-    def activity_gated_stop(self, doc: dict):
+    def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.uid_to_finalize_on:
             ISPYB_LOGGER.info(
                 "ISPyB callback received stop document corresponding to start document "
