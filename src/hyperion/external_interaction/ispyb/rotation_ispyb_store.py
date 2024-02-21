@@ -51,33 +51,25 @@ class StoreRotationInIspyb(StoreInIspyb):
 
     def update_deposition(
         self,
+        ispyb_ids: IspybIds,
         data_collection_group_info: DataCollectionGroupInfo,
         scan_data_info: ScanDataInfo,
     ) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
             assert (
-                self._data_collection_group_id
+                ispyb_ids.data_collection_group_id
             ), "Attempted to store scan data without a collection group"
             assert (
-                self._data_collection_id
+                ispyb_ids.data_collection_ids
             ), "Attempted to store scan data without a collection"
             self._store_data_collection_group_table(
-                conn, data_collection_group_info, self._data_collection_group_id
+                conn, data_collection_group_info, ispyb_ids.data_collection_group_id
             )
             self._data_collection_id, _ = self._store_single_scan_data(
-                conn, scan_data_info, self._data_collection_id
+                conn, scan_data_info, ispyb_ids.data_collection_ids[0]
             )
-            result = self._data_collection_id, self._data_collection_group_id
-            ids = result
-            self._data_collection_group_id = ids[1]
-            self._data_collection_id = ids[0]
             return IspybIds(
-                data_collection_ids=(ids[0],), data_collection_group_id=ids[1]
+                data_collection_ids=(self._data_collection_id,),
+                data_collection_group_id=self._data_collection_group_id,
             )
-
-    def end_deposition(self, success: str, reason: str):
-        assert (
-            self._data_collection_id is not None
-        ), "Can't end ISPyB deposition, data_collection IDs is missing"
-        self._end_deposition(self._data_collection_id, success, reason)

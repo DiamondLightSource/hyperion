@@ -145,21 +145,19 @@ class TestFlyscanXrayCentrePlan:
 
         error = None
         with pytest.raises(FailedStatus) as exc:
-            with patch(
-                "hyperion.external_interaction.ispyb.ispyb_store.ispyb",
-                mock_ispyb,
-            ):
-                with patch.object(
-                    fake_fgs_composite.sample_motors.omega, "set"
-                ) as mock_set:
-                    error = AssertionError("Test Exception")
-                    mock_set.return_value = FailedStatus(error)
+            with patch.object(
+                fake_fgs_composite.sample_motors.omega, "set"
+            ) as mock_set:
+                error = AssertionError("Test Exception")
+                mock_set.return_value = FailedStatus(error)
 
-                    RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+                RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
         assert exc.value.args[0] is error
-        ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # pyright: ignore
-            "fail", "Test Exception"
+        ispyb_callback.ispyb.end_deposition.assert_called_once_with(
+            IspybIds(data_collection_group_id=0, data_collection_ids=(0, 0)),
+            "fail",
+            "Test Exception",
         )
 
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
