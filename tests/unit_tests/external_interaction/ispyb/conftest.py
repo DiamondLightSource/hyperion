@@ -16,7 +16,8 @@ from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-from unit_tests.external_interaction.conftest import (
+
+from ..conftest import (
     TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_SAMPLE_ID,

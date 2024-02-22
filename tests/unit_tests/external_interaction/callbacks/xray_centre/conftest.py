@@ -5,10 +5,6 @@ import pytest
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 
 
 @pytest.fixture
@@ -62,16 +58,3 @@ def mock_ispyb_end_deposition():
 @pytest.fixture
 def ispyb_handler():
     return GridscanISPyBCallback()
-
-
-def dummy_params():
-    dummy_params = GridscanInternalParameters(**default_raw_params())
-    return dummy_params
-
-
-def dummy_params_2d():
-    return GridscanInternalParameters(
-        **default_raw_params(
-            "tests/test_data/parameter_json_files/test_parameter_defaults_2d.json"
-        )
-    )
