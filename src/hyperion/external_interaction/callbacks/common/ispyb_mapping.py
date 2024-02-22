@@ -50,7 +50,7 @@ def populate_remaining_data_collection_info(
     detector_params,
     ispyb_params,
 ):
-    get_visit_string(ispyb_params, detector_params)
+    data_collection_info.visit_string = get_visit_string(ispyb_params, detector_params)
     data_collection_info.parent_id = data_collection_group_id
     data_collection_info.sample_id = ispyb_params.sample_id
     data_collection_info.detector_id = I03_EIGER_DETECTOR

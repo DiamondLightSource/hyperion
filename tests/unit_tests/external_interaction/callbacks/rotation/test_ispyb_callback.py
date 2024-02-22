@@ -92,8 +92,10 @@ def test_activity_gated_event(
     mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
 ):
     callback = RotationISPyBCallback()
-    callback.activity_gated_start(test_rotation_start_outer_document)
-    callback.activity_gated_start(TestData.test_rotation_start_main_document)
+    callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
+    callback.activity_gated_start(
+        TestData.test_rotation_start_main_document  # pyright: ignore
+    )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
 
     mx.upsert_data_collection_group.reset_mock()
@@ -155,8 +157,10 @@ def test_activity_gated_event(
 )
 def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document):
     callback = RotationISPyBCallback()
-    callback.activity_gated_start(test_rotation_start_outer_document)
-    callback.activity_gated_start(TestData.test_rotation_start_main_document)
+    callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
+    callback.activity_gated_start(
+        TestData.test_rotation_start_main_document  # pyright: ignore
+    )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
 
     mx.upsert_data_collection_group.reset_mock()
