@@ -2,14 +2,14 @@ import numpy as np
 from dodal.devices.detector.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.fast_grid_scan import GridScanParams
 
-import unit_tests.conftest
+import hyperion.parameters.external_parameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
 
 def test_FGS_parameters_load_from_file():
-    params = unit_tests.conftest.from_file(
+    params = hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
     internal_parameters = GridscanInternalParameters(**params)

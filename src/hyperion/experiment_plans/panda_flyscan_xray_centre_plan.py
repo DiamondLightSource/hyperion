@@ -18,7 +18,6 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
 
-import unit_tests.conftest
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -45,6 +44,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import CONST
 from hyperion.tracing import TRACER
 from hyperion.utils.context import device_composite_from_context, setup_context
@@ -312,7 +312,7 @@ if __name__ == "__main__":
         GridscanInternalParameters,
     )
 
-    parameters = GridscanInternalParameters(**unit_tests.conftest.from_file())
+    parameters = GridscanInternalParameters(**external_parameters.from_file())
     subscriptions = XrayCentreCallbackCollection()
 
     context = setup_context(wait_for_connection=True)

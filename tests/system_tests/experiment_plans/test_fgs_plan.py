@@ -29,10 +29,10 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-from unit_tests.conftest import from_file as default_raw_params
 
 from ..external_interaction.conftest import (  # noqa
     fetch_comment,

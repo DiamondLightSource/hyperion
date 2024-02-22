@@ -18,7 +18,7 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.zebra import Zebra
 from flask.testing import FlaskClient
 
-import unit_tests.conftest
+import hyperion.parameters.external_parameters
 from hyperion.__main__ import (
     Actions,
     BlueskyRunner,
@@ -46,7 +46,7 @@ STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
-    unit_tests.conftest.from_file(
+    hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameter_defaults.json"
     )
 )

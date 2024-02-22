@@ -13,6 +13,7 @@ from ophyd.sim import SynAxis
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -20,7 +21,6 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 from hyperion.utils.utils import convert_angstrom_to_eV
-from unit_tests.conftest import from_file
 
 
 class MockReactiveCallback(PlanReactiveCallback):

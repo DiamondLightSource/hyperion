@@ -13,10 +13,10 @@ from sqlalchemy.orm import sessionmaker
 from hyperion.external_interaction.ispyb.data_model import ExperimentType
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-from unit_tests.conftest import from_file as default_raw_params
 
 TEST_RESULT_LARGE = [
     {

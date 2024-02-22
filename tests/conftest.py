@@ -53,6 +53,7 @@ from hyperion.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
+from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
@@ -65,7 +66,6 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-from unit_tests.conftest import from_file as raw_params_from_file
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
