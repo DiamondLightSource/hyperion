@@ -55,6 +55,9 @@ class StoreInIspyb(ABC):
     ) -> IspybIds:
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None
+            assert (
+                scan_data_info.data_collection_info.visit_string
+            ), "No visit string supplied for ispyb"
             data_collection_group_id = scan_data_info.data_collection_info.parent_id
             if not data_collection_group_id:
                 data_collection_group_id = self._store_data_collection_group_table(

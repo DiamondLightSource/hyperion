@@ -178,7 +178,12 @@ def base_ispyb_conn():
         )
         ispyb_connection.return_value.mx_acquisition = mock_mx_acquisition
         mock_core = MagicMock()
-        mock_core.retrieve_visit_id.return_value = TEST_SESSION_ID
+
+        def mock_retrieve_visit(visit_str):
+            assert visit_str, "No visit id supplied"
+            return TEST_SESSION_ID
+
+        mock_core.retrieve_visit_id.side_effect = mock_retrieve_visit
         ispyb_connection.return_value.core = mock_core
         yield ispyb_connection
 
