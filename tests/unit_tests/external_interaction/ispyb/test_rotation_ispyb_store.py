@@ -12,12 +12,10 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     construct_comment_for_rotation_scan,
     populate_data_collection_info_for_rotation,
 )
-from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
-)
-from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
-    StoreRotationInIspyb,
+    StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
 
@@ -118,7 +116,7 @@ def scan_data_info_for_update(scan_data_info_for_begin, dummy_rotation_params):
 
 @pytest.fixture
 def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
-    store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG, "Characterization")
+    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, "Characterization")
     return store_in_ispyb
 
 
@@ -167,7 +165,7 @@ def test_begin_deposition_with_group_id_doesnt_insert(
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
 ):
-    dummy_rotation_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG)
+    dummy_rotation_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.ROTATION)
     scan_data_info_for_begin.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
@@ -240,7 +238,7 @@ def test_update_deposition(
     assert dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
         dummy_rotation_data_collection_group_info,
-        scan_data_info_for_update,
+        [scan_data_info_for_update],
     ) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
@@ -288,7 +286,7 @@ def test_update_deposition_with_group_id_updates(
     scan_data_info_for_begin,
     scan_data_info_for_update,
 ):
-    dummy_rotation_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG)
+    dummy_rotation_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.ROTATION)
     scan_data_info_for_begin.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
@@ -302,7 +300,7 @@ def test_update_deposition_with_group_id_updates(
     assert dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
         dummy_rotation_data_collection_group_info,
-        scan_data_info_for_update,
+        [scan_data_info_for_update],
     ) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
@@ -359,7 +357,9 @@ def test_end_deposition_happy_path(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
     )
     ispyb_ids = dummy_rotation_ispyb.update_deposition(
-        ispyb_ids, dummy_rotation_data_collection_group_info, scan_data_info_for_update
+        ispyb_ids,
+        dummy_rotation_data_collection_group_info,
+        [scan_data_info_for_update],
     )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.reset_mock()
@@ -389,7 +389,7 @@ def test_end_deposition_happy_path(
 
 
 def test_store_rotation_scan_failures(
-    mock_ispyb_conn, dummy_rotation_ispyb: StoreRotationInIspyb
+    mock_ispyb_conn, dummy_rotation_ispyb: StoreInIspyb
 ):
     dummy_rotation_ispyb._data_collection_id = None
 
@@ -426,7 +426,7 @@ def test_store_rotation_scan_uses_supplied_dcgid(
 ):
     ispyb_conn.return_value.mx_acquisition = MagicMock()
     ispyb_conn.return_value.core = mock()
-    store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG)
+    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.ROTATION)
     scan_data_info_for_begin.data_collection_info.parent_id = dcgid
     ispyb_ids = store_in_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
@@ -436,7 +436,7 @@ def test_store_rotation_scan_uses_supplied_dcgid(
         store_in_ispyb.update_deposition(
             ispyb_ids,
             dummy_rotation_data_collection_group_info,
-            scan_data_info_for_update,
+            [scan_data_info_for_update],
         ).data_collection_group_id
         == dcgid
     )

@@ -22,18 +22,10 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     populate_xz_data_collection_info,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store import (
-    StoreGridscanInIspyb,
-)
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
-    Store2DGridscanInIspyb,
-)
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
-)
+from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+    StoreInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import CONST
@@ -69,7 +61,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     ) -> None:
         super().__init__(emit=emit)
         self.params: GridscanInternalParameters
-        self.ispyb: StoreGridscanInIspyb
+        self.ispyb: StoreInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
@@ -88,10 +80,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.params = GridscanInternalParameters.from_json(json_params)
-            self.ispyb = (
-                Store3DGridscanInIspyb(self.ispyb_config)
-                if self.is_3d_gridscan()
-                else Store2DGridscanInIspyb(self.ispyb_config)
+            self.ispyb = StoreInIspyb(
+                self.ispyb_config,
+                (
+                    ExperimentType.GRIDSCAN_3D
+                    if self.is_3d_gridscan()
+                    else ExperimentType.GRIDSCAN_2D
+                ),
             )
             data_collection_group_info = populate_data_collection_group(
                 self.ispyb.experiment_type,

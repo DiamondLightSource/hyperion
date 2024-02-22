@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Optional, Tuple
+from itertools import zip_longest
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
 import ispyb
 import ispyb.sqlalchemy
@@ -14,6 +15,7 @@ from pydantic import BaseModel
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
+    ExperimentType,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_utils import (
@@ -31,37 +33,78 @@ EIGER_FILE_SUFFIX = "h5"
 
 
 class IspybIds(BaseModel):
-    data_collection_ids: tuple[int, ...] = tuple()
+    data_collection_ids: tuple[int, ...] = ()
     data_collection_group_id: int | None = None
-    grid_ids: tuple[int, ...] | None = None
+    grid_ids: tuple[int, ...] = ()
 
 
 class StoreInIspyb(ABC):
-    def __init__(self, ispyb_config: str) -> None:
+    def __init__(self, ispyb_config: str, experiment_type: ExperimentType) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
         self._data_collection_group_id: int | None
+        self._experiment_type = experiment_type
 
     @property
-    @abstractmethod
     def experiment_type(self) -> str:
-        pass
+        return self._experiment_type.value
 
-    @abstractmethod
     def begin_deposition(
         self,
         data_collection_group_info: DataCollectionGroupInfo,
         scan_data_info: ScanDataInfo,
     ) -> IspybIds:
-        pass
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None
+            data_collection_group_id = scan_data_info.data_collection_info.parent_id
+            if not data_collection_group_id:
+                data_collection_group_id = self._store_data_collection_group_table(
+                    conn, data_collection_group_info
+                )
+                scan_data_info.data_collection_info.parent_id = data_collection_group_id
+            data_collection_id = self._store_data_collection_table(
+                conn, None, scan_data_info.data_collection_info
+            )
+            return IspybIds(
+                data_collection_group_id=data_collection_group_id,
+                data_collection_ids=(data_collection_id,),
+            )
 
-    @abstractmethod
     def update_deposition(
         self,
-        ispyb_ids: IspybIds,
+        ispyb_ids,
         data_collection_group_info: DataCollectionGroupInfo,
-        scan_data_info: ScanDataInfo,
-    ) -> IspybIds:
-        pass
+        scan_data_infos: Sequence[ScanDataInfo],
+    ):
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None, "Failed to connect to ISPyB"
+            assert (
+                ispyb_ids.data_collection_group_id
+            ), "Attempted to store scan data without a collection group"
+            assert (
+                ispyb_ids.data_collection_ids
+            ), "Attempted to store scan data without a collection"
+
+            self._store_data_collection_group_table(
+                conn, data_collection_group_info, ispyb_ids.data_collection_group_id
+            )
+
+            grid_ids = []
+            data_collection_ids_out = []
+            for scan_data_info, data_collection_id in zip_longest(
+                scan_data_infos, ispyb_ids.data_collection_ids
+            ):
+                data_collection_id, grid_id = self._store_single_scan_data(
+                    conn, scan_data_info, data_collection_id
+                )
+                data_collection_ids_out.append(data_collection_id)
+                if grid_id:
+                    grid_ids.append(grid_id)
+            ispyb_ids = IspybIds(
+                data_collection_ids=tuple(data_collection_ids_out),
+                grid_ids=tuple(grid_ids),
+                data_collection_group_id=ispyb_ids.data_collection_group_id,
+            )
+        return ispyb_ids
 
     def end_deposition(self, ispyb_ids: IspybIds, success: str, reason: str):
         assert (
@@ -157,7 +200,7 @@ class StoreInIspyb(ABC):
     def _store_data_collection_table(
         self, conn, data_collection_id, data_collection_info
     ):
-        params = self.fill_common_data_collection_params(
+        params = self._fill_common_data_collection_params(
             conn, data_collection_id, data_collection_info
         )
         return self._upsert_data_collection(conn, params)
@@ -194,7 +237,7 @@ class StoreInIspyb(ABC):
         params["parentid"] = ispyb_data_collection_id
         return mx_acquisition.upsert_dc_grid(list(params.values()))
 
-    def fill_common_data_collection_params(
+    def _fill_common_data_collection_params(
         self, conn, data_collection_id, data_collection_info: DataCollectionInfo
     ) -> StrictOrderedDict:
         mx_acquisition: MXAcquisition = conn.mx_acquisition

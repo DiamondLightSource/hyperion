@@ -16,11 +16,9 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     populate_xz_data_collection_info,
 )
 from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
-)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+    StoreInIspyb,
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -144,7 +142,7 @@ def scan_data_infos_for_update(scan_xy_data_info_for_update, dummy_params):
 
 def test_ispyb_deposition_comment_for_3D_correct(
     mock_ispyb_conn: MagicMock,
-    dummy_3d_gridscan_ispyb: Store3DGridscanInIspyb,
+    dummy_3d_gridscan_ispyb: StoreInIspyb,
     dummy_params_3d,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -174,7 +172,7 @@ def test_ispyb_deposition_comment_for_3D_correct(
 
 def test_store_3d_grid_scan(
     mock_ispyb_conn,
-    dummy_3d_gridscan_ispyb: Store3DGridscanInIspyb,
+    dummy_3d_gridscan_ispyb: StoreInIspyb,
     dummy_params_3d: GridscanInternalParameters,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -205,7 +203,7 @@ def test_store_3d_grid_scan(
 )
 def test_begin_deposition(
     mock_ispyb_conn,
-    dummy_3d_gridscan_ispyb: Store3DGridscanInIspyb,
+    dummy_3d_gridscan_ispyb: StoreInIspyb,
     dummy_params_3d: GridscanInternalParameters,
     dummy_collection_group_info,
     scan_data_info_for_begin,

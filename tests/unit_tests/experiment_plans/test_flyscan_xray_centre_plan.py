@@ -44,11 +44,9 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 from hyperion.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
-)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+    StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -101,7 +99,7 @@ def mock_ispyb():
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
 class TestFlyscanXrayCentrePlan:
@@ -200,7 +198,7 @@ class TestFlyscanXrayCentrePlan:
 
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
-        test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
+        test_ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
         test_ispyb_callback.ispyb.begin_deposition.return_value = IspybIds(
             data_collection_ids=(2, 3), data_collection_group_id=5, grid_ids=(7, 8, 9)
         )
