@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
-from unit_tests.external_interaction.callbacks.conftest import TestData
-from unit_tests.external_interaction.conftest import (
+
+from ...conftest import (
     EXPECTED_END_TIME,
     EXPECTED_START_TIME,
     TEST_BARCODE,
@@ -15,6 +15,7 @@ from unit_tests.external_interaction.conftest import (
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
+from ..conftest import TestData
 
 EXPECTED_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,

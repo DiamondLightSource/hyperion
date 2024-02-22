@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from unit_tests.external_interaction.callbacks.conftest import TestData
-from unit_tests.external_interaction.conftest import (
+
+from ...conftest import (
     EXPECTED_START_TIME,
     TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
@@ -13,6 +13,7 @@ from unit_tests.external_interaction.conftest import (
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
+from ..conftest import TestData
 
 
 @patch(
