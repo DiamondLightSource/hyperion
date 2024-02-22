@@ -35,6 +35,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -357,11 +358,16 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
 
         RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 
+        begin_deposition_scan_data: ScanDataInfo = (
+            rotation_ispyb.return_value.begin_deposition.call_args.args[1]
+        )
         if same_dcgid:
-            assert rotation_ispyb.call_args.args[1] is not None
-            assert rotation_ispyb.call_args.args[1] is last_dcgid
+            assert begin_deposition_scan_data.data_collection_info.parent_id is not None
+            assert (
+                begin_deposition_scan_data.data_collection_info.parent_id is last_dcgid
+            )
         else:
-            assert rotation_ispyb.call_args.args[1] is None
+            assert begin_deposition_scan_data.data_collection_info.parent_id is None
 
         last_dcgid = cb[0].ispyb_ids.data_collection_group_id
 
@@ -386,8 +392,7 @@ def test_ispyb_specifies_experiment_type_if_supplied(
 
     RE(fake_rotation_scan(params, cb))
 
-    assert rotation_ispyb.call_args.args[2] == "Characterization"
-    assert rotation_ispyb.call_args.args[1] is None
+    assert rotation_ispyb.call_args.args[1] == "Characterization"
 
 
 n_images_store_id = [

@@ -90,11 +90,10 @@ class RotationISPyBCallback(BaseISPyBCallback):
             if experiment_type:
                 self.ispyb = StoreRotationInIspyb(
                     self.ispyb_config,
-                    dcgid,
                     experiment_type,
                 )
             else:
-                self.ispyb = StoreRotationInIspyb(self.ispyb_config, dcgid)
+                self.ispyb = StoreRotationInIspyb(self.ispyb_config)
             ISPYB_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(
                 self.ispyb.experiment_type,
@@ -113,6 +112,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.params.hyperion_params.detector_params,
                 self.params.hyperion_params.ispyb_params,
             )
+            data_collection_info.parent_id = dcgid
             scan_data_info = ScanDataInfo(
                 data_collection_info=data_collection_info,
             )

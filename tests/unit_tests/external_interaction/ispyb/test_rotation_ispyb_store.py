@@ -118,9 +118,7 @@ def scan_data_info_for_update(scan_data_info_for_begin, dummy_rotation_params):
 
 @pytest.fixture
 def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
-    store_in_ispyb = StoreRotationInIspyb(
-        CONST.SIM.ISPYB_CONFIG, None, "Characterization"
-    )
+    store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG, "Characterization")
     return store_in_ispyb
 
 
@@ -169,8 +167,9 @@ def test_begin_deposition_with_group_id_doesnt_insert(
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
 ):
-    dummy_rotation_ispyb = StoreRotationInIspyb(
-        CONST.SIM.ISPYB_CONFIG, TEST_DATA_COLLECTION_GROUP_ID
+    dummy_rotation_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG)
+    scan_data_info_for_begin.data_collection_info.parent_id = (
+        TEST_DATA_COLLECTION_GROUP_ID
     )
     assert dummy_rotation_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
@@ -289,8 +288,9 @@ def test_update_deposition_with_group_id_updates(
     scan_data_info_for_begin,
     scan_data_info_for_update,
 ):
-    dummy_rotation_ispyb = StoreRotationInIspyb(
-        CONST.SIM.ISPYB_CONFIG, TEST_DATA_COLLECTION_GROUP_ID
+    dummy_rotation_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG)
+    scan_data_info_for_begin.data_collection_info.parent_id = (
+        TEST_DATA_COLLECTION_GROUP_ID
     )
     ispyb_ids = dummy_rotation_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
@@ -426,7 +426,8 @@ def test_store_rotation_scan_uses_supplied_dcgid(
 ):
     ispyb_conn.return_value.mx_acquisition = MagicMock()
     ispyb_conn.return_value.core = mock()
-    store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG, dcgid)
+    store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG)
+    scan_data_info_for_begin.data_collection_info.parent_id = dcgid
     ispyb_ids = store_in_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
     )
