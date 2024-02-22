@@ -14,11 +14,9 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     populate_xy_data_collection_info,
 )
 from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
-    Store2DGridscanInIspyb,
-)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+    StoreInIspyb,
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -146,7 +144,7 @@ def scan_data_info_for_begin(dummy_params):
         dummy_params.experiment_params.y_steps,
         dummy_params.experiment_params.y_step_size,
     )
-    return ScanDataInfo(
+    info = ScanDataInfo(
         data_collection_info=populate_remaining_data_collection_info(
             lambda: construct_comment_for_gridscan(
                 dummy_params, dummy_params.hyperion_params.ispyb_params, grid_scan_info
@@ -162,6 +160,7 @@ def scan_data_info_for_begin(dummy_params):
             dummy_params.hyperion_params.ispyb_params,
         ),
     )
+    return info
 
 
 def test_begin_deposition(
@@ -258,7 +257,7 @@ def test_update_deposition(
     mx_acq.upsert_data_collection_group.assert_called_once()
     mx_acq.upsert_data_collection.assert_called_once()
     assert dummy_2d_gridscan_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, [scan_data_info_for_begin]
+        ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]
     ) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
@@ -514,7 +513,7 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
 @patch("ispyb.open", autospec=True)
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     ispyb_conn,
-    dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
+    dummy_2d_gridscan_ispyb: StoreInIspyb,
     dummy_params: GridscanInternalParameters,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -540,7 +539,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
 
 def test_fail_result_run_results_in_bad_run_status(
     mock_ispyb_conn: MagicMock,
-    dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
+    dummy_2d_gridscan_ispyb: StoreInIspyb,
     dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -569,7 +568,7 @@ def test_fail_result_run_results_in_bad_run_status(
 
 def test_no_exception_during_run_results_in_good_run_status(
     mock_ispyb_conn: MagicMock,
-    dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
+    dummy_2d_gridscan_ispyb: StoreInIspyb,
     dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -599,7 +598,7 @@ def test_no_exception_during_run_results_in_good_run_status(
 
 def test_ispyb_deposition_comment_correct(
     mock_ispyb_conn: MagicMock,
-    dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
+    dummy_2d_gridscan_ispyb: StoreInIspyb,
     dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -625,7 +624,7 @@ def test_ispyb_deposition_comment_correct(
 @patch("ispyb.open", autospec=True)
 def test_ispyb_deposition_rounds_position_to_int(
     mock_ispyb_conn: MagicMock,
-    dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
+    dummy_2d_gridscan_ispyb: StoreInIspyb,
     dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -661,7 +660,7 @@ def test_ispyb_deposition_rounds_position_to_int(
 )
 def test_ispyb_deposition_rounds_box_size_int(
     bottom_right_from_top_left: MagicMock,
-    dummy_2d_gridscan_ispyb: Store2DGridscanInIspyb,
+    dummy_2d_gridscan_ispyb: StoreInIspyb,
     dummy_params: GridscanInternalParameters,
     raw,
     rounded,

@@ -1,7 +1,15 @@
 from dataclasses import asdict, dataclass
+from enum import Enum
 from typing import Optional
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
+
+
+class ExperimentType(Enum):
+    ROTATION = "SAD"
+    GRIDSCAN_2D = "mesh"
+    GRIDSCAN_3D = "Mesh3D"
+    CHARACTERIZATION = "Characterization"
 
 
 @dataclass()

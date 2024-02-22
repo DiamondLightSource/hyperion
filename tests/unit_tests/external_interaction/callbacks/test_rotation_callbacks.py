@@ -28,13 +28,10 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import ScanDataInfo, ExperimentType
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
-)
-from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
-    StoreRotationInIspyb,
 )
 from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
@@ -117,7 +114,7 @@ def fake_rotation_scan(
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_nexus_handler_gets_documents_in_mock_plan(
@@ -156,7 +153,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     autospec=True,
 )
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_nexus_handler_only_writes_once(
@@ -184,7 +181,7 @@ def test_nexus_handler_only_writes_once(
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_nexus_handler_triggers_write_file_when_told(
@@ -227,7 +224,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     cb.ispyb_handler.activity_gated_start = MagicMock(autospec=True)
     cb.ispyb_handler.activity_gated_stop = MagicMock(autospec=True)
     cb.ispyb_handler.activity_gated_event = MagicMock(autospec=True)
-    cb.ispyb_handler.ispyb = MagicMock(spec=StoreRotationInIspyb)
+    cb.ispyb_handler.ispyb = MagicMock(spec=StoreInIspyb)
     cb.ispyb_handler.params = params
     with pytest.raises(ISPyBDepositionNotMade):
         RE(fake_rotation_scan(params, cb))
@@ -241,9 +238,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
-@patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb"
-)
+@patch("hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb")
 def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zocalo(
     mock_store_in_ispyb_class,
     zocalo,
@@ -304,27 +299,27 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         assert callbacks.ispyb_handler.uid_to_finalize_on is not None
 
     with patch(
-        "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+        "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
         autospec=True,
     ):
         RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 
 
 ids = [
-    IspybIds(data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None),
-    IspybIds(data_collection_group_id=24, data_collection_ids=(48,), grid_ids=None),
-    IspybIds(data_collection_group_id=25, data_collection_ids=(51,), grid_ids=None),
-    IspybIds(data_collection_group_id=26, data_collection_ids=(111,), grid_ids=None),
-    IspybIds(data_collection_group_id=27, data_collection_ids=(238476,), grid_ids=None),
-    IspybIds(data_collection_group_id=36, data_collection_ids=(189765,), grid_ids=None),
-    IspybIds(data_collection_group_id=39, data_collection_ids=(0,), grid_ids=None),
-    IspybIds(data_collection_group_id=43, data_collection_ids=(89,), grid_ids=None),
+    IspybIds(data_collection_group_id=23, data_collection_ids=(45,)),
+    IspybIds(data_collection_group_id=24, data_collection_ids=(48,)),
+    IspybIds(data_collection_group_id=25, data_collection_ids=(51,)),
+    IspybIds(data_collection_group_id=26, data_collection_ids=(111,)),
+    IspybIds(data_collection_group_id=27, data_collection_ids=(238476,)),
+    IspybIds(data_collection_group_id=36, data_collection_ids=(189765,)),
+    IspybIds(data_collection_group_id=39, data_collection_ids=(0,)),
+    IspybIds(data_collection_group_id=43, data_collection_ids=(89,)),
 ]
 
 
 @pytest.mark.parametrize("ispyb_ids", ids)
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_ispyb_reuses_dcgid_on_same_sampleID(
@@ -335,9 +330,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
 ):
     cb = [RotationISPyBCallback()]
     cb[0].active = True
-    ispyb_ids = IspybIds(
-        data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None
-    )
+    ispyb_ids = IspybIds(data_collection_group_id=23, data_collection_ids=(45,))
     rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
 
     test_cases = zip(
@@ -373,7 +366,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_ispyb_specifies_experiment_type_if_supplied(
@@ -385,14 +378,14 @@ def test_ispyb_specifies_experiment_type_if_supplied(
     cb[0].active = True
     params.hyperion_params.ispyb_params.ispyb_experiment_type = "Characterization"
     rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
-        data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None
+        data_collection_group_id=23, data_collection_ids=(45,)
     )
 
     params.hyperion_params.ispyb_params.sample_id = "abc"
 
     RE(fake_rotation_scan(params, cb))
 
-    assert rotation_ispyb.call_args.args[1] == "Characterization"
+    assert rotation_ispyb.call_args.args[1] == ExperimentType.CHARACTERIZATION
 
 
 n_images_store_id = [
@@ -416,7 +409,7 @@ n_images_store_id = [
 
 @pytest.mark.parametrize("n_images,store_id", n_images_store_id)
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     new=MagicMock(),
 )
 def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
