@@ -5,10 +5,10 @@ import pytest
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-from unit_tests.conftest import from_file as default_raw_params
 
 
 @pytest.fixture

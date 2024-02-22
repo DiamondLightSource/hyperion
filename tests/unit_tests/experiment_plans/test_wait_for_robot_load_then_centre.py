@@ -12,13 +12,13 @@ from hyperion.experiment_plans.wait_for_robot_load_then_centre_plan import (
     WaitForRobotLoadThenCentreComposite,
     wait_for_robot_load_then_centre,
 )
+from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
 from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
     WaitForRobotLoadThenCentreInternalParameters,
 )
-from unit_tests.conftest import from_file as raw_params_from_file
 
 
 @pytest.fixture

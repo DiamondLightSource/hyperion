@@ -34,7 +34,6 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from ophyd_async.panda import PandA
 
-import unit_tests.conftest
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -53,6 +52,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
     DO_FGS,
     GRIDSCAN_AND_MOVE,
@@ -375,7 +375,7 @@ if __name__ == "__main__":
         GridscanInternalParameters,
     )
 
-    parameters = GridscanInternalParameters(**unit_tests.conftest.from_file())
+    parameters = GridscanInternalParameters(**external_parameters.conftest.from_file())
     subscriptions = XrayCentreCallbackCollection.setup()
 
     context = setup_context(wait_for_connection=True)
