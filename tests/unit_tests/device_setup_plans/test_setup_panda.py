@@ -58,8 +58,8 @@ def test_setup_panda_performs_correct_plans(mock_load_device):
         "setup", mock_load_device
     )
     mock_load_device.assert_called_once()
-    assert num_of_sets == 7
-    assert num_of_waits == 2
+    assert num_of_sets == 9
+    assert num_of_waits == 3
 
 
 @pytest.mark.parametrize(
@@ -156,5 +156,5 @@ def test_setup_panda_correctly_configures_table(
 # all the blocks which were enabled on setup are also disabled on tidyup
 def test_disarm_panda_disables_correct_blocks():
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions("disarm")
-    assert num_of_sets == 4
+    assert num_of_sets == 6
     assert num_of_waits == 1

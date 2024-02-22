@@ -24,6 +24,11 @@ class Enabled(Enum):
     DISABLED = "ZERO"
 
 
+class PcapArm(Enum):
+    ARMED = "Arm"
+    DISARMED = "Disarm"
+
+
 def get_seq_table(
     parameters: PandAGridScanParams,
     exposure_distance_mm,
@@ -154,6 +159,9 @@ def setup_panda_for_flyscan(
 
     yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
+    # Wait here since we need PCAP to be enabled before armed
+    yield from bps.abs_set(panda.pcap.enable, Enabled.ENABLED.value, wait=True)  # type: ignore
+
     yield from arm_panda_for_gridscan(panda, group="panda-config")
 
     yield from bps.wait(group="panda-config", timeout=GENERAL_TIMEOUT)
@@ -163,9 +171,11 @@ def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
     yield from bps.abs_set(panda.seq[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.pulse[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.counter[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
+    yield from bps.abs_set(panda.pcap.arm, PcapArm.ARMED.value, group=group)  # type: ignore
 
 
 def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenerator:
+    yield from bps.abs_set(panda.pcap.arm, PcapArm.DISARMED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.counter[1].enable, Enabled.DISABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.seq[1].enable, Enabled.DISABLED.value, group=group)
     yield from bps.abs_set(
@@ -173,4 +183,5 @@ def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenera
     )  # While disarming the clock shouldn't be necessery,
     # it will stop the eiger continuing to trigger if something in the sequencer table goes wrong
     yield from bps.abs_set(panda.pulse[1].enable, Enabled.DISABLED.value, group=group)
+    yield from bps.abs_set(panda.pcap.enable, Enabled.DISABLED.value, group=group)  # type: ignore
     yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
