@@ -11,10 +11,23 @@ from hyperion.parameters.constants import (
     ROTATION_OUTER_PLAN,
     ROTATION_PLAN_MAIN,
 )
-from unit_tests.external_interaction.callbacks.xray_centre.conftest import (
-    dummy_params,
-    dummy_params_2d,
+from hyperion.parameters.external_parameters import from_file
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
 )
+
+
+def dummy_params():
+    dummy_params = GridscanInternalParameters(**from_file())
+    return dummy_params
+
+
+def dummy_params_2d():
+    return GridscanInternalParameters(
+        **from_file(
+            "tests/test_data/parameter_json_files/test_parameter_defaults_2d.json"
+        )
+    )
 
 
 @pytest.fixture
