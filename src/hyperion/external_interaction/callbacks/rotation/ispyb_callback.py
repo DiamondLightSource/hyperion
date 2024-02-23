@@ -74,7 +74,18 @@ class RotationISPyBCallback(BaseISPyBCallback):
                     f"Collection has {n_images} images - treating as a genuine dataset - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
-            self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
+            experiment_type = (
+                self.params.hyperion_params.ispyb_params.ispyb_experiment_type
+            )
+            if experiment_type:
+                self.ispyb = StoreRotationInIspyb(
+                    self.ispyb_config,
+                    self.params,
+                    dcgid,
+                    experiment_type,
+                )
+            else:
+                self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
             ISPYB_LOGGER.info("Beginning ispyb deposition")
             self.ispyb_ids = self.ispyb.begin_deposition()
         ISPYB_LOGGER.info("ISPYB handler received start document.")

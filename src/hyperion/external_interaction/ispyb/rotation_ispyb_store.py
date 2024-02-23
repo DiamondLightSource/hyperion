@@ -22,8 +22,9 @@ class StoreRotationInIspyb(StoreInIspyb):
         ispyb_config,
         parameters: RotationInternalParameters,
         datacollection_group_id: int | None = None,
+        experiment_type: str = "SAD",
     ) -> None:
-        super().__init__(ispyb_config, "SAD")
+        super().__init__(ispyb_config, experiment_type)
         self.full_params: RotationInternalParameters = parameters
         self._ispyb_params: RotationIspybParams = (  # pyright: ignore
             parameters.hyperion_params.ispyb_params

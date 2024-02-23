@@ -63,6 +63,8 @@ class IspybParams(BaseModel):
     xtal_snapshots_omega_start: Optional[list[str]] = None
     xtal_snapshots_omega_end: Optional[list[str]] = None
 
+    ispyb_experiment_type: Optional[str] = None
+
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {np.ndarray: lambda a: a.tolist()}

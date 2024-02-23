@@ -30,6 +30,14 @@ EXPECTED_START_TIME = "2024-02-08 14:03:59"
 EXPECTED_END_TIME = "2024-02-08 14:04:01"
 
 
+@pytest.fixture
+def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
+    store_in_ispyb = StoreRotationInIspyb(
+        SIM_ISPYB_CONFIG, dummy_rotation_params, None, "Characterization"
+    )
+    return store_in_ispyb
+
+
 @patch(
     "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
@@ -96,6 +104,32 @@ def test_begin_deposition(
             "filetemplate": "file_name_0_master.h5",
             "nimages": 1800,
             "kappastart": 0,
+        },
+    )
+
+
+@patch(
+    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    new=MagicMock(return_value=EXPECTED_START_TIME),
+)
+def test_begin_deposition_with_alternate_experiment_type(
+    ispyb_conn_with_2x2_collections_and_grid_info,
+    dummy_rotation_ispyb_with_experiment_type,
+    dummy_rotation_params,
+):
+    assert dummy_rotation_ispyb_with_experiment_type.begin_deposition() == IspybIds(
+        data_collection_ids=TEST_DATA_COLLECTION_IDS[0],
+        data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+    )
+    mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
+    assert_upsert_call_with(
+        mx_acq.upsert_data_collection_group.mock_calls[0],
+        mx_acq.get_data_collection_group_params(),
+        {
+            "parentid": TEST_SESSION_ID,
+            "experimenttype": "Characterization",
+            "sampleid": TEST_SAMPLE_ID,
+            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
 

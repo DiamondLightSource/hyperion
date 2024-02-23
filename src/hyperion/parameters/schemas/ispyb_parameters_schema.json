@@ -74,6 +74,9 @@
         },
         "resolution": {
             "type": "number"
+        },
+        "ispyb_experiment_type": {
+            "type": ["string", "null"]
         }
     },
     "required": [

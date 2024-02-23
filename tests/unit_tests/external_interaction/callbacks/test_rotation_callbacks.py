@@ -370,6 +370,9 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
 ):
     cb = [RotationISPyBCallback()]
     cb[0].active = True
+    ispyb_ids = IspybIds(
+        data_collection_group_id=23, data_collection_ids=45, grid_ids=None
+    )
     rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
 
     test_cases = zip(
@@ -397,6 +400,30 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
             assert rotation_ispyb.call_args.args[2] is None
 
         last_dcgid = cb[0].ispyb_ids.data_collection_group_id
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    autospec=True,
+)
+def test_ispyb_specifies_experiment_type_if_supplied(
+    rotation_ispyb: MagicMock,
+    RE: RunEngine,
+    params: RotationInternalParameters,
+):
+    cb = [RotationISPyBCallback()]
+    cb[0].active = True
+    params.hyperion_params.ispyb_params.ispyb_experiment_type = "Characterization"
+    rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
+        data_collection_group_id=23, data_collection_ids=45, grid_ids=None
+    )
+
+    params.hyperion_params.ispyb_params.sample_id = "abc"
+
+    RE(fake_rotation_scan(params, cb))
+
+    assert rotation_ispyb.call_args.args[3] == "Characterization"
+    assert rotation_ispyb.call_args.args[2] is None
 
 
 n_images_store_id = [
