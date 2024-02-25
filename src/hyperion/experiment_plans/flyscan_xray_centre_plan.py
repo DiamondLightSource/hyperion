@@ -71,6 +71,8 @@ if TYPE_CHECKING:
         GridscanInternalParameters,
     )
 
+    PandaOrZebraGridscan = FastGridScan | PandAFastGridScan
+
 
 @dataclasses.dataclass
 class FlyScanXRayCentreComposite:
@@ -137,7 +139,7 @@ def set_aperture_for_bbox_size(
     yield from set_aperture()
 
 
-def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
+def wait_for_gridscan_valid(fgs_motors: PandaOrZebraGridscan, timeout=0.5):
     LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -161,6 +163,48 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     yield from bps.unstage(
         fgs_composite.zocalo
     )  # make sure we don't consume any other results
+
+
+def kickoff_and_complete_gridscan(
+    gridscan: PandaOrZebraGridscan,
+    eiger: EigerDetector,
+    synchrotron: Synchrotron,
+    zocalo_environment: str,
+):
+    @TRACER.start_as_current_span(DO_FGS)
+    @bpp.set_run_key_decorator(DO_FGS)
+    @bpp.run_decorator(
+        md={
+            "subplan_name": DO_FGS,
+            "zocalo_environment": zocalo_environment,
+        }
+    )
+    @bpp.contingency_decorator(
+        except_plan=lambda e: (yield from bps.stop(eiger)),
+        else_plan=lambda: (yield from bps.unstage(eiger)),
+    )
+    def do_fgs():
+        # Check topup gate
+        expected_images = yield from bps.rd(gridscan.expected_images)
+        exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)
+        LOGGER.info("waiting for topup if necessary...")
+        yield from check_topup_and_wait_if_necessary(
+            synchrotron,
+            expected_images * exposure_sec_per_image,
+            30.0,
+        )
+        LOGGER.info("Wait for all moves with no assigned group")
+        yield from bps.wait()
+        LOGGER.info("kicking off FGS")
+        yield from bps.kickoff(gridscan)
+        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
+        yield from bps.wait(
+            ZOCALO_STAGE_GROUP
+        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        LOGGER.info("completing FGS")
+        yield from bps.complete(gridscan, wait=True)
+
+    yield from do_fgs()
 
 
 @bpp.set_run_key_decorator(GRIDSCAN_MAIN_PLAN)
@@ -199,41 +243,16 @@ def run_gridscan(
 
     yield from wait_for_gridscan_valid(fgs_motors)
 
-    @bpp.set_run_key_decorator(DO_FGS)
-    @bpp.run_decorator(md={"subplan_name": DO_FGS})
-    @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(fgs_composite.eiger)),
-        else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
-    )
-    def do_fgs():
-        # Check topup gate
-        dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000.0
-        total_exposure = (
-            parameters.experiment_params.get_num_images() * dwell_time_in_s
-        )  # Expected exposure time for full scan
-        LOGGER.info("waiting for topup if necessary...")
-        yield from check_topup_and_wait_if_necessary(
-            fgs_composite.synchrotron,
-            total_exposure,
-            30.0,
-        )
-        LOGGER.info("Wait for all moves with no assigned group")
-        yield from bps.wait()
-        LOGGER.info("kicking off FGS")
-        yield from bps.kickoff(fgs_motors)
-        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
-        yield from bps.wait(
-            ZOCALO_STAGE_GROUP
-        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
-        LOGGER.info("completing FGS")
-        yield from bps.complete(fgs_motors, wait=True)
-
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
     yield from bps.stage(fgs_composite.eiger)
 
-    with TRACER.start_span("do_fgs"):
-        yield from do_fgs()
+    yield from kickoff_and_complete_gridscan(
+        fgs_motors,
+        fgs_composite.eiger,
+        fgs_composite.synchrotron,
+        parameters.hyperion_params.zocalo_environment,
+    )
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
