@@ -16,7 +16,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.log import ISPYB_LOGGER
-from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
+from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 
 class XrayCentreZocaloCallback(PlanReactiveCallback):
     """Callback class to handle the triggering of Zocalo processing.
-    Sends zocalo a run_start signal on recieving a start document for the 'do_fgs'
-    sub-plan, and sends a run_end signal on recieving a stop document for the#
+    Sends zocalo a run_start signal on receiving a start document for the 'do_fgs'
+    sub-plan, and sends a run_end signal on receiving a stop document for the#
     'run_gridscan' sub-plan.
 
     Needs to be connected to an ISPyBCallback subscribed to the same run in order
@@ -69,7 +69,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
 
-        if doc.get("subplan_name") == "do_fgs":
+        if doc.get("subplan_name") == DO_FGS:
             self.do_fgs_uid = doc.get("uid")
             if self.ispyb.ispyb_ids.data_collection_ids is not None:
                 assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
