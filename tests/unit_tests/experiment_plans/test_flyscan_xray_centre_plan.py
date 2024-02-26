@@ -12,6 +12,7 @@ from dodal.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
@@ -25,6 +26,7 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
+    kickoff_and_complete_gridscan,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_gridscan_valid,
@@ -37,6 +39,9 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
+)
+from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
+    XrayCentreZocaloCallback,
 )
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
@@ -725,3 +730,33 @@ class TestFlyscanXrayCentrePlan:
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+    autospec=True,
+)
+def test_kickoff_and_complete_gridscan_triggers_zocalo(
+    mock_zocalo_trigger_class: MagicMock,
+    RE: RunEngine,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
+):
+    mock_ispyb_handler = MagicMock()
+    mock_ispyb_handler.ispyb_ids.data_collection_ids = (100, 200)
+    zocalo_env = "dev_env"
+    zocalo_callback = XrayCentreZocaloCallback(mock_ispyb_handler)
+    zocalo_callback.active = True
+    mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+    RE.subscribe(zocalo_callback)
+    RE(
+        kickoff_and_complete_gridscan(
+            fake_fgs_composite.fast_grid_scan,
+            MagicMock(spec=EigerDetector),
+            fake_fgs_composite.synchrotron,
+            zocalo_env,
+        )
+    )
+
+    mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
+    assert mock_zocalo_trigger.run_start.call_count == 2
+    assert mock_zocalo_trigger.run_end.call_count == 2

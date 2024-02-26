@@ -16,10 +16,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.log import ISPYB_LOGGER
-from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.constants import DO_FGS
 
 if TYPE_CHECKING:
     from event_model.documents import RunStart, RunStop
@@ -57,19 +54,10 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.info("XRC Zocalo handler received start document.")
-
-        if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
-            ISPYB_LOGGER.info(
-                "Zocalo callback recieved start document with experiment parameters."
-            )
-            params = GridscanInternalParameters.from_json(
-                doc.get("hyperion_internal_parameters")
-            )
-            zocalo_environment = params.hyperion_params.zocalo_environment
+        if doc.get("subplan_name") == DO_FGS:
+            assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
-
-        if doc.get("subplan_name") == DO_FGS:
             self.do_fgs_uid = doc.get("uid")
             if self.ispyb.ispyb_ids.data_collection_ids is not None:
                 assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
