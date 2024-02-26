@@ -137,3 +137,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ISPYB_LOGGER.warning(
                 "ISPyB deposition not initialised, can't update comment."
             )
+
+    def append_to_comment(self, comment: str):
+        for id in self.ispyb_ids.data_collection_ids:
+            self._append_to_comment(id, comment)

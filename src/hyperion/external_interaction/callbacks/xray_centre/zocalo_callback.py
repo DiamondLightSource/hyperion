@@ -13,7 +13,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import DO_FGS
 
@@ -56,8 +55,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
             self.do_fgs_uid = doc.get("uid")
-            if self.ispyb.ispyb_ids.data_collection_ids is not None:
-                assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
+            if self.ispyb.ispyb_ids.data_collection_ids:
                 for id in self.ispyb.ispyb_ids.data_collection_ids:
                     self.zocalo_interactor.run_start(id)
             else:
@@ -68,8 +66,8 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
-            if self.ispyb.ispyb_ids == IspybIds():
+            if self.ispyb.ispyb_ids.data_collection_ids:
+                for id in self.ispyb.ispyb_ids.data_collection_ids:
+                    self.zocalo_interactor.run_end(id)
+            else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
-            assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, tuple)
-            for id in self.ispyb.ispyb_ids.data_collection_ids:
-                self.zocalo_interactor.run_end(id)

@@ -50,14 +50,12 @@ class RotationZocaloCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
-            if self.ispyb.ispyb_ids.data_collection_ids is not None:
+            if self.ispyb.ispyb_ids.data_collection_ids:
                 ISPYB_LOGGER.info(
-                    f"Zocalo callback submitting job {self.ispyb.ispyb_ids.data_collection_ids}"
+                    f"Zocalo callback submitting job {self.ispyb.ispyb_ids.data_collection_ids[0]}"
                 )
-                assert isinstance(self.ispyb.ispyb_ids.data_collection_ids, int)
-                self.zocalo_interactor.run_start(
-                    self.ispyb.ispyb_ids.data_collection_ids
-                )
-                self.zocalo_interactor.run_end(self.ispyb.ispyb_ids.data_collection_ids)
+                dcid = self.ispyb.ispyb_ids.data_collection_ids[0]
+                self.zocalo_interactor.run_start(dcid)
+                self.zocalo_interactor.run_end(dcid)
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")

@@ -107,7 +107,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                     )
             else:
                 crystal_summary += "Zocalo found no crystals in this gridscan."
-            assert isinstance(self.ispyb_ids.data_collection_ids, tuple)
+            assert (
+                self.ispyb_ids.data_collection_ids
+            ), "No data collection to add results to"
             self.ispyb.append_to_comment(
                 self.ispyb_ids.data_collection_ids[0], crystal_summary
             )
@@ -126,8 +128,3 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
             super().activity_gated_stop(doc)
-
-    def append_to_comment(self, comment: str):
-        assert isinstance(self.ispyb_ids.data_collection_ids, tuple)
-        for id in self.ispyb_ids.data_collection_ids:
-            self._append_to_comment(id, comment)

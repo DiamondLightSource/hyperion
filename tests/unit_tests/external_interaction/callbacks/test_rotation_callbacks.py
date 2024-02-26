@@ -237,7 +237,7 @@ def test_zocalo_start_and_end_triggered_once(
 
     def set_ispyb_ids(cbs):
         cbs.ispyb_handler.ispyb_ids = IspybIds(
-            data_collection_ids=0, data_collection_group_id=0
+            data_collection_ids=(0,), data_collection_group_id=0
         )
 
     RE(fake_rotation_scan(params, cb, after_main_do=set_ispyb_ids))
@@ -288,10 +288,10 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
 ):
     mock_store_in_ispyb_instance = MagicMock(spec=StoreInIspyb)
     mock_store_in_ispyb_instance.begin_deposition.return_value = IspybIds(
-        data_collection_group_id=0, data_collection_ids=0
+        data_collection_group_id=0, data_collection_ids=(0,)
     )
     mock_store_in_ispyb_instance.update_deposition.return_value = IspybIds(
-        data_collection_group_id=0, data_collection_ids=0
+        data_collection_group_id=0, data_collection_ids=(0,)
     )
     mock_store_in_ispyb_class.return_value = mock_store_in_ispyb_instance
     nexus_writer.return_value.full_filename = "test_full_filename"
@@ -340,7 +340,7 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
 
     def after_main_do(callbacks: RotationCallbackCollection):
         cb.ispyb_handler.ispyb_ids = IspybIds(
-            data_collection_ids=0, data_collection_group_id=0
+            data_collection_ids=(0,), data_collection_group_id=0
         )
         assert callbacks.ispyb_handler.activity_gated_start.call_count == 2
         assert callbacks.ispyb_handler.uid_to_finalize_on is not None
@@ -353,14 +353,14 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
 
 
 ids = [
-    IspybIds(data_collection_group_id=23, data_collection_ids=45, grid_ids=None),
-    IspybIds(data_collection_group_id=24, data_collection_ids=48, grid_ids=None),
-    IspybIds(data_collection_group_id=25, data_collection_ids=51, grid_ids=None),
-    IspybIds(data_collection_group_id=26, data_collection_ids=111, grid_ids=None),
-    IspybIds(data_collection_group_id=27, data_collection_ids=238476, grid_ids=None),
-    IspybIds(data_collection_group_id=36, data_collection_ids=189765, grid_ids=None),
-    IspybIds(data_collection_group_id=39, data_collection_ids=0, grid_ids=None),
-    IspybIds(data_collection_group_id=43, data_collection_ids=89, grid_ids=None),
+    IspybIds(data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None),
+    IspybIds(data_collection_group_id=24, data_collection_ids=(48,), grid_ids=None),
+    IspybIds(data_collection_group_id=25, data_collection_ids=(51,), grid_ids=None),
+    IspybIds(data_collection_group_id=26, data_collection_ids=(111,), grid_ids=None),
+    IspybIds(data_collection_group_id=27, data_collection_ids=(238476,), grid_ids=None),
+    IspybIds(data_collection_group_id=36, data_collection_ids=(189765,), grid_ids=None),
+    IspybIds(data_collection_group_id=39, data_collection_ids=(0,), grid_ids=None),
+    IspybIds(data_collection_group_id=43, data_collection_ids=(89,), grid_ids=None),
 ]
 
 
