@@ -47,8 +47,6 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
         ispyb_handler: GridscanISPyBCallback,
     ):
         super().__init__(ISPYB_LOGGER)
-        self.processing_start_time = 0.0
-        self.processing_time = 0.0
         self.do_fgs_uid: Optional[str] = None
         self.ispyb: GridscanISPyBCallback = ispyb_handler
 

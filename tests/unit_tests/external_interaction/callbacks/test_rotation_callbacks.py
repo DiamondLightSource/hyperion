@@ -52,10 +52,18 @@ def params():
 
 
 @pytest.fixture
-def test_start_doc(params: RotationInternalParameters):
+def test_outer_start_doc(params: RotationInternalParameters):
     return {
         "subplan_name": ROTATION_OUTER_PLAN,
         "hyperion_internal_parameters": params.json(),
+    }
+
+
+@pytest.fixture
+def test_main_start_doc():
+    return {
+        "subplan_name": ROTATION_PLAN_MAIN,
+        "zocalo_environment": "dev_zocalo",
     }
 
 
@@ -92,9 +100,7 @@ def fake_rotation_scan(
 
         @bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
         @bpp.run_decorator(
-            md={
-                "subplan_name": ROTATION_PLAN_MAIN,
-            }
+            md={"subplan_name": ROTATION_PLAN_MAIN, "zocalo_environment": "dev_zocalo"}
         )
         def fake_main_plan():
             yield from read_hardware_for_ispyb_during_collection(attenuator, flux, dcm)
@@ -156,7 +162,7 @@ def test_nexus_handler_only_writes_once(
     nexus_writer: MagicMock,
     RE: RunEngine,
     params: RotationInternalParameters,
-    test_start_doc,
+    test_outer_start_doc,
 ):
     nexus_writer.return_value.full_filename = "test_full_filename"
     with patch(
@@ -246,7 +252,7 @@ def test_zocalo_start_and_end_triggered_once(
     autospec=True,
 )
 def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
-    zocalo, RE: RunEngine, params: RotationInternalParameters, test_start_doc
+    zocalo, RE: RunEngine, params: RotationInternalParameters, test_outer_start_doc
 ):
     cb = RotationCallbackCollection.setup()
     activate_callbacks(cb)
@@ -277,7 +283,8 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
     nexus_writer,
     RE: RunEngine,
     params: RotationInternalParameters,
-    test_start_doc,
+    test_outer_start_doc,
+    test_main_start_doc,
 ):
     mock_store_in_ispyb_instance = MagicMock(spec=StoreInIspyb)
     mock_store_in_ispyb_instance.begin_deposition.return_value = IspybIds(
@@ -290,8 +297,8 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
     nexus_writer.return_value.full_filename = "test_full_filename"
     cb = RotationCallbackCollection.setup()
     activate_callbacks(cb)
-    cb.nexus_handler.activity_gated_start(test_start_doc)
-    cb.zocalo_handler.activity_gated_start(test_start_doc)
+    cb.nexus_handler.activity_gated_start(test_outer_start_doc)
+    cb.zocalo_handler.activity_gated_start(test_main_start_doc)
 
     cb.zocalo_handler.zocalo_interactor.run_start = MagicMock()
     cb.zocalo_handler.zocalo_interactor.run_end = MagicMock()
@@ -317,7 +324,7 @@ def test_zocalo_starts_on_opening_and_ispyb_on_main_so_ispyb_triggered_before_zo
     autospec=True,
 )
 def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
-    zocalo, RE: RunEngine, params: RotationInternalParameters, test_start_doc
+    zocalo, RE: RunEngine, params: RotationInternalParameters, test_outer_start_doc
 ):
     cb = RotationCallbackCollection.setup()
     activate_callbacks(cb)

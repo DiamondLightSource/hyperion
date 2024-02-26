@@ -14,10 +14,7 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
-from hyperion.parameters.constants import ROTATION_OUTER_PLAN
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.constants import ROTATION_PLAN_MAIN
 
 if TYPE_CHECKING:
     from event_model import RunStart, RunStop
@@ -38,15 +35,12 @@ class RotationZocaloCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
-        if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
+        if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.run_uid = doc.get("uid")
             ISPYB_LOGGER.info(
-                "Zocalo callback recieved start document with experiment parameters."
+                "Zocalo callback received start document with experiment parameters."
             )
-            params = RotationInternalParameters.from_json(
-                doc.get("hyperion_internal_parameters")
-            )
-            zocalo_environment = params.hyperion_params.zocalo_environment
+            assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
 
