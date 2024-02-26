@@ -107,7 +107,7 @@ def run_zocalo_with_dev_ispyb(
                 assert isinstance(zc.ispyb.ispyb_ids.data_collection_ids, tuple)
                 for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
                     zc.zocalo_interactor.run_start(dcid)
-                zc.ispyb.processing_start_time = time()
+                zc.ispyb._processing_start_time = time()
                 for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
                     zc.zocalo_interactor.run_end(dcid)
 

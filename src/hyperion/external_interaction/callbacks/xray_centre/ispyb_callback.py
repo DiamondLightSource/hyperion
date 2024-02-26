@@ -23,7 +23,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
+from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -54,9 +54,12 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.params: GridscanInternalParameters
         self.ispyb: StoreGridscanInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
-        self.processing_start_time: float | None = None
+        self._start_of_fgs_uid: str | None = None
+        self._processing_start_time: float | None = None
 
     def activity_gated_start(self, doc: RunStart):
+        if doc.get("subplan_name") == DO_FGS:
+            self._start_of_fgs_uid = doc.get("uid")
         if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_LOGGER.info(
@@ -79,8 +82,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == ZOCALO_READING_PLAN_NAME:
             crystal_summary = ""
-            if self.processing_start_time is not None:
-                proc_time = time() - self.processing_start_time
+            if self._processing_start_time is not None:
+                proc_time = time() - self._processing_start_time
                 crystal_summary = f"Zocalo processing took {proc_time:.2f} s. "
 
             bboxes = []
@@ -113,6 +116,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return doc
 
     def activity_gated_stop(self, doc: RunStop):
+        if doc.get("run_start") == self._start_of_fgs_uid:
+            self._processing_start_time = time()
         if doc.get("run_start") == self.uid_to_finalize_on:
             ISPYB_LOGGER.info(
                 "ISPyB callback received stop document corresponding to start document "

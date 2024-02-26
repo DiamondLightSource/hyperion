@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents import Event, EventDescriptor, RunStop
 
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -188,3 +189,12 @@ class TestData:
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
     }
+    test_descriptor_document_zocalo_reading: EventDescriptor = {
+        "uid": "unique_id_zocalo_reading",
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "name": ZOCALO_READING_PLAN_NAME,
+    }  # type:ignore
+    test_zocalo_reading_event: Event = {
+        "descriptor": "unique_id_zocalo_reading",
+        "data": {"zocalo-results": []},
+    }  # type:ignore
