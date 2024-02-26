@@ -176,9 +176,9 @@ class TestXrayCentreIspybHandler:
     ):
         ispyb_handler = GridscanISPyBCallback()
 
-        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_start(td.test_start_document)  # type:ignore
 
-        ispyb_handler.activity_gated_start(td.test_do_fgs_start_document)
+        ispyb_handler.activity_gated_start(td.test_do_fgs_start_document)  # type:ignore
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
         ispyb_handler.activity_gated_descriptor(
@@ -187,6 +187,6 @@ class TestXrayCentreIspybHandler:
         ispyb_handler.activity_gated_event(td.test_zocalo_reading_event)
 
         assert (
-            ispyb_handler.ispyb.append_to_comment.call_args.args[1]
+            ispyb_handler.ispyb.append_to_comment.call_args.args[1]  # type:ignore
             == "Zocalo processing took 98.00 s. Zocalo found no crystals in this gridscan."
         )
