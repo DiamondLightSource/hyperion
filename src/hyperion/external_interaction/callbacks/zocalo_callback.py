@@ -9,52 +9,47 @@ from dodal.devices.zocalo import (
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
-from hyperion.parameters.constants import DO_FGS
 
 if TYPE_CHECKING:
     from event_model.documents import RunStart, RunStop
 
 
-class XrayCentreZocaloCallback(PlanReactiveCallback):
+class ZocaloCallback(PlanReactiveCallback):
     """Callback class to handle the triggering of Zocalo processing.
-    Sends zocalo a run_start signal on receiving a start document for the 'do_fgs'
-    sub-plan, and sends a run_end signal on receiving a stop document for the#
-    'run_gridscan' sub-plan.
+    Sends zocalo a run_start signal on receiving a start document for the specified
+    sub-plan, and sends a run_end signal on receiving a stop document for the same plan.
+
+    The metadata of the sub-plan this starts on must include a zocalo_environment.
 
     Needs to be connected to an ISPyBCallback subscribed to the same run in order
     to have access to the deposition numbers to pass on to Zocalo.
-
-    To use, subscribe the Bluesky RunEngine to an instance of this class.
-    E.g.:
-        nexus_file_handler_callback = NexusFileCallback(parameters)
-        RE.subscribe(nexus_file_handler_callback)
-    Or decorate a plan using bluesky.preprocessors.subs_decorator.
-
-    See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
-
-    Usually used as part of an FGSCallbackCollection.
     """
 
     def __init__(
         self,
-        ispyb_handler: GridscanISPyBCallback,
+        ispyb_handler: GridscanISPyBCallback | RotationISPyBCallback,
+        plan_name_to_trigger_on: str,
     ):
         super().__init__(ISPYB_LOGGER)
-        self.do_fgs_uid: Optional[str] = None
-        self.ispyb: GridscanISPyBCallback = ispyb_handler
+        self.run_uid: Optional[str] = None
+        self.ispyb: GridscanISPyBCallback | RotationISPyBCallback = ispyb_handler
+        self.plan_name_to_trigger_on = plan_name_to_trigger_on
 
     def activity_gated_start(self, doc: RunStart):
-        ISPYB_LOGGER.info("XRC Zocalo handler received start document.")
-        if doc.get("subplan_name") == DO_FGS:
+        ISPYB_LOGGER.info("Zocalo handler received start document.")
+        if doc.get("subplan_name") == self.plan_name_to_trigger_on:
             assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
-            self.do_fgs_uid = doc.get("uid")
+            self.run_uid = doc.get("uid")
             if self.ispyb.ispyb_ids.data_collection_ids:
                 for id in self.ispyb.ispyb_ids.data_collection_ids:
                     self.zocalo_interactor.run_start(id)
@@ -62,7 +57,7 @@ class XrayCentreZocaloCallback(PlanReactiveCallback):
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 
     def activity_gated_stop(self, doc: RunStop):
-        if doc.get("run_start") == self.do_fgs_uid:
+        if doc.get("run_start") == self.run_uid:
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )

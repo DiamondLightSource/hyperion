@@ -40,8 +40,8 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
-    XrayCentreZocaloCallback,
+from hyperion.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
 )
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
@@ -51,6 +51,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
+    DO_FGS,
     GRIDSCAN_OUTER_PLAN,
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -351,7 +352,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
     @patch(
-        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+        "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
@@ -668,7 +669,7 @@ class TestFlyscanXrayCentrePlan:
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(
-            "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+            "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
             [RE.subscribe(cb) for cb in list(mock_subscriptions)]
@@ -733,7 +734,7 @@ class TestFlyscanXrayCentrePlan:
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+    "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
 def test_kickoff_and_complete_gridscan_triggers_zocalo(
@@ -744,7 +745,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     mock_ispyb_handler = MagicMock()
     mock_ispyb_handler.ispyb_ids.data_collection_ids = (100, 200)
     zocalo_env = "dev_env"
-    zocalo_callback = XrayCentreZocaloCallback(mock_ispyb_handler)
+    zocalo_callback = ZocaloCallback(mock_ispyb_handler, DO_FGS)
     zocalo_callback.active = True
     mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
     RE.subscribe(zocalo_callback)

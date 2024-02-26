@@ -12,17 +12,14 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from hyperion.external_interaction.callbacks.rotation.zocalo_callback import (
-    RotationZocaloCallback,
-)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
-    XrayCentreZocaloCallback,
+from hyperion.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
 )
 from hyperion.log import (
     ISPYB_LOGGER,
@@ -31,7 +28,11 @@ from hyperion.log import (
     dc_group_id_filter,
 )
 from hyperion.parameters.cli import parse_callback_dev_mode_arg
-from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS
+from hyperion.parameters.constants import (
+    CALLBACK_0MQ_PROXY_PORTS,
+    DO_FGS,
+    ROTATION_PLAN_MAIN,
+)
 
 LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
@@ -43,10 +44,10 @@ def setup_callbacks():
     return [
         GridscanNexusFileCallback(),
         gridscan_ispyb,
-        XrayCentreZocaloCallback(gridscan_ispyb),
+        ZocaloCallback(gridscan_ispyb, DO_FGS),
         RotationNexusFileCallback(),
         rotation_ispyb,
-        RotationZocaloCallback(rotation_ispyb),
+        ZocaloCallback(rotation_ispyb, ROTATION_PLAN_MAIN),
     ]
 
 

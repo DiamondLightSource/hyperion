@@ -42,10 +42,10 @@ def init_cbs_with_docs_and_mock_zocalo_and_ispyb(
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+    "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
     new=MagicMock(),
 )
-class TestXrayCentreZocaloHandler:
+class TestZocaloHandler:
     def test_execution_of_run_gridscan_triggers_zocalo_calls(
         self,
         mock_ispyb_update_time_and_status: MagicMock,

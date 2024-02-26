@@ -11,9 +11,10 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
-    XrayCentreZocaloCallback,
+from hyperion.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
 )
+from hyperion.parameters.constants import DO_FGS
 
 
 @dataclass(frozen=True, order=True)
@@ -24,13 +25,13 @@ class XrayCentreCallbackCollection(AbstractPlanCallbackCollection):
 
     nexus_handler: GridscanNexusFileCallback
     ispyb_handler: GridscanISPyBCallback
-    zocalo_handler: XrayCentreZocaloCallback
+    zocalo_handler: ZocaloCallback
 
     @classmethod
     def setup(cls):
         nexus_handler = GridscanNexusFileCallback()
         ispyb_handler = GridscanISPyBCallback()
-        zocalo_handler = XrayCentreZocaloCallback(ispyb_handler)
+        zocalo_handler = ZocaloCallback(ispyb_handler, DO_FGS)
         callback_collection = cls(
             nexus_handler=nexus_handler,
             ispyb_handler=ispyb_handler,

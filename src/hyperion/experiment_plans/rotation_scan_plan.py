@@ -268,7 +268,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
             "subplan_name": ROTATION_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "RotationZocaloCallback",
+                "ZocaloCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],

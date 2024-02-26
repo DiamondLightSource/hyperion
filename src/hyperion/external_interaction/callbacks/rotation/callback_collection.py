@@ -11,9 +11,10 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from hyperion.external_interaction.callbacks.rotation.zocalo_callback import (
-    RotationZocaloCallback,
+from hyperion.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
 )
+from hyperion.parameters.constants import ROTATION_PLAN_MAIN
 
 
 @dataclass(frozen=True, order=True)
@@ -23,13 +24,13 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
 
     nexus_handler: RotationNexusFileCallback
     ispyb_handler: RotationISPyBCallback
-    zocalo_handler: RotationZocaloCallback
+    zocalo_handler: ZocaloCallback
 
     @classmethod
     def setup(cls):
         nexus_handler = RotationNexusFileCallback()
         ispyb_handler = RotationISPyBCallback()
-        zocalo_handler = RotationZocaloCallback(ispyb_handler)
+        zocalo_handler = ZocaloCallback(ispyb_handler, ROTATION_PLAN_MAIN)
         callback_collection = cls(
             nexus_handler=nexus_handler,
             ispyb_handler=ispyb_handler,
