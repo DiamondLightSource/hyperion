@@ -8,6 +8,9 @@ from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
+)
 
 
 def populate_data_collection_info(grid_scan_info: GridScanInfo):
@@ -60,3 +63,43 @@ def populate_data_collection_grid_info(grid_scan_info: GridScanInfo):
         snaked=True,
     )
     return dc_grid_info
+
+
+def grid_scan_xy_from_internal_params(
+    params: GridscanInternalParameters,
+) -> GridScanInfo:
+    return GridScanInfo(
+        [
+            int(params.hyperion_params.ispyb_params.upper_left[0]),
+            int(params.hyperion_params.ispyb_params.upper_left[1]),
+        ],
+        params.experiment_params.y_steps,
+        params.experiment_params.y_step_size,
+        params.hyperion_params.ispyb_params.microns_per_pixel_y,
+        params.experiment_params.x_steps,
+        params.experiment_params.x_step_size,
+        params.hyperion_params.ispyb_params.microns_per_pixel_x,
+        params.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
+        params.hyperion_params.detector_params.omega_start,
+        params.hyperion_params.detector_params.run_number,  # type:ignore
+    )
+
+
+def grid_scan_xz_from_internal_params(
+    params: GridscanInternalParameters,
+) -> GridScanInfo:
+    return GridScanInfo(
+        [
+            int(params.hyperion_params.ispyb_params.upper_left[0]),
+            int(params.hyperion_params.ispyb_params.upper_left[2]),
+        ],
+        params.experiment_params.z_steps,
+        params.experiment_params.z_step_size,
+        params.hyperion_params.ispyb_params.microns_per_pixel_y,
+        params.experiment_params.x_steps,
+        params.experiment_params.x_step_size,
+        params.hyperion_params.ispyb_params.microns_per_pixel_x,
+        params.hyperion_params.ispyb_params.xtal_snapshots_omega_end or [],
+        params.hyperion_params.detector_params.omega_start + 90,
+        params.hyperion_params.detector_params.run_number + 1,  # type:ignore
+    )

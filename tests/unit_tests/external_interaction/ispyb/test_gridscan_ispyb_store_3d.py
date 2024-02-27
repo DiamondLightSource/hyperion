@@ -4,13 +4,14 @@ import numpy as np
 import pytest
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    GridScanInfo,
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
+    grid_scan_xy_from_internal_params,
+    grid_scan_xz_from_internal_params,
     populate_data_collection_grid_info,
     populate_data_collection_info,
 )
@@ -65,18 +66,7 @@ def dummy_collection_group_info(dummy_params_3d):
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def scan_data_info_for_begin(dummy_params_3d: GridscanInternalParameters):
-    grid_scan_info = GridScanInfo(
-        dummy_params_3d.hyperion_params.ispyb_params.upper_left,
-        dummy_params_3d.experiment_params.y_steps,
-        dummy_params_3d.experiment_params.y_step_size,
-        dummy_params_3d.hyperion_params.ispyb_params.microns_per_pixel_y,
-        dummy_params_3d.experiment_params.x_steps,
-        dummy_params_3d.experiment_params.x_step_size,
-        dummy_params_3d.hyperion_params.ispyb_params.microns_per_pixel_x,
-        dummy_params_3d.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
-        dummy_params_3d.hyperion_params.detector_params.omega_start,
-        dummy_params_3d.hyperion_params.detector_params.run_number,  # type:ignore
-    )
+    grid_scan_info = grid_scan_xy_from_internal_params(dummy_params_3d)
     return ScanDataInfo(
         data_collection_info=populate_remaining_data_collection_info(
             lambda: construct_comment_for_gridscan(grid_scan_info),
@@ -96,22 +86,7 @@ def scan_data_info_for_begin(dummy_params_3d: GridscanInternalParameters):
 def scan_data_infos_for_update(
     scan_xy_data_info_for_update, dummy_params: GridscanInternalParameters
 ):
-    upper_left = dummy_params.hyperion_params.ispyb_params.upper_left
-    grid_scan_info = GridScanInfo(
-        [
-            int(upper_left[0]),
-            int(upper_left[2]),
-        ],
-        dummy_params.experiment_params.z_steps,
-        dummy_params.experiment_params.z_step_size,
-        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
-        dummy_params.experiment_params.x_steps,
-        dummy_params.experiment_params.x_step_size,
-        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
-        dummy_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end or [],
-        dummy_params.hyperion_params.detector_params.omega_start + 90,
-        dummy_params.hyperion_params.detector_params.run_number + 1,  # type:ignore
-    )
+    grid_scan_info = grid_scan_xz_from_internal_params(dummy_params)
     xz_data_collection_info = populate_data_collection_info(grid_scan_info)
 
     def comment_constructor():

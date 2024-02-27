@@ -5,12 +5,12 @@ import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    GridScanInfo,
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
+    grid_scan_xy_from_internal_params,
     populate_data_collection_info,
 )
 from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
@@ -141,18 +141,7 @@ def dummy_collection_group_info(dummy_params: GridscanInternalParameters):
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def scan_data_info_for_begin(dummy_params: GridscanInternalParameters):
-    grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
-        dummy_params.experiment_params.y_steps,
-        dummy_params.experiment_params.y_step_size,
-        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
-        dummy_params.experiment_params.x_steps,
-        dummy_params.experiment_params.x_step_size,
-        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
-        dummy_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
-        dummy_params.hyperion_params.detector_params.omega_start,
-        dummy_params.hyperion_params.detector_params.run_number,  # type:ignore
-    )
+    grid_scan_info = grid_scan_xy_from_internal_params(dummy_params)
     return ScanDataInfo(
         data_collection_info=populate_remaining_data_collection_info(
             lambda: construct_comment_for_gridscan(grid_scan_info),
@@ -633,18 +622,7 @@ def test_ispyb_deposition_rounds_position_to_int(
 ):
     dummy_params.hyperion_params.ispyb_params.upper_left = np.array([0.01, 100, 50])
 
-    grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
-        dummy_params.experiment_params.y_steps,
-        dummy_params.experiment_params.y_step_size,
-        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
-        dummy_params.experiment_params.x_steps,
-        dummy_params.experiment_params.x_step_size,
-        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
-        dummy_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
-        dummy_params.hyperion_params.detector_params.omega_start,
-        dummy_params.hyperion_params.detector_params.run_number,  # type:ignore
-    )
+    grid_scan_info = grid_scan_xy_from_internal_params(dummy_params)
 
     assert construct_comment_for_gridscan(grid_scan_info) == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
@@ -677,18 +655,10 @@ def test_ispyb_deposition_rounds_box_size_int(
 ):
     dummy_params.experiment_params.x_steps = 0
     dummy_params.experiment_params.x_step_size = raw
-    grid_scan_info = GridScanInfo(
-        [0, 0],
-        0,
-        raw,
-        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
-        dummy_params.experiment_params.x_steps,
-        dummy_params.experiment_params.x_step_size,
-        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
-        dummy_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
-        dummy_params.hyperion_params.detector_params.omega_start,
-        dummy_params.hyperion_params.detector_params.run_number,  # type:ignore
-    )
+    grid_scan_info = grid_scan_xy_from_internal_params(dummy_params)
+    grid_scan_info.upper_left = [0, 0]
+    grid_scan_info.y_steps = 0
+    grid_scan_info.y_step_size = raw
     bottom_right_from_top_left.return_value = grid_scan_info.upper_left
 
     assert construct_comment_for_gridscan(grid_scan_info) == (

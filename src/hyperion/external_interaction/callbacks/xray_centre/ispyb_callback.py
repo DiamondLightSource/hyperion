@@ -17,6 +17,8 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
+    grid_scan_xy_from_internal_params,
+    grid_scan_xz_from_internal_params,
     populate_data_collection_grid_info,
     populate_data_collection_info,
 )
@@ -149,39 +151,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return self.ispyb.update_deposition(data_collection_group_info, scan_data_infos)
 
     def populate_xy_scan_data_info(self, params: GridscanInternalParameters):
-        grid_scan_info = GridScanInfo(
-            [
-                int(params.hyperion_params.ispyb_params.upper_left[0]),
-                int(params.hyperion_params.ispyb_params.upper_left[1]),
-            ],
-            params.experiment_params.y_steps,
-            params.experiment_params.y_step_size,
-            params.hyperion_params.ispyb_params.microns_per_pixel_y,
-            params.experiment_params.x_steps,
-            params.experiment_params.x_step_size,
-            params.hyperion_params.ispyb_params.microns_per_pixel_x,
-            params.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
-            params.hyperion_params.detector_params.omega_start,
-            params.hyperion_params.detector_params.run_number,  # type:ignore
-        )
+        grid_scan_info = grid_scan_xy_from_internal_params(params)
         return self._populate_all_data(grid_scan_info, params.hyperion_params)
 
     def populate_xz_scan_data_info(self, params: GridscanInternalParameters):
-        grid_scan_info = GridScanInfo(
-            [
-                int(params.hyperion_params.ispyb_params.upper_left[0]),
-                int(params.hyperion_params.ispyb_params.upper_left[2]),
-            ],
-            params.experiment_params.z_steps,
-            params.experiment_params.z_step_size,
-            params.hyperion_params.ispyb_params.microns_per_pixel_y,
-            params.experiment_params.x_steps,
-            params.experiment_params.x_step_size,
-            params.hyperion_params.ispyb_params.microns_per_pixel_x,
-            params.hyperion_params.ispyb_params.xtal_snapshots_omega_end or [],
-            params.hyperion_params.detector_params.omega_start + 90,
-            params.hyperion_params.detector_params.run_number + 1,  # type:ignore
-        )
+        grid_scan_info = grid_scan_xz_from_internal_params(params)
         return self._populate_all_data(grid_scan_info, params.hyperion_params)
 
     def _populate_all_data(
