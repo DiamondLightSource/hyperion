@@ -18,8 +18,7 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
     populate_data_collection_grid_info,
-    populate_xy_data_collection_info,
-    populate_xz_data_collection_info,
+    populate_data_collection_info,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
@@ -38,6 +37,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanHyperionParameters,
     GridscanInternalParameters,
 )
 
@@ -91,33 +91,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 self.params.hyperion_params.detector_params,
                 self.params.hyperion_params.ispyb_params,
             )
-            grid_scan_info = GridScanInfo(
-                self.params.hyperion_params.ispyb_params.upper_left,
-                self.params.experiment_params.y_steps,
-                self.params.experiment_params.y_step_size,
-            )
-
-            def constructor():
-                return construct_comment_for_gridscan(
-                    self.params,
-                    self.params.hyperion_params.ispyb_params,
-                    grid_scan_info,
-                )
-
-            scan_data_info = ScanDataInfo(
-                data_collection_info=populate_remaining_data_collection_info(
-                    constructor,
-                    None,
-                    populate_xy_data_collection_info(
-                        grid_scan_info,
-                        self.params,
-                        self.params.hyperion_params.ispyb_params,
-                        self.params.hyperion_params.detector_params,
-                    ),
-                    self.params.hyperion_params.detector_params,
-                    self.params.hyperion_params.ispyb_params,
-                ),
-            )
+            scan_data_info = self.populate_xy_scan_data_info(self.params)
             self.ispyb_ids = self.ispyb.begin_deposition(
                 data_collection_group_info, scan_data_info
             )
@@ -161,7 +135,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         return doc
 
-    def update_deposition(self, params):
+    def update_deposition(self, params: GridscanInternalParameters):
         data_collection_group_info = populate_data_collection_group(
             self.ispyb.experiment_type,
             params.hyperion_params.detector_params,
@@ -174,7 +148,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         return self.ispyb.update_deposition(data_collection_group_info, scan_data_infos)
 
-    def populate_xy_scan_data_info(self, params):
+    def populate_xy_scan_data_info(self, params: GridscanInternalParameters):
         grid_scan_info = GridScanInfo(
             [
                 int(params.hyperion_params.ispyb_params.upper_left[0]),
@@ -182,73 +156,51 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             ],
             params.experiment_params.y_steps,
             params.experiment_params.y_step_size,
+            params.hyperion_params.ispyb_params.microns_per_pixel_y,
+            params.experiment_params.x_steps,
+            params.experiment_params.x_step_size,
+            params.hyperion_params.ispyb_params.microns_per_pixel_x,
+            params.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
+            params.hyperion_params.detector_params.omega_start,
+            params.hyperion_params.detector_params.run_number,  # type:ignore
         )
+        return self._populate_all_data(grid_scan_info, params.hyperion_params)
 
-        xy_data_collection_info = populate_xy_data_collection_info(
-            grid_scan_info,
-            params,
-            params.hyperion_params.ispyb_params,
-            params.hyperion_params.detector_params,
-        )
-
-        def comment_constructor():
-            return construct_comment_for_gridscan(
-                params, params.hyperion_params.ispyb_params, grid_scan_info
-            )
-
-        xy_data_collection_info = populate_remaining_data_collection_info(
-            comment_constructor,
-            self.ispyb_ids.data_collection_group_id,
-            xy_data_collection_info,
-            params.hyperion_params.detector_params,
-            params.hyperion_params.ispyb_params,
-        )
-
-        return ScanDataInfo(
-            data_collection_info=xy_data_collection_info,
-            data_collection_grid_info=populate_data_collection_grid_info(
-                params, grid_scan_info, params.hyperion_params.ispyb_params
-            ),
-            data_collection_position_info=populate_data_collection_position_info(
-                params.hyperion_params.ispyb_params
-            ),
-        )
-
-    def populate_xz_scan_data_info(self, params):
-        xz_grid_scan_info = GridScanInfo(
+    def populate_xz_scan_data_info(self, params: GridscanInternalParameters):
+        grid_scan_info = GridScanInfo(
             [
                 int(params.hyperion_params.ispyb_params.upper_left[0]),
                 int(params.hyperion_params.ispyb_params.upper_left[2]),
             ],
             params.experiment_params.z_steps,
             params.experiment_params.z_step_size,
+            params.hyperion_params.ispyb_params.microns_per_pixel_y,
+            params.experiment_params.x_steps,
+            params.experiment_params.x_step_size,
+            params.hyperion_params.ispyb_params.microns_per_pixel_x,
+            params.hyperion_params.ispyb_params.xtal_snapshots_omega_end or [],
+            params.hyperion_params.detector_params.omega_start + 90,
+            params.hyperion_params.detector_params.run_number + 1,  # type:ignore
         )
-        xz_data_collection_info = populate_xz_data_collection_info(
-            xz_grid_scan_info,
-            params,
-            params.hyperion_params.ispyb_params,
-            params.hyperion_params.detector_params,
-        )
+        return self._populate_all_data(grid_scan_info, params.hyperion_params)
 
-        def xz_comment_constructor():
-            return construct_comment_for_gridscan(
-                params, params.hyperion_params.ispyb_params, xz_grid_scan_info
-            )
+    def _populate_all_data(
+        self, grid_scan: GridScanInfo, hyperion_params: GridscanHyperionParameters
+    ) -> ScanDataInfo:
+        data_collection_info = populate_data_collection_info(grid_scan)
 
-        xz_data_collection_info = populate_remaining_data_collection_info(
-            xz_comment_constructor,
+        data_collection_info = populate_remaining_data_collection_info(
+            lambda: construct_comment_for_gridscan(grid_scan),
             self.ispyb_ids.data_collection_group_id,
-            xz_data_collection_info,
-            params.hyperion_params.detector_params,
-            params.hyperion_params.ispyb_params,
+            data_collection_info,
+            hyperion_params.detector_params,
+            hyperion_params.ispyb_params,
         )
         return ScanDataInfo(
-            data_collection_info=xz_data_collection_info,
-            data_collection_grid_info=populate_data_collection_grid_info(
-                params, xz_grid_scan_info, params.hyperion_params.ispyb_params
-            ),
+            data_collection_info=data_collection_info,
+            data_collection_grid_info=populate_data_collection_grid_info(grid_scan),
             data_collection_position_info=populate_data_collection_position_info(
-                params.hyperion_params.ispyb_params
+                hyperion_params.ispyb_params
             ),
         )
 

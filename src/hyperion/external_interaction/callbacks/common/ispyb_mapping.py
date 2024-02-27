@@ -126,3 +126,10 @@ class GridScanInfo:
     upper_left: Union[list[int], ndarray]
     y_steps: int
     y_step_size: float
+    microns_per_pixel_y: float
+    x_steps: int
+    x_step_size: float
+    microns_per_pixel_x: float
+    crystal_snapshots: list[str]
+    omega: float
+    run_number: int

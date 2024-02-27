@@ -104,7 +104,7 @@ def fetch_datacollection_attribute() -> Callable:
 
 
 @pytest.fixture
-def dummy_params():
+def dummy_params() -> GridscanInternalParameters:
     dummy_params = GridscanInternalParameters(**default_raw_params())
     dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 0.8

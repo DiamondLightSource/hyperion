@@ -12,8 +12,7 @@ from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
     populate_data_collection_grid_info,
-    populate_xy_data_collection_info,
-    populate_xz_data_collection_info,
+    populate_data_collection_info,
 )
 from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
@@ -65,26 +64,24 @@ def dummy_collection_group_info(dummy_params_3d):
     "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def scan_data_info_for_begin(dummy_params_3d):
+def scan_data_info_for_begin(dummy_params_3d: GridscanInternalParameters):
     grid_scan_info = GridScanInfo(
         dummy_params_3d.hyperion_params.ispyb_params.upper_left,
         dummy_params_3d.experiment_params.y_steps,
         dummy_params_3d.experiment_params.y_step_size,
+        dummy_params_3d.hyperion_params.ispyb_params.microns_per_pixel_y,
+        dummy_params_3d.experiment_params.x_steps,
+        dummy_params_3d.experiment_params.x_step_size,
+        dummy_params_3d.hyperion_params.ispyb_params.microns_per_pixel_x,
+        dummy_params_3d.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
+        dummy_params_3d.hyperion_params.detector_params.omega_start,
+        dummy_params_3d.hyperion_params.detector_params.run_number,  # type:ignore
     )
     return ScanDataInfo(
         data_collection_info=populate_remaining_data_collection_info(
-            lambda: construct_comment_for_gridscan(
-                dummy_params_3d,
-                dummy_params_3d.hyperion_params.ispyb_params,
-                grid_scan_info,
-            ),
+            lambda: construct_comment_for_gridscan(grid_scan_info),
             None,
-            populate_xy_data_collection_info(
-                grid_scan_info,
-                dummy_params_3d,
-                dummy_params_3d.hyperion_params.ispyb_params,
-                dummy_params_3d.hyperion_params.detector_params,
-            ),
+            populate_data_collection_info(grid_scan_info),
             dummy_params_3d.hyperion_params.detector_params,
             dummy_params_3d.hyperion_params.ispyb_params,
         ),
@@ -96,24 +93,29 @@ def scan_data_info_for_begin(dummy_params_3d):
     "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def scan_data_infos_for_update(scan_xy_data_info_for_update, dummy_params):
+def scan_data_infos_for_update(
+    scan_xy_data_info_for_update, dummy_params: GridscanInternalParameters
+):
     upper_left = dummy_params.hyperion_params.ispyb_params.upper_left
-    xz_grid_scan_info = GridScanInfo(
-        [upper_left[0], upper_left[2]],
+    grid_scan_info = GridScanInfo(
+        [
+            int(upper_left[0]),
+            int(upper_left[2]),
+        ],
         dummy_params.experiment_params.z_steps,
         dummy_params.experiment_params.z_step_size,
+        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
+        dummy_params.experiment_params.x_steps,
+        dummy_params.experiment_params.x_step_size,
+        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
+        dummy_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end or [],
+        dummy_params.hyperion_params.detector_params.omega_start + 90,
+        dummy_params.hyperion_params.detector_params.run_number + 1,  # type:ignore
     )
-    xz_data_collection_info = populate_xz_data_collection_info(
-        xz_grid_scan_info,
-        dummy_params,
-        dummy_params.hyperion_params.ispyb_params,
-        dummy_params.hyperion_params.detector_params,
-    )
+    xz_data_collection_info = populate_data_collection_info(grid_scan_info)
 
     def comment_constructor():
-        return construct_comment_for_gridscan(
-            dummy_params, dummy_params.hyperion_params.ispyb_params, xz_grid_scan_info
-        )
+        return construct_comment_for_gridscan(grid_scan_info)
 
     xz_data_collection_info = populate_remaining_data_collection_info(
         comment_constructor,
@@ -126,13 +128,7 @@ def scan_data_infos_for_update(scan_xy_data_info_for_update, dummy_params):
 
     scan_xz_data_info_for_update = ScanDataInfo(
         data_collection_info=xz_data_collection_info,
-        data_collection_grid_info=(
-            populate_data_collection_grid_info(
-                dummy_params,
-                xz_grid_scan_info,
-                dummy_params.hyperion_params.ispyb_params,
-            )
-        ),
+        data_collection_grid_info=(populate_data_collection_grid_info(grid_scan_info)),
         data_collection_position_info=(
             populate_data_collection_position_info(
                 dummy_params.hyperion_params.ispyb_params

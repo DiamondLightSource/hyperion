@@ -3,7 +3,7 @@ import pytest
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import GridScanInfo
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
-    populate_xy_data_collection_info,
+    populate_data_collection_info,
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -35,14 +35,16 @@ def test_given_x_and_y_steps_different_from_total_images_when_grid_scan_stored_t
     dummy_params.experiment_params.y_steps = 3
     grid_scan_info = GridScanInfo(
         dummy_params.hyperion_params.ispyb_params.upper_left,
-        3,
+        dummy_params.experiment_params.y_steps,
         dummy_params.experiment_params.y_step_size,
+        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
+        dummy_params.experiment_params.x_steps,
+        dummy_params.experiment_params.x_step_size,
+        dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
+        dummy_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start or [],
+        dummy_params.hyperion_params.detector_params.omega_start,
+        dummy_params.hyperion_params.detector_params.run_number,  # type:ignore
     )
-    actual = populate_xy_data_collection_info(
-        grid_scan_info,
-        dummy_params,
-        dummy_params.hyperion_params.ispyb_params,
-        dummy_params.hyperion_params.detector_params,
-    )
+    actual = populate_data_collection_info(grid_scan_info)
 
     assert actual.n_images == expected_number_of_steps
