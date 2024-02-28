@@ -44,10 +44,10 @@ def setup_callbacks():
     return [
         GridscanNexusFileCallback(),
         gridscan_ispyb,
-        ZocaloCallback(gridscan_ispyb, DO_FGS),
+        ZocaloCallback(DO_FGS),
         RotationNexusFileCallback(),
         rotation_ispyb,
-        ZocaloCallback(rotation_ispyb, ROTATION_PLAN_MAIN),
+        ZocaloCallback(ROTATION_PLAN_MAIN),
     ]
 
 

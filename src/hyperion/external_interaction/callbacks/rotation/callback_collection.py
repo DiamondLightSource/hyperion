@@ -30,7 +30,7 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
     def setup(cls):
         nexus_handler = RotationNexusFileCallback()
         ispyb_handler = RotationISPyBCallback()
-        zocalo_handler = ZocaloCallback(ispyb_handler, ROTATION_PLAN_MAIN)
+        zocalo_handler = ZocaloCallback(ROTATION_PLAN_MAIN)
         callback_collection = cls(
             nexus_handler=nexus_handler,
             ispyb_handler=ispyb_handler,

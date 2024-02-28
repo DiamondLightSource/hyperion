@@ -9,12 +9,6 @@ from dodal.devices.zocalo import (
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
-    RotationISPyBCallback,
-)
-from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-)
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
 
@@ -35,13 +29,12 @@ class ZocaloCallback(PlanReactiveCallback):
 
     def __init__(
         self,
-        ispyb_handler: GridscanISPyBCallback | RotationISPyBCallback,
         plan_name_to_trigger_on: str,
     ):
         super().__init__(ISPYB_LOGGER)
         self.run_uid: Optional[str] = None
-        self.ispyb: GridscanISPyBCallback | RotationISPyBCallback = ispyb_handler
         self.plan_name_to_trigger_on = plan_name_to_trigger_on
+        self.ispyb_ids: Optional[tuple[int]] = None
 
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
@@ -50,19 +43,20 @@ class ZocaloCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
             self.run_uid = doc.get("uid")
-            if self.ispyb.ispyb_ids.data_collection_ids:
-                for id in self.ispyb.ispyb_ids.data_collection_ids:
+            if isinstance(ispyb_ids := doc.get("ispyb_dcids"), tuple):
+                self.ispyb_ids = ispyb_ids
+                for id in self.ispyb_ids:
                     self.zocalo_interactor.run_start(id)
             else:
-                raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
+                raise ISPyBDepositionNotMade(
+                    f"No ISPyB IDs received by the start of {self.plan_name_to_trigger_on=}"
+                )
 
     def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.run_uid:
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
-            if self.ispyb.ispyb_ids.data_collection_ids:
-                for id in self.ispyb.ispyb_ids.data_collection_ids:
+            if self.ispyb_ids:
+                for id in self.ispyb_ids:
                     self.zocalo_interactor.run_end(id)
-            else:
-                raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")

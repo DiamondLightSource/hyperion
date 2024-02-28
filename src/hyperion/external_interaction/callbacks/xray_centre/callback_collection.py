@@ -31,7 +31,7 @@ class XrayCentreCallbackCollection(AbstractPlanCallbackCollection):
     def setup(cls):
         nexus_handler = GridscanNexusFileCallback()
         ispyb_handler = GridscanISPyBCallback()
-        zocalo_handler = ZocaloCallback(ispyb_handler, DO_FGS)
+        zocalo_handler = ZocaloCallback(DO_FGS)
         callback_collection = cls(
             nexus_handler=nexus_handler,
             ispyb_handler=ispyb_handler,
