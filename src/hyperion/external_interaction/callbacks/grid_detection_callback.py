@@ -15,7 +15,7 @@ class GridDetectionCallback(CallbackBase):
         oav_params: OAVConfigParams,
         exposure_time: float,
         set_stub_offsets: bool,
-        run_up_distance_mm: float,
+        run_up_distance_mm: float = 0.15,
         *args,
     ) -> None:
         super().__init__(*args)

@@ -153,7 +153,7 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     box_size_y_pixels = box_size_microns / composite.oav.parameters.micronsPerYPixel
 
     oav_cb = OavSnapshotCallback()
-    grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004, False, 0.15)
+    grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004, False)
     RE.subscribe(oav_cb)
     RE.subscribe(grid_param_cb)
     RE(
@@ -225,7 +225,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
     box_size_microns = 20
-    cb = GridDetectionCallback(composite.oav.parameters, 0.5, True, 0.15)
+    cb = GridDetectionCallback(composite.oav.parameters, 0.5, True)
     RE.subscribe(cb)
 
     RE(
