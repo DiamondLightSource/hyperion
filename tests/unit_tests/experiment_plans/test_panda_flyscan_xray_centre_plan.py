@@ -707,7 +707,7 @@ class TestFlyscanXrayCentrePlan:
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(
-            "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+            "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
             RE(panda_flyscan_xray_centre(fake_fgs_composite, test_panda_fgs_params))

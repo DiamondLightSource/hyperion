@@ -18,7 +18,6 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
 
-from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -37,6 +36,7 @@ from hyperion.device_setup_plans.xbpm_feedback import (
 )
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
+    kickoff_and_complete_gridscan,
     set_aperture_for_bbox_size,
     wait_for_gridscan_valid,
 )
@@ -46,7 +46,6 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
-    DO_FGS,
     GRIDSCAN_AND_MOVE,
     GRIDSCAN_MAIN_PLAN,
     GRIDSCAN_OUTER_PLAN,
@@ -128,42 +127,16 @@ def run_gridscan(
 
     yield from wait_for_gridscan_valid(fgs_motors)
 
-    @bpp.set_run_key_decorator(DO_FGS)
-    @bpp.run_decorator(md={"subplan_name": DO_FGS})
-    @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(fgs_composite.eiger)),
-        else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
-    )
-    def do_fgs():
-        # Check topup gate
-        total_exposure = (
-            parameters.experiment_params.get_num_images()
-            * parameters.hyperion_params.detector_params.exposure_time
-        )  # Expected exposure time for full scan
-        yield from check_topup_and_wait_if_necessary(
-            fgs_composite.synchrotron,
-            total_exposure,
-            30.0,
-        )
-
-        LOGGER.info("Wait for all moves with no assigned group")
-        yield from bps.wait()
-
-        LOGGER.info("kicking off FGS")
-        yield from bps.kickoff(fgs_motors)
-        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
-        yield from bps.wait(
-            ZOCALO_STAGE_GROUP
-        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
-        LOGGER.info("completing FGS")
-        yield from bps.complete(fgs_motors, wait=True)
-
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
     yield from bps.stage(fgs_composite.eiger)
 
-    with TRACER.start_span("do_fgs"):
-        yield from do_fgs()
+    yield from kickoff_and_complete_gridscan(
+        fgs_motors,
+        fgs_composite.eiger,
+        fgs_composite.synchrotron,
+        parameters.hyperion_params.zocalo_environment,
+    )
 
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
@@ -299,7 +272,7 @@ def panda_flyscan_xray_centre(
             "subplan_name": GRIDSCAN_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "XrayCentreZocaloCallback",
+                "ZocaloCallback",
                 "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],

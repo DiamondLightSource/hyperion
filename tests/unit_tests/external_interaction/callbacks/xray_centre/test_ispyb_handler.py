@@ -31,6 +31,7 @@ def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIsp
             data_collection_group_id=DCG_ID, data_collection_ids=DC_IDS
         )
     )
+    mock.append_to_comment = MagicMock()
     return mock
 
 
@@ -165,3 +166,27 @@ class TestXrayCentreIspybHandler:
         ISPYB_LOGGER.info("test")
         latest_record = gelf_handler.emit.call_args.args[-1]
         assert not hasattr(latest_record, "dc_group_id")
+
+    @patch(
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.time",
+        side_effect=[2, 100],
+    )
+    def test_given_fgs_plan_finished_when_zocalo_results_event_then_expected_comment_deposited(
+        self, mock_time
+    ):
+        ispyb_handler = GridscanISPyBCallback()
+
+        ispyb_handler.activity_gated_start(td.test_start_document)  # type:ignore
+
+        ispyb_handler.activity_gated_start(td.test_do_fgs_start_document)  # type:ignore
+        ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
+
+        ispyb_handler.activity_gated_descriptor(
+            td.test_descriptor_document_zocalo_reading
+        )
+        ispyb_handler.activity_gated_event(td.test_zocalo_reading_event)
+
+        assert (
+            ispyb_handler.ispyb.append_to_comment.call_args.args[1]  # type:ignore
+            == "Zocalo processing took 98.00 s. Zocalo found no crystals in this gridscan."
+        )

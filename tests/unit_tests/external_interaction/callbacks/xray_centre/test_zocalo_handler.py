@@ -39,24 +39,13 @@ def init_cbs_with_docs_and_mock_zocalo_and_ispyb(
         lambda _, __: modified_store_grid_scan_mock(dcids=dcids, dcgid=dcgid),
     ):
         callbacks.ispyb_handler.activity_gated_start(td.test_start_document)
-        callbacks.zocalo_handler.activity_gated_start(td.test_start_document)
-    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
-    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
 
 
-def init_cbs_with_docs_and_mock_zocalo_but_no_ispyb(
-    callbacks: XrayCentreCallbackCollection, dcids=(0, 0), dcgid=4
-):
-    with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
-        lambda _, __: modified_store_grid_scan_mock(dcids=dcids, dcgid=dcgid),
-    ):
-        callbacks.zocalo_handler.activity_gated_start(td.test_start_document)
-    callbacks.zocalo_handler.zocalo_interactor.run_end = MagicMock()
-    callbacks.zocalo_handler.zocalo_interactor.run_start = MagicMock()
-
-
-class TestXrayCentreZocaloHandler:
+@patch(
+    "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    new=MagicMock(),
+)
+class TestZocaloHandler:
     def test_execution_of_run_gridscan_triggers_zocalo_calls(
         self,
         mock_ispyb_update_time_and_status: MagicMock,
@@ -79,9 +68,6 @@ class TestXrayCentreZocaloHandler:
         callbacks.ispyb_handler.activity_gated_start(
             td.test_run_gridscan_start_document
         )  # type: ignore
-        callbacks.zocalo_handler.activity_gated_start(
-            td.test_run_gridscan_start_document
-        )
         callbacks.ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
         )  # type: ignore
@@ -112,17 +98,11 @@ class TestXrayCentreZocaloHandler:
             dc_ids
         )
 
-    @patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
-        autospec=True,
-    )
     def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception(
         self,
-        store_3d_grid_scan,
         dummy_params,
     ):
         callbacks = XrayCentreCallbackCollection.setup()
-        init_cbs_with_docs_and_mock_zocalo_but_no_ispyb(callbacks)
 
         with pytest.raises(ISPyBDepositionNotMade):
             callbacks.zocalo_handler.activity_gated_start(td.test_do_fgs_start_document)

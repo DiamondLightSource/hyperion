@@ -30,7 +30,7 @@ EIGER_FILE_SUFFIX = "h5"
 
 
 class IspybIds(BaseModel):
-    data_collection_ids: int | tuple[int, ...] | None = None
+    data_collection_ids: tuple[int, ...] = tuple()
     data_collection_group_id: int | None = None
     grid_ids: tuple[int, ...] | None = None
 

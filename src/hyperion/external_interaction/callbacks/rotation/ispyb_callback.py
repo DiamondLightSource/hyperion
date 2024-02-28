@@ -43,10 +43,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
         self.last_sample_id: str | None = None
         self.ispyb_ids: IspybIds = IspybIds()
 
-    def append_to_comment(self, comment: str):
-        assert isinstance(self.ispyb_ids.data_collection_ids, int)
-        self._append_to_comment(self.ispyb_ids.data_collection_ids, comment)
-
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             ISPYB_LOGGER.info(

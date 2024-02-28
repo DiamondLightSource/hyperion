@@ -136,113 +136,119 @@ def set_speed(axis: EpicsMotor, image_width, exposure_time, wait=True):
     )
 
 
-@bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
-@bpp.run_decorator(md={"subplan_name": ROTATION_PLAN_MAIN})
 def rotation_scan_plan(
-    composite: RotationScanComposite,
-    params: RotationInternalParameters,
-    **kwargs,
+    composite: RotationScanComposite, params: RotationInternalParameters
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
     a fixed axis - for now this axis is limited to omega. Only does the scan itself, no
     setup tasks."""
 
-    detector_params: DetectorParams = params.hyperion_params.detector_params
-    expt_params: RotationScanParams = params.experiment_params
-
-    start_angle_deg = detector_params.omega_start
-    scan_width_deg = expt_params.get_num_images() * detector_params.omega_increment
-    image_width_deg = detector_params.omega_increment
-    exposure_time_s = detector_params.exposure_time
-    shutter_time_s = expt_params.shutter_opening_time_s
-
-    speed_for_rotation_deg_s = image_width_deg / exposure_time_s
-    LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
-
-    motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
-    motor_time_to_speed *= ACCELERATION_MARGIN
-    acceleration_offset = motor_time_to_speed * speed_for_rotation_deg_s
-    LOGGER.info(
-        f"calculated rotation offset for acceleration: at {speed_for_rotation_deg_s} "
-        f"deg/s, to take {motor_time_to_speed} s = {acceleration_offset} deg"
+    @bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
+    @bpp.run_decorator(
+        md={
+            "subplan_name": ROTATION_PLAN_MAIN,
+            "zocalo_environment": params.hyperion_params.zocalo_environment,
+        }
     )
+    def _rotation_scan_plan():
+        detector_params: DetectorParams = params.hyperion_params.detector_params
+        expt_params: RotationScanParams = params.experiment_params
 
-    shutter_opening_degrees = (
-        speed_for_rotation_deg_s * expt_params.shutter_opening_time_s
-    )
-    LOGGER.info(
-        f"calculated degrees rotation needed for shutter: {shutter_opening_degrees} deg"
-        f" for {shutter_time_s} s at {speed_for_rotation_deg_s} deg/s"
-    )
+        start_angle_deg = detector_params.omega_start
+        scan_width_deg = expt_params.get_num_images() * detector_params.omega_increment
+        image_width_deg = detector_params.omega_increment
+        exposure_time_s = detector_params.exposure_time
+        shutter_time_s = expt_params.shutter_opening_time_s
 
-    LOGGER.info(f"moving omega to beginning, start_angle={start_angle_deg}")
-    yield from move_to_start_w_buffer(
-        composite.smargon.omega, start_angle_deg, acceleration_offset
-    )
+        speed_for_rotation_deg_s = image_width_deg / exposure_time_s
+        LOGGER.info(f"calculated speed: {speed_for_rotation_deg_s} deg/s")
 
-    LOGGER.info(
-        f"setting up zebra w: start_angle = {start_angle_deg} deg, "
-        f"scan_width = {scan_width_deg} deg"
-    )
-    yield from setup_zebra_for_rotation(
-        composite.zebra,
-        start_angle=start_angle_deg,
-        scan_width=scan_width_deg,
-        direction=expt_params.rotation_direction,
-        shutter_opening_deg=shutter_opening_degrees,
-        shutter_opening_s=expt_params.shutter_opening_time_s,
-        group="setup_zebra",
-        wait=True,
-    )
+        motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
+        motor_time_to_speed *= ACCELERATION_MARGIN
+        acceleration_offset = motor_time_to_speed * speed_for_rotation_deg_s
+        LOGGER.info(
+            f"calculated rotation offset for acceleration: at {speed_for_rotation_deg_s} "
+            f"deg/s, to take {motor_time_to_speed} s = {acceleration_offset} deg"
+        )
 
-    LOGGER.info("wait for any previous moves...")
-    # wait for all the setup tasks at once
-    yield from bps.wait("setup_senv")
-    yield from bps.wait("move_x_y_z")
-    yield from bps.wait("move_to_start")
-    yield from bps.wait("setup_zebra")
+        shutter_opening_degrees = (
+            speed_for_rotation_deg_s * expt_params.shutter_opening_time_s
+        )
+        LOGGER.info(
+            f"calculated degrees rotation needed for shutter: {shutter_opening_degrees} deg"
+            f" for {shutter_time_s} s at {speed_for_rotation_deg_s} deg/s"
+        )
 
-    # get some information for the ispyb deposition and trigger the callback
+        LOGGER.info(f"moving omega to beginning, start_angle={start_angle_deg}")
+        yield from move_to_start_w_buffer(
+            composite.smargon.omega, start_angle_deg, acceleration_offset
+        )
 
-    yield from read_hardware_for_nexus_writer(composite.eiger)
+        LOGGER.info(
+            f"setting up zebra w: start_angle = {start_angle_deg} deg, "
+            f"scan_width = {scan_width_deg} deg"
+        )
+        yield from setup_zebra_for_rotation(
+            composite.zebra,
+            start_angle=start_angle_deg,
+            scan_width=scan_width_deg,
+            direction=expt_params.rotation_direction,
+            shutter_opening_deg=shutter_opening_degrees,
+            shutter_opening_s=expt_params.shutter_opening_time_s,
+            group="setup_zebra",
+            wait=True,
+        )
 
-    yield from read_hardware_for_ispyb_pre_collection(
-        composite.undulator,
-        composite.synchrotron,
-        composite.s4_slit_gaps,
-        composite.robot,
-    )
-    yield from read_hardware_for_ispyb_during_collection(
-        composite.attenuator, composite.flux, composite.dcm
-    )
-    LOGGER.info(
-        f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
-        f" s, setting rotation speed to {image_width_deg / exposure_time_s} deg/s"
-    )
-    yield from set_speed(
-        composite.smargon.omega, image_width_deg, exposure_time_s, wait=True
-    )
+        LOGGER.info("wait for any previous moves...")
+        # wait for all the setup tasks at once
+        yield from bps.wait("setup_senv")
+        yield from bps.wait("move_x_y_z")
+        yield from bps.wait("move_to_start")
+        yield from bps.wait("setup_zebra")
 
-    yield from arm_zebra(composite.zebra)
+        # get some information for the ispyb deposition and trigger the callback
 
-    total_exposure = expt_params.get_num_images() * exposure_time_s
-    # Check topup gate
-    yield from check_topup_and_wait_if_necessary(
-        composite.synchrotron,
-        total_exposure,
-        ops_time=10.0,  # Additional time to account for rotation, is s
-    )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
+        yield from read_hardware_for_nexus_writer(composite.eiger)
 
-    LOGGER.info(
-        f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
-        f"through {scan_width_deg}, (before shutter and acceleration adjustment)"
-    )
-    yield from move_to_end_w_buffer(
-        composite.smargon.omega,
-        scan_width_deg,
-        shutter_opening_degrees,
-        acceleration_offset,
-    )
+        yield from read_hardware_for_ispyb_pre_collection(
+            composite.undulator,
+            composite.synchrotron,
+            composite.s4_slit_gaps,
+            composite.robot,
+        )
+        yield from read_hardware_for_ispyb_during_collection(
+            composite.attenuator, composite.flux, composite.dcm
+        )
+        LOGGER.info(
+            f"Based on image_width {image_width_deg} deg, exposure_time {exposure_time_s}"
+            f" s, setting rotation speed to {image_width_deg / exposure_time_s} deg/s"
+        )
+        yield from set_speed(
+            composite.smargon.omega, image_width_deg, exposure_time_s, wait=True
+        )
+
+        yield from arm_zebra(composite.zebra)
+
+        total_exposure = expt_params.get_num_images() * exposure_time_s
+        # Check topup gate
+        yield from check_topup_and_wait_if_necessary(
+            composite.synchrotron,
+            total_exposure,
+            ops_time=10.0,  # Additional time to account for rotation, is s
+        )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
+
+        LOGGER.info(
+            f"{'increase' if expt_params.rotation_direction > 0 else 'decrease'} omega "
+            f"through {scan_width_deg}, (before shutter and acceleration adjustment)"
+        )
+        yield from move_to_end_w_buffer(
+            composite.smargon.omega,
+            scan_width_deg,
+            shutter_opening_degrees,
+            acceleration_offset,
+        )
+
+    yield from _rotation_scan_plan()
 
 
 def cleanup_plan(composite: RotationScanComposite, **kwargs):
@@ -262,7 +268,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
             "subplan_name": ROTATION_OUTER_PLAN,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "RotationZocaloCallback",
+                "ZocaloCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],

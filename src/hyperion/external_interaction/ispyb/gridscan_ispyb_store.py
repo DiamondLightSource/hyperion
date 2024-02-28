@@ -75,7 +75,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def end_deposition(self, success: str, reason: str):
         assert (
-            self._data_collection_ids is not None
+            self._data_collection_ids
         ), "Can't end ISPyB deposition, data_collection IDs are missing"
         for id in self._data_collection_ids:
             self._end_deposition(id, success, reason)

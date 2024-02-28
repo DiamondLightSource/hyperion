@@ -88,7 +88,7 @@ class StoreRotationInIspyb(StoreInIspyb):
                 )
         return IspybIds(
             data_collection_group_id=self._data_collection_group_id,
-            data_collection_ids=self._data_collection_id,
+            data_collection_ids=(self._data_collection_id,),
         )
         # fmt: on
 
@@ -96,7 +96,9 @@ class StoreRotationInIspyb(StoreInIspyb):
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
             ids = self._store_scan_data(conn)
-            return IspybIds(data_collection_ids=ids[0], data_collection_group_id=ids[1])
+            return IspybIds(
+                data_collection_ids=(ids[0],), data_collection_group_id=ids[1]
+            )
 
     def end_deposition(self, success: str, reason: str):
         assert (

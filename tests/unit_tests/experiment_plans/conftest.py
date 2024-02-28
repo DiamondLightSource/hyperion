@@ -128,7 +128,7 @@ def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
 @pytest.fixture
 def mock_subscriptions(test_fgs_params):
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+        "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     ), patch(
         "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.append_to_comment"
@@ -168,7 +168,7 @@ def mock_rotation_subscriptions(test_rotation_params):
         "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationISPyBCallback",
         autospec=True,
     ), patch(
-        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
+        "hyperion.external_interaction.callbacks.rotation.callback_collection.ZocaloCallback",
         autospec=True,
     ):
         subscriptions = RotationCallbackCollection.setup()
