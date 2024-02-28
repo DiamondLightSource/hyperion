@@ -33,6 +33,7 @@ class PlanReactiveCallback(CallbackBase):
         in the future (https://github.com/DiamondLightSource/hyperion/issues/964)."""
 
         super().__init__(emit=emit)
+        self.emit_cb = emit  # to avoid GC; base class only holds a WeakRef
         self.active = False
         self.activity_uid = 0
         self.log = log
@@ -96,4 +97,4 @@ class PlanReactiveCallback(CallbackBase):
         return doc
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} with id: {hex(id(self))}>"
+        return f"<{self.__class__.__name__} with id: {hex(id(self))} - active: {self.active}>"

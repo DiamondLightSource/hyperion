@@ -54,7 +54,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         *,
         emit: Callable[..., Any] | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(emit=emit)
         self.params: GridscanInternalParameters
         self.ispyb: StoreGridscanInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
