@@ -23,22 +23,26 @@ class ZocaloCallback(PlanReactiveCallback):
 
     The metadata of the sub-plan this starts on must include a zocalo_environment.
 
-    Needs to be connected to an ISPyBCallback subscribed to the same run in order
-    to have access to the deposition numbers to pass on to Zocalo.
+    Shouldn't be subscribed directly to the RunEngine, instead should be passed to the
+    `emit` argument of an ISPyB callback which appends DCIDs to the relevant start doc.
     """
+
+    def _reset_state(self):
+        self.run_uid: Optional[str] = None
+        self.triggering_plan: Optional[str] = None
+        self.ispyb_ids: Optional[tuple[int]] = None
 
     def __init__(
         self,
-        plan_name_to_trigger_on: str,
     ):
         super().__init__(ISPYB_LOGGER)
-        self.run_uid: Optional[str] = None
-        self.plan_name_to_trigger_on = plan_name_to_trigger_on
-        self.ispyb_ids: Optional[tuple[int]] = None
+        self._reset_state()
 
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
-        if doc.get("subplan_name") == self.plan_name_to_trigger_on:
+        if triggering_plan := doc.get("trigger_zocalo_on"):
+            self.triggering_plan = triggering_plan
+        if self.triggering_plan and doc.get("subplan_name") == self.triggering_plan:
             assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
@@ -49,7 +53,7 @@ class ZocaloCallback(PlanReactiveCallback):
                     self.zocalo_interactor.run_start(id)
             else:
                 raise ISPyBDepositionNotMade(
-                    f"No ISPyB IDs received by the start of {self.plan_name_to_trigger_on=}"
+                    f"No ISPyB IDs received by the start of {self.triggering_plan=}"
                 )
 
     def activity_gated_stop(self, doc: RunStop):
@@ -60,3 +64,4 @@ class ZocaloCallback(PlanReactiveCallback):
             if self.ispyb_ids:
                 for id in self.ispyb_ids:
                     self.zocalo_interactor.run_end(id)
+            self._reset_state()
