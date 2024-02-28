@@ -39,6 +39,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         for self.ispyb_ids."""
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
+        self.emit_cb = emit  # to avoid GC; base class only holds a WeakRef
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )

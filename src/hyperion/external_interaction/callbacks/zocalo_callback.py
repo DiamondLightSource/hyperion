@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+from bluesky.callbacks import CallbackBase
 from dodal.devices.zocalo import (
     ZocaloTrigger,
 )
 
-from hyperion.external_interaction.callbacks.plan_reactive_callback import (
-    PlanReactiveCallback,
-)
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
 
@@ -16,7 +14,7 @@ if TYPE_CHECKING:
     from event_model.documents import RunStart, RunStop
 
 
-class ZocaloCallback(PlanReactiveCallback):
+class ZocaloCallback(CallbackBase):
     """Callback class to handle the triggering of Zocalo processing.
     Sends zocalo a run_start signal on receiving a start document for the specified
     sub-plan, and sends a run_end signal on receiving a stop document for the same plan.
@@ -35,10 +33,10 @@ class ZocaloCallback(PlanReactiveCallback):
     def __init__(
         self,
     ):
-        super().__init__(ISPYB_LOGGER)
+        super().__init__()
         self._reset_state()
 
-    def activity_gated_start(self, doc: RunStart):
+    def start(self, doc: RunStart):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
         if triggering_plan := doc.get("trigger_zocalo_on"):
             self.triggering_plan = triggering_plan
@@ -56,7 +54,7 @@ class ZocaloCallback(PlanReactiveCallback):
                     f"No ISPyB IDs received by the start of {self.triggering_plan=}"
                 )
 
-    def activity_gated_stop(self, doc: RunStop):
+    def stop(self, doc: RunStop):
         if doc.get("run_start") == self.run_uid:
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."

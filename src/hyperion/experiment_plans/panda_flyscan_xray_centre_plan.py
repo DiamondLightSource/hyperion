@@ -270,9 +270,9 @@ def panda_flyscan_xray_centre(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "trigger_zocalo_on": GRIDSCAN_MAIN_PLAN,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "ZocaloCallback",
                 "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],
