@@ -15,12 +15,14 @@ class GridDetectionCallback(CallbackBase):
         oav_params: OAVConfigParams,
         exposure_time: float,
         set_stub_offsets: bool,
+        run_up_distance_mm: float,
         *args,
     ) -> None:
         super().__init__(*args)
         self.exposure_time = exposure_time
         self.set_stub_offsets = set_stub_offsets
         self.oav_params = oav_params
+        self.run_up_distance_mm: float = run_up_distance_mm
         self.start_positions: list = []
         self.box_numbers: list = []
 
@@ -78,6 +80,7 @@ class GridDetectionCallback(CallbackBase):
 
     def get_panda_grid_parameters(self) -> PandAGridScanParams:
         return PandAGridScanParams(
+            run_up_distance_mm=self.run_up_distance_mm,
             x_start=self.start_positions[0][0],
             y1_start=self.start_positions[0][1],
             y2_start=self.start_positions[0][1],
