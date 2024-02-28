@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
@@ -38,8 +38,12 @@ class RotationISPyBCallback(BaseISPyBCallback):
     Usually used as part of a RotationCallbackCollection.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        *,
+        emit: Callable[..., Any] | None = None,
+    ) -> None:
+        super().__init__(emit=emit)
         self.last_sample_id: str | None = None
         self.ispyb_ids: IspybIds = IspybIds()
 

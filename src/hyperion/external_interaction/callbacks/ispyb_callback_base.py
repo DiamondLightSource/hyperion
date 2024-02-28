@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -29,12 +29,16 @@ if TYPE_CHECKING:
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        emit: Callable[..., Any] | None = None,
+    ) -> None:
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
-        super().__init__(ISPYB_LOGGER)
+        super().__init__(log=ISPYB_LOGGER, emit=emit)
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )

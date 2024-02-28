@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from time import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
@@ -49,7 +49,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        emit: Callable[..., Any] | None = None,
+    ) -> None:
         super().__init__()
         self.params: GridscanInternalParameters
         self.ispyb: StoreGridscanInIspyb
