@@ -55,11 +55,16 @@ async def test_when_running_start_stop_then_get_expected_returned_results(
 ):
     dcids = (1, 2)
     zc = ZocaloCallback()
-    zc.start({})  # TODO
-    for dcid in dcids:
-        zc.zocalo_interactor.run_start(dcid)
-    for dcid in dcids:
-        zc.zocalo_interactor.run_end(dcid)
+    zc.triggering_plan = "test"
+    zc.start(
+        {
+            "subplan_name": "test",
+            "uid": "123",
+            "zocalo_environment": "dev_artemis",
+            "ispyb_ids": dcids,
+        }  # type:ignore
+    )
+    zc.stop({"run_start": "123"})  # type:ignore
     RE(bps.trigger(zocalo_device, wait=True))
     result = await zocalo_device.read()
     assert result["zocalo-results"]["value"][0] == TEST_RESULT_LARGE[0]
