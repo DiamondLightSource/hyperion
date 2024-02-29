@@ -86,7 +86,7 @@ class TestZocaloHandler:
         callbacks.zocalo_handler.activity_gated_stop(td.test_stop_document)
 
         expected_args = list(zip(dc_ids, *expected_shapes))
-        callbacks.zocalo_handler.zocalo_interactor.run_start.assert_has_calls(
+        callbacks.zocalo_handler.zocalo_interactor.run_start.assert_has_calls(  # type: ignore
             [call(*x) for x in expected_args]
         )
         assert callbacks.zocalo_handler.zocalo_interactor.run_start.call_count == len(
