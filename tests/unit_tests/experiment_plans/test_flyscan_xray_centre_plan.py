@@ -17,8 +17,6 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_sim_value
-from scanspec.core import Path as ScanPath
-from scanspec.specs import Line
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -59,6 +57,7 @@ from hyperion.parameters.constants import (
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from tests.conftest import create_dummy_scan_spec
 
 from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
@@ -733,16 +732,6 @@ class TestFlyscanXrayCentrePlan:
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
-
-
-def create_dummy_scan_spec(x_steps, y_steps, z_steps):
-    x_line = Line("sam_x", 0, 10, 10)
-    y_line = Line("sam_y", 10, 20, 20)
-    z_line = Line("sam_z", 30, 50, 30)
-
-    specs = [y_line * ~x_line, z_line * ~x_line]
-    specs = [ScanPath(spec.calculate()) for spec in specs]
-    return [spec.consume().midpoints for spec in specs]
 
 
 @patch(

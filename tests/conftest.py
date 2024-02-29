@@ -29,6 +29,8 @@ from ophyd.epics_motor import EpicsMotor
 from ophyd.status import DeviceStatus, Status
 from ophyd_async.core import set_sim_value
 from ophyd_async.core.async_status import AsyncStatus
+from scanspec.core import Path as ScanPath
+from scanspec.specs import Line
 
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
@@ -60,6 +62,16 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
+
+
+def create_dummy_scan_spec(x_steps, y_steps, z_steps):
+    x_line = Line("sam_x", 0, 10, 10)
+    y_line = Line("sam_y", 10, 20, 20)
+    z_line = Line("sam_z", 30, 50, 30)
+
+    specs = [y_line * ~x_line, z_line * ~x_line]
+    specs = [ScanPath(spec.calculate()) for spec in specs]
+    return [spec.consume().midpoints for spec in specs]
 
 
 def _destroy_loggers(loggers):

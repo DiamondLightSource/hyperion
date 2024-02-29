@@ -56,6 +56,7 @@ class TestZocaloHandler:
     ):
         dc_ids = (1, 2)
         dcg_id = 4
+        expected_shapes = [(0, 200), (200, 300)]
 
         mock_ispyb_store_grid_scan.return_value = IspybIds(
             data_collection_ids=dc_ids, grid_ids=None, data_collection_group_id=dcg_id
@@ -84,8 +85,9 @@ class TestZocaloHandler:
         callbacks.ispyb_handler.activity_gated_stop(td.test_stop_document)
         callbacks.zocalo_handler.activity_gated_stop(td.test_stop_document)
 
+        expected_args = list(zip(dc_ids, *expected_shapes))
         callbacks.zocalo_handler.zocalo_interactor.run_start.assert_has_calls(
-            [call(x) for x in dc_ids]
+            [call(*x) for x in expected_args]
         )
         assert callbacks.zocalo_handler.zocalo_interactor.run_start.call_count == len(
             dc_ids

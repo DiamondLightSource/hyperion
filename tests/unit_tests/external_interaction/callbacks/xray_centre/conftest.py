@@ -18,6 +18,7 @@ from hyperion.parameters.external_parameters import from_file as default_raw_par
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from tests.conftest import create_dummy_scan_spec
 
 
 @pytest.fixture
@@ -110,6 +111,7 @@ class TestData:
         "plan_name": GRIDSCAN_AND_MOVE,
         "subplan_name": "do_fgs",
         "zocalo_environment": "dev_artemis",
+        "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
