@@ -50,10 +50,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    DO_FGS,
-    GRIDSCAN_OUTER_PLAN,
-)
+from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN, TRIGGER_ZOCALO_ON
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -747,7 +744,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
     zocalo_env = "dev_env"
 
-    zocalo_cb.start({"trigger_zocalo_on": DO_FGS})  # type: ignore
+    zocalo_cb.start({TRIGGER_ZOCALO_ON: DO_FGS})  # type: ignore
     assert zocalo_cb.triggering_plan == DO_FGS
 
     mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())

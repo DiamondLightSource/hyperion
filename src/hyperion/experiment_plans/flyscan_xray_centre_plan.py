@@ -59,6 +59,7 @@ from hyperion.parameters.constants import (
     GRIDSCAN_MAIN_PLAN,
     GRIDSCAN_OUTER_PLAN,
     SIM_BEAMLINE,
+    TRIGGER_ZOCALO_ON,
 )
 from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
@@ -340,7 +341,7 @@ def flyscan_xray_centre(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": GRIDSCAN_OUTER_PLAN,
-            "trigger_zocalo_on": DO_FGS,
+            TRIGGER_ZOCALO_ON: DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanISPyBCallback",

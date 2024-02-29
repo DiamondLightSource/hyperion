@@ -9,6 +9,7 @@ from dodal.devices.zocalo import (
 
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
+from hyperion.parameters.constants import TRIGGER_ZOCALO_ON
 
 if TYPE_CHECKING:
     from event_model.documents import RunStart, RunStop
@@ -39,7 +40,7 @@ class ZocaloCallback(CallbackBase):
 
     def start(self, doc: RunStart):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
-        if triggering_plan := doc.get("trigger_zocalo_on"):
+        if triggering_plan := doc.get(TRIGGER_ZOCALO_ON):
             self.triggering_plan = triggering_plan
         if self.triggering_plan and doc.get("subplan_name") == self.triggering_plan:
             assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)

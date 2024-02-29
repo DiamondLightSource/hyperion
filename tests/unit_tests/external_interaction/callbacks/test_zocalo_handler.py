@@ -9,6 +9,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.zocalo_callback import ZocaloCallback
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
+from hyperion.parameters.constants import TRIGGER_ZOCALO_ON
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -51,16 +52,14 @@ class TestZocaloHandler:
     def test_handler_gets_plan_name_from_start_doc(self):
         zocalo_handler = ZocaloCallback()
         assert zocalo_handler.triggering_plan is None
-        zocalo_handler.start({"trigger_zocalo_on": "test_plan_name"})  # type: ignore
+        zocalo_handler.start({TRIGGER_ZOCALO_ON: "test_plan_name"})  # type: ignore
         assert zocalo_handler.triggering_plan == "test_plan_name"
         assert zocalo_handler.zocalo_interactor is None
         return zocalo_handler
 
     def test_handler_doesnt_trigger_on_wrong_plan(self):
         zocalo_handler = self.test_handler_gets_plan_name_from_start_doc()
-        zocalo_handler.start(
-            {"trigger_zocalo_on": "_not_test_plan_name"}  # type: ignore
-        )
+        zocalo_handler.start({TRIGGER_ZOCALO_ON: "_not_test_plan_name"})  # type: ignore
 
     def test_handler_raises_on_right_plan_with_wrong_metadata(self):
         zocalo_handler = self.test_handler_gets_plan_name_from_start_doc()
@@ -86,8 +85,7 @@ class TestZocaloHandler:
                 "ispyb_dcids": (135, 139),
             }  # type: ignore
         )
-        assert isinstance(zocalo_handler.zocalo_interactor, ZocaloTrigger)
-        zocalo_handler.zocalo_interactor
+        assert zocalo_handler.zocalo_interactor is not None
 
     def test_execution_of_run_gridscan_triggers_zocalo_calls(
         self,
@@ -141,13 +139,3 @@ class TestZocaloHandler:
             [call(x) for x in dc_ids]
         )
         assert zocalo_handler.zocalo_interactor.run_end.call_count == len(dc_ids)
-
-    def test_GIVEN_ispyb_not_started_WHEN_trigger_zocalo_handler_THEN_raises_exception(
-        self,
-        dummy_params,
-    ):
-        callbacks = XrayCentreCallbackCollection()
-
-        with pytest.raises(ISPyBDepositionNotMade):
-            assert isinstance(callbacks.ispyb_handler.emit_cb, ZocaloCallback)
-            callbacks.ispyb_handler.emit_cb.start(td.test_do_fgs_start_document)

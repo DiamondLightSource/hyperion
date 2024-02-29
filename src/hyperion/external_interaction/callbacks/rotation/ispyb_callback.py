@@ -91,13 +91,15 @@ class RotationISPyBCallback(BaseISPyBCallback):
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
+        return self._tag_doc(doc)
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
-        return doc
+        return self._tag_doc(doc)
 
     def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.uid_to_finalize_on:
             self.uid_to_finalize_on = None
-            super().activity_gated_stop(doc)
+            return super().activity_gated_stop(doc)
+        return self._tag_doc(doc)
