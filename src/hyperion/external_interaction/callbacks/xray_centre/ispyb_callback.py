@@ -79,6 +79,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
             self.ispyb_ids = self.ispyb.begin_deposition()
+        return self._tag_doc(doc)
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
@@ -119,7 +120,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
 
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
-        return doc
+        return self._tag_doc(doc)
 
     def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self._start_of_fgs_uid:
@@ -131,4 +132,5 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
-            super().activity_gated_stop(doc)
+            return super().activity_gated_stop(doc)
+        return self._tag_doc(doc)

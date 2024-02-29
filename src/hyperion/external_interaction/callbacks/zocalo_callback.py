@@ -46,7 +46,10 @@ class ZocaloCallback(CallbackBase):
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
             self.run_uid = doc.get("uid")
-            if isinstance(ispyb_ids := doc.get("ispyb_dcids"), tuple):
+            if (
+                isinstance(ispyb_ids := doc.get("ispyb_dcids"), tuple)
+                and len(ispyb_ids) > 0
+            ):
                 self.ispyb_ids = ispyb_ids
                 for id in self.ispyb_ids:
                     self.zocalo_interactor.run_start(id)
@@ -60,7 +63,7 @@ class ZocaloCallback(CallbackBase):
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
-            if self.ispyb_ids:
+            if self.ispyb_ids and self.zocalo_interactor:
                 for id in self.ispyb_ids:
                     self.zocalo_interactor.run_end(id)
             self._reset_state()
