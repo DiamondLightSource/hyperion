@@ -355,7 +355,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     callback_class_mock = MagicMock(
         spec=AbstractPlanCallbackCollection,
         name="mock_callback_class",
-        return_value=[1, 2],
+        return_value=["test_cb_1", "test_cb_2"],
     )
 
     TEST_REGISTRY = {

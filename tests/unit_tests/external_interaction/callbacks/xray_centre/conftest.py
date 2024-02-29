@@ -8,11 +8,13 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.parameters.constants import (
+    DO_FGS,
     GRIDSCAN_AND_MOVE,
     GRIDSCAN_MAIN_PLAN,
     GRIDSCAN_OUTER_PLAN,
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+    TRIGGER_ZOCALO_ON,
 )
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -90,6 +92,7 @@ class TestData:
         "plan_type": "generator",
         "plan_name": GRIDSCAN_OUTER_PLAN,
         "subplan_name": GRIDSCAN_OUTER_PLAN,
+        TRIGGER_ZOCALO_ON: DO_FGS,
         "hyperion_internal_parameters": dummy_params().json(),
     }
     test_run_gridscan_start_document: RunStart = {  # type: ignore
@@ -107,8 +110,8 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": GRIDSCAN_AND_MOVE,
-        "subplan_name": "do_fgs",
+        "plan_name": DO_FGS,
+        "subplan_name": DO_FGS,
         "zocalo_environment": "dev_artemis",
     }
     test_descriptor_document_pre_data_collection: EventDescriptor = {

@@ -11,16 +11,15 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 
 def test_callback_collection_init():
     callbacks = XrayCentreCallbackCollection()
-    assert len(list(callbacks)) == 3
+    assert len(list(callbacks)) == 2
 
 
 def test_callback_collection_list():
     callbacks = XrayCentreCallbackCollection()
     callback_list = list(callbacks)
-    assert len(callback_list) == 3
+    assert len(callback_list) == 2
     assert callbacks.ispyb_handler in callback_list
     assert callbacks.nexus_handler in callback_list
-    assert callbacks.zocalo_handler in callback_list
 
 
 def test_subscribe_in_plan():
@@ -28,8 +27,6 @@ def test_subscribe_in_plan():
     document_event_mock = MagicMock()
     callbacks.ispyb_handler.start = document_event_mock
     callbacks.ispyb_handler.activity_gated_stop = document_event_mock
-    callbacks.zocalo_handler.activity_gated_start = document_event_mock
-    callbacks.zocalo_handler.activity_gated_stop = document_event_mock
     callbacks.nexus_handler.activity_gated_start = document_event_mock
     callbacks.nexus_handler.stop = document_event_mock
 

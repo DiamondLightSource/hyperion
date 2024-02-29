@@ -280,6 +280,7 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
     zocalo, RE: RunEngine, params: RotationInternalParameters, test_outer_start_doc
 ):
     cb = RotationCallbackCollection()
+    cb.ispyb_handler.emit_cb = None
     activate_callbacks(cb)
     cb.nexus_handler.activity_gated_event = MagicMock(autospec=True)
     cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
