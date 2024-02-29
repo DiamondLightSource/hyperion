@@ -112,8 +112,8 @@ if [[ $START == 1 ]]; then
     echo "$(date) Logging to $HYPERION_LOG_DIR"
     export HYPERION_LOG_DIR
     mkdir -p $HYPERION_LOG_DIR
-    start_log_path=$HYPERION_LOG_DIR/start_log.txt
-    callback_start_log_path=$HYPERION_LOG_DIR/callback_start_log.txt
+    start_log_path=$HYPERION_LOG_DIR/start_log.log
+    callback_start_log_path=$HYPERION_LOG_DIR/callback_start_log.log
 
     source .venv/bin/activate
 
@@ -145,11 +145,10 @@ if [[ $START == 1 ]]; then
     done
 
     unset PYEPICS_LIBCA
-    screen -S hyperion-debug -d -m hyperion `echo $h_commands;`>$start_log_path &
+    hyperion `echo $h_commands;`>$start_log_path  2>&1 &
     if [ $EXTERNAL_CALLBACK_SERVICE == true ]; then
         hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
     fi
-
     echo "$(date) Waiting for Hyperion to start"
 
     for i in {1..30}
