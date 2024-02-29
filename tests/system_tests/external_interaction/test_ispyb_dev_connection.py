@@ -167,7 +167,7 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     os.environ["ISPYB_CONFIG_PATH"] = DEV_ISPYB_DATABASE_CFG
-    callbacks = RotationCallbackCollection.setup()
+    callbacks = RotationCallbackCollection()
     for cb in list(callbacks):
         RE.subscribe(cb)
 

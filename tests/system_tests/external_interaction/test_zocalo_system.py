@@ -14,7 +14,7 @@ from dodal.devices.zocalo import (
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
+from hyperion.external_interaction.callbacks.zocalo_callback import ZocaloCallback
 from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -53,16 +53,9 @@ async def zocalo_device():
 async def test_when_running_start_stop_then_get_expected_returned_results(
     dummy_params, zocalo_env, zocalo_device: ZocaloResults, RE: RunEngine
 ):
-    start_doc = {
-        "subplan_name": GRIDSCAN_OUTER_PLAN,
-        "hyperion_internal_parameters": dummy_params.json(),
-    }
-    zc = XrayCentreCallbackCollection.setup().zocalo_handler
-    zc.activity_gated_start(start_doc)
     dcids = (1, 2)
-    zc.ispyb.ispyb_ids = IspybIds(
-        data_collection_ids=dcids, data_collection_group_id=4, grid_ids=(0,)
-    )
+    zc = ZocaloCallback()
+    zc.start({})  # TODO
     for dcid in dcids:
         zc.zocalo_interactor.run_start(dcid)
     for dcid in dcids:
@@ -81,14 +74,12 @@ def run_zocalo_with_dev_ispyb(
 ):
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.hyperion_params.detector_params.prefix = sample_name
-        cbs = XrayCentreCallbackCollection.setup()
-        zc = cbs.zocalo_handler
-        zc.active = True
+        cbs = XrayCentreCallbackCollection()
         ispyb = cbs.ispyb_handler
         ispyb.ispyb_config = dummy_ispyb_3d.ISPYB_CONFIG_PATH
         ispyb.active = True
+        assert isinstance(zc := ispyb.emit_cb, ZocaloCallback)
 
-        RE.subscribe(zc)
         RE.subscribe(ispyb)
 
         @bpp.set_run_key_decorator("testing123")
@@ -103,12 +94,12 @@ def run_zocalo_with_dev_ispyb(
             )
             def inner_plan():
                 yield from bps.sleep(0)
-                zc.ispyb.ispyb_ids = zc.ispyb.ispyb.begin_deposition()
-                assert isinstance(zc.ispyb.ispyb_ids.data_collection_ids, tuple)
-                for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
+                ispyb.ispyb_ids = ispyb.ispyb.begin_deposition()
+                assert isinstance(ispyb.ispyb_ids.data_collection_ids, tuple)
+                for dcid in ispyb.ispyb_ids.data_collection_ids:
                     zc.zocalo_interactor.run_start(dcid)
-                zc.ispyb._processing_start_time = time()
-                for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
+                ispyb._processing_start_time = time()
+                for dcid in ispyb.ispyb_ids.data_collection_ids:
                     zc.zocalo_interactor.run_end(dcid)
 
             yield from inner_plan()
@@ -123,7 +114,7 @@ def run_zocalo_with_dev_ispyb(
         else:
             centre = centre[0]
 
-        return zc, centre
+        return ispyb, zc, centre
 
     return inner
 
@@ -134,7 +125,7 @@ async def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_t
     run_zocalo_with_dev_ispyb, zocalo_env
 ):
     fallback = np.array([1, 2, 3])
-    zc, centre = await run_zocalo_with_dev_ispyb("NO_DIFF", fallback)
+    _, _, centre = await run_zocalo_with_dev_ispyb("NO_DIFF", fallback)
     assert np.allclose(centre, fallback)
 
 
@@ -143,9 +134,9 @@ async def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_t
 async def test_given_a_result_with_no_diffraction_ispyb_comment_updated(
     run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
 ):
-    zc, _ = await run_zocalo_with_dev_ispyb("NO_DIFF")
+    ispyb, zc, _ = await run_zocalo_with_dev_ispyb("NO_DIFF")
 
-    comment = fetch_comment(zc.ispyb.ispyb_ids.data_collection_ids[0])
+    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
     assert "Zocalo found no crystals in this gridscan." in comment
 
 
@@ -154,9 +145,9 @@ async def test_given_a_result_with_no_diffraction_ispyb_comment_updated(
 async def test_zocalo_adds_nonzero_comment_time(
     run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
 ):
-    zc, _ = await run_zocalo_with_dev_ispyb()
+    ispyb, zc, _ = await run_zocalo_with_dev_ispyb()
 
-    comment = fetch_comment(zc.ispyb.ispyb_ids.data_collection_ids[0])
+    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
     assert comment[156:178] == "Zocalo processing took"
     assert float(comment[179:184]) > 0
     assert float(comment[179:184]) < 180
@@ -167,8 +158,8 @@ async def test_zocalo_adds_nonzero_comment_time(
 async def test_given_a_single_crystal_result_ispyb_comment_updated(
     run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
 ):
-    zc, _ = await run_zocalo_with_dev_ispyb()
-    comment = fetch_comment(zc.ispyb.ispyb_ids.data_collection_ids[0])
+    ispyb, zc, _ = await run_zocalo_with_dev_ispyb()
+    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
     assert "Crystal 1" in comment
     assert "Strength" in comment
     assert "Size (grid boxes)" in comment
@@ -179,9 +170,9 @@ async def test_given_a_single_crystal_result_ispyb_comment_updated(
 async def test_given_a_result_with_multiple_crystals_ispyb_comment_updated(
     run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
 ):
-    zc, _ = await run_zocalo_with_dev_ispyb("MULTI_X")
+    ispyb, zc, _ = await run_zocalo_with_dev_ispyb("MULTI_X")
 
-    comment = fetch_comment(zc.ispyb.ispyb_ids.data_collection_ids[0])
+    comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
     assert "Crystal 1" and "Crystal 2" in comment
     assert "Strength" in comment
     assert "Position (grid boxes)" in comment

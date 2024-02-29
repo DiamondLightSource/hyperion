@@ -152,10 +152,10 @@ def test_emit_called_correctly():
     receiving_cb.active = True
 
     test_cb.start(start_doc)
-    receiving_cb.activity_gated_start.assert_called_with(start_doc)
+    receiving_cb.activity_gated_start.assert_called_once_with(start_doc)
     test_cb.descriptor(desc_doc)
-    receiving_cb.activity_gated_descriptor.assert_called_with(desc_doc)
+    receiving_cb.activity_gated_descriptor.assert_called_once_with(desc_doc)
     test_cb.event(event_doc)
-    receiving_cb.activity_gated_event.assert_called_with(event_doc)
+    receiving_cb.activity_gated_event.assert_called_once_with(event_doc)
     test_cb.stop(stop_doc)
-    receiving_cb.activity_gated_stop.assert_called_with(stop_doc)
+    receiving_cb.activity_gated_stop.assert_called_once_with(stop_doc)

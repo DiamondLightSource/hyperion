@@ -147,7 +147,7 @@ def mock_subscriptions(test_fgs_params):
             )
         ),
     ):
-        subscriptions = XrayCentreCallbackCollection.setup()
+        subscriptions = XrayCentreCallbackCollection()
         subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
         start_doc = {
             "subplan_name": GRIDSCAN_OUTER_PLAN,
@@ -171,7 +171,7 @@ def mock_rotation_subscriptions(test_rotation_params):
         "hyperion.external_interaction.callbacks.rotation.callback_collection.ZocaloCallback",
         autospec=True,
     ):
-        subscriptions = RotationCallbackCollection.setup()
+        subscriptions = RotationCallbackCollection()
     return subscriptions
 
 

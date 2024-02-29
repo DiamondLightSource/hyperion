@@ -155,11 +155,7 @@ class BlueskyRunner:
                 if command.experiment is None:
                     raise ValueError("No experiment provided for START")
                 try:
-                    if (
-                        not self.use_external_callbacks
-                        and command.callbacks
-                        and (cbs := list(command.callbacks.setup()))
-                    ):
+                    if command.callbacks and (cbs := list(command.callbacks())):
                         LOGGER.info(
                             f"Using callbacks for this plan: {not self.use_external_callbacks} - {cbs}"
                         )

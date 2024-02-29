@@ -29,6 +29,7 @@ class ZocaloCallback(CallbackBase):
         self.run_uid: Optional[str] = None
         self.triggering_plan: Optional[str] = None
         self.ispyb_ids: Optional[tuple[int]] = None
+        self.zocalo_interactor: Optional[ZocaloTrigger] = None
 
     def __init__(
         self,

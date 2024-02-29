@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
-from event_model.documents import Event, EventDescriptor, RunStop
+from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -82,7 +82,7 @@ class TestData:
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
     GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
     BAD_ISPYB_RUN_STATUS: str = "DataCollection Unsuccessful"
-    test_start_document = {
+    test_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -92,7 +92,7 @@ class TestData:
         "subplan_name": GRIDSCAN_OUTER_PLAN,
         "hyperion_internal_parameters": dummy_params().json(),
     }
-    test_run_gridscan_start_document = {
+    test_run_gridscan_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -101,7 +101,7 @@ class TestData:
         "plan_name": GRIDSCAN_AND_MOVE,
         "subplan_name": GRIDSCAN_MAIN_PLAN,
     }
-    test_do_fgs_start_document = {
+    test_do_fgs_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
