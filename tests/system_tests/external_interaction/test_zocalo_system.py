@@ -6,10 +6,7 @@ import numpy as np
 import pytest
 import pytest_asyncio
 from bluesky.run_engine import RunEngine
-from dodal.devices.zocalo import (
-    ZOCALO_READING_PLAN_NAME,
-    ZocaloResults,
-)
+from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults, ZocaloTrigger
 
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -57,14 +54,14 @@ async def test_when_running_start_stop_then_get_expected_returned_results(
     zc = ZocaloCallback()
     zc.triggering_plan = "test"
     zc.start(
-        {
+        {  # type: ignore
             "subplan_name": "test",
             "uid": "123",
             "zocalo_environment": "dev_artemis",
-            "ispyb_ids": dcids,
-        }  # type:ignore
+            "ispyb_dcids": dcids,
+        }
     )
-    zc.stop({"run_start": "123"})  # type:ignore
+    zc.stop({"run_start": "123"})  # type: ignore
     RE(bps.trigger(zocalo_device, wait=True))
     result = await zocalo_device.read()
     assert result["zocalo-results"]["value"][0] == TEST_RESULT_LARGE[0]
@@ -82,8 +79,9 @@ def run_zocalo_with_dev_ispyb(
         cbs = XrayCentreCallbackCollection()
         ispyb = cbs.ispyb_handler
         ispyb.ispyb_config = dummy_ispyb_3d.ISPYB_CONFIG_PATH
+        ispyb.emit_cb = None
         ispyb.active = True
-        assert isinstance(zc := ispyb.emit_cb, ZocaloCallback)
+        zc = ZocaloTrigger("dev_artemis")
 
         RE.subscribe(ispyb)
 
@@ -102,10 +100,10 @@ def run_zocalo_with_dev_ispyb(
                 ispyb.ispyb_ids = ispyb.ispyb.begin_deposition()
                 assert isinstance(ispyb.ispyb_ids.data_collection_ids, tuple)
                 for dcid in ispyb.ispyb_ids.data_collection_ids:
-                    zc.zocalo_interactor.run_start(dcid)
+                    zc.run_start(dcid)
                 ispyb._processing_start_time = time()
                 for dcid in ispyb.ispyb_ids.data_collection_ids:
-                    zc.zocalo_interactor.run_end(dcid)
+                    zc.run_end(dcid)
 
             yield from inner_plan()
             yield from bps.trigger_and_read(

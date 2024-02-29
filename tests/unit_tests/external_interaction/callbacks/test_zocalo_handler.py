@@ -112,16 +112,16 @@ class TestZocaloHandler:
         ispyb_cb.event(td.test_event_document_during_data_collection)
         assert zocalo_handler.zocalo_interactor is not None
 
-        zocalo_handler.zocalo_interactor.run_start.assert_has_calls(
+        zocalo_handler.zocalo_interactor.run_start.assert_has_calls(  # type: ignore
             [call(x) for x in dc_ids]
         )
-        assert zocalo_handler.zocalo_interactor.run_start.call_count == len(dc_ids)
+        assert zocalo_handler.zocalo_interactor.run_start.call_count == len(dc_ids)  # type: ignore
 
         ispyb_cb.stop(td.test_stop_document)
 
-        zocalo_handler.zocalo_interactor.run_end.assert_has_calls(
+        zocalo_handler.zocalo_interactor.run_end.assert_has_calls(  # type: ignore
             [call(x) for x in dc_ids]
         )
-        assert zocalo_handler.zocalo_interactor.run_end.call_count == len(dc_ids)
+        assert zocalo_handler.zocalo_interactor.run_end.call_count == len(dc_ids)  # type: ignore
 
         zocalo_handler._reset_state.assert_called()

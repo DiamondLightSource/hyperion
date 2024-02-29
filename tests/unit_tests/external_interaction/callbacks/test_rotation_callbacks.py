@@ -1,5 +1,5 @@
 import os
-from typing import Callable
+from typing import Callable, Sequence
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -84,7 +84,7 @@ def activate_callbacks(cbs: RotationCallbackCollection | XrayCentreCallbackColle
 
 def fake_rotation_scan(
     params: RotationInternalParameters,
-    subscriptions: RotationCallbackCollection | list[PlanReactiveCallback],
+    subscriptions: RotationCallbackCollection | Sequence[PlanReactiveCallback],
     after_open_do: Callable | None = None,
     after_main_do: Callable | None = None,
 ):
@@ -150,13 +150,13 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     params.hyperion_params.ispyb_params.transmission_fraction = 1.0
     params.hyperion_params.ispyb_params.flux = 10.0
 
-    assert nexus_handler.activity_gated_start.call_count == 2
-    call_content_outer = nexus_handler.activity_gated_start.call_args_list[0].args[0]
+    assert nexus_handler.activity_gated_start.call_count == 2  # type: ignore
+    call_content_outer = nexus_handler.activity_gated_start.call_args_list[0].args[0]  # type: ignore
     assert call_content_outer["hyperion_internal_parameters"] == params.json()
-    call_content_inner = nexus_handler.activity_gated_start.call_args_list[1].args[0]
+    call_content_inner = nexus_handler.activity_gated_start.call_args_list[1].args[0]  # type: ignore
     assert call_content_inner["subplan_name"] == ROTATION_PLAN_MAIN
 
-    assert nexus_handler.activity_gated_event.call_count == 2
+    assert nexus_handler.activity_gated_event.call_count == 2  # type: ignore
 
 
 @patch(
@@ -175,7 +175,7 @@ def test_nexus_handler_only_writes_once(
     RE(fake_rotation_scan(params, [cb]))
     nexus_writer.assert_called_once()
     assert cb.writer is not None
-    cb.writer.create_nexus_file.assert_called_once()
+    cb.writer.create_nexus_file.assert_called_once()  # type: ignore
 
 
 def test_nexus_handler_triggers_write_file_when_told(
