@@ -334,7 +334,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     cb = [RotationISPyBCallback()]
     cb[0].active = True
     ispyb_ids = IspybIds(
-        data_collection_group_id=23, data_collection_ids=45, grid_ids=None
+        data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None
     )
     rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
 
@@ -378,7 +378,7 @@ def test_ispyb_specifies_experiment_type_if_supplied(
     cb[0].active = True
     params.hyperion_params.ispyb_params.ispyb_experiment_type = "Characterization"
     rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
-        data_collection_group_id=23, data_collection_ids=45, grid_ids=None
+        data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None
     )
 
     params.hyperion_params.ispyb_params.sample_id = "abc"

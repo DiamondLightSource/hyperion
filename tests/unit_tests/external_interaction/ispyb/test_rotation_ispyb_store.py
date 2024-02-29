@@ -118,7 +118,7 @@ def test_begin_deposition_with_alternate_experiment_type(
     dummy_rotation_params,
 ):
     assert dummy_rotation_ispyb_with_experiment_type.begin_deposition() == IspybIds(
-        data_collection_ids=TEST_DATA_COLLECTION_IDS[0],
+        data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
     mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
