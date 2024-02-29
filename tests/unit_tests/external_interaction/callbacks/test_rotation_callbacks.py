@@ -100,7 +100,11 @@ def fake_rotation_scan(
 
         @bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
         @bpp.run_decorator(
-            md={"subplan_name": ROTATION_PLAN_MAIN, "zocalo_environment": "dev_zocalo"}
+            md={
+                "subplan_name": ROTATION_PLAN_MAIN,
+                "zocalo_environment": "dev_zocalo",
+                "scan_points": [params.get_scan_points()],
+            }
         )
         def fake_main_plan():
             yield from read_hardware_for_ispyb_during_collection(attenuator, flux, dcm)

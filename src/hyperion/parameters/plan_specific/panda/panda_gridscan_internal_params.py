@@ -22,6 +22,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
     OddYStepsException,
 )
+from hyperion.utils.utils import number_of_frames_from_scan_spec
 
 
 class PandAGridscanInternalParameters(InternalParameters):
@@ -103,9 +104,7 @@ class PandAGridscanInternalParameters(InternalParameters):
         size = (
             self.hyperion_params.detector_params.detector_size_constants.det_size_pixels
         )
-        ax = list(scan_points.keys())[0]
-        num_frames_in_vds = len(scan_points[ax])
-        return (num_frames_in_vds, size.width, size.height)
+        return (number_of_frames_from_scan_spec(scan_points), size.width, size.height)
 
     def get_omega_start(self, scan_number: int) -> float:
         assert (

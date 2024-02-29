@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -72,6 +72,7 @@ if TYPE_CHECKING:
     )
 
     PandaOrZebraGridscan = FastGridScan | PandAFastGridScan
+    from scanspec.core import AxesPoints, Axis
 
 
 @dataclasses.dataclass
@@ -170,6 +171,7 @@ def kickoff_and_complete_gridscan(
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,
+    scan_points: List[AxesPoints[Axis]],
 ):
     @TRACER.start_as_current_span(DO_FGS)
     @bpp.set_run_key_decorator(DO_FGS)
@@ -177,6 +179,7 @@ def kickoff_and_complete_gridscan(
         md={
             "subplan_name": DO_FGS,
             "zocalo_environment": zocalo_environment,
+            "scan_points": scan_points,
         }
     )
     @bpp.contingency_decorator(
@@ -252,6 +255,7 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.hyperion_params.zocalo_environment,
+        [parameters.get_scan_points(1), parameters.get_scan_points(2)],
     )
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 

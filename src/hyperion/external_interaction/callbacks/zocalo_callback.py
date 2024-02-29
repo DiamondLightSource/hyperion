@@ -17,6 +17,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
+from hyperion.utils.utils import number_of_frames_from_scan_spec
 
 if TYPE_CHECKING:
     from event_model.documents import RunStart, RunStop
@@ -50,9 +51,21 @@ class ZocaloCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
             self.run_uid = doc.get("uid")
+
+            assert isinstance(scan_points := doc.get("scan_points"), list)
             if self.ispyb.ispyb_ids.data_collection_ids:
-                for id in self.ispyb.ispyb_ids.data_collection_ids:
-                    self.zocalo_interactor.run_start(id)
+                ids_and_shape = list(
+                    zip(self.ispyb.ispyb_ids.data_collection_ids, scan_points)
+                )
+                start_idx = 0
+                for id, shape in ids_and_shape:
+                    num_frames = number_of_frames_from_scan_spec(shape)
+                    self.zocalo_interactor.run_start(
+                        id,
+                        start_idx,
+                        num_frames,
+                    )
+                    start_idx += num_frames
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
 

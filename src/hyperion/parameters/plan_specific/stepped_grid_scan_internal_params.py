@@ -16,6 +16,7 @@ from hyperion.parameters.internal_parameters import (
     extract_experiment_params_from_flat_dict,
     extract_hyperion_params_from_flat_dict,
 )
+from hyperion.utils.utils import number_of_frames_from_scan_spec
 
 
 @dataclass
@@ -169,6 +170,4 @@ class SteppedGridScanInternalParameters(InternalParameters):
         size = (
             self.hyperion_params.detector_params.detector_size_constants.det_size_pixels
         )
-        ax = list(scan_points.keys())[0]
-        num_frames_in_vds = len(scan_points[ax])
-        return (num_frames_in_vds, size.width, size.height)
+        return (number_of_frames_from_scan_spec(scan_points), size.width, size.height)

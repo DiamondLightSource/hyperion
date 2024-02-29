@@ -17,6 +17,8 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_sim_value
+from scanspec.core import Path as ScanPath
+from scanspec.specs import Line
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -733,6 +735,16 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disarm_detector.assert_called()
 
 
+def create_dummy_scan_spec(x_steps, y_steps, z_steps):
+    x_line = Line("sam_x", 0, 10, 10)
+    y_line = Line("sam_y", 10, 20, 20)
+    z_line = Line("sam_z", 30, 50, 30)
+
+    specs = [y_line * ~x_line, z_line * ~x_line]
+    specs = [ScanPath(spec.calculate()) for spec in specs]
+    return [spec.consume().midpoints for spec in specs]
+
+
 @patch(
     "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
     autospec=True,
@@ -743,11 +755,15 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     fake_fgs_composite: FlyScanXRayCentreComposite,
 ):
     mock_ispyb_handler = MagicMock()
-    mock_ispyb_handler.ispyb_ids.data_collection_ids = (100, 200)
+    id_1, id_2 = 100, 200
+    mock_ispyb_handler.ispyb_ids.data_collection_ids = (id_1, id_2)
     zocalo_env = "dev_env"
     zocalo_callback = ZocaloCallback(mock_ispyb_handler, DO_FGS)
     zocalo_callback.active = True
     mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+
+    x_steps, y_steps, z_steps = 10, 20, 30
+
     RE.subscribe(zocalo_callback)
     RE(
         kickoff_and_complete_gridscan(
@@ -755,9 +771,23 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
             MagicMock(spec=EigerDetector),
             fake_fgs_composite.synchrotron,
             zocalo_env,
+            scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
         )
     )
 
     mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
+
+    expected_start_calls = [
+        call(id_1, 0, x_steps * y_steps),
+        call(
+            id_2,
+            x_steps * y_steps,
+            x_steps * z_steps,
+        ),
+    ]
+
     assert mock_zocalo_trigger.run_start.call_count == 2
+    assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls
+
     assert mock_zocalo_trigger.run_end.call_count == 2
+    assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]

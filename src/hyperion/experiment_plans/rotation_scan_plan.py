@@ -148,6 +148,7 @@ def rotation_scan_plan(
         md={
             "subplan_name": ROTATION_PLAN_MAIN,
             "zocalo_environment": params.hyperion_params.zocalo_environment,
+            "scan_points": [params.get_scan_points()],
         }
     )
     def _rotation_scan_plan():
