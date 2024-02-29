@@ -46,6 +46,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
+    DO_FGS,
     GRIDSCAN_AND_MOVE,
     GRIDSCAN_MAIN_PLAN,
     GRIDSCAN_OUTER_PLAN,
@@ -270,7 +271,7 @@ def panda_flyscan_xray_centre(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": GRIDSCAN_OUTER_PLAN,
-            "trigger_zocalo_on": GRIDSCAN_MAIN_PLAN,
+            "trigger_zocalo_on": DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanISPyBCallback",

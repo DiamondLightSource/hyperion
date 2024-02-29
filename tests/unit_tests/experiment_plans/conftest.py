@@ -27,6 +27,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.parameters.constants import (
+    DO_FGS,
     GRIDSCAN_OUTER_PLAN,
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
@@ -152,9 +153,9 @@ def mock_subscriptions(test_fgs_params):
         start_doc = {
             "subplan_name": GRIDSCAN_OUTER_PLAN,
             "hyperion_internal_parameters": test_fgs_params.json(),
+            "trigger_zocalo_on": DO_FGS,
         }
         subscriptions.ispyb_handler.activity_gated_start(start_doc)
-        subscriptions.zocalo_handler.activity_gated_start(start_doc)
 
     return subscriptions
 
