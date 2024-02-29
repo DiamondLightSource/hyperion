@@ -19,8 +19,6 @@
         "trigger_mode": 2,
         "detector_size_constants": "EIGER2_X_16M",
         "beam_xy_converter": null,
-        "start_index": 0,
-        "nexus_file_run_number": 0
     },
     "ispyb_params": {
         "visit_path": "/tmp/cm31105-4/",
