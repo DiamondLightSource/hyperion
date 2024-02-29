@@ -37,6 +37,9 @@ class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
     # Whether to set the stub offsets after centering
     set_stub_offsets: bool = False
 
+    # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
+    run_up_distance_mm: float = 0.15
+
     use_panda: bool = False
 
     def get_num_images(self):
