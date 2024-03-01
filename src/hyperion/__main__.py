@@ -1,6 +1,7 @@
 import atexit
 import threading
 from dataclasses import asdict
+from logging.handlers import TimedRotatingFileHandler
 from queue import Queue
 from traceback import format_exception
 from typing import Any, Callable, Optional, Tuple
@@ -272,7 +273,20 @@ class StopOrStatus(Resource):
 
 class FlushLogs(Resource):
     def put(self, **kwargs):
-        get_memory_handler().flush()
+        try:
+            handler = get_memory_handler()
+            assert isinstance(
+                handler.target, TimedRotatingFileHandler
+            ), "Circular memory handler doesn't have an appropriate fileHandler target"
+            handler.flush()
+            status_and_message = StatusAndMessage(
+                Status.SUCCESS, f"Flushed debug log to {handler.target.baseFilename}"
+            )
+        except Exception as e:
+            status_and_message = StatusAndMessage(
+                Status.FAILED, f"Failed to flush debug log: {e}"
+            )
+        return asdict(status_and_message)
 
 
 def create_app(
