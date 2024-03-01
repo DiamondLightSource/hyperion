@@ -14,7 +14,6 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     DEFAULT_DIRECTION,
     DEFAULT_MAX_VELOCITY,
     RotationScanComposite,
-    move_to_end_w_buffer,
     move_to_start_w_buffer,
     rotation_scan,
     rotation_scan_plan,
@@ -144,25 +143,6 @@ def test_move_to_start(smargon: Smargon, RE):
         smargon.omega.user_readback.get()
         == start_angle - TEST_OFFSET * DEFAULT_DIRECTION
     )
-
-
-def test_move_to_end(smargon: Smargon, RE):
-    scan_width = 153
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        fake_read,
-    ):
-        RE(
-            move_to_end_w_buffer(
-                smargon.omega, scan_width, TEST_OFFSET, TEST_SHUTTER_OPENING_DEGREES
-            )
-        )
-
-    distance_to_move = (
-        scan_width + TEST_SHUTTER_OPENING_DEGREES + TEST_OFFSET * 2
-    ) * DEFAULT_DIRECTION
-
-    assert smargon.omega.user_readback.get() == distance_to_move
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)

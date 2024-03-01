@@ -8,7 +8,6 @@ from dodal.beamlines import i03
 from hyperion.experiment_plans.rotation_scan_plan import (
     DEFAULT_DIRECTION,
     RotationScanComposite,
-    move_to_end_w_buffer,
     move_to_start_w_buffer,
 )
 
@@ -57,19 +56,3 @@ def test_move_to_start(devices, RE):
 
     assert velocity == 120
     assert omega_position == (start_angle - TEST_OFFSET * DEFAULT_DIRECTION)
-
-
-@pytest.mark.s03()
-def test_move_to_end(devices, RE):
-    smargon: Smargon = devices.smargon
-    scan_width = 153
-    RE(
-        move_to_end_w_buffer(
-            smargon.omega, scan_width, TEST_OFFSET, TEST_SHUTTER_DEGREES
-        )
-    )
-    omega_position = smargon.omega.user_setpoint.get()
-
-    assert omega_position == (
-        (scan_width + TEST_OFFSET * 2 + TEST_SHUTTER_DEGREES) * DEFAULT_DIRECTION
-    )
