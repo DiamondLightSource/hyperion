@@ -18,7 +18,7 @@ from hyperion.parameters.constants import SET_LOG_UID_TAG
 from .conftest import _destroy_loggers
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def clear_and_mock_loggers():
     _destroy_loggers([*log.ALL_LOGGERS, dodal_logger])
     mock_open_with_tell = MagicMock()
@@ -28,6 +28,8 @@ def clear_and_mock_loggers():
         patch("dodal.log.GELFTCPHandler.emit") as graylog_emit,
         patch("dodal.log.TimedRotatingFileHandler.emit") as filehandler_emit,
     ):
+        graylog_emit.reset_mock()
+        filehandler_emit.reset_mock()
         yield filehandler_emit, graylog_emit
     _destroy_loggers([*log.ALL_LOGGERS, dodal_logger])
 
@@ -88,6 +90,7 @@ def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
 
     RE.subscribe(LogUidTaggingCallback())
     test_run_uid = None
+    logger = log.LOGGER
 
     @bpp.run_decorator(
         md={
@@ -99,19 +102,25 @@ def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
         assert log.run_uid_filter.run_uid is not None
         nonlocal test_run_uid
         test_run_uid = log.run_uid_filter.run_uid
-        logger = log.LOGGER
         logger.info("test_hyperion")
-        dodal_logger.info("test_dodal")
+        logger.info("test_hyperion")
         yield from bps.sleep(0)
 
     assert log.run_uid_filter.run_uid is None
     RE(test_plan())
     assert log.run_uid_filter.run_uid is None
 
-    graylog_calls = mock_GELFTCPHandler_emit.mock_calls[5:-5]
-    assert len(graylog_calls) == 2
+    graylog_calls_in_plan = [
+        c.args[0]
+        for c in mock_GELFTCPHandler_emit.mock_calls
+        if c.args[0].msg == "test_hyperion"
+    ]
 
-    dc_group_id_correct = [c.args[0].run_uid == test_run_uid for c in graylog_calls]
+    assert len(graylog_calls_in_plan) == 2
+
+    dc_group_id_correct = [
+        record.run_uid == test_run_uid for record in graylog_calls_in_plan
+    ]
     assert all(dc_group_id_correct)
 
 
