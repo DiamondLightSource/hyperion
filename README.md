@@ -83,3 +83,10 @@ curl -X PUT http://127.0.0.1:5005/stop
 
 ```
 
+Writing out `DEBUG` logs
+------------------------
+To make the app write the `DEBUG` level logs stored in the `CircularMemoryHandler`:
+```
+curl -X PUT http://127.0.0.1:5005/flush_debug_log
+
+```
