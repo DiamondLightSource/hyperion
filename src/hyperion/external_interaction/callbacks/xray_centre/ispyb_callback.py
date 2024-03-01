@@ -120,7 +120,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
 
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
-        return self._tag_doc(doc)
+        return doc
 
     def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self._start_of_fgs_uid:

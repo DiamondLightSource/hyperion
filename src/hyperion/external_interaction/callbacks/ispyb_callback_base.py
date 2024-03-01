@@ -60,9 +60,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.log = ISPYB_LOGGER
 
     def activity_gated_start(self, doc: RunStart):
-        ISPYB_LOGGER.debug("ISPyB Callback Start Triggered")
-        if self.uid_to_finalize_on is None:
-            self.uid_to_finalize_on = doc.get("uid")
         return self._tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
