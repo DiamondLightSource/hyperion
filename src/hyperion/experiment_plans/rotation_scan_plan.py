@@ -19,7 +19,6 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
-from ophyd.epics_motor import EpicsMotor
 
 from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import (
@@ -83,7 +82,8 @@ ACCELERATION_MARGIN = 1.5
 
 @dataclasses.dataclass
 class RotationMotionProfile:
-    start_angle_deg: float
+    start_scan_deg: float
+    start_motion_deg: float
     scan_width_deg: float
     exposure_time_s: float
     shutter_time_s: float
@@ -114,12 +114,17 @@ def calculate_motion_profile(
     image_width_deg = detector_params.omega_increment
     exposure_time_s = detector_params.exposure_time
     motor_time_to_speed *= ACCELERATION_MARGIN
+    start_scan_deg = detector_params.omega_start
 
     LOGGER.info("Calculating rotation scan motion profile:")
+
     LOGGER.info(f"{(scan_width_deg := num_images * detector_params.omega_increment)=}")
     LOGGER.info(f"{(speed_for_rotation_deg_s := image_width_deg / exposure_time_s)=}")
     LOGGER.info(
         f"{(acceleration_offset_deg := motor_time_to_speed * speed_for_rotation_deg_s)=}"
+    )
+    LOGGER.info(
+        f"{(start_motion_deg := start_scan_deg - (acceleration_offset_deg * direction))=}"
     )
     LOGGER.info(
         f"{(shutter_opening_deg := speed_for_rotation_deg_s * expt_params.shutter_opening_time_s)=}"
@@ -134,7 +139,8 @@ def calculate_motion_profile(
     )
 
     return RotationMotionProfile(
-        start_angle_deg=detector_params.omega_start,
+        start_scan_deg=start_scan_deg,
+        start_motion_deg=start_motion_deg,
         scan_width_deg=scan_width_deg,
         exposure_time_s=exposure_time_s,
         shutter_time_s=shutter_time_s,
@@ -144,30 +150,6 @@ def calculate_motion_profile(
         shutter_opening_deg=shutter_opening_deg,
         total_exposure_s=total_exposure_s,
         distance_to_move_deg=distance_to_move,
-    )
-
-
-def move_to_start_w_buffer(
-    axis: EpicsMotor,
-    start_angle: float,
-    offset: float,
-    wait_for_velocity_set: bool = True,
-    wait_for_move: bool = False,
-    direction: RotationDirection = DEFAULT_DIRECTION,
-    max_velocity: float = DEFAULT_MAX_VELOCITY,
-):
-    """Move an EpicsMotor 'axis' to angle 'start_angle', modified by an offset and
-    against the direction of rotation. Status for the move has group 'move_to_start'."""
-    # can move to start as fast as possible
-    # TODO get VMAX, see https://github.com/bluesky/ophyd/issues/1122
-    yield from bps.abs_set(axis.velocity, max_velocity, wait=wait_for_velocity_set)
-    start_position = start_angle - (offset * direction)
-    LOGGER.info(
-        "moving to_start_w_buffer doing: start_angle-(offset*direction)"
-        f" = {start_angle} - ({offset} * {direction}) = {start_position}"
-    )
-    yield from bps.abs_set(
-        axis, start_position, group="move_to_start", wait=wait_for_move
     )
 
 
@@ -198,20 +180,24 @@ def rotation_scan_plan(
     ):
         axis = composite.smargon.omega
 
-        LOGGER.info(f"moving omega to beginning, {motion_values.start_angle_deg=}")
-        yield from move_to_start_w_buffer(
+        LOGGER.info(f"moving omega to beginning, {motion_values.start_scan_deg=}")
+        # can move to start as fast as possible
+        # TODO get VMAX, see https://github.com/bluesky/ophyd/issues/1122
+        yield from bps.abs_set(axis.velocity, DEFAULT_MAX_VELOCITY, wait=True)
+        yield from bps.abs_set(
             axis,
-            motion_values.start_angle_deg,
-            motion_values.acceleration_offset_deg,
+            motion_values.start_motion_deg,
+            group="move_to_start",
+            wait=True,
         )
 
         LOGGER.info(
-            f"setting up zebra w: {motion_values.start_angle_deg=}"
+            f"setting up zebra w: {motion_values.start_scan_deg=}"
             f"scan_width = {motion_values.scan_width_deg=} deg"
         )
         yield from setup_zebra_for_rotation(
             composite.zebra,
-            start_angle=motion_values.start_angle_deg,
+            start_angle=motion_values.start_scan_deg,
             scan_width=motion_values.scan_width_deg,
             direction=motion_values.direction,
             shutter_opening_deg=motion_values.shutter_opening_deg,
