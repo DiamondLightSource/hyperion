@@ -85,7 +85,6 @@ class RotationMotionProfile:
     start_scan_deg: float
     start_motion_deg: float
     scan_width_deg: float
-    exposure_time_s: float
     shutter_time_s: float
     direction: RotationDirection
     speed_for_rotation_deg_s: float
@@ -98,7 +97,7 @@ class RotationMotionProfile:
 def calculate_motion_profile(
     detector_params: DetectorParams,
     expt_params: RotationScanParams,
-    motor_time_to_speed: float,
+    motor_time_to_speed_s: float,
 ) -> RotationMotionProfile:
     """Calculates the various numbers needed for motions in the rotation scan.
     Rotates through "scan width" plus twice an "offset" to take into account
@@ -113,15 +112,17 @@ def calculate_motion_profile(
     shutter_time_s = expt_params.shutter_opening_time_s
     image_width_deg = detector_params.omega_increment
     exposure_time_s = detector_params.exposure_time
-    motor_time_to_speed *= ACCELERATION_MARGIN
+    motor_time_to_speed_s *= ACCELERATION_MARGIN
     start_scan_deg = detector_params.omega_start
 
     LOGGER.info("Calculating rotation scan motion profile:")
-
+    LOGGER.info(
+        f"{num_images=}, {shutter_time_s=}, {image_width_deg=}, {exposure_time_s=}, {direction=}"
+    )
     LOGGER.info(f"{(scan_width_deg := num_images * detector_params.omega_increment)=}")
     LOGGER.info(f"{(speed_for_rotation_deg_s := image_width_deg / exposure_time_s)=}")
     LOGGER.info(
-        f"{(acceleration_offset_deg := motor_time_to_speed * speed_for_rotation_deg_s)=}"
+        f"{(acceleration_offset_deg := motor_time_to_speed_s * speed_for_rotation_deg_s)=}"
     )
     LOGGER.info(
         f"{(start_motion_deg := start_scan_deg - (acceleration_offset_deg * direction))=}"
@@ -130,26 +131,21 @@ def calculate_motion_profile(
         f"{(shutter_opening_deg := speed_for_rotation_deg_s * expt_params.shutter_opening_time_s)=}"
     )
     LOGGER.info(f"{(total_exposure_s := num_images * exposure_time_s)=}")
-    distance_to_move = (
-        scan_width_deg + shutter_opening_deg + motor_time_to_speed * 2
-    ) * direction
     LOGGER.info(
-        f"Given scan width of {scan_width_deg}, acceleration offset of {motor_time_to_speed}, direction"
-        f" {direction}, apply a relative set to omega of: {distance_to_move}"
+        f"{(distance_to_move_deg := (scan_width_deg + shutter_opening_deg + acceleration_offset_deg * 2) * direction)=}"
     )
 
     return RotationMotionProfile(
         start_scan_deg=start_scan_deg,
         start_motion_deg=start_motion_deg,
         scan_width_deg=scan_width_deg,
-        exposure_time_s=exposure_time_s,
         shutter_time_s=shutter_time_s,
         direction=direction,
         speed_for_rotation_deg_s=speed_for_rotation_deg_s,
         acceleration_offset_deg=acceleration_offset_deg,
         shutter_opening_deg=shutter_opening_deg,
         total_exposure_s=total_exposure_s,
-        distance_to_move_deg=distance_to_move,
+        distance_to_move_deg=distance_to_move_deg,
     )
 
 
@@ -161,7 +157,6 @@ def rotation_scan_plan(
     setup tasks."""
 
     motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
-
     motion_values = calculate_motion_profile(
         params.hyperion_params.detector_params,
         params.experiment_params,
@@ -190,11 +185,6 @@ def rotation_scan_plan(
             group="move_to_start",
             wait=True,
         )
-
-        LOGGER.info(
-            f"setting up zebra w: {motion_values.start_scan_deg=}"
-            f"scan_width = {motion_values.scan_width_deg=} deg"
-        )
         yield from setup_zebra_for_rotation(
             composite.zebra,
             start_angle=motion_values.start_scan_deg,
@@ -214,9 +204,7 @@ def rotation_scan_plan(
         yield from bps.wait("setup_zebra")
 
         # get some information for the ispyb deposition and trigger the callback
-
         yield from read_hardware_for_nexus_writer(composite.eiger)
-
         yield from read_hardware_for_ispyb_pre_collection(
             composite.undulator,
             composite.synchrotron,
@@ -227,10 +215,10 @@ def rotation_scan_plan(
             composite.attenuator, composite.flux, composite.dcm
         )
 
+        # Get ready for the actual scan
         yield from bps.abs_set(
             axis.velocity, motion_values.speed_for_rotation_deg_s, wait=True
         )
-
         yield from arm_zebra(composite.zebra)
 
         # Check topup gate
@@ -240,6 +228,7 @@ def rotation_scan_plan(
             ops_time=10.0,  # Additional time to account for rotation, is s
         )  # See #https://github.com/DiamondLightSource/hyperion/issues/932
 
+        LOGGER.info("Executing rotation scan")
         yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
 
     yield from _rotation_scan_plan(motion_values, composite)
