@@ -26,9 +26,9 @@ Starting the bluesky runner
 -------------------------
 You can start the bluesky runner by running `run_hyperion.sh`. Note that this will fail on a developer machine unless you have a simulated beamline running, instead you should do `run_hyperion.sh --dev --skip-startup-connection`, which will give you a running instance (note that without hardware trying to run a plan on this will fail). The `--dev` flag ensures that logging will not be sent to the production Graylog.
 
-This script will determine whether you are on a beamline or a production machine based on the `BEAMLINE` environment variable.  If on a beamline Hyperion will run with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/hyperion.txt on the shared file system.
+This script will determine whether you are on a beamline or a production machine based on the `BEAMLINE` environment variable.  If on a beamline Hyperion will run with `INFO` level logging, sending its logs to both production graylog and to the beamline/log/bluesky/hyperion.log on the shared file system.
 
-If in a dev environment Hyperion will log to a local graylog instance instead and into a file at `./tmp/dev/hyperion.txt`. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
+If in a dev environment Hyperion will log to a local graylog instance instead and into a file at `./tmp/dev/hyperion.log`. A local instance of graylog will need to be running for this to work correctly. To set this up and run up the containers on your local machine run the `setup_graylog.sh` script.
 
 This uses the generic defaults for a local graylog instance. It can be accessed on `localhost:9000` where the username and password for the graylog portal are both admin.
 
