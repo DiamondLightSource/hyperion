@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from bluesky import FailedStatus
 from bluesky.run_engine import RunEngine
-from dodal.devices.det_dim_constants import (
+from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,

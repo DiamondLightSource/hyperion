@@ -5,6 +5,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import Smargon
+from numpy import isclose
 from ophyd.sim import instantiate_fake_device
 
 from hyperion.experiment_plans.wait_for_robot_load_then_centre_plan import (
@@ -79,6 +80,9 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
     assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
+    assert isclose(
+        params_passed.hyperion_params.ispyb_params.resolution, 2.11338  # type: ignore
+    )
 
 
 @patch(
@@ -166,6 +170,11 @@ def run_simulating_smargon_wait(
         num_of_reads += 1
         return {"values": {"value": int(num_of_reads < total_disabled_reads)}}
 
+    sim_run_engine.add_handler(
+        "read",
+        "dcm_energy_in_kev",
+        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+    )
     sim_run_engine.add_handler(
         "read",
         "smargon_disabled",
