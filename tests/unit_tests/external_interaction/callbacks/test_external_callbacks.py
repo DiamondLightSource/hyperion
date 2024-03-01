@@ -37,7 +37,7 @@ def test_main_function(
 
 
 def test_setup_callbacks():
-    current_number_of_callbacks = 6
+    current_number_of_callbacks = 7
     cbs = setup_callbacks()
     assert len(cbs) == current_number_of_callbacks
     assert len(set(cbs)) == current_number_of_callbacks
