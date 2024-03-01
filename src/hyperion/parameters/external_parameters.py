@@ -19,7 +19,7 @@ def validate_raw_parameters_from_dict(dict_params: dict[str, Any]):
         full_schema = json.load(f)
 
     path = Path(CONST.PARAMETER_SCHEMA_DIRECTORY).absolute()
-    resolver = jsonschema.validators.RefResolver(
+    resolver = jsonschema.validators.RefResolver(  # type: ignore # will be removed in param refactor
         base_uri=f"{path.as_uri()}/",
         referrer=True,
     )
