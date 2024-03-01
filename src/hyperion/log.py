@@ -5,6 +5,8 @@ from typing import Optional
 
 from dodal.log import (
     ERROR_LOG_BUFFER_LINES,
+    CircularMemoryHandler,
+    DodalLogHandlers,
     integrate_bluesky_and_ophyd_logging,
     set_up_all_logging_handlers,
 )
@@ -13,6 +15,7 @@ from dodal.log import LOGGER as dodal_logger
 LOGGER = logging.getLogger("Hyperion")
 LOGGER.setLevel("DEBUG")
 LOGGER.parent = dodal_logger
+__logger_handlers: Optional[DodalLogHandlers] = None
 
 ISPYB_LOGGER = logging.getLogger("Hyperion ISPyB and Zocalo callbacks")
 ISPYB_LOGGER.setLevel(logging.DEBUG)
@@ -51,6 +54,16 @@ def do_default_logging_setup(dev_mode=False):
     )
     integrate_bluesky_and_ophyd_logging(dodal_logger, handlers)
     handlers["graylog_handler"].addFilter(dc_group_id_filter)
+
+    global __logger_handlers
+    __logger_handlers = handlers
+
+
+def get_memory_handler() -> CircularMemoryHandler:
+    assert (
+        __logger_handlers is not None
+    ), "You can only use this after running the default logging setup"
+    return __logger_handlers["debug_memory_handler"]
 
 
 def _get_logging_dir() -> Path:
