@@ -255,9 +255,9 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
         )
 
     sleep(1)
-    assert isfile("tmp/dev/hyperion_ispyb_callback.txt")
+    assert isfile("tmp/dev/hyperion_ispyb_callback.log")
     ispyb_log_tail = subprocess.run(
-        ["tail", "tmp/dev/hyperion_ispyb_callback.txt"],
+        ["tail", "tmp/dev/hyperion_ispyb_callback.log"],
         timeout=1,
         stdout=subprocess.PIPE,
     ).stdout.decode("utf-8")
