@@ -15,7 +15,7 @@ from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
 from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
 )
-from hyperion.parameters.constants import SIM_ISPYB_CONFIG
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -127,7 +127,7 @@ def ispyb_conn_with_2x2_collections_and_grid_info(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_3d_gridscan_ispyb(dummy_params):
-    store_in_ispyb_3d = Store3DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
+    store_in_ispyb_3d = Store3DGridscanInIspyb(CONST.SIM.ISPYB_CONFIG, dummy_params)
     return store_in_ispyb_3d
 
 
@@ -137,7 +137,7 @@ def remap_upsert_columns(keys: Sequence[str], values: list):
 
 @pytest.fixture
 def dummy_rotation_ispyb(dummy_rotation_params):
-    store_in_ispyb = StoreRotationInIspyb(SIM_ISPYB_CONFIG, dummy_rotation_params)
+    store_in_ispyb = StoreRotationInIspyb(CONST.SIM.ISPYB_CONFIG, dummy_rotation_params)
     return store_in_ispyb
 
 
@@ -160,7 +160,7 @@ def ispyb_conn_with_1_collection(base_ispyb_conn):
 
 @pytest.fixture
 def dummy_2d_gridscan_ispyb(dummy_params):
-    return Store2DGridscanInIspyb(SIM_ISPYB_CONFIG, dummy_params)
+    return Store2DGridscanInIspyb(CONST.SIM.ISPYB_CONFIG, dummy_params)
 
 
 def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:

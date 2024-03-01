@@ -39,7 +39,7 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_rotation,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
@@ -143,10 +143,10 @@ def rotation_scan_plan(
     a fixed axis - for now this axis is limited to omega. Only does the scan itself, no
     setup tasks."""
 
-    @bpp.set_run_key_decorator(ROTATION_PLAN_MAIN)
+    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MAIN)
     @bpp.run_decorator(
         md={
-            "subplan_name": ROTATION_PLAN_MAIN,
+            "subplan_name": CONST.PLAN.ROTATION_MAIN,
             "zocalo_environment": params.hyperion_params.zocalo_environment,
         }
     )
@@ -265,7 +265,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": ROTATION_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.ROTATION_OUTER,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "ZocaloCallback",

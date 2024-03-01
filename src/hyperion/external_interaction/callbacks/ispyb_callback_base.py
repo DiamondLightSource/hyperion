@@ -11,12 +11,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import (
-    DEV_ISPYB_DATABASE_CFG,
-    ISPYB_HARDWARE_READ_PLAN,
-    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
-    SIM_ISPYB_CONFIG,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -42,8 +37,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.descriptors: Dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
         if (
-            self.ispyb_config == SIM_ISPYB_CONFIG
-            or self.ispyb_config == DEV_ISPYB_DATABASE_CFG
+            self.ispyb_config == CONST.SIM.ISPYB_CONFIG
+            or self.ispyb_config == CONST.SIM.DEV_ISPYB_DATABASE_CFG
         ):
             ISPYB_LOGGER.warning(
                 f"{self.__class__} using dev ISPyB config: {self.ispyb_config}. If you"
@@ -76,7 +71,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 "has no corresponding descriptor record"
             )
             return doc
-        if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
+        if event_descriptor.get("name") == CONST.PLAN.ISPYB_HARDWARE_READ:
             ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_current_gap"
@@ -94,7 +89,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 "robot-barcode"
             ]
 
-        if event_descriptor.get("name") == ISPYB_TRANSMISSION_FLUX_READ_PLAN:
+        if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
             self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
                 "data"
             ]["attenuator_actual_transmission"]

@@ -26,11 +26,7 @@ from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from hyperion.parameters.constants import (
-    GRIDSCAN_OUTER_PLAN,
-    ISPYB_HARDWARE_READ_PLAN,
-    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -83,12 +79,12 @@ def run_generic_ispyb_handler_setup(
     ispyb_handler.active = True
     ispyb_handler.activity_gated_start(
         {
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": params.json(),
-        }
+        }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
+        {"uid": "123abc", "name": CONST.PLAN.ISPYB_HARDWARE_READ}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -97,7 +93,7 @@ def run_generic_ispyb_handler_setup(
         )
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
+        {"uid": "abc123", "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -150,11 +146,11 @@ def mock_subscriptions(test_fgs_params):
         subscriptions = XrayCentreCallbackCollection.setup()
         subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
         start_doc = {
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
-        subscriptions.ispyb_handler.activity_gated_start(start_doc)
-        subscriptions.zocalo_handler.activity_gated_start(start_doc)
+        subscriptions.ispyb_handler.activity_gated_start(start_doc)  # type: ignore
+        subscriptions.zocalo_handler.activity_gated_start(start_doc)  # type: ignore
 
     return subscriptions
 

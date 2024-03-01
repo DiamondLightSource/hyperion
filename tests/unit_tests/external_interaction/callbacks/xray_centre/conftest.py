@@ -7,13 +7,7 @@ from event_model.documents import Event, EventDescriptor, RunStop
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.parameters.constants import (
-    GRIDSCAN_AND_MOVE,
-    GRIDSCAN_MAIN_PLAN,
-    GRIDSCAN_OUTER_PLAN,
-    ISPYB_HARDWARE_READ_PLAN,
-    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -88,8 +82,8 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": GRIDSCAN_OUTER_PLAN,
-        "subplan_name": GRIDSCAN_OUTER_PLAN,
+        "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
+        "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "hyperion_internal_parameters": dummy_params().json(),
     }
     test_run_gridscan_start_document = {
@@ -98,8 +92,8 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": GRIDSCAN_AND_MOVE,
-        "subplan_name": GRIDSCAN_MAIN_PLAN,
+        "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
+        "subplan_name": CONST.PLAN.GRIDSCAN_MAIN,
     }
     test_do_fgs_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -107,19 +101,19 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": GRIDSCAN_AND_MOVE,
+        "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
         "subplan_name": "do_fgs",
         "zocalo_environment": "dev_artemis",
     }
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ISPYB_HARDWARE_READ_PLAN,
+        "name": CONST.PLAN.ISPYB_HARDWARE_READ,
     }  # type: ignore
     test_descriptor_document_during_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+        "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ,
     }  # type: ignore
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",

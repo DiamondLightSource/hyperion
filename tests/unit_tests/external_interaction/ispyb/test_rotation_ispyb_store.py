@@ -8,7 +8,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
 )
-from hyperion.parameters.constants import SIM_ISPYB_CONFIG
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -33,7 +33,7 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
 @pytest.fixture
 def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
     store_in_ispyb = StoreRotationInIspyb(
-        SIM_ISPYB_CONFIG, dummy_rotation_params, None, "Characterization"
+        CONST.SIM.ISPYB_CONFIG, dummy_rotation_params, None, "Characterization"
     )
     return store_in_ispyb
 
@@ -279,7 +279,7 @@ def test_store_rotation_scan_failures(
             None
         )
         ispyb_no_snapshots = StoreRotationInIspyb(  # noqa
-            SIM_ISPYB_CONFIG, dummy_rotation_params
+            CONST.SIM.ISPYB_CONFIG, dummy_rotation_params
         )
         warning.assert_called_once_with("No xtal snapshot paths sent to ISPyB!")
 
@@ -292,7 +292,7 @@ def test_store_rotation_scan_uses_supplied_dcgid(
     ispyb_conn.return_value.mx_acquisition = MagicMock()
     ispyb_conn.return_value.core = mock()
     store_in_ispyb = StoreRotationInIspyb(
-        SIM_ISPYB_CONFIG, dummy_rotation_params, dcgid
+        CONST.SIM.ISPYB_CONFIG, dummy_rotation_params, dcgid
     )
     assert store_in_ispyb.begin_deposition().data_collection_group_id == dcgid
     assert store_in_ispyb.update_deposition().data_collection_group_id == dcgid

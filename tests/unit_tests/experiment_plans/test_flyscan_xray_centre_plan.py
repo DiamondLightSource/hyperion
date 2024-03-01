@@ -50,10 +50,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    DO_FGS,
-    GRIDSCAN_OUTER_PLAN,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -74,10 +71,10 @@ from .conftest import (
 
 @pytest.fixture
 def ispyb_plan(test_fgs_params):
-    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
+    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
@@ -745,7 +742,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     mock_ispyb_handler = MagicMock()
     mock_ispyb_handler.ispyb_ids.data_collection_ids = (100, 200)
     zocalo_env = "dev_env"
-    zocalo_callback = ZocaloCallback(mock_ispyb_handler, DO_FGS)
+    zocalo_callback = ZocaloCallback(mock_ispyb_handler, CONST.PLAN.DO_FGS)
     zocalo_callback.active = True
     mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
     RE.subscribe(zocalo_callback)

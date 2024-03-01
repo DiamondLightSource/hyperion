@@ -15,7 +15,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
-from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -54,7 +54,7 @@ async def test_when_running_start_stop_then_get_expected_returned_results(
     dummy_params, zocalo_env, zocalo_device: ZocaloResults, RE: RunEngine
 ):
     start_doc = {
-        "subplan_name": GRIDSCAN_OUTER_PLAN,
+        "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "hyperion_internal_parameters": dummy_params.json(),
     }
     zc = XrayCentreCallbackCollection.setup().zocalo_handler
@@ -97,7 +97,7 @@ def run_zocalo_with_dev_ispyb(
             @bpp.set_run_key_decorator("testing124")
             @bpp.run_decorator(
                 md={
-                    "subplan_name": GRIDSCAN_OUTER_PLAN,
+                    "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
                     "hyperion_internal_parameters": dummy_params.json(),
                 }
             )

@@ -28,7 +28,7 @@ from hyperion.external_interaction.callbacks.logging_callback import (
 )
 from hyperion.log import LOGGER, do_default_logging_setup
 from hyperion.parameters.cli import parse_cli_args
-from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
+from hyperion.parameters.constants import CONST, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
 from hyperion.utils.context import setup_context
@@ -86,7 +86,7 @@ class BlueskyRunner:
         self.use_external_callbacks = use_external_callbacks
         if self.use_external_callbacks:
             LOGGER.info("Connecting to external callback ZMQ proxy...")
-            self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
+            self.publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
             RE.subscribe(self.publisher)
 
         if VERBOSE_EVENT_LOGGING:

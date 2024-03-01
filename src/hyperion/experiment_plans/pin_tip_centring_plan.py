@@ -20,7 +20,7 @@ from hyperion.device_setup_plans.setup_oav import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import OAV_REFRESH_DELAY
+from hyperion.parameters.constants import CONST
 from hyperion.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5
@@ -99,7 +99,7 @@ def move_pin_into_view(
         yield from bps.mv(smargon.x, move_within_limits)
 
         # Some time for the view to settle after the move
-        yield from bps.sleep(OAV_REFRESH_DELAY)
+        yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
 
     tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 

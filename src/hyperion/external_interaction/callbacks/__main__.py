@@ -28,11 +28,7 @@ from hyperion.log import (
     dc_group_id_filter,
 )
 from hyperion.parameters.cli import parse_callback_dev_mode_arg
-from hyperion.parameters.constants import (
-    CALLBACK_0MQ_PROXY_PORTS,
-    DO_FGS,
-    ROTATION_PLAN_MAIN,
-)
+from hyperion.parameters.constants import CONST
 
 LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
@@ -44,10 +40,10 @@ def setup_callbacks():
     return [
         GridscanNexusFileCallback(),
         gridscan_ispyb,
-        ZocaloCallback(gridscan_ispyb, DO_FGS),
+        ZocaloCallback(gridscan_ispyb, CONST.PLAN.DO_FGS),
         RotationNexusFileCallback(),
         rotation_ispyb,
-        ZocaloCallback(rotation_ispyb, ROTATION_PLAN_MAIN),
+        ZocaloCallback(rotation_ispyb, CONST.PLAN.ROTATION_MAIN),
     ]
 
 
@@ -72,8 +68,8 @@ def setup_logging(dev_mode: bool):
 
 
 def setup_threads():
-    proxy = Proxy(*CALLBACK_0MQ_PROXY_PORTS)
-    dispatcher = RemoteDispatcher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[1]}")
+    proxy = Proxy(*CONST.CALLBACK_0MQ_PROXY_PORTS)
+    dispatcher = RemoteDispatcher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[1]}")
     log_debug("Created proxy and dispatcher objects")
 
     def start_proxy():

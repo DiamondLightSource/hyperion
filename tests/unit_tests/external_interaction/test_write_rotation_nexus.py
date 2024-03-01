@@ -15,7 +15,7 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from hyperion.parameters.constants import ROTATION_OUTER_PLAN
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -57,7 +57,7 @@ def fake_rotation_scan(
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": ROTATION_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.ROTATION_OUTER,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": "RotationNexusFileCallback",
         }
