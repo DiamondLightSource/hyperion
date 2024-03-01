@@ -196,7 +196,7 @@ def rotation_scan_plan(
             wait=True,
         )
 
-        LOGGER.info("wait for any previous moves...")
+        LOGGER.info("Wait for any previous moves...")
         # wait for all the setup tasks at once
         yield from bps.wait("setup_senv")
         yield from bps.wait("move_x_y_z")

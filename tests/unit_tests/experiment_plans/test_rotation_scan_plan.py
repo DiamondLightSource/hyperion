@@ -13,6 +13,7 @@ from ophyd.status import Status
 from hyperion.experiment_plans.rotation_scan_plan import (
     DEFAULT_MAX_VELOCITY,
     RotationScanComposite,
+    calculate_motion_profile,
     rotation_scan,
     rotation_scan_plan,
 )
@@ -128,6 +129,33 @@ def setup_and_run_rotation_plan_for_tests_nomove(
         test_rotation_params_nomove,
         fake_create_rotation_devices,
     )
+
+
+def test_rotation_scan_calculations(test_rotation_params: RotationInternalParameters):
+    test_rotation_params.hyperion_params.detector_params.exposure_time = 0.2
+    test_rotation_params.hyperion_params.detector_params.omega_start = 10
+    test_rotation_params.experiment_params.omega_start = 10
+
+    motion_values = calculate_motion_profile(
+        test_rotation_params.hyperion_params.detector_params,
+        test_rotation_params.experiment_params,
+        0.005,  # time for acceleration
+    )
+
+    assert motion_values.direction == -1
+    assert motion_values.start_scan_deg == 10
+
+    assert motion_values.speed_for_rotation_deg_s == 0.5  # 0.1 deg per 0.2 sec
+    assert motion_values.shutter_time_s == 0.6
+    assert motion_values.shutter_opening_deg == 0.3  # distance moved in 0.6 s
+
+    # 1.5 * distance moved in time for accel (fudge)
+    assert motion_values.acceleration_offset_deg == 0.00375
+    assert motion_values.start_motion_deg == 10.00375
+
+    assert motion_values.total_exposure_s == 360
+    assert motion_values.scan_width_deg == 180
+    assert motion_values.distance_to_move_deg == -180.3075
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
