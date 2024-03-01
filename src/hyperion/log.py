@@ -66,7 +66,7 @@ def do_default_logging_setup(dev_mode=False):
     )
     integrate_bluesky_and_ophyd_logging(dodal_logger, handlers)
     handlers["graylog_handler"].addFilter(dc_group_id_filter)
-    handlers["graylog_handler"].addFilter(dc_group_id_filter)
+    handlers["graylog_handler"].addFilter(run_uid_filter)
 
 
 def _get_logging_dir() -> Path:

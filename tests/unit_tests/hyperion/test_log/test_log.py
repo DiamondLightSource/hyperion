@@ -4,10 +4,16 @@ from logging.handlers import TimedRotatingFileHandler
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
 from hyperion import log
+from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
+from hyperion.parameters.constants import SET_LOG_UID_TAG
 
 from .conftest import _destroy_loggers
 
@@ -72,6 +78,40 @@ def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
     graylog_calls = mock_GELFTCPHandler_emit.mock_calls[1:]
 
     dc_group_id_correct = [c.args[0].dc_group_id == 100 for c in graylog_calls]
+    assert all(dc_group_id_correct)
+
+
+@pytest.mark.skip_log_setup
+def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
+    _, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+    log.do_default_logging_setup(dev_mode=True)
+
+    RE.subscribe(LogUidTaggingCallback())
+    test_run_uid = None
+
+    @bpp.run_decorator(
+        md={
+            SET_LOG_UID_TAG: True,
+        }
+    )
+    def test_plan():
+        yield from bps.sleep(0)
+        assert log.run_uid_filter.run_uid is not None
+        nonlocal test_run_uid
+        test_run_uid = log.run_uid_filter.run_uid
+        logger = log.LOGGER
+        logger.info("test_hyperion")
+        dodal_logger.info("test_dodal")
+        yield from bps.sleep(0)
+
+    assert log.run_uid_filter.run_uid is None
+    RE(test_plan())
+    assert log.run_uid_filter.run_uid is None
+
+    graylog_calls = mock_GELFTCPHandler_emit.mock_calls[5:-5]
+    assert len(graylog_calls) == 2
+
+    dc_group_id_correct = [c.args[0].run_uid == test_run_uid for c in graylog_calls]
     assert all(dc_group_id_correct)
 
 
