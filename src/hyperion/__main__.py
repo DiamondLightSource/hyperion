@@ -26,7 +26,7 @@ from hyperion.external_interaction.callbacks.aperture_change_callback import (
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from hyperion.log import LOGGER, do_default_logging_setup
+from hyperion.log import LOGGER, do_default_logging_setup, get_memory_handler
 from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
@@ -270,6 +270,11 @@ class StopOrStatus(Resource):
         return asdict(status_and_message)
 
 
+class FlushLogs(Resource):
+    def put(self, **kwargs):
+        get_memory_handler().flush()
+
+
 def create_app(
     test_config=None,
     RE: RunEngine = RunEngine({}),
@@ -293,6 +298,10 @@ def create_app(
         RunExperiment,
         "/<string:plan_name>/<string:action>",
         resource_class_args=[runner, context],
+    )
+    api.add_resource(
+        FlushLogs,
+        "/flush_debug_log",
     )
     api.add_resource(
         StopOrStatus,
