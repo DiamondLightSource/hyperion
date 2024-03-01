@@ -2,6 +2,7 @@ import logging
 from os import environ
 from pathlib import Path
 from typing import Optional
+from uuid import uuid4
 
 from dodal.log import (
     ERROR_LOG_BUFFER_LINES,
@@ -32,7 +33,21 @@ class DCGIDFilter(logging.Filter):
         return True
 
 
+class RunUIDFilter(logging.Filter):
+    run_uid: Optional[str] = None
+
+    def filter(self, record):
+        if self.run_uid:
+            record.run_uid = self.run_uid
+        return True
+
+    def create_and_set_new(self) -> str:
+        self.run_uid = str(uuid4())
+        return self.run_uid
+
+
 dc_group_id_filter = DCGIDFilter()
+run_uid_filter = RunUIDFilter()
 
 
 def set_dcgid_tag(dcgid):
@@ -50,6 +65,7 @@ def do_default_logging_setup(dev_mode=False):
         ERROR_LOG_BUFFER_LINES,
     )
     integrate_bluesky_and_ophyd_logging(dodal_logger, handlers)
+    handlers["graylog_handler"].addFilter(dc_group_id_filter)
     handlers["graylog_handler"].addFilter(dc_group_id_filter)
 
 

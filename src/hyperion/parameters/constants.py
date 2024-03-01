@@ -29,6 +29,9 @@ ROTATION_PLAN_MAIN = "rotation_scan_main"
 ########################################################################################
 
 
+SET_LOG_UID_TAG = "set_log_uid_tag"
+
+
 class Actions(Enum):
     START = "start"
     STOP = "stop"
