@@ -1,6 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import bluesky.plan_stubs as bps
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
@@ -50,8 +49,8 @@ def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
         return_value=SampleLocation(
             8,
             5,
-            np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 6, 6]),
             np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 4, 4, 3, 3, 2, 2, 3, 3, 4, 4]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 6, 6]),
         )
     )
 
@@ -289,11 +288,9 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 )
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-@patch("hyperion.experiment_plans.oav_grid_detection_plan.wait_for_tip_to_be_found")
 @patch("hyperion.experiment_plans.oav_grid_detection_plan.LOGGER")
 def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     fake_logger: MagicMock,
-    fake_wait_for_tip: MagicMock,
     fake_devices,
     test_config_files,
     odd,
@@ -306,22 +303,16 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     box_size_y_pixels = box_size_um / composite.oav.parameters.micronsPerYPixel
     initial_min_y = 1
 
-    tip_x_y = (8, 5)
-
-    def wait_for_tip(_):
-        yield from bps.null()
-        return tip_x_y
-
-    fake_wait_for_tip.side_effect = wait_for_tip
-
     abs_sets: dict[str, list] = {"snapshot.top_left_y": [], "snapshot.num_boxes_y": []}
 
     def handle_read(msg: Msg):
-        if msg.obj.dotted_name == "mxsc.top":
+        if msg.obj.name == "pin_tip_detection-triggered_tip":
+            return {"values": {"value": (8, 5)}}
+        if msg.obj.name == "pin_tip_detection-triggered_top_edge":
             top_edge = [0] * 20
             top_edge[19] = initial_min_y
             return {"values": {"value": top_edge}}
-        elif msg.obj.dotted_name == "mxsc.bottom":
+        elif msg.obj.name == "pin_tip_detection-triggered_bottom_edge":
             bottom_edge = [0] * 20
             bottom_edge[19] = (
                 10 if odd else 25
@@ -331,8 +322,9 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
             pass
 
     def record_set(msg: Msg):
-        if msg.obj.dotted_name in abs_sets.keys():
-            abs_sets[msg.obj.dotted_name].append(msg.args[0])
+        if hasattr(msg.obj, "dotted_name"):
+            if msg.obj.dotted_name in abs_sets.keys():
+                abs_sets[msg.obj.dotted_name].append(msg.args[0])
 
     sim.add_handler(
         "set",
