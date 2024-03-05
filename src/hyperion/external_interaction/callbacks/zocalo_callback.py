@@ -72,7 +72,7 @@ class ZocaloCallback(PlanReactiveCallback):
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
 
-    def activity_gated_event(self, doc: Event):
+    def activity_gated_event(self, doc: Event) -> Event:
         doc = super().activity_gated_event(doc)
 
         event_descriptor = self.descriptors[doc["descriptor"]]
@@ -81,7 +81,7 @@ class ZocaloCallback(PlanReactiveCallback):
             for start_info in self.zocalo_info:
                 start_info.filename = filename
                 self.zocalo_interactor.run_start(start_info)
-            return doc
+        return doc
 
     def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.run_uid:
