@@ -14,7 +14,7 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     construct_comment_for_rotation_scan,
     populate_data_collection_info_for_rotation,
 )
-from hyperion.external_interaction.ispyb.data_model import ScanDataInfo, ExperimentType
+from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
