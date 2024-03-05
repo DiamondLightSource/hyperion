@@ -15,6 +15,7 @@ from hyperion.parameters.constants import (
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
     NEXUS_READ_PLAN,
+    ZOCALO_READ_HARDWARE_PLAN,
 )
 
 
@@ -50,4 +51,10 @@ def read_hardware_for_ispyb_during_collection(
 def read_hardware_for_nexus_writer(detector: EigerDetector):
     yield from bps.create(name=NEXUS_READ_PLAN)
     yield from bps.read(detector.bit_depth)
+    yield from bps.save()
+
+
+def read_hardware_for_zocalo(detector: EigerDetector):
+    yield from bps.create(name=ZOCALO_READ_HARDWARE_PLAN)
+    yield from bps.read(detector.odin.file_writer.id)
     yield from bps.save()

@@ -12,8 +12,8 @@ from dodal.devices.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_sim_value
@@ -751,13 +751,16 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     zocalo_callback.active = True
     mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
 
+    fake_fgs_composite.eiger.unstage = MagicMock()
+    fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
+
     x_steps, y_steps, z_steps = 10, 20, 30
 
     RE.subscribe(zocalo_callback)
     RE(
         kickoff_and_complete_gridscan(
             fake_fgs_composite.fast_grid_scan,
-            MagicMock(spec=EigerDetector),
+            fake_fgs_composite.eiger,
             fake_fgs_composite.synchrotron,
             zocalo_env,
             scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
@@ -766,13 +769,14 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 
     mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
 
+    expected_start_infos = [
+        ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps),
+        ZocaloStartInfo(id_2, "test/filename", x_steps * y_steps, x_steps * z_steps),
+    ]
+
     expected_start_calls = [
-        call(id_1, 0, x_steps * y_steps),
-        call(
-            id_2,
-            x_steps * y_steps,
-            x_steps * z_steps,
-        ),
+        call(expected_start_infos[0]),
+        call(expected_start_infos[1]),
     ]
 
     assert mock_zocalo_trigger.run_start.call_count == 2

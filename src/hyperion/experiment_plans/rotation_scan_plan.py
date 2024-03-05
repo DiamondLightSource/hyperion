@@ -31,6 +31,7 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
     read_hardware_for_nexus_writer,
+    read_hardware_for_zocalo,
 )
 from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
@@ -210,6 +211,8 @@ def rotation_scan_plan(
         # get some information for the ispyb deposition and trigger the callback
 
         yield from read_hardware_for_nexus_writer(composite.eiger)
+
+        yield from read_hardware_for_zocalo(composite.eiger)
 
         yield from read_hardware_for_ispyb_pre_collection(
             composite.undulator,

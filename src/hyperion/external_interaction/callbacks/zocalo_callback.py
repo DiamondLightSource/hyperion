@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
-from dodal.devices.zocalo import (
-    ZocaloTrigger,
-)
+from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -17,10 +15,11 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
+from hyperion.parameters.constants import ZOCALO_READ_HARDWARE_PLAN
 from hyperion.utils.utils import number_of_frames_from_scan_spec
 
 if TYPE_CHECKING:
-    from event_model.documents import RunStart, RunStop
+    from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 
 class ZocaloCallback(PlanReactiveCallback):
@@ -43,6 +42,8 @@ class ZocaloCallback(PlanReactiveCallback):
         self.run_uid: Optional[str] = None
         self.ispyb: GridscanISPyBCallback | RotationISPyBCallback = ispyb_handler
         self.plan_name_to_trigger_on = plan_name_to_trigger_on
+        self.zocalo_info: list[ZocaloStartInfo] = []
+        self.descriptors: Dict[str, EventDescriptor] = {}
 
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
@@ -58,16 +59,29 @@ class ZocaloCallback(PlanReactiveCallback):
                     zip(self.ispyb.ispyb_ids.data_collection_ids, scan_points)
                 )
                 start_idx = 0
+                self.zocalo_info = []
                 for id, shape in ids_and_shape:
                     num_frames = number_of_frames_from_scan_spec(shape)
-                    self.zocalo_interactor.run_start(
-                        id,
-                        start_idx,
-                        num_frames,
+                    self.zocalo_info.append(
+                        ZocaloStartInfo(id, None, start_idx, num_frames)
                     )
                     start_idx += num_frames
             else:
                 raise ISPyBDepositionNotMade("ISPyB deposition was not initialised!")
+
+    def activity_gated_descriptor(self, doc: EventDescriptor):
+        self.descriptors[doc["uid"]] = doc
+
+    def activity_gated_event(self, doc: Event):
+        doc = super().activity_gated_event(doc)
+
+        event_descriptor = self.descriptors[doc["descriptor"]]
+        if event_descriptor.get("name") == ZOCALO_READ_HARDWARE_PLAN:
+            filename = doc["data"]["eiger_odin_file_writer_id"]
+            for start_info in self.zocalo_info:
+                start_info.filename = filename
+                self.zocalo_interactor.run_start(start_info)
+            return doc
 
     def activity_gated_stop(self, doc: RunStop):
         if doc.get("run_start") == self.run_uid:

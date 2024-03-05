@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from dodal.devices.zocalo import ZocaloStartInfo
 
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -56,7 +57,6 @@ class TestZocaloHandler:
     ):
         dc_ids = (1, 2)
         dcg_id = 4
-        expected_shapes = [(0, 200), (200, 300)]
 
         mock_ispyb_store_grid_scan.return_value = IspybIds(
             data_collection_ids=dc_ids, grid_ids=None, data_collection_group_id=dcg_id
@@ -82,12 +82,21 @@ class TestZocaloHandler:
             td.test_event_document_during_data_collection
         )
         callbacks.zocalo_handler.activity_gated_start(td.test_do_fgs_start_document)
+        callbacks.zocalo_handler.activity_gated_descriptor(
+            td.test_descriptor_document_zocalo_hardware
+        )
+        callbacks.zocalo_handler.activity_gated_event(
+            td.test_event_document_zocalo_hardware
+        )
         callbacks.ispyb_handler.activity_gated_stop(td.test_stop_document)
         callbacks.zocalo_handler.activity_gated_stop(td.test_stop_document)
 
-        expected_args = list(zip(dc_ids, *expected_shapes))
+        expected_args = [
+            ZocaloStartInfo(dc_ids[0], "test_path", 0, 200),
+            ZocaloStartInfo(dc_ids[1], "test_path", 200, 300),
+        ]
         callbacks.zocalo_handler.zocalo_interactor.run_start.assert_has_calls(  # type: ignore
-            [call(*x) for x in expected_args]
+            [call(x) for x in expected_args]
         )
         assert callbacks.zocalo_handler.zocalo_interactor.run_start.call_count == len(
             dc_ids

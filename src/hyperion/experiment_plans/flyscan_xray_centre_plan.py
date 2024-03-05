@@ -39,6 +39,7 @@ from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
+    read_hardware_for_zocalo,
 )
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
@@ -196,6 +197,7 @@ def kickoff_and_complete_gridscan(
             expected_images * exposure_sec_per_image,
             30.0,
         )
+        yield from read_hardware_for_zocalo(eiger)
         LOGGER.info("Wait for all moves with no assigned group")
         yield from bps.wait()
         LOGGER.info("kicking off FGS")
