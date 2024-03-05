@@ -21,7 +21,6 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 from hyperion.utils.utils import convert_angstrom_to_eV
 from unit_tests.conftest import from_file
-from unit_tests.conftest import from_file as default_raw_params
 
 
 class MockReactiveCallback(PlanReactiveCallback):

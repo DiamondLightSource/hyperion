@@ -1,7 +1,6 @@
 import pytest
-from event_model.documents import Event, EventDescriptor, RunStop
-
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
+from event_model.documents import Event, EventDescriptor, RunStop
 
 from hyperion.parameters.constants import (
     GRIDSCAN_AND_MOVE,
@@ -163,7 +162,6 @@ class TestData:
         "exit_status": "success",
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": GRIDSCAN_MAIN_PLAN,
     }
     test_do_fgs_gridscan_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -172,7 +170,6 @@ class TestData:
         "exit_status": "success",
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": "do_fgs",
     }
     test_failed_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -189,7 +186,6 @@ class TestData:
         "exit_status": "fail",
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": GRIDSCAN_MAIN_PLAN,
     }
     test_descriptor_document_zocalo_reading: EventDescriptor = {
         "uid": "unique_id_zocalo_reading",

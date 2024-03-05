@@ -30,8 +30,8 @@ class StoreRotationInIspyb(StoreInIspyb):
 
     def begin_deposition(
         self,
-        data_collection_group_info: DataCollectionGroupInfo = None,
-        scan_data_info: ScanDataInfo = None,
+        data_collection_group_info: DataCollectionGroupInfo,
+        scan_data_info: ScanDataInfo,
     ) -> IspybIds:
         # prevent pyright + black fighting
         # fmt: off

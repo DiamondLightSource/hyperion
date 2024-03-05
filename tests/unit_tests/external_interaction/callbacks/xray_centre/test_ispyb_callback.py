@@ -21,7 +21,9 @@ from unit_tests.external_interaction.conftest import (
 )
 def test_activity_gated_start_2d(mock_ispyb_conn):
     callback = GridscanISPyBCallback()
-    callback.activity_gated_start(TestData.test_gridscan2d_start_document)
+    callback.activity_gated_start(
+        TestData.test_gridscan2d_start_document  # pyright: ignore
+    )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     assert_upsert_call_with(
         mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
@@ -89,7 +91,7 @@ def test_activity_gated_start_2d(mock_ispyb_conn):
 )
 def test_activity_gated_start_3d(mock_ispyb_conn):
     callback = GridscanISPyBCallback()
-    callback.activity_gated_start(TestData.test_start_document)
+    callback.activity_gated_start(TestData.test_start_document)  # pyright: ignore
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     assert_upsert_call_with(
         mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore

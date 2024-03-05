@@ -49,8 +49,8 @@ class StoreInIspyb(ABC):
     @abstractmethod
     def begin_deposition(
         self,
-        data_collection_group_info: DataCollectionGroupInfo = None,
-        scan_data_info: ScanDataInfo = None,
+        data_collection_group_info: DataCollectionGroupInfo,
+        scan_data_info: ScanDataInfo,
     ) -> IspybIds:
         pass
 
@@ -161,7 +161,7 @@ class StoreInIspyb(ABC):
 
     def _store_single_scan_data(
         self, conn, scan_data_info, data_collection_id=None
-    ) -> Tuple[int, int]:
+    ) -> Tuple[int, Optional[int]]:
         data_collection_id = self._store_data_collection_table(
             conn, data_collection_id, scan_data_info.data_collection_info
         )
@@ -193,12 +193,13 @@ class StoreInIspyb(ABC):
 
     def fill_common_data_collection_params(
         self, conn, data_collection_id, data_collection_info: DataCollectionInfo
-    ) -> DataCollectionInfo:
+    ) -> StrictOrderedDict:
         mx_acquisition: MXAcquisition = conn.mx_acquisition
         params = mx_acquisition.get_data_collection_params()
 
         if data_collection_id:
             params["id"] = data_collection_id
+        assert data_collection_info.visit_string
         params["visit_id"] = get_session_id_from_visit(
             conn, data_collection_info.visit_string
         )
