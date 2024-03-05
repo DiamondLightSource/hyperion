@@ -133,7 +133,8 @@ def pre_centring_setup_oav(
     )
 
     # Connect MXSC output to MJPG input for debugging
-    yield from set_using_group(oav.snapshot.input_plugin, "OAV.MXSC")
+    if isinstance(pin_tip_detection_device, MXSC):
+        yield from set_using_group(oav.snapshot.input_plugin, "OAV.MXSC")
 
     yield from bps.wait(oav_group)
 
