@@ -11,11 +11,9 @@ from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from hyperion.experiment_plans.rotation_scan_plan import (
-    DEFAULT_DIRECTION,
     DEFAULT_MAX_VELOCITY,
     RotationScanComposite,
-    move_to_end_w_buffer,
-    move_to_start_w_buffer,
+    calculate_motion_profile,
     rotation_scan,
     rotation_scan_plan,
 )
@@ -133,36 +131,31 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     )
 
 
-def test_move_to_start(smargon: Smargon, RE):
-    start_angle = 153
-    mock_velocity_set = MagicMock(return_value=Status(done=True, success=True))
-    with patch.object(smargon.omega.velocity, "set", mock_velocity_set):
-        RE(move_to_start_w_buffer(smargon.omega, start_angle, TEST_OFFSET))
+def test_rotation_scan_calculations(test_rotation_params: RotationInternalParameters):
+    test_rotation_params.hyperion_params.detector_params.exposure_time = 0.2
+    test_rotation_params.hyperion_params.detector_params.omega_start = 10
+    test_rotation_params.experiment_params.omega_start = 10
 
-    mock_velocity_set.assert_called_with(120)
-    assert (
-        smargon.omega.user_readback.get()
-        == start_angle - TEST_OFFSET * DEFAULT_DIRECTION
+    motion_values = calculate_motion_profile(
+        test_rotation_params.hyperion_params.detector_params,
+        test_rotation_params.experiment_params,
+        0.005,  # time for acceleration
     )
 
+    assert motion_values.direction == -1
+    assert motion_values.start_scan_deg == 10
 
-def test_move_to_end(smargon: Smargon, RE):
-    scan_width = 153
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        fake_read,
-    ):
-        RE(
-            move_to_end_w_buffer(
-                smargon.omega, scan_width, TEST_OFFSET, TEST_SHUTTER_OPENING_DEGREES
-            )
-        )
+    assert motion_values.speed_for_rotation_deg_s == 0.5  # 0.1 deg per 0.2 sec
+    assert motion_values.shutter_time_s == 0.6
+    assert motion_values.shutter_opening_deg == 0.3  # distance moved in 0.6 s
 
-    distance_to_move = (
-        scan_width + TEST_SHUTTER_OPENING_DEGREES + TEST_OFFSET * 2
-    ) * DEFAULT_DIRECTION
+    # 1.5 * distance moved in time for accel (fudge)
+    assert motion_values.acceleration_offset_deg == 0.00375
+    assert motion_values.start_motion_deg == 10.00375
 
-    assert smargon.omega.user_readback.get() == distance_to_move
+    assert motion_values.total_exposure_s == 360
+    assert motion_values.scan_width_deg == 180
+    assert motion_values.distance_to_move_deg == -180.3075
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -303,29 +296,3 @@ def test_cleanup_happens(
             )
             assert "Experiment fails because this is a test" in exc.value.args[0]
             cleanup_plan.assert_called_once()
-
-
-@patch(
-    "hyperion.experiment_plans.rotation_scan_plan.move_to_start_w_buffer", autospec=True
-)
-def test_acceleration_offset_calculated_correctly(
-    mock_move_to_start: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
-    test_rotation_params: RotationInternalParameters,
-    fake_create_rotation_devices: RotationScanComposite,
-):
-    composite = fake_create_rotation_devices
-    composite.smargon.omega.acceleration.sim_put(0.2)  # type: ignore
-    setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
-        test_rotation_params,
-        fake_create_rotation_devices,
-    )
-
-    expected_start_angle = (
-        test_rotation_params.hyperion_params.detector_params.omega_start
-    )
-
-    mock_move_to_start.assert_called_once_with(
-        composite.smargon.omega, expected_start_angle, pytest.approx(0.3)
-    )
