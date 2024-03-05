@@ -115,7 +115,7 @@ def test_begin_deposition_with_group_id_doesnt_insert(
     dummy_rotation_params,
 ):
     dummy_rotation_ispyb = StoreRotationInIspyb(
-        SIM_ISPYB_CONFIG, dummy_rotation_params, TEST_DATA_COLLECTION_GROUP_ID
+        CONST.SIM.ISPYB_CONFIG, dummy_rotation_params, TEST_DATA_COLLECTION_GROUP_ID
     )
     assert dummy_rotation_ispyb.begin_deposition() == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
@@ -215,7 +215,7 @@ def test_update_deposition_with_group_id_updates(
     dummy_rotation_params,
 ):
     dummy_rotation_ispyb = StoreRotationInIspyb(
-        SIM_ISPYB_CONFIG, dummy_rotation_params, TEST_DATA_COLLECTION_GROUP_ID
+        CONST.SIM.ISPYB_CONFIG, dummy_rotation_params, TEST_DATA_COLLECTION_GROUP_ID
     )
     dummy_rotation_ispyb.begin_deposition()
     mx_acq = mx_acquisition_from_conn(ispyb_conn_with_2x2_collections_and_grid_info)
