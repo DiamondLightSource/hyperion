@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.devices.detector_motion import ShutterState
+from dodal.devices.detector.detector_motion import ShutterState
 
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,

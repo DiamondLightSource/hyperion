@@ -28,7 +28,7 @@ from ...conftest import RunEngineSimulator
 
 
 @pytest.fixture
-def fake_devices(smargon: Smargon, backlight: Backlight, test_config_files):
+def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
     oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True)
 
     oav.parameters = OAVConfigParams(

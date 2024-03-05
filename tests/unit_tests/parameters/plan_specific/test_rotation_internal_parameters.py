@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
+from dodal.devices.detector.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.motors import XYZLimitBundle
 
 from hyperion.parameters import external_parameters

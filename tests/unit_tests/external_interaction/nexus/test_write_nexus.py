@@ -246,7 +246,7 @@ def test_nexus_writer_files_are_formatted_as_expected(
 def test_nexus_writer_writes_width_and_height_correctly(
     single_dummy_file: NexusWriter,
 ):
-    from dodal.devices.det_dim_constants import (
+    from dodal.devices.detector.det_dim_constants import (
         PIXELS_X_EIGER2_X_4M,
         PIXELS_Y_EIGER2_X_4M,
     )
@@ -290,21 +290,21 @@ def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]
 
 @pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
-    dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
+    dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     check_validity_through_zocalo(dummy_nexus_writers)
 
 
 @pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
-    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter],
 ):
     check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
 
 
 @pytest.mark.skip("Requires #87 of nexgen")
 def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
-    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
 
