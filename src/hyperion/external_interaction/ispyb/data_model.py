@@ -26,7 +26,7 @@ class DataCollectionInfo:
     kappa_start: Optional[float] = None
 
     parent_id: Optional[int] = None
-    visit_string: str = None
+    visit_string: Optional[str] = None
     sample_id: Optional[str] = None
     detector_id: Optional[int] = None
     axis_start: Optional[float] = None

@@ -24,8 +24,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def begin_deposition(
         self,
-        data_collection_group_info: DataCollectionGroupInfo = None,
-        scan_data_info: ScanDataInfo = None,
+        data_collection_group_info: DataCollectionGroupInfo,
+        scan_data_info: ScanDataInfo,
     ) -> IspybIds:
         # fmt: off
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
@@ -44,7 +44,7 @@ class StoreGridscanInIspyb(StoreInIspyb):
 
     def update_deposition(
         self,
-        data_collection_group_info: DataCollectionGroupInfo = None,
+        data_collection_group_info: DataCollectionGroupInfo,
         scan_data_infos: Sequence[ScanDataInfo] = (),
     ):
         ispyb_ids = self._store_grid_scan(
@@ -104,7 +104,8 @@ class StoreGridscanInIspyb(StoreInIspyb):
                 conn, scan_data_info, data_collection_id
             )
             data_collection_ids_out.append(data_collection_id)
-            grid_ids.append(grid_id)
+            if grid_id:
+                grid_ids.append(grid_id)
 
         return IspybIds(
             data_collection_ids=tuple(data_collection_ids_out),

@@ -171,7 +171,6 @@ class TestData:
         "exit_status": "success",
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": CONST.PLAN.GRIDSCAN_MAIN,
     }
     test_do_fgs_gridscan_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -180,7 +179,6 @@ class TestData:
         "exit_status": "success",
         "reason": "",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": CONST.PLAN.DO_FGS,
     }
     test_failed_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -197,7 +195,6 @@ class TestData:
         "exit_status": "fail",
         "reason": "could not connect to devices",
         "num_events": {"fake_ispyb_params": 1, "primary": 1},
-        "subplan_name": CONST.PLAN.GRIDSCAN_MAIN,
     }
     test_descriptor_document_zocalo_reading: EventDescriptor = {
         "uid": "unique_id_zocalo_reading",
