@@ -79,7 +79,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
             self.ispyb_ids = self.ispyb.begin_deposition()
-        return self._tag_doc(doc)
+        return super().activity_gated_start(doc)
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
