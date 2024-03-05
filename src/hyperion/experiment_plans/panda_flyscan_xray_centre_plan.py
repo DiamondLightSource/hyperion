@@ -163,6 +163,12 @@ def run_gridscan_and_move(
 
     LOGGER.info("Setting up Panda for flyscan")
 
+    assert isinstance(parameters.experiment_params, PandAGridScanParams)
+
+    run_up_distance_mm = yield from bps.rd(
+        fgs_composite.panda_fast_grid_scan.run_up_distance
+    )
+
     # Set the time between x steps pv
     DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
@@ -185,14 +191,14 @@ def run_gridscan_and_move(
                                           {sample_velocity_mm_per_s}. The smargon's speed limit is {smargon_speed_limit_mm_per_s} mm/s."
         )
     else:
-        LOGGER.info(f"Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s")
+        LOGGER.info(
+            f"Panda grid scan: Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s and using a run-up distance of {run_up_distance_mm}"
+        )
 
     yield from bps.mv(
         fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
         time_between_x_steps_ms,
     )
-
-    assert isinstance(parameters.experiment_params, PandAGridScanParams)
 
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,

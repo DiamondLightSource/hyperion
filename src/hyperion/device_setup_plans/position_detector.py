@@ -1,5 +1,5 @@
 from bluesky import plan_stubs as bps
-from dodal.devices.detector_motion import DetectorMotion, ShutterState
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 
 from hyperion.log import LOGGER
 

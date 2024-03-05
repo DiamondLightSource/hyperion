@@ -49,7 +49,8 @@ class IspybParams(BaseModel):
     focal_spot_size_x: float
     focal_spot_size_y: float
     comment: str
-    resolution: float
+    # populated by wait_for_robot_load_then_centre
+    resolution: Optional[float]
 
     sample_id: Optional[str] = None
     sample_barcode: Optional[str] = None
