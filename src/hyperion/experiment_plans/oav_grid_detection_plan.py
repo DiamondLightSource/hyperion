@@ -16,9 +16,8 @@ from dodal.devices.smargon import Smargon
 from hyperion.device_setup_plans.setup_oav import (
     get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
+    wait_for_tip_to_be_found,
 )
-from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.pin_tip_centring_plan import trigger_and_return_pin_tip
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import (
     OAV_REFRESH_DELAY,
@@ -93,10 +92,8 @@ def grid_detection_plan(
         # need to wait for the OAV image to update
         # See #673 for improvements
         yield from bps.sleep(OAV_REFRESH_DELAY)
-        tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(pin_tip_detection)
-        if tip_x_px is None or tip_y_px is None:
-            timeout = yield from bps.rd(pin_tip_detection.validity_timeout)
-            raise WarningException(f"No pin found after {timeout} seconds")
+
+        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(pin_tip_detection)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
