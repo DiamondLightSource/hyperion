@@ -1,4 +1,5 @@
 import sys
+import threading
 from functools import partial
 from os import environ, getenv
 from typing import Callable, Generator, Optional, Sequence
@@ -13,7 +14,7 @@ from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
-from dodal.devices.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
 from dodal.devices.flux import Flux
@@ -142,8 +143,17 @@ def RE():
     yield RE
     try:
         RE.halt()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Got exception while halting RunEngine {e}")
+    finally:
+        stopped_event = threading.Event()
+
+        def stop_event_loop():
+            RE.loop.stop()  # noqa: F821
+            stopped_event.set()
+
+        RE.loop.call_soon_threadsafe(stop_event_loop)
+        stopped_event.wait(10)
     del RE
 
 

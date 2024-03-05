@@ -90,7 +90,6 @@
         "beam_size_y",
         "focal_spot_size_x",
         "focal_spot_size_y",
-        "comment",
-        "resolution"
+        "comment"
     ]
 }
