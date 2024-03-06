@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from time import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
@@ -49,8 +49,12 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     Usually used as part of an FGSCallbackCollection.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        *,
+        emit: Callable[..., Any] | None = None,
+    ) -> None:
+        super().__init__(emit=emit)
         self.params: GridscanInternalParameters
         self.ispyb: StoreGridscanInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
@@ -75,6 +79,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 else Store2DGridscanInIspyb(self.ispyb_config, self.params)
             )
             self.ispyb_ids = self.ispyb.begin_deposition()
+        return super().activity_gated_start(doc)
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
@@ -127,4 +132,5 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             if self.ispyb_ids == IspybIds():
                 raise ISPyBDepositionNotMade("ispyb was not initialised at run start")
-            super().activity_gated_stop(doc)
+            return super().activity_gated_stop(doc)
+        return self._tag_doc(doc)

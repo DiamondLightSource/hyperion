@@ -38,7 +38,11 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_rotation,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
+from hyperion.parameters.constants import (
+    ROTATION_OUTER_PLAN,
+    ROTATION_PLAN_MAIN,
+    TRIGGER_ZOCALO_ON,
+)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
@@ -249,9 +253,9 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": ROTATION_OUTER_PLAN,
+            TRIGGER_ZOCALO_ON: ROTATION_PLAN_MAIN,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "ZocaloCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],

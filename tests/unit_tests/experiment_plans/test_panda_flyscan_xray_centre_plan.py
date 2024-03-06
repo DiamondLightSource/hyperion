@@ -341,9 +341,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
-        mock_subscriptions.zocalo_handler.activity_gated_start(
-            self.td.test_start_document
-        )
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
@@ -701,9 +698,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
         with patch(
-            "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
-            lambda: mock_subscriptions,
-        ), patch(
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(

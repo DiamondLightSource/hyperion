@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import fields
 from typing import Any, Generator
 
@@ -14,19 +14,12 @@ class AbstractPlanCallbackCollection(ABC):
     @subs_decorator(list(callback_collection)) to subscribe them to your plan in order.
     """
 
-    @classmethod
-    @abstractmethod
-    def setup(cls) -> AbstractPlanCallbackCollection: ...
-
     def __iter__(self) -> Generator[CallbackBase, Any, None]:
         for field in fields(self):  # type: ignore # subclasses must be dataclass
             yield getattr(self, field.name)
 
 
 class NullPlanCallbackCollection(AbstractPlanCallbackCollection):
-    @classmethod
-    def setup(cls):
-        return cls()
 
     def __iter__(self):
         yield from ()

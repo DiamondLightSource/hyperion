@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
@@ -14,7 +14,10 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
 from hyperion.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
-from hyperion.parameters.constants import ROTATION_PLAN_MAIN
+
+
+def new_ispyb_with_zocalo():
+    return RotationISPyBCallback(emit=ZocaloCallback())
 
 
 @dataclass(frozen=True, order=True)
@@ -22,18 +25,7 @@ class RotationCallbackCollection(AbstractPlanCallbackCollection):
     """Groups the callbacks for external interactions for a rotation scan.
     Cast to a list to pass it to Bluesky.preprocessors.subs_decorator()."""
 
-    nexus_handler: RotationNexusFileCallback
-    ispyb_handler: RotationISPyBCallback
-    zocalo_handler: ZocaloCallback
-
-    @classmethod
-    def setup(cls):
-        nexus_handler = RotationNexusFileCallback()
-        ispyb_handler = RotationISPyBCallback()
-        zocalo_handler = ZocaloCallback(ispyb_handler, ROTATION_PLAN_MAIN)
-        callback_collection = cls(
-            nexus_handler=nexus_handler,
-            ispyb_handler=ispyb_handler,
-            zocalo_handler=zocalo_handler,
-        )
-        return callback_collection
+    nexus_handler: RotationNexusFileCallback = field(
+        default_factory=RotationNexusFileCallback
+    )
+    ispyb_handler: RotationISPyBCallback = field(default_factory=new_ispyb_with_zocalo)

@@ -28,6 +28,11 @@ ROTATION_OUTER_PLAN = "rotation_scan_with_cleanup"
 ROTATION_PLAN_MAIN = "rotation_scan_main"
 ########################################################################################
 
+# Plan metadata keys ###################################################################
+# Gridscan
+TRIGGER_ZOCALO_ON = "trigger_zocalo_on"
+########################################################################################
+
 
 class Actions(Enum):
     START = "start"

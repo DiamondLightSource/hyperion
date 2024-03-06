@@ -17,9 +17,6 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
     rotation_scan_plan,
 )
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
-)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -35,17 +32,16 @@ TEST_SHUTTER_OPENING_DEGREES = 2.5
 
 
 def do_rotation_main_plan_for_tests(
-    run_eng_w_subs: tuple[RunEngine, RotationCallbackCollection],
+    run_eng: RunEngine,
     expt_params: RotationInternalParameters,
     devices: RotationScanComposite,
     plan=rotation_scan_plan,
 ):
-    run_engine, _ = run_eng_w_subs
     with patch(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
     ):
-        run_engine(
+        run_eng(
             plan(
                 devices,
                 expt_params,
@@ -54,28 +50,19 @@ def do_rotation_main_plan_for_tests(
 
 
 @pytest.fixture
-def RE_with_subs(
-    RE: RunEngine, mock_rotation_subscriptions: RotationCallbackCollection
-):
-    for cb in mock_rotation_subscriptions:
-        RE.subscribe(cb)
-    return RE, mock_rotation_subscriptions
-
-
-@pytest.fixture
 def run_full_rotation_plan(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     do_rotation_main_plan_for_tests(
-        RE_with_subs, test_rotation_params, fake_create_rotation_devices, rotation_scan
+        RE, test_rotation_params, fake_create_rotation_devices, rotation_scan
     )
     return fake_create_rotation_devices
 
 
 def setup_and_run_rotation_plan_for_tests(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
@@ -92,13 +79,13 @@ def setup_and_run_rotation_plan_for_tests(
 
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
-            RE_with_subs,
+            RE,
             test_params,
             fake_create_rotation_devices,
         )
 
     return {
-        "RE_with_subs": RE_with_subs,
+        "RE_with_subs": RE,
         "test_rotation_params": test_params,
         "smargon": fake_create_rotation_devices.smargon,
         "zebra": fake_create_rotation_devices.zebra,
@@ -107,12 +94,12 @@ def setup_and_run_rotation_plan_for_tests(
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_standard(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
+        RE,
         test_rotation_params,
         fake_create_rotation_devices,
     )
@@ -120,12 +107,12 @@ def setup_and_run_rotation_plan_for_tests_standard(
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_nomove(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params_nomove: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
+        RE,
         test_rotation_params_nomove,
         fake_create_rotation_devices,
     )
@@ -162,11 +149,10 @@ def test_rotation_scan_calculations(test_rotation_params: RotationInternalParame
 @patch("hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan", autospec=True)
 def test_rotation_scan(
     plan: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    RE, _ = RE_with_subs
 
     composite = fake_create_rotation_devices
     RE(rotation_scan(composite, test_rotation_params))
@@ -176,10 +162,7 @@ def test_rotation_scan(
 
 
 def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests_standard) -> None:
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection] = (
-        setup_and_run_rotation_plan_for_tests_standard["RE_with_subs"]
-    )
-    RE, _ = RE_with_subs
+    RE: RunEngine = setup_and_run_rotation_plan_for_tests_standard["RE_with_subs"]
     assert RE._exit_status == "success"
 
 
@@ -263,11 +246,10 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
 def test_cleanup_happens(
     bps_wait: MagicMock,
     cleanup_plan: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    RE, _ = RE_with_subs
 
     class MyTestException(Exception):
         pass
@@ -296,3 +278,4 @@ def test_cleanup_happens(
             )
             assert "Experiment fails because this is a test" in exc.value.args[0]
             cleanup_plan.assert_called_once()
+
