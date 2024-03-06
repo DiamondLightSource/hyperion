@@ -137,7 +137,7 @@ def set_aperture_for_bbox_size(
     @bpp.run_decorator(
         md={
             "subplan_name": "change_aperture",
-            "aperture_size": new_selected_aperture.name,
+            "aperture_size": new_selected_aperture.GDA_name,
         }
     )
     def set_aperture():
