@@ -7,6 +7,10 @@ import numpy as np
 import pytest
 from bluesky import FailedStatus
 from bluesky.run_engine import RunEngine
+from dodal.devices.aperturescatterguard import (
+    ApertureFiveDimensionalLocation,
+    SingleAperturePosition,
+)
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -50,10 +54,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    DO_FGS,
-    GRIDSCAN_OUTER_PLAN,
-)
+from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN, TRIGGER_ZOCALO_ON
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -82,8 +83,10 @@ def ispyb_plan(test_fgs_params):
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, robot, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot)
+    def standalone_read_hardware_for_ispyb(
+        und, syn, slits, robot, attn, fl, dcm, ap_sg
+    ):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg, robot)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -196,6 +199,20 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
+        test_aperture = SingleAperturePosition(
+            name="Large",
+            radius_microns=100,
+            location=ApertureFiveDimensionalLocation(
+                aperture_x=0,
+                aperture_y=1.0005,  # only here departs from the Large position described in conftest.py fixture
+                aperture_z=2,
+                scatterguard_x=3,
+                scatterguard_y=4,
+            ),
+        )
+        fake_fgs_composite.aperture_scatterguard.selected_aperture.put(
+            test_aperture.location
+        )
         set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
 
         test_ispyb_callback = GridscanISPyBCallback()
@@ -215,6 +232,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
                 fake_fgs_composite.dcm,
+                fake_fgs_composite.aperture_scatterguard,
             )
         )
         hyperion_params = test_ispyb_callback.params.hyperion_params
@@ -286,10 +304,10 @@ class TestFlyscanXrayCentrePlan:
 
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
         )
         ap_call_medium = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
         )
 
         move_aperture.assert_has_calls(
@@ -366,9 +384,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
     ):
         RE, mock_subscriptions = RE_with_subs
-        mock_subscriptions.zocalo_handler.activity_gated_start(
-            self.td.test_start_document
-        )
+
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
@@ -743,12 +759,17 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     RE: RunEngine,
     fake_fgs_composite: FlyScanXRayCentreComposite,
 ):
-    mock_ispyb_handler = MagicMock()
     id_1, id_2 = 100, 200
-    mock_ispyb_handler.ispyb_ids.data_collection_ids = (id_1, id_2)
+    cbs = XrayCentreCallbackCollection()
+    ispyb_cb = cbs.ispyb_handler
+    ispyb_cb.active = True
+    ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
+    assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
     zocalo_env = "dev_env"
-    zocalo_callback = ZocaloCallback(mock_ispyb_handler, DO_FGS)
-    zocalo_callback.active = True
+
+    zocalo_cb.start({TRIGGER_ZOCALO_ON: DO_FGS})  # type: ignore
+    assert zocalo_cb.triggering_plan == DO_FGS
+
     mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
 
     fake_fgs_composite.eiger.unstage = MagicMock()
@@ -756,7 +777,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 
     x_steps, y_steps, z_steps = 10, 20, 30
 
-    RE.subscribe(zocalo_callback)
+    RE.subscribe(ispyb_cb)
     RE(
         kickoff_and_complete_gridscan(
             fake_fgs_composite.fast_grid_scan,

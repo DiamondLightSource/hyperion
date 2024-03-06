@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import os
+from typing import Any, Callable, Literal
 from unittest.mock import patch
 
 import pytest
+from bluesky.run_engine import RunEngine
+from dodal.devices.attenuator import Attenuator
+from dodal.devices.flux import Flux
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.undulator import Undulator
 
 from hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -38,7 +45,7 @@ from ...conftest import fake_read
 
 
 @pytest.mark.s03
-def test_ispyb_get_comment_from_collection_correctly(fetch_comment):
+def test_ispyb_get_comment_from_collection_correctly(fetch_comment: Callable[..., Any]):
     expected_comment_contents = (
         "Xray centring - "
         "Diffraction grid scan of 1 by 41 images, "
@@ -52,7 +59,7 @@ def test_ispyb_get_comment_from_collection_correctly(fetch_comment):
 
 @pytest.mark.s03
 def test_ispyb_deposition_comment_correct_on_failure(
-    dummy_ispyb: Store2DGridscanInIspyb, fetch_comment
+    dummy_ispyb: Store2DGridscanInIspyb, fetch_comment: Callable[..., Any]
 ):
     dcid = dummy_ispyb.begin_deposition()
     dummy_ispyb.end_deposition("fail", "could not connect to devices")
@@ -64,7 +71,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
 
 @pytest.mark.s03
 def test_ispyb_deposition_comment_correct_for_3D_on_failure(
-    dummy_ispyb_3d: Store3DGridscanInIspyb, fetch_comment
+    dummy_ispyb_3d: Store3DGridscanInIspyb, fetch_comment: Callable[..., Any]
 ):
     dcid = dummy_ispyb_3d.begin_deposition()
     dcid1 = dcid.data_collection_ids[0]  # type: ignore
@@ -91,7 +98,10 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     ],
 )
 def test_can_store_2D_ispyb_data_correctly_when_in_error(
-    StoreClass, exp_num_of_grids, success, fetch_comment
+    StoreClass: type[Store2DGridscanInIspyb] | type[Store3DGridscanInIspyb],
+    exp_num_of_grids: Literal[1, 2],
+    success: bool,
+    fetch_comment: Callable[..., Any],
 ):
     test_params = GridscanInternalParameters(**default_raw_params())
     test_params.hyperion_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
@@ -113,15 +123,19 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
         ),
     ]
 
-    if not success:
+    if success:
+        ispyb.end_deposition("success", "")
+    else:
         ispyb.end_deposition("fail", "In error")
         expected_comments = [
             e + " DataCollection Unsuccessful reason: In error"
             for e in expected_comments
         ]
-    else:
-        ispyb.end_deposition("success", "")
 
+    assert (
+        not isinstance(ispyb_ids.data_collection_ids, int)
+        and ispyb_ids.data_collection_ids is not None
+    )
     for grid_no, dc_id in enumerate(ispyb_ids.data_collection_ids):
         assert fetch_comment(dc_id) == expected_comments[grid_no]
 
@@ -136,18 +150,18 @@ def test_ispyb_deposition_in_rotation_plan(
     bps_wait,
     nexus_writer,
     zocalo_callback,
-    fake_create_rotation_devices,
-    RE,
+    fake_create_rotation_devices: RotationScanComposite,
+    RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
-    fetch_comment,
-    fetch_datacollection_attribute,
-    undulator,
-    attenuator,
-    synchrotron,
-    s4_slit_gaps,
-    flux,
+    fetch_comment: Callable[..., Any],
+    fetch_datacollection_attribute: Callable[..., Any],
+    undulator: Undulator,
+    attenuator: Attenuator,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    flux: Flux,
     robot,
-    fake_create_devices,
+    fake_create_devices: dict[str, Any],
 ):
     test_wl = 0.71
     test_bs_x = 0.023
@@ -167,7 +181,7 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     os.environ["ISPYB_CONFIG_PATH"] = DEV_ISPYB_DATABASE_CFG
-    callbacks = RotationCallbackCollection.setup()
+    callbacks = RotationCallbackCollection()
     for cb in list(callbacks):
         RE.subscribe(cb)
 
@@ -183,6 +197,7 @@ def test_ispyb_deposition_in_rotation_plan(
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         zebra=fake_create_devices["zebra"],
+        aperture_scatterguard=fake_create_devices["ap_sg"],
         robot=robot,
     )
 

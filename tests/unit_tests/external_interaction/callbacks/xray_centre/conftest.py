@@ -2,17 +2,19 @@ from unittest.mock import patch
 
 import pytest
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
-from event_model.documents import Event, EventDescriptor, RunStop
+from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.parameters.constants import (
+    DO_FGS,
     GRIDSCAN_AND_MOVE,
     GRIDSCAN_MAIN_PLAN,
     GRIDSCAN_OUTER_PLAN,
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+    TRIGGER_ZOCALO_ON,
     ZOCALO_READ_HARDWARE_PLAN,
 )
 from hyperion.parameters.external_parameters import from_file as default_raw_params
@@ -84,7 +86,7 @@ class TestData:
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
     GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
     BAD_ISPYB_RUN_STATUS: str = "DataCollection Unsuccessful"
-    test_start_document = {
+    test_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -92,9 +94,10 @@ class TestData:
         "plan_type": "generator",
         "plan_name": GRIDSCAN_OUTER_PLAN,
         "subplan_name": GRIDSCAN_OUTER_PLAN,
+        TRIGGER_ZOCALO_ON: DO_FGS,
         "hyperion_internal_parameters": dummy_params().json(),
     }
-    test_run_gridscan_start_document = {
+    test_run_gridscan_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -103,14 +106,14 @@ class TestData:
         "plan_name": GRIDSCAN_AND_MOVE,
         "subplan_name": GRIDSCAN_MAIN_PLAN,
     }
-    test_do_fgs_start_document = {
+    test_do_fgs_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": GRIDSCAN_AND_MOVE,
-        "subplan_name": "do_fgs",
+        "plan_name": DO_FGS,
+        "subplan_name": DO_FGS,
         "zocalo_environment": "dev_artemis",
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }

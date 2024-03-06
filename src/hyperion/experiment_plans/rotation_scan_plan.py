@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -39,7 +40,11 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_rotation,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
+from hyperion.parameters.constants import (
+    ROTATION_OUTER_PLAN,
+    ROTATION_PLAN_MAIN,
+    TRIGGER_ZOCALO_ON,
+)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
@@ -55,6 +60,7 @@ if TYPE_CHECKING:
 class RotationScanComposite:
     """All devices which are directly or indirectly required by this plan"""
 
+    aperture_scatterguard: ApertureScatterguard
     attenuator: Attenuator
     backlight: Backlight
     dcm: DCM
@@ -214,6 +220,7 @@ def rotation_scan_plan(
             composite.undulator,
             composite.synchrotron,
             composite.s4_slit_gaps,
+            composite.aperture_scatterguard,
             composite.robot,
         )
         yield from read_hardware_for_ispyb_during_collection(
@@ -254,9 +261,9 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": ROTATION_OUTER_PLAN,
+            TRIGGER_ZOCALO_ON: ROTATION_PLAN_MAIN,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "ZocaloCallback",
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
             ],

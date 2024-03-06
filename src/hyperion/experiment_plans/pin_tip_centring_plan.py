@@ -44,7 +44,7 @@ def trigger_and_return_pin_tip(
     pin_tip: PinTipDetect | PinTipDetection,
 ) -> Generator[Msg, None, Pixel]:
     yield from bps.trigger(pin_tip, wait=True)
-    tip_x_y_px = yield from bps.rd(pin_tip)
+    tip_x_y_px = yield from bps.rd(pin_tip.triggered_tip)
     LOGGER.info(f"Pin tip found at {tip_x_y_px}")
     return tip_x_y_px  # type: ignore
 
