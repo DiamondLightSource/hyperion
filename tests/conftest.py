@@ -370,21 +370,25 @@ def aperture_scatterguard(done_status):
             SingleAperturePosition(
                 location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
                 name="Large",
+                GDA_name="LARGE_APERTURE",
                 radius_microns=100,
             ),
             SingleAperturePosition(
                 location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
                 name="Medium",
+                GDA_name="MEDIUM_APERTURE",
                 radius_microns=50,
             ),
             SingleAperturePosition(
                 location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
                 name="Small",
+                GDA_name="SMALL_APERTURE",
                 radius_microns=20,
             ),
             SingleAperturePosition(
                 location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
                 name="Robot_load",
+                GDA_name="ROBOT_LOAD",
                 radius_microns=None,
             ),
         ),
