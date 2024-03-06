@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
@@ -18,9 +18,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 if TYPE_CHECKING:
-    from event_model.documents.event import Event
-    from event_model.documents.run_start import RunStart
-    from event_model.documents.run_stop import RunStop
+    from event_model.documents import Event, RunStart, RunStop
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -40,16 +38,16 @@ class RotationISPyBCallback(BaseISPyBCallback):
     Usually used as part of a RotationCallbackCollection.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        *,
+        emit: Callable[..., Any] | None = None,
+    ) -> None:
+        super().__init__(emit=emit)
         self.last_sample_id: str | None = None
         self.ispyb_ids: IspybIds = IspybIds()
 
-    def append_to_comment(self, comment: str) -> None:
-        assert isinstance(self.ispyb_ids.data_collection_ids, int)
-        self._append_to_comment(self.ispyb_ids.data_collection_ids, comment)
-
-    def activity_gated_start(self, doc: RunStart) -> None:
+    def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
             ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
@@ -76,18 +74,32 @@ class RotationISPyBCallback(BaseISPyBCallback):
                     f"Collection has {n_images} images - treating as a genuine dataset - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
-            self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
+            experiment_type = (
+                self.params.hyperion_params.ispyb_params.ispyb_experiment_type
+            )
+            if experiment_type:
+                self.ispyb = StoreRotationInIspyb(
+                    self.ispyb_config,
+                    self.params,
+                    dcgid,
+                    experiment_type,
+                )
+            else:
+                self.ispyb = StoreRotationInIspyb(self.ispyb_config, self.params, dcgid)
             ISPYB_LOGGER.info("Beginning ispyb deposition")
             self.ispyb_ids = self.ispyb.begin_deposition()
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
+        return super().activity_gated_start(doc)
 
-    def activity_gated_event(self, doc: Event) -> None:
-        super().activity_gated_event(doc)
+    def activity_gated_event(self, doc: Event):
+        doc = super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
+        return doc
 
     def activity_gated_stop(self, doc: RunStop) -> None:
         if doc.get("run_start") == self.uid_to_finalize_on:
             self.uid_to_finalize_on = None
-            super().activity_gated_stop(doc)
+            return super().activity_gated_stop(doc)
+        return self._tag_doc(doc)

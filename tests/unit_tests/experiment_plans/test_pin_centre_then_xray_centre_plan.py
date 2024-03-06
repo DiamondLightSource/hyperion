@@ -3,7 +3,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.devices.detector_motion import ShutterState
+from dodal.devices.detector.detector_motion import ShutterState
+from dodal.devices.fast_grid_scan import GridScanParams
 
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
@@ -71,16 +72,52 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 
 
 @patch(
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
+)
+@patch(
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.OavSnapshotCallback",
+)
+@patch(
     "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
     autospec=True,
 )
+@patch(
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    autospec=True,
+)
 def test_when_pin_centre_xray_centre_called_then_detector_positioned(
+    mock_grid_detect: MagicMock,
     mock_pin_tip_centre: MagicMock,
+    mock_oav_callback: MagicMock,
+    mock_grid_callback: MagicMock,
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
     simple_beamline,
     test_config_files,
     sim_run_engine,
 ):
+
+    mock_oav_callback.return_value.out_upper_left = [[1, 3], [3, 4]]
+    mock_oav_callback.return_value.snapshot_filenames = [
+        ["1.png", "2.png", "3.png"],
+        ["1.png", "2.png", "3.png"],
+        ["1.png", "2.png", "3.png"],
+    ]
+    mock_grid_callback.return_value.get_grid_parameters.return_value = GridScanParams(
+        dwell_time_ms=0,
+        x_start=0,
+        y1_start=0,
+        y2_start=0,
+        z1_start=0,
+        z2_start=0,
+        x_steps=0,
+        y_steps=0,
+        z_steps=0,
+        x_step_size=0,
+        y_step_size=0,
+        z_step_size=0,
+        set_stub_offsets=False,
+    )
+
     sim_run_engine.add_handler_for_callback_subscribes()
     add_simple_pin_tip_centre_handlers(sim_run_engine)
     add_simple_oav_mxsc_callback_handlers(sim_run_engine)

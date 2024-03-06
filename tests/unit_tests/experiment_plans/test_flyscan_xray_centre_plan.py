@@ -11,11 +11,12 @@ from dodal.devices.aperturescatterguard import (
     ApertureFiveDimensionalLocation,
     SingleAperturePosition,
 )
-from dodal.devices.det_dim_constants import (
+from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
@@ -29,6 +30,7 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
+    kickoff_and_complete_gridscan,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_gridscan_valid,
@@ -42,17 +44,17 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from hyperion.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
+)
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    GRIDSCAN_OUTER_PLAN,
-)
+from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN, TRIGGER_ZOCALO_ON
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -273,7 +275,6 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
     ):
         RE, _ = RE_with_subs
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
@@ -369,7 +370,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
     @patch(
-        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+        "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
@@ -382,9 +383,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
     ):
         RE, mock_subscriptions = RE_with_subs
-        mock_subscriptions.zocalo_handler.activity_gated_start(
-            self.td.test_start_document
-        )
+
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
@@ -456,7 +455,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(
@@ -592,7 +590,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(
@@ -688,7 +685,7 @@ class TestFlyscanXrayCentrePlan:
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(
-            "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+            "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
             [RE.subscribe(cb) for cb in list(mock_subscriptions)]
@@ -750,3 +747,38 @@ class TestFlyscanXrayCentrePlan:
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    autospec=True,
+)
+def test_kickoff_and_complete_gridscan_triggers_zocalo(
+    mock_zocalo_trigger_class: MagicMock,
+    RE: RunEngine,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
+):
+    cbs = XrayCentreCallbackCollection()
+    ispyb_cb = cbs.ispyb_handler
+    ispyb_cb.active = True
+    ispyb_cb.ispyb_ids.data_collection_ids = (1, 2)
+    assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
+    zocalo_env = "dev_env"
+
+    zocalo_cb.start({TRIGGER_ZOCALO_ON: DO_FGS})  # type: ignore
+    assert zocalo_cb.triggering_plan == DO_FGS
+
+    mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+    RE.subscribe(ispyb_cb)
+    RE(
+        kickoff_and_complete_gridscan(
+            fake_fgs_composite.fast_grid_scan,
+            MagicMock(spec=EigerDetector),
+            fake_fgs_composite.synchrotron,
+            zocalo_env,
+        )
+    )
+
+    mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
+    assert mock_zocalo_trigger.run_start.call_count == 2
+    assert mock_zocalo_trigger.run_end.call_count == 2

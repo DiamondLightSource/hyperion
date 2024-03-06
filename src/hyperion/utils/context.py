@@ -7,7 +7,6 @@ from blueapi.core.bluesky_types import Device
 # Ideally wouldn't import a 'private' method from dodal - but this will likely go
 # away once we fully use blueapi's plan management components.
 # https://github.com/DiamondLightSource/hyperion/issues/868
-from dodal.beamlines.beamline_utils import _wait_for_connection
 from dodal.utils import get_beamline_based_on_environment_variable
 
 import hyperion.experiment_plans as hyperion_plans
@@ -51,7 +50,8 @@ def device_composite_from_context(context: BlueskyContext, dc: Type[DT]) -> DT:
     context, checking that the types of devices returned by the context are compatible
     with the type annotations of the dataclass.
 
-    Will ensure that devices referenced by this composite are connected.
+    Note that if the context was not created with `wait_for_connection=True` devices may
+    still be unconnected.
     """
     LOGGER.debug(
         f"Attempting to initialize devices referenced in dataclass {dc} from blueapi context"
@@ -64,10 +64,6 @@ def device_composite_from_context(context: BlueskyContext, dc: Type[DT]) -> DT:
         device = find_device_in_context(
             context, field.name, expected_type=dc_type_hints.get(field.name, Device)
         )
-
-        # At the point where we're actually making a device composite, i.e. starting a plan with these devices,
-        # we need all the referenced devices to be connected.
-        _wait_for_connection(device=device)
 
         devices[field.name] = device
 

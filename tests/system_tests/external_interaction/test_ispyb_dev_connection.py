@@ -144,7 +144,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 @patch("bluesky.plan_stubs.wait")
 @patch("hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter")
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback"
+    "hyperion.external_interaction.callbacks.rotation.callback_collection.ZocaloCallback"
 )
 def test_ispyb_deposition_in_rotation_plan(
     bps_wait,
@@ -181,7 +181,7 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     os.environ["ISPYB_CONFIG_PATH"] = DEV_ISPYB_DATABASE_CFG
-    callbacks = RotationCallbackCollection.setup()
+    callbacks = RotationCallbackCollection()
     for cb in list(callbacks):
         RE.subscribe(cb)
 

@@ -5,7 +5,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.areadetector.plugins.MXSC import MXSC, PinTipDetect
+from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
@@ -16,8 +16,7 @@ from hyperion.device_setup_plans.setup_oav import (
     Pixel,
     get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
-    wait_for_tip_to_be_found_ad_mxsc,
-    wait_for_tip_to_be_found_ophyd,
+    wait_for_tip_to_be_found,
 )
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
@@ -44,17 +43,8 @@ def create_devices(context: BlueskyContext) -> PinTipCentringComposite:
 def trigger_and_return_pin_tip(
     pin_tip: PinTipDetect | PinTipDetection,
 ) -> Generator[Msg, None, Pixel]:
-    if isinstance(pin_tip, PinTipDetection):
-        tip_x_y_px = yield from bps.rd(pin_tip)
-
-        if tip_x_y_px == pin_tip.INVALID_POSITION:
-            # Wait a second and then retry
-            LOGGER.info("Pin tip not found, waiting a second and trying again")
-            yield from bps.sleep(1)
-            tip_x_y_px = yield from bps.rd(pin_tip)
-    else:
-        yield from bps.trigger(pin_tip, wait=True)
-        tip_x_y_px = yield from bps.rd(pin_tip)
+    yield from bps.trigger(pin_tip, wait=True)
+    tip_x_y_px = yield from bps.rd(pin_tip.triggered_tip)
     LOGGER.info(f"Pin tip found at {tip_x_y_px}")
     return tip_x_y_px  # type: ignore
 
@@ -197,10 +187,5 @@ def pin_tip_centre_plan(
     # See #673 for improvements
     yield from bps.sleep(0.3)
 
-    if isinstance(pin_tip_setup, MXSC):
-        LOGGER.info("Acquiring pin-tip from AD MXSC plugin")
-        tip = yield from wait_for_tip_to_be_found_ad_mxsc(pin_tip_setup)
-    elif isinstance(pin_tip_setup, PinTipDetection):
-        LOGGER.info("Acquiring pin-tip from ophyd device")
-        tip = yield from wait_for_tip_to_be_found_ophyd(pin_tip_setup)
+    tip = yield from wait_for_tip_to_be_found(pin_tip_detect)
     yield from offset_and_move(tip)

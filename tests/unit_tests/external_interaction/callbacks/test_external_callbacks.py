@@ -13,11 +13,10 @@ from hyperion.external_interaction.callbacks.__main__ import (
     setup_threads,
 )
 from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER
-from hyperion.parameters.cli import CallbackArgs
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.__main__.parse_callback_cli_args",
+    "hyperion.external_interaction.callbacks.__main__.parse_callback_dev_mode_arg",
     return_value=("DEBUG", True),
 )
 @patch("hyperion.external_interaction.callbacks.__main__.setup_callbacks")
@@ -27,7 +26,7 @@ def test_main_function(
     setup_threads: MagicMock,
     setup_logging: MagicMock,
     setup_callbacks: MagicMock,
-    parse_callback_cli_args: MagicMock,
+    parse_callback_dev_mode_arg: MagicMock,
 ):
     setup_threads.return_value = (MagicMock(), MagicMock(), MagicMock(), MagicMock())
 
@@ -38,7 +37,7 @@ def test_main_function(
 
 
 def test_setup_callbacks():
-    current_number_of_callbacks = 6
+    current_number_of_callbacks = 4
     cbs = setup_callbacks()
     assert len(cbs) == current_number_of_callbacks
     assert len(set(cbs)) == current_number_of_callbacks
@@ -46,18 +45,18 @@ def test_setup_callbacks():
 
 @pytest.mark.skip_log_setup
 @patch(
-    "hyperion.external_interaction.callbacks.__main__.parse_callback_cli_args",
-    return_value=CallbackArgs(logging_level="DEBUG", dev_mode=True),
+    "hyperion.external_interaction.callbacks.__main__.parse_callback_dev_mode_arg",
+    return_value=True,
 )
 def test_setup_logging(parse_callback_cli_args):
     assert len(ISPYB_LOGGER.handlers) == 0
     assert len(NEXUS_LOGGER.handlers) == 0
     setup_logging(parse_callback_cli_args())
-    assert len(ISPYB_LOGGER.handlers) == 3
-    assert len(NEXUS_LOGGER.handlers) == 3
+    assert len(ISPYB_LOGGER.handlers) == 4
+    assert len(NEXUS_LOGGER.handlers) == 4
     setup_logging(parse_callback_cli_args())
-    assert len(ISPYB_LOGGER.handlers) == 3
-    assert len(NEXUS_LOGGER.handlers) == 3
+    assert len(ISPYB_LOGGER.handlers) == 4
+    assert len(NEXUS_LOGGER.handlers) == 4
 
 
 def test_setup_threads():

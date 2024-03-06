@@ -6,7 +6,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.det_dim_constants import (
+from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
@@ -25,6 +25,7 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
 )
 from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
+    SmargonSpeedException,
     panda_flyscan_xray_centre,
     read_hardware_for_ispyb_pre_collection,
     run_gridscan,
@@ -47,7 +48,6 @@ from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from hyperion.log import set_up_logging_handlers
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
     GRIDSCAN_OUTER_PLAN,
@@ -149,9 +149,9 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(
+        fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
             transmission_test_value
-        )  # type: ignore
+        )
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
@@ -226,9 +226,7 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: PandAGridscanInternalParameters,
         RE: RunEngine,
     ):
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
-
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
         RE(
             run_gridscan_and_move(
@@ -346,9 +344,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
-        mock_subscriptions.zocalo_handler.activity_gated_start(
-            self.td.test_start_document
-        )
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
@@ -434,7 +429,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(mock_subscriptions.ispyb_handler)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -557,6 +551,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
+
         class MoveException(Exception):
             pass
 
@@ -601,7 +596,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(
@@ -707,13 +701,10 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
         with patch(
-            "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
-            lambda: mock_subscriptions,
-        ), patch(
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(
-            "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+            "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
             RE(panda_flyscan_xray_centre(fake_fgs_composite, test_panda_fgs_params))
@@ -784,24 +775,16 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disarm_detector.assert_called()
 
 
-@patch(
-    "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.LOGGER",
-    autospec=True,
-)
 def test_if_smargon_speed_over_limit_then_log_error(
-    mock_log: MagicMock,
     test_panda_fgs_params: PandAGridscanInternalParameters,
     fake_fgs_composite: FlyScanXRayCentreComposite,
     RE: RunEngine,
 ):
-    mock_log.error.side_effect = Exception("End test")
     test_panda_fgs_params.experiment_params.x_step_size = 10
     test_panda_fgs_params.hyperion_params.detector_params.exposure_time = 0.01
 
-    with pytest.raises(Exception):
+    with pytest.raises(SmargonSpeedException):
         RE(run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params))
-
-    mock_log.error.assert_called_once()
 
 
 # Ideally we'd have a test to check the tidy up plan is called upon any errors

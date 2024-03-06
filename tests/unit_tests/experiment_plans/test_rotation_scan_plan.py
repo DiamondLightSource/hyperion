@@ -11,16 +11,11 @@ from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from hyperion.experiment_plans.rotation_scan_plan import (
-    DEFAULT_DIRECTION,
     DEFAULT_MAX_VELOCITY,
     RotationScanComposite,
-    move_to_end_w_buffer,
-    move_to_start_w_buffer,
+    calculate_motion_profile,
     rotation_scan,
     rotation_scan_plan,
-)
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -37,17 +32,16 @@ TEST_SHUTTER_OPENING_DEGREES = 2.5
 
 
 def do_rotation_main_plan_for_tests(
-    run_eng_w_subs: tuple[RunEngine, RotationCallbackCollection],
+    run_eng: RunEngine,
     expt_params: RotationInternalParameters,
     devices: RotationScanComposite,
     plan=rotation_scan_plan,
 ):
-    run_engine, _ = run_eng_w_subs
     with patch(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
     ):
-        run_engine(
+        run_eng(
             plan(
                 devices,
                 expt_params,
@@ -56,28 +50,19 @@ def do_rotation_main_plan_for_tests(
 
 
 @pytest.fixture
-def RE_with_subs(
-    RE: RunEngine, mock_rotation_subscriptions: RotationCallbackCollection
-):
-    for cb in mock_rotation_subscriptions:
-        RE.subscribe(cb)
-    return RE, mock_rotation_subscriptions
-
-
-@pytest.fixture
 def run_full_rotation_plan(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     do_rotation_main_plan_for_tests(
-        RE_with_subs, test_rotation_params, fake_create_rotation_devices, rotation_scan
+        RE, test_rotation_params, fake_create_rotation_devices, rotation_scan
     )
     return fake_create_rotation_devices
 
 
 def setup_and_run_rotation_plan_for_tests(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
@@ -94,13 +79,13 @@ def setup_and_run_rotation_plan_for_tests(
 
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
-            RE_with_subs,
+            RE,
             test_params,
             fake_create_rotation_devices,
         )
 
     return {
-        "RE_with_subs": RE_with_subs,
+        "RE_with_subs": RE,
         "test_rotation_params": test_params,
         "smargon": fake_create_rotation_devices.smargon,
         "zebra": fake_create_rotation_devices.zebra,
@@ -109,12 +94,12 @@ def setup_and_run_rotation_plan_for_tests(
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_standard(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
+        RE,
         test_rotation_params,
         fake_create_rotation_devices,
     )
@@ -122,58 +107,52 @@ def setup_and_run_rotation_plan_for_tests_standard(
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_nomove(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params_nomove: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
+        RE,
         test_rotation_params_nomove,
         fake_create_rotation_devices,
     )
 
 
-def test_move_to_start(smargon: Smargon, RE):
-    start_angle = 153
-    mock_velocity_set = MagicMock(return_value=Status(done=True, success=True))
-    with patch.object(smargon.omega.velocity, "set", mock_velocity_set):
-        RE(move_to_start_w_buffer(smargon.omega, start_angle, TEST_OFFSET))
+def test_rotation_scan_calculations(test_rotation_params: RotationInternalParameters):
+    test_rotation_params.hyperion_params.detector_params.exposure_time = 0.2
+    test_rotation_params.hyperion_params.detector_params.omega_start = 10
+    test_rotation_params.experiment_params.omega_start = 10
 
-    mock_velocity_set.assert_called_with(120)
-    assert (
-        smargon.omega.user_readback.get()
-        == start_angle - TEST_OFFSET * DEFAULT_DIRECTION
+    motion_values = calculate_motion_profile(
+        test_rotation_params.hyperion_params.detector_params,
+        test_rotation_params.experiment_params,
+        0.005,  # time for acceleration
     )
 
+    assert motion_values.direction == -1
+    assert motion_values.start_scan_deg == 10
 
-def test_move_to_end(smargon: Smargon, RE):
-    scan_width = 153
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        fake_read,
-    ):
-        RE(
-            move_to_end_w_buffer(
-                smargon.omega, scan_width, TEST_OFFSET, TEST_SHUTTER_OPENING_DEGREES
-            )
-        )
+    assert motion_values.speed_for_rotation_deg_s == 0.5  # 0.1 deg per 0.2 sec
+    assert motion_values.shutter_time_s == 0.6
+    assert motion_values.shutter_opening_deg == 0.3  # distance moved in 0.6 s
 
-    distance_to_move = (
-        scan_width + TEST_SHUTTER_OPENING_DEGREES + TEST_OFFSET * 2
-    ) * DEFAULT_DIRECTION
+    # 1.5 * distance moved in time for accel (fudge)
+    assert motion_values.acceleration_offset_deg == 0.00375
+    assert motion_values.start_motion_deg == 10.00375
 
-    assert smargon.omega.user_readback.get() == distance_to_move
+    assert motion_values.total_exposure_s == 360
+    assert motion_values.scan_width_deg == 180
+    assert motion_values.distance_to_move_deg == -180.3075
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan", autospec=True)
 def test_rotation_scan(
     plan: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    RE, _ = RE_with_subs
 
     composite = fake_create_rotation_devices
     RE(rotation_scan(composite, test_rotation_params))
@@ -183,10 +162,7 @@ def test_rotation_scan(
 
 
 def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests_standard) -> None:
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection] = (
-        setup_and_run_rotation_plan_for_tests_standard["RE_with_subs"]
-    )
-    RE, _ = RE_with_subs
+    RE: RunEngine = setup_and_run_rotation_plan_for_tests_standard["RE_with_subs"]
     assert RE._exit_status == "success"
 
 
@@ -227,6 +203,7 @@ def test_full_rotation_plan_smargon_settings(
     expt_params = params.experiment_params
 
     omega_set: MagicMock = smargon.omega.set  # type: ignore
+    omega_velocity_set: MagicMock = smargon.omega.velocity.set  # type: ignore
     rotation_speed = (
         expt_params.image_width / params.hyperion_params.detector_params.exposure_time
     )
@@ -236,11 +213,13 @@ def test_full_rotation_plan_smargon_settings(
     assert smargon.x.user_readback.get() == expt_params.x
     assert smargon.y.user_readback.get() == expt_params.y
     assert smargon.z.user_readback.get() == expt_params.z
-    assert omega_set.call_count == 6
-    omega_set.assert_has_calls(
-        [call(DEFAULT_MAX_VELOCITY), call(rotation_speed), call(DEFAULT_MAX_VELOCITY)],
-        any_order=True,
-    )
+    assert omega_set.call_count == 2
+    assert omega_velocity_set.call_count == 3
+    assert omega_velocity_set.call_args_list == [
+        call(DEFAULT_MAX_VELOCITY),
+        call(rotation_speed),
+        call(DEFAULT_MAX_VELOCITY),
+    ]
 
 
 def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
@@ -267,11 +246,10 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
 def test_cleanup_happens(
     bps_wait: MagicMock,
     cleanup_plan: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    RE, _ = RE_with_subs
 
     class MyTestException(Exception):
         pass
@@ -301,28 +279,3 @@ def test_cleanup_happens(
             assert "Experiment fails because this is a test" in exc.value.args[0]
             cleanup_plan.assert_called_once()
 
-
-@patch(
-    "hyperion.experiment_plans.rotation_scan_plan.move_to_start_w_buffer", autospec=True
-)
-def test_acceleration_offset_calculated_correctly(
-    mock_move_to_start: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
-    test_rotation_params: RotationInternalParameters,
-    fake_create_rotation_devices: RotationScanComposite,
-):
-    composite = fake_create_rotation_devices
-    composite.smargon.omega.acceleration.sim_put(0.2)  # type: ignore
-    setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
-        test_rotation_params,
-        fake_create_rotation_devices,
-    )
-
-    expected_start_angle = (
-        test_rotation_params.hyperion_params.detector_params.omega_start
-    )
-
-    mock_move_to_start.assert_called_once_with(
-        composite.smargon.omega, expected_start_angle, pytest.approx(0.3)
-    )

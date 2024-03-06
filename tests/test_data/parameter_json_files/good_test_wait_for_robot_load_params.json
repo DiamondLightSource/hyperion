@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.3",
+    "params_version": "4.0.4",
     "hyperion_params": {
         "zocalo_environment": "artemis",
         "beamline": "BL03I",
@@ -28,7 +28,6 @@
             "focal_spot_size_x": 0.0,
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
-            "resolution": 1,
             "sample_id": null,
             "sample_barcode": null
         }

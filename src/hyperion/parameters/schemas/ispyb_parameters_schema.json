@@ -74,6 +74,9 @@
         },
         "resolution": {
             "type": "number"
+        },
+        "ispyb_experiment_type": {
+            "type": ["string", "null"]
         }
     },
     "required": [
@@ -87,7 +90,6 @@
         "beam_size_y",
         "focal_spot_size_x",
         "focal_spot_size_y",
-        "comment",
-        "resolution"
+        "comment"
     ]
 }

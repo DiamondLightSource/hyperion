@@ -4,48 +4,38 @@ from pydantic.dataclasses import dataclass
 
 
 @dataclass
-class CallbackArgs:
-    logging_level: str = "INFO"
-    dev_mode: bool = False
-
-
-@dataclass
 class HyperionArgs:
-    logging_level: str = "INFO"
     dev_mode: bool = False
     use_external_callbacks: bool = False
     verbose_event_logging: bool = False
     skip_startup_connection: bool = False
 
 
-def add_callback_relevant_args(parser: argparse.ArgumentParser) -> None:
-    """adds arguments relevant to hyperion-callbacks. Returns the tuple: (log_level: str, dev_mode: bool)"""
+def _add_callback_relevant_args(parser: argparse.ArgumentParser) -> None:
+    """adds arguments relevant to hyperion-callbacks."""
     parser.add_argument(
         "--dev",
         action="store_true",
         help="Use dev options, such as local graylog instances and S03",
     )
-    parser.add_argument(
-        "--logging-level",
-        type=str,
-        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
-        help="Choose overall logging level, defaults to INFO",
-    )
 
 
-def parse_callback_cli_args() -> CallbackArgs:
+def parse_callback_dev_mode_arg() -> bool:
+    """Returns the bool representing the 'dev_mode' argument."""
     parser = argparse.ArgumentParser()
-    add_callback_relevant_args(parser)
+    _add_callback_relevant_args(parser)
     args = parser.parse_args()
-    return CallbackArgs(
-        logging_level=args.logging_level or "INFO", dev_mode=args.dev or False
-    )
+    return args.dev
 
 
 def parse_cli_args() -> HyperionArgs:
-    """Parses all arguments relevant to hyperion. Returns the tuple: (log_level: str, verbose_event_logging: bool, dev_mode: bool, skip_startup_connection: bool )"""
+    """Parses all arguments relevant to hyperion. Returns an HyperionArgs dataclass with
+    the fields: (verbose_event_logging: bool,
+                 dev_mode: bool,
+                 skip_startup_connection: bool,
+                 external_callbacks: bool)"""
     parser = argparse.ArgumentParser()
-    add_callback_relevant_args(parser)
+    _add_callback_relevant_args(parser)
     parser.add_argument(
         "--verbose-event-logging",
         action="store_true",
@@ -63,7 +53,6 @@ def parse_cli_args() -> HyperionArgs:
     )
     args = parser.parse_args()
     return HyperionArgs(
-        logging_level=args.logging_level or "INFO",
         verbose_event_logging=args.verbose_event_logging or False,
         dev_mode=args.dev or False,
         skip_startup_connection=args.skip_startup_connection or False,

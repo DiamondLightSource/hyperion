@@ -1,5 +1,5 @@
 import numpy as np
-from dodal.devices.det_dim_constants import EIGER2_X_16M_SIZE
+from dodal.devices.detector.det_dim_constants import EIGER2_X_16M_SIZE
 
 from hyperion.parameters import external_parameters
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (

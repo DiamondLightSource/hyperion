@@ -15,6 +15,10 @@ from hyperion.device_setup_plans.setup_panda import (
 from ...conftest import RunEngineSimulator
 
 
+def get_smargon_speed(x_step_size_mm: float, time_between_x_steps_ms: float) -> float:
+    return x_step_size_mm / time_between_x_steps_ms
+
+
 def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
     num_of_sets = 0
     num_of_waits = 0
@@ -36,8 +40,11 @@ def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
     )
 
     if plan == "setup":
+        smargon_speed = get_smargon_speed(0.1, 1)
         sim.simulate_plan(
-            setup_panda_for_flyscan(mock_panda, "path", PandAGridScanParams(), 1, 1, 1)
+            setup_panda_for_flyscan(
+                mock_panda, "path", PandAGridScanParams(), 1, 1, 1, smargon_speed
+            )
         )
     elif plan == "disarm":
         sim.simulate_plan(disarm_panda_for_gridscan(mock_panda))
@@ -51,8 +58,8 @@ def test_setup_panda_performs_correct_plans(mock_load_device):
         "setup", mock_load_device
     )
     mock_load_device.assert_called_once()
-    assert num_of_sets == 7
-    assert num_of_waits == 2
+    assert num_of_sets == 9
+    assert num_of_waits == 3
 
 
 @pytest.mark.parametrize(
@@ -89,6 +96,7 @@ def test_setup_panda_correctly_configures_table(
     to look like [0,1,0,0,1,0]
     """
 
+    sample_velocity_mm_per_s = get_smargon_speed(x_step_size, time_between_x_steps_ms)
     params = PandAGridScanParams(
         x_steps=x_steps,
         x_step_size=x_step_size,
@@ -96,18 +104,15 @@ def test_setup_panda_correctly_configures_table(
         run_up_distance_mm=run_up_distance_mm,
     )
 
-    table = get_seq_table(params, time_between_x_steps_ms, exposure_time_s)
+    exposure_distance_mm = int(sample_velocity_mm_per_s * exposure_time_s)
+
+    table = get_seq_table(params, exposure_distance_mm)
 
     np.testing.assert_array_equal(table["time2"], np.ones(6))
 
     safe_distance = int((params.x_step_size * MM_TO_ENCODER_COUNTS) / 2)
 
-    exposure_distance = int(
-        (params.x_step_size / time_between_x_steps_ms)
-        * 1e-3
-        * exposure_time_s
-        * MM_TO_ENCODER_COUNTS
-    )
+    exposure_distance_counts = exposure_distance_mm * MM_TO_ENCODER_COUNTS
 
     np.testing.assert_array_equal(
         table["position"],
@@ -121,10 +126,10 @@ def test_setup_panda_correctly_configures_table(
                 0,
                 (params.x_start + (params.x_steps - 1) * params.x_step_size)
                 * MM_TO_ENCODER_COUNTS
-                + exposure_distance,
+                + exposure_distance_counts,
                 params.x_start * MM_TO_ENCODER_COUNTS
                 - safe_distance
-                + exposure_distance,
+                + exposure_distance_counts,
             ],
             dtype=np.int32,
         ),
@@ -151,5 +156,5 @@ def test_setup_panda_correctly_configures_table(
 # all the blocks which were enabled on setup are also disabled on tidyup
 def test_disarm_panda_disables_correct_blocks():
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions("disarm")
-    assert num_of_sets == 4
+    assert num_of_sets == 6
     assert num_of_waits == 1

@@ -20,7 +20,7 @@ def mock_eiger():
     return eiger
 
 
-class TestException(Exception):
+class MyTestException(Exception):
     pass
 
 
@@ -29,12 +29,12 @@ def test_given_plan_raises_when_exception_raised_then_eiger_disarmed_and_correct
 ):
     def my_plan():
         yield from bps.null()
-        raise TestException()
+        raise MyTestException()
 
     eiger = mock_eiger
     detector_motion = MagicMock()
 
-    with pytest.raises(TestException):
+    with pytest.raises(MyTestException):
         RE(
             start_preparing_data_collection_then_do_plan(
                 eiger, detector_motion, 100, my_plan()

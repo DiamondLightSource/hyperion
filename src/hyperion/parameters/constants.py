@@ -4,6 +4,7 @@ SIM_BEAMLINE = "BL03S"
 SIM_INSERTION_PREFIX = "SR03S"
 ISPYB_HARDWARE_READ_PLAN = "ispyb_reading_hardware"
 ISPYB_TRANSMISSION_FLUX_READ_PLAN = "ispyb_update_transmission_flux"
+NEXUS_READ_PLAN = "nexus_read_plan"
 SIM_ZOCALO_ENV = "dev_artemis"
 
 CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
@@ -25,6 +26,11 @@ DO_FGS = "do_fgs"
 # Rotation scan
 ROTATION_OUTER_PLAN = "rotation_scan_with_cleanup"
 ROTATION_PLAN_MAIN = "rotation_scan_main"
+########################################################################################
+
+# Plan metadata keys ###################################################################
+# Gridscan
+TRIGGER_ZOCALO_ON = "trigger_zocalo_on"
 ########################################################################################
 
 

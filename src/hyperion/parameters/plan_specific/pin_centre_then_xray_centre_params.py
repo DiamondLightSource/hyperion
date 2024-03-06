@@ -46,6 +46,9 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
     # plugin
     use_ophyd_pin_tip_detect: bool = False
 
+    # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
+    run_up_distance_mm: float = 0.15
+
     # Use constant motion panda scans instead of fast grid scans
     use_panda: bool = False
 
