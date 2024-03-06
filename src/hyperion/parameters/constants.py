@@ -12,7 +12,7 @@ CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
 # this one is for reading
 SIM_ISPYB_CONFIG = "tests/test_data/test_config.cfg"
 # this one is for making depositions:
-DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
+DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
 
 PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
 OAV_REFRESH_DELAY = 0.3
