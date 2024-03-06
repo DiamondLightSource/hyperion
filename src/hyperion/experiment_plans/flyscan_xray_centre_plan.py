@@ -141,7 +141,7 @@ def set_aperture_for_bbox_size(
         }
     )
     def set_aperture():
-        yield from bps.abs_set(aperture_device, new_selected_aperture.location)
+        yield from bps.abs_set(aperture_device, new_selected_aperture)
 
     yield from set_aperture()
 

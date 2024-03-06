@@ -373,26 +373,28 @@ def aperture_scatterguard(done_status):
                 radius_microns=100,
             ),
             SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(5, 6, 7, 8, 9),
+                location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
                 name="Medium",
                 radius_microns=50,
             ),
             SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(10, 11, 12, 13, 14),
+                location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
                 name="Small",
                 radius_microns=20,
             ),
             SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(15, 16, 17, 18, 19),
+                location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
                 name="Robot_load",
                 radius_microns=None,
             ),
         ),
     )
+    ap_sg.aperture.z.user_setpoint.sim_put(2)  # type: ignore
     ap_sg.aperture.z.motor_done_move.sim_put(1)  # type: ignore
     with patch_motor(ap_sg.aperture.x), patch_motor(ap_sg.aperture.y), patch_motor(
         ap_sg.aperture.z
     ), patch_motor(ap_sg.scatterguard.x), patch_motor(ap_sg.scatterguard.y):
+        ap_sg.set(ap_sg.aperture_positions.SMALL)  # type: ignore
         yield ap_sg
 
 

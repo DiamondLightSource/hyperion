@@ -5,12 +5,8 @@ from unittest.mock import MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
-from bluesky import FailedStatus
 from bluesky.run_engine import RunEngine
-from dodal.devices.aperturescatterguard import (
-    ApertureFiveDimensionalLocation,
-    SingleAperturePosition,
-)
+from bluesky.utils import FailedStatus
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -198,19 +194,8 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-        test_aperture = SingleAperturePosition(
-            name="Large",
-            radius_microns=100,
-            location=ApertureFiveDimensionalLocation(
-                aperture_x=0,
-                aperture_y=1.0005,  # only here departs from the Large position described in conftest.py fixture
-                aperture_z=2,
-                scatterguard_x=3,
-                scatterguard_y=4,
-            ),
-        )
-        fake_fgs_composite.aperture_scatterguard.selected_aperture.put(
-            test_aperture.location
+        fake_fgs_composite.aperture_scatterguard.set(
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE  # type: ignore
         )
         set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
 
