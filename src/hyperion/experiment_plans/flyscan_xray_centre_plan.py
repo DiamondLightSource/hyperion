@@ -130,7 +130,7 @@ def set_aperture_for_bbox_size(
         else aperture_device.aperture_positions.LARGE
     )
     LOGGER.info(
-        f"Setting aperture to {new_selected_aperture.name} ({new_selected_aperture.location}) based on bounding box size {bbox_size}."
+        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
     )
 
     @bpp.set_run_key_decorator("change_aperture")
