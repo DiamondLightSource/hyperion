@@ -66,7 +66,7 @@ def flatten_dict(d: dict, parent_items: dict = {}) -> dict:
 def fetch_subdict_from_bucket(
     list_of_keys: list[str], bucket: dict[str, Any]
 ) -> dict[str, Any]:
-    return {key: bucket.get(key) for key in list_of_keys if bucket.get(key) is not None}
+    return {key: value for key, value in bucket.items() if key in list_of_keys}
 
 
 def extract_experiment_params_from_flat_dict(

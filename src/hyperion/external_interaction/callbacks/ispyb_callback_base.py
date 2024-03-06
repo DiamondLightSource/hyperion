@@ -114,7 +114,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
 
-    def activity_gated_stop(self, doc: RunStop):
+    def activity_gated_stop(self, doc: RunStop) -> None:
         """Subclasses must check that they are recieving a stop document for the correct
         uid to use this method!"""
         assert isinstance(
@@ -134,7 +134,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
         return self._tag_doc(doc)
 
-    def _append_to_comment(self, id: int, comment: str):
+    def _append_to_comment(self, id: int, comment: str) -> None:
         assert isinstance(self.ispyb, StoreInIspyb)
         try:
             self.ispyb.append_to_comment(id, comment)

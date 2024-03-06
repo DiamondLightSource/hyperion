@@ -142,14 +142,26 @@ def test_read_hardware_for_ispyb_pre_collection(
     attenuator = fgs_composite.attenuator
     flux = fgs_composite.flux
     dcm = fgs_composite.dcm
+    aperture_scatterguard = fgs_composite.aperture_scatterguard
     robot = fgs_composite.robot
 
     @bpp.run_decorator()
-    def read_run(u, s, g, r, a, f, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(u, s, g, r)
+    def read_run(u, s, g, r, a, f, dcm, ap_sg):
+        yield from read_hardware_for_ispyb_pre_collection(u, s, g, r, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
-    RE(read_run(undulator, synchrotron, slit_gaps, robot, attenuator, flux, dcm))
+    RE(
+        read_run(
+            undulator,
+            synchrotron,
+            slit_gaps,
+            robot,
+            attenuator,
+            flux,
+            dcm,
+            aperture_scatterguard,
+        )
+    )
 
 
 @pytest.mark.s03

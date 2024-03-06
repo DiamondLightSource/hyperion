@@ -57,6 +57,7 @@ BASIC_PRE_SETUP_DOC = {
     "s4_slit_gaps_ygap": 0,
     "robot-barcode": "BARCODE",
 }
+
 BASIC_POST_SETUP_DOC = {
     "attenuator_actual_transmission": 0,
     "flux_flux_reading": 10,

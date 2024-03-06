@@ -7,6 +7,10 @@ import numpy as np
 import pytest
 from bluesky import FailedStatus
 from bluesky.run_engine import RunEngine
+from dodal.devices.aperturescatterguard import (
+    ApertureFiveDimensionalLocation,
+    SingleAperturePosition,
+)
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -78,8 +82,10 @@ def ispyb_plan(test_fgs_params):
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, robot, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot)
+    def standalone_read_hardware_for_ispyb(
+        und, syn, slits, robot, attn, fl, dcm, ap_sg
+    ):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg, robot)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -192,6 +198,20 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
+        test_aperture = SingleAperturePosition(
+            name="Large",
+            radius_microns=100,
+            location=ApertureFiveDimensionalLocation(
+                aperture_x=0,
+                aperture_y=1.0005,  # only here departs from the Large position described in conftest.py fixture
+                aperture_z=2,
+                scatterguard_x=3,
+                scatterguard_y=4,
+            ),
+        )
+        fake_fgs_composite.aperture_scatterguard.selected_aperture.put(
+            test_aperture.location
+        )
         set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
 
         test_ispyb_callback = GridscanISPyBCallback()
@@ -211,6 +231,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
                 fake_fgs_composite.dcm,
+                fake_fgs_composite.aperture_scatterguard,
             )
         )
         hyperion_params = test_ispyb_callback.params.hyperion_params
@@ -282,10 +303,10 @@ class TestFlyscanXrayCentrePlan:
 
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
         )
         ap_call_medium = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
         )
 
         move_aperture.assert_has_calls(

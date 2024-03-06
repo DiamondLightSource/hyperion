@@ -115,6 +115,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.aperture_scatterguard,
             fgs_composite.robot,
         )
         yield from read_hardware_for_ispyb_during_collection(

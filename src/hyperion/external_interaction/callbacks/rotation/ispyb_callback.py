@@ -98,7 +98,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
         return doc
 
-    def activity_gated_stop(self, doc: RunStop):
+    def activity_gated_stop(self, doc: RunStop) -> None:
         if doc.get("run_start") == self.uid_to_finalize_on:
             self.uid_to_finalize_on = None
             return super().activity_gated_stop(doc)
