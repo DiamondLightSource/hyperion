@@ -12,11 +12,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import (
-    ISPYB_HARDWARE_READ_PLAN,
-    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
-    NEXUS_READ_PLAN,
-)
+from hyperion.parameters.constants import CONST
 
 
 def read_hardware_for_ispyb_pre_collection(
@@ -28,7 +24,7 @@ def read_hardware_for_ispyb_pre_collection(
 ):
     LOGGER.info("Reading status of beamline for ispyb deposition, pre collection.")
     yield from bps.create(
-        name=ISPYB_HARDWARE_READ_PLAN
+        name=CONST.PLAN.ISPYB_HARDWARE_READ
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.current_gap)
     yield from bps.read(synchrotron.machine_status.synchrotron_mode)
@@ -43,7 +39,7 @@ def read_hardware_for_ispyb_during_collection(
     attenuator: Attenuator, flux: Flux, dcm: DCM
 ):
     LOGGER.info("Reading status of beamline for ispyb deposition, during collection.")
-    yield from bps.create(name=ISPYB_TRANSMISSION_FLUX_READ_PLAN)
+    yield from bps.create(name=CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ)
     yield from bps.read(attenuator.actual_transmission)
     yield from bps.read(flux.flux_reading)
     yield from bps.read(dcm.energy_in_kev)
@@ -51,6 +47,12 @@ def read_hardware_for_ispyb_during_collection(
 
 
 def read_hardware_for_nexus_writer(detector: EigerDetector):
-    yield from bps.create(name=NEXUS_READ_PLAN)
+    yield from bps.create(name=CONST.PLAN.NEXUS_READ)
     yield from bps.read(detector.bit_depth)
+    yield from bps.save()
+
+
+def read_hardware_for_zocalo(detector: EigerDetector):
+    yield from bps.create(name=CONST.PLAN.ZOCALO_HW_READ)
+    yield from bps.read(detector.odin.file_writer.id)
     yield from bps.save()

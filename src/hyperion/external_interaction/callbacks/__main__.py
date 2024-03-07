@@ -6,6 +6,9 @@ from typing import Callable, Sequence
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from dodal.log import set_up_all_logging_handlers
 
+from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
@@ -25,12 +28,10 @@ from hyperion.log import (
     ISPYB_LOGGER,
     NEXUS_LOGGER,
     _get_logging_dir,
-    dc_group_id_filter,
+    tag_filter,
 )
 from hyperion.parameters.cli import parse_callback_dev_mode_arg
-from hyperion.parameters.constants import (
-    CALLBACK_0MQ_PROXY_PORTS,
-)
+from hyperion.parameters.constants import CONST
 
 LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
@@ -43,6 +44,7 @@ def setup_callbacks():
         GridscanISPyBCallback(emit=zocalo),
         RotationNexusFileCallback(),
         RotationISPyBCallback(emit=zocalo),
+        LogUidTaggingCallback(),
     ]
 
 
@@ -59,7 +61,7 @@ def setup_logging(dev_mode: bool):
                 dev_mode,
                 error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
             )
-            handlers["graylog_handler"].addFilter(dc_group_id_filter)
+            handlers["graylog_handler"].addFilter(tag_filter)
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
@@ -67,8 +69,8 @@ def setup_logging(dev_mode: bool):
 
 
 def setup_threads():
-    proxy = Proxy(*CALLBACK_0MQ_PROXY_PORTS)
-    dispatcher = RemoteDispatcher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[1]}")
+    proxy = Proxy(*CONST.CALLBACK_0MQ_PROXY_PORTS)
+    dispatcher = RemoteDispatcher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[1]}")
     log_debug("Created proxy and dispatcher objects")
 
     def start_proxy():

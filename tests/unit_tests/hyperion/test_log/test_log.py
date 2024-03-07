@@ -4,15 +4,20 @@ from logging.handlers import TimedRotatingFileHandler
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
 from hyperion import log
+from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
 
 from .conftest import _destroy_loggers
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def clear_and_mock_loggers():
     _destroy_loggers([*log.ALL_LOGGERS, dodal_logger])
     mock_open_with_tell = MagicMock()
@@ -22,6 +27,8 @@ def clear_and_mock_loggers():
         patch("dodal.log.GELFTCPHandler.emit") as graylog_emit,
         patch("dodal.log.TimedRotatingFileHandler.emit") as filehandler_emit,
     ):
+        graylog_emit.reset_mock()
+        filehandler_emit.reset_mock()
         yield filehandler_emit, graylog_emit
     _destroy_loggers([*log.ALL_LOGGERS, dodal_logger])
 
@@ -72,6 +79,43 @@ def test_messages_logged_from_dodal_and_hyperion_contain_dcgid(
     graylog_calls = mock_GELFTCPHandler_emit.mock_calls[1:]
 
     dc_group_id_correct = [c.args[0].dc_group_id == 100 for c in graylog_calls]
+    assert all(dc_group_id_correct)
+
+
+@pytest.mark.skip_log_setup
+def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
+    _, mock_GELFTCPHandler_emit = clear_and_mock_loggers
+    log.do_default_logging_setup(dev_mode=True)
+
+    RE.subscribe(LogUidTaggingCallback())
+    test_run_uid = None
+    logger = log.LOGGER
+
+    @bpp.run_decorator()
+    def test_plan():
+        yield from bps.sleep(0)
+        assert log.tag_filter.run_uid is not None
+        nonlocal test_run_uid
+        test_run_uid = log.tag_filter.run_uid
+        logger.info("test_hyperion")
+        logger.info("test_hyperion")
+        yield from bps.sleep(0)
+
+    assert log.tag_filter.run_uid is None
+    RE(test_plan())
+    assert log.tag_filter.run_uid is None
+
+    graylog_calls_in_plan = [
+        c.args[0]
+        for c in mock_GELFTCPHandler_emit.mock_calls
+        if c.args[0].msg == "test_hyperion"
+    ]
+
+    assert len(graylog_calls_in_plan) == 2
+
+    dc_group_id_correct = [
+        record.run_uid == test_run_uid for record in graylog_calls_in_plan
+    ]
     assert all(dc_group_id_correct)
 
 

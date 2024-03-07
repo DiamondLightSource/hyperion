@@ -23,12 +23,15 @@ from hyperion.external_interaction.callbacks.abstract_plan_callback_collection i
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
 )
+from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
 from hyperion.log import LOGGER, do_default_logging_setup
 from hyperion.parameters.cli import parse_cli_args
-from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
+from hyperion.parameters.constants import CONST, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER
 from hyperion.utils.context import setup_context
@@ -76,17 +79,19 @@ class BlueskyRunner:
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
         self.last_run_aborted: bool = False
         self.aperture_change_callback = ApertureChangeCallback()
+        self.logging_uid_tag_callback = LogUidTaggingCallback()
         self.context: BlueskyContext
 
         self.RE = RE
         self.context = context
         self.subscribed_per_plan_callbacks: list[int] = []
         RE.subscribe(self.aperture_change_callback)
+        RE.subscribe(self.logging_uid_tag_callback)
 
         self.use_external_callbacks = use_external_callbacks
         if self.use_external_callbacks:
             LOGGER.info("Connecting to external callback ZMQ proxy...")
-            self.publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
+            self.publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
             RE.subscribe(self.publisher)
 
         if VERBOSE_EVENT_LOGGING:

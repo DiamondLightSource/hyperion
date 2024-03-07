@@ -23,22 +23,29 @@ NEXUS_LOGGER.setLevel(logging.DEBUG)
 ALL_LOGGERS = [LOGGER, ISPYB_LOGGER, NEXUS_LOGGER]
 
 
-class DCGIDFilter(logging.Filter):
+class ExperimentMetadataTagFilter(logging.Filter):
     dc_group_id: Optional[str] = None
+    run_uid: Optional[str] = None
 
     def filter(self, record):
         if self.dc_group_id:
             record.dc_group_id = self.dc_group_id
+        if self.run_uid:
+            record.run_uid = self.run_uid
         return True
 
 
-dc_group_id_filter = DCGIDFilter()
+tag_filter = ExperimentMetadataTagFilter()
 
 
 def set_dcgid_tag(dcgid):
     """Set the datacollection group id as a tag on all subsequent log messages.
     Setting to None will remove the tag."""
-    dc_group_id_filter.dc_group_id = dcgid
+    tag_filter.dc_group_id = dcgid
+
+
+def set_uid_tag(uid):
+    tag_filter.run_uid = uid
 
 
 def do_default_logging_setup(dev_mode=False):
@@ -50,7 +57,7 @@ def do_default_logging_setup(dev_mode=False):
         ERROR_LOG_BUFFER_LINES,
     )
     integrate_bluesky_and_ophyd_logging(dodal_logger, handlers)
-    handlers["graylog_handler"].addFilter(dc_group_id_filter)
+    handlers["graylog_handler"].addFilter(tag_filter)
 
 
 def _get_logging_dir() -> Path:

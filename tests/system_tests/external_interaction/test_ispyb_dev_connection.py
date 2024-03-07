@@ -31,7 +31,7 @@ from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
-from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -105,7 +105,9 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 ):
     test_params = GridscanInternalParameters(**default_raw_params())
     test_params.hyperion_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
-    ispyb: StoreGridscanInIspyb = StoreClass(DEV_ISPYB_DATABASE_CFG, test_params)
+    ispyb: StoreGridscanInIspyb = StoreClass(
+        CONST.SIM.DEV_ISPYB_DATABASE_CFG, test_params
+    )
     ispyb_ids: IspybIds = ispyb.begin_deposition()
 
     assert len(ispyb_ids.data_collection_ids) == exp_num_of_grids  # type: ignore
@@ -180,7 +182,7 @@ def test_ispyb_deposition_in_rotation_plan(
         convert_angstrom_to_eV(test_wl)
     )
 
-    os.environ["ISPYB_CONFIG_PATH"] = DEV_ISPYB_DATABASE_CFG
+    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     callbacks = RotationCallbackCollection()
     for cb in list(callbacks):
         RE.subscribe(cb)
