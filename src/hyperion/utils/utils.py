@@ -1,3 +1,4 @@
+from scanspec.core import AxesPoints, Axis
 from scipy.constants import physical_constants
 
 hc_in_eV_and_Angstrom: float = (
@@ -17,3 +18,8 @@ def convert_eV_to_angstrom(hv: float) -> float:
 
 def convert_angstrom_to_eV(wavelength: float) -> float:
     return interconvert_eV_Angstrom(wavelength)
+
+
+def number_of_frames_from_scan_spec(scan_points: AxesPoints[Axis]):
+    ax = list(scan_points.keys())[0]
+    return len(scan_points[ax])

@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from dodal.devices.zocalo import ZocaloStartInfo
 
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
@@ -50,7 +51,11 @@ class TestZocaloHandler:
         assert zocalo_handler.zocalo_interactor is None
         with pytest.raises(ISPyBDepositionNotMade):
             zocalo_handler.start(
-                {"subplan_name": "test_plan_name", "zocalo_environment": "test_env"}  # type: ignore
+                {
+                    "subplan_name": "test_plan_name",
+                    "zocalo_environment": "test_env",
+                    "scan_points": [{"test": [1, 2, 3]}],
+                }  # type: ignore
             )
 
     @patch(
@@ -65,6 +70,7 @@ class TestZocaloHandler:
                 "subplan_name": "test_plan_name",
                 "zocalo_environment": "test_env",
                 "ispyb_dcids": (135, 139),
+                "scan_points": [{"test": [1, 2, 3]}],
             }  # type: ignore
         )
         assert zocalo_handler.zocalo_interactor is not None
@@ -106,15 +112,20 @@ class TestZocaloHandler:
             td.test_descriptor_document_pre_data_collection
         )  # type: ignore
         ispyb_cb.event(td.test_event_document_pre_data_collection)
+        ispyb_cb.descriptor(td.test_descriptor_document_zocalo_hardware)
+        ispyb_cb.event(td.test_event_document_zocalo_hardware)
         ispyb_cb.descriptor(
             td.test_descriptor_document_during_data_collection  # type: ignore
         )
         ispyb_cb.event(td.test_event_document_during_data_collection)
         assert zocalo_handler.zocalo_interactor is not None
 
-        zocalo_handler.zocalo_interactor.run_start.assert_has_calls(  # type: ignore
-            [call(x) for x in dc_ids]
-        )
+        expected_start_calls = [
+            call(ZocaloStartInfo(1, "test_path", 0, 200)),
+            call(ZocaloStartInfo(2, "test_path", 200, 300)),
+        ]
+
+        zocalo_handler.zocalo_interactor.run_start.assert_has_calls(expected_start_calls)  # type: ignore
         assert zocalo_handler.zocalo_interactor.run_start.call_count == len(dc_ids)  # type: ignore
 
         ispyb_cb.stop(td.test_stop_document)

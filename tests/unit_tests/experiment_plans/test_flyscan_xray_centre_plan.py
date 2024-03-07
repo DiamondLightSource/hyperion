@@ -16,8 +16,8 @@ from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_sim_value
@@ -58,6 +58,7 @@ from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN, TRIGGER_Z
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from tests.conftest import create_dummy_scan_spec
 
 from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
@@ -758,10 +759,14 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     RE: RunEngine,
     fake_fgs_composite: FlyScanXRayCentreComposite,
 ):
+    id_1, id_2 = 100, 200
+
     cbs = XrayCentreCallbackCollection()
     ispyb_cb = cbs.ispyb_handler
     ispyb_cb.active = True
-    ispyb_cb.ispyb_ids.data_collection_ids = (1, 2)
+    ispyb_cb.ispyb = MagicMock()
+    ispyb_cb.params = MagicMock()
+    ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
     assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
     zocalo_env = "dev_env"
 
@@ -769,16 +774,37 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     assert zocalo_cb.triggering_plan == DO_FGS
 
     mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+
+    fake_fgs_composite.eiger.unstage = MagicMock()
+    fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
+
+    x_steps, y_steps, z_steps = 10, 20, 30
+
     RE.subscribe(ispyb_cb)
     RE(
         kickoff_and_complete_gridscan(
             fake_fgs_composite.fast_grid_scan,
-            MagicMock(spec=EigerDetector),
+            fake_fgs_composite.eiger,
             fake_fgs_composite.synchrotron,
             zocalo_env,
+            scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
         )
     )
 
     mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
+
+    expected_start_infos = [
+        ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps),
+        ZocaloStartInfo(id_2, "test/filename", x_steps * y_steps, x_steps * z_steps),
+    ]
+
+    expected_start_calls = [
+        call(expected_start_infos[0]),
+        call(expected_start_infos[1]),
+    ]
+
     assert mock_zocalo_trigger.run_start.call_count == 2
+    assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls
+
     assert mock_zocalo_trigger.run_end.call_count == 2
+    assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]

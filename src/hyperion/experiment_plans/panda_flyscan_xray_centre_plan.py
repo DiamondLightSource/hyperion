@@ -139,6 +139,7 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.hyperion_params.zocalo_environment,
+        [parameters.get_scan_points(1), parameters.get_scan_points(2)],
     )
 
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
