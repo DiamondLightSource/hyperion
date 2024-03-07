@@ -172,7 +172,7 @@ def run_gridscan_and_move(
     ) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
-        fgs_composite.smargon.x_speed_limit_mm_per_s
+        fgs_composite.smargon.x.max_velocity
     )
 
     sample_velocity_mm_per_s = (
