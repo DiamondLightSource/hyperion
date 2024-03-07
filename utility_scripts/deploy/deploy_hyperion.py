@@ -74,7 +74,7 @@ def get_hyperion_release_dir_from_args(repo: repo) -> str:
 if __name__ == "__main__":
     hyperion_repo = repo(
         name="hyperion",
-        repo_args=os.path.join(os.path.dirname(__file__), "../.git"),
+        repo_args=os.path.join(os.path.dirname(__file__), "../../.git"),
     )
 
     # Gives path to /bluesky
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     dodal_repo = repo(
         name="dodal",
-        repo_args=os.path.join(os.path.dirname(__file__), "../../dodal/.git"),
+        repo_args=os.path.join(os.path.dirname(__file__), "../../../dodal/.git"),
     )
 
     dodal_repo.set_deploy_location(release_area_version)
@@ -114,7 +114,10 @@ if __name__ == "__main__":
 
     if hyperion_repo.name == "hyperion":
         with Popen(
-            "./dls_dev_env.sh", stdout=PIPE, bufsize=1, universal_newlines=True
+            "./utility_scripts/dls_dev_env.sh",
+            stdout=PIPE,
+            bufsize=1,
+            universal_newlines=True,
         ) as p:
             if p.stdout is not None:
                 for line in p.stdout:
