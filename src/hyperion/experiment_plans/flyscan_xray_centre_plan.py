@@ -62,7 +62,6 @@ from hyperion.parameters.constants import (
     GRIDSCAN_AND_MOVE,
     GRIDSCAN_MAIN_PLAN,
     GRIDSCAN_OUTER_PLAN,
-    SET_LOG_UID_TAG,
     SIM_BEAMLINE,
     TRIGGER_ZOCALO_ON,
 )
@@ -355,7 +354,6 @@ def flyscan_xray_centre(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": GRIDSCAN_OUTER_PLAN,
-            SET_LOG_UID_TAG: True,
             TRIGGER_ZOCALO_ON: DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [

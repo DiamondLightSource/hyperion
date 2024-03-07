@@ -35,9 +35,6 @@ TRIGGER_ZOCALO_ON = "trigger_zocalo_on"
 ########################################################################################
 
 
-SET_LOG_UID_TAG = "set_log_uid_tag"
-
-
 class Actions(Enum):
     START = "start"
     STOP = "stop"

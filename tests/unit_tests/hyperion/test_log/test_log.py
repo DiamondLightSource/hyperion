@@ -13,7 +13,6 @@ from hyperion import log
 from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
-from hyperion.parameters.constants import SET_LOG_UID_TAG
 
 from .conftest import _destroy_loggers
 
@@ -92,11 +91,7 @@ def test_messages_are_tagged_with_run_uid(clear_and_mock_loggers, RE):
     test_run_uid = None
     logger = log.LOGGER
 
-    @bpp.run_decorator(
-        md={
-            SET_LOG_UID_TAG: True,
-        }
-    )
+    @bpp.run_decorator()
     def test_plan():
         yield from bps.sleep(0)
         assert log.run_uid_filter.run_uid is not None
