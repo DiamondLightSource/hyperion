@@ -760,9 +760,12 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     fake_fgs_composite: FlyScanXRayCentreComposite,
 ):
     id_1, id_2 = 100, 200
+
     cbs = XrayCentreCallbackCollection()
     ispyb_cb = cbs.ispyb_handler
     ispyb_cb.active = True
+    ispyb_cb.ispyb = MagicMock()
+    ispyb_cb.params = MagicMock()
     ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
     assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
     zocalo_env = "dev_env"

@@ -28,7 +28,6 @@ class ZocaloCallback(CallbackBase):
     def _reset_state(self):
         self.run_uid: Optional[str] = None
         self.triggering_plan: Optional[str] = None
-        self.ispyb_ids: Optional[tuple[int]] = None
         self.zocalo_interactor: Optional[ZocaloTrigger] = None
         self.zocalo_info: list[ZocaloStartInfo] = []
         self.descriptors: Dict[str, EventDescriptor] = {}
@@ -71,14 +70,12 @@ class ZocaloCallback(CallbackBase):
         self.descriptors[doc["uid"]] = doc
 
     def event(self, doc: Event) -> Event:
-        doc = super().event(doc)
-
         event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == ZOCALO_READ_HARDWARE_PLAN:
             filename = doc["data"]["eiger_odin_file_writer_id"]
             for start_info in self.zocalo_info:
                 start_info.filename = filename
-                assert isinstance(self.zocalo_interactor, ZocaloTrigger)
+                assert self.zocalo_interactor is not None
                 self.zocalo_interactor.run_start(start_info)
         return doc
 
@@ -87,7 +84,7 @@ class ZocaloCallback(CallbackBase):
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
-            if self.ispyb_ids and self.zocalo_interactor:
-                for id in self.ispyb_ids:
-                    self.zocalo_interactor.run_end(id)
+            assert self.zocalo_interactor is not None
+            for info in self.zocalo_info:
+                self.zocalo_interactor.run_end(info.ispyb_dcid)
             self._reset_state()
