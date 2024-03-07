@@ -5,6 +5,8 @@ from hyperion.log import LOGGER
 
 
 class ApertureChangeCallback(CallbackBase):
+    """A callback that's used to send the selected aperture back to GDA"""
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.last_selected_aperture: str = "NONE"

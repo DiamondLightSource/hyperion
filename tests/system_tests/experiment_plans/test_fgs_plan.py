@@ -78,7 +78,7 @@ def fgs_composite():
     )
     composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
     composite.aperture_scatterguard.aperture.z.move(
-        aperture_positions.LARGE[2], wait=True
+        aperture_positions.LARGE.location[2], wait=True
     )
     composite.eiger.cam.manual_trigger.put("Yes")
     composite.eiger.odin.check_odin_initialised = lambda: (True, "")

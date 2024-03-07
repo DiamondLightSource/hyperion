@@ -132,11 +132,11 @@ def set_aperture_for_bbox_size(
     @bpp.run_decorator(
         md={
             "subplan_name": "change_aperture",
-            "aperture_size": new_selected_aperture.name,
+            "aperture_size": new_selected_aperture.GDA_name,
         }
     )
     def set_aperture():
-        yield from bps.abs_set(aperture_device, new_selected_aperture.location)
+        yield from bps.abs_set(aperture_device, new_selected_aperture)
 
     yield from set_aperture()
 
