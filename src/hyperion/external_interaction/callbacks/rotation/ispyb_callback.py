@@ -12,7 +12,7 @@ from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
     StoreRotationInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import ROTATION_OUTER_PLAN, ROTATION_PLAN_MAIN
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -48,7 +48,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         self.ispyb_ids: IspybIds = IspybIds()
 
     def activity_gated_start(self, doc: RunStart):
-        if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
+        if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
             ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
             )
@@ -89,7 +89,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             ISPYB_LOGGER.info("Beginning ispyb deposition")
             self.ispyb_ids = self.ispyb.begin_deposition()
         ISPYB_LOGGER.info("ISPYB handler received start document.")
-        if doc.get("subplan_name") == ROTATION_PLAN_MAIN:
+        if doc.get("subplan_name") == CONST.PLAN.ROTATION_MAIN:
             self.uid_to_finalize_on = doc.get("uid")
         return super().activity_gated_start(doc)
 

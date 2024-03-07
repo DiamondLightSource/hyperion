@@ -16,7 +16,7 @@ from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
 from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
 )
-from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -89,7 +89,7 @@ def get_current_datacollection_attribute(
 
 @pytest.fixture
 def fetch_comment() -> Callable:
-    url = ispyb.sqlalchemy.url(DEV_ISPYB_DATABASE_CFG)
+    url = ispyb.sqlalchemy.url(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
     engine = create_engine(url, connect_args={"use_pure": True})
     Session = sessionmaker(engine)
     return partial(get_current_datacollection_comment, Session)
@@ -97,7 +97,7 @@ def fetch_comment() -> Callable:
 
 @pytest.fixture
 def fetch_datacollection_attribute() -> Callable:
-    url = ispyb.sqlalchemy.url(DEV_ISPYB_DATABASE_CFG)
+    url = ispyb.sqlalchemy.url(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
     engine = create_engine(url, connect_args={"use_pure": True})
     Session = sessionmaker(engine)
     return partial(get_current_datacollection_attribute, Session)
@@ -117,12 +117,12 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params) -> Store2DGridscanInIspyb:
-    return Store2DGridscanInIspyb(DEV_ISPYB_DATABASE_CFG, dummy_params)
+    return Store2DGridscanInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, dummy_params)
 
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> Store3DGridscanInIspyb:
-    return Store3DGridscanInIspyb(DEV_ISPYB_DATABASE_CFG, dummy_params)
+    return Store3DGridscanInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, dummy_params)
 
 
 @pytest.fixture

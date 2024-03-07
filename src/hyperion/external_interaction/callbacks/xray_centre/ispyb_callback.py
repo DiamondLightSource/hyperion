@@ -23,7 +23,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -62,9 +62,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._processing_start_time: float | None = None
 
     def activity_gated_start(self, doc: RunStart):
-        if doc.get("subplan_name") == DO_FGS:
+        if doc.get("subplan_name") == CONST.PLAN.DO_FGS:
             self._start_of_fgs_uid = doc.get("uid")
-        if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
+        if doc.get("subplan_name") == CONST.PLAN.GRIDSCAN_OUTER:
             self.uid_to_finalize_on = doc.get("uid")
             ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters and "

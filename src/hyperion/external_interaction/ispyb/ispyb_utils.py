@@ -7,9 +7,7 @@ from ispyb import NoResult
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.core import Core
 
-from hyperion.parameters.constants import (
-    SIM_ISPYB_CONFIG,
-)
+from hyperion.parameters.constants import CONST
 
 VISIT_PATH_REGEX = r".+/([a-zA-Z]{2}\d{4,5}-\d{1,3})(/?$)"
 
@@ -20,7 +18,7 @@ def get_current_time_string():
 
 
 def get_ispyb_config():
-    return os.environ.get("ISPYB_CONFIG_PATH", SIM_ISPYB_CONFIG)
+    return os.environ.get("ISPYB_CONFIG_PATH", CONST.SIM.ISPYB_CONFIG)
 
 
 def get_visit_string_from_path(path: Optional[str]) -> str | None:

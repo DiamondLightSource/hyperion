@@ -7,7 +7,7 @@ from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
-from hyperion.parameters.constants import TRIGGER_ZOCALO_ON, ZOCALO_READ_HARDWARE_PLAN
+from hyperion.parameters.constants import CONST
 from hyperion.utils.utils import number_of_frames_from_scan_spec
 
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ class ZocaloCallback(CallbackBase):
 
     def start(self, doc: RunStart):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
-        if triggering_plan := doc.get(TRIGGER_ZOCALO_ON):
+        if triggering_plan := doc.get(CONST.TRIGGER.ZOCALO):
             self.triggering_plan = triggering_plan
         if self.triggering_plan and doc.get("subplan_name") == self.triggering_plan:
             assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
@@ -71,7 +71,7 @@ class ZocaloCallback(CallbackBase):
 
     def event(self, doc: Event) -> Event:
         event_descriptor = self.descriptors[doc["descriptor"]]
-        if event_descriptor.get("name") == ZOCALO_READ_HARDWARE_PLAN:
+        if event_descriptor.get("name") == CONST.PLAN.ZOCALO_HW_READ:
             filename = doc["data"]["eiger_odin_file_writer_id"]
             for start_info in self.zocalo_info:
                 start_info.filename = filename

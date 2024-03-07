@@ -7,16 +7,7 @@ from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.parameters.constants import (
-    DO_FGS,
-    GRIDSCAN_AND_MOVE,
-    GRIDSCAN_MAIN_PLAN,
-    GRIDSCAN_OUTER_PLAN,
-    ISPYB_HARDWARE_READ_PLAN,
-    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
-    TRIGGER_ZOCALO_ON,
-    ZOCALO_READ_HARDWARE_PLAN,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -92,9 +83,9 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": GRIDSCAN_OUTER_PLAN,
-        "subplan_name": GRIDSCAN_OUTER_PLAN,
-        TRIGGER_ZOCALO_ON: DO_FGS,
+        "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
+        "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+        CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         "hyperion_internal_parameters": dummy_params().json(),
     }
     test_run_gridscan_start_document: RunStart = {  # type: ignore
@@ -103,8 +94,8 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": GRIDSCAN_AND_MOVE,
-        "subplan_name": GRIDSCAN_MAIN_PLAN,
+        "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
+        "subplan_name": CONST.PLAN.GRIDSCAN_MAIN,
     }
     test_do_fgs_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -112,25 +103,25 @@ class TestData:
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
-        "plan_name": DO_FGS,
-        "subplan_name": DO_FGS,
+        "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
+        "subplan_name": CONST.PLAN.DO_FGS,
         "zocalo_environment": "dev_artemis",
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ISPYB_HARDWARE_READ_PLAN,
+        "name": CONST.PLAN.ISPYB_HARDWARE_READ,
     }  # type: ignore
     test_descriptor_document_during_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+        "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ,
     }  # type: ignore
     test_descriptor_document_zocalo_hardware: EventDescriptor = {
         "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": ZOCALO_READ_HARDWARE_PLAN,
+        "name": CONST.PLAN.ZOCALO_HW_READ,
     }  # type: ignore
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",

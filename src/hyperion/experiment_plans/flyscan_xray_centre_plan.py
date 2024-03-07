@@ -57,15 +57,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    DO_FGS,
-    GRIDSCAN_AND_MOVE,
-    GRIDSCAN_MAIN_PLAN,
-    GRIDSCAN_OUTER_PLAN,
-    SET_LOG_UID_TAG,
-    SIM_BEAMLINE,
-    TRIGGER_ZOCALO_ON,
-)
+from hyperion.parameters.constants import CONST, SET_LOG_UID_TAG
 from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -182,11 +174,11 @@ def kickoff_and_complete_gridscan(
     zocalo_environment: str,
     scan_points: List[AxesPoints[Axis]],
 ):
-    @TRACER.start_as_current_span(DO_FGS)
-    @bpp.set_run_key_decorator(DO_FGS)
+    @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
+    @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
     @bpp.run_decorator(
         md={
-            "subplan_name": DO_FGS,
+            "subplan_name": CONST.PLAN.DO_FGS,
             "zocalo_environment": zocalo_environment,
             "scan_points": scan_points,
         }
@@ -220,13 +212,13 @@ def kickoff_and_complete_gridscan(
     yield from do_fgs()
 
 
-@bpp.set_run_key_decorator(GRIDSCAN_MAIN_PLAN)
-@bpp.run_decorator(md={"subplan_name": GRIDSCAN_MAIN_PLAN})
+@bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
+@bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
     md={
-        "plan_name": GRIDSCAN_MAIN_PLAN,
+        "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
 ):
     sample_motors = fgs_composite.sample_motors
@@ -271,8 +263,8 @@ def run_gridscan(
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
-@bpp.set_run_key_decorator(GRIDSCAN_AND_MOVE)
-@bpp.run_decorator(md={"subplan_name": GRIDSCAN_AND_MOVE})
+@bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_AND_MOVE)
+@bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
@@ -351,12 +343,12 @@ def flyscan_xray_centre(
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
     composite.zocalo.zocalo_environment = parameters.hyperion_params.zocalo_environment
 
-    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
+    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
             SET_LOG_UID_TAG: True,
-            TRIGGER_ZOCALO_ON: DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanISPyBCallback",
@@ -381,7 +373,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--beamline",
         help="The beamline prefix this is being run on",
-        default=SIM_BEAMLINE,
+        default=CONST.SIM.BEAMLINE,
     )
     args = parser.parse_args()
 

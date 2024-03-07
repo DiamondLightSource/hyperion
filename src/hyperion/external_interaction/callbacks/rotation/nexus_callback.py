@@ -11,7 +11,7 @@ from hyperion.external_interaction.callbacks.plan_reactive_callback import (
 from hyperion.external_interaction.nexus.nexus_utils import vds_type_based_on_bit_depth
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
-from hyperion.parameters.constants import NEXUS_READ_PLAN, ROTATION_OUTER_PLAN
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -54,7 +54,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 "has no corresponding descriptor record"
             )
             return doc
-        if event_descriptor.get("name") == NEXUS_READ_PLAN:
+        if event_descriptor.get("name") == CONST.PLAN.NEXUS_READ:
             NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
             assert self.writer is not None
@@ -63,7 +63,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
         return doc
 
     def activity_gated_start(self, doc: RunStart):
-        if doc.get("subplan_name") == ROTATION_OUTER_PLAN:
+        if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
             self.run_uid = doc.get("uid")
             json_params = doc.get("hyperion_internal_parameters")
             NEXUS_LOGGER.info(
