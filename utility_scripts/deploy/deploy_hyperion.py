@@ -1,5 +1,6 @@
 import argparse
 import os
+from subprocess import PIPE, CalledProcessError, Popen
 
 from git import Repo
 from packaging.version import Version
@@ -111,19 +112,19 @@ if __name__ == "__main__":
     os.chdir(hyperion_repo.deploy_location)
     print(f"Setting up environment in {hyperion_repo.deploy_location}")
 
-    # if hyperion_repo.name == "hyperion":
-    #     with Popen(
-    #         "./utility_scripts/dls_dev_env.sh",
-    #         stdout=PIPE,
-    #         bufsize=1,
-    #         universal_newlines=True,
-    #     ) as p:
-    #         if p.stdout is not None:
-    #             for line in p.stdout:
-    #                 print(line, end="")
+    if hyperion_repo.name == "hyperion":
+        with Popen(
+            "./utility_scripts/dls_dev_env.sh",
+            stdout=PIPE,
+            bufsize=1,
+            universal_newlines=True,
+        ) as p:
+            if p.stdout is not None:
+                for line in p.stdout:
+                    print(line, end="")
 
-    # if p.returncode != 0:
-    #     raise CalledProcessError(p.returncode, p.args)
+    if p.returncode != 0:
+        raise CalledProcessError(p.returncode, p.args)
 
     move_symlink = input(
         """Move symlink (y/n)? WARNING: this will affect the running version!
