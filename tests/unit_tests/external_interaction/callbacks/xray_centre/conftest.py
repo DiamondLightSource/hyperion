@@ -12,6 +12,7 @@ from hyperion.parameters.external_parameters import from_file as default_raw_par
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from tests.conftest import create_dummy_scan_spec
 
 
 @pytest.fixture
@@ -105,6 +106,7 @@ class TestData:
         "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
         "subplan_name": CONST.PLAN.DO_FGS,
         "zocalo_environment": "dev_artemis",
+        "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
@@ -115,6 +117,11 @@ class TestData:
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ,
+    }  # type: ignore
+    test_descriptor_document_zocalo_hardware: EventDescriptor = {
+        "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "name": CONST.PLAN.ZOCALO_HW_READ,
     }  # type: ignore
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
@@ -143,6 +150,15 @@ class TestData:
         "seq_num": 1,
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "filled": {},
+    }
+    test_event_document_zocalo_hardware: Event = {
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
+        "time": 1709654583.9770422,
+        "data": {"eiger_odin_file_writer_id": "test_path"},
+        "timestamps": {"eiger_odin_file_writer_id": 1666604299.8220396},
+        "seq_num": 1,
+        "filled": {},
+        "descriptor": "f082901b-7453-4150-8ae5-c5f98bb34406",
     }
     test_stop_document: RunStop = {
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",

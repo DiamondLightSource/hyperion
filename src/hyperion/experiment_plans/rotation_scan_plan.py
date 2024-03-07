@@ -31,6 +31,7 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
     read_hardware_for_nexus_writer,
+    read_hardware_for_zocalo,
 )
 from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
@@ -39,7 +40,7 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_rotation,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import CONST
+from hyperion.parameters.constants import CONST, SET_LOG_UID_TAG
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
@@ -170,6 +171,7 @@ def rotation_scan_plan(
         md={
             "subplan_name": CONST.PLAN.ROTATION_MAIN,
             "zocalo_environment": params.hyperion_params.zocalo_environment,
+            "scan_points": [params.get_scan_points()],
         }
     )
     def _rotation_scan_plan(
@@ -207,6 +209,9 @@ def rotation_scan_plan(
 
         # get some information for the ispyb deposition and trigger the callback
         yield from read_hardware_for_nexus_writer(composite.eiger)
+
+        yield from read_hardware_for_zocalo(composite.eiger)
+
         yield from read_hardware_for_ispyb_pre_collection(
             composite.undulator,
             composite.synchrotron,
@@ -253,6 +258,7 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
+            SET_LOG_UID_TAG: True,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -42,6 +42,7 @@ from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
+    read_hardware_for_zocalo,
 )
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
@@ -56,7 +57,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import CONST
+from hyperion.parameters.constants import CONST, SET_LOG_UID_TAG
 from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -69,6 +70,7 @@ if TYPE_CHECKING:
     )
 
     PandaOrZebraGridscan = FastGridScan | PandAFastGridScan
+    from scanspec.core import AxesPoints, Axis
 
 
 @dataclasses.dataclass
@@ -170,6 +172,7 @@ def kickoff_and_complete_gridscan(
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,
+    scan_points: List[AxesPoints[Axis]],
 ):
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
@@ -177,6 +180,7 @@ def kickoff_and_complete_gridscan(
         md={
             "subplan_name": CONST.PLAN.DO_FGS,
             "zocalo_environment": zocalo_environment,
+            "scan_points": scan_points,
         }
     )
     @bpp.contingency_decorator(
@@ -193,6 +197,7 @@ def kickoff_and_complete_gridscan(
             expected_images * exposure_sec_per_image,
             30.0,
         )
+        yield from read_hardware_for_zocalo(eiger)
         LOGGER.info("Wait for all moves with no assigned group")
         yield from bps.wait()
         LOGGER.info("kicking off FGS")
@@ -253,6 +258,7 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.hyperion_params.zocalo_environment,
+        [parameters.get_scan_points(1), parameters.get_scan_points(2)],
     )
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
@@ -342,6 +348,7 @@ def flyscan_xray_centre(
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+            SET_LOG_UID_TAG: True,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanISPyBCallback",

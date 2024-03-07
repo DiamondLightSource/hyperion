@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from bluesky.callbacks import CallbackBase
-from dodal.devices.zocalo import (
-    ZocaloTrigger,
-)
+from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
+from hyperion.utils.utils import number_of_frames_from_scan_spec
 
 if TYPE_CHECKING:
-    from event_model.documents import RunStart, RunStop
+    from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 
 class ZocaloCallback(CallbackBase):
@@ -29,8 +28,9 @@ class ZocaloCallback(CallbackBase):
     def _reset_state(self):
         self.run_uid: Optional[str] = None
         self.triggering_plan: Optional[str] = None
-        self.ispyb_ids: Optional[tuple[int]] = None
         self.zocalo_interactor: Optional[ZocaloTrigger] = None
+        self.zocalo_info: list[ZocaloStartInfo] = []
+        self.descriptors: Dict[str, EventDescriptor] = {}
 
     def __init__(
         self,
@@ -47,24 +47,44 @@ class ZocaloCallback(CallbackBase):
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
             self.run_uid = doc.get("uid")
+            assert isinstance(scan_points := doc.get("scan_points"), list)
             if (
                 isinstance(ispyb_ids := doc.get("ispyb_dcids"), tuple)
                 and len(ispyb_ids) > 0
             ):
-                self.ispyb_ids = ispyb_ids
-                for id in self.ispyb_ids:
-                    self.zocalo_interactor.run_start(id)
+                ids_and_shape = list(zip(ispyb_ids, scan_points))
+                start_idx = 0
+                self.zocalo_info = []
+                for id, shape in ids_and_shape:
+                    num_frames = number_of_frames_from_scan_spec(shape)
+                    self.zocalo_info.append(
+                        ZocaloStartInfo(id, None, start_idx, num_frames)
+                    )
+                    start_idx += num_frames
             else:
                 raise ISPyBDepositionNotMade(
                     f"No ISPyB IDs received by the start of {self.triggering_plan=}"
                 )
+
+    def descriptor(self, doc: EventDescriptor):
+        self.descriptors[doc["uid"]] = doc
+
+    def event(self, doc: Event) -> Event:
+        event_descriptor = self.descriptors[doc["descriptor"]]
+        if event_descriptor.get("name") == CONST.PLAN.ZOCALO_HW_READ:
+            filename = doc["data"]["eiger_odin_file_writer_id"]
+            for start_info in self.zocalo_info:
+                start_info.filename = filename
+                assert self.zocalo_interactor is not None
+                self.zocalo_interactor.run_start(start_info)
+        return doc
 
     def stop(self, doc: RunStop):
         if doc.get("run_start") == self.run_uid:
             ISPYB_LOGGER.info(
                 f"Zocalo handler received stop document, for run {doc.get('run_start')}."
             )
-            if self.ispyb_ids and self.zocalo_interactor:
-                for id in self.ispyb_ids:
-                    self.zocalo_interactor.run_end(id)
+            assert self.zocalo_interactor is not None
+            for info in self.zocalo_info:
+                self.zocalo_interactor.run_end(info.ispyb_dcid)
             self._reset_state()

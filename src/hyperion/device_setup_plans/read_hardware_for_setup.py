@@ -50,3 +50,9 @@ def read_hardware_for_nexus_writer(detector: EigerDetector):
     yield from bps.create(name=CONST.PLAN.NEXUS_READ)
     yield from bps.read(detector.bit_depth)
     yield from bps.save()
+
+
+def read_hardware_for_zocalo(detector: EigerDetector):
+    yield from bps.create(name=CONST.PLAN.ZOCALO_HW_READ)
+    yield from bps.read(detector.odin.file_writer.id)
+    yield from bps.save()

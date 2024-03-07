@@ -45,7 +45,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import CONST
+from hyperion.parameters.constants import CONST, SET_LOG_UID_TAG
 from hyperion.tracing import TRACER
 from hyperion.utils.context import device_composite_from_context, setup_context
 
@@ -132,6 +132,7 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.hyperion_params.zocalo_environment,
+        [parameters.get_scan_points(1), parameters.get_scan_points(2)],
     )
 
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
@@ -273,6 +274,7 @@ def panda_flyscan_xray_centre(
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+            SET_LOG_UID_TAG: True,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanISPyBCallback",

@@ -109,12 +109,12 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         y2_start=0,
         z1_start=0,
         z2_start=0,
-        x_steps=0,
-        y_steps=0,
-        z_steps=0,
-        x_step_size=0,
-        y_step_size=0,
-        z_step_size=0,
+        x_steps=10,
+        y_steps=10,
+        z_steps=10,
+        x_step_size=0.1,
+        y_step_size=0.1,
+        z_step_size=0.1,
         set_stub_offsets=False,
     )
 

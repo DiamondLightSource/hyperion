@@ -23,6 +23,9 @@ from hyperion.external_interaction.callbacks.abstract_plan_callback_collection i
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
 )
+from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
@@ -76,12 +79,14 @@ class BlueskyRunner:
         self.current_status: StatusAndMessage = StatusAndMessage(Status.IDLE)
         self.last_run_aborted: bool = False
         self.aperture_change_callback = ApertureChangeCallback()
+        self.logging_uid_tag_callback = LogUidTaggingCallback()
         self.context: BlueskyContext
 
         self.RE = RE
         self.context = context
         self.subscribed_per_plan_callbacks: list[int] = []
         RE.subscribe(self.aperture_change_callback)
+        RE.subscribe(self.logging_uid_tag_callback)
 
         self.use_external_callbacks = use_external_callbacks
         if self.use_external_callbacks:

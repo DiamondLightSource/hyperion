@@ -89,7 +89,7 @@ if [[ $START == 1 ]]; then
     if [ $IN_DEV == false ]; then
         check_user
 
-        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
+        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-${BEAMLINE}.cfg"
         export ISPYB_CONFIG_PATH
 
     fi

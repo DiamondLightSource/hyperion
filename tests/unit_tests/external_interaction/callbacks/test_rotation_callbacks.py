@@ -17,6 +17,7 @@ from ophyd.sim import make_fake_device
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_nexus_writer,
+    read_hardware_for_zocalo,
 )
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -109,11 +110,13 @@ def fake_rotation_scan(
             md={
                 "subplan_name": CONST.PLAN.ROTATION_MAIN,
                 "zocalo_environment": "dev_zocalo",
+                "scan_points": [params.get_scan_points()],
             }
         )
         def fake_main_plan():
             yield from read_hardware_for_ispyb_during_collection(attenuator, flux, dcm)
             yield from read_hardware_for_nexus_writer(eiger)
+            yield from read_hardware_for_zocalo(eiger)
             if after_main_do:
                 after_main_do(subscriptions)
             yield from bps.sleep(0)
@@ -155,7 +158,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     call_content_inner = nexus_handler.activity_gated_start.call_args_list[1].args[0]  # type: ignore
     assert call_content_inner["subplan_name"] == CONST.PLAN.ROTATION_MAIN
 
-    assert nexus_handler.activity_gated_event.call_count == 2  # type: ignore
+    assert nexus_handler.activity_gated_event.call_count == 3  # type: ignore
 
 
 @patch(
