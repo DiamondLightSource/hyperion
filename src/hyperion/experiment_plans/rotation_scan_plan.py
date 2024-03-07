@@ -40,7 +40,7 @@ from hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_rotation,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import CONST, SET_LOG_UID_TAG
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationScanParams,
 )
@@ -258,7 +258,6 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-            SET_LOG_UID_TAG: True,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",

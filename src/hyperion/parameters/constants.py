@@ -54,9 +54,6 @@ class HyperionConstants:
 CONST = HyperionConstants()
 
 
-SET_LOG_UID_TAG = "set_log_uid_tag"
-
-
 class Actions(Enum):
     START = "start"
     STOP = "stop"
