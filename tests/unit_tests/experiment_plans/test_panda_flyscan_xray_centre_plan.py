@@ -49,9 +49,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    GRIDSCAN_OUTER_PLAN,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
     PandAGridscanInternalParameters,
 )
@@ -83,10 +81,10 @@ def RE_with_subs(RE: RunEngine, mock_subscriptions):
 
 @pytest.fixture
 def ispyb_plan(test_panda_fgs_params):
-    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
+    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": test_panda_fgs_params.json(),
         }
     )

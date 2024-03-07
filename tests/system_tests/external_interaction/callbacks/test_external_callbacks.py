@@ -20,7 +20,6 @@ from dodal.devices.zocalo import ZocaloResults
 from genericpath import isfile
 from zmq.utils.monitor import recv_monitor_message
 
-from hyperion.__main__ import CALLBACK_0MQ_PROXY_PORTS
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
@@ -30,10 +29,7 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import (
-    CALLBACK_0MQ_PROXY_PORTS,
-    DEV_ISPYB_DATABASE_CFG,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -96,7 +92,7 @@ def RE_with_external_callbacks():
     old_ispyb_config = os.environ.get("ISPYB_CONFIG_PATH")
 
     process_env = os.environ.copy()
-    process_env["ISPYB_CONFIG_PATH"] = DEV_ISPYB_DATABASE_CFG
+    process_env["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
 
     external_callbacks_process = subprocess.Popen(
         [
@@ -108,7 +104,7 @@ def RE_with_external_callbacks():
         ],
         env=process_env,
     )
-    publisher = Publisher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[0]}")
+    publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
     monitor = publisher._socket.get_monitor_socket()
 
     connection_active_lock = threading.Lock()

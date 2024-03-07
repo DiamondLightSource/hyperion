@@ -28,8 +28,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
-from hyperion.parameters.constants import DEV_ISPYB_DATABASE_CFG as ISPYB_CONFIG
-from hyperion.parameters.constants import SIM_BEAMLINE
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -44,7 +43,7 @@ from ..external_interaction.conftest import (  # noqa
 @pytest.fixture
 def params():
     params = GridscanInternalParameters(**default_raw_params())
-    params.hyperion_params.beamline = SIM_BEAMLINE
+    params.hyperion_params.beamline = CONST.SIM.BEAMLINE
     return params
 
 
@@ -243,9 +242,9 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     params.experiment_params.z_steps = 100
 
     callbacks = XrayCentreCallbackCollection()
-    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     mock_start_zocalo = MagicMock()
-    callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
+    callbacks.ispyb_handler.emit_cb.zocalo_interactor.run_start = mock_start_zocalo  # type: ignore
 
     with pytest.raises(WarningException):
         RE(flyscan_xray_centre(fgs_composite, params))
@@ -285,7 +284,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     fgs_composite.eiger.unstage = MagicMock()
 
     callbacks = XrayCentreCallbackCollection()
-    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = ISPYB_CONFIG
+    callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = CONST.SIM.DEV_ISPYB_DATABASE_CFG
 
     RE(flyscan_xray_centre(fgs_composite, params))
 

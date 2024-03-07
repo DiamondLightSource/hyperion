@@ -31,9 +31,7 @@ from hyperion.log import (
     tag_filter,
 )
 from hyperion.parameters.cli import parse_callback_dev_mode_arg
-from hyperion.parameters.constants import (
-    CALLBACK_0MQ_PROXY_PORTS,
-)
+from hyperion.parameters.constants import CONST
 
 LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
@@ -71,8 +69,8 @@ def setup_logging(dev_mode: bool):
 
 
 def setup_threads():
-    proxy = Proxy(*CALLBACK_0MQ_PROXY_PORTS)
-    dispatcher = RemoteDispatcher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[1]}")
+    proxy = Proxy(*CONST.CALLBACK_0MQ_PROXY_PORTS)
+    dispatcher = RemoteDispatcher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[1]}")
     log_debug("Created proxy and dispatcher objects")
 
     def start_proxy():

@@ -9,7 +9,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.zocalo_callback import ZocaloCallback
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds, StoreInIspyb
-from hyperion.parameters.constants import TRIGGER_ZOCALO_ON
+from hyperion.parameters.constants import CONST
 
 from .xray_centre.conftest import TestData
 
@@ -28,7 +28,7 @@ class TestZocaloHandler:
     def _setup_handler(self):
         zocalo_handler = ZocaloCallback()
         assert zocalo_handler.triggering_plan is None
-        zocalo_handler.start({TRIGGER_ZOCALO_ON: "test_plan_name"})  # type: ignore
+        zocalo_handler.start({CONST.TRIGGER.ZOCALO: "test_plan_name"})  # type: ignore
         assert zocalo_handler.triggering_plan == "test_plan_name"
         assert zocalo_handler.zocalo_interactor is None
         return zocalo_handler
@@ -38,7 +38,7 @@ class TestZocaloHandler:
 
     def test_handler_doesnt_trigger_on_wrong_plan(self):
         zocalo_handler = self._setup_handler()
-        zocalo_handler.start({TRIGGER_ZOCALO_ON: "_not_test_plan_name"})  # type: ignore
+        zocalo_handler.start({CONST.TRIGGER.ZOCALO: "_not_test_plan_name"})  # type: ignore
 
     def test_handler_raises_on_right_plan_with_wrong_metadata(self):
         zocalo_handler = self._setup_handler()

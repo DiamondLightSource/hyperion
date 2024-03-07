@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
-from bluesky import FailedStatus
 from bluesky.run_engine import RunEngine
+from bluesky.utils import FailedStatus
 from dodal.devices.aperturescatterguard import (
     ApertureFiveDimensionalLocation,
     SingleAperturePosition,
@@ -54,7 +54,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN, TRIGGER_ZOCALO_ON
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -76,10 +76,10 @@ from .conftest import (
 
 @pytest.fixture
 def ispyb_plan(test_fgs_params):
-    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
+    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
@@ -770,8 +770,8 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
     zocalo_env = "dev_env"
 
-    zocalo_cb.start({TRIGGER_ZOCALO_ON: DO_FGS})  # type: ignore
-    assert zocalo_cb.triggering_plan == DO_FGS
+    zocalo_cb.start({CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS})  # type: ignore
+    assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
 
     mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
 
