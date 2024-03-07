@@ -46,11 +46,13 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import (
+    DO_FGS,
     GRIDSCAN_AND_MOVE,
     GRIDSCAN_MAIN_PLAN,
     GRIDSCAN_OUTER_PLAN,
     SET_LOG_UID_TAG,
     SIM_BEAMLINE,
+    TRIGGER_ZOCALO_ON,
 )
 from hyperion.tracing import TRACER
 from hyperion.utils.context import device_composite_from_context, setup_context
@@ -114,6 +116,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.aperture_scatterguard,
             fgs_composite.robot,
         )
         yield from read_hardware_for_ispyb_during_collection(
@@ -278,9 +281,9 @@ def panda_flyscan_xray_centre(
         md={
             "subplan_name": GRIDSCAN_OUTER_PLAN,
             SET_LOG_UID_TAG: True,
+            TRIGGER_ZOCALO_ON: DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "ZocaloCallback",
                 "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],
@@ -314,7 +317,7 @@ if __name__ == "__main__":
     )
 
     parameters = GridscanInternalParameters(**external_parameters.from_file())
-    subscriptions = XrayCentreCallbackCollection.setup()
+    subscriptions = XrayCentreCallbackCollection()
 
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)

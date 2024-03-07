@@ -11,9 +11,6 @@ from event_model import Event
 from ophyd.sim import make_fake_device
 from ophyd_async.core.async_status import AsyncStatus
 
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
-)
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
@@ -27,9 +24,11 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from hyperion.parameters.constants import (
+    DO_FGS,
     GRIDSCAN_OUTER_PLAN,
     ISPYB_HARDWARE_READ_PLAN,
     ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+    TRIGGER_ZOCALO_ON,
 )
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -58,6 +57,7 @@ BASIC_PRE_SETUP_DOC = {
     "s4_slit_gaps_ygap": 0,
     "robot-barcode": "BARCODE",
 }
+
 BASIC_POST_SETUP_DOC = {
     "attenuator_actual_transmission": 0,
     "flux_flux_reading": 10,
@@ -147,31 +147,15 @@ def mock_subscriptions(test_fgs_params):
             )
         ),
     ):
-        subscriptions = XrayCentreCallbackCollection.setup()
+        subscriptions = XrayCentreCallbackCollection()
         subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
         start_doc = {
             "subplan_name": GRIDSCAN_OUTER_PLAN,
             "hyperion_internal_parameters": test_fgs_params.json(),
+            TRIGGER_ZOCALO_ON: DO_FGS,
         }
         subscriptions.ispyb_handler.activity_gated_start(start_doc)
-        subscriptions.zocalo_handler.activity_gated_start(start_doc)
 
-    return subscriptions
-
-
-@pytest.fixture
-def mock_rotation_subscriptions(test_rotation_params):
-    with patch(
-        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationNexusFileCallback",
-        autospec=True,
-    ), patch(
-        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationISPyBCallback",
-        autospec=True,
-    ), patch(
-        "hyperion.external_interaction.callbacks.rotation.callback_collection.ZocaloCallback",
-        autospec=True,
-    ):
-        subscriptions = RotationCallbackCollection.setup()
     return subscriptions
 
 

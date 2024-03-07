@@ -12,12 +12,10 @@ import hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
 from hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
     pin_centre_then_xray_centre_plan,
-    stepped_grid_scan_plan,
     wait_for_robot_load_then_centre_plan,
 )
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
-    NullPlanCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.rotation.callback_collection import (
     RotationCallbackCollection,
@@ -43,10 +41,6 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
 )
-from hyperion.parameters.plan_specific.stepped_grid_scan_internal_params import (
-    SteppedGridScanInternalParameters,
-    SteppedGridScanParams,
-)
 from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
     WaitForRobotLoadThenCentreInternalParameters,
     WaitForRobotLoadThenCentreParams,
@@ -68,14 +62,14 @@ class ExperimentRegistryEntry(TypedDict):
         | GridScanWithEdgeDetectInternalParameters
         | RotationInternalParameters
         | PinCentreThenXrayCentreInternalParameters
-        | SteppedGridScanInternalParameters
         | WaitForRobotLoadThenCentreInternalParameters
+        | PandAGridscanInternalParameters
     ]
     experiment_param_type: type[AbstractExperimentParameterBase]
     callback_collection_type: type[AbstractPlanCallbackCollection]
 
 
-EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams, SteppedGridScanParams]
+EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "panda_flyscan_xray_centre": {
         "setup": panda_flyscan_xray_centre_plan.create_devices,
@@ -106,12 +100,6 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "internal_param_type": PinCentreThenXrayCentreInternalParameters,
         "experiment_param_type": PinCentreThenXrayCentreParams,
         "callback_collection_type": XrayCentreCallbackCollection,
-    },
-    "stepped_grid_scan": {
-        "setup": stepped_grid_scan_plan.create_devices,
-        "internal_param_type": SteppedGridScanInternalParameters,
-        "experiment_param_type": SteppedGridScanParams,
-        "callback_collection_type": NullPlanCallbackCollection,
     },
     "wait_for_robot_load_then_centre": {
         "setup": wait_for_robot_load_then_centre_plan.create_devices,

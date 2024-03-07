@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
     AbstractPlanCallbackCollection,
@@ -14,7 +14,10 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
 from hyperion.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
-from hyperion.parameters.constants import DO_FGS
+
+
+def new_ispyb_with_zocalo():
+    return GridscanISPyBCallback(emit=ZocaloCallback())
 
 
 @dataclass(frozen=True, order=True)
@@ -23,18 +26,7 @@ class XrayCentreCallbackCollection(AbstractPlanCallbackCollection):
     connects the Zocalo and ISPyB handlers. Cast to a list to pass it to
     Bluesky.preprocessors.subs_decorator()."""
 
-    nexus_handler: GridscanNexusFileCallback
-    ispyb_handler: GridscanISPyBCallback
-    zocalo_handler: ZocaloCallback
-
-    @classmethod
-    def setup(cls):
-        nexus_handler = GridscanNexusFileCallback()
-        ispyb_handler = GridscanISPyBCallback()
-        zocalo_handler = ZocaloCallback(ispyb_handler, DO_FGS)
-        callback_collection = cls(
-            nexus_handler=nexus_handler,
-            ispyb_handler=ispyb_handler,
-            zocalo_handler=zocalo_handler,
-        )
-        return callback_collection
+    nexus_handler: GridscanNexusFileCallback = field(
+        default_factory=GridscanNexusFileCallback
+    )
+    ispyb_handler: GridscanISPyBCallback = field(default_factory=new_ispyb_with_zocalo)

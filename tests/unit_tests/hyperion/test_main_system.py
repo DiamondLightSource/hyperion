@@ -353,9 +353,11 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     mock_param_class = MagicMock()
     mock_param_class.from_json.return_value = mock_params
     callback_class_mock = MagicMock(
-        spec=AbstractPlanCallbackCollection, name="mock_callback_class"
+        spec=AbstractPlanCallbackCollection,
+        name="mock_callback_class",
+        return_value=["test_cb_1", "test_cb_2"],
     )
-    callback_class_mock.setup.return_value = [1, 2, 3]
+
     TEST_REGISTRY = {
         "test_experiment": {
             "setup": MagicMock(),
@@ -398,7 +400,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
         if parsed_arg_values[3]:
             assert runner.RE.subscribe.call_count == 0
         else:
-            assert runner.RE.subscribe.call_count == 3
+            assert runner.RE.subscribe.call_count == 2
 
 
 @pytest.mark.skip(

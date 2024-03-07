@@ -69,15 +69,16 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
                        the parameters
         :return: True if the scan is valid
         """
-        if not limits.x.is_within(self.x):
-            return False
-        if not limits.y.is_within(self.y):
-            return False
-        if not limits.z.is_within(self.z):
-            return False
-        return True
+        assert (
+            self.x is not None and self.y is not None and self.z is not None
+        ), "Validity is only defined for positions which are not None"
+        return (
+            limits.x.is_within(self.x)
+            and limits.y.is_within(self.y)
+            and limits.z.is_within(self.z)
+        )
 
-    def get_num_images(self):
+    def get_num_images(self) -> int:
         return int(self.rotation_angle / self.image_width)
 
 
