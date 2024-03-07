@@ -28,8 +28,7 @@ from hyperion.log import (
     ISPYB_LOGGER,
     NEXUS_LOGGER,
     _get_logging_dir,
-    dc_group_id_filter,
-    run_uid_filter,
+    tag_filter,
 )
 from hyperion.parameters.cli import parse_callback_dev_mode_arg
 from hyperion.parameters.constants import (
@@ -64,8 +63,7 @@ def setup_logging(dev_mode: bool):
                 dev_mode,
                 error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
             )
-            handlers["graylog_handler"].addFilter(dc_group_id_filter)
-            handlers["graylog_handler"].addFilter(run_uid_filter)
+            handlers["graylog_handler"].addFilter(tag_filter)
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
