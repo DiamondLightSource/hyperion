@@ -1,6 +1,7 @@
 from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import numpy as np
 import pytest
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
@@ -8,6 +9,7 @@ from dodal.beamlines import i03
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.smargon import Smargon
 from ophyd.signal import Signal
 from ophyd.sim import instantiate_fake_device
@@ -91,7 +93,7 @@ def test_when_set_up_oav_with_different_zoom_levels_then_flat_field_applied_corr
     RE = RunEngine()
     RE(pre_centring_setup_oav(oav, mock_parameters, ophyd_pin_tip_detection))
     assert oav.mxsc.input_plugin.get() == expected_plugin
-    assert oav.snapshot.input_plugin.get() == "OAV.MXSC"
+    assert oav.snapshot.input_plugin.get() == expected_plugin
 
 
 @pytest.mark.parametrize(
@@ -157,11 +159,13 @@ async def test_given_tip_found_when_wait_for_tip_to_be_found_called_then_tip_imm
         PinTipDetection, name="pin_detect"
     )
     await mock_pin_tip_detect.connect(sim=True)
-    mock_pin_tip_detect._get_tip_position = AsyncMock(return_value=(100, 100))
+    mock_pin_tip_detect._get_tip_and_edge_data = AsyncMock(
+        return_value=SampleLocation(100, 100, np.array([]), np.array([]))
+    )
     RE = RunEngine(call_returns_result=True)
     result = RE(wait_for_tip_to_be_found(mock_pin_tip_detect))
     assert result.plan_result == (100, 100)  # type: ignore
-    mock_pin_tip_detect._get_tip_position.assert_called_once()
+    mock_pin_tip_detect._get_tip_and_edge_data.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -171,8 +175,10 @@ async def test_given_no_tip_when_wait_for_tip_to_be_found_called_then_exception_
     )
     await mock_pin_tip_detect.connect(sim=True)
     await mock_pin_tip_detect.validity_timeout.set(0.2)
-    mock_pin_tip_detect._get_tip_position = AsyncMock(
-        return_value=(PinTipDetection.INVALID_POSITION)
+    mock_pin_tip_detect._get_tip_and_edge_data = AsyncMock(
+        return_value=SampleLocation(
+            *PinTipDetection.INVALID_POSITION, np.array([]), np.array([])
+        )
     )
     RE = RunEngine(call_returns_result=True)
     with pytest.raises(WarningException):

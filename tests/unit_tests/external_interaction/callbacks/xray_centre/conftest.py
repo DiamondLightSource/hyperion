@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
-from event_model.documents import Event, EventDescriptor, RunStop
+from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -76,7 +76,7 @@ class TestData:
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
     GOOD_ISPYB_RUN_STATUS: str = "DataCollection Successful"
     BAD_ISPYB_RUN_STATUS: str = "DataCollection Unsuccessful"
-    test_start_document = {
+    test_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -84,9 +84,10 @@ class TestData:
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+        CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         "hyperion_internal_parameters": dummy_params().json(),
     }
-    test_run_gridscan_start_document = {
+    test_run_gridscan_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -95,14 +96,14 @@ class TestData:
         "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
         "subplan_name": CONST.PLAN.GRIDSCAN_MAIN,
     }
-    test_do_fgs_start_document = {
+    test_do_fgs_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
         "scan_id": 1,
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
-        "subplan_name": "do_fgs",
+        "subplan_name": CONST.PLAN.DO_FGS,
         "zocalo_environment": "dev_artemis",
     }
     test_descriptor_document_pre_data_collection: EventDescriptor = {

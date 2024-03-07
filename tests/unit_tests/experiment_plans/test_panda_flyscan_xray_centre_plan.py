@@ -88,8 +88,10 @@ def ispyb_plan(test_panda_fgs_params):
             "hyperion_internal_parameters": test_panda_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, robot, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot)
+    def standalone_read_hardware_for_ispyb(
+        und, syn, slits, robot, attn, fl, dcm, ap_sg
+    ):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg, robot)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -175,6 +177,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
                 fake_fgs_composite.dcm,
+                fake_fgs_composite.aperture_scatterguard,
             )
         )
         params = test_ispyb_callback.params
@@ -248,10 +251,10 @@ class TestFlyscanXrayCentrePlan:
 
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
         )
         ap_call_medium = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
         )
 
         move_aperture.assert_has_calls(
@@ -339,9 +342,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
-        mock_subscriptions.zocalo_handler.activity_gated_start(
-            self.td.test_start_document
-        )
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_panda_fgs_params
         )
@@ -699,9 +699,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
         with patch(
-            "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.XrayCentreCallbackCollection.setup",
-            lambda: mock_subscriptions,
-        ), patch(
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(

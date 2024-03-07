@@ -141,14 +141,26 @@ def test_read_hardware_for_ispyb_pre_collection(
     attenuator = fgs_composite.attenuator
     flux = fgs_composite.flux
     dcm = fgs_composite.dcm
+    aperture_scatterguard = fgs_composite.aperture_scatterguard
     robot = fgs_composite.robot
 
     @bpp.run_decorator()
-    def read_run(u, s, g, r, a, f, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(u, s, g, r)
+    def read_run(u, s, g, r, a, f, dcm, ap_sg):
+        yield from read_hardware_for_ispyb_pre_collection(u, s, g, r, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
-    RE(read_run(undulator, synchrotron, slit_gaps, robot, attenuator, flux, dcm))
+    RE(
+        read_run(
+            undulator,
+            synchrotron,
+            slit_gaps,
+            robot,
+            attenuator,
+            flux,
+            dcm,
+            aperture_scatterguard,
+        )
+    )
 
 
 @pytest.mark.s03
@@ -173,7 +185,7 @@ def test_full_plan_tidies_at_end(
     params: GridscanInternalParameters,
     RE: RunEngine,
 ):
-    callbacks = XrayCentreCallbackCollection.setup()
+    callbacks = XrayCentreCallbackCollection()
     callbacks.nexus_handler.nexus_writer_1 = MagicMock()
     callbacks.nexus_handler.nexus_writer_2 = MagicMock()
     callbacks.ispyb_handler.ispyb_ids = IspybIds(
@@ -229,10 +241,10 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 100
 
-    callbacks = XrayCentreCallbackCollection.setup()
+    callbacks = XrayCentreCallbackCollection()
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     mock_start_zocalo = MagicMock()
-    callbacks.zocalo_handler.zocalo_interactor.run_start = mock_start_zocalo
+    callbacks.ispyb_handler.emit_cb.zocalo_interactor.run_start = mock_start_zocalo  # type: ignore
 
     with pytest.raises(WarningException):
         RE(flyscan_xray_centre(fgs_composite, params))
@@ -271,7 +283,7 @@ def test_WHEN_plan_run_THEN_move_to_centre_returned_from_zocalo_expected_centre(
     fgs_composite.eiger.stage = MagicMock()
     fgs_composite.eiger.unstage = MagicMock()
 
-    callbacks = XrayCentreCallbackCollection.setup()
+    callbacks = XrayCentreCallbackCollection()
     callbacks.ispyb_handler.ispyb.ISPYB_CONFIG_PATH = CONST.SIM.DEV_ISPYB_DATABASE_CFG
 
     RE(flyscan_xray_centre(fgs_composite, params))

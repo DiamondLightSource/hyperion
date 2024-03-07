@@ -1,6 +1,7 @@
 import datetime
 import os
 import re
+from typing import Optional
 
 from ispyb import NoResult
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
@@ -20,7 +21,7 @@ def get_ispyb_config():
     return os.environ.get("ISPYB_CONFIG_PATH", CONST.SIM.ISPYB_CONFIG)
 
 
-def get_visit_string_from_path(path) -> str | None:
+def get_visit_string_from_path(path: Optional[str]) -> str | None:
     match = re.search(VISIT_PATH_REGEX, path) if path else None
     return str(match.group(1)) if match else None
 

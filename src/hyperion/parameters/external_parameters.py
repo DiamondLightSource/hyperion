@@ -11,7 +11,7 @@ from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 
 
-def validate_raw_parameters_from_dict(dict_params: dict[str, Any]):
+def validate_raw_parameters_from_dict(dict_params: dict[str, Any]) -> dict[str, Any]:
     with open(
         join(CONST.PARAMETER_SCHEMA_DIRECTORY, "full_external_parameters_schema.json"),
         "r",

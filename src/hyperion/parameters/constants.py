@@ -35,15 +35,21 @@ class HardwareConstants:
 
 
 @dataclass(frozen=True)
+class TriggerConstants:
+    ZOCALO = "trigger_zocalo_on"
+
+
+@dataclass(frozen=True)
 class HyperionConstants:
     SIM = SimConstants()
     PLAN = PlanNameConstants()
     HARDWARE = HardwareConstants()
+    TRIGGER = TriggerConstants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
 
 
-CONST = HyperionConstants
+CONST = HyperionConstants()
 
 
 class Actions(Enum):

@@ -35,15 +35,12 @@ ERROR_LOG_BUFFER_LINES = 5000
 
 
 def setup_callbacks():
-    gridscan_ispyb = GridscanISPyBCallback()
-    rotation_ispyb = RotationISPyBCallback()
+    zocalo = ZocaloCallback()
     return [
         GridscanNexusFileCallback(),
-        gridscan_ispyb,
-        ZocaloCallback(gridscan_ispyb, CONST.PLAN.DO_FGS),
+        GridscanISPyBCallback(emit=zocalo),
         RotationNexusFileCallback(),
-        rotation_ispyb,
-        ZocaloCallback(rotation_ispyb, CONST.PLAN.ROTATION_MAIN),
+        RotationISPyBCallback(emit=zocalo),
     ]
 
 

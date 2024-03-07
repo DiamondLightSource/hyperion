@@ -158,7 +158,7 @@ class BlueskyRunner:
                     if (
                         not self.use_external_callbacks
                         and command.callbacks
-                        and (cbs := list(command.callbacks.setup()))
+                        and (cbs := list(command.callbacks()))
                     ):
                         LOGGER.info(
                             f"Using callbacks for this plan: {not self.use_external_callbacks} - {cbs}"

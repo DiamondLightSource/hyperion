@@ -10,7 +10,10 @@ import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+    SingleAperturePosition,
+)
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -113,22 +116,25 @@ def set_aperture_for_bbox_size(
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
     assert aperture_device.aperture_positions is not None
-    if bbox_size[0] < 2:
-        aperture_size_positions = aperture_device.aperture_positions.MEDIUM
-        selected_aperture = "MEDIUM_APERTURE"
-    else:
-        aperture_size_positions = aperture_device.aperture_positions.LARGE
-        selected_aperture = "LARGE_APERTURE"
+
+    new_selected_aperture: SingleAperturePosition = (
+        aperture_device.aperture_positions.MEDIUM
+        if bbox_size[0] < 2
+        else aperture_device.aperture_positions.LARGE
+    )
     LOGGER.info(
-        f"Setting aperture to {selected_aperture} ({aperture_size_positions}) based on bounding box size {bbox_size}."
+        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
     )
 
     @bpp.set_run_key_decorator("change_aperture")
     @bpp.run_decorator(
-        md={"subplan_name": "change_aperture", "aperture_size": selected_aperture}
+        md={
+            "subplan_name": "change_aperture",
+            "aperture_size": new_selected_aperture.name,
+        }
     )
     def set_aperture():
-        yield from bps.abs_set(aperture_device, aperture_size_positions)
+        yield from bps.abs_set(aperture_device, new_selected_aperture.location)
 
     yield from set_aperture()
 
@@ -224,6 +230,7 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.aperture_scatterguard,
             fgs_composite.robot,
         )
         yield from read_hardware_for_ispyb_during_collection(
@@ -334,9 +341,9 @@ def flyscan_xray_centre(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "ZocaloCallback",
                 "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],
@@ -370,7 +377,7 @@ if __name__ == "__main__":
     )
 
     parameters = GridscanInternalParameters(**external_parameters.from_file())
-    subscriptions = XrayCentreCallbackCollection.setup()
+    subscriptions = XrayCentreCallbackCollection()
 
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)
