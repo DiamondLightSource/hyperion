@@ -11,7 +11,6 @@ from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from hyperion.experiment_plans.rotation_scan_plan import (
-    DEFAULT_MAX_VELOCITY,
     RotationScanComposite,
     calculate_motion_profile,
     rotation_scan,
@@ -202,6 +201,8 @@ def test_full_rotation_plan_smargon_settings(
     params: RotationInternalParameters = test_rotation_params
     expt_params = params.experiment_params
 
+    test_max_velocity = smargon.omega.max_velocity.get()
+
     omega_set: MagicMock = smargon.omega.set  # type: ignore
     omega_velocity_set: MagicMock = smargon.omega.velocity.set  # type: ignore
     rotation_speed = (
@@ -216,9 +217,9 @@ def test_full_rotation_plan_smargon_settings(
     assert omega_set.call_count == 2
     assert omega_velocity_set.call_count == 3
     assert omega_velocity_set.call_args_list == [
-        call(DEFAULT_MAX_VELOCITY),
+        call(test_max_velocity),
         call(rotation_speed),
-        call(DEFAULT_MAX_VELOCITY),
+        call(test_max_velocity),
     ]
 
 
@@ -278,4 +279,3 @@ def test_cleanup_happens(
             )
             assert "Experiment fails because this is a test" in exc.value.args[0]
             cleanup_plan.assert_called_once()
-
