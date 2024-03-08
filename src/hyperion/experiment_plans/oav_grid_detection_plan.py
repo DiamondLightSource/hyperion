@@ -105,6 +105,8 @@ def grid_detection_plan(
         # only use the area from the start of the pin onwards
         top_edge = top_edge[tip_x_px : tip_x_px + grid_width_pixels]
         bottom_edge = bottom_edge[tip_x_px : tip_x_px + grid_width_pixels]
+        LOGGER.info(f"OAV Edge detection top: {list(top_edge)}")
+        LOGGER.info(f"OAV Edge detection bottom: {list(bottom_edge)}")
 
         # the edge detection line can jump to the edge of the image sometimes, filter
         # those points out, and if empty after filter use the whole image
@@ -112,6 +114,8 @@ def grid_detection_plan(
         filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [
             full_image_height_px
         ]
+        LOGGER.info(f"OAV Edge detection filtered top: {filtered_top}")
+        LOGGER.info(f"OAV Edge detection filtered bottom: {filtered_bottom}")
         min_y = min(filtered_top)
         max_y = max(filtered_bottom)
         grid_height_px = max_y - min_y
