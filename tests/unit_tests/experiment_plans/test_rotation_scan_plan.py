@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import pytest
@@ -11,6 +11,7 @@ from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from hyperion.experiment_plans.rotation_scan_plan import (
+    RotationMotionProfile,
     RotationScanComposite,
     calculate_motion_profile,
     rotation_scan,
@@ -34,17 +35,15 @@ def do_rotation_main_plan_for_tests(
     run_eng: RunEngine,
     expt_params: RotationInternalParameters,
     devices: RotationScanComposite,
-    plan=rotation_scan_plan,
+    motion_values: RotationMotionProfile,
+    plan: Callable = rotation_scan_plan,
 ):
     with patch(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
     ):
         run_eng(
-            plan(
-                devices,
-                expt_params,
-            ),
+            plan(devices, expt_params, motion_values),
         )
 
 
@@ -54,16 +53,31 @@ def run_full_rotation_plan(
     test_rotation_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    do_rotation_main_plan_for_tests(
-        RE, test_rotation_params, fake_create_rotation_devices, rotation_scan
+    with patch(
+        "bluesky.preprocessors.__read_and_stash_a_motor",
+        fake_read,
+    ):
+        RE(
+            rotation_scan(fake_create_rotation_devices, test_rotation_params),
+        )
+        return fake_create_rotation_devices
+
+
+@pytest.fixture
+def motion_values(test_rotation_params: RotationInternalParameters):
+    return calculate_motion_profile(
+        test_rotation_params.hyperion_params.detector_params,
+        test_rotation_params.experiment_params,
+        0.005,
+        222,
     )
-    return fake_create_rotation_devices
 
 
 def setup_and_run_rotation_plan_for_tests(
     RE: RunEngine,
     test_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
+    motion_values,
 ):
     smargon = fake_create_rotation_devices.smargon
 
@@ -78,9 +92,7 @@ def setup_and_run_rotation_plan_for_tests(
 
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
-            RE,
-            test_params,
-            fake_create_rotation_devices,
+            RE, test_params, fake_create_rotation_devices, motion_values
         )
 
     return {
@@ -96,11 +108,10 @@ def setup_and_run_rotation_plan_for_tests_standard(
     RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
+    motion_values,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE,
-        test_rotation_params,
-        fake_create_rotation_devices,
+        RE, test_rotation_params, fake_create_rotation_devices, motion_values
     )
 
 
@@ -109,11 +120,10 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     RE: RunEngine,
     test_rotation_params_nomove: RotationInternalParameters,
     fake_create_rotation_devices: RotationScanComposite,
+    motion_values,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE,
-        test_rotation_params_nomove,
-        fake_create_rotation_devices,
+        RE, test_rotation_params_nomove, fake_create_rotation_devices, motion_values
     )
 
 
@@ -126,6 +136,7 @@ def test_rotation_scan_calculations(test_rotation_params: RotationInternalParame
         test_rotation_params.hyperion_params.detector_params,
         test_rotation_params.experiment_params,
         0.005,  # time for acceleration
+        224,
     )
 
     assert motion_values.direction == -1
@@ -250,6 +261,7 @@ def test_cleanup_happens(
     RE: RunEngine,
     test_rotation_params,
     fake_create_rotation_devices: RotationScanComposite,
+    motion_values: RotationMotionProfile,
 ):
 
     class MyTestException(Exception):
@@ -264,18 +276,12 @@ def test_cleanup_happens(
         with pytest.raises(MyTestException):
             RE(
                 rotation_scan_plan(
-                    fake_create_rotation_devices,
-                    test_rotation_params,
+                    fake_create_rotation_devices, test_rotation_params, motion_values
                 )
             )
             cleanup_plan.assert_not_called()
         # check that failure is handled in composite plan
         with pytest.raises(MyTestException) as exc:
-            RE(
-                rotation_scan(
-                    fake_create_rotation_devices,
-                    test_rotation_params,
-                )
-            )
+            RE(rotation_scan(fake_create_rotation_devices, test_rotation_params))
             assert "Experiment fails because this is a test" in exc.value.args[0]
             cleanup_plan.assert_called_once()
