@@ -18,7 +18,8 @@ from hyperion.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
     wait_for_tip_to_be_found,
 )
-from hyperion.log import LOGGER
+from hyperion.external_interaction.ispyb.ispyb_utils import get_current_time_string
+from hyperion.log import LOGGER, _get_logging_dir
 from hyperion.parameters.constants import CONST
 from hyperion.utils.context import device_composite_from_context
 
@@ -91,7 +92,14 @@ def grid_detection_plan(
         # See #673 for improvements
         yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
 
+        yield from bps.mv(pin_tip_detection.store_diagnostics, True)
+        filename = f"{_get_logging_dir()}/OAV_edge_detection/{snapshot_template}_{get_current_time_string().replace(' ','_')}_"
+        yield from bps.mv(
+            pin_tip_detection.diagnostics_filename,
+            filename,
+        )
         tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(pin_tip_detection)
+        yield from bps.mv(pin_tip_detection.store_diagnostics, False)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
