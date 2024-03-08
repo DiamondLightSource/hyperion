@@ -249,6 +249,10 @@ def run_gridscan_and_move(
             fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
         )
 
+    # Wait on everything before returning to GDA (particularly apertures), can be removed
+    # when we do not return to GDA here
+    yield from bps.wait()
+
 
 def panda_flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
