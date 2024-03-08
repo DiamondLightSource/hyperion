@@ -11,24 +11,19 @@ from event_model import Event
 from ophyd.sim import make_fake_device
 from ophyd_async.core.async_status import AsyncStatus
 
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
-)
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
 )
-from hyperion.parameters.constants import (
-    GRIDSCAN_OUTER_PLAN,
-    ISPYB_HARDWARE_READ_PLAN,
-    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -54,7 +49,9 @@ BASIC_PRE_SETUP_DOC = {
     "synchrotron_machine_status_synchrotron_mode": 0,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
+    "robot-barcode": "BARCODE",
 }
+
 BASIC_POST_SETUP_DOC = {
     "attenuator_actual_transmission": 0,
     "flux_flux_reading": 10,
@@ -80,12 +77,12 @@ def run_generic_ispyb_handler_setup(
     ispyb_handler.active = True
     ispyb_handler.activity_gated_start(
         {
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": params.json(),
-        }
+        }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "123abc", "name": ISPYB_HARDWARE_READ_PLAN}
+        {"uid": "123abc", "name": CONST.PLAN.ISPYB_HARDWARE_READ}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -94,7 +91,7 @@ def run_generic_ispyb_handler_setup(
         )
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "abc123", "name": ISPYB_TRANSMISSION_FLUX_READ_PLAN}
+        {"uid": "abc123", "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -114,6 +111,9 @@ def modified_interactor_mock(assign_run_end: Callable | None = None):
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
     mock = MagicMock(spec=Store3DGridscanInIspyb)
     mock.begin_deposition.return_value = IspybIds(
+        data_collection_ids=dcids, data_collection_group_id=dcgid
+    )
+    mock.update_deposition.return_value = IspybIds(
         data_collection_ids=dcids, data_collection_group_id=dcgid, grid_ids=(0, 0)
     )
     return mock
@@ -122,39 +122,34 @@ def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
 @pytest.fixture
 def mock_subscriptions(test_fgs_params):
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+        "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     ), patch(
         "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.append_to_comment"
+    ), patch(
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.begin_deposition",
+        new=MagicMock(
+            return_value=IspybIds(
+                data_collection_ids=(0, 0), data_collection_group_id=0
+            )
+        ),
+    ), patch(
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.update_deposition",
+        new=MagicMock(
+            return_value=IspybIds(
+                data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0, 0)
+            )
+        ),
     ):
-        subscriptions = XrayCentreCallbackCollection.setup()
+        subscriptions = XrayCentreCallbackCollection()
+        subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
         start_doc = {
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": test_fgs_params.json(),
+            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         }
-        subscriptions.ispyb_handler.activity_gated_start(start_doc)
-        subscriptions.zocalo_handler.activity_gated_start(start_doc)
-    subscriptions.ispyb_handler.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
-    subscriptions.ispyb_handler.ispyb.begin_deposition = lambda: IspybIds(
-        data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0, 0)
-    )
+        subscriptions.ispyb_handler.activity_gated_start(start_doc)  # type: ignore
 
-    return subscriptions
-
-
-@pytest.fixture
-def mock_rotation_subscriptions(test_rotation_params):
-    with patch(
-        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationNexusFileCallback",
-        autospec=True,
-    ), patch(
-        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationISPyBCallback",
-        autospec=True,
-    ), patch(
-        "hyperion.external_interaction.callbacks.rotation.callback_collection.RotationZocaloCallback",
-        autospec=True,
-    ):
-        subscriptions = RotationCallbackCollection.setup()
     return subscriptions
 
 

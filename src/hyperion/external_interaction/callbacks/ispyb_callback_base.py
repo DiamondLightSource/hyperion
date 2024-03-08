@@ -1,22 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
+from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
-from hyperion.parameters.constants import (
-    DEV_ISPYB_DATABASE_CFG,
-    ISPYB_HARDWARE_READ_PLAN,
-    ISPYB_TRANSMISSION_FLUX_READ_PLAN,
-    SIM_ISPYB_CONFIG,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -24,20 +19,22 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
+D = TypeVar("D")
 if TYPE_CHECKING:
-    from event_model.documents.event import Event
-    from event_model.documents.event_descriptor import EventDescriptor
-    from event_model.documents.run_start import RunStart
-    from event_model.documents.run_stop import RunStop
+    from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        emit: Callable[..., Any] | None = None,
+    ) -> None:
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
-        super().__init__(ISPYB_LOGGER)
+        super().__init__(log=ISPYB_LOGGER, emit=emit)
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )
@@ -45,8 +42,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.descriptors: Dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
         if (
-            self.ispyb_config == SIM_ISPYB_CONFIG
-            or self.ispyb_config == DEV_ISPYB_DATABASE_CFG
+            self.ispyb_config == CONST.SIM.ISPYB_CONFIG
+            or self.ispyb_config == CONST.SIM.DEV_ISPYB_DATABASE_CFG
         ):
             ISPYB_LOGGER.warning(
                 f"{self.__class__} using dev ISPyB config: {self.ispyb_config}. If you"
@@ -58,14 +55,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.log = ISPYB_LOGGER
 
     def activity_gated_start(self, doc: RunStart):
-        ISPYB_LOGGER.debug("ISPyB Callback Start Triggered")
-        if self.uid_to_finalize_on is None:
-            self.uid_to_finalize_on = doc.get("uid")
+        return self._tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
+        return self._tag_doc(doc)
 
-    def activity_gated_event(self, doc: Event):
+    def activity_gated_event(self, doc: Event) -> Event:
         """Subclasses should extend this to add a call to set_dcig_tag from
         hyperion.log"""
         ISPYB_LOGGER.debug("ISPyB handler received event document.")
@@ -78,8 +74,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 f"Ispyb handler {self} recieved event doc {doc} and "
                 "has no corresponding descriptor record"
             )
-            return
-        if event_descriptor.get("name") == ISPYB_HARDWARE_READ_PLAN:
+            return doc
+        if event_descriptor.get("name") == CONST.PLAN.ISPYB_HARDWARE_READ:
             ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
             self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
                 "undulator_current_gap"
@@ -93,8 +89,11 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"][
                 "s4_slit_gaps_ygap"
             ]
+            self.params.hyperion_params.ispyb_params.sample_barcode = doc["data"][
+                "robot-barcode"
+            ]
 
-        if event_descriptor.get("name") == ISPYB_TRANSMISSION_FLUX_READ_PLAN:
+        if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
             self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
                 "data"
             ]["attenuator_actual_transmission"]
@@ -105,11 +104,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 doc["data"]["dcm_energy_in_kev"] * 1000
             )
 
-            ISPYB_LOGGER.info("Creating ispyb entry.")
-            self.ispyb_ids = self.ispyb.begin_deposition()
+            ISPYB_LOGGER.info("Updating ispyb entry.")
+            self.ispyb_ids = self.ispyb.update_deposition()
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
+        return self._tag_doc(doc)
 
-    def activity_gated_stop(self, doc: RunStop):
+    def activity_gated_stop(self, doc: RunStop) -> None:
         """Subclasses must check that they are recieving a stop document for the correct
         uid to use this method!"""
         assert isinstance(
@@ -127,8 +127,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ISPYB_LOGGER.warning(
                 f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"
             )
+        return self._tag_doc(doc)
 
-    def _append_to_comment(self, id: int, comment: str):
+    def _append_to_comment(self, id: int, comment: str) -> None:
         assert isinstance(self.ispyb, StoreInIspyb)
         try:
             self.ispyb.append_to_comment(id, comment)
@@ -136,3 +137,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ISPYB_LOGGER.warning(
                 "ISPyB deposition not initialised, can't update comment."
             )
+
+    def append_to_comment(self, comment: str):
+        for id in self.ispyb_ids.data_collection_ids:
+            self._append_to_comment(id, comment)
+
+    def _tag_doc(self, doc: D) -> D:
+        assert isinstance(doc, dict)
+        if self.ispyb_ids:
+            doc["ispyb_dcids"] = self.ispyb_ids.data_collection_ids
+        return doc

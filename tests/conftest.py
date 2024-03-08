@@ -1,4 +1,5 @@
 import sys
+import threading
 from functools import partial
 from typing import Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
@@ -8,23 +9,33 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import beamline_utils, i03
 from dodal.beamlines.beamline_parameters import GDABeamlineParameters
-from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.aperturescatterguard import (
+    ApertureFiveDimensionalLocation,
+    AperturePositions,
+    ApertureScatterguard,
+    SingleAperturePosition,
+)
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
-from dodal.devices.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
 from dodal.devices.flux import Flux
+from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
+from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.status import DeviceStatus, Status
+from ophyd_async.core import set_sim_value
 from ophyd_async.core.async_status import AsyncStatus
+from scanspec.core import Path as ScanPath
+from scanspec.specs import Line
 
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
@@ -38,7 +49,8 @@ from hyperion.log import (
     ISPYB_LOGGER,
     LOGGER,
     NEXUS_LOGGER,
-    set_up_logging_handlers,
+    _get_logging_dir,
+    do_default_logging_setup,
 )
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -54,6 +66,18 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
+i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
+
+
+def create_dummy_scan_spec(x_steps, y_steps, z_steps):
+    x_line = Line("sam_x", 0, 10, 10)
+    y_line = Line("sam_y", 10, 20, 20)
+    z_line = Line("sam_z", 30, 50, 30)
+
+    specs = [y_line * ~x_line, z_line * ~x_line]
+    specs = [ScanPath(spec.calculate()) for spec in specs]
+    return [spec.consume().midpoints for spec in specs]
+
 
 def _destroy_loggers(loggers):
     for logger in loggers:
@@ -64,26 +88,28 @@ def _destroy_loggers(loggers):
 
 def pytest_runtest_setup(item):
     markers = [m.name for m in item.own_markers]
-    log_level = "DEBUG" if item.config.option.debug_logging else "INFO"
-    log_params = {"logging_level": log_level, "dev_mode": True}
     if "skip_log_setup" not in markers:
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
-                print(f"Initialising Hyperion logger for tests at {log_level}")
-                set_up_logging_handlers(**log_params)
+                print("Initialising Hyperion logger for tests")
+                do_default_logging_setup(dev_mode=True)
         if ISPYB_LOGGER.handlers == []:
-            print(f"Initialising ISPyB logger for tests at {log_level}")
-            set_up_logging_handlers(
-                **log_params,
-                filename="hyperion_ispyb_callback.txt",
-                logger=ISPYB_LOGGER,
+            print("Initialising ISPyB logger for tests")
+            set_up_all_logging_handlers(
+                ISPYB_LOGGER,
+                _get_logging_dir(),
+                "hyperion_ispyb_callback.log",
+                True,
+                10000,
             )
         if NEXUS_LOGGER.handlers == []:
-            print(f"Initialising nexus logger for tests at {log_level}")
-            set_up_logging_handlers(
-                **log_params,
-                filename="hyperion_nexus_callback.txt",
-                logger=NEXUS_LOGGER,
+            print("Initialising nexus logger for tests")
+            set_up_all_logging_handlers(
+                NEXUS_LOGGER,
+                _get_logging_dir(),
+                "hyperion_ispyb_callback.log",
+                True,
+                10000,
             )
     else:
         print("Skipping log setup for log test - deleting existing handlers")
@@ -104,8 +130,17 @@ def RE():
     yield RE
     try:
         RE.halt()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Got exception while halting RunEngine {e}")
+    finally:
+        stopped_event = threading.Event()
+
+        def stop_event_loop():
+            RE.loop.stop()  # noqa: F821
+            stopped_event.set()
+
+        RE.loop.call_soon_threadsafe(stop_event_loop)
+        stopped_event.wait(10)
     del RE
 
 
@@ -115,8 +150,8 @@ def mock_set(motor: EpicsMotor, val):
     return Status(done=True, success=True)
 
 
-def patch_motor(motor):
-    return patch.object(motor, "set", partial(mock_set, motor))
+def patch_motor(motor: EpicsMotor):
+    return patch.object(motor, "set", MagicMock(side_effect=partial(mock_set, motor)))
 
 
 @pytest.fixture
@@ -194,13 +229,19 @@ def smargon() -> Generator[Smargon, None, None]:
 
     with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
         smargon.y
-    ), patch_motor(smargon.z):
+    ), patch_motor(smargon.z), patch_motor(smargon.chi), patch_motor(smargon.phi):
         yield smargon
 
 
 @pytest.fixture
 def zebra():
-    return i03.zebra(fake_with_ophyd_sim=True)
+    zebra = i03.zebra(fake_with_ophyd_sim=True)
+    mock_arm = MagicMock(
+        side_effect=zebra.pc.arm.armed.set,
+        return_value=Status(done=True, success=True),
+    )
+    with patch.object(zebra.pc.arm.arm_set, "set", mock_arm):
+        return i03.zebra(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -240,6 +281,20 @@ def oav():
 @pytest.fixture
 def flux():
     return i03.flux(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def ophyd_pin_tip_detection():
+    RunEngine()  # A RE is needed to start the bluesky loop
+    pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
+    return pin_tip_detection
+
+
+@pytest.fixture
+def robot():
+    robot = i03.robot(fake_with_ophyd_sim=True)
+    set_sim_value(robot.barcode.bare_signal, ["BARCODE"])
+    return robot
 
 
 @pytest.fixture
@@ -306,16 +361,38 @@ def aperture_scatterguard(done_status):
     ap_sg = i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,
         aperture_positions=AperturePositions(
-            LARGE=(0, 1, 2, 3, 4),
-            MEDIUM=(5, 6, 7, 8, 9),
-            SMALL=(10, 11, 12, 13, 14),
-            ROBOT_LOAD=(15, 16, 17, 18, 19),
+            SingleAperturePosition(
+                location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
+                name="Large",
+                GDA_name="LARGE_APERTURE",
+                radius_microns=100,
+            ),
+            SingleAperturePosition(
+                location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
+                name="Medium",
+                GDA_name="MEDIUM_APERTURE",
+                radius_microns=50,
+            ),
+            SingleAperturePosition(
+                location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
+                name="Small",
+                GDA_name="SMALL_APERTURE",
+                radius_microns=20,
+            ),
+            SingleAperturePosition(
+                location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
+                name="Robot_load",
+                GDA_name="ROBOT_LOAD",
+                radius_microns=None,
+            ),
         ),
     )
+    ap_sg.aperture.z.user_setpoint.sim_put(2)  # type: ignore
     ap_sg.aperture.z.motor_done_move.sim_put(1)  # type: ignore
     with patch_motor(ap_sg.aperture.x), patch_motor(ap_sg.aperture.y), patch_motor(
         ap_sg.aperture.z
     ), patch_motor(ap_sg.scatterguard.x), patch_motor(ap_sg.scatterguard.y):
+        ap_sg.set(ap_sg.aperture_positions.SMALL)  # type: ignore
         yield ap_sg
 
 
@@ -372,18 +449,21 @@ def fake_create_rotation_devices(
     attenuator: Attenuator,
     flux: Flux,
     undulator: Undulator,
+    aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
+    robot: BartRobot,
     done_status,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+    mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
 
     mock_arm_disarm = MagicMock(
         side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
     )
     zebra.pc.arm.set = mock_arm_disarm
-    smargon.omega.velocity.set = mock_omega_sets
+    smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
 
     return RotationScanComposite(
@@ -395,9 +475,11 @@ def fake_create_rotation_devices(
         flux=flux,
         smargon=smargon,
         undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
+        robot=robot,
     )
 
 
@@ -438,6 +520,7 @@ def fake_fgs_composite(
         zocalo=zocalo,
         panda=MagicMock(),
         panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
+        robot=i03.robot(fake_with_ophyd_sim=True),
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
@@ -486,6 +569,9 @@ def fake_fgs_composite(
     fake_composite.zocalo.timeout_s = 3
     fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
+    fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
+
+    set_sim_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
 
     return fake_composite
 
@@ -546,7 +632,9 @@ class RunEngineSimulator:
             )
         )
 
-    def add_wait_handler(self, handler: Callable[[Msg], None], group: str = "any"):
+    def add_wait_handler(
+        self, handler: Callable[[Msg], None], group: str = "any"
+    ) -> None:
         """Add a wait handler for a particular message
         Args:
             handler: a lambda that accepts a Msg, use this to execute any code that simulates something that's
@@ -561,7 +649,7 @@ class RunEngineSimulator:
             )
         )
 
-    def fire_callback(self, document_name, document):
+    def fire_callback(self, document_name, document) -> None:
         """Fire all the callbacks registered for this document type in order to simulate something happening
         Args:
              document_name: document name as defined in the Bluesky Message Protocol 'subscribe' call,

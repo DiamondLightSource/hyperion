@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -10,7 +10,10 @@ import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.run_engine import RunEngine
 from bluesky.utils import ProgressBarManager
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+    SingleAperturePosition,
+)
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -19,6 +22,7 @@ from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 from dodal.devices.flux import Flux
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
+from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
@@ -38,6 +42,7 @@ from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
+    read_hardware_for_zocalo,
 )
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
@@ -52,13 +57,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    DO_FGS,
-    GRIDSCAN_AND_MOVE,
-    GRIDSCAN_MAIN_PLAN,
-    GRIDSCAN_OUTER_PLAN,
-    SIM_BEAMLINE,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -69,6 +68,9 @@ if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
         GridscanInternalParameters,
     )
+
+    PandaOrZebraGridscan = FastGridScan | PandAFastGridScan
+    from scanspec.core import AxesPoints, Axis
 
 
 @dataclasses.dataclass
@@ -91,6 +93,7 @@ class FlyScanXRayCentreComposite:
     zocalo: ZocaloResults
     panda: PandA
     panda_fast_grid_scan: PandAFastGridScan
+    robot: BartRobot
 
     @property
     def sample_motors(self) -> Smargon:
@@ -115,27 +118,30 @@ def set_aperture_for_bbox_size(
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
     assert aperture_device.aperture_positions is not None
-    if bbox_size[0] < 2:
-        aperture_size_positions = aperture_device.aperture_positions.MEDIUM
-        selected_aperture = "MEDIUM_APERTURE"
-    else:
-        aperture_size_positions = aperture_device.aperture_positions.LARGE
-        selected_aperture = "LARGE_APERTURE"
+
+    new_selected_aperture: SingleAperturePosition = (
+        aperture_device.aperture_positions.MEDIUM
+        if bbox_size[0] < 2
+        else aperture_device.aperture_positions.LARGE
+    )
     LOGGER.info(
-        f"Setting aperture to {selected_aperture} ({aperture_size_positions}) based on bounding box size {bbox_size}."
+        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
     )
 
     @bpp.set_run_key_decorator("change_aperture")
     @bpp.run_decorator(
-        md={"subplan_name": "change_aperture", "aperture_size": selected_aperture}
+        md={
+            "subplan_name": "change_aperture",
+            "aperture_size": new_selected_aperture.GDA_name,
+        }
     )
     def set_aperture():
-        yield from bps.abs_set(aperture_device, aperture_size_positions)
+        yield from bps.abs_set(aperture_device, new_selected_aperture)
 
     yield from set_aperture()
 
 
-def wait_for_gridscan_valid(fgs_motors: FastGridScan, timeout=0.5):
+def wait_for_gridscan_valid(fgs_motors: PandaOrZebraGridscan, timeout=0.5):
     LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -161,13 +167,58 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     )  # make sure we don't consume any other results
 
 
-@bpp.set_run_key_decorator(GRIDSCAN_MAIN_PLAN)
-@bpp.run_decorator(md={"subplan_name": GRIDSCAN_MAIN_PLAN})
+def kickoff_and_complete_gridscan(
+    gridscan: PandaOrZebraGridscan,
+    eiger: EigerDetector,
+    synchrotron: Synchrotron,
+    zocalo_environment: str,
+    scan_points: List[AxesPoints[Axis]],
+):
+    @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
+    @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
+    @bpp.run_decorator(
+        md={
+            "subplan_name": CONST.PLAN.DO_FGS,
+            "zocalo_environment": zocalo_environment,
+            "scan_points": scan_points,
+        }
+    )
+    @bpp.contingency_decorator(
+        except_plan=lambda e: (yield from bps.stop(eiger)),
+        else_plan=lambda: (yield from bps.unstage(eiger)),
+    )
+    def do_fgs():
+        # Check topup gate
+        expected_images = yield from bps.rd(gridscan.expected_images)
+        exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)
+        LOGGER.info("waiting for topup if necessary...")
+        yield from check_topup_and_wait_if_necessary(
+            synchrotron,
+            expected_images * exposure_sec_per_image,
+            30.0,
+        )
+        yield from read_hardware_for_zocalo(eiger)
+        LOGGER.info("Wait for all moves with no assigned group")
+        yield from bps.wait()
+        LOGGER.info("kicking off FGS")
+        yield from bps.kickoff(gridscan)
+        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
+        yield from bps.wait(
+            ZOCALO_STAGE_GROUP
+        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        LOGGER.info("completing FGS")
+        yield from bps.complete(gridscan, wait=True)
+
+    yield from do_fgs()
+
+
+@bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
+@bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
     md={
-        "plan_name": GRIDSCAN_MAIN_PLAN,
+        "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
 ):
     sample_motors = fgs_composite.sample_motors
@@ -184,6 +235,8 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.aperture_scatterguard,
+            fgs_composite.robot,
         )
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
@@ -196,44 +249,22 @@ def run_gridscan(
     LOGGER.info("Waiting for gridscan validity check")
     yield from wait_for_gridscan_valid(fgs_motors)
 
-    @bpp.set_run_key_decorator(DO_FGS)
-    @bpp.run_decorator(md={"subplan_name": DO_FGS})
-    @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(fgs_composite.eiger)),
-        else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
-    )
-    def do_fgs():
-        # Check topup gate
-        dwell_time_in_s = parameters.experiment_params.dwell_time_ms / 1000.0
-        total_exposure = (
-            parameters.experiment_params.get_num_images() * dwell_time_in_s
-        )  # Expected exposure time for full scan
-        LOGGER.info("waiting for topup if necessary...")
-        yield from check_topup_and_wait_if_necessary(
-            fgs_composite.synchrotron,
-            total_exposure,
-            30.0,
-        )
-        LOGGER.info("kicking off FGS")
-        yield from bps.kickoff(fgs_motors)
-        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
-        yield from bps.wait(
-            ZOCALO_STAGE_GROUP
-        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
-        LOGGER.info("completing FGS")
-        yield from bps.complete(fgs_motors, wait=True)
-
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
     yield from bps.stage(fgs_composite.eiger)
 
-    with TRACER.start_span("do_fgs"):
-        yield from do_fgs()
+    yield from kickoff_and_complete_gridscan(
+        fgs_motors,
+        fgs_composite.eiger,
+        fgs_composite.synchrotron,
+        parameters.hyperion_params.zocalo_environment,
+        [parameters.get_scan_points(1), parameters.get_scan_points(2)],
+    )
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
-@bpp.set_run_key_decorator(GRIDSCAN_AND_MOVE)
-@bpp.run_decorator(md={"subplan_name": GRIDSCAN_AND_MOVE})
+@bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_AND_MOVE)
+@bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
@@ -250,7 +281,7 @@ def run_gridscan_and_move(
         ]
     )
 
-    yield from setup_zebra_for_gridscan(fgs_composite.zebra)
+    yield from setup_zebra_for_gridscan(fgs_composite.zebra, wait=True)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
@@ -312,13 +343,13 @@ def flyscan_xray_centre(
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
     composite.zocalo.zocalo_environment = parameters.hyperion_params.zocalo_environment
 
-    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
+    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "XrayCentreZocaloCallback",
                 "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],
@@ -341,7 +372,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--beamline",
         help="The beamline prefix this is being run on",
-        default=SIM_BEAMLINE,
+        default=CONST.SIM.BEAMLINE,
     )
     args = parser.parse_args()
 
@@ -352,7 +383,7 @@ if __name__ == "__main__":
     )
 
     parameters = GridscanInternalParameters(**external_parameters.from_file())
-    subscriptions = XrayCentreCallbackCollection.setup()
+    subscriptions = XrayCentreCallbackCollection()
 
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)

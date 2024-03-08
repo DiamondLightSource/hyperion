@@ -6,10 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from bluesky.callbacks import CallbackBase
 
 if TYPE_CHECKING:
-    from event_model.documents.event import Event
-    from event_model.documents.event_descriptor import EventDescriptor
-    from event_model.documents.run_start import RunStart
-    from event_model.documents.run_stop import RunStop
+    from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 
 class PlanReactiveCallback(CallbackBase):
@@ -36,11 +33,12 @@ class PlanReactiveCallback(CallbackBase):
         in the future (https://github.com/DiamondLightSource/hyperion/issues/964)."""
 
         super().__init__(emit=emit)
+        self.emit_cb = emit  # to avoid GC; base class only holds a WeakRef
         self.active = False
         self.activity_uid = 0
         self.log = log
 
-    def _run_activity_gated(self, func, doc, override=False):
+    def _run_activity_gated(self, name: str, func, doc, override=False):
         # Runs `func` if self.active is True or overide is true. Override can be used
         # to run the function even after setting self.active to False, i.e. in the last
         # handler of a run.
@@ -49,7 +47,7 @@ class PlanReactiveCallback(CallbackBase):
         if not running_gated_function:
             return doc
         try:
-            return func(doc)
+            return self.emit(name, func(doc))
         except Exception as e:
             self.log.exception(e)
             raise
@@ -63,13 +61,15 @@ class PlanReactiveCallback(CallbackBase):
                 f"{'' if activate else 'not'} activating {type(self).__name__}"
             )
             self.activity_uid = doc.get("uid")
-        return self._run_activity_gated(self.activity_gated_start, doc)
+        return self._run_activity_gated("start", self.activity_gated_start, doc)
 
     def descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
-        return self._run_activity_gated(self.activity_gated_descriptor, doc)
+        return self._run_activity_gated(
+            "descriptor", self.activity_gated_descriptor, doc
+        )
 
     def event(self, doc: Event) -> Event | None:
-        return self._run_activity_gated(self.activity_gated_event, doc)
+        return self._run_activity_gated("event", self.activity_gated_event, doc)
 
     def stop(self, doc: RunStop) -> RunStop | None:
         do_stop = self.active
@@ -77,22 +77,24 @@ class PlanReactiveCallback(CallbackBase):
             self.active = False
             self.activity_uid = 0
         return (
-            self._run_activity_gated(self.activity_gated_stop, doc, override=True)
+            self._run_activity_gated(
+                "stop", self.activity_gated_stop, doc, override=True
+            )
             if do_stop
             else doc
         )
 
-    def activity_gated_start(self, doc: RunStart):
+    def activity_gated_start(self, doc: RunStart) -> RunStart | None:
         return doc
 
-    def activity_gated_descriptor(self, doc: EventDescriptor):
+    def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
         return doc
 
-    def activity_gated_event(self, doc: Event):
+    def activity_gated_event(self, doc: Event) -> Event | None:
         return doc
 
-    def activity_gated_stop(self, doc: RunStop):
+    def activity_gated_stop(self, doc: RunStop) -> RunStop | None:
         return doc
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} with id: {hex(id(self))}>"
+        return f"<{self.__class__.__name__} with id: {hex(id(self))} - active: {self.active}>"

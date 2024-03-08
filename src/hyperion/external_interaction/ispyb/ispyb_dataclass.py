@@ -49,7 +49,8 @@ class IspybParams(BaseModel):
     focal_spot_size_x: float
     focal_spot_size_y: float
     comment: str
-    resolution: float
+    # populated by wait_for_robot_load_then_centre
+    resolution: Optional[float]
 
     sample_id: Optional[str] = None
     sample_barcode: Optional[str] = None
@@ -62,6 +63,8 @@ class IspybParams(BaseModel):
     slit_gap_size_y: Optional[float] = None
     xtal_snapshots_omega_start: Optional[list[str]] = None
     xtal_snapshots_omega_end: Optional[list[str]] = None
+
+    ispyb_experiment_type: Optional[str] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -90,16 +93,16 @@ class IspybParams(BaseModel):
         return transmission_fraction
 
     @property
-    def wavelength_angstroms(self):
+    def wavelength_angstroms(self) -> float:
+        if self.current_energy_ev is None:
+            return 0.0
         return convert_eV_to_angstrom(self.current_energy_ev)
 
 
-class RobotLoadIspybParams(IspybParams):
-    ...
+class RobotLoadIspybParams(IspybParams): ...
 
 
-class RotationIspybParams(IspybParams):
-    ...
+class RotationIspybParams(IspybParams): ...
 
 
 class GridscanIspybParams(IspybParams):

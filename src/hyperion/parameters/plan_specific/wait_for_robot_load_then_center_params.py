@@ -45,6 +45,11 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     omega_start: float
     snapshot_dir: str
     requested_energy_kev: Optional[float] = None
+
+    # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
+    run_up_distance_mm: float = 0.15
+
+    # Use constant motion panda scans instead of fast grid scans
     use_panda: bool = False
 
     # Whether to use the ophyd device for tip centring rather than the area detector

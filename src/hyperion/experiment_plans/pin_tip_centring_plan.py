@@ -5,7 +5,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.areadetector.plugins.MXSC import MXSC, PinTipDetect
+from dodal.devices.areadetector.plugins.MXSC import PinTipDetect
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
@@ -16,12 +16,11 @@ from hyperion.device_setup_plans.setup_oav import (
     Pixel,
     get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
-    wait_for_tip_to_be_found_ad_mxsc,
-    wait_for_tip_to_be_found_ophyd,
+    wait_for_tip_to_be_found,
 )
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import OAV_REFRESH_DELAY
+from hyperion.parameters.constants import CONST
 from hyperion.utils.context import device_composite_from_context
 
 DEFAULT_STEP_SIZE = 0.5
@@ -45,9 +44,9 @@ def trigger_and_return_pin_tip(
     pin_tip: PinTipDetect | PinTipDetection,
 ) -> Generator[Msg, None, Pixel]:
     yield from bps.trigger(pin_tip, wait=True)
-    tip_x_y_px = yield from bps.rd(pin_tip)
+    tip_x_y_px = yield from bps.rd(pin_tip.triggered_tip)
     LOGGER.info(f"Pin tip found at {tip_x_y_px}")
-    return tip_x_y_px
+    return tip_x_y_px  # type: ignore
 
 
 def move_pin_into_view(
@@ -100,7 +99,7 @@ def move_pin_into_view(
         yield from bps.mv(smargon.x, move_within_limits)
 
         # Some time for the view to settle after the move
-        yield from bps.sleep(OAV_REFRESH_DELAY)
+        yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
 
     tip_x_px, tip_y_px = yield from trigger_and_return_pin_tip(pin_tip_device)
 
@@ -188,10 +187,5 @@ def pin_tip_centre_plan(
     # See #673 for improvements
     yield from bps.sleep(0.3)
 
-    if isinstance(pin_tip_setup, MXSC):
-        LOGGER.info("Acquiring pin-tip from AD MXSC plugin")
-        tip = yield from wait_for_tip_to_be_found_ad_mxsc(pin_tip_setup)
-    elif isinstance(pin_tip_setup, PinTipDetection):
-        LOGGER.info("Acquiring pin-tip from ophyd device")
-        tip = yield from wait_for_tip_to_be_found_ophyd(pin_tip_setup)
+    tip = yield from wait_for_tip_to_be_found(pin_tip_detect)
     yield from offset_and_move(tip)

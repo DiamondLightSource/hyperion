@@ -6,7 +6,6 @@ SKIP_STARTUP_CONNECTION=false
 VERBOSE_EVENT_LOGGING=false
 IN_DEV=false
 EXTERNAL_CALLBACK_SERVICE=false
-LOGGING_LEVEL="INFO"
 
 for option in "$@"; do
     case $option in
@@ -31,9 +30,6 @@ for option in "$@"; do
             ;;
         --external-callbacks)
             EXTERNAL_CALLBACK_SERVICE=true
-            ;;
-        --logging-level=*)
-            LOGGING_LEVEL="${option#*=}"
             ;;
 
         --help|--info|--h)
@@ -61,6 +57,7 @@ done
 kill_active_apps () {
     echo "Killing active instances of hyperion and hyperion-callbacks..."
     pkill -e -f "python.*hyperion"
+    pkill -e -f "SCREEN.*hyperion"
     echo "done."
 }
 
@@ -71,13 +68,6 @@ check_user () {
         exit 1
     fi
 }
-
-#Check valid logging level was chosen
-if [[ "$LOGGING_LEVEL" != "INFO" && "$LOGGING_LEVEL" != "CRITICAL" && "$LOGGING_LEVEL" != "ERROR" 
-    && "$LOGGING_LEVEL" != "WARNING" && "$LOGGING_LEVEL" != "DEBUG" ]]; then
-    echo "Invalid logging level selected, defaulting to INFO"
-    LOGGING_LEVEL="INFO"
-fi
 
 if [ -z "${BEAMLINE}" ]; then
     echo "BEAMLINE parameter not set, assuming running on a dev machine."
@@ -99,7 +89,7 @@ if [[ $START == 1 ]]; then
     if [ $IN_DEV == false ]; then
         check_user
 
-        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-artemis-${BEAMLINE}.cfg"
+        ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-${BEAMLINE}.cfg"
         export ISPYB_CONFIG_PATH
 
     fi
@@ -122,8 +112,8 @@ if [[ $START == 1 ]]; then
     echo "$(date) Logging to $HYPERION_LOG_DIR"
     export HYPERION_LOG_DIR
     mkdir -p $HYPERION_LOG_DIR
-    start_log_path=$HYPERION_LOG_DIR/start_log.txt
-    callback_start_log_path=$HYPERION_LOG_DIR/callback_start_log.txt
+    start_log_path=$HYPERION_LOG_DIR/start_log.log
+    callback_start_log_path=$HYPERION_LOG_DIR/callback_start_log.log
 
     source .venv/bin/activate
 
@@ -135,10 +125,8 @@ if [[ $START == 1 ]]; then
                                     ["VERBOSE_EVENT_LOGGING"]="--verbose-event-logging"
                                     ["EXTERNAL_CALLBACK_SERVICE"]="--external-callbacks")
 
-    declare -A h_and_cb_args=(           ["IN_DEV"]="$IN_DEV"
-                                        ["LOGGING_LEVEL"]="$LOGGING_LEVEL" )
-    declare -A h_and_cb_arg_strings=(    ["IN_DEV"]="--dev"
-                                        ["LOGGING_LEVEL"]="--logging-level=$LOGGING_LEVEL" )
+    declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
+    declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
 
     h_commands=()
     for i in "${!h_only_args[@]}"
@@ -157,11 +145,10 @@ if [[ $START == 1 ]]; then
     done
 
     unset PYEPICS_LIBCA
-    hyperion `echo $h_commands;`>$start_log_path 2>&1 &
+    hyperion `echo $h_commands;`>$start_log_path  2>&1 &
     if [ $EXTERNAL_CALLBACK_SERVICE == true ]; then
         hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
     fi
-
     echo "$(date) Waiting for Hyperion to start"
 
     for i in {1..30}

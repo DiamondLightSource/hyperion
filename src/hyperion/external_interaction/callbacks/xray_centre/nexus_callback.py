@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
-from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN, ISPYB_HARDWARE_READ_PLAN
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+if TYPE_CHECKING:
+    from event_model.documents import EventDescriptor, RunStart
 
 
 class GridscanNexusFileCallback(PlanReactiveCallback):
@@ -38,8 +43,8 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         self.nexus_writer_2: NexusWriter | None = None
         self.log = NEXUS_LOGGER
 
-    def activity_gated_start(self, doc: dict):
-        if doc.get("subplan_name") == GRIDSCAN_OUTER_PLAN:
+    def activity_gated_start(self, doc: RunStart):
+        if doc.get("subplan_name") == CONST.PLAN.GRIDSCAN_OUTER:
             json_params = doc.get("hyperion_internal_parameters")
             NEXUS_LOGGER.info(
                 f"Nexus writer recieved start document with experiment parameters {json_params}"
@@ -47,8 +52,8 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             self.parameters = GridscanInternalParameters.from_json(json_params)
             self.run_start_uid = doc.get("uid")
 
-    def activity_gated_descriptor(self, doc):
-        if doc.get("name") == ISPYB_HARDWARE_READ_PLAN:
+    def activity_gated_descriptor(self, doc: EventDescriptor):
+        if doc.get("name") == CONST.PLAN.ISPYB_HARDWARE_READ:
             assert (
                 self.parameters is not None
             ), "Nexus callback did not receive parameters before being asked to write!"

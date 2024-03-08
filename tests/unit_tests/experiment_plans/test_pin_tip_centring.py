@@ -1,11 +1,14 @@
 from functools import partial
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import numpy as np
 import pytest
 from bluesky.plan_stubs import null
-from bluesky.run_engine import RunEngine
+from bluesky.run_engine import RunEngine, RunEngineResult
 from dodal.devices.areadetector.plugins.MXSC import MXSC
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
+from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
 
@@ -16,6 +19,7 @@ from hyperion.experiment_plans.pin_tip_centring_plan import (
     move_pin_into_view,
     move_smargon_warn_on_out_of_range,
     pin_tip_centre_plan,
+    trigger_and_return_pin_tip,
 )
 
 
@@ -37,6 +41,7 @@ def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_re
 
     oav.mxsc.pin_tip.trigger.assert_called_once()
     assert smargon.x.user_readback.get() == 0
+    assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
 
 
@@ -61,6 +66,7 @@ def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargo
     result = RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     assert smargon.x.user_readback.get() == DEFAULT_STEP_SIZE
+    assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
 
 
@@ -85,7 +91,29 @@ def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon
     result = RE(move_pin_into_view(oav.mxsc.pin_tip, smargon))
 
     assert smargon.x.user_readback.get() == -DEFAULT_STEP_SIZE
-    assert result.plan_result == (100, 200)
+    assert result.plan_result == (100, 200)  # type: ignore
+
+
+def test_trigger_and_return_pin_tip_works_for_AD_pin_tip_detection(
+    oav: OAV, RE: RunEngine
+):
+    oav.mxsc.pin_tip.settle_time_s.put(0.01)
+    oav.mxsc.pin_tip.tip_x.sim_put(200)  # type: ignore
+    oav.mxsc.pin_tip.tip_y.sim_put(100)  # type: ignore
+    oav.mxsc.pin_tip.validity_timeout.put(0.15)
+    re_result = RE(trigger_and_return_pin_tip(oav.mxsc.pin_tip))
+    assert re_result.plan_result == (200, 100)  # type: ignore
+
+
+def test_trigger_and_return_pin_tip_works_for_ophyd_pin_tip_detection(
+    ophyd_pin_tip_detection: PinTipDetection, RE: RunEngine
+):
+    mock_trigger_result = SampleLocation(100, 200, np.array([]), np.array([]))
+    ophyd_pin_tip_detection._get_tip_and_edge_data = AsyncMock(
+        return_value=mock_trigger_result
+    )
+    re_result = RE(trigger_and_return_pin_tip(ophyd_pin_tip_detection))
+    assert re_result.plan_result == (100, 200)  # type: ignore
 
 
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip")
@@ -161,7 +189,7 @@ def return_pixel(pixel, *args):
 
 
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found_ad_mxsc",
+    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(
@@ -220,7 +248,7 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
 
 
 @patch(
-    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found_ophyd",
+    "hyperion.experiment_plans.pin_tip_centring_plan.wait_for_tip_to_be_found",
     new=partial(return_pixel, (200, 200)),
 )
 @patch(

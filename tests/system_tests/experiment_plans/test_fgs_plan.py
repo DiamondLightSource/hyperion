@@ -30,8 +30,8 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import IspybIds
-from hyperion.parameters.constants import SIM_BEAMLINE
+from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -46,15 +46,10 @@ from ..external_interaction.conftest import (  # noqa
 @pytest.fixture
 def params():
     params = GridscanInternalParameters(**default_raw_params())
-    params.hyperion_params.beamline = SIM_BEAMLINE
+    params.hyperion_params.beamline = CONST.SIM.BEAMLINE
     params.hyperion_params.ispyb_params.current_energy_ev = 10000
     params.hyperion_params.zocalo_environment = "dev_artemis"
     yield params
-
-
-@pytest.fixture
-def RE():
-    yield RunEngine({})
 
 
 @pytest.fixture()
@@ -62,7 +57,8 @@ def callbacks(params):
     with patch(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
     ):
-        callbacks = XrayCentreCallbackCollection.setup()
+        callbacks = XrayCentreCallbackCollection()
+        callbacks.ispyb_handler.ispyb_config = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     yield callbacks
 
 
@@ -84,6 +80,7 @@ def fxc_composite():
         eiger=i03.eiger(),
         fast_grid_scan=i03.fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
+        robot=i03.robot(fake_with_ophyd_sim=True),
         panda=i03.panda(fake_with_ophyd_sim=True),
         panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(),
@@ -106,7 +103,7 @@ def fxc_composite():
     )
     composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
     composite.aperture_scatterguard.aperture.z.move(
-        aperture_positions.LARGE[2], wait=True
+        aperture_positions.LARGE.location[2], wait=True
     )
     composite.eiger.cam.manual_trigger.put("Yes")
     composite.eiger.odin.check_odin_initialised = lambda: (True, "")
@@ -138,13 +135,26 @@ def test_read_hardware_for_ispyb_pre_collection(
     attenuator = fxc_composite.attenuator
     flux = fxc_composite.flux
     dcm = fxc_composite.dcm
+    aperture_scatterguard = fxc_composite.aperture_scatterguard
+    robot = fxc_composite.robot
 
     @bpp.run_decorator()
-    def read_run(u, s, g, a, f, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(u, s, g)
+    def read_run(u, s, g, r, a, f, dcm, ap_sg):
+        yield from read_hardware_for_ispyb_pre_collection(u, s, g, r, ap_sg)
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
-    RE(read_run(undulator, synchrotron, slit_gaps, attenuator, flux, dcm))
+    RE(
+        read_run(
+            undulator,
+            synchrotron,
+            slit_gaps,
+            robot,
+            attenuator,
+            flux,
+            dcm,
+            aperture_scatterguard,
+        )
+    )
 
 
 @pytest.mark.s03
@@ -195,6 +205,8 @@ def test_full_plan_tidies_at_end(
 ):
     RE(reset_positions(fxc_composite.smargon))
 
+    callbacks.nexus_handler.nexus_writer_1 = MagicMock()
+    callbacks.nexus_handler.nexus_writer_2 = MagicMock()
     callbacks.ispyb_handler.ispyb_ids = IspybIds(
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
     )
@@ -250,6 +262,9 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 100
     RE(reset_positions(fxc_composite.smargon))
+    mock_start_zocalo = MagicMock()
+
+    callbacks.ispyb_handler.emit_cb.zocalo_interactor.run_start = mock_start_zocalo  # type: ignore
 
     [RE.subscribe(cb) for cb in callbacks]
     with pytest.raises(WarningException):
@@ -258,8 +273,8 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     dcid_used = callbacks.ispyb_handler.ispyb_ids = IspybIds(
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
     )
-    assert callbacks.ispyb_handler.ispyb.data_collection_ids is not None
-    dcid_used = callbacks.ispyb_handler.ispyb.data_collection_ids[0]
+    assert callbacks.ispyb_handler.ispyb_ids.data_collection_ids is not None
+    dcid_used = callbacks.ispyb_handler.ispyb_ids.data_collection_ids[0]
 
     comment = fetch_comment(dcid_used)
 

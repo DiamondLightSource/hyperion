@@ -3,7 +3,7 @@ from __future__ import annotations
 import bluesky.plan_stubs as bps
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import Smargon
 
 from hyperion.log import LOGGER
@@ -52,7 +52,7 @@ def move_x_y_z(
     """Move the x, y, and z axes of the given smargon to the specified position. All
     axes are optional."""
 
-    LOGGER.info(f"Moving smargon to x, y, z: {(x,y,z)}")
+    LOGGER.info(f"Moving smargon to x, y, z: {(x, y, z)}")
     if x:
         yield from bps.abs_set(smargon.x, x, group=group)
     if y:

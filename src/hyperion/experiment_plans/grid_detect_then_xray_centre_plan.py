@@ -12,14 +12,14 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
-from dodal.devices.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -32,7 +32,6 @@ from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
     flyscan_xray_centre,
 )
 from hyperion.experiment_plans.oav_grid_detection_plan import (
@@ -97,6 +96,7 @@ class GridDetectThenXRayCentreComposite:
     zocalo: ZocaloResults
     panda: PandA
     panda_fast_grid_scan: PandAFastGridScan
+    robot: BartRobot
 
     def __post_init__(self):
         """Ensure that aperture positions are loaded whenever this class is created."""
@@ -149,6 +149,7 @@ def detect_grid_and_do_gridscan(
         composite.oav.parameters,
         experiment_params.exposure_time,
         experiment_params.set_stub_offsets,
+        experiment_params.run_up_distance_mm,
     )
 
     @bpp.subs_decorator([oav_callback, grid_params_callback])
@@ -219,6 +220,7 @@ def detect_grid_and_do_gridscan(
         panda=composite.panda,
         fast_grid_scan=composite.fast_grid_scan,
         dcm=composite.dcm,
+        robot=composite.robot,
     )
 
     if parameters.experiment_params.use_panda:

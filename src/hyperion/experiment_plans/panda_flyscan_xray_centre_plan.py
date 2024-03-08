@@ -18,7 +18,6 @@ from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
 
-from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -37,6 +36,7 @@ from hyperion.device_setup_plans.xbpm_feedback import (
 )
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
+    kickoff_and_complete_gridscan,
     set_aperture_for_bbox_size,
     wait_for_gridscan_valid,
 )
@@ -45,13 +45,7 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    DO_FGS,
-    GRIDSCAN_AND_MOVE,
-    GRIDSCAN_MAIN_PLAN,
-    GRIDSCAN_OUTER_PLAN,
-    SIM_BEAMLINE,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.tracing import TRACER
 from hyperion.utils.context import device_composite_from_context, setup_context
 
@@ -69,6 +63,10 @@ PANDA_SETUP_PATH = (
 )
 
 
+class SmargonSpeedException(Exception):
+    pass
+
+
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
     return device_composite_from_context(context, FlyScanXRayCentreComposite)
@@ -81,14 +79,14 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
     )
     LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(
-        fgs_composite.zebra, group="panda_flyscan_tidy"
+        fgs_composite.zebra, group="panda_flyscan_tidy", wait=True
     )
 
     yield from bps.wait(group="panda_flyscan_tidy", timeout=10)
 
 
-@bpp.set_run_key_decorator(GRIDSCAN_MAIN_PLAN)
-@bpp.run_decorator(md={"subplan_name": GRIDSCAN_MAIN_PLAN})
+@bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
+@bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
@@ -110,6 +108,8 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
+            fgs_composite.aperture_scatterguard,
+            fgs_composite.robot,
         )
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
@@ -123,39 +123,23 @@ def run_gridscan(
 
     yield from wait_for_gridscan_valid(fgs_motors)
 
-    @bpp.set_run_key_decorator(DO_FGS)
-    @bpp.run_decorator(md={"subplan_name": DO_FGS})
-    @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(fgs_composite.eiger)),
-        else_plan=lambda: (yield from bps.unstage(fgs_composite.eiger)),
-    )
-    def do_fgs():
-        yield from bps.wait()  # Wait for all moves to complete
-        # Check topup gate
-        total_exposure = (
-            parameters.experiment_params.get_num_images()
-            * parameters.hyperion_params.detector_params.exposure_time
-        )  # Expected exposure time for full scan
-        yield from check_topup_and_wait_if_necessary(
-            fgs_composite.synchrotron,
-            total_exposure,
-            30.0,
-        )
-        yield from bps.kickoff(fgs_motors)
-        yield from bps.complete(fgs_motors, wait=True)
-
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
     yield from bps.stage(fgs_composite.eiger)
 
-    with TRACER.start_span("do_fgs"):
-        yield from do_fgs()
+    yield from kickoff_and_complete_gridscan(
+        fgs_motors,
+        fgs_composite.eiger,
+        fgs_composite.synchrotron,
+        parameters.hyperion_params.zocalo_environment,
+        [parameters.get_scan_points(1), parameters.get_scan_points(2)],
+    )
 
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
 
-@bpp.set_run_key_decorator(GRIDSCAN_AND_MOVE)
-@bpp.run_decorator(md={"subplan_name": GRIDSCAN_AND_MOVE})
+@bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_AND_MOVE)
+@bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: GridscanInternalParameters,
@@ -174,34 +158,42 @@ def run_gridscan_and_move(
 
     LOGGER.info("Setting up Panda for flyscan")
 
+    assert isinstance(parameters.experiment_params, PandAGridScanParams)
+
+    run_up_distance_mm = yield from bps.rd(
+        fgs_composite.panda_fast_grid_scan.run_up_distance
+    )
+
     # Set the time between x steps pv
     DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
 
     time_between_x_steps_ms = (
         DEADTIME_S + parameters.hyperion_params.detector_params.exposure_time
-    )
+    ) * 1e3
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(
-        fgs_composite.smargon.x_speed_limit_mm_per_s
+        fgs_composite.smargon.x.max_velocity
     )
 
-    smargon_speed = (
+    sample_velocity_mm_per_s = (
         parameters.experiment_params.x_step_size * 1e3 / time_between_x_steps_ms
     )
-    if smargon_speed > smargon_speed_limit_mm_per_s:
-        LOGGER.error(
+    if sample_velocity_mm_per_s > smargon_speed_limit_mm_per_s:
+        raise SmargonSpeedException(
             f"Smargon speed was calculated from x step size\
                                   {parameters.experiment_params.x_step_size} and\
                                       time_between_x_steps_ms {time_between_x_steps_ms} as\
-                                          {smargon_speed}. The smargon's speed limit is {smargon_speed_limit_mm_per_s} mm/s."
+                                          {sample_velocity_mm_per_s}. The smargon's speed limit is {smargon_speed_limit_mm_per_s} mm/s."
+        )
+    else:
+        LOGGER.info(
+            f"Panda grid scan: Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s and using a run-up distance of {run_up_distance_mm}"
         )
 
     yield from bps.mv(
         fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
         time_between_x_steps_ms,
     )
-
-    assert isinstance(parameters.experiment_params, PandAGridScanParams)
 
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
@@ -210,10 +202,11 @@ def run_gridscan_and_move(
         initial_xyz[0],
         parameters.hyperion_params.detector_params.exposure_time,
         time_between_x_steps_ms,
+        sample_velocity_mm_per_s,
     )
 
     LOGGER.info("Setting up Zebra for panda flyscan")
-    yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra)
+    yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra, wait=True)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
@@ -274,18 +267,15 @@ def panda_flyscan_xray_centre(
     """
     composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    subscriptions = XrayCentreCallbackCollection.setup()
+    composite.zocalo.zocalo_environment = parameters.hyperion_params.zocalo_environment
 
-    @bpp.subs_decorator(  # subscribe the RE to nexus, ispyb, and zocalo callbacks
-        list(subscriptions)  # must be the outermost decorator to receive the metadata
-    )
-    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
+    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "XrayCentreZocaloCallback",
                 "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],
@@ -308,7 +298,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--beamline",
         help="The beamline prefix this is being run on",
-        default=SIM_BEAMLINE,
+        default=CONST.SIM.BEAMLINE,
     )
     args = parser.parse_args()
 
@@ -319,7 +309,7 @@ if __name__ == "__main__":
     )
 
     parameters = GridscanInternalParameters(**external_parameters.from_file())
-    subscriptions = XrayCentreCallbackCollection.setup()
+    subscriptions = XrayCentreCallbackCollection()
 
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)

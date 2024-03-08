@@ -8,7 +8,6 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
-from bluesky.preprocessors import finalize_wrapper
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -17,12 +16,10 @@ from dodal.devices.smargon import Smargon
 from hyperion.device_setup_plans.setup_oav import (
     get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
-    wait_for_tip_to_be_found_ad_mxsc,
+    wait_for_tip_to_be_found,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import (
-    OAV_REFRESH_DELAY,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
@@ -43,35 +40,14 @@ def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:
     return device_composite_from_context(context, OavGridDetectionComposite)
 
 
+@bpp.run_decorator()
 def grid_detection_plan(
     composite: OavGridDetectionComposite,
     parameters: OAVParameters,
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: float,
-    box_size_microns=20,
-):
-    yield from finalize_wrapper(
-        grid_detection_main_plan(
-            composite,
-            parameters,
-            snapshot_template,
-            snapshot_dir,
-            grid_width_microns,
-            box_size_microns,
-        ),
-        reset_oav(composite.oav),
-    )
-
-
-@bpp.run_decorator()
-def grid_detection_main_plan(
-    composite: OavGridDetectionComposite,
-    parameters: OAVParameters,
-    snapshot_template: str,
-    snapshot_dir: str,
-    grid_width_microns: float,
-    box_size_um: float,
+    box_size_um: float = 20,
 ):
     """
     Creates the parameters for two grids that are 90 degrees from each other and
@@ -87,13 +63,14 @@ def grid_detection_main_plan(
     """
     oav: OAV = composite.oav
     smargon: Smargon = composite.smargon
+    pin_tip_detection: PinTipDetection = composite.pin_tip_detection
 
     LOGGER.info("OAV Centring: Starting grid detection centring")
 
     yield from bps.wait()
 
     # Set relevant PVs to whatever the config dictates.
-    yield from pre_centring_setup_oav(oav, parameters, oav.mxsc)
+    yield from pre_centring_setup_oav(oav, parameters, pin_tip_detection)
 
     LOGGER.info("OAV Centring: Camera set up")
 
@@ -112,14 +89,16 @@ def grid_detection_main_plan(
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
         # See #673 for improvements
-        yield from bps.sleep(OAV_REFRESH_DELAY)
+        yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
 
-        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found_ad_mxsc(oav.mxsc)
+        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(pin_tip_detection)
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 
-        top_edge = np.array((yield from bps.rd(oav.mxsc.top)))
-        bottom_edge = np.array((yield from bps.rd(oav.mxsc.bottom)))
+        top_edge = np.array((yield from bps.rd(pin_tip_detection.triggered_top_edge)))
+        bottom_edge = np.array(
+            (yield from bps.rd(pin_tip_detection.triggered_bottom_edge))
+        )
 
         full_image_height_px = yield from bps.rd(oav.cam.array_size.array_size_y)
 
@@ -137,11 +116,24 @@ def grid_detection_main_plan(
         max_y = max(filtered_bottom)
         grid_height_px = max_y - min_y
 
+        y_steps: int = math.ceil(grid_height_px / box_size_y_pixels)
+
+        # Panda not configured to run a half complete snake so enforce even rows on first grid
+        # See https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning#motion-program-summary
+        if y_steps % 2 and angle == 0:
+            LOGGER.debug(
+                f"Forcing number of rows in first grid to be even: Adding an extra row onto bottom of first grid and shifting grid upwards by {box_size_y_pixels/2}"
+            )
+            y_steps += 1
+            min_y -= box_size_y_pixels / 2
+            max_y += box_size_y_pixels / 2
+            grid_height_px += 1
+
         LOGGER.info(f"Drawing snapshot {grid_width_pixels} by {grid_height_px}")
 
         boxes = (
             math.ceil(grid_width_pixels / box_size_x_pixels),
-            math.ceil(grid_height_px / box_size_y_pixels),
+            y_steps,
         )
         box_numbers.append(boxes)
 
@@ -185,9 +177,3 @@ def grid_detection_main_plan(
     )
 
     LOGGER.info(f"Step sizes: {box_size_um, box_size_um, box_size_um}")
-
-
-def reset_oav(oav: OAV):
-    """Changes the MJPG stream to look at the camera without the edge detection and turns off the edge detcetion plugin."""
-    yield from bps.abs_set(oav.snapshot.input_plugin, "OAV.CAM")
-    yield from bps.abs_set(oav.mxsc.enable_callbacks, 0)

@@ -4,15 +4,16 @@ from time import sleep
 from typing import Callable, Sequence
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
+from dodal.log import set_up_all_logging_handlers
 
+from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
-)
-from hyperion.external_interaction.callbacks.rotation.zocalo_callback import (
-    RotationZocaloCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -20,51 +21,56 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from hyperion.external_interaction.callbacks.xray_centre.zocalo_callback import (
-    XrayCentreZocaloCallback,
+from hyperion.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
 )
-from hyperion.log import ISPYB_LOGGER, NEXUS_LOGGER, set_up_logging_handlers
-from hyperion.parameters.cli import CallbackArgs, parse_callback_cli_args
-from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS
+from hyperion.log import (
+    ISPYB_LOGGER,
+    NEXUS_LOGGER,
+    _get_logging_dir,
+    tag_filter,
+)
+from hyperion.parameters.cli import parse_callback_dev_mode_arg
+from hyperion.parameters.constants import CONST
 
 LIVENESS_POLL_SECONDS = 1
+ERROR_LOG_BUFFER_LINES = 5000
 
 
 def setup_callbacks():
-    gridscan_ispyb = GridscanISPyBCallback()
-    rotation_ispyb = RotationISPyBCallback()
+    zocalo = ZocaloCallback()
     return [
         GridscanNexusFileCallback(),
-        gridscan_ispyb,
-        XrayCentreZocaloCallback(gridscan_ispyb),
+        GridscanISPyBCallback(emit=zocalo),
         RotationNexusFileCallback(),
-        rotation_ispyb,
-        RotationZocaloCallback(rotation_ispyb),
+        RotationISPyBCallback(emit=zocalo),
+        LogUidTaggingCallback(),
     ]
 
 
-def setup_logging(logging_args: CallbackArgs):
-    set_up_logging_handlers(
-        logging_level=logging_args.logging_level,
-        dev_mode=logging_args.dev_mode,
-        filename="hyperion_ispyb_callback.txt",
-        logger=ISPYB_LOGGER,
-    )
-    set_up_logging_handlers(
-        logging_level=logging_args.logging_level,
-        dev_mode=logging_args.dev_mode,
-        filename="hyperion_nexus_callback.txt",
-        logger=NEXUS_LOGGER,
-    )
-    log_info(f"Loggers initialised with arguments: {logging_args}")
+def setup_logging(dev_mode: bool):
+    for logger, filename in [
+        (ISPYB_LOGGER, "hyperion_ispyb_callback.txt"),
+        (NEXUS_LOGGER, "hyperion_nexus_callback.txt"),
+    ]:
+        if logger.handlers == []:
+            handlers = set_up_all_logging_handlers(
+                logger,
+                _get_logging_dir(),
+                filename,
+                dev_mode,
+                error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
+            )
+            handlers["graylog_handler"].addFilter(tag_filter)
+    log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
     log_debug("nexgen logger added to nexus logger")
 
 
 def setup_threads():
-    proxy = Proxy(*CALLBACK_0MQ_PROXY_PORTS)
-    dispatcher = RemoteDispatcher(f"localhost:{CALLBACK_0MQ_PROXY_PORTS[1]}")
+    proxy = Proxy(*CONST.CALLBACK_0MQ_PROXY_PORTS)
+    dispatcher = RemoteDispatcher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[1]}")
     log_debug("Created proxy and dispatcher objects")
 
     def start_proxy():
@@ -103,8 +109,8 @@ def wait_for_threads_forever(threads: Sequence[Thread]):
 class HyperionCallbackRunner:
     """Runs Nexus, ISPyB and Zocalo callbacks in their own process."""
 
-    def __init__(self, logging_args) -> None:
-        setup_logging(logging_args)
+    def __init__(self, dev_mode) -> None:
+        setup_logging(dev_mode)
         log_info("Hyperion callback process started.")
 
         self.callbacks = setup_callbacks()
@@ -124,10 +130,10 @@ class HyperionCallbackRunner:
         wait_for_threads_forever([self.proxy_thread, self.dispatcher_thread])
 
 
-def main(logging_args=None) -> None:
-    logging_args = logging_args or parse_callback_cli_args()
-    print(f"using logging args {logging_args}")
-    runner = HyperionCallbackRunner(logging_args)
+def main(dev_mode=False) -> None:
+    dev_mode = dev_mode or parse_callback_dev_mode_arg()
+    print(f"In dev mode: {dev_mode}")
+    runner = HyperionCallbackRunner(dev_mode)
     runner.start()
 
 

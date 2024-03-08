@@ -1,34 +1,21 @@
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.attenuator import Attenuator
-from dodal.devices.backlight import Backlight
-from dodal.devices.DCM import DCM
-from dodal.devices.detector_motion import DetectorMotion
-from dodal.devices.eiger import EigerDetector
-from dodal.devices.flux import Flux
-from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
 from hyperion.experiment_plans.rotation_scan_plan import (
-    DEFAULT_DIRECTION,
     DEFAULT_MAX_VELOCITY,
     RotationScanComposite,
-    move_to_end_w_buffer,
-    move_to_start_w_buffer,
+    calculate_motion_profile,
     rotation_scan,
     rotation_scan_plan,
-)
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -37,10 +24,6 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 from .conftest import fake_read
 
 if TYPE_CHECKING:
-    from dodal.devices.attenuator import Attenuator
-    from dodal.devices.backlight import Backlight
-    from dodal.devices.detector_motion import DetectorMotion
-    from dodal.devices.eiger import EigerDetector
     from dodal.devices.smargon import Smargon
 
 
@@ -49,46 +32,17 @@ TEST_SHUTTER_OPENING_DEGREES = 2.5
 
 
 def do_rotation_main_plan_for_tests(
-    run_eng_w_subs,
-    sim_und,
-    sim_synch,
-    sim_slits,
-    sim_flux,
-    sim_att,
-    expt_params,
-    sim_sgon,
-    sim_zeb,
-    sim_bl,
-    sim_det,
-    sim_dcm,
+    run_eng: RunEngine,
+    expt_params: RotationInternalParameters,
+    devices: RotationScanComposite,
+    plan=rotation_scan_plan,
 ):
-    devices = RotationScanComposite(
-        attenuator=sim_att,
-        backlight=sim_bl,
-        dcm=sim_dcm,
-        detector_motion=sim_det,
-        eiger=MagicMock(),
-        flux=sim_flux,
-        smargon=sim_sgon,
-        undulator=sim_und,
-        synchrotron=sim_synch,
-        s4_slit_gaps=sim_slits,
-        zebra=sim_zeb,
-    )
-    run_engine, _ = run_eng_w_subs
-    with (
-        patch(
-            "bluesky.preprocessors.__read_and_stash_a_motor",
-            fake_read,
-        ),
-        patch("dodal.beamlines.i03.undulator", lambda: sim_und),
-        patch("dodal.beamlines.i03.synchrotron", lambda: sim_synch),
-        patch("dodal.beamlines.i03.s4_slit_gaps", lambda: sim_slits),
-        patch("dodal.beamlines.i03.flux", lambda: sim_flux),
-        patch("dodal.beamlines.i03.attenuator", lambda: sim_att),
+    with patch(
+        "bluesky.preprocessors.__read_and_stash_a_motor",
+        fake_read,
     ):
-        run_engine(
-            rotation_scan_plan(
+        run_eng(
+            plan(
                 devices,
                 expt_params,
             ),
@@ -96,51 +50,23 @@ def do_rotation_main_plan_for_tests(
 
 
 @pytest.fixture
-def RE_with_subs(
-    RE: RunEngine, mock_rotation_subscriptions: RotationCallbackCollection
-):
-    for cb in mock_rotation_subscriptions:
-        RE.subscribe(cb)
-    return RE, mock_rotation_subscriptions
-
-
-@pytest.fixture
 def run_full_rotation_plan(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
-    attenuator: Attenuator,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    undulator: Undulator,
-    flux: Flux,
-    fake_create_rotation_devices,
+    fake_create_rotation_devices: RotationScanComposite,
 ):
-    RE, mock_rotation_subscriptions = RE_with_subs
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        fake_read,
-    ):
-        RE(rotation_scan(fake_create_rotation_devices, test_rotation_params))
-
+    do_rotation_main_plan_for_tests(
+        RE, test_rotation_params, fake_create_rotation_devices, rotation_scan
+    )
     return fake_create_rotation_devices
 
 
 def setup_and_run_rotation_plan_for_tests(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_params: RotationInternalParameters,
-    smargon: Smargon,
-    zebra: Zebra,
-    eiger: EigerDetector,
-    attenuator: Attenuator,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    undulator: Undulator,
-    flux: Flux,
-    dcm: DCM,
+    fake_create_rotation_devices: RotationScanComposite,
 ):
-    from functools import partial
+    smargon = fake_create_rotation_devices.smargon
 
     def side_set_w_return(obj, *args):
         obj.sim_put(*args)
@@ -150,217 +76,93 @@ def setup_and_run_rotation_plan_for_tests(
         return_value=Status(done=True, success=True),
         side_effect=partial(side_set_w_return, smargon.omega.velocity),
     )
-    smargon.omega.set = MagicMock(
-        return_value=Status(done=True, success=True),
-        side_effect=partial(side_set_w_return, smargon.omega.user_readback),
-    )
-    smargon.x.set = MagicMock(
-        return_value=Status(done=True, success=True),
-        side_effect=partial(side_set_w_return, smargon.x.user_readback),
-    )
-    smargon.y.set = MagicMock(
-        return_value=Status(done=True, success=True),
-        side_effect=partial(side_set_w_return, smargon.y.user_readback),
-    )
-    smargon.z.set = MagicMock(
-        return_value=Status(done=True, success=True),
-        side_effect=partial(side_set_w_return, smargon.z.user_readback),
-    )
-    smargon.chi.set = MagicMock(
-        return_value=Status(done=True, success=True),
-        side_effect=partial(side_set_w_return, smargon.chi.user_readback),
-    )
-    smargon.phi.set = MagicMock(
-        return_value=Status(done=True, success=True),
-        side_effect=partial(side_set_w_return, smargon.phi.user_readback),
-    )
-
-    mock_arm = MagicMock(
-        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
-    )
-    zebra.pc.arm.arm_set.set = mock_arm
 
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
-            RE_with_subs,
-            undulator,
-            synchrotron,
-            s4_slit_gaps,
-            flux,
-            attenuator,
+            RE,
             test_params,
-            smargon,
-            zebra,
-            backlight,
-            detector_motion,
-            dcm,
+            fake_create_rotation_devices,
         )
 
     return {
-        "RE_with_subs": RE_with_subs,
+        "RE_with_subs": RE,
         "test_rotation_params": test_params,
-        "smargon": smargon,
-        "zebra": zebra,
-        "eiger": eiger,
-        "attenuator": attenuator,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
-        "synchrotron": synchrotron,
-        "s4_slit_gaps": s4_slit_gaps,
-        "undulator": undulator,
-        "flux": flux,
+        "smargon": fake_create_rotation_devices.smargon,
+        "zebra": fake_create_rotation_devices.zebra,
     }
 
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_standard(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
-    smargon: Smargon,
-    zebra: Zebra,
-    eiger: EigerDetector,
-    attenuator: Attenuator,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    undulator: Undulator,
-    flux: Flux,
-    dcm: DCM,
+    fake_create_rotation_devices: RotationScanComposite,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
+        RE,
         test_rotation_params,
-        smargon,
-        zebra,
-        eiger,
-        attenuator,
-        detector_motion,
-        backlight,
-        synchrotron,
-        s4_slit_gaps,
-        undulator,
-        flux,
-        dcm,
+        fake_create_rotation_devices,
     )
 
 
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_nomove(
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params_nomove: RotationInternalParameters,
-    smargon: Smargon,
-    zebra: Zebra,
-    eiger: EigerDetector,
-    attenuator: Attenuator,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    undulator: Undulator,
-    flux: Flux,
-    dcm: DCM,
+    fake_create_rotation_devices: RotationScanComposite,
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
+        RE,
         test_rotation_params_nomove,
-        smargon,
-        zebra,
-        eiger,
-        attenuator,
-        detector_motion,
-        backlight,
-        synchrotron,
-        s4_slit_gaps,
-        undulator,
-        flux,
-        dcm,
+        fake_create_rotation_devices,
     )
 
 
-def test_move_to_start(smargon: Smargon, RE):
-    start_angle = 153
-    mock_velocity_set = MagicMock(return_value=Status(done=True, success=True))
-    with patch.object(smargon.omega.velocity, "set", mock_velocity_set):
-        RE(move_to_start_w_buffer(smargon.omega, start_angle, TEST_OFFSET))
+def test_rotation_scan_calculations(test_rotation_params: RotationInternalParameters):
+    test_rotation_params.hyperion_params.detector_params.exposure_time = 0.2
+    test_rotation_params.hyperion_params.detector_params.omega_start = 10
+    test_rotation_params.experiment_params.omega_start = 10
 
-    mock_velocity_set.assert_called_with(120)
-    assert (
-        smargon.omega.user_readback.get()
-        == start_angle - TEST_OFFSET * DEFAULT_DIRECTION
+    motion_values = calculate_motion_profile(
+        test_rotation_params.hyperion_params.detector_params,
+        test_rotation_params.experiment_params,
+        0.005,  # time for acceleration
     )
 
+    assert motion_values.direction == -1
+    assert motion_values.start_scan_deg == 10
 
-def test_move_to_end(smargon: Smargon, RE):
-    scan_width = 153
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        fake_read,
-    ):
-        RE(
-            move_to_end_w_buffer(
-                smargon.omega, scan_width, TEST_OFFSET, TEST_SHUTTER_OPENING_DEGREES
-            )
-        )
+    assert motion_values.speed_for_rotation_deg_s == 0.5  # 0.1 deg per 0.2 sec
+    assert motion_values.shutter_time_s == 0.6
+    assert motion_values.shutter_opening_deg == 0.3  # distance moved in 0.6 s
 
-    distance_to_move = (
-        scan_width + TEST_SHUTTER_OPENING_DEGREES + TEST_OFFSET * 2
-    ) * DEFAULT_DIRECTION
+    # 1.5 * distance moved in time for accel (fudge)
+    assert motion_values.acceleration_offset_deg == 0.00375
+    assert motion_values.start_motion_deg == 10.00375
 
-    assert smargon.omega.user_readback.get() == distance_to_move
+    assert motion_values.total_exposure_s == 360
+    assert motion_values.scan_width_deg == 180
+    assert motion_values.distance_to_move_deg == -180.3075
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan", autospec=True)
 def test_rotation_scan(
     plan: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params,
-    smargon: Smargon,
-    zebra: Zebra,
-    eiger: EigerDetector,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    attenuator: Attenuator,
-    dcm: DCM,
+    fake_create_rotation_devices: RotationScanComposite,
 ):
-    RE, mock_rotation_subscriptions = RE_with_subs
-    zebra.pc.arm.armed.set(False)
-    with (
-        patch("dodal.beamlines.i03.smargon", return_value=smargon),
-        patch("dodal.beamlines.i03.eiger", return_value=eiger),
-        patch("dodal.beamlines.i03.zebra", return_value=zebra),
-        patch("dodal.beamlines.i03.attenuator", return_value=attenuator),
-        patch("dodal.beamlines.i03.backlight", return_value=backlight),
-        patch(
-            "hyperion.experiment_plans.rotation_scan_plan.DetectorMotion",
-            return_value=detector_motion,
-        ),
-    ):
-        composite = RotationScanComposite(
-            attenuator=attenuator,
-            backlight=backlight,
-            dcm=dcm,
-            detector_motion=detector_motion,
-            eiger=eiger,
-            flux=MagicMock(),
-            smargon=smargon,
-            undulator=MagicMock(),
-            synchrotron=MagicMock(),
-            s4_slit_gaps=MagicMock(),
-            zebra=zebra,
-        )
-        RE(rotation_scan(composite, test_rotation_params))
 
-    eiger.stage.assert_called()
-    eiger.unstage.assert_called()
+    composite = fake_create_rotation_devices
+    RE(rotation_scan(composite, test_rotation_params))
+
+    composite.eiger.stage.assert_called()  # type: ignore
+    composite.eiger.unstage.assert_called()  # type: ignore
 
 
 def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests_standard) -> None:
-    RE_with_subs: tuple[
-        RunEngine, RotationCallbackCollection
-    ] = setup_and_run_rotation_plan_for_tests_standard["RE_with_subs"]
-    RE, _ = RE_with_subs
+    RE: RunEngine = setup_and_run_rotation_plan_for_tests_standard["RE_with_subs"]
     assert RE._exit_status == "success"
 
 
@@ -401,6 +203,7 @@ def test_full_rotation_plan_smargon_settings(
     expt_params = params.experiment_params
 
     omega_set: MagicMock = smargon.omega.set  # type: ignore
+    omega_velocity_set: MagicMock = smargon.omega.velocity.set  # type: ignore
     rotation_speed = (
         expt_params.image_width / params.hyperion_params.detector_params.exposure_time
     )
@@ -410,11 +213,13 @@ def test_full_rotation_plan_smargon_settings(
     assert smargon.x.user_readback.get() == expt_params.x
     assert smargon.y.user_readback.get() == expt_params.y
     assert smargon.z.user_readback.get() == expt_params.z
-    assert omega_set.call_count == 6
-    omega_set.assert_has_calls(
-        [call(DEFAULT_MAX_VELOCITY), call(rotation_speed), call(DEFAULT_MAX_VELOCITY)],
-        any_order=True,
-    )
+    assert omega_set.call_count == 2
+    assert omega_velocity_set.call_count == 3
+    assert omega_velocity_set.call_args_list == [
+        call(DEFAULT_MAX_VELOCITY),
+        call(rotation_speed),
+        call(DEFAULT_MAX_VELOCITY),
+    ]
 
 
 def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
@@ -431,16 +236,9 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     assert expt_params.x is None
     assert expt_params.y is None
     assert expt_params.z is None
-    assert smargon.phi.user_readback.get() == 0
-    assert smargon.chi.user_readback.get() == 0
-    assert smargon.x.user_readback.get() == 0
-    assert smargon.y.user_readback.get() == 0
-    assert smargon.z.user_readback.get() == 0
-    smargon.phi.set.assert_not_called()
-    smargon.chi.set.assert_not_called()
-    smargon.x.set.assert_not_called()
-    smargon.y.set.assert_not_called()
-    smargon.z.set.assert_not_called()
+    for motor in [smargon.phi, smargon.chi, smargon.x, smargon.y, smargon.z]:
+        assert motor.user_readback.get() == 0
+        motor.set.assert_not_called()  # type: ignore
 
 
 @patch("hyperion.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)
@@ -448,100 +246,36 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
 def test_cleanup_happens(
     bps_wait: MagicMock,
     cleanup_plan: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
+    RE: RunEngine,
     test_rotation_params,
-    smargon: Smargon,
-    zebra: Zebra,
-    eiger: EigerDetector,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    attenuator: Attenuator,
-    dcm: DCM,
+    fake_create_rotation_devices: RotationScanComposite,
 ):
-    RE, mock_rotation_subscriptions = RE_with_subs
 
     class MyTestException(Exception):
         pass
 
-    smargon.omega.set = MagicMock(
+    failing_set = MagicMock(
         side_effect=MyTestException("Experiment fails because this is a test")
     )
 
-    composite = RotationScanComposite(
-        attenuator=attenuator,
-        backlight=backlight,
-        dcm=dcm,
-        detector_motion=detector_motion,
-        eiger=eiger,
-        flux=MagicMock(),
-        smargon=smargon,
-        undulator=MagicMock(),
-        synchrotron=MagicMock(),
-        s4_slit_gaps=MagicMock(),
-        zebra=zebra,
-    )
-
-    # check main subplan part fails
-    with pytest.raises(MyTestException):
-        RE(
-            rotation_scan_plan(
-                composite,
-                test_rotation_params,
+    with patch.object(fake_create_rotation_devices.smargon.omega, "set", failing_set):
+        # check main subplan part fails
+        with pytest.raises(MyTestException):
+            RE(
+                rotation_scan_plan(
+                    fake_create_rotation_devices,
+                    test_rotation_params,
+                )
             )
-        )
-        cleanup_plan.assert_not_called()
-    # check that failure is handled in composite plan
-    with pytest.raises(MyTestException) as exc:
-        RE(
-            rotation_scan(
-                composite,
-                test_rotation_params,
+            cleanup_plan.assert_not_called()
+        # check that failure is handled in composite plan
+        with pytest.raises(MyTestException) as exc:
+            RE(
+                rotation_scan(
+                    fake_create_rotation_devices,
+                    test_rotation_params,
+                )
             )
-        )
-        assert "Experiment fails because this is a test" in exc.value.args[0]
-        cleanup_plan.assert_called_once()
+            assert "Experiment fails because this is a test" in exc.value.args[0]
+            cleanup_plan.assert_called_once()
 
-
-@patch(
-    "hyperion.experiment_plans.rotation_scan_plan.move_to_start_w_buffer", autospec=True
-)
-def test_acceleration_offset_calculated_correctly(
-    mock_move_to_start: MagicMock,
-    RE_with_subs: tuple[RunEngine, RotationCallbackCollection],
-    test_rotation_params: RotationInternalParameters,
-    smargon: Smargon,
-    zebra: Zebra,
-    eiger: EigerDetector,
-    attenuator: Attenuator,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    undulator: Undulator,
-    flux: Flux,
-    dcm: DCM,
-):
-    smargon.omega.acceleration.sim_put(0.2)  # type: ignore
-    setup_and_run_rotation_plan_for_tests(
-        RE_with_subs,
-        test_rotation_params,
-        smargon,
-        zebra,
-        eiger,
-        attenuator,
-        detector_motion,
-        backlight,
-        synchrotron,
-        s4_slit_gaps,
-        undulator,
-        flux,
-        dcm,
-    )
-
-    expected_start_angle = (
-        test_rotation_params.hyperion_params.detector_params.omega_start
-    )
-
-    mock_move_to_start.assert_called_once_with(
-        smargon.omega, expected_start_angle, pytest.approx(0.3)
-    )

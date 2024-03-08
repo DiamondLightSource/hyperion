@@ -2,6 +2,11 @@ from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
+from event_model.documents import Event, EventDescriptor, RunStart, RunStop
+
+from hyperion.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 
 from ..conftest import MockReactiveCallback, get_test_plan
 
@@ -102,8 +107,7 @@ def test_cb_logs_and_raises_exception():
     cb = MockReactiveCallback()
     cb.active = True
 
-    class MockTestException(Exception):
-        ...
+    class MockTestException(Exception): ...
 
     e = MockTestException()
 
@@ -113,6 +117,45 @@ def test_cb_logs_and_raises_exception():
     cb.log = MagicMock()
 
     with pytest.raises(MockTestException):
-        cb._run_activity_gated(mock_excepting_func, {"start": "test"})
+        cb._run_activity_gated("start", mock_excepting_func, {"start": "test"})
 
     cb.log.exception.assert_called_with(e)
+
+
+def test_emit_called_correctly():
+    receiving_cb = MockReactiveCallback()
+    test_cb = PlanReactiveCallback(emit=receiving_cb, log=MagicMock())
+
+    start_doc: RunStart = {"uid": "123", "time": 0}
+    desc_doc: EventDescriptor = {
+        "data_keys": {},
+        "run_start": "123",
+        "uid": "987",
+        "time": 0,
+    }
+    event_doc: Event = {
+        "data": {},
+        "time": 0,
+        "descriptor": "987",
+        "timestamps": {},
+        "uid": "999",
+        "seq_num": 0,
+    }
+    stop_doc: RunStop = {
+        "exit_status": "success",
+        "run_start": "123",
+        "uid": "456",
+        "time": 0,
+    }
+
+    test_cb.active = True
+    receiving_cb.active = True
+
+    test_cb.start(start_doc)
+    receiving_cb.activity_gated_start.assert_called_once_with(start_doc)
+    test_cb.descriptor(desc_doc)
+    receiving_cb.activity_gated_descriptor.assert_called_once_with(desc_doc)
+    test_cb.event(event_doc)
+    receiving_cb.activity_gated_event.assert_called_once_with(event_doc)
+    test_cb.stop(stop_doc)
+    receiving_cb.activity_gated_stop.assert_called_once_with(stop_doc)

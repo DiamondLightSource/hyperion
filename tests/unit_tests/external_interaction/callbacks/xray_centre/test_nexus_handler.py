@@ -6,11 +6,7 @@ from event_model.documents.event_descriptor import EventDescriptor
 from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from hyperion.parameters.constants import (
-    GRIDSCAN_AND_MOVE,
-    GRIDSCAN_MAIN_PLAN,
-    ISPYB_HARDWARE_READ_PLAN,
-)
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -22,7 +18,7 @@ test_start_document = {
     "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
     "scan_id": 1,
     "plan_type": "generator",
-    "plan_name": GRIDSCAN_AND_MOVE,
+    "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
 }
 
 test_event_descriptor = EventDescriptor(
@@ -31,7 +27,7 @@ test_event_descriptor = EventDescriptor(
     time=0,
     uid="",
 )
-test_event_descriptor["name"] = ISPYB_HARDWARE_READ_PLAN
+test_event_descriptor["name"] = CONST.PLAN.ISPYB_HARDWARE_READ
 
 
 @pytest.fixture
@@ -107,7 +103,7 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
     )
     nexus_handler.activity_gated_start(
         {
-            "subplan_name": GRIDSCAN_MAIN_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_MAIN,
         }
     )
     with patch(

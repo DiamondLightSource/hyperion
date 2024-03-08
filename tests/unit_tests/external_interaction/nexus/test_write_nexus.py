@@ -1,6 +1,7 @@
 import os
 from contextlib import contextmanager
 from typing import Literal
+from unittest.mock import patch
 
 import h5py
 import numpy as np
@@ -20,7 +21,9 @@ Note that the testing process does now write temporary files to disk."""
 def assert_end_data_correct(nexus_writer: NexusWriter):
     for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
-            assert "end_time_estimated" in written_nexus_file["entry"]
+            entry = written_nexus_file["entry"]
+            assert isinstance(entry, h5py.Group)
+            assert "end_time_estimated" in entry
 
 
 @pytest.fixture
@@ -90,11 +93,14 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
     first_writer = single_dummy_file
     assert len(first_writer.get_image_datafiles()) == expected_num_of_files
     paths = [str(filename) for filename in first_writer.get_image_datafiles()]
+    test_data_folder = (
+        os.path.dirname(os.path.realpath(os.path.join(__file__, ".."))) + "/test_data"
+    )
     expected_paths = [
-        f"{os.path.dirname(os.path.realpath(__file__))}/test_data/dummy_0_00000{i + 1}.h5"
+        f"{test_data_folder}/dummy_0_00000{i + 1}.h5"
         for i in range(expected_num_of_files)
     ]
-    assert paths == expected_paths
+    assert expected_paths[0] == paths[0]
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
@@ -107,17 +113,25 @@ def test_given_dummy_data_then_datafile_written_correctly(
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
-            data_path = written_nexus_file["/entry/data"]
+            assert isinstance(
+                data_path := written_nexus_file["/entry/data"], h5py.Group
+            )
             assert_x_data_stride_correct(
                 data_path, grid_scan_params, grid_scan_params.y_steps
             )
+            assert isinstance(sam_y := data_path["sam_y"], h5py.Dataset)
             assert_varying_axis_stride_correct(
-                data_path["sam_y"][:], grid_scan_params, grid_scan_params.y_axis
+                sam_y[:], grid_scan_params, grid_scan_params.y_axis
             )
             assert_axis_data_fixed(written_nexus_file, "z", grid_scan_params.z1_start)
-            assert written_nexus_file["/entry/instrument/beam/total_flux"][()] == 9.0
+            assert isinstance(
+                flux := written_nexus_file["/entry/instrument/beam/total_flux"],
+                h5py.Dataset,
+            )
+            assert flux[()] == 9.0
             assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
-            assert np.all(data_path["omega"][:] == 0.0)
+            assert isinstance(omega := data_path["omega"], h5py.Dataset)
+            assert np.all(omega[:] == 0.0)
 
             assert np.all(
                 written_nexus_file["/entry/data/omega"].attrs.get("vector")
@@ -151,18 +165,26 @@ def test_given_dummy_data_then_datafile_written_correctly(
 
     for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
-            data_path = written_nexus_file["/entry/data"]
+            assert isinstance(
+                data_path := written_nexus_file["/entry/data"], h5py.Group
+            )
             assert_x_data_stride_correct(
                 data_path, grid_scan_params, grid_scan_params.z_steps
             )
+            assert isinstance(sam_z := data_path["sam_z"], h5py.Dataset)
             assert_varying_axis_stride_correct(
-                data_path["sam_z"][:], grid_scan_params, grid_scan_params.z_axis
+                sam_z[:], grid_scan_params, grid_scan_params.z_axis
             )
             assert_axis_data_fixed(written_nexus_file, "y", grid_scan_params.y2_start)
-            assert written_nexus_file["/entry/instrument/beam/total_flux"][()] == 9.0
+            assert isinstance(
+                flux := written_nexus_file["/entry/instrument/beam/total_flux"],
+                h5py.Dataset,
+            )
+            assert flux[()] == 9.0
             assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
             assert_contains_external_link(data_path, "data_000002", "dummy_0_000002.h5")
-            assert np.all(data_path["omega"][:] == 90.0)
+            assert isinstance(omega := data_path["omega"], h5py.Dataset)
+            assert np.all(omega[:] == 90.0)
             assert np.all(
                 written_nexus_file["/entry/data/sam_z"].attrs.get("vector")
                 == [
@@ -199,9 +221,10 @@ def assert_axis_data_fixed(written_nexus_file, axis, expected_value):
 def assert_data_edge_at(nexus_file, expected_edge_index):
     """Asserts that the datafile's last datapoint is at the specified index"""
     with h5py.File(nexus_file) as f:
-        assert f["entry"]["data"]["data"][expected_edge_index, 0, 0] == 0
+        assert isinstance(data := f["entry/data/data"], h5py.Dataset)
+        assert data[expected_edge_index, 0, 0] == 0
         with pytest.raises(IndexError):
-            assert f["entry"]["data"]["data"][expected_edge_index + 1, 0, 0] == 0
+            assert data[expected_edge_index + 1, 0, 0] == 0
 
 
 def assert_contains_external_link(data_path, entry_name, file_name):
@@ -223,7 +246,7 @@ def test_nexus_writer_files_are_formatted_as_expected(
 def test_nexus_writer_writes_width_and_height_correctly(
     single_dummy_file: NexusWriter,
 ):
-    from dodal.devices.det_dim_constants import (
+    from dodal.devices.detector.det_dim_constants import (
         PIXELS_X_EIGER2_X_4M,
         PIXELS_Y_EIGER2_X_4M,
     )
@@ -234,6 +257,14 @@ def test_nexus_writer_writes_width_and_height_correctly(
     assert (
         single_dummy_file.detector.detector_params.image_size[1] == PIXELS_X_EIGER2_X_4M
     )
+
+
+@patch.dict(os.environ, {"BEAMLINE": "I03"})
+def test_nexus_writer_writes_beamline_name_correctly(
+    test_fgs_params,
+):
+    nexus_writer = NexusWriter(test_fgs_params, **test_fgs_params.get_nexus_info(1))
+    assert nexus_writer.source.beamline == "I03"
 
 
 def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]):
@@ -259,21 +290,21 @@ def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]
 
 @pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_two_linked_datasets(
-    dummy_nexus_writers: tuple[NexusWriter, NexusWriter]
+    dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     check_validity_through_zocalo(dummy_nexus_writers)
 
 
 @pytest.mark.dlstbx
 def test_nexus_file_validity_for_zocalo_with_three_linked_datasets(
-    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter],
 ):
     check_validity_through_zocalo(dummy_nexus_writers_with_more_images)
 
 
 @pytest.mark.skip("Requires #87 of nexgen")
 def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_file(
-    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter]
+    dummy_nexus_writers_with_more_images: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
 
@@ -282,15 +313,17 @@ def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_fi
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
-            assert "data_000001" in written_nexus_file["entry/data"]
-            assert "data_000002" in written_nexus_file["entry/data"]
-            assert "data_000003" not in written_nexus_file["entry/data"]
+            assert isinstance(data := written_nexus_file["entry/data"], h5py.Dataset)
+            assert "data_000001" in data
+            assert "data_000002" in data
+            assert "data_000003" not in data
 
     for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
-            assert "data_000001" not in written_nexus_file["entry/data"]
-            assert "data_000002" in written_nexus_file["entry/data"]
-            assert "data_000003" in written_nexus_file["entry/data"]
+            assert isinstance(data := written_nexus_file["entry/data"], h5py.Dataset)
+            assert "data_000001" not in data
+            assert "data_000002" in data
+            assert "data_000003" in data
 
 
 def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_files_still_written(

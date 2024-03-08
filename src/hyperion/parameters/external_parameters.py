@@ -8,17 +8,18 @@ from typing import Any
 import jsonschema
 
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import PARAMETER_SCHEMA_DIRECTORY
+from hyperion.parameters.constants import CONST
 
 
-def validate_raw_parameters_from_dict(dict_params: dict[str, Any]):
+def validate_raw_parameters_from_dict(dict_params: dict[str, Any]) -> dict[str, Any]:
     with open(
-        join(PARAMETER_SCHEMA_DIRECTORY, "full_external_parameters_schema.json"), "r"
+        join(CONST.PARAMETER_SCHEMA_DIRECTORY, "full_external_parameters_schema.json"),
+        "r",
     ) as f:
         full_schema = json.load(f)
 
-    path = Path(PARAMETER_SCHEMA_DIRECTORY).absolute()
-    resolver = jsonschema.validators.RefResolver(
+    path = Path(CONST.PARAMETER_SCHEMA_DIRECTORY).absolute()
+    resolver = jsonschema.validators.RefResolver(  # type: ignore # will be removed in param refactor
         base_uri=f"{path.as_uri()}/",
         referrer=True,
     )

@@ -6,14 +6,17 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.det_dim_constants import (
+from bluesky.utils import FailedStatus
+from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
+from ophyd_async.core import set_sim_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -23,7 +26,7 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
-    read_hardware_for_ispyb_pre_collection,
+    kickoff_and_complete_gridscan,
     run_gridscan,
     run_gridscan_and_move,
     wait_for_gridscan_valid,
@@ -37,18 +40,21 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.store_datacollection_in_ispyb import (
-    IspybIds,
+from hyperion.external_interaction.callbacks.zocalo_callback import (
+    ZocaloCallback,
+)
+from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
     Store3DGridscanInIspyb,
 )
-from hyperion.log import set_up_logging_handlers
-from hyperion.parameters import external_parameters
-from hyperion.parameters.constants import (
-    GRIDSCAN_OUTER_PLAN,
+from hyperion.external_interaction.ispyb.ispyb_store import (
+    IspybIds,
 )
+from hyperion.parameters import external_parameters
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from tests.conftest import create_dummy_scan_spec
 
 from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
@@ -66,15 +72,17 @@ from .conftest import (
 
 @pytest.fixture
 def ispyb_plan(test_fgs_params):
-    @bpp.set_run_key_decorator(GRIDSCAN_OUTER_PLAN)
+    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
-            "subplan_name": GRIDSCAN_OUTER_PLAN,
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": test_fgs_params.json(),
         }
     )
-    def standalone_read_hardware_for_ispyb(und, syn, slits, attn, fl, dcm):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits)
+    def standalone_read_hardware_for_ispyb(
+        und, syn, slits, robot, attn, fl, dcm, ap_sg
+    ):
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg, robot)
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -85,6 +93,11 @@ def RE_with_subs(RE: RunEngine, mock_subscriptions):
     for cb in list(mock_subscriptions):
         RE.subscribe(cb)
     yield RE, mock_subscriptions
+
+
+@pytest.fixture
+def mock_ispyb():
+    return MagicMock()
 
 
 @patch(
@@ -120,6 +133,35 @@ class TestFlyscanXrayCentrePlan:
         plan = run_gridscan(MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
 
+    def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
+        self,
+        RE: RunEngine,
+        fake_fgs_composite,
+        test_fgs_params,
+        mock_ispyb,
+    ):
+        ispyb_callback = GridscanISPyBCallback()
+        RE.subscribe(ispyb_callback)
+
+        error = None
+        with pytest.raises(FailedStatus) as exc:
+            with patch(
+                "hyperion.external_interaction.ispyb.ispyb_store.ispyb",
+                mock_ispyb,
+            ):
+                with patch.object(
+                    fake_fgs_composite.sample_motors.omega, "set"
+                ) as mock_set:
+                    error = AssertionError("Test Exception")
+                    mock_set.return_value = FailedStatus(error)
+
+                    RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+
+        assert exc.value.args[0] is error
+        ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # pyright: ignore
+            "fail", "Test Exception"
+        )
+
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
@@ -153,6 +195,11 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
+        fake_fgs_composite.aperture_scatterguard.set(
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE  # type: ignore
+        )
+        set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
+
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
         test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
@@ -166,29 +213,33 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.undulator,
                 fake_fgs_composite.synchrotron,
                 fake_fgs_composite.s4_slit_gaps,
+                fake_fgs_composite.robot,
                 fake_fgs_composite.attenuator,
                 fake_fgs_composite.flux,
                 fake_fgs_composite.dcm,
+                fake_fgs_composite.aperture_scatterguard,
             )
         )
-        params = test_ispyb_callback.params
+        hyperion_params = test_ispyb_callback.params.hyperion_params
 
-        assert params.hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
+            hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
             == synchrotron_test_value
         )
-        assert params.hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
-        assert params.hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.transmission_fraction  # type: ignore
+            hyperion_params.ispyb_params.transmission_fraction  # type: ignore
             == transmission_test_value
         )
-        assert params.hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
+        assert hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
         assert (
-            params.hyperion_params.ispyb_params.current_energy_ev
+            hyperion_params.ispyb_params.current_energy_ev
             == current_energy_kev_test_value * 1000
         )
+
+        assert hyperion_params.ispyb_params.sample_barcode == "BARCODE"
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
@@ -210,7 +261,6 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
     ):
         RE, _ = RE_with_subs
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
@@ -239,10 +289,10 @@ class TestFlyscanXrayCentrePlan:
 
         assert fake_fgs_composite.aperture_scatterguard.aperture_positions is not None
         ap_call_large = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE)
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE.location
         )
         ap_call_medium = call(
-            *(fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM)
+            fake_fgs_composite.aperture_scatterguard.aperture_positions.MEDIUM.location
         )
 
         move_aperture.assert_has_calls(
@@ -306,7 +356,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
     @patch(
-        "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+        "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
         modified_interactor_mock,
     )
     def test_individual_plans_triggered_once_and_only_once_in_composite_run(
@@ -319,9 +369,7 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: GridscanInternalParameters,
     ):
         RE, mock_subscriptions = RE_with_subs
-        mock_subscriptions.zocalo_handler.activity_gated_start(
-            self.td.test_start_document
-        )
+
         run_generic_ispyb_handler_setup(
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
@@ -393,7 +441,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(
@@ -529,7 +576,6 @@ class TestFlyscanXrayCentrePlan:
             mock_subscriptions.ispyb_handler, test_fgs_params
         )
 
-        set_up_logging_handlers(logging_level="INFO", dev_mode=True)
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         RE(
@@ -625,7 +671,7 @@ class TestFlyscanXrayCentrePlan:
             "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ), patch(
-            "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger",
+            "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
             [RE.subscribe(cb) for cb in list(mock_subscriptions)]
@@ -687,3 +733,63 @@ class TestFlyscanXrayCentrePlan:
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+    autospec=True,
+)
+def test_kickoff_and_complete_gridscan_triggers_zocalo(
+    mock_zocalo_trigger_class: MagicMock,
+    RE: RunEngine,
+    fake_fgs_composite: FlyScanXRayCentreComposite,
+):
+    id_1, id_2 = 100, 200
+
+    cbs = XrayCentreCallbackCollection()
+    ispyb_cb = cbs.ispyb_handler
+    ispyb_cb.active = True
+    ispyb_cb.ispyb = MagicMock()
+    ispyb_cb.params = MagicMock()
+    ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
+    assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
+    zocalo_env = "dev_env"
+
+    zocalo_cb.start({CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS})  # type: ignore
+    assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
+
+    mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+
+    fake_fgs_composite.eiger.unstage = MagicMock()
+    fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
+
+    x_steps, y_steps, z_steps = 10, 20, 30
+
+    RE.subscribe(ispyb_cb)
+    RE(
+        kickoff_and_complete_gridscan(
+            fake_fgs_composite.fast_grid_scan,
+            fake_fgs_composite.eiger,
+            fake_fgs_composite.synchrotron,
+            zocalo_env,
+            scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
+        )
+    )
+
+    mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
+
+    expected_start_infos = [
+        ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps),
+        ZocaloStartInfo(id_2, "test/filename", x_steps * y_steps, x_steps * z_steps),
+    ]
+
+    expected_start_calls = [
+        call(expected_start_infos[0]),
+        call(expected_start_infos[1]),
+    ]
+
+    assert mock_zocalo_trigger.run_start.call_count == 2
+    assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls
+
+    assert mock_zocalo_trigger.run_end.call_count == 2
+    assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]

@@ -1,8 +1,11 @@
+from functools import wraps
+from typing import Callable
+
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 from dodal.devices.zebra import (
     DISCONNECT,
     IN1_TTL,
-    IN2_TTL,
     IN3_TTL,
     IN4_TTL,
     OR1,
@@ -19,6 +22,33 @@ from dodal.devices.zebra import (
 
 from hyperion.log import LOGGER
 
+ZEBRA_STATUS_TIMEOUT = 30
+
+
+def bluesky_retry(func: Callable):
+    """Decorator that will retry the decorated plan if it fails.
+
+    Use this with care as it knows nothing about the state of the world when things fail.
+    If it is possible that your plan fails when the beamline is in a transient state that
+    the plan could not act on do not use this decorator without doing some more intelligent
+    clean up.
+
+    You should avoid using this decorator often in general production as it hides errors,
+    instead it should be used only for debugging these underlying errors.
+    """
+
+    @wraps(func)
+    def newfunc(*args, **kwargs):
+        def log_and_retry(exception):
+            LOGGER.error(f"Function {func.__name__} failed with {exception}, retrying")
+            yield from func(*args, **kwargs)
+
+        yield from bpp.contingency_wrapper(
+            func(*args, **kwargs), except_plan=log_and_retry, auto_raise=False
+        )
+
+    return newfunc
+
 
 def arm_zebra(zebra: Zebra):
     yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
@@ -28,6 +58,7 @@ def disarm_zebra(zebra: Zebra):
     yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, wait=True)
 
 
+@bluesky_retry
 def setup_zebra_for_rotation(
     zebra: Zebra,
     axis: I03Axes = I03Axes.OMEGA,
@@ -37,7 +68,7 @@ def setup_zebra_for_rotation(
     shutter_opening_s: float = 0.04,
     direction: RotationDirection = RotationDirection.POSITIVE,
     group: str = "setup_zebra_for_rotation",
-    wait: bool = False,
+    wait: bool = True,
 ):
     """Set up the Zebra to collect a rotation dataset. Any plan using this is
     responsible for setting the smargon velocity appropriately so that the desired
@@ -87,48 +118,48 @@ def setup_zebra_for_rotation(
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     # Don't use the fluorescence detector
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
     LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
     if wait:
-        yield from bps.wait(group)
+        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
-def setup_zebra_for_gridscan(
-    zebra: Zebra, group="setup_zebra_for_gridscan", wait=False
-):
+@bluesky_retry
+def setup_zebra_for_gridscan(zebra: Zebra, group="setup_zebra_for_gridscan", wait=True):
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN3_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1_input, DISCONNECT, group=group)
+    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
 
     if wait:
-        yield from bps.wait(group)
+        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
+@bluesky_retry
 def set_zebra_shutter_to_manual(
-    zebra: Zebra, group="set_zebra_shutter_to_manual", wait=False
+    zebra: Zebra, group="set_zebra_shutter_to_manual", wait=True
 ):
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
 
     if wait:
-        yield from bps.wait(group)
+        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
-def make_trigger_safe(zebra: Zebra, group="make_zebra_safe", wait=False):
+@bluesky_retry
+def make_trigger_safe(zebra: Zebra, group="make_zebra_safe", wait=True):
     yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=wait, group=group)
 
 
+@bluesky_retry
 def setup_zebra_for_panda_flyscan(
-    zebra: Zebra, group="setup_zebra_for_panda_flyscan", wait=False
+    zebra: Zebra, group="setup_zebra_for_panda_flyscan", wait=True
 ):
-    yield from bps.abs_set(
-        zebra.output.out_pvs[TTL_DETECTOR], IN1_TTL, group=group
-    )  # Forwards eiger trigger signal from panda
+    # Forwards eiger trigger signal from panda
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], IN1_TTL, group=group)
 
-    yield from bps.abs_set(
-        zebra.output.out_pvs[TTL_SHUTTER], IN2_TTL, group=group
-    )  # Forwards shutter trigger signal from panda
+    # Forwards signal from PPMAC to fast shutter. High while panda PLC is running
+    yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], IN4_TTL, group=group)
 
     yield from bps.abs_set(zebra.output.out_pvs[3], DISCONNECT, group=group)
 
@@ -137,4 +168,4 @@ def setup_zebra_for_panda_flyscan(
     )  # Tells panda that motion is beginning/changing direction
 
     if wait:
-        yield from bps.wait(group)
+        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
