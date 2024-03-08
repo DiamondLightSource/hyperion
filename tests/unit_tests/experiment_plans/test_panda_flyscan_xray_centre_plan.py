@@ -198,7 +198,8 @@ class TestFlyscanXrayCentrePlan:
         assert params.hyperion_params.ispyb_params.sample_barcode == "BARCODE"
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
+        return_value=Status(done=True, success=True),
     )
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
@@ -318,6 +319,7 @@ class TestFlyscanXrayCentrePlan:
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
+        return_value=Status(done=True, success=True),
     )
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
