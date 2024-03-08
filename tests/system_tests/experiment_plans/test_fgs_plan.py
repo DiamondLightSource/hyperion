@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
+import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.beamlines.beamline_parameters import (
@@ -49,6 +50,8 @@ def params():
     params.hyperion_params.beamline = CONST.SIM.BEAMLINE
     params.hyperion_params.ispyb_params.current_energy_ev = 10000
     params.hyperion_params.zocalo_environment = "dev_artemis"
+    params.hyperion_params.ispyb_params.microns_per_pixel_x = 10
+    params.hyperion_params.ispyb_params.microns_per_pixel_y = 10
     yield params
 
 
@@ -66,12 +69,13 @@ def reset_positions(smargon: Smargon):
     yield from bps.mv(smargon.x, -1, smargon.y, -1, smargon.z, -1)
 
 
-@pytest.fixture
-def fxc_composite():
+@pytest_asyncio.fixture
+async def fxc_composite():
     with patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"), patch(
         "dodal.devices.zocalo.zocalo_results.workflows.recipe"
     ), patch("dodal.devices.zocalo.zocalo_results.workflows.recipe"):
         zocalo = i03.zocalo()
+
     composite = FlyScanXRayCentreComposite(
         attenuator=i03.attenuator(),
         aperture_scatterguard=i03.aperture_scatterguard(),
@@ -92,6 +96,7 @@ def fxc_composite():
         zocalo=zocalo,
     )
 
+    await composite.robot.barcode.bare_signal._backend.put(["ABCDEFGHIJ"])  # type: ignore
     composite.dcm.energy_in_kev.user_readback.sim_put(12.345)  # type: ignore
 
     gda_beamline_parameters = GDABeamlineParameters.from_file(
@@ -102,9 +107,9 @@ def fxc_composite():
         gda_beamline_parameters
     )
     composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
-    composite.aperture_scatterguard.aperture.z.move(
-        aperture_positions.LARGE.location[2], wait=True
-    )
+    composite.aperture_scatterguard._set_raw_unsafe(
+        aperture_positions.LARGE.location
+    ).wait()
     composite.eiger.cam.manual_trigger.put("Yes")
     composite.eiger.odin.check_odin_initialised = lambda: (True, "")
     composite.eiger.stage = MagicMock(return_value=Status(done=True, success=True))
@@ -118,12 +123,14 @@ def fxc_composite():
     return composite
 
 
+@pytest.mark.asyncio
 @pytest.mark.s03
 def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
     assert fxc_composite.aperture_scatterguard
     assert fxc_composite.backlight
 
 
+@pytest.mark.asyncio
 @pytest.mark.s03
 def test_read_hardware_for_ispyb_pre_collection(
     RE: RunEngine,
@@ -140,7 +147,13 @@ def test_read_hardware_for_ispyb_pre_collection(
 
     @bpp.run_decorator()
     def read_run(u, s, g, r, a, f, dcm, ap_sg):
-        yield from read_hardware_for_ispyb_pre_collection(u, s, g, r, ap_sg)
+        yield from read_hardware_for_ispyb_pre_collection(
+            undulator=u,
+            synchrotron=s,
+            s4_slit_gaps=g,
+            aperture_scatterguard=ap_sg,
+            robot=r,
+        )
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
     RE(
@@ -157,6 +170,7 @@ def test_read_hardware_for_ispyb_pre_collection(
     )
 
 
+@pytest.mark.asyncio
 @pytest.mark.s03
 def test_xbpm_feedback_decorator(
     RE: RunEngine,
@@ -180,6 +194,7 @@ def test_xbpm_feedback_decorator(
     assert fxc_composite.xbpm_feedback.pos_stable.get() == 1
 
 
+@pytest.mark.asyncio
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
@@ -215,6 +230,7 @@ def test_full_plan_tidies_at_end(
     set_shutter_to_manual.assert_called_once()
 
 
+@pytest.mark.asyncio
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
@@ -243,9 +259,8 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     set_shutter_to_manual.assert_called_once()
 
 
-@patch(
-    "hyperion.external_interaction.callbacks.xray_centre.zocalo_callback.ZocaloTrigger"
-)
+@patch("hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger")
+@pytest.mark.asyncio
 @pytest.mark.s03
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
     zocalo_trigger: MagicMock,
@@ -262,18 +277,13 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     # Currently s03 calls anything with z_steps > 1 invalid
     params.experiment_params.z_steps = 100
     RE(reset_positions(fxc_composite.smargon))
-    mock_start_zocalo = MagicMock()
-
-    callbacks.ispyb_handler.emit_cb.zocalo_interactor.run_start = mock_start_zocalo  # type: ignore
 
     [RE.subscribe(cb) for cb in callbacks]
     with pytest.raises(WarningException):
         RE(flyscan_xray_centre(fxc_composite, params))
 
-    dcid_used = callbacks.ispyb_handler.ispyb_ids = IspybIds(
-        data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
-    )
-    assert callbacks.ispyb_handler.ispyb_ids.data_collection_ids is not None
+    ids = callbacks.ispyb_handler.ispyb_ids
+    assert ids.data_collection_group_id is not None
     dcid_used = callbacks.ispyb_handler.ispyb_ids.data_collection_ids[0]
 
     comment = fetch_comment(dcid_used)
@@ -282,6 +292,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     zocalo_trigger.run_start.assert_not_called()
 
 
+@pytest.mark.asyncio
 @pytest.mark.s03
 def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE: RunEngine,
@@ -319,6 +330,7 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     assert fxc_composite.sample_motors.z.user_readback.get() == pytest.approx(-1)
 
 
+@pytest.mark.asyncio
 @pytest.mark.s03
 def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE: RunEngine,
