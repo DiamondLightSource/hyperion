@@ -119,6 +119,8 @@ def grid_detection_plan(
         # only use the area from the start of the pin onwards
         top_edge = top_edge[tip_x_px : tip_x_px + grid_width_pixels]
         bottom_edge = bottom_edge[tip_x_px : tip_x_px + grid_width_pixels]
+        LOGGER.info(f"OAV Edge detection top: {list(top_edge)}")
+        LOGGER.info(f"OAV Edge detection bottom: {list(bottom_edge)}")
 
         min_y, max_y = get_min_and_max_y_of_pin(
             top_edge, bottom_edge, full_image_height_px
