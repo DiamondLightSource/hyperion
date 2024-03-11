@@ -143,7 +143,7 @@ def grid_detection_plan(
 
         LOGGER.info(f"Drawing snapshot {grid_width_pixels} by {grid_height_px}")
 
-        x_steps = (math.ceil(grid_width_pixels / box_size_x_pixels),)
+        x_steps = math.ceil(grid_width_pixels / box_size_x_pixels)
 
         upper_left = (tip_x_px, min_y)
 
