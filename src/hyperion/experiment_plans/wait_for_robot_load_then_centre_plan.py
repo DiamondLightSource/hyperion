@@ -19,6 +19,7 @@ from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
+from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -83,6 +84,9 @@ class WaitForRobotLoadThenCentreComposite:
     dcm: DCM
     undulator_dcm: UndulatorDCM
 
+    # RobotLoad fields
+    robot: BartRobot
+
 
 def create_devices(context: BlueskyContext) -> WaitForRobotLoadThenCentreComposite:
     from hyperion.utils.context import device_composite_from_context
@@ -113,11 +117,22 @@ def wait_for_robot_load_then_centre_plan(
     composite: WaitForRobotLoadThenCentreComposite,
     parameters: WaitForRobotLoadThenCentreInternalParameters,
 ):
+    yield from bps.abs_set(
+        composite.robot,
+        SampleLocation(
+            parameters.experiment_params.sample_puck,
+            parameters.experiment_params.sample_pin,
+        ),
+        group="robot_load",
+    )
+
     if parameters.experiment_params.requested_energy_kev:
         yield from set_energy_plan(
             parameters.experiment_params.requested_energy_kev,
             cast(SetEnergyComposite, composite),
         )
+
+    yield from bps.wait("robot_load")
 
     yield from wait_for_smargon_not_disabled(composite.smargon)
 

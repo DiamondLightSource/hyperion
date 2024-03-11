@@ -22,11 +22,14 @@ from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params im
 
 
 @pytest.fixture
-def wait_for_robot_load_composite(smargon, dcm):
-    composite = MagicMock()
+def wait_for_robot_load_composite(
+    smargon, dcm, robot
+) -> WaitForRobotLoadThenCentreComposite:
+    composite: WaitForRobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
     composite.dcm = dcm
     composite.dcm.energy_in_kev.user_readback.sim_put(11.105)
+    composite.robot = robot
     return composite
 
 

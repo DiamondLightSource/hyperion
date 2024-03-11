@@ -44,6 +44,10 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     detector_distance: float
     omega_start: float
     snapshot_dir: str
+
+    sample_puck: int
+    sample_pin: int
+
     requested_energy_kev: Optional[float] = None
 
     # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda

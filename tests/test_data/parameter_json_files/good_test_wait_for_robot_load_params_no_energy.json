@@ -37,6 +37,8 @@
         "omega_start": 0,
         "exposure_time": 0.004,
         "detector_distance": 255,
-        "snapshot_dir": "/tmp"
+        "snapshot_dir": "/tmp",
+        "sample_puck": 40,
+        "sample_pin": 3
     }
 }

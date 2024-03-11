@@ -309,9 +309,11 @@ def ophyd_pin_tip_detection():
 
 
 @pytest.fixture
-def robot():
+def robot(done_status):
+    RunEngine()  # A RE is needed to start the bluesky loop
     robot = i03.robot(fake_with_ophyd_sim=True)
     set_sim_value(robot.barcode.bare_signal, ["BARCODE"])
+    robot.set = MagicMock(return_value=done_status)
     return robot
 
 
