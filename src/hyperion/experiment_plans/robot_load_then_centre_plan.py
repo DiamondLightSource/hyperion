@@ -48,14 +48,14 @@ from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
-from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
-    WaitForRobotLoadThenCentreInternalParameters,
+from hyperion.parameters.plan_specific.robot_load_then_center_params import (
+    RobotLoadThenCentreInternalParameters,
 )
 from hyperion.utils.utils import convert_eV_to_angstrom
 
 
 @dataclasses.dataclass
-class WaitForRobotLoadThenCentreComposite:
+class RobotLoadThenCentreComposite:
     # common fields
     xbpm_feedback: XBPMFeedback
     attenuator: Attenuator
@@ -88,10 +88,10 @@ class WaitForRobotLoadThenCentreComposite:
     robot: BartRobot
 
 
-def create_devices(context: BlueskyContext) -> WaitForRobotLoadThenCentreComposite:
+def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
     from hyperion.utils.context import device_composite_from_context
 
-    return device_composite_from_context(context, WaitForRobotLoadThenCentreComposite)
+    return device_composite_from_context(context, RobotLoadThenCentreComposite)
 
 
 def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
@@ -113,9 +113,9 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     )
 
 
-def wait_for_robot_load_then_centre_plan(
-    composite: WaitForRobotLoadThenCentreComposite,
-    parameters: WaitForRobotLoadThenCentreInternalParameters,
+def robot_load_then_centre_plan(
+    composite: RobotLoadThenCentreComposite,
+    parameters: RobotLoadThenCentreInternalParameters,
 ):
     yield from bps.abs_set(
         composite.robot,
@@ -144,9 +144,9 @@ def wait_for_robot_load_then_centre_plan(
     )
 
 
-def wait_for_robot_load_then_centre(
-    composite: WaitForRobotLoadThenCentreComposite,
-    parameters: WaitForRobotLoadThenCentreInternalParameters,
+def robot_load_then_centre(
+    composite: RobotLoadThenCentreComposite,
+    parameters: RobotLoadThenCentreInternalParameters,
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
 
@@ -175,5 +175,5 @@ def wait_for_robot_load_then_centre(
         eiger,
         composite.detector_motion,
         parameters.experiment_params.detector_distance,
-        wait_for_robot_load_then_centre_plan(composite, parameters),
+        robot_load_then_centre_plan(composite, parameters),
     )

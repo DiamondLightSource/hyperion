@@ -42,14 +42,14 @@ class IspybParams(BaseModel):
     position: np.ndarray
 
     transmission_fraction: float
-    # populated by wait_for_robot_load_then_centre
+    # populated by robot_load_then_centre
     current_energy_ev: Optional[float]
     beam_size_x: float
     beam_size_y: float
     focal_spot_size_x: float
     focal_spot_size_y: float
     comment: str
-    # populated by wait_for_robot_load_then_centre
+    # populated by robot_load_then_centre
     resolution: Optional[float]
 
     sample_id: Optional[str] = None
