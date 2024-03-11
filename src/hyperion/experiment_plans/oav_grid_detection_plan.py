@@ -71,8 +71,8 @@ def grid_detection_plan(
     encompass the whole of the sample as it appears in the OAV.
 
     Args:
-        parameters (OAVParamaters): Object containing paramters for setting up the OAV
-        out_parameters (GridScanParams): The returned parameters for the gridscan
+        composite (OavGridDetectionComposite): Composite containing devices for doing a grid detection.
+        parameters (OAVParameters): Object containing parameters for setting up the OAV
         snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
         snapshot_dir (str): The location to save snapshots
         grid_width_microns (int): The width of the grid to scan in microns
@@ -137,7 +137,7 @@ def grid_detection_plan(
             y_steps += 1
             min_y -= box_size_y_pixels / 2
             max_y += box_size_y_pixels / 2
-            grid_height_px += 1
+            grid_height_px += box_size_y_pixels
 
         LOGGER.info(f"Drawing snapshot {grid_width_pixels} by {grid_height_px}")
 
