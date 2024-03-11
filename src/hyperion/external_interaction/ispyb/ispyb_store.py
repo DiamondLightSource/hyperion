@@ -193,6 +193,13 @@ class StoreInIspyb(ABC):
         params["parent_id"] = get_session_id_from_visit(conn, dcg_info.visit_string)
         params |= {k: v for k, v in asdict(dcg_info).items() if k != "visit_string"}
 
+        return self._upsert_data_collection_group(conn, params)
+
+    @staticmethod
+    @TRACER.start_as_current_span("_upsert_data_collection_group")
+    def _upsert_data_collection_group(
+        conn: Connector, params: StrictOrderedDict
+    ) -> int:
         return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
 
     @staticmethod

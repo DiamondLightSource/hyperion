@@ -1,24 +1,18 @@
-from time import time
-
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 import pytest_asyncio
 from bluesky.run_engine import RunEngine
-from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults, ZocaloTrigger
+from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
 
+from tests.conftest import create_dummy_scan_spec
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.callbacks.zocalo_callback import ZocaloCallback
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
-)
-
-from .conftest import (
-    TEST_RESULT_LARGE,
 )
 
 """
@@ -45,32 +39,16 @@ async def zocalo_device():
     return zd
 
 
-@pytest.mark.s03
-@pytest.mark.asyncio
-async def test_when_running_start_stop_then_get_expected_returned_results(
-    dummy_params, zocalo_env, zocalo_device: ZocaloResults, RE: RunEngine
-):
-    start_doc = {
-        "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-        "hyperion_internal_parameters": dummy_params.json(),
+@bpp.set_run_key_decorator("testing125")
+@bpp.run_decorator(
+    md={
+        "subplan_name": CONST.PLAN.DO_FGS,
+        "zocalo_environment": "dev_artemis",
+        "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
-    zc: ZocaloCallback = XrayCentreCallbackCollection().ispyb_handler.emit_cb  # type: ignore
-    zc.start(start_doc)  # type: ignore
-    dcids = (1, 2)
-    zc = ZocaloCallback()
-    zc.triggering_plan = "test"
-    zc.start(
-        {  # type: ignore
-            "subplan_name": "test",
-            "uid": "123",
-            "zocalo_environment": "dev_artemis",
-            "ispyb_dcids": dcids,
-        }
-    )
-    zc.stop({"run_start": "123"})  # type: ignore
-    RE(bps.trigger(zocalo_device, wait=True))
-    result = await zocalo_device.read()
-    assert result["zocalo-results"]["value"][0] == TEST_RESULT_LARGE[0]
+)
+def fake_fgs_plan():
+    yield from bps.sleep(0)
 
 
 @pytest.fixture
@@ -85,45 +63,36 @@ def run_zocalo_with_dev_ispyb(
         cbs = XrayCentreCallbackCollection()
         ispyb = cbs.ispyb_handler
         ispyb.ispyb_config = dummy_ispyb_3d.ISPYB_CONFIG_PATH
-        ispyb.emit_cb = None
         ispyb.active = True
-        zc = ZocaloTrigger("dev_artemis")
-
         RE.subscribe(ispyb)
 
         @bpp.set_run_key_decorator("testing123")
-        @bpp.run_decorator()
-        def plan():
+        def trigger_zocalo_after_fast_grid_scan():
             @bpp.set_run_key_decorator("testing124")
+            @bpp.stage_decorator([zocalo_device])
             @bpp.run_decorator(
                 md={
                     "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+                    CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
                     "hyperion_internal_parameters": dummy_params.json(),
                 }
             )
             def inner_plan():
-                yield from bps.sleep(0)
-                ispyb.ispyb_ids = ispyb.ispyb.begin_deposition()
-                assert isinstance(ispyb.ispyb_ids.data_collection_ids, tuple)
-                for dcid in ispyb.ispyb_ids.data_collection_ids:
-                    zc.run_start(dcid)
-                ispyb._processing_start_time = time()
-                for dcid in ispyb.ispyb_ids.data_collection_ids:
-                    zc.run_end(dcid)
+                yield from fake_fgs_plan()
+                yield from bps.trigger_and_read(
+                    [zocalo_device], name=ZOCALO_READING_PLAN_NAME
+                )
 
             yield from inner_plan()
-            yield from bps.trigger_and_read(
-                [zocalo_device], name=ZOCALO_READING_PLAN_NAME
-            )
 
-        RE(plan())
+        RE(trigger_zocalo_after_fast_grid_scan())
         centre = await zocalo_device.centres_of_mass.get_value()
         if centre.size == 0:
             centre = fallback
         else:
             centre = centre[0]
 
-        return ispyb, zc, centre
+        return ispyb, ispyb.emit_cb, centre
 
     return inner
 

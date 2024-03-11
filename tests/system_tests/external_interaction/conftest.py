@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 from hyperion.external_interaction.ispyb.data_model import ExperimentType
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file as default_raw_params
+from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -101,10 +101,12 @@ def fetch_datacollection_attribute() -> Callable:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = GridscanInternalParameters(**default_raw_params())
+    dummy_params = GridscanInternalParameters(
+        **from_file(
+            "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
+        )
+    )
     dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 0.8
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 0.8
     dummy_params.hyperion_params.ispyb_params.visit_path = (
         "/dls/i03/data/2022/cm31105-5/"
     )

@@ -437,6 +437,7 @@ def fake_create_devices(
     smargon: Smargon,
     zebra: Zebra,
     detector_motion: DetectorMotion,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
@@ -453,6 +454,7 @@ def fake_create_devices(
         "zebra": zebra,
         "detector_motion": detector_motion,
         "backlight": i03.backlight(fake_with_ophyd_sim=True),
+        "ap_sg": aperture_scatterguard,
     }
     return devices
 

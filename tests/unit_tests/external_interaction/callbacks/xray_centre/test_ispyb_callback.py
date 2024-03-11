@@ -69,7 +69,7 @@ def test_activity_gated_start_2d(mock_ispyb_conn):
             "omegastart": 0,
             "start_image_number": 1,
             "resolution": 1.0,  # deferred
-            "wavelength": 0,
+            "wavelength": None,
             "xbeam": 150.0,
             "ybeam": 160.0,
             "xtal_snapshot1": "test_1_y",
@@ -137,7 +137,7 @@ def test_activity_gated_start_3d(mock_ispyb_conn):
             "omegastart": 0,
             "start_image_number": 1,
             "resolution": 1.0,  # deferred
-            "wavelength": 0,
+            "wavelength": None,
             "xbeam": 150.0,
             "ybeam": 160.0,
             "xtal_snapshot1": "test_1_y",

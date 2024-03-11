@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from copy import deepcopy
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, Sequence
 from unittest.mock import patch
 
 import pytest
@@ -41,10 +41,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -202,6 +198,15 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     ispyb_ids = dummy_ispyb_3d.begin_deposition(
         dummy_data_collection_group_info, dummy_scan_data_info_for_begin
     )
+    scan_data_infos = generate_scan_data_infos(
+        dummy_params,
+        dummy_scan_data_info_for_begin,
+        ExperimentType.GRIDSCAN_3D,
+        ispyb_ids,
+    )
+    ispyb_ids = dummy_ispyb_3d.update_deposition(
+        ispyb_ids, dummy_data_collection_group_info, scan_data_infos
+    )
     dcid1 = ispyb_ids.data_collection_ids[0]  # type: ignore
     dcid2 = ispyb_ids.data_collection_ids[1]  # type: ignore
     dummy_ispyb_3d.end_deposition(ispyb_ids, "fail", "could not connect to devices")
@@ -234,23 +239,15 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     dummy_data_collection_group_info,
     dummy_scan_data_info_for_begin,
 ):
-    test_params = GridscanInternalParameters(**default_raw_params())
-    test_params.hyperion_params.ispyb_params.visit_path = "/tmp/cm31105-4/"
     ispyb: StoreInIspyb = StoreInIspyb(
         CONST.SIM.DEV_ISPYB_DATABASE_CFG, experiment_type
     )
     ispyb_ids: IspybIds = ispyb.begin_deposition(
         dummy_data_collection_group_info, dummy_scan_data_info_for_begin
     )
-    xy_scan_data_info = scan_xy_data_info_for_update(
-        ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
+    scan_data_infos = generate_scan_data_infos(
+        dummy_params, dummy_scan_data_info_for_begin, experiment_type, ispyb_ids
     )
-    if experiment_type == ExperimentType.GRIDSCAN_3D:
-        scan_data_infos = scan_data_infos_for_update_3d(
-            ispyb_ids, xy_scan_data_info, dummy_params
-        )
-    else:
-        scan_data_infos = [xy_scan_data_info]
 
     ispyb_ids = ispyb.update_deposition(
         ispyb_ids, dummy_data_collection_group_info, scan_data_infos
@@ -262,11 +259,11 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     expected_comments = [
         (
             "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
-            "images in 100.0 um by 100.0 um steps. Top left (px): [0,0], bottom right (px): [0,0]."
+            "images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
         ),
         (
             "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
-            "images in 100.0 um by 100.0 um steps. Top left (px): [0,0], bottom right (px): [0,0]."
+            "images in 100.0 um by 100.0 um steps. Top left (px): [100,50], bottom right (px): [3300,850]."
         ),
     ]
 
@@ -285,6 +282,24 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     )
     for grid_no, dc_id in enumerate(ispyb_ids.data_collection_ids):
         assert fetch_comment(dc_id) == expected_comments[grid_no]
+
+
+def generate_scan_data_infos(
+    dummy_params,
+    dummy_scan_data_info_for_begin: ScanDataInfo,
+    experiment_type: ExperimentType,
+    ispyb_ids: IspybIds,
+) -> Sequence[ScanDataInfo]:
+    xy_scan_data_info = scan_xy_data_info_for_update(
+        ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
+    )
+    if experiment_type == ExperimentType.GRIDSCAN_3D:
+        scan_data_infos = scan_data_infos_for_update_3d(
+            ispyb_ids, xy_scan_data_info, dummy_params
+        )
+    else:
+        scan_data_infos = [xy_scan_data_info]
+    return scan_data_infos
 
 
 @pytest.mark.s03
@@ -335,7 +350,7 @@ def test_ispyb_deposition_in_rotation_plan(
     composite = RotationScanComposite(
         attenuator=attenuator,
         backlight=fake_create_devices["backlight"],
-        dcm=fake_create_devices["dcm"],
+        dcm=fake_create_rotation_devices.dcm,
         detector_motion=fake_create_devices["detector_motion"],
         eiger=fake_create_devices["eiger"],
         flux=flux,
@@ -356,7 +371,7 @@ def test_ispyb_deposition_in_rotation_plan(
             )
         )
 
-    dcid = callbacks.ispyb_handler.ispyb_ids.data_collection_ids
+    dcid = callbacks.ispyb_handler.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     comment = fetch_comment(dcid)
     assert comment == "Hyperion rotation scan"
