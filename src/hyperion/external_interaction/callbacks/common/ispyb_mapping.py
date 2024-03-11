@@ -35,10 +35,11 @@ def populate_data_collection_group(experiment_type, detector_params, ispyb_param
 
 
 def populate_data_collection_position_info(ispyb_params):
+    # explicit cast to float because numpy int64, grrr...
     dc_pos_info = DataCollectionPositionInfo(
-        ispyb_params.position[0],
-        ispyb_params.position[1],
-        ispyb_params.position[2],
+        float(ispyb_params.position[0]),
+        float(ispyb_params.position[1]),
+        float(ispyb_params.position[2]),
     )
     return dc_pos_info
 
