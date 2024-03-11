@@ -13,6 +13,7 @@ from ophyd.sim import SynAxis
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -20,7 +21,6 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 from hyperion.utils.utils import convert_angstrom_to_eV
-from unit_tests.conftest import from_file
 
 
 class MockReactiveCallback(PlanReactiveCallback):
@@ -178,7 +178,12 @@ def base_ispyb_conn():
         )
         ispyb_connection.return_value.mx_acquisition = mock_mx_acquisition
         mock_core = MagicMock()
-        mock_core.retrieve_visit_id.return_value = TEST_SESSION_ID
+
+        def mock_retrieve_visit(visit_str):
+            assert visit_str, "No visit id supplied"
+            return TEST_SESSION_ID
+
+        mock_core.retrieve_visit_id.side_effect = mock_retrieve_visit
         ispyb_connection.return_value.core = mock_core
         yield ispyb_connection
 

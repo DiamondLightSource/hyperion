@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Optional, Tuple
+from itertools import zip_longest
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
 import ispyb
 import ispyb.sqlalchemy
@@ -14,6 +15,7 @@ from pydantic import BaseModel
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
+    ExperimentType,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_utils import (
@@ -31,40 +33,106 @@ EIGER_FILE_SUFFIX = "h5"
 
 
 class IspybIds(BaseModel):
-    data_collection_ids: tuple[int, ...] = tuple()
+    data_collection_ids: tuple[int, ...] = ()
     data_collection_group_id: int | None = None
-    grid_ids: tuple[int, ...] | None = None
+    grid_ids: tuple[int, ...] = ()
 
 
 class StoreInIspyb(ABC):
-    def __init__(self, ispyb_config: str) -> None:
+    def __init__(self, ispyb_config: str, experiment_type: ExperimentType) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
         self._data_collection_group_id: int | None
+        self._experiment_type = experiment_type
 
     @property
-    @abstractmethod
     def experiment_type(self) -> str:
-        pass
+        return self._experiment_type.value
 
-    @abstractmethod
     def begin_deposition(
         self,
         data_collection_group_info: DataCollectionGroupInfo,
         scan_data_info: ScanDataInfo,
     ) -> IspybIds:
-        pass
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None
+            assert (
+                scan_data_info.data_collection_info.visit_string
+            ), "No visit string supplied for ispyb"
+            data_collection_group_id = scan_data_info.data_collection_info.parent_id
+            if not data_collection_group_id:
+                data_collection_group_id = self._store_data_collection_group_table(
+                    conn, data_collection_group_info
+                )
+                scan_data_info.data_collection_info.parent_id = data_collection_group_id
+            data_collection_id = self._store_data_collection_table(
+                conn, None, scan_data_info.data_collection_info
+            )
+            return IspybIds(
+                data_collection_group_id=data_collection_group_id,
+                data_collection_ids=(data_collection_id,),
+            )
 
-    @abstractmethod
     def update_deposition(
         self,
+        ispyb_ids,
         data_collection_group_info: DataCollectionGroupInfo,
-        scan_data_info: ScanDataInfo,
-    ) -> IspybIds:
-        pass
+        scan_data_infos: Sequence[ScanDataInfo],
+    ):
+        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
+            assert conn is not None, "Failed to connect to ISPyB"
+            assert (
+                ispyb_ids.data_collection_group_id
+            ), "Attempted to store scan data without a collection group"
+            assert (
+                ispyb_ids.data_collection_ids
+            ), "Attempted to store scan data without a collection"
 
-    @abstractmethod
-    def end_deposition(self, success: str, reason: str):
-        pass
+            self._store_data_collection_group_table(
+                conn, data_collection_group_info, ispyb_ids.data_collection_group_id
+            )
+
+            grid_ids = []
+            data_collection_ids_out = []
+            for scan_data_info, data_collection_id in zip_longest(
+                scan_data_infos, ispyb_ids.data_collection_ids
+            ):
+                data_collection_id, grid_id = self._store_single_scan_data(
+                    conn, scan_data_info, data_collection_id
+                )
+                data_collection_ids_out.append(data_collection_id)
+                if grid_id:
+                    grid_ids.append(grid_id)
+            ispyb_ids = IspybIds(
+                data_collection_ids=tuple(data_collection_ids_out),
+                grid_ids=tuple(grid_ids),
+                data_collection_group_id=ispyb_ids.data_collection_group_id,
+            )
+        return ispyb_ids
+
+    def end_deposition(self, ispyb_ids: IspybIds, success: str, reason: str):
+        assert (
+            ispyb_ids.data_collection_ids
+        ), "Can't end ISPyB deposition, data_collection IDs are missing"
+        assert (
+            ispyb_ids.data_collection_group_id is not None
+        ), "Cannot end ISPyB deposition without data collection group ID"
+
+        for id_ in ispyb_ids.data_collection_ids:
+            ISPYB_LOGGER.info(
+                f"End ispyb deposition with status '{success}' and reason '{reason}'."
+            )
+            if success == "fail" or success == "abort":
+                run_status = "DataCollection Unsuccessful"
+            else:
+                run_status = "DataCollection Successful"
+            current_time = get_current_time_string()
+            self._update_scan_with_end_time_and_status(
+                current_time,
+                run_status,
+                reason,
+                id_,
+                ispyb_ids.data_collection_group_id,
+            )
 
     def append_to_comment(
         self, data_collection_id: int, comment: str, delimiter: str = " "
@@ -100,25 +168,6 @@ class StoreInIspyb(ABC):
 
             mx_acquisition.upsert_data_collection(list(params.values()))
 
-    def _end_deposition(self, dcid: int, success: str, reason: str):
-        """Write the end of data_collection data.
-        Args:
-            success (str): The success of the run, could be fail or abort
-            reason (str): If the run failed, the reason why
-        """
-        ISPYB_LOGGER.info(
-            f"End ispyb deposition with status '{success}' and reason '{reason}'."
-        )
-        if success == "fail" or success == "abort":
-            run_status = "DataCollection Unsuccessful"
-        else:
-            run_status = "DataCollection Successful"
-        current_time = get_current_time_string()
-        assert self._data_collection_group_id is not None
-        self._update_scan_with_end_time_and_status(
-            current_time, run_status, reason, dcid, self._data_collection_group_id
-        )
-
     def _store_position_table(
         self, conn: Connector, dc_pos_info, data_collection_id
     ) -> int:
@@ -144,6 +193,13 @@ class StoreInIspyb(ABC):
         params["parent_id"] = get_session_id_from_visit(conn, dcg_info.visit_string)
         params |= {k: v for k, v in asdict(dcg_info).items() if k != "visit_string"}
 
+        return self._upsert_data_collection_group(conn, params)
+
+    @staticmethod
+    @TRACER.start_as_current_span("_upsert_data_collection_group")
+    def _upsert_data_collection_group(
+        conn: Connector, params: StrictOrderedDict
+    ) -> int:
         return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
 
     @staticmethod
@@ -154,7 +210,7 @@ class StoreInIspyb(ABC):
     def _store_data_collection_table(
         self, conn, data_collection_id, data_collection_info
     ):
-        params = self.fill_common_data_collection_params(
+        params = self._fill_common_data_collection_params(
             conn, data_collection_id, data_collection_info
         )
         return self._upsert_data_collection(conn, params)
@@ -191,7 +247,7 @@ class StoreInIspyb(ABC):
         params["parentid"] = ispyb_data_collection_id
         return mx_acquisition.upsert_dc_grid(list(params.values()))
 
-    def fill_common_data_collection_params(
+    def _fill_common_data_collection_params(
         self, conn, data_collection_id, data_collection_info: DataCollectionInfo
     ) -> StrictOrderedDict:
         mx_acquisition: MXAcquisition = conn.mx_acquisition

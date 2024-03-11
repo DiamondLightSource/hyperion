@@ -1,5 +1,3 @@
-from time import time
-
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
@@ -14,14 +12,9 @@ from dodal.devices.zocalo import (
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
-from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
-from hyperion.parameters.constants import GRIDSCAN_OUTER_PLAN
+from hyperion.parameters.constants import DO_FGS, GRIDSCAN_OUTER_PLAN
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
-)
-
-from .conftest import (
-    TEST_RESULT_LARGE,
 )
 
 """
@@ -48,28 +41,10 @@ async def zocalo_device():
     return zd
 
 
-@pytest.mark.s03
-@pytest.mark.asyncio
-async def test_when_running_start_stop_then_get_expected_returned_results(
-    dummy_params, zocalo_env, zocalo_device: ZocaloResults, RE: RunEngine
-):
-    start_doc = {
-        "subplan_name": GRIDSCAN_OUTER_PLAN,
-        "hyperion_internal_parameters": dummy_params.json(),
-    }
-    zc = XrayCentreCallbackCollection.setup().zocalo_handler
-    zc.activity_gated_start(start_doc)
-    dcids = (1, 2)
-    zc.ispyb.ispyb_ids = IspybIds(
-        data_collection_ids=dcids, data_collection_group_id=4, grid_ids=(0,)
-    )
-    for dcid in dcids:
-        zc.zocalo_interactor.run_start(dcid)
-    for dcid in dcids:
-        zc.zocalo_interactor.run_end(dcid)
-    RE(bps.trigger(zocalo_device, wait=True))
-    result = await zocalo_device.read()
-    assert result["zocalo-results"]["value"][0] == TEST_RESULT_LARGE[0]
+@bpp.set_run_key_decorator("testing125")
+@bpp.run_decorator(md={"subplan_name": DO_FGS, "zocalo_environment": "dev_artemis"})
+def fake_fgs_plan():
+    yield from bps.sleep(0)
 
 
 @pytest.fixture
@@ -93,8 +68,9 @@ def run_zocalo_with_dev_ispyb(
 
         @bpp.set_run_key_decorator("testing123")
         @bpp.run_decorator()
-        def plan():
+        def trigger_zocalo_after_fast_grid_scan():
             @bpp.set_run_key_decorator("testing124")
+            @bpp.stage_decorator([zocalo_device])
             @bpp.run_decorator(
                 md={
                     "subplan_name": GRIDSCAN_OUTER_PLAN,
@@ -102,21 +78,14 @@ def run_zocalo_with_dev_ispyb(
                 }
             )
             def inner_plan():
-                yield from bps.sleep(0)
-                zc.ispyb.ispyb_ids = zc.ispyb.ispyb.begin_deposition()
-                assert isinstance(zc.ispyb.ispyb_ids.data_collection_ids, tuple)
-                for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
-                    zc.zocalo_interactor.run_start(dcid)
-                zc.ispyb._processing_start_time = time()
-                for dcid in zc.ispyb.ispyb_ids.data_collection_ids:
-                    zc.zocalo_interactor.run_end(dcid)
+                yield from fake_fgs_plan()
+                yield from bps.trigger_and_read(
+                    [zocalo_device], name=ZOCALO_READING_PLAN_NAME
+                )
 
             yield from inner_plan()
-            yield from bps.trigger_and_read(
-                [zocalo_device], name=ZOCALO_READING_PLAN_NAME
-            )
 
-        RE(plan())
+        RE(trigger_zocalo_after_fast_grid_scan())
         centre = await zocalo_device.centres_of_mass.get_value()
         if centre.size == 0:
             centre = fallback

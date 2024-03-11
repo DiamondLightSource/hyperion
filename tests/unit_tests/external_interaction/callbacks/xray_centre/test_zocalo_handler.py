@@ -7,11 +7,11 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
+from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-from ....conftest import from_file as default_raw_params
 from ....experiment_plans.conftest import modified_store_grid_scan_mock
 from ..conftest import TestData
 
@@ -35,8 +35,8 @@ def init_cbs_with_docs_and_mock_zocalo_and_ispyb(
     callbacks: XrayCentreCallbackCollection, dcids=(0, 0), dcgid=4
 ):
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
-        lambda _: modified_store_grid_scan_mock(dcids=dcids, dcgid=dcgid),
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
+        lambda _, __: modified_store_grid_scan_mock(dcids=dcids, dcgid=dcgid),
     ):
         callbacks.ispyb_handler.activity_gated_start(td.test_start_document)
 
@@ -54,11 +54,18 @@ class TestZocaloHandler:
         nexus_writer: MagicMock,
         dummy_params,
     ):
+        mock_ispyb_store_grid_scan.begin_deposition.return_value = IspybIds(
+            data_collection_ids=(1,), data_collection_group_id=4
+        )
+        mock_ispyb_store_grid_scan.update_deposition.return_value = IspybIds(
+            data_collection_ids=(1, 2),
+            data_collection_group_id=4,
+        )
         dc_ids = (1, 2)
         dcg_id = 4
 
         mock_ispyb_store_grid_scan.return_value = IspybIds(
-            data_collection_ids=dc_ids, grid_ids=None, data_collection_group_id=dcg_id
+            data_collection_ids=dc_ids, data_collection_group_id=dcg_id
         )
         mock_ispyb_get_time.return_value = td.DUMMY_TIME_STRING
         mock_ispyb_update_time_and_status.return_value = None

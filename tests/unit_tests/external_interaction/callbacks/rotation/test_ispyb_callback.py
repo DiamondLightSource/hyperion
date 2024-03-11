@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
-from unit_tests.external_interaction.callbacks.conftest import TestData
-from unit_tests.external_interaction.conftest import (
+
+from ...conftest import (
     EXPECTED_END_TIME,
     EXPECTED_START_TIME,
     TEST_BARCODE,
@@ -15,6 +15,7 @@ from unit_tests.external_interaction.conftest import (
     assert_upsert_call_with,
     mx_acquisition_from_conn,
 )
+from ..conftest import TestData
 
 EXPECTED_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,
@@ -92,8 +93,10 @@ def test_activity_gated_event(
     mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
 ):
     callback = RotationISPyBCallback()
-    callback.activity_gated_start(test_rotation_start_outer_document)
-    callback.activity_gated_start(TestData.test_rotation_start_main_document)
+    callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
+    callback.activity_gated_start(
+        TestData.test_rotation_start_main_document  # pyright: ignore
+    )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
 
     mx.upsert_data_collection_group.reset_mock()
@@ -155,8 +158,10 @@ def test_activity_gated_event(
 )
 def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document):
     callback = RotationISPyBCallback()
-    callback.activity_gated_start(test_rotation_start_outer_document)
-    callback.activity_gated_start(TestData.test_rotation_start_main_document)
+    callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
+    callback.activity_gated_start(
+        TestData.test_rotation_start_main_document  # pyright: ignore
+    )
     mx = mx_acquisition_from_conn(mock_ispyb_conn)
 
     mx.upsert_data_collection_group.reset_mock()

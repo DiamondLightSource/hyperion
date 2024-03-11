@@ -8,7 +8,8 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
-from unit_tests.external_interaction.conftest import (
+
+from ...conftest import (
     TEST_BARCODE,
     TEST_SAMPLE_ID,
     default_raw_params,

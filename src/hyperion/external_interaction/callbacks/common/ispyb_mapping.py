@@ -35,10 +35,11 @@ def populate_data_collection_group(experiment_type, detector_params, ispyb_param
 
 
 def populate_data_collection_position_info(ispyb_params):
+    # explicit cast to float because numpy int64, grrr...
     dc_pos_info = DataCollectionPositionInfo(
-        ispyb_params.position[0],
-        ispyb_params.position[1],
-        ispyb_params.position[2],
+        float(ispyb_params.position[0]),
+        float(ispyb_params.position[1]),
+        float(ispyb_params.position[2]),
     )
     return dc_pos_info
 
@@ -50,7 +51,7 @@ def populate_remaining_data_collection_info(
     detector_params,
     ispyb_params,
 ):
-    get_visit_string(ispyb_params, detector_params)
+    data_collection_info.visit_string = get_visit_string(ispyb_params, detector_params)
     data_collection_info.parent_id = data_collection_group_id
     data_collection_info.sample_id = ispyb_params.sample_id
     data_collection_info.detector_id = I03_EIGER_DETECTOR

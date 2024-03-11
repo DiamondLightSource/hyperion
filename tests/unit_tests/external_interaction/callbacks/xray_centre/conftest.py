@@ -5,10 +5,6 @@ import pytest
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from unit_tests.conftest import from_file as default_raw_params
 
 
 @pytest.fixture
@@ -30,7 +26,7 @@ def mock_ispyb_get_time():
 @pytest.fixture
 def mock_ispyb_store_grid_scan():
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb._store_grid_scan"
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb"
     ) as p:
         yield p
 
@@ -38,7 +34,7 @@ def mock_ispyb_store_grid_scan():
 @pytest.fixture
 def mock_ispyb_update_time_and_status():
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb._update_scan_with_end_time_and_status"
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb._update_scan_with_end_time_and_status"
     ) as p:
         yield p
 
@@ -46,7 +42,7 @@ def mock_ispyb_update_time_and_status():
 @pytest.fixture
 def mock_ispyb_begin_deposition():
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.begin_deposition"
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition"
     ) as p:
         yield p
 
@@ -54,7 +50,7 @@ def mock_ispyb_begin_deposition():
 @pytest.fixture
 def mock_ispyb_end_deposition():
     with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb.end_deposition"
+        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.end_deposition"
     ) as p:
         yield p
 
@@ -62,16 +58,3 @@ def mock_ispyb_end_deposition():
 @pytest.fixture
 def ispyb_handler():
     return GridscanISPyBCallback()
-
-
-def dummy_params():
-    dummy_params = GridscanInternalParameters(**default_raw_params())
-    return dummy_params
-
-
-def dummy_params_2d():
-    return GridscanInternalParameters(
-        **default_raw_params(
-            "tests/test_data/parameter_json_files/test_parameter_defaults_2d.json"
-        )
-    )

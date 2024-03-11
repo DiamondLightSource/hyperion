@@ -7,11 +7,12 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
 from pydantic import ValidationError
 
-import unit_tests.conftest
+import hyperion.parameters.external_parameters
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     GridscanIspybParams,
 )
+from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.internal_parameters import (
     InternalParameters,
     extract_hyperion_params_from_flat_dict,
@@ -27,19 +28,18 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
-from unit_tests.conftest import from_file
 
 
 @pytest.fixture
 def raw_params():
-    return unit_tests.conftest.from_file(
+    return hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
 
 
 @pytest.fixture
 def rotation_raw_params():
-    return unit_tests.conftest.from_file(
+    return hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
 
@@ -68,7 +68,7 @@ TEST_PARAM_DICT = {
 def test_cant_initialise_abstract_internalparams():
     with pytest.raises(TypeError):
         internal_parameters = InternalParameters(  # noqa
-            **unit_tests.conftest.from_file()
+            **hyperion.parameters.external_parameters.from_file()
         )
 
 
@@ -107,7 +107,7 @@ def test_internal_param_serialisation_deserialisation():
 
 
 def test_flatten():
-    params = unit_tests.conftest.from_file(
+    params = hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
     flat_dict = flatten_dict(params)
@@ -239,7 +239,7 @@ def test_param_fields_match_components_they_should_use(
 
 
 def test_internal_params_eq():
-    params = unit_tests.conftest.from_file(
+    params = hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
     internal_params = GridscanInternalParameters(**params)
