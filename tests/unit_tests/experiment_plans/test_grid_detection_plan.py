@@ -10,12 +10,13 @@ from dodal.devices.fast_grid_scan import GridAxis
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
+from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE, SampleLocation
 from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
+    get_min_and_max_y_of_pin,
     grid_detection_plan,
 )
 from hyperion.external_interaction.callbacks.grid_detection_callback import (
@@ -360,3 +361,51 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
 
     assert abs_sets["snapshot.top_left_y"][0] == expected_min_y
     assert abs_sets["snapshot.num_boxes_y"][0] == expected_y_steps
+
+
+@pytest.mark.parametrize(
+    "top, bottom, expected_min, expected_max",
+    [
+        (np.array([1, 2, 5]), np.array([8, 9, 40]), 1, 40),
+        (np.array([9, 6, 10]), np.array([152, 985, 72]), 6, 985),
+        (np.array([5, 1]), np.array([999, 1056, 896, 10]), 1, 1056),
+    ],
+)
+def test_given_array_with_valid_top_and_bottom_then_min_and_max_as_expected(
+    top, bottom, expected_min, expected_max
+):
+    min_y, max_y = get_min_and_max_y_of_pin(top, bottom, 100)
+    assert min_y == expected_min
+    assert max_y == expected_max
+
+
+@pytest.mark.parametrize(
+    "top, bottom, expected_min, expected_max",
+    [
+        (np.array([1, 2, NONE_VALUE]), np.array([8, 9, 40]), 1, 40),
+        (np.array([6, NONE_VALUE, 10]), np.array([152, 985, NONE_VALUE]), 6, 985),
+        (np.array([1, 5]), np.array([999, 1056, NONE_VALUE, 10]), 1, 1056),
+    ],
+)
+def test_given_array_with_some_invalid_top_and_bottom_sections_then_min_and_max_as_expected(
+    top, bottom, expected_min, expected_max
+):
+    min_y, max_y = get_min_and_max_y_of_pin(top, bottom, 100)
+    assert min_y == expected_min
+    assert max_y == expected_max
+
+
+@pytest.mark.parametrize(
+    "top, bottom, expected_min, expected_max",
+    [
+        (np.array([NONE_VALUE, 0, NONE_VALUE]), np.array([100, NONE_VALUE]), 0, 100),
+        (np.array([NONE_VALUE, NONE_VALUE]), np.array([100, NONE_VALUE]), 0, 100),
+        (np.array([0, NONE_VALUE]), np.array([NONE_VALUE]), 0, 100),
+    ],
+)
+def test_given_array_with_all_invalid_top_and_bottom_sections_then_min_and_max_is_full_image(
+    top, bottom, expected_min, expected_max
+):
+    min_y, max_y = get_min_and_max_y_of_pin(top, bottom, 100)
+    assert min_y == expected_min
+    assert max_y == expected_max

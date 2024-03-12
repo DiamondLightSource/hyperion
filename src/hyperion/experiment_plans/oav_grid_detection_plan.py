@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -11,10 +11,10 @@ from blueapi.core import BlueskyContext
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
 from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.setup_oav import (
-    get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
     wait_for_tip_to_be_found,
 )
@@ -40,6 +40,23 @@ def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:
     return device_composite_from_context(context, OavGridDetectionComposite)
 
 
+def get_min_and_max_y_of_pin(
+    top: np.ndarray, bottom: np.ndarray, full_image_height_px: int
+) -> Tuple[int, int]:
+    """Gives the minimum and maximum y that would cover the whole pin.
+
+    First filters out where no edge was found or the edge covers the full image.
+    If this results in no edges found then returns a min/max that covers the full image
+    """
+    filtered_top = top[np.where((top != 0) & (top != NONE_VALUE))]
+    min_y = min(filtered_top) if len(filtered_top) else 0
+    filtered_bottom = bottom[
+        np.where((bottom != full_image_height_px) & (bottom != NONE_VALUE))
+    ]
+    max_y = max(filtered_bottom) if len(filtered_bottom) else full_image_height_px
+    return min_y, max_y
+
+
 @bpp.run_decorator()
 def grid_detection_plan(
     composite: OavGridDetectionComposite,
@@ -54,8 +71,8 @@ def grid_detection_plan(
     encompass the whole of the sample as it appears in the OAV.
 
     Args:
-        parameters (OAVParamaters): Object containing paramters for setting up the OAV
-        out_parameters (GridScanParams): The returned parameters for the gridscan
+        composite (OavGridDetectionComposite): Composite containing devices for doing a grid detection.
+        parameters (OAVParameters): Object containing parameters for setting up the OAV
         snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
         snapshot_dir (str): The location to save snapshots
         grid_width_microns (int): The width of the grid to scan in microns
@@ -73,9 +90,6 @@ def grid_detection_plan(
     yield from pre_centring_setup_oav(oav, parameters, pin_tip_detection)
 
     LOGGER.info("OAV Centring: Camera set up")
-
-    start_positions = []
-    box_numbers = []
 
     assert isinstance(oav.parameters.micronsPerXPixel, float)
     box_size_x_pixels = box_size_um / oav.parameters.micronsPerXPixel
@@ -108,16 +122,10 @@ def grid_detection_plan(
         LOGGER.info(f"OAV Edge detection top: {list(top_edge)}")
         LOGGER.info(f"OAV Edge detection bottom: {list(bottom_edge)}")
 
-        # the edge detection line can jump to the edge of the image sometimes, filter
-        # those points out, and if empty after filter use the whole image
-        filtered_top = list(top_edge[top_edge != 0]) or [0]
-        filtered_bottom = list(bottom_edge[bottom_edge != full_image_height_px]) or [
-            full_image_height_px
-        ]
-        LOGGER.info(f"OAV Edge detection filtered top: {filtered_top}")
-        LOGGER.info(f"OAV Edge detection filtered bottom: {filtered_bottom}")
-        min_y = min(filtered_top)
-        max_y = max(filtered_bottom)
+        min_y, max_y = get_min_and_max_y_of_pin(
+            top_edge, bottom_edge, full_image_height_px
+        )
+
         grid_height_px = max_y - min_y
 
         y_steps: int = math.ceil(grid_height_px / box_size_y_pixels)
@@ -131,23 +139,19 @@ def grid_detection_plan(
             y_steps += 1
             min_y -= box_size_y_pixels / 2
             max_y += box_size_y_pixels / 2
-            grid_height_px += 1
+            grid_height_px += box_size_y_pixels
 
         LOGGER.info(f"Drawing snapshot {grid_width_pixels} by {grid_height_px}")
 
-        boxes = (
-            math.ceil(grid_width_pixels / box_size_x_pixels),
-            y_steps,
-        )
-        box_numbers.append(boxes)
+        x_steps = math.ceil(grid_width_pixels / box_size_x_pixels)
 
         upper_left = (tip_x_px, min_y)
 
         yield from bps.abs_set(oav.snapshot.top_left_x, upper_left[0])
         yield from bps.abs_set(oav.snapshot.top_left_y, upper_left[1])
         yield from bps.abs_set(oav.snapshot.box_width, box_size_x_pixels)
-        yield from bps.abs_set(oav.snapshot.num_boxes_x, boxes[0])
-        yield from bps.abs_set(oav.snapshot.num_boxes_y, boxes[1])
+        yield from bps.abs_set(oav.snapshot.num_boxes_x, x_steps)
+        yield from bps.abs_set(oav.snapshot.num_boxes_y, y_steps)
 
         snapshot_filename = snapshot_template.format(angle=abs(angle))
 
@@ -161,23 +165,6 @@ def grid_detection_plan(
         yield from bps.read(smargon)
         yield from bps.save()
 
-        # The first frame is taken at the centre of the first box
-        centre_of_first_box = (
-            int(upper_left[0] + box_size_x_pixels / 2),
-            int(upper_left[1] + box_size_y_pixels / 2),
+        LOGGER.info(
+            f"Grid calculated at {angle}: {x_steps}px by {y_steps}px starting at {upper_left}px"
         )
-
-        position = yield from get_move_required_so_that_beam_is_at_pixel(
-            smargon, centre_of_first_box, oav.parameters
-        )
-        start_positions.append(position)
-
-    LOGGER.info(
-        f"Calculated start position {start_positions[0][0], start_positions[0][1], start_positions[1][2]}"
-    )
-
-    LOGGER.info(
-        f"Calculated number of steps {box_numbers[0][0], box_numbers[0][1], box_numbers[1][1]}"
-    )
-
-    LOGGER.info(f"Step sizes: {box_size_um, box_size_um, box_size_um}")
