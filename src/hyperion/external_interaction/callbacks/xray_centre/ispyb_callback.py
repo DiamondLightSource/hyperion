@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from time import time
-from typing import TYPE_CHECKING, Any, Callable, List
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
@@ -258,7 +258,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             ),
         )
 
-    def activity_gated_stop(self, doc: RunStop):
+    def activity_gated_stop(self, doc: RunStop) -> Optional[RunStop]:
         if doc.get("run_start") == self._start_of_fgs_uid:
             self._processing_start_time = time()
         if doc.get("run_start") == self.uid_to_finalize_on:

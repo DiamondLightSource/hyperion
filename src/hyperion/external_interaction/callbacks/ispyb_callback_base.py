@@ -114,7 +114,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def update_deposition(self, params):
         pass
 
-    def activity_gated_stop(self, doc: RunStop) -> None:
+    def activity_gated_stop(self, doc: RunStop) -> Optional[RunStop]:
         """Subclasses must check that they are recieving a stop document for the correct
         uid to use this method!"""
         assert isinstance(

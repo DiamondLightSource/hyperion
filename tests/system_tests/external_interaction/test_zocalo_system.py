@@ -6,7 +6,6 @@ import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
 
-from tests.conftest import create_dummy_scan_spec
 from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
     XrayCentreCallbackCollection,
 )
@@ -14,6 +13,7 @@ from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from tests.conftest import create_dummy_scan_spec
 
 """
 If fake-zocalo system tests are failing, check that the RMQ instance is set up right:
