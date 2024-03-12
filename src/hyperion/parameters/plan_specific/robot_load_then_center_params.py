@@ -21,7 +21,7 @@ from hyperion.parameters.internal_parameters import (
 
 
 class RobotLoadThenCentreHyperionParameters(HyperionParameters):
-    ispyb_params: RobotLoadIspybParams = RobotLoadIspybParams(
+    ispyb_params: RobotLoadIspybParams = RobotLoadIspybParams(  # type: ignore
         **GRIDSCAN_ISPYB_PARAM_DEFAULTS
     )
 
