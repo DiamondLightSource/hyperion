@@ -12,6 +12,7 @@ from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
+from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_sim_value
@@ -141,9 +142,9 @@ class TestFlyscanXrayCentrePlan:
 
         fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
 
-        synchrotron_test_value = "test"
-        fake_fgs_composite.synchrotron.machine_status.synchrotron_mode.sim_put(  # type: ignore
-            synchrotron_test_value
+        synchrotron_test_value = SynchrotronMode.USER
+        set_sim_value(
+            fake_fgs_composite.synchrotron.synchrotron_mode, synchrotron_test_value
         )
 
         transmission_test_value = 0.01
@@ -185,7 +186,7 @@ class TestFlyscanXrayCentrePlan:
         assert params.hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
         assert (
             params.hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
-            == synchrotron_test_value
+            == synchrotron_test_value.value
         )
         assert params.hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
         assert params.hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
