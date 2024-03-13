@@ -1,27 +1,18 @@
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
-from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    GridScanInfo,
-    populate_data_collection_group,
-    populate_data_collection_position_info,
-    populate_remaining_data_collection_info,
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionGridInfo,
+    DataCollectionGroupInfo,
+    DataCollectionInfo,
+    DataCollectionPositionInfo,
+    ScanDataInfo,
 )
-from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
-    construct_comment_for_gridscan,
-    populate_data_collection_grid_info,
-    populate_xy_data_collection_info,
-    populate_xz_data_collection_info,
-)
-from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
+from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
-)
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
 )
 
 from ..conftest import (
@@ -40,101 +31,183 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
 
 
 @pytest.fixture
-def dummy_params_3d(dummy_params):
-    x = 50
-    y = 100
-    z = 120
-    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([x, y, z])
-    dummy_params.experiment_params.z_step_size = 0.2
-    return dummy_params
-
-
-@pytest.fixture
-def dummy_collection_group_info(dummy_params_3d):
-    return populate_data_collection_group(
-        "Mesh3D",
-        dummy_params_3d.hyperion_params.detector_params,
-        dummy_params_3d.hyperion_params.ispyb_params,
+def dummy_collection_group_info():
+    return DataCollectionGroupInfo(
+        visit_string="cm31105-4",
+        experiment_type="Mesh3D",
+        sample_id="0001",
+        sample_barcode="12345A",
     )
 
 
 @pytest.fixture
-@patch(
-    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
-    new=MagicMock(return_value=EXPECTED_START_TIME),
-)
-def scan_data_info_for_begin(dummy_params_3d):
-    grid_scan_info = GridScanInfo(
-        dummy_params_3d.hyperion_params.ispyb_params.upper_left,
-        dummy_params_3d.experiment_params.y_steps,
-        dummy_params_3d.experiment_params.y_step_size,
-    )
+def scan_data_info_for_begin():
     return ScanDataInfo(
-        data_collection_info=populate_remaining_data_collection_info(
-            lambda: construct_comment_for_gridscan(
-                dummy_params_3d,
-                dummy_params_3d.hyperion_params.ispyb_params,
-                grid_scan_info,
-            ),
-            None,
-            populate_xy_data_collection_info(
-                grid_scan_info,
-                dummy_params_3d,
-                dummy_params_3d.hyperion_params.ispyb_params,
-                dummy_params_3d.hyperion_params.detector_params,
-            ),
-            dummy_params_3d.hyperion_params.detector_params,
-            dummy_params_3d.hyperion_params.ispyb_params,
+        data_collection_info=DataCollectionInfo(
+            omega_start=0.0,
+            data_collection_number=0,
+            xtal_snapshot1="test_1_y",
+            xtal_snapshot2="test_2_y",
+            xtal_snapshot3="test_3_y",
+            n_images=800,
+            axis_range=0,
+            axis_end=0.0,
+            kappa_start=None,
+            parent_id=None,
+            visit_string="cm31105-4",
+            sample_id="0001",
+            detector_id=78,
+            axis_start=0.0,
+            focal_spot_size_at_samplex=0.0,
+            focal_spot_size_at_sampley=0.0,
+            slitgap_vertical=0.1,
+            slitgap_horizontal=0.1,
+            beamsize_at_samplex=0.1,
+            beamsize_at_sampley=0.1,
+            transmission=100.0,
+            comments="Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700].",
+            detector_distance=100.0,
+            exp_time=0.1,
+            imgdir="/tmp/",
+            file_template="file_name_0_master.h5",
+            imgprefix="file_name",
+            imgsuffix="h5",
+            n_passes=1,
+            overlap=0,
+            flux=10.0,
+            start_image_number=1,
+            resolution=1.0,
+            wavelength=123.98419840550369,
+            xbeam=150.0,
+            ybeam=160.0,
+            synchrotron_mode=None,
+            undulator_gap1=1.0,
+            start_time=EXPECTED_START_TIME,
         ),
+        data_collection_id=None,
+        data_collection_position_info=None,
+        data_collection_grid_info=None,
     )
 
 
 @pytest.fixture
-@patch(
-    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
-    new=MagicMock(return_value=EXPECTED_START_TIME),
-)
-def scan_data_infos_for_update(scan_xy_data_info_for_update, dummy_params):
-    upper_left = dummy_params.hyperion_params.ispyb_params.upper_left
-    xz_grid_scan_info = GridScanInfo(
-        [upper_left[0], upper_left[2]],
-        dummy_params.experiment_params.z_steps,
-        dummy_params.experiment_params.z_step_size,
-    )
-    xz_data_collection_info = populate_xz_data_collection_info(
-        xz_grid_scan_info,
-        dummy_params,
-        dummy_params.hyperion_params.ispyb_params,
-        dummy_params.hyperion_params.detector_params,
-    )
-
-    def comment_constructor():
-        return construct_comment_for_gridscan(
-            dummy_params, dummy_params.hyperion_params.ispyb_params, xz_grid_scan_info
-        )
-
-    xz_data_collection_info = populate_remaining_data_collection_info(
-        comment_constructor,
-        TEST_DATA_COLLECTION_GROUP_ID,
-        xz_data_collection_info,
-        dummy_params.hyperion_params.detector_params,
-        dummy_params.hyperion_params.ispyb_params,
-    )
-    xz_data_collection_info.parent_id = TEST_DATA_COLLECTION_GROUP_ID
-
-    scan_xz_data_info_for_update = ScanDataInfo(
-        data_collection_info=xz_data_collection_info,
-        data_collection_grid_info=(
-            populate_data_collection_grid_info(
-                dummy_params,
-                xz_grid_scan_info,
-                dummy_params.hyperion_params.ispyb_params,
-            )
+def scan_data_infos_for_update():
+    scan_xy_data_info_for_update = ScanDataInfo(
+        data_collection_info=DataCollectionInfo(
+            omega_start=0.0,
+            data_collection_number=0,
+            xtal_snapshot1="test_1_y",
+            xtal_snapshot2="test_2_y",
+            xtal_snapshot3="test_3_y",
+            n_images=800,
+            axis_range=0,
+            axis_end=0.0,
+            kappa_start=None,
+            parent_id=34,
+            visit_string="cm31105-4",
+            sample_id="0001",
+            detector_id=78,
+            axis_start=0.0,
+            focal_spot_size_at_samplex=0.0,
+            focal_spot_size_at_sampley=0.0,
+            slitgap_vertical=0.1,
+            slitgap_horizontal=0.1,
+            beamsize_at_samplex=0.1,
+            beamsize_at_sampley=0.1,
+            transmission=100.0,
+            comments="Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [50,100], bottom right (px): [3250,1700].",
+            detector_distance=100.0,
+            exp_time=0.1,
+            imgdir="/tmp/",
+            file_template="file_name_0_master.h5",
+            imgprefix="file_name",
+            imgsuffix="h5",
+            n_passes=1,
+            overlap=0,
+            flux=10.0,
+            start_image_number=1,
+            resolution=1.0,
+            wavelength=123.98419840550369,
+            xbeam=150.0,
+            ybeam=160.0,
+            synchrotron_mode=None,
+            undulator_gap1=1.0,
+            start_time=EXPECTED_START_TIME,
         ),
-        data_collection_position_info=(
-            populate_data_collection_position_info(
-                dummy_params.hyperion_params.ispyb_params
-            )
+        data_collection_id=None,
+        data_collection_position_info=DataCollectionPositionInfo(
+            pos_x=0, pos_y=0, pos_z=0
+        ),
+        data_collection_grid_info=DataCollectionGridInfo(
+            dx_in_mm=0.1,
+            dy_in_mm=0.1,
+            steps_x=40,
+            steps_y=20,
+            microns_per_pixel_x=1.25,
+            microns_per_pixel_y=1.25,
+            snapshot_offset_x_pixel=50,
+            snapshot_offset_y_pixel=100,
+            orientation=Orientation.HORIZONTAL,
+            snaked=True,
+        ),
+    )
+    scan_xz_data_info_for_update = ScanDataInfo(
+        data_collection_info=DataCollectionInfo(
+            omega_start=90.0,
+            data_collection_number=1,
+            xtal_snapshot1="test_1_z",
+            xtal_snapshot2="test_2_z",
+            xtal_snapshot3="test_3_z",
+            n_images=400,
+            axis_range=0,
+            axis_end=90.0,
+            kappa_start=None,
+            parent_id=34,
+            visit_string="cm31105-4",
+            sample_id="0001",
+            detector_id=78,
+            axis_start=90.0,
+            focal_spot_size_at_samplex=0.0,
+            focal_spot_size_at_sampley=0.0,
+            slitgap_vertical=0.1,
+            slitgap_horizontal=0.1,
+            beamsize_at_samplex=0.1,
+            beamsize_at_sampley=0.1,
+            transmission=100.0,
+            comments="Hyperion: Xray centring - Diffraction grid scan of 40 by 10 images in 100.0 um by 200.0 um steps. Top left (px): [50,120], bottom right (px): [3250,1720].",
+            detector_distance=100.0,
+            exp_time=0.1,
+            imgdir="/tmp/",
+            file_template="file_name_1_master.h5",
+            imgprefix="file_name",
+            imgsuffix="h5",
+            n_passes=1,
+            overlap=0,
+            flux=10.0,
+            start_image_number=1,
+            resolution=1.0,
+            wavelength=123.98419840550369,
+            xbeam=150.0,
+            ybeam=160.0,
+            synchrotron_mode=None,
+            undulator_gap1=1.0,
+            start_time=EXPECTED_START_TIME,
+        ),
+        data_collection_id=None,
+        data_collection_position_info=DataCollectionPositionInfo(
+            pos_x=0.0, pos_y=0.0, pos_z=0.0
+        ),
+        data_collection_grid_info=DataCollectionGridInfo(
+            dx_in_mm=0.1,
+            dy_in_mm=0.2,
+            steps_x=40,
+            steps_y=10,
+            microns_per_pixel_x=1.25,
+            microns_per_pixel_y=1.25,
+            snapshot_offset_x_pixel=50,
+            snapshot_offset_y_pixel=120,
+            orientation=Orientation.HORIZONTAL,
+            snaked=True,
         ),
     )
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
@@ -143,7 +216,6 @@ def scan_data_infos_for_update(scan_xy_data_info_for_update, dummy_params):
 def test_ispyb_deposition_comment_for_3D_correct(
     mock_ispyb_conn: MagicMock,
     dummy_3d_gridscan_ispyb: StoreInIspyb,
-    dummy_params_3d,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_data_infos_for_update,
@@ -173,7 +245,6 @@ def test_ispyb_deposition_comment_for_3D_correct(
 def test_store_3d_grid_scan(
     mock_ispyb_conn,
     dummy_3d_gridscan_ispyb: StoreInIspyb,
-    dummy_params_3d: GridscanInternalParameters,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_data_infos_for_update,
@@ -204,7 +275,6 @@ def test_store_3d_grid_scan(
 def test_begin_deposition(
     mock_ispyb_conn,
     dummy_3d_gridscan_ispyb: StoreInIspyb,
-    dummy_params_3d: GridscanInternalParameters,
     dummy_collection_group_info,
     scan_data_info_for_begin,
 ):
@@ -284,7 +354,6 @@ def test_begin_deposition(
 def test_update_deposition(
     mock_ispyb_conn,
     dummy_3d_gridscan_ispyb,
-    dummy_params_3d,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_data_infos_for_update,
@@ -371,9 +440,9 @@ def test_update_deposition(
         mx_acq.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": dummy_params_3d.hyperion_params.ispyb_params.position[0],
-            "pos_y": dummy_params_3d.hyperion_params.ispyb_params.position[1],
-            "pos_z": dummy_params_3d.hyperion_params.ispyb_params.position[2],
+            "pos_x": 0,
+            "pos_y": 0,
+            "pos_z": 0,
         },
     )
 
@@ -382,18 +451,14 @@ def test_update_deposition(
         mx_acq.get_dc_grid_params(),
         {
             "parentid": TEST_DATA_COLLECTION_IDS[0],
-            "dxinmm": dummy_params_3d.experiment_params.x_step_size,
-            "dyinmm": dummy_params_3d.experiment_params.y_step_size,
-            "stepsx": dummy_params_3d.experiment_params.x_steps,
-            "stepsy": dummy_params_3d.experiment_params.y_steps,
-            "micronsperpixelx": dummy_params_3d.hyperion_params.ispyb_params.microns_per_pixel_x,
-            "micronsperpixely": dummy_params_3d.hyperion_params.ispyb_params.microns_per_pixel_y,
-            "snapshotoffsetxpixel": dummy_params_3d.hyperion_params.ispyb_params.upper_left[
-                0
-            ],
-            "snapshotoffsetypixel": dummy_params_3d.hyperion_params.ispyb_params.upper_left[
-                1
-            ],
+            "dxinmm": 0.1,
+            "dyinmm": 0.1,
+            "stepsx": 40,
+            "stepsy": 20,
+            "micronsperpixelx": 1.25,
+            "micronsperpixely": 1.25,
+            "snapshotoffsetxpixel": 50,
+            "snapshotoffsetypixel": 100,
             "orientation": "horizontal",
             "snaked": True,
         },
@@ -452,9 +517,9 @@ def test_update_deposition(
         mx_acq.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[1],
-            "pos_x": dummy_params_3d.hyperion_params.ispyb_params.position[0],
-            "pos_y": dummy_params_3d.hyperion_params.ispyb_params.position[1],
-            "pos_z": dummy_params_3d.hyperion_params.ispyb_params.position[2],
+            "pos_x": 0,
+            "pos_y": 0,
+            "pos_z": 0,
         },
     )
 
@@ -463,18 +528,14 @@ def test_update_deposition(
         mx_acq.get_dc_grid_params(),
         {
             "parentid": TEST_DATA_COLLECTION_IDS[1],
-            "dxinmm": dummy_params_3d.experiment_params.x_step_size,
-            "dyinmm": dummy_params_3d.experiment_params.z_step_size,
-            "stepsx": dummy_params_3d.experiment_params.x_steps,
-            "stepsy": dummy_params_3d.experiment_params.z_steps,
-            "micronsperpixelx": dummy_params_3d.hyperion_params.ispyb_params.microns_per_pixel_x,
-            "micronsperpixely": dummy_params_3d.hyperion_params.ispyb_params.microns_per_pixel_y,
-            "snapshotoffsetxpixel": dummy_params_3d.hyperion_params.ispyb_params.upper_left[
-                0
-            ],
-            "snapshotoffsetypixel": dummy_params_3d.hyperion_params.ispyb_params.upper_left[
-                2
-            ],
+            "dxinmm": 0.1,
+            "dyinmm": 0.2,
+            "stepsx": 40,
+            "stepsy": 10,
+            "micronsperpixelx": 1.25,
+            "micronsperpixely": 1.25,
+            "snapshotoffsetxpixel": 50,
+            "snapshotoffsetypixel": 120,
             "orientation": "horizontal",
             "snaked": True,
         },
@@ -492,7 +553,6 @@ def test_end_deposition_happy_path(
     get_current_time,
     mock_ispyb_conn,
     dummy_3d_gridscan_ispyb,
-    dummy_params_3d,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_data_infos_for_update,

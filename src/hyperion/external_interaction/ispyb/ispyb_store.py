@@ -195,18 +195,6 @@ class StoreInIspyb(ABC):
 
         return self._upsert_data_collection_group(conn, params)
 
-    @staticmethod
-    @TRACER.start_as_current_span("_upsert_data_collection_group")
-    def _upsert_data_collection_group(
-        conn: Connector, params: StrictOrderedDict
-    ) -> int:
-        return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
-
-    @staticmethod
-    @TRACER.start_as_current_span("_upsert_data_collection")
-    def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
-        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
-
     def _store_data_collection_table(
         self, conn, data_collection_id, data_collection_info
     ):
@@ -264,3 +252,15 @@ class StoreInIspyb(ABC):
         }
 
         return params
+
+    @staticmethod
+    @TRACER.start_as_current_span("_upsert_data_collection_group")
+    def _upsert_data_collection_group(
+        conn: Connector, params: StrictOrderedDict
+    ) -> int:
+        return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
+
+    @staticmethod
+    @TRACER.start_as_current_span("_upsert_data_collection")
+    def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
+        return conn.mx_acquisition.upsert_data_collection(list(params.values()))

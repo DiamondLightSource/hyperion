@@ -3,14 +3,12 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
-from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    GridScanInfo,
-    populate_data_collection_position_info,
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionGridInfo,
+    DataCollectionPositionInfo,
+    ExperimentType,
 )
-from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
-    populate_data_collection_grid_info,
-)
-from hyperion.external_interaction.ispyb.data_model import ExperimentType
+from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -38,7 +36,7 @@ def dummy_params():
 
 
 @pytest.fixture
-def dummy_3d_gridscan_ispyb(dummy_params):
+def dummy_3d_gridscan_ispyb():
     store_in_ispyb_3d = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.GRIDSCAN_3D)
     return store_in_ispyb_3d
 
@@ -50,29 +48,29 @@ def dummy_rotation_ispyb(dummy_rotation_params):
 
 
 @pytest.fixture
-def dummy_2d_gridscan_ispyb(dummy_params):
+def dummy_2d_gridscan_ispyb():
     return StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.GRIDSCAN_2D)
 
 
 @pytest.fixture
-def scan_xy_data_info_for_update(dummy_params, scan_data_info_for_begin):
+def scan_xy_data_info_for_update(scan_data_info_for_begin):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
-    grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
-        dummy_params.experiment_params.y_steps,
-        dummy_params.experiment_params.y_step_size,
-    )
     scan_data_info_for_update.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
-    scan_data_info_for_update.data_collection_grid_info = (
-        populate_data_collection_grid_info(
-            dummy_params, grid_scan_info, dummy_params.hyperion_params.ispyb_params
-        )
+    scan_data_info_for_update.data_collection_grid_info = DataCollectionGridInfo(
+        dx_in_mm=0.1,
+        dy_in_mm=0.1,
+        steps_x=40,
+        steps_y=20,
+        microns_per_pixel_x=1.25,
+        microns_per_pixel_y=1.25,
+        snapshot_offset_x_pixel=100,
+        snapshot_offset_y_pixel=100,
+        orientation=Orientation.HORIZONTAL,
+        snaked=True,
     )
     scan_data_info_for_update.data_collection_position_info = (
-        populate_data_collection_position_info(
-            dummy_params.hyperion_params.ispyb_params
-        )
+        DataCollectionPositionInfo(0, 0, 0)
     )
     return scan_data_info_for_update
