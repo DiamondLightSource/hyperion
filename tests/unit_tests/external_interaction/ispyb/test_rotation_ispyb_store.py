@@ -3,16 +3,13 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 from mockito import mock
 
-from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    populate_data_collection_group,
-    populate_data_collection_position_info,
-    populate_remaining_data_collection_info,
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionGroupInfo,
+    DataCollectionInfo,
+    DataCollectionPositionInfo,
+    ExperimentType,
+    ScanDataInfo,
 )
-from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
-    construct_comment_for_rotation_scan,
-    populate_data_collection_info_for_rotation,
-)
-from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -74,11 +71,12 @@ EXPECTED_DATA_COLLECTION = {
 
 
 @pytest.fixture
-def dummy_rotation_data_collection_group_info(dummy_rotation_params):
-    return populate_data_collection_group(
-        "SAD",
-        dummy_rotation_params.hyperion_params.detector_params,
-        dummy_rotation_params.hyperion_params.ispyb_params,
+def dummy_rotation_data_collection_group_info():
+    return DataCollectionGroupInfo(
+        visit_string="cm31105-4",
+        experiment_type="SAD",
+        sample_id="0001",
+        sample_barcode="12345A",
     )
 
 
@@ -87,35 +85,109 @@ def dummy_rotation_data_collection_group_info(dummy_rotation_params):
     "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def scan_data_info_for_begin(dummy_rotation_params):
-    scan_data_info = ScanDataInfo(
-        data_collection_info=populate_remaining_data_collection_info(
-            construct_comment_for_rotation_scan,
-            None,
-            populate_data_collection_info_for_rotation(
-                dummy_rotation_params.hyperion_params.ispyb_params,
-                dummy_rotation_params.hyperion_params.detector_params,
-                dummy_rotation_params,
-            ),
-            dummy_rotation_params.hyperion_params.detector_params,
-            dummy_rotation_params.hyperion_params.ispyb_params,
-        )
+def scan_data_info_for_begin():
+    return ScanDataInfo(
+        data_collection_info=DataCollectionInfo(
+            omega_start=0.0,
+            data_collection_number=0,
+            xtal_snapshot1="test_1_y",
+            xtal_snapshot2="test_2_y",
+            xtal_snapshot3="test_3_y",
+            n_images=1800,
+            axis_range=0.1,
+            axis_end=180.0,
+            kappa_start=0.0,
+            parent_id=None,
+            visit_string="cm31105-4",
+            sample_id="0001",
+            detector_id=78,
+            axis_start=0.0,
+            focal_spot_size_at_samplex=1.0,
+            focal_spot_size_at_sampley=1.0,
+            slitgap_vertical=1.0,
+            slitgap_horizontal=1.0,
+            beamsize_at_samplex=1.0,
+            beamsize_at_sampley=1.0,
+            transmission=100.0,
+            comments="Hyperion rotation scan",
+            detector_distance=100.0,
+            exp_time=0.1,
+            imgdir="/tmp/",
+            file_template="file_name_0_master.h5",
+            imgprefix="file_name",
+            imgsuffix="h5",
+            n_passes=1,
+            overlap=0,
+            flux=10.0,
+            start_image_number=1,
+            resolution=1.0,
+            wavelength=123.98419840550369,
+            xbeam=150.0,
+            ybeam=160.0,
+            synchrotron_mode=None,
+            undulator_gap1=None,
+            start_time="2024-02-08 14:03:59",
+        ),
+        data_collection_id=None,
+        data_collection_position_info=None,
+        data_collection_grid_info=None,
     )
-    return scan_data_info
 
 
 @pytest.fixture
-def scan_data_info_for_update(scan_data_info_for_begin, dummy_rotation_params):
-    scan_data_info_for_begin.data_collection_position_info = (
-        populate_data_collection_position_info(
-            dummy_rotation_params.hyperion_params.ispyb_params
-        )
+def scan_data_info_for_update(scan_data_info_for_begin):
+    return ScanDataInfo(
+        data_collection_info=DataCollectionInfo(
+            omega_start=0.0,
+            data_collection_number=0,
+            xtal_snapshot1="test_1_y",
+            xtal_snapshot2="test_2_y",
+            xtal_snapshot3="test_3_y",
+            n_images=1800,
+            axis_range=0.1,
+            axis_end=180.0,
+            kappa_start=0.0,
+            parent_id=None,
+            visit_string="cm31105-4",
+            sample_id="0001",
+            detector_id=78,
+            axis_start=0.0,
+            focal_spot_size_at_samplex=1.0,
+            focal_spot_size_at_sampley=1.0,
+            slitgap_vertical=1.0,
+            slitgap_horizontal=1.0,
+            beamsize_at_samplex=1.0,
+            beamsize_at_sampley=1.0,
+            transmission=100.0,
+            comments="Hyperion rotation scan",
+            detector_distance=100.0,
+            exp_time=0.1,
+            imgdir="/tmp/",
+            file_template="file_name_0_master.h5",
+            imgprefix="file_name",
+            imgsuffix="h5",
+            n_passes=1,
+            overlap=0,
+            flux=10.0,
+            start_image_number=1,
+            resolution=1.0,
+            wavelength=123.98419840550369,
+            xbeam=150.0,
+            ybeam=160.0,
+            synchrotron_mode=None,
+            undulator_gap1=None,
+            start_time="2024-02-08 14:03:59",
+        ),
+        data_collection_id=11,
+        data_collection_position_info=DataCollectionPositionInfo(
+            pos_x=10.0, pos_y=20.0, pos_z=30.0
+        ),
+        data_collection_grid_info=None,
     )
-    return scan_data_info_for_begin
 
 
 @pytest.fixture
-def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
+def dummy_rotation_ispyb_with_experiment_type():
     store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, "Characterization")
     return store_in_ispyb
 
@@ -127,16 +199,23 @@ def dummy_rotation_ispyb_with_experiment_type(dummy_rotation_params):
 def test_begin_deposition(
     mock_ispyb_conn,
     dummy_rotation_ispyb,
-    dummy_rotation_params,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
 ):
+    assert scan_data_info_for_begin.data_collection_info.parent_id is None
+
     assert dummy_rotation_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
     ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
+
+    assert (
+        scan_data_info_for_begin.data_collection_info.parent_id
+        == TEST_DATA_COLLECTION_GROUP_ID
+    )
+
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     assert_upsert_call_with(
         mx_acq.upsert_data_collection_group.mock_calls[0],
@@ -161,7 +240,6 @@ def test_begin_deposition(
 )
 def test_begin_deposition_with_group_id_doesnt_insert(
     mock_ispyb_conn,
-    dummy_rotation_params,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
 ):
@@ -169,6 +247,7 @@ def test_begin_deposition_with_group_id_doesnt_insert(
     scan_data_info_for_begin.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
+
     assert dummy_rotation_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
     ) == IspybIds(
@@ -177,6 +256,11 @@ def test_begin_deposition_with_group_id_doesnt_insert(
     )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.assert_not_called()
+    assert (
+        scan_data_info_for_begin.data_collection_info.parent_id
+        == TEST_DATA_COLLECTION_GROUP_ID
+    )
+
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
@@ -191,7 +275,6 @@ def test_begin_deposition_with_group_id_doesnt_insert(
 def test_begin_deposition_with_alternate_experiment_type(
     mock_ispyb_conn,
     dummy_rotation_ispyb_with_experiment_type,
-    dummy_rotation_params,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
 ):
@@ -223,7 +306,6 @@ def test_begin_deposition_with_alternate_experiment_type(
 def test_update_deposition(
     mock_ispyb_conn,
     dummy_rotation_ispyb,
-    dummy_rotation_params,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
     scan_data_info_for_update,
@@ -234,6 +316,11 @@ def test_update_deposition(
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.reset_mock()
     mx_acq.upsert_data_collection.reset_mock()
+
+    scan_data_info_for_update.data_collection_info.parent_id = (
+        ispyb_ids.data_collection_group_id
+    )
+    scan_data_info_for_update.data_collection_id = ispyb_ids.data_collection_ids[0]
 
     assert dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
@@ -268,9 +355,9 @@ def test_update_deposition(
         mx_acq.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": dummy_rotation_params.hyperion_params.ispyb_params.position[0],
-            "pos_y": dummy_rotation_params.hyperion_params.ispyb_params.position[1],
-            "pos_z": dummy_rotation_params.hyperion_params.ispyb_params.position[2],
+            "pos_x": 10,
+            "pos_y": 20,
+            "pos_z": 30,
         },
     )
 
@@ -281,7 +368,6 @@ def test_update_deposition(
 )
 def test_update_deposition_with_group_id_updates(
     mock_ispyb_conn,
-    dummy_rotation_params,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
     scan_data_info_for_update,
@@ -297,6 +383,10 @@ def test_update_deposition_with_group_id_updates(
     mx_acq.upsert_data_collection_group.reset_mock()
     mx_acq.upsert_data_collection.reset_mock()
 
+    scan_data_info_for_update.data_collection_info.parent_id = (
+        ispyb_ids.data_collection_group_id
+    )
+    scan_data_info_for_update.data_collection_id = ispyb_ids.data_collection_ids[0]
     assert dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
         dummy_rotation_data_collection_group_info,
@@ -330,9 +420,9 @@ def test_update_deposition_with_group_id_updates(
         mx_acq.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": dummy_rotation_params.hyperion_params.ispyb_params.position[0],
-            "pos_y": dummy_rotation_params.hyperion_params.ispyb_params.position[1],
-            "pos_z": dummy_rotation_params.hyperion_params.ispyb_params.position[2],
+            "pos_x": 10,
+            "pos_y": 20,
+            "pos_z": 30,
         },
     )
 
@@ -348,7 +438,6 @@ def test_end_deposition_happy_path(
     get_current_time,
     mock_ispyb_conn,
     dummy_rotation_ispyb,
-    dummy_rotation_params,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
     scan_data_info_for_update,
@@ -356,6 +445,10 @@ def test_end_deposition_happy_path(
     ispyb_ids = dummy_rotation_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
     )
+    scan_data_info_for_update.data_collection_info.parent_id = (
+        ispyb_ids.data_collection_group_id
+    )
+    scan_data_info_for_update.data_collection_id = ispyb_ids.data_collection_ids[0]
     ispyb_ids = dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
         dummy_rotation_data_collection_group_info,
@@ -398,21 +491,6 @@ def test_store_rotation_scan_failures(
     )
     with pytest.raises(AssertionError):
         dummy_rotation_ispyb.end_deposition(ispyb_ids, "", "")
-
-
-def test_populate_data_collection_info_for_rotation_checks_snapshots(
-    dummy_rotation_params, dummy_rotation_data_collection_group_info
-):
-    with patch("hyperion.log.ISPYB_LOGGER.warning", autospec=True) as warning:
-        dummy_rotation_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = (
-            None
-        )
-        populate_data_collection_info_for_rotation(
-            dummy_rotation_params.hyperion_params.ispyb_params,
-            dummy_rotation_params.hyperion_params.detector_params,
-            dummy_rotation_params,
-        )
-        warning.assert_called_once_with("No xtal snapshot paths sent to ISPyB!")
 
 
 @pytest.mark.parametrize("dcgid", [2, 45, 61, 88, 13, 25])
