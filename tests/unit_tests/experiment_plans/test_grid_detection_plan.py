@@ -85,7 +85,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     test_config_files,
     fake_devices,
 ):
-
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     cb = OavSnapshotCallback()
     RE.subscribe(cb)
@@ -250,15 +249,21 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     my_grid_params = cb.get_grid_parameters()
 
     test_x_grid_axis = GridAxis(
-        my_grid_params.x_start, my_grid_params.x_step_size, my_grid_params.x_steps
+        start=my_grid_params.x_start,
+        step_size=my_grid_params.x_step_size,
+        full_steps=my_grid_params.x_steps,
     )
 
     test_y_grid_axis = GridAxis(
-        my_grid_params.y1_start, my_grid_params.y_step_size, my_grid_params.y_steps
+        start=my_grid_params.y1_start,
+        step_size=my_grid_params.y_step_size,
+        full_steps=my_grid_params.y_steps,
     )
 
     test_z_grid_axis = GridAxis(
-        my_grid_params.z2_start, my_grid_params.z_step_size, my_grid_params.z_steps
+        start=my_grid_params.z2_start,
+        step_size=my_grid_params.z_step_size,
+        full_steps=my_grid_params.z_steps,
     )
 
     assert my_grid_params.x_start == pytest.approx(-0.7942199999999999)

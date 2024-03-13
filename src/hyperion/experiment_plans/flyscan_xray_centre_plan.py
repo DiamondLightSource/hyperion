@@ -246,7 +246,7 @@ def run_gridscan(
 
     LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
-
+    LOGGER.info("Waiting for gridscan validity check")
     yield from wait_for_gridscan_valid(fgs_motors)
 
     LOGGER.info("Waiting for arming to finish")
