@@ -17,10 +17,10 @@ if s03_epics_repeater_port:
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--debug-logging",
+        "--logging",
         action="store_true",
         default=False,
-        help="initialise test loggers in DEBUG instead of INFO",
+        help="Log during all tests (not just those that are testing logging logic)",
     )
 
 
