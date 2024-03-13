@@ -18,9 +18,9 @@
             "microns_per_pixel_x": 1.25,
             "microns_per_pixel_y": 1.25,
             "upper_left": [
-                50,
                 100,
-                0
+                100,
+                50
             ],
             "position": [
                 0,
@@ -45,8 +45,8 @@
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
             "resolution": 1,
-            "sample_id": "0001",
-            "sample_barcode": "12345A",
+            "sample_id": null,
+            "sample_barcode": null,
             "undulator_gap": 1.0,
             "synchrotron_mode": null,
             "slit_gap_size_x": 0.1,

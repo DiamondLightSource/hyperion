@@ -278,4 +278,3 @@ def test_cleanup_happens(
             )
             assert "Experiment fails because this is a test" in exc.value.args[0]
             cleanup_plan.assert_called_once()
-

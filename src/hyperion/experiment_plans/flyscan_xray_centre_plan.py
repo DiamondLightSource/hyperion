@@ -386,7 +386,7 @@ if __name__ == "__main__":
         GridscanInternalParameters,
     )
 
-    parameters = GridscanInternalParameters(**external_parameters.from_file())
+    parameters = GridscanInternalParameters(**external_parameters.conftest.from_file())
     subscriptions = XrayCentreCallbackCollection()
 
     context = setup_context(wait_for_connection=True)
