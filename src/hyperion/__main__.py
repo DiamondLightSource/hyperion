@@ -6,6 +6,7 @@ from traceback import format_exception
 from typing import Any, Callable, Optional, Tuple
 
 from blueapi.core import BlueskyContext, MsgGenerator
+from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from flask import Flask, request
@@ -15,7 +16,6 @@ from pydantic.dataclasses import dataclass
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
-    CallbackFactories,
     PlanNotFound,
 )
 from hyperion.external_interaction.callbacks.__main__ import (
@@ -46,7 +46,7 @@ class Command:
     devices: Optional[Any] = None
     experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
     parameters: Optional[InternalParameters] = None
-    callbacks: Optional[CallbackFactories] = None
+    callbacks: Optional[Callable[[], Tuple[CallbackBase, CallbackBase]]] = None
 
 
 @dataclass
@@ -109,7 +109,7 @@ class BlueskyRunner:
         experiment: Callable,
         parameters: InternalParameters,
         plan_name: str,
-        callbacks: Optional[CallbackFactories],
+        callbacks: Optional[Callable[[], Tuple[CallbackBase, CallbackBase]]],
     ) -> StatusAndMessage:
         LOGGER.info(f"Started with parameters: {parameters}")
 
@@ -170,7 +170,7 @@ class BlueskyRunner:
                     if (
                         not self.use_external_callbacks
                         and command.callbacks
-                        and (cbs := [c() for c in command.callbacks])
+                        and (cbs := command.callbacks())
                     ):
                         LOGGER.info(
                             f"Using callbacks for this plan: {not self.use_external_callbacks} - {cbs}"
