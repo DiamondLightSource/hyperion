@@ -201,7 +201,7 @@ def kickoff_and_complete_gridscan(
         LOGGER.info("Wait for all moves with no assigned group")
         yield from bps.wait()
         LOGGER.info("kicking off FGS")
-        yield from bps.kickoff(gridscan)
+        yield from bps.kickoff(gridscan, wait=True)
         LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
         yield from bps.wait(
             ZOCALO_STAGE_GROUP

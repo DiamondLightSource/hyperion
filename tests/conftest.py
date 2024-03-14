@@ -526,6 +526,7 @@ def fake_fgs_composite(
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.unstage = MagicMock(return_value=done_status)
     fake_composite.eiger.set_detector_parameters(
         test_fgs_params.hyperion_params.detector_params
     )
