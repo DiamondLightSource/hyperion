@@ -723,9 +723,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
         RE: RunEngine,
+        done_status,
     ):
-        fake_fgs_composite.eiger.stage = MagicMock()
-        fake_fgs_composite.eiger.unstage = MagicMock()
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
 
         RE(run_gridscan(fake_fgs_composite, test_panda_fgs_params))
         fake_fgs_composite.eiger.stage.assert_called_once()

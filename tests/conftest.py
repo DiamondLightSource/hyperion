@@ -495,6 +495,15 @@ def zocalo(done_status):
     return zoc
 
 
+def mock_gridscan_kickoff_complete(gridscan):
+    gridscan_start = DeviceStatus(device=gridscan)
+    gridscan_start.set_finished()
+    gridscan_result = GridScanCompleteStatus(device=gridscan)
+    gridscan_result.set_finished()
+    gridscan.kickoff = MagicMock(return_value=gridscan_start)
+    gridscan.complete = MagicMock(return_value=gridscan_result)
+
+
 @pytest.fixture
 def fake_fgs_composite(
     smargon: Smargon,
@@ -528,6 +537,7 @@ def fake_fgs_composite(
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
         test_fgs_params.hyperion_params.detector_params
     )
@@ -543,16 +553,9 @@ def fake_fgs_composite(
     fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
         False
     )
-    gridscan_start = DeviceStatus(device=fake_composite.fast_grid_scan)
-    gridscan_start.set_finished()
-    gridscan_result = GridScanCompleteStatus(device=fake_composite.fast_grid_scan)
-    gridscan_result.set_finished()
-    fake_composite.fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
-    fake_composite.fast_grid_scan.complete = MagicMock(return_value=gridscan_result)
-    fake_composite.panda_fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
-    fake_composite.panda_fast_grid_scan.complete = MagicMock(
-        return_value=gridscan_result
-    )
+
+    mock_gridscan_kickoff_complete(fake_composite.fast_grid_scan)
+    mock_gridscan_kickoff_complete(fake_composite.panda_fast_grid_scan)
 
     test_result = {
         "centre_of_mass": [6, 6, 6],

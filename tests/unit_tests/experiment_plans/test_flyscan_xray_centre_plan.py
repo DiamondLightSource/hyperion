@@ -7,6 +7,8 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import FailedStatus
+from dodal.beamlines import i03
+from dodal.beamlines.beamline_utils import clear_device
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -455,6 +457,54 @@ class TestFlyscanXrayCentrePlan:
         assert "Crystal 1: Strength 999999" in call.args[1]
 
     @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+    )
+    def test_waits_for_motion_program(
+        self,
+        check_topup_and_wait,
+        RE,
+        test_fgs_params: GridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        done_status,
+    ):
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        clear_device("fast_grid_scan")
+        fgs = i03.fast_grid_scan(fake_with_ophyd_sim=True)
+        fgs.KICKOFF_TIMEOUT = 0.1
+        fgs.complete = MagicMock(return_value=done_status)
+        fgs.motion_program.running.sim_put(1)  # type: ignore
+        with pytest.raises(FailedStatus):
+            RE(
+                kickoff_and_complete_gridscan(
+                    fgs,
+                    fake_fgs_composite.eiger,
+                    fake_fgs_composite.synchrotron,
+                    "zocalo environment",
+                    [
+                        test_fgs_params.get_scan_points(1),
+                        test_fgs_params.get_scan_points(2),
+                    ],
+                )
+            )
+        fgs.KICKOFF_TIMEOUT = 1
+        fgs.motion_program.running.sim_put(0)  # type: ignore
+        fgs.status.sim_put(1)  # type: ignore
+        res = RE(
+            kickoff_and_complete_gridscan(
+                fgs,
+                fake_fgs_composite.eiger,
+                fake_fgs_composite.synchrotron,
+                "zocalo environment",
+                [
+                    test_fgs_params.get_scan_points(1),
+                    test_fgs_params.get_scan_points(2),
+                ],
+            )
+        )
+        assert res.exit_status == "success"
+        clear_device("fast_grid_scan")
+
+    @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
     )
     @patch(
@@ -688,10 +738,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
+        done_status,
     ):
-        fake_fgs_composite.eiger.stage = MagicMock()
-        fake_fgs_composite.eiger.unstage = MagicMock()
-
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         RE(run_gridscan(fake_fgs_composite, test_fgs_params))
         fake_fgs_composite.eiger.stage.assert_called_once()
         fake_fgs_composite.eiger.unstage.assert_called_once()
