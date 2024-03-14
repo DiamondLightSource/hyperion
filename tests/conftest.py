@@ -468,6 +468,8 @@ def fake_create_rotation_devices(
     smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
 
+    smargon.omega.max_velocity.sim_put(131)  # type: ignore
+
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
