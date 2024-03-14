@@ -58,8 +58,6 @@ def populate_remaining_data_collection_info(
     data_collection_info.axis_start = data_collection_info.omega_start
     data_collection_info.focal_spot_size_at_samplex = ispyb_params.focal_spot_size_x
     data_collection_info.focal_spot_size_at_sampley = ispyb_params.focal_spot_size_y
-    data_collection_info.slitgap_vertical = ispyb_params.slit_gap_size_y
-    data_collection_info.slitgap_horizontal = ispyb_params.slit_gap_size_x
     data_collection_info.beamsize_at_samplex = ispyb_params.beam_size_x
     data_collection_info.beamsize_at_sampley = ispyb_params.beam_size_y
     # Ispyb wants the transmission in a percentage, we use fractions
@@ -74,17 +72,13 @@ def populate_remaining_data_collection_info(
     # planned to be removed later
     data_collection_info.n_passes = 1
     data_collection_info.overlap = 0
-    data_collection_info.flux = ispyb_params.flux
     data_collection_info.start_image_number = 1
     data_collection_info.resolution = ispyb_params.resolution
-    data_collection_info.wavelength = ispyb_params.wavelength_angstroms
     beam_position = detector_params.get_beam_position_mm(
         detector_params.detector_distance
     )
     data_collection_info.xbeam = beam_position[0]
     data_collection_info.ybeam = beam_position[1]
-    data_collection_info.synchrotron_mode = ispyb_params.synchrotron_mode
-    data_collection_info.undulator_gap1 = ispyb_params.undulator_gap
     data_collection_info.start_time = get_current_time_string()
     # temporary file template until nxs filewriting is integrated and we can use
     # that file name

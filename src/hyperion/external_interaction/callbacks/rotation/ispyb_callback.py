@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Sequence
+from dataclasses import asdict, replace
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -14,7 +16,11 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
     construct_comment_for_rotation_scan,
     populate_data_collection_info_for_rotation,
 )
-from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionInfo,
+    ExperimentType,
+    ScanDataInfo,
+)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -120,29 +126,37 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.uid_to_finalize_on = doc.get("uid")
         return super().activity_gated_start(doc)
 
-    def update_deposition(self, params):
-        dcg_info = populate_data_collection_group(
-            self.ispyb.experiment_type,
-            params.hyperion_params.detector_params,
+    def populate_info_for_update(
+        self, event_sourced_data_collection_info: DataCollectionInfo, params
+    ) -> Sequence[ScanDataInfo]:
+        params = cast(RotationInternalParameters, params)
+        initial_collection_info = populate_data_collection_info_for_rotation(
             params.hyperion_params.ispyb_params,
+            params.hyperion_params.detector_params,
+            params,
         )
-        scan_data_info = ScanDataInfo(
-            data_collection_info=populate_remaining_data_collection_info(
-                construct_comment_for_rotation_scan,
-                self.ispyb_ids.data_collection_group_id,
-                populate_data_collection_info_for_rotation(
-                    params.hyperion_params.ispyb_params,
+        initial_collection_info = replace(
+            initial_collection_info,
+            **{
+                k: v
+                for (k, v) in asdict(event_sourced_data_collection_info).items()
+                if v
+            },
+        )
+        return [
+            ScanDataInfo(
+                data_collection_info=populate_remaining_data_collection_info(
+                    construct_comment_for_rotation_scan,
+                    self.ispyb_ids.data_collection_group_id,
+                    initial_collection_info,
                     params.hyperion_params.detector_params,
-                    params,
+                    params.hyperion_params.ispyb_params,
                 ),
-                params.hyperion_params.detector_params,
-                params.hyperion_params.ispyb_params,
-            ),
-            data_collection_position_info=populate_data_collection_position_info(
-                params.hyperion_params.ispyb_params
-            ),
-        )
-        return self.ispyb.update_deposition(self.ispyb_ids, dcg_info, [scan_data_info])
+                data_collection_position_info=populate_data_collection_position_info(
+                    params.hyperion_params.ispyb_params
+                ),
+            )
+        ]
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
