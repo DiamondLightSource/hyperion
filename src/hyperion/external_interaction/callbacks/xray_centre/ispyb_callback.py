@@ -217,10 +217,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 params, params.hyperion_params.ispyb_params, grid_scan_info
             )
 
-        xy_data_collection_info = self.populate_data_collection_info_from_ispyb_params(
-            xy_data_collection_info, params.hyperion_params.ispyb_params
-        )
-
         xy_data_collection_info = populate_remaining_data_collection_info(
             comment_constructor,
             self.ispyb_ids.data_collection_group_id,

@@ -14,7 +14,6 @@ from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
     ScanDataInfo,
 )
-from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -29,6 +28,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+from hyperion.utils.utils import convert_eV_to_angstrom
 
 D = TypeVar("D")
 if TYPE_CHECKING:
@@ -46,6 +46,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         for self.ispyb_ids."""
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
+        self._event_driven_data_collection_info: Optional[DataCollectionInfo] = None
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )
@@ -66,6 +67,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self.log = ISPYB_LOGGER
 
     def activity_gated_start(self, doc: RunStart):
+        self._event_driven_data_collection_info = DataCollectionInfo()
         return self._tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
@@ -87,17 +89,18 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
             return doc
         if event_descriptor.get("name") == CONST.PLAN.ISPYB_HARDWARE_READ:
+            assert self._event_driven_data_collection_info
             ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
-            self.params.hyperion_params.ispyb_params.undulator_gap = doc["data"][
+            self._event_driven_data_collection_info.undulator_gap1 = doc["data"][
                 "undulator_current_gap"
             ]
-            self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][
+            self._event_driven_data_collection_info.synchrotron_mode = doc["data"][
                 "synchrotron-synchrotron_mode"
             ]
-            self.params.hyperion_params.ispyb_params.slit_gap_size_x = doc["data"][
+            self._event_driven_data_collection_info.slitgap_horizontal = doc["data"][
                 "s4_slit_gaps_xgap"
             ]
-            self.params.hyperion_params.ispyb_params.slit_gap_size_y = doc["data"][
+            self._event_driven_data_collection_info.slitgap_vertical = doc["data"][
                 "s4_slit_gaps_ygap"
             ]
             self.params.hyperion_params.ispyb_params.sample_barcode = doc["data"][
@@ -105,41 +108,27 @@ class BaseISPyBCallback(PlanReactiveCallback):
             ]
 
         if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
-            self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
-                "data"
-            ]["attenuator_actual_transmission"]
-            self.params.hyperion_params.ispyb_params.flux = doc["data"][
+            assert self._event_driven_data_collection_info
+            if doc["data"]["attenuator_actual_transmission"]:
+                # Ispyb wants the transmission in a percentage, we use fractions
+                self._event_driven_data_collection_info.transmission = (
+                    doc["data"]["attenuator_actual_transmission"] * 100
+                )
+            self._event_driven_data_collection_info.flux = doc["data"][
                 "flux_flux_reading"
             ]
-            self.params.hyperion_params.ispyb_params.current_energy_ev = (
-                doc["data"]["dcm_energy_in_kev"] * 1000
-            )
-
-            ISPYB_LOGGER.info("Updating ispyb entry.")
-            template_data_collection_info = (
-                self.populate_data_collection_info_from_ispyb_params(
-                    DataCollectionInfo(), self.params.hyperion_params.ispyb_params
+            if doc["data"]["dcm_energy_in_kev"]:
+                self._event_driven_data_collection_info.wavelength = (
+                    convert_eV_to_angstrom(doc["data"]["dcm_energy_in_kev"] * 1000)
                 )
-            )
+
             scan_data_infos = self.populate_info_for_update(
-                template_data_collection_info, self.params
+                self._event_driven_data_collection_info, self.params
             )
+            ISPYB_LOGGER.info("Updating ispyb entry.")
             self.ispyb_ids = self.update_deposition(self.params, scan_data_infos)
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
-
-    def populate_data_collection_info_from_ispyb_params(
-        self, data_collection_info: DataCollectionInfo, ispyb_params: IspybParams
-    ) -> DataCollectionInfo:
-        data_collection_info.undulator_gap1 = ispyb_params.undulator_gap
-        data_collection_info.synchrotron_mode = ispyb_params.synchrotron_mode
-        data_collection_info.slitgap_horizontal = ispyb_params.slit_gap_size_x
-        data_collection_info.slitgap_vertical = ispyb_params.slit_gap_size_y
-        data_collection_info.flux = ispyb_params.flux
-        data_collection_info.wavelength = ispyb_params.wavelength_angstroms
-
-        # TODO barcode
-        return data_collection_info
 
     def update_deposition(
         self, params, scan_data_infos: Sequence[ScanDataInfo]

@@ -1,7 +1,7 @@
 import random
 import types
 from typing import Tuple
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
 import numpy as np
@@ -39,16 +39,16 @@ from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from hyperion.external_interaction.callbacks.plan_reactive_callback import (
+    PlanReactiveCallback,
+)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from hyperion.external_interaction.ispyb.ispyb_store import (
-    IspybIds,
-    StoreInIspyb,
-)
+from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
     PandAGridscanInternalParameters,
@@ -160,42 +160,52 @@ class TestFlyscanXrayCentrePlan:
 
         set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
 
-        test_ispyb_callback = GridscanISPyBCallback()
+        test_ispyb_callback = PlanReactiveCallback(ISPYB_LOGGER)
         test_ispyb_callback.active = True
-        test_ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
-        test_ispyb_callback.ispyb.begin_deposition.return_value = IspybIds(
-            data_collection_ids=(2, 3), data_collection_group_id=5, grid_ids=(7, 8, 9)
-        )
-        RE.subscribe(test_ispyb_callback)
+        with patch.multiple(
+            test_ispyb_callback,
+            activity_gated_start=DEFAULT,
+            activity_gated_event=DEFAULT,
+        ):
+            RE.subscribe(test_ispyb_callback)
 
-        RE(
-            ispyb_plan(
-                fake_fgs_composite.undulator,
-                fake_fgs_composite.synchrotron,
-                fake_fgs_composite.s4_slit_gaps,
-                fake_fgs_composite.robot,
-                fake_fgs_composite.attenuator,
-                fake_fgs_composite.flux,
-                fake_fgs_composite.dcm,
-                fake_fgs_composite.aperture_scatterguard,
+            RE(
+                ispyb_plan(
+                    fake_fgs_composite.undulator,
+                    fake_fgs_composite.synchrotron,
+                    fake_fgs_composite.s4_slit_gaps,
+                    fake_fgs_composite.robot,
+                    fake_fgs_composite.attenuator,
+                    fake_fgs_composite.flux,
+                    fake_fgs_composite.dcm,
+                    fake_fgs_composite.aperture_scatterguard,
+                )
             )
-        )
-        params = test_ispyb_callback.params
 
-        assert params.hyperion_params.ispyb_params.undulator_gap == undulator_test_value  # type: ignore
-        assert (
-            params.hyperion_params.ispyb_params.synchrotron_mode  # type: ignore
-            == synchrotron_test_value.value
-        )
-        assert params.hyperion_params.ispyb_params.slit_gap_size_x == xgap_test_value  # type: ignore
-        assert params.hyperion_params.ispyb_params.slit_gap_size_y == ygap_test_value  # type: ignore
-        assert (
-            params.hyperion_params.ispyb_params.transmission_fraction  # type: ignore
-            == transmission_test_value
-        )
-        assert params.hyperion_params.ispyb_params.flux == flux_test_value  # type: ignore
-
-        assert params.hyperion_params.ispyb_params.sample_barcode == "BARCODE"
+            assert_event(
+                test_ispyb_callback.activity_gated_start.mock_calls[0],
+                {
+                    "plan_name": "standalone_read_hardware_for_ispyb",
+                    "subplan_name": "run_gridscan_move_and_tidy",
+                },
+            )
+            assert_event(
+                test_ispyb_callback.activity_gated_event.mock_calls[0],
+                {
+                    "undulator_current_gap": undulator_test_value,
+                    "synchrotron-synchrotron_mode": synchrotron_test_value.value,
+                    "s4_slit_gaps_xgap": xgap_test_value,
+                    "s4_slit_gaps_ygap": ygap_test_value,
+                    "robot-barcode": "BARCODE",
+                },
+            )
+            assert_event(
+                test_ispyb_callback.activity_gated_event.mock_calls[1],
+                {
+                    "attenuator_actual_transmission": transmission_test_value,
+                    "flux_flux_reading": flux_test_value,
+                },
+            )
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
@@ -805,3 +815,11 @@ def test_tidy_up_plans_disable_panda_and_zebra(
     RE(tidy_up_plans(MagicMock()))
     mock_panda_tidy.assert_called_once()
     mock_zebra_tidy.assert_called_once()
+
+
+def assert_event(mock_call, expected):
+    actual = mock_call.args[0]
+    if "data" in actual:
+        actual = actual["data"]
+    for k, v in expected.items():
+        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
