@@ -10,14 +10,10 @@ from ispyb.sqlalchemy import DataCollection
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_2d import (
-    Store2DGridscanInIspyb,
-)
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
-)
+from hyperion.external_interaction.ispyb.data_model import ExperimentType
+from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file as default_raw_params
+from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -105,10 +101,12 @@ def fetch_datacollection_attribute() -> Callable:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = GridscanInternalParameters(**default_raw_params())
+    dummy_params = GridscanInternalParameters(
+        **from_file(
+            "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
+        )
+    )
     dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 0.8
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 0.8
     dummy_params.hyperion_params.ispyb_params.visit_path = (
         "/dls/i03/data/2022/cm31105-5/"
     )
@@ -116,13 +114,13 @@ def dummy_params():
 
 
 @pytest.fixture
-def dummy_ispyb(dummy_params) -> Store2DGridscanInIspyb:
-    return Store2DGridscanInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, dummy_params)
+def dummy_ispyb(dummy_params) -> StoreInIspyb:
+    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, ExperimentType.GRIDSCAN_2D)
 
 
 @pytest.fixture
-def dummy_ispyb_3d(dummy_params) -> Store3DGridscanInIspyb:
-    return Store3DGridscanInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, dummy_params)
+def dummy_ispyb_3d(dummy_params) -> StoreInIspyb:
+    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, ExperimentType.GRIDSCAN_3D)
 
 
 @pytest.fixture

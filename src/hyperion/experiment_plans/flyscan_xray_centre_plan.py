@@ -246,7 +246,7 @@ def run_gridscan(
 
     LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
-
+    LOGGER.info("Waiting for gridscan validity check")
     yield from wait_for_gridscan_valid(fgs_motors)
 
     LOGGER.info("Waiting for arming to finish")
@@ -324,6 +324,10 @@ def run_gridscan_and_move(
             fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
         )
 
+    # Wait on everything before returning to GDA (particularly apertures), can be removed
+    # when we do not return to GDA here
+    yield from bps.wait()
+
 
 def flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
@@ -382,7 +386,7 @@ if __name__ == "__main__":
         GridscanInternalParameters,
     )
 
-    parameters = GridscanInternalParameters(**external_parameters.from_file())
+    parameters = GridscanInternalParameters(**external_parameters.conftest.from_file())
     subscriptions = XrayCentreCallbackCollection()
 
     context = setup_context(wait_for_connection=True)

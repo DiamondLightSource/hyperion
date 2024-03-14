@@ -15,8 +15,8 @@
         },
         "ispyb_params": {
             "visit_path": "/tmp/cm31105-4",
-            "microns_per_pixel_x": 1.25,
-            "microns_per_pixel_y": 1.25,
+            "microns_per_pixel_x": 10.0,
+            "microns_per_pixel_y": 10.0,
             "upper_left": [
                 50,
                 100,
@@ -56,10 +56,10 @@
     "experiment_params": {
         "x_steps": 40,
         "y_steps": 20,
-        "z_steps": 10,
+        "z_steps": 0,
         "x_step_size": 0.1,
         "y_step_size": 0.1,
-        "z_step_size": 0.1,
+        "z_step_size": 0,
         "dwell_time_ms": 2,
         "x_start": 0.0,
         "y1_start": 0.0,

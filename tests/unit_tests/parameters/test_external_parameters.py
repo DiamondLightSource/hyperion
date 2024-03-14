@@ -1,11 +1,11 @@
-from hyperion.parameters import external_parameters
+import hyperion.parameters.external_parameters
 
 
 def test_new_parameters_is_a_new_object():
-    a = external_parameters.from_file(
+    a = hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
-    b = external_parameters.from_file(
+    b = hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
     assert a == b
@@ -13,7 +13,7 @@ def test_new_parameters_is_a_new_object():
 
 
 def test_parameters_load_from_file():
-    params = external_parameters.from_file(
+    params = hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
     expt_params = params["experiment_params"]

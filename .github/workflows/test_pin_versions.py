@@ -61,7 +61,7 @@ def test_write_commit_message(mock_stdout, patched_run_pip_freeze):
     installed_versions = pin_versions.fetch_pin_versions()
     pin_versions.write_commit_message(installed_versions)
     mock_stdout.write.assert_called_once_with(
-        "Pin dependencies prior to release. Dodal 1.13.1, nexgen 0.8.0"
+        "Pin dependencies prior to release. Dodal 1.13.1, nexgen 0.8.4"
     )
 
 

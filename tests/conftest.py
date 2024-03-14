@@ -1,7 +1,6 @@
 import sys
 import threading
 from functools import partial
-from os import environ, getenv
 from typing import Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
@@ -89,7 +88,7 @@ def _destroy_loggers(loggers):
 
 def pytest_runtest_setup(item):
     markers = [m.name for m in item.own_markers]
-    if "skip_log_setup" not in markers:
+    if item.config.getoption("logging") and "skip_log_setup" not in markers:
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
@@ -115,23 +114,6 @@ def pytest_runtest_setup(item):
     else:
         print("Skipping log setup for log test - deleting existing handlers")
         _destroy_loggers([*ALL_LOGGERS, dodal_logger])
-
-    if "s03" in markers:
-        print("Running s03 test - setting EPICS server ports variables...")
-        s03_epics_server_port = getenv("S03_EPICS_CA_SERVER_PORT")
-        s03_epics_repeater_port = getenv("S03_EPICS_CA_REPEATER_PORT")
-
-        assert (
-            s03_epics_server_port is not None and s03_epics_repeater_port is not None
-        ), (
-            "Please run the S03 launch script with the '-f' flag to run it on a port "
-            " which doesn't clash with the real EPICS ports."
-        )
-
-        environ["EPICS_CA_SERVER_PORT"] = s03_epics_server_port
-        print(f"[EPICS_CA_SERVER_PORT] = {s03_epics_server_port}")
-        environ["EPICS_CA_REPEATER_PORT"] = s03_epics_repeater_port
-        print(f"[EPICS_CA_REPEATER_PORT] = {s03_epics_repeater_port}")
 
 
 def pytest_runtest_teardown():
@@ -437,6 +419,7 @@ def fake_create_devices(
     smargon: Smargon,
     zebra: Zebra,
     detector_motion: DetectorMotion,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
@@ -453,6 +436,7 @@ def fake_create_devices(
         "zebra": zebra,
         "detector_motion": detector_motion,
         "backlight": i03.backlight(fake_with_ophyd_sim=True),
+        "ap_sg": aperture_scatterguard,
     }
     return devices
 

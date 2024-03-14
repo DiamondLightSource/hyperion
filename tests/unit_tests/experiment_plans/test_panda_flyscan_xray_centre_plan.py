@@ -16,6 +16,7 @@ from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_sim_value
 
+import hyperion.parameters.external_parameters
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
@@ -42,13 +43,10 @@ from hyperion.external_interaction.callbacks.xray_centre.callback_collection imp
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
-)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+    StoreInIspyb,
 )
-from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
     PandAGridscanInternalParameters,
@@ -59,7 +57,7 @@ from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
 )
-from ..external_interaction.callbacks.xray_centre.conftest import TestData
+from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
     mock_zocalo_trigger,
     modified_interactor_mock,
@@ -98,7 +96,7 @@ def ispyb_plan(test_panda_fgs_params):
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
 class TestFlyscanXrayCentrePlan:
@@ -112,7 +110,7 @@ class TestFlyscanXrayCentrePlan:
             test_panda_fgs_params.hyperion_params.detector_params.detector_size_constants.det_type_string
             == EIGER_TYPE_EIGER2_X_16M
         )
-        raw_params_dict = external_parameters.from_file()
+        raw_params_dict = hyperion.parameters.external_parameters.from_file()
         raw_params_dict["hyperion_params"]["detector_params"][
             "detector_size_constants"
         ] = EIGER_TYPE_EIGER2_X_4M
@@ -162,7 +160,7 @@ class TestFlyscanXrayCentrePlan:
 
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
-        test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
+        test_ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
         test_ispyb_callback.ispyb.begin_deposition.return_value = IspybIds(
             data_collection_ids=(2, 3), data_collection_group_id=5, grid_ids=(7, 8, 9)
         )
@@ -198,7 +196,8 @@ class TestFlyscanXrayCentrePlan:
         assert params.hyperion_params.ispyb_params.sample_barcode == "BARCODE"
 
     @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range"
+        "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
+        return_value=Status(done=True, success=True),
     )
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
@@ -318,6 +317,7 @@ class TestFlyscanXrayCentrePlan:
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",
+        return_value=Status(done=True, success=True),
     )
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
@@ -549,7 +549,6 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
     ):
-
         class MoveException(Exception):
             pass
 
