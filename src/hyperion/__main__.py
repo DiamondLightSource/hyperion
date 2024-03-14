@@ -38,6 +38,7 @@ from hyperion.tracing import TRACER
 from hyperion.utils.context import setup_context
 
 VERBOSE_EVENT_LOGGING: Optional[bool] = None
+CallbackFactories = Callable[[], Tuple[CallbackBase, CallbackBase]]
 
 
 @dataclass
@@ -46,7 +47,7 @@ class Command:
     devices: Optional[Any] = None
     experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
     parameters: Optional[InternalParameters] = None
-    callbacks: Optional[Callable[[], Tuple[CallbackBase, CallbackBase]]] = None
+    callbacks: Optional[CallbackFactories] = None
 
 
 @dataclass
@@ -109,7 +110,7 @@ class BlueskyRunner:
         experiment: Callable,
         parameters: InternalParameters,
         plan_name: str,
-        callbacks: Optional[Callable[[], Tuple[CallbackBase, CallbackBase]]],
+        callbacks: Optional[CallbackFactories],
     ) -> StatusAndMessage:
         LOGGER.info(f"Started with parameters: {parameters}")
 

@@ -94,8 +94,7 @@ class TestZocaloHandler:
         mock_ids = IspybIds(data_collection_ids=dc_ids, data_collection_group_id=dcg_id)
         ispyb_store.return_value.mock_add_spec(StoreInIspyb)
 
-        callbacks = create_gridscan_callbacks()
-        ispyb_cb = callbacks[1]
+        _, ispyb_cb = create_gridscan_callbacks()
         ispyb_cb.active = True
         assert isinstance(zocalo_handler := ispyb_cb.emit_cb, ZocaloCallback)
         zocalo_handler._reset_state()

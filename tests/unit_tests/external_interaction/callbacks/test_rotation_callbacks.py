@@ -127,12 +127,12 @@ def fake_rotation_scan(
 
 @pytest.fixture
 def activated_mocked_cbs():
-    cb = create_rotation_callbacks()
-    cb[1].emit_cb = MagicMock
-    activate_callbacks(cb)
-    cb[0].activity_gated_event = MagicMock(autospec=True)
-    cb[0].activity_gated_start = MagicMock(autospec=True)
-    return cb
+    nexus_callback, ispyb_callback = create_rotation_callbacks()
+    ispyb_callback.emit_cb = MagicMock
+    activate_callbacks((nexus_callback, ispyb_callback))
+    nexus_callback.activity_gated_event = MagicMock(autospec=True)
+    nexus_callback.activity_gated_start = MagicMock(autospec=True)
+    return nexus_callback, ispyb_callback
 
 
 @patch(
@@ -145,7 +145,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     params: RotationInternalParameters,
     activated_mocked_cbs: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
 ):
-    nexus_handler = activated_mocked_cbs[0]
+    nexus_handler, _ = activated_mocked_cbs
     RE(fake_rotation_scan(params, [nexus_handler]))
 
     params.hyperion_params.ispyb_params.transmission_fraction = 1.0
@@ -219,14 +219,14 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     test_outer_start_doc,
 ):
     nexus_writer.return_value.full_filename = "test_full_filename"
-    cb = create_rotation_callbacks()
-    activate_callbacks(cb)
+    nexus_callback, ispyb_callback = create_rotation_callbacks()
+    activate_callbacks((nexus_callback, ispyb_callback))
 
-    cb[1].ispyb = MagicMock(spec=StoreInIspyb)
-    cb[1].params = params
+    ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
+    ispyb_callback.params = params
     with pytest.raises(ISPyBDepositionNotMade):
-        RE(fake_rotation_scan(params, cb))
-    cb[1].emit_cb.zocalo_interactor.run_start.assert_not_called()  # type: ignore
+        RE(fake_rotation_scan(params, (nexus_callback, ispyb_callback)))
+    ispyb_callback.emit_cb.zocalo_interactor.run_start.assert_not_called()  # type: ignore
 
 
 @patch(
@@ -254,9 +254,9 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
 
     ispyb_store.return_value = mock_store_in_ispyb_instance
     nexus_writer.return_value.full_filename = "test_full_filename"
-    cb = create_rotation_callbacks()
-    activate_callbacks(cb)
-    cb[1].emit_cb.stop = MagicMock()  # type: ignore
+    nexus_callback, ispyb_callback = create_rotation_callbacks()
+    activate_callbacks((nexus_callback, ispyb_callback))
+    ispyb_callback.emit_cb.stop = MagicMock()  # type: ignore
 
     def after_open_do(
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
@@ -268,11 +268,15 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
     ):
         callbacks[1].ispyb.update_deposition.assert_called_once()  # pyright: ignore
-        cb[1].emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
+        ispyb_callback.emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
 
-    RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+    RE(
+        fake_rotation_scan(
+            params, (nexus_callback, ispyb_callback), after_open_do, after_main_do
+        )
+    )
 
-    cb[1].emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
+    ispyb_callback.emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
 
 
 @patch(
@@ -282,13 +286,13 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
 def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
     zocalo, RE: RunEngine, params: RotationInternalParameters, test_outer_start_doc
 ):
-    cb = create_rotation_callbacks()
-    cb[1].emit_cb = None
-    activate_callbacks(cb)
-    cb[0].activity_gated_event = MagicMock(autospec=True)
-    cb[0].activity_gated_start = MagicMock(autospec=True)
-    cb[1].activity_gated_start = MagicMock(
-        autospec=True, side_effect=cb[1].activity_gated_start
+    (nexus_callback, ispyb_callback) = create_rotation_callbacks()
+    ispyb_callback.emit_cb = None
+    activate_callbacks((nexus_callback, ispyb_callback))
+    nexus_callback.activity_gated_event = MagicMock(autospec=True)
+    nexus_callback.activity_gated_start = MagicMock(autospec=True)
+    ispyb_callback.activity_gated_start = MagicMock(
+        autospec=True, side_effect=ispyb_callback.activity_gated_start
     )
 
     def after_open_do(
@@ -300,7 +304,9 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
     def after_main_do(
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
     ):
-        cb[1].ispyb_ids = IspybIds(data_collection_ids=(0,), data_collection_group_id=0)
+        ispyb_callback.ispyb_ids = IspybIds(
+            data_collection_ids=(0,), data_collection_group_id=0
+        )
         assert callbacks[1].activity_gated_start.call_count == 2  # type: ignore
         assert callbacks[1].uid_to_finalize_on is not None
 
@@ -308,7 +314,11 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
         autospec=True,
     ):
-        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+        RE(
+            fake_rotation_scan(
+                params, (nexus_callback, ispyb_callback), after_open_do, after_main_do
+            )
+        )
 
 
 ids = [
@@ -334,8 +344,8 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     params: RotationInternalParameters,
     ispyb_ids,
 ):
-    cb = [RotationISPyBCallback()]
-    cb[0].active = True
+    ispyb_cb = RotationISPyBCallback()
+    ispyb_cb.active = True
     ispyb_ids = IspybIds(data_collection_group_id=23, data_collection_ids=(45,))
     rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
 
@@ -355,7 +365,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         def after_main_do(callbacks: list[RotationISPyBCallback]):
             assert callbacks[0].uid_to_finalize_on is not None
 
-        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+        RE(fake_rotation_scan(params, [ispyb_cb], after_open_do, after_main_do))
 
         begin_deposition_scan_data: ScanDataInfo = (
             rotation_ispyb.return_value.begin_deposition.call_args.args[1]
@@ -368,7 +378,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         else:
             assert begin_deposition_scan_data.data_collection_info.parent_id is None
 
-        last_dcgid = cb[0].ispyb_ids.data_collection_group_id
+        last_dcgid = ispyb_cb.ispyb_ids.data_collection_group_id
 
 
 @patch(
@@ -380,8 +390,8 @@ def test_ispyb_specifies_experiment_type_if_supplied(
     RE: RunEngine,
     params: RotationInternalParameters,
 ):
-    cb = [RotationISPyBCallback()]
-    cb[0].active = True
+    ispyb_cb = RotationISPyBCallback()
+    ispyb_cb.active = True
     params.hyperion_params.ispyb_params.ispyb_experiment_type = "Characterization"
     rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
         data_collection_group_id=23, data_collection_ids=(45,)
@@ -389,7 +399,7 @@ def test_ispyb_specifies_experiment_type_if_supplied(
 
     params.hyperion_params.ispyb_params.sample_id = "abc"
 
-    RE(fake_rotation_scan(params, cb))
+    RE(fake_rotation_scan(params, [ispyb_cb]))
 
     assert rotation_ispyb.call_args.args[1] == ExperimentType.CHARACTERIZATION
 

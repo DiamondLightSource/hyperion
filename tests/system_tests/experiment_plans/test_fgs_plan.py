@@ -66,8 +66,8 @@ def callbacks(params):
     with patch(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
     ):
-        callbacks = create_gridscan_callbacks()
-        callbacks[1].ispyb_config = CONST.SIM.DEV_ISPYB_DATABASE_CFG
+        _, ispyb_cb = create_gridscan_callbacks()
+        ispyb_cb.ispyb_config = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     yield callbacks
 
 
@@ -225,10 +225,10 @@ def test_full_plan_tidies_at_end(
     callbacks: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     RE(reset_positions(fxc_composite.smargon))
-
-    callbacks[0].nexus_writer_1 = MagicMock()
-    callbacks[0].nexus_writer_2 = MagicMock()
-    callbacks[1].ispyb_ids = IspybIds(
+    nexus_cb, ispyb_cb = callbacks
+    nexus_cb.nexus_writer_1 = MagicMock()
+    nexus_cb.nexus_writer_2 = MagicMock()
+    ispyb_cb.ispyb_ids = IspybIds(
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
     )
     [RE.subscribe(cb) for cb in callbacks]
@@ -276,6 +276,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     params: GridscanInternalParameters,
     callbacks: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
+    _, ispyb_cb = callbacks
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
     params.hyperion_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
@@ -288,9 +289,9 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     with pytest.raises(WarningException):
         RE(flyscan_xray_centre(fxc_composite, params))
 
-    ids = callbacks[1].ispyb_ids
+    ids = ispyb_cb.ispyb_ids
     assert ids.data_collection_group_id is not None
-    dcid_used = callbacks[1].ispyb_ids.data_collection_ids[0]
+    dcid_used = ispyb_cb.ispyb_ids.data_collection_ids[0]
 
     comment = fetch_comment(dcid_used)
 
