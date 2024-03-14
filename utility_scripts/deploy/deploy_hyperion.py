@@ -137,7 +137,7 @@ Only do so if you have informed the beamline scientist and you're sure Hyperion 
 """
     )
     # Creates symlinks: software/bluesky/hyperion_latest -> software/bluesky/hyperion_{version}/hyperion
-    #                   software/bluesky/hyperion -> software/bluesky/hyperion
+    #                   software/bluesky/hyperion -> software/bluesky/hyperion_latest
     if move_symlink == "y":
         latest_location = os.path.join(release_area, "hyperion_latest")
         live_location = os.path.join(release_area, "hyperion")
