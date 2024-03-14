@@ -95,12 +95,14 @@ class RotationMotionProfile:
     shutter_opening_deg: float
     total_exposure_s: float
     distance_to_move_deg: float
+    max_velocity_deg_s: float
 
 
 def calculate_motion_profile(
     detector_params: DetectorParams,
     expt_params: RotationScanParams,
     motor_time_to_speed_s: float,
+    max_velocity_deg_s: float,
 ) -> RotationMotionProfile:
     """Calculates the various numbers needed for motions in the rotation scan.
     Rotates through "scan width" plus twice an "offset" to take into account
@@ -149,22 +151,18 @@ def calculate_motion_profile(
         shutter_opening_deg=shutter_opening_deg,
         total_exposure_s=total_exposure_s,
         distance_to_move_deg=distance_to_move_deg,
+        max_velocity_deg_s=max_velocity_deg_s,
     )
 
 
 def rotation_scan_plan(
-    composite: RotationScanComposite, params: RotationInternalParameters
+    composite: RotationScanComposite,
+    params: RotationInternalParameters,
+    motion_values: RotationMotionProfile,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
     a fixed axis - for now this axis is limited to omega. Only does the scan itself, no
     setup tasks."""
-
-    motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
-    motion_values = calculate_motion_profile(
-        params.hyperion_params.detector_params,
-        params.experiment_params,
-        motor_time_to_speed,
-    )
 
     @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MAIN)
     @bpp.run_decorator(
@@ -182,7 +180,9 @@ def rotation_scan_plan(
         LOGGER.info(f"moving omega to beginning, {motion_values.start_scan_deg=}")
         # can move to start as fast as possible
         # TODO get VMAX, see https://github.com/bluesky/ophyd/issues/1122
-        yield from bps.abs_set(axis.velocity, DEFAULT_MAX_VELOCITY, wait=True)
+        yield from bps.abs_set(
+            axis.velocity, motion_values.max_velocity_deg_s, wait=True
+        )
         yield from bps.abs_set(
             axis,
             motion_values.start_motion_deg,
@@ -242,12 +242,10 @@ def rotation_scan_plan(
     yield from _rotation_scan_plan(motion_values, composite)
 
 
-def cleanup_plan(composite: RotationScanComposite, **kwargs):
+def cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
     LOGGER.info("Cleaning up after rotation scan")
     yield from cleanup_sample_environment(composite.detector_motion, group="cleanup")
-    yield from bps.abs_set(
-        composite.smargon.omega.velocity, DEFAULT_MAX_VELOCITY, group="cleanup"
-    )
+    yield from bps.abs_set(composite.smargon.omega.velocity, max_vel, group="cleanup")
     yield from make_trigger_safe(composite.zebra, group="cleanup")
     yield from bpp.finalize_wrapper(disarm_zebra(composite.zebra), bps.wait("cleanup"))
 
@@ -268,11 +266,23 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationInternalParameters,
     ):
+        motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
+        max_vel = (
+            yield from bps.rd(composite.smargon.omega.max_velocity)
+            or DEFAULT_MAX_VELOCITY
+        )
+        motion_values = calculate_motion_profile(
+            params.hyperion_params.detector_params,
+            params.experiment_params,
+            motor_time_to_speed,
+            max_vel,
+        )
+
         eiger: EigerDetector = composite.eiger
         eiger.set_detector_parameters(params.hyperion_params.detector_params)
 
         @bpp.stage_decorator([eiger])
-        @bpp.finalize_decorator(lambda: cleanup_plan(composite=composite))
+        @bpp.finalize_decorator(lambda: cleanup_plan(composite, max_vel))
         def rotation_with_cleanup_and_stage(params: RotationInternalParameters):
             LOGGER.info("setting up sample environment...")
             yield from setup_sample_environment(
@@ -290,10 +300,10 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
                 params.experiment_params.z,
                 group="move_x_y_z",
             )
-
             yield from rotation_scan_plan(
                 composite,
                 params,
+                motion_values,
             )
 
         LOGGER.info("setting up and staging eiger...")
