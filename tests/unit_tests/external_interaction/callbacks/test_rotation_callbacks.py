@@ -305,19 +305,6 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
 
 
-ids = [
-    IspybIds(data_collection_group_id=23, data_collection_ids=(45,)),
-    IspybIds(data_collection_group_id=24, data_collection_ids=(48,)),
-    IspybIds(data_collection_group_id=25, data_collection_ids=(51,)),
-    IspybIds(data_collection_group_id=26, data_collection_ids=(111,)),
-    IspybIds(data_collection_group_id=27, data_collection_ids=(238476,)),
-    IspybIds(data_collection_group_id=36, data_collection_ids=(189765,)),
-    IspybIds(data_collection_group_id=39, data_collection_ids=(0,)),
-    IspybIds(data_collection_group_id=43, data_collection_ids=(89,)),
-]
-
-
-@pytest.mark.parametrize("ispyb_ids", ids)
 @patch(
     "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
@@ -326,7 +313,6 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb: MagicMock,
     RE: RunEngine,
     params: RotationInternalParameters,
-    ispyb_ids,
 ):
     cb = [RotationISPyBCallback()]
     cb[0].active = True

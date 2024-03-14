@@ -88,7 +88,7 @@ def _destroy_loggers(loggers):
 
 def pytest_runtest_setup(item):
     markers = [m.name for m in item.own_markers]
-    if "skip_log_setup" not in markers:
+    if item.config.getoption("logging") and "skip_log_setup" not in markers:
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")

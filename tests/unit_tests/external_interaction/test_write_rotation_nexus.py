@@ -75,6 +75,8 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
     master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"
 
+    eiger.bit_depth.sim_put(32)  # type: ignore
+
     RE = RunEngine({})
 
     with patch(
@@ -102,10 +104,13 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]  # type: ignore
         assert np.allclose(hyperion_omega, example_omega)
 
-        hyperion_data_shape = hyperion_nexus["/entry/data/data"].shape  # type: ignore
+        assert isinstance(
+            hyperion_data := hyperion_nexus["/entry/data/data"], h5py.Dataset
+        )
         example_data_shape = example_nexus["/entry/data/data"].shape  # type: ignore
 
-        assert hyperion_data_shape == example_data_shape
+        assert hyperion_data.dtype == "uint32"
+        assert hyperion_data.shape == example_data_shape
 
         hyperion_instrument = hyperion_nexus["/entry/instrument"]
         example_instrument = example_nexus["/entry/instrument"]
@@ -170,17 +175,17 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
 
 @pytest.mark.parametrize(
     "bit_depth,expected_type",
-    [(8, "uint8"), (16, "uint16"), (32, "uint32"), (100, "uint16")],
+    [(8, np.uint8), (16, np.uint16), (32, np.uint32), (100, np.uint16)],
 )
+@patch("hyperion.external_interaction.nexus.write_nexus.NXmxFileWriter")
 def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
+    mock_nexus_writer,
     test_params: RotationInternalParameters,
-    tmpdir,
     eiger: EigerDetector,
     bit_depth,
     expected_type,
 ):
-    run_number = test_params.hyperion_params.detector_params.run_number
-    nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
+    write_vds_mock = mock_nexus_writer.return_value.write_vds
 
     eiger.bit_depth.sim_put(bit_depth)  # type: ignore
 
@@ -192,6 +197,5 @@ def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
     ):
         RE(fake_rotation_scan(test_params, RotationNexusFileCallback(), eiger))
 
-        with (h5py.File(nexus_filename, "r") as hyperion_nexus,):
-            assert isinstance(data := hyperion_nexus["/entry/data/data"], h5py.Dataset)
-            assert data.dtype == expected_type
+        for call in write_vds_mock.mock_calls:
+            assert call.kwargs["vds_dtype"] == expected_type
