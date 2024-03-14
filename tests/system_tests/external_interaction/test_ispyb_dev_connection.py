@@ -17,14 +17,14 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan,
 )
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    create_rotation_callbacks,
+)
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     GridScanInfo,
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
-)
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
@@ -343,7 +343,7 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
-    callbacks = RotationCallbackCollection()
+    callbacks = create_rotation_callbacks()
     for cb in list(callbacks):
         RE.subscribe(cb)
 
@@ -371,7 +371,7 @@ def test_ispyb_deposition_in_rotation_plan(
             )
         )
 
-    dcid = callbacks.ispyb_handler.ispyb_ids.data_collection_ids[0]
+    dcid = callbacks[1].ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     comment = fetch_comment(dcid)
     assert comment == "Hyperion rotation scan"

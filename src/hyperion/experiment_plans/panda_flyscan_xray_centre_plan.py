@@ -40,8 +40,8 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     set_aperture_for_bbox_size,
     wait_for_gridscan_valid,
 )
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
 )
 from hyperion.log import LOGGER
 from hyperion.parameters import external_parameters
@@ -313,7 +313,7 @@ if __name__ == "__main__":
     )
 
     parameters = GridscanInternalParameters(**external_parameters.from_file())
-    subscriptions = XrayCentreCallbackCollection()
+    subscriptions = create_gridscan_callbacks()
 
     context = setup_context(wait_for_connection=True)
     composite = create_devices(context)

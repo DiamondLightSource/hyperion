@@ -1,5 +1,5 @@
 import uuid
-from typing import Callable
+from typing import Callable, Tuple
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -28,8 +28,14 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,
 )
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
+)
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
+from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.parameters.constants import CONST
@@ -60,8 +66,8 @@ def callbacks(params):
     with patch(
         "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
     ):
-        callbacks = XrayCentreCallbackCollection()
-        callbacks.ispyb_handler.ispyb_config = CONST.SIM.DEV_ISPYB_DATABASE_CFG
+        callbacks = create_gridscan_callbacks()
+        callbacks[1].ispyb_config = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     yield callbacks
 
 
@@ -176,7 +182,7 @@ def test_xbpm_feedback_decorator(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     params: GridscanInternalParameters,
-    callbacks: XrayCentreCallbackCollection,
+    callbacks: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     # This test is currently kind of more a unit test since we are faking XBPM feedback
     # with ophyd.sim, but it should continue to pass when we replace it with something
@@ -216,13 +222,13 @@ def test_full_plan_tidies_at_end(
     fxc_composite: FlyScanXRayCentreComposite,
     params: GridscanInternalParameters,
     RE: RunEngine,
-    callbacks: XrayCentreCallbackCollection,
+    callbacks: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     RE(reset_positions(fxc_composite.smargon))
 
-    callbacks.nexus_handler.nexus_writer_1 = MagicMock()
-    callbacks.nexus_handler.nexus_writer_2 = MagicMock()
-    callbacks.ispyb_handler.ispyb_ids = IspybIds(
+    callbacks[0].nexus_writer_1 = MagicMock()
+    callbacks[0].nexus_writer_2 = MagicMock()
+    callbacks[1].ispyb_ids = IspybIds(
         data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0,)
     )
     [RE.subscribe(cb) for cb in callbacks]
@@ -268,7 +274,7 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     fxc_composite: FlyScanXRayCentreComposite,
     fetch_comment: Callable,
     params: GridscanInternalParameters,
-    callbacks: XrayCentreCallbackCollection,
+    callbacks: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
@@ -282,9 +288,9 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     with pytest.raises(WarningException):
         RE(flyscan_xray_centre(fxc_composite, params))
 
-    ids = callbacks.ispyb_handler.ispyb_ids
+    ids = callbacks[1].ispyb_ids
     assert ids.data_collection_group_id is not None
-    dcid_used = callbacks.ispyb_handler.ispyb_ids.data_collection_ids[0]
+    dcid_used = callbacks[1].ispyb_ids.data_collection_ids[0]
 
     comment = fetch_comment(dcid_used)
 
