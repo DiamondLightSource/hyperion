@@ -467,6 +467,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         clear_device("fast_grid_scan")
         fgs = i03.fast_grid_scan(fake_with_ophyd_sim=True)
         fgs.KICKOFF_TIMEOUT = 0.1
@@ -737,10 +738,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
+        done_status,
     ):
-        fake_fgs_composite.eiger.stage = MagicMock()
-        fake_fgs_composite.eiger.unstage = MagicMock()
-
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         RE(run_gridscan(fake_fgs_composite, test_fgs_params))
         fake_fgs_composite.eiger.stage.assert_called_once()
         fake_fgs_composite.eiger.unstage.assert_called_once()
