@@ -1,11 +1,20 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
+from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
+    populate_data_collection_group,
+)
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionInfo,
+    ScanDataInfo,
+)
+from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -13,6 +22,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -106,12 +116,50 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
 
             ISPYB_LOGGER.info("Updating ispyb entry.")
-            self.ispyb_ids = self.update_deposition(self.params)
+            template_data_collection_info = (
+                self.populate_data_collection_info_from_ispyb_params(
+                    DataCollectionInfo(), self.params.hyperion_params.ispyb_params
+                )
+            )
+            scan_data_infos = self.populate_info_for_update(
+                template_data_collection_info, self.params
+            )
+            self.ispyb_ids = self.update_deposition(self.params, scan_data_infos)
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
 
+    def populate_data_collection_info_from_ispyb_params(
+        self, data_collection_info: DataCollectionInfo, ispyb_params: IspybParams
+    ) -> DataCollectionInfo:
+        data_collection_info.undulator_gap1 = ispyb_params.undulator_gap
+        data_collection_info.synchrotron_mode = ispyb_params.synchrotron_mode
+        data_collection_info.slitgap_horizontal = ispyb_params.slit_gap_size_x
+        data_collection_info.slitgap_vertical = ispyb_params.slit_gap_size_y
+        data_collection_info.flux = ispyb_params.flux
+        data_collection_info.wavelength = ispyb_params.wavelength_angstroms
+
+        # TODO barcode
+        return data_collection_info
+
+    def update_deposition(
+        self, params, scan_data_infos: Sequence[ScanDataInfo]
+    ) -> IspybIds:
+        data_collection_group_info = populate_data_collection_group(
+            self.ispyb.experiment_type,
+            params.hyperion_params.detector_params,
+            params.hyperion_params.ispyb_params,
+        )
+
+        return self.ispyb.update_deposition(
+            self.ispyb_ids, data_collection_group_info, scan_data_infos
+        )
+
     @abstractmethod
-    def update_deposition(self, params) -> IspybIds:
+    def populate_info_for_update(
+        self,
+        event_sourced_data_collection_info: DataCollectionInfo,
+        params: InternalParameters,
+    ) -> Sequence[ScanDataInfo]:
         pass
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
