@@ -72,9 +72,13 @@ if __name__ == "__main__":
     # Gives path to /bluesky
     release_area = get_hyperion_release_dir_from_args()
 
+    this_repo_top = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+
+    print(f"Repo top is {this_repo_top}")
+
     hyperion_repo = repo(
         name="hyperion",
-        repo_args=os.path.join(os.path.dirname(__file__), "../../.git"),
+        repo_args=os.path.join(this_repo_top, ".git"),
     )
 
     if hyperion_repo.name != "hyperion":
@@ -88,7 +92,7 @@ if __name__ == "__main__":
 
     dodal_repo = repo(
         name="dodal",
-        repo_args=os.path.join(os.path.dirname(__file__), "../../../dodal/.git"),
+        repo_args=os.path.join(this_repo_top, "../dodal/.git"),
     )
 
     dodal_repo.set_deploy_location(release_area_version)
@@ -113,8 +117,9 @@ if __name__ == "__main__":
     print(f"Setting up environment in {hyperion_repo.deploy_location}")
 
     if hyperion_repo.name == "hyperion":
+        env_script = os.path.join(this_repo_top, "utility_scripts/dls_dev_env.sh")
         with Popen(
-            "./utility_scripts/dls_dev_env.sh",
+            env_script,
             stdout=PIPE,
             bufsize=1,
             universal_newlines=True,
@@ -144,4 +149,4 @@ Only do so if you have informed the beamline scientist and you're sure Hyperion 
         print(f"New version moved to {latest_location}")
         print("To start this version run hyperion_restart from the beamline's GDA")
     else:
-        print("Quiting without latest version being updated")
+        print("Quitting without latest version being updated")
