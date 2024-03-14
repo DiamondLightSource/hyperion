@@ -752,8 +752,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 ):
     id_1, id_2 = 100, 200
 
-    cbs = create_gridscan_callbacks()
-    ispyb_cb = cbs[1]
+    _,  ispyb_cb= create_gridscan_callbacks()
     ispyb_cb.active = True
     ispyb_cb.ispyb = MagicMock()
     ispyb_cb.params = MagicMock()
