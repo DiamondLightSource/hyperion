@@ -13,12 +13,13 @@ from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
 from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, PlanNotFound
+from hyperion.experiment_plans.experiment_registry import (
+    PLAN_REGISTRY,
+    CallbackFactories,
+    PlanNotFound,
+)
 from hyperion.external_interaction.callbacks.__main__ import (
     setup_logging as setup_callback_logging,
-)
-from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
-    AbstractPlanCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
@@ -45,7 +46,7 @@ class Command:
     devices: Optional[Any] = None
     experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
     parameters: Optional[InternalParameters] = None
-    callbacks: Optional[type[AbstractPlanCallbackCollection]] = None
+    callbacks: Optional[CallbackFactories] = None
 
 
 @dataclass
@@ -108,7 +109,7 @@ class BlueskyRunner:
         experiment: Callable,
         parameters: InternalParameters,
         plan_name: str,
-        callback_type: Optional[type[AbstractPlanCallbackCollection]],
+        callbacks: Optional[CallbackFactories],
     ) -> StatusAndMessage:
         LOGGER.info(f"Started with parameters: {parameters}")
 
@@ -122,7 +123,13 @@ class BlueskyRunner:
         else:
             self.current_status = StatusAndMessage(Status.BUSY)
             self.command_queue.put(
-                Command(Actions.START, devices, experiment, parameters, callback_type)
+                Command(
+                    action=Actions.START,
+                    devices=devices,
+                    experiment=experiment,
+                    parameters=parameters,
+                    callbacks=callbacks,
+                )
             )
             return StatusAndMessage(Status.SUCCESS)
 
@@ -149,7 +156,7 @@ class BlueskyRunner:
         """Stops the run engine and the loop waiting for messages."""
         print("Shutting down: Stopping the run engine gracefully")
         self.stop()
-        self.command_queue.put(Command(Actions.SHUTDOWN))
+        self.command_queue.put(Command(action=Actions.SHUTDOWN))
 
     def wait_on_queue(self):
         while True:
@@ -163,7 +170,7 @@ class BlueskyRunner:
                     if (
                         not self.use_external_callbacks
                         and command.callbacks
-                        and (cbs := list(command.callbacks()))
+                        and (cbs := [c() for c in command.callbacks])
                     ):
                         LOGGER.info(
                             f"Using callbacks for this plan: {not self.use_external_callbacks} - {cbs}"
