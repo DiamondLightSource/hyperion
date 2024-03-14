@@ -28,7 +28,6 @@ EXPECTED_DATA_COLLECTION_3D = {
     "focal_spot_size_at_sampley": 0.0,
     "beamsize_at_samplex": 0.1,
     "beamsize_at_sampley": 0.1,
-    "transmission": 100.0,
     "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
     "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
     "bottom right (px): [3250,1700].",
@@ -68,7 +67,6 @@ EXPECTED_DATA_COLLECTION_2D = {
     "focal_spot_size_at_sampley": 0.0,
     "beamsize_at_samplex": 0.1,
     "beamsize_at_sampley": 0.1,
-    "transmission": 100.0,
     "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
     "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
     "bottom right (px): [450,300].",

@@ -29,7 +29,6 @@ EXPECTED_DATA_COLLECTION = {
     "focal_spot_size_at_sampley": 1.0,
     "beamsize_at_samplex": 1,
     "beamsize_at_sampley": 1,
-    "transmission": 100.0,
     "comments": "Hyperion rotation scan",
     "data_collection_number": 0,
     "detector_distance": 100.0,

@@ -60,8 +60,6 @@ def populate_remaining_data_collection_info(
     data_collection_info.focal_spot_size_at_sampley = ispyb_params.focal_spot_size_y
     data_collection_info.beamsize_at_samplex = ispyb_params.beam_size_x
     data_collection_info.beamsize_at_sampley = ispyb_params.beam_size_y
-    # Ispyb wants the transmission in a percentage, we use fractions
-    data_collection_info.transmission = ispyb_params.transmission_fraction * 100
     data_collection_info.comments = comment_constructor()
     data_collection_info.detector_distance = detector_params.detector_distance
     data_collection_info.exp_time = detector_params.exposure_time
