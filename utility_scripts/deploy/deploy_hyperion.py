@@ -51,10 +51,7 @@ class repo:
 
 
 # Get the release directory based off the beamline and the latest hyperion version
-def get_hyperion_release_dir_from_args(repo: repo) -> str:
-    if repo.name != "hyperion":
-        raise ValueError("This function should only be used with the hyperion repo")
-
+def get_hyperion_release_dir_from_args() -> str:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "beamline",
@@ -72,13 +69,16 @@ def get_hyperion_release_dir_from_args(repo: repo) -> str:
 
 
 if __name__ == "__main__":
+    # Gives path to /bluesky
+    release_area = get_hyperion_release_dir_from_args()
+
     hyperion_repo = repo(
         name="hyperion",
         repo_args=os.path.join(os.path.dirname(__file__), "../../.git"),
     )
 
-    # Gives path to /bluesky
-    release_area = get_hyperion_release_dir_from_args(hyperion_repo)
+    if hyperion_repo.name != "hyperion":
+        raise ValueError("This function should only be used with the hyperion repo")
 
     release_area_version = os.path.join(
         release_area, f"hyperion_{hyperion_repo.latest_version_str}"
