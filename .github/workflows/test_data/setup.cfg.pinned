@@ -24,7 +24,7 @@ install_requires =
     ispyb @ 10.0.0
     scanspec @ 0.6.5
     numpy @ 1.26.3
-    nexgen @ 0.8.0
+    nexgen @ 0.8.4
     opentelemetry-distro @ 0.43b0
     opentelemetry-exporter-jaeger @ 1.21.0
     ophyd @ 1.9.0
