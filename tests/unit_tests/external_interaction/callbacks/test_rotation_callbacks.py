@@ -294,14 +294,14 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
     def after_open_do(
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
     ):
-        callbacks[1].activity_gated_start.assert_called_once()
+        callbacks[1].activity_gated_start.assert_called_once()  # type: ignore
         assert callbacks[1].uid_to_finalize_on is None
 
     def after_main_do(
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
     ):
         cb[1].ispyb_ids = IspybIds(data_collection_ids=(0,), data_collection_group_id=0)
-        assert callbacks[1].activity_gated_start.call_count == 2
+        assert callbacks[1].activity_gated_start.call_count == 2  # type: ignore
         assert callbacks[1].uid_to_finalize_on is not None
 
     with patch(
