@@ -6,7 +6,6 @@ from traceback import format_exception
 from typing import Any, Callable, Optional, Tuple
 
 from blueapi.core import BlueskyContext, MsgGenerator
-from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from flask import Flask, request
@@ -16,6 +15,7 @@ from pydantic.dataclasses import dataclass
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
+    CallbackFactories,
     PlanNotFound,
 )
 from hyperion.external_interaction.callbacks.__main__ import (
@@ -38,7 +38,6 @@ from hyperion.tracing import TRACER
 from hyperion.utils.context import setup_context
 
 VERBOSE_EVENT_LOGGING: Optional[bool] = None
-CallbackFactories = Callable[[], Tuple[CallbackBase, CallbackBase]]
 
 
 @dataclass

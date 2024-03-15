@@ -42,6 +42,8 @@ from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params im
     WaitForRobotLoadThenCentreParams,
 )
 
+CallbackFactories = Callable[[], Tuple[CallbackBase, CallbackBase]]
+
 
 def not_implemented():
     raise NotImplementedError
@@ -62,7 +64,7 @@ class ExperimentRegistryEntry(TypedDict):
         | PandAGridscanInternalParameters
     ]
     experiment_param_type: type[AbstractExperimentParameterBase]
-    callback_factories: Callable[[], Tuple[CallbackBase, CallbackBase]]
+    callback_factories: CallbackFactories
 
 
 EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
