@@ -43,7 +43,6 @@
         "comment": "test",
         "resolution": 1.0,
         "sample_id": null,
-        "sample_barcode": null,
         "xtal_snapshots_omega_start": [
             "test_1_y",
             "test_2_y",

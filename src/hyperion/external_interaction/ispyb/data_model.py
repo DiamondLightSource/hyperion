@@ -55,7 +55,7 @@ class DataCollectionGroupInfo:
     visit_string: str
     experiment_type: str
     sample_id: Optional[str]
-    sample_barcode: Optional[str]
+    sample_barcode: Optional[str] = None
 
 
 @dataclass(kw_only=True)

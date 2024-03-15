@@ -8,7 +8,6 @@ from hyperion.utils.utils import convert_eV_to_angstrom
 
 GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
-    "sample_barcode": None,
     "visit_path": "",
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
@@ -48,7 +47,6 @@ class IspybParams(BaseModel):
     resolution: Optional[float]
 
     sample_id: Optional[str] = None
-    sample_barcode: Optional[str] = None
 
     # Optional from GDA as populated by Ophyd
     flux: Optional[float] = None

@@ -16,7 +16,6 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 
 from ..conftest import (
-    TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_SAMPLE_ID,
     default_raw_params,
@@ -27,7 +26,6 @@ from ..conftest import (
 def dummy_params():
     dummy_params = GridscanInternalParameters(**default_raw_params())
     dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
-    dummy_params.hyperion_params.ispyb_params.sample_barcode = TEST_BARCODE
     dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 1.25
     dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 1.25

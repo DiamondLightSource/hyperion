@@ -6,7 +6,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 
 from ...conftest import (
     EXPECTED_START_TIME,
-    TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
@@ -112,7 +111,6 @@ def test_activity_gated_start_2d(mock_ispyb_conn):
             "parentid": TEST_SESSION_ID,
             "experimenttype": "mesh",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
     assert_upsert_call_with(
@@ -215,7 +213,6 @@ def test_activity_gated_start_3d(mock_ispyb_conn):
             "parentid": TEST_SESSION_ID,
             "experimenttype": "Mesh3D",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
     assert_upsert_call_with(

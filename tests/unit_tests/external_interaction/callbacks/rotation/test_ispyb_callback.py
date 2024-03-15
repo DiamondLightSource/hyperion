@@ -7,7 +7,6 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
 from ...conftest import (
     EXPECTED_END_TIME,
     EXPECTED_START_TIME,
-    TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
@@ -70,7 +69,6 @@ def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_documen
             "parentid": TEST_SESSION_ID,
             "experimenttype": "SAD",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
     assert_upsert_call_with(
