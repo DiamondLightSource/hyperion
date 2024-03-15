@@ -46,18 +46,12 @@
             }
         },
         "flux": {
-            "type": "number"
+            "type": ["number", "null"]
         },
         "beam_size_x": {
             "type": "number"
         },
         "beam_size_y": {
-            "type": "number"
-        },
-        "slit_gap_size_x": {
-            "type": "number"
-        },
-        "slit_gap_size_y": {
             "type": "number"
         },
         "focal_spot_size_x": {
@@ -84,7 +78,6 @@
         "microns_per_pixel_x",
         "microns_per_pixel_y",
         "position",
-        "flux",
         "beam_size_x",
         "beam_size_y",
         "focal_spot_size_x",

@@ -71,6 +71,7 @@ from ...system_tests.external_interaction.conftest import (
 )
 from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
+    assert_event,
     mock_zocalo_trigger,
     modified_interactor_mock,
     modified_store_grid_scan_mock,
@@ -840,11 +841,3 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 
     assert mock_zocalo_trigger.run_end.call_count == 2
     assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
-
-
-def assert_event(mock_call, expected):
-    actual = mock_call.args[0]
-    if "data" in actual:
-        actual = actual["data"]
-    for k, v in expected.items():
-        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"

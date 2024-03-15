@@ -7,7 +7,7 @@
         "zocalo_environment": "devrmq",
         "experiment_type": "pin_tip_centre_then_xray_centre",
         "detector_params": {
-            "current_energy_ev": 100,
+            "expected_energy_ev": 100,
             "directory": "/tmp",
             "prefix": "file_name",
             "run_number": 0,
@@ -23,11 +23,8 @@
                 20.0,
                 30.0
             ],
-            "flux": 10.0,
             "beam_size_x": 1.0,
             "beam_size_y": 1.0,
-            "slit_gap_size_x": 1.0,
-            "slit_gap_size_y": 1.0,
             "focal_spot_size_x": 1.0,
             "focal_spot_size_y": 1.0,
             "comment": "test",

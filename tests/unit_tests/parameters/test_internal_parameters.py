@@ -76,8 +76,9 @@ def test_ispyb_param_wavelength():
     from hyperion.utils.utils import convert_eV_to_angstrom
 
     ispyb_params = GridscanIspybParams(**GRIDSCAN_ISPYB_PARAM_DEFAULTS)
+    ispyb_params.current_energy_ev = 12700
     assert ispyb_params.wavelength_angstroms == pytest.approx(
-        convert_eV_to_angstrom(GRIDSCAN_ISPYB_PARAM_DEFAULTS["current_energy_ev"])
+        convert_eV_to_angstrom(12700)
     )
 
 

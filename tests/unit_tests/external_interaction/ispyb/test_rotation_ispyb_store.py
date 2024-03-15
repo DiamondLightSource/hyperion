@@ -38,8 +38,6 @@ EXPECTED_DATA_COLLECTION = {
     "axisend": 180,
     "focal_spot_size_at_samplex": 1.0,
     "focal_spot_size_at_sampley": 1.0,
-    "slitgap_vertical": 1,
-    "slitgap_horizontal": 1,
     "beamsize_at_samplex": 1,
     "beamsize_at_sampley": 1,
     "transmission": 100.0,
@@ -52,7 +50,6 @@ EXPECTED_DATA_COLLECTION = {
     "imgsuffix": "h5",
     "n_passes": 1,
     "overlap": 0,
-    "flux": 10.0,
     "omegastart": 0,
     "start_image_number": 1,
     "resolution": 1.0,  # deferred
@@ -104,8 +101,6 @@ def scan_data_info_for_begin():
             axis_start=0.0,
             focal_spot_size_at_samplex=1.0,
             focal_spot_size_at_sampley=1.0,
-            slitgap_vertical=1.0,
-            slitgap_horizontal=1.0,
             beamsize_at_samplex=1.0,
             beamsize_at_sampley=1.0,
             transmission=100.0,
@@ -118,7 +113,6 @@ def scan_data_info_for_begin():
             imgsuffix="h5",
             n_passes=1,
             overlap=0,
-            flux=10.0,
             start_image_number=1,
             resolution=1.0,
             wavelength=123.98419840550369,
@@ -174,7 +168,7 @@ def scan_data_info_for_update(scan_data_info_for_begin):
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
-            synchrotron_mode=None,
+            synchrotron_mode="test",
             undulator_gap1=None,
             start_time="2024-02-08 14:03:59",
         ),
@@ -347,6 +341,10 @@ def test_update_deposition(
         EXPECTED_DATA_COLLECTION
         | {
             "id": TEST_DATA_COLLECTION_IDS[0],
+            "synchrotron_mode": "test",
+            "slitgap_vertical": 1,
+            "slitgap_horizontal": 1,
+            "flux": 10,
         },
     )
 
@@ -412,6 +410,10 @@ def test_update_deposition_with_group_id_updates(
         EXPECTED_DATA_COLLECTION
         | {
             "id": TEST_DATA_COLLECTION_IDS[0],
+            "synchrotron_mode": "test",
+            "slitgap_vertical": 1,
+            "slitgap_horizontal": 1,
+            "flux": 10,
         },
     )
 

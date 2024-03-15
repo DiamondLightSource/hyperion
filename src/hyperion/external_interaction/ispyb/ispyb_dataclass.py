@@ -12,26 +12,21 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "visit_path": "",
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
-    "current_energy_ev": 12700,
-    # populate later depending on if requested energy is specified
-    "expected_energy_ev": None,
+    "current_energy_ev": None,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     "upper_left": [0, 0, 0],
     "position": [0, 0, 0],
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
-    "transmission_fraction": 1.0,
-    "flux": 10.0,
+    "transmission_fraction": None,
+    "flux": None,
     "beam_size_x": 0.1,
     "beam_size_y": 0.1,
     "focal_spot_size_x": 0.0,
     "focal_spot_size_y": 0.0,
     "comment": "Descriptive comment.",
     "resolution": 1,
-    "undulator_gap": 1.0,
-    "synchrotron_mode": None,
-    "slit_gap_size_x": 0.1,
-    "slit_gap_size_y": 0.1,
+    "undulator_gap": None,
 }
 
 
@@ -41,7 +36,7 @@ class IspybParams(BaseModel):
     microns_per_pixel_y: float
     position: np.ndarray
 
-    transmission_fraction: float
+    transmission_fraction: Optional[float]  # TODO 1033 this is now deprecated
     # populated by robot_load_then_centre
     current_energy_ev: Optional[float]
     beam_size_x: float
@@ -58,9 +53,6 @@ class IspybParams(BaseModel):
     # Optional from GDA as populated by Ophyd
     flux: Optional[float] = None
     undulator_gap: Optional[float] = None
-    synchrotron_mode: Optional[str] = None
-    slit_gap_size_x: Optional[float] = None
-    slit_gap_size_y: Optional[float] = None
     xtal_snapshots_omega_start: Optional[list[str]] = None
     xtal_snapshots_omega_end: Optional[list[str]] = None
 
@@ -85,8 +77,8 @@ class IspybParams(BaseModel):
         return np.array(position)
 
     @validator("transmission_fraction")
-    def _transmission_not_percentage(cls, transmission_fraction: float):
-        if transmission_fraction > 1:
+    def _transmission_not_percentage(cls, transmission_fraction: Optional[float]):
+        if transmission_fraction and transmission_fraction > 1:
             raise ValueError(
                 "Transmission_fraction of >1 given. Did you give a percentage instead of a fraction?"
             )

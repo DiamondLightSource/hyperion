@@ -178,6 +178,7 @@ def robot_load_then_centre(
         yield from read_energy(cast(SetEnergyComposite, composite))
     )
 
+    # XXX TODO 1173 remove this - left in to avoid breaking nexus files?
     parameters.hyperion_params.ispyb_params.current_energy_ev = actual_energy_ev
     if not parameters.experiment_params.requested_energy_kev:
         parameters.hyperion_params.detector_params.expected_energy_ev = actual_energy_ev
