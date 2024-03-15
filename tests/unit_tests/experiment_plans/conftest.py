@@ -139,16 +139,16 @@ def mock_subscriptions(test_fgs_params):
             )
         ),
     ):
-        subscriptions = create_gridscan_callbacks()
-        subscriptions[1].ispyb = MagicMock(spec=StoreInIspyb)
+        nexus_callback, ispyb_callback = create_gridscan_callbacks()
+        ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
         start_doc = {
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": test_fgs_params.json(),
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         }
-        subscriptions[1].activity_gated_start(start_doc)  # type: ignore
+        ispyb_callback.activity_gated_start(start_doc)  # type: ignore
 
-    return subscriptions
+    return (nexus_callback, ispyb_callback)
 
 
 def fake_read(obj, initial_positions, _):
