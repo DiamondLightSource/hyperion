@@ -120,7 +120,6 @@ def dummy_collection_group_info():
         visit_string="cm31105-4",
         experiment_type="mesh",
         sample_id="0001",
-        sample_barcode="12345A",
     )
 
 
@@ -198,7 +197,6 @@ def test_begin_deposition(
             "parentid": TEST_SESSION_ID,
             "experimenttype": "mesh",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
     assert_upsert_call_with(
@@ -267,6 +265,7 @@ def test_update_deposition(
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.assert_called_once()
     mx_acq.upsert_data_collection.assert_called_once()
+    dummy_collection_group_info.sample_barcode = TEST_BARCODE
     assert dummy_2d_gridscan_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]
     ) == IspybIds(

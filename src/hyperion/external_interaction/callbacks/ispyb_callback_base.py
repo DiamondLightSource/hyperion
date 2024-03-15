@@ -47,6 +47,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
         self._event_driven_data_collection_info: Optional[DataCollectionInfo] = None
+        self._sample_barcode: Optional[str] = None
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )
@@ -68,6 +69,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         self._event_driven_data_collection_info = DataCollectionInfo()
+        self._sample_barcode = None
         return self._tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
@@ -103,9 +105,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self._event_driven_data_collection_info.slitgap_vertical = doc["data"][
                 "s4_slit_gaps_ygap"
             ]
-            self.params.hyperion_params.ispyb_params.sample_barcode = doc["data"][
-                "robot-barcode"
-            ]
+            self._sample_barcode = doc["data"]["robot-barcode"]
 
         if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
             assert self._event_driven_data_collection_info
@@ -137,17 +137,25 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 self._event_driven_data_collection_info, self.params
             )
             ISPYB_LOGGER.info("Updating ispyb entry.")
-            self.ispyb_ids = self.update_deposition(self.params, scan_data_infos)
+            self.ispyb_ids = self.update_deposition(
+                self.params,
+                scan_data_infos,
+                self._sample_barcode,
+            )
             ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
 
     def update_deposition(
-        self, params, scan_data_infos: Sequence[ScanDataInfo]
+        self,
+        params,
+        scan_data_infos: Sequence[ScanDataInfo],
+        sample_barcode: Optional[str],
     ) -> IspybIds:
         data_collection_group_info = populate_data_collection_group(
             self.ispyb.experiment_type,
             params.hyperion_params.detector_params,
             params.hyperion_params.ispyb_params,
+            sample_barcode,
         )
 
         return self.ispyb.update_deposition(

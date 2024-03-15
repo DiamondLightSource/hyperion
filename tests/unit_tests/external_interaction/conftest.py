@@ -196,7 +196,6 @@ def dummy_rotation_params():
         )
     )
     dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
-    dummy_params.hyperion_params.ispyb_params.sample_barcode = TEST_BARCODE
     return dummy_params
 
 

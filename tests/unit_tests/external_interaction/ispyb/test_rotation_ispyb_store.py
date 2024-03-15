@@ -73,7 +73,6 @@ def dummy_rotation_data_collection_group_info():
         visit_string="cm31105-4",
         experiment_type="SAD",
         sample_id="0001",
-        sample_barcode="12345A",
     )
 
 
@@ -218,7 +217,6 @@ def test_begin_deposition(
             "parentid": TEST_SESSION_ID,
             "experimenttype": "SAD",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
     assert_upsert_call_with(
@@ -288,7 +286,6 @@ def test_begin_deposition_with_alternate_experiment_type(
             "parentid": TEST_SESSION_ID,
             "experimenttype": "Characterization",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
 
@@ -315,6 +312,7 @@ def test_update_deposition(
         ispyb_ids.data_collection_group_id
     )
     scan_data_info_for_update.data_collection_id = ispyb_ids.data_collection_ids[0]
+    dummy_rotation_data_collection_group_info.sample_barcode = TEST_BARCODE
 
     assert dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
@@ -385,6 +383,7 @@ def test_update_deposition_with_group_id_updates(
         ispyb_ids.data_collection_group_id
     )
     scan_data_info_for_update.data_collection_id = ispyb_ids.data_collection_ids[0]
+    dummy_rotation_data_collection_group_info.sample_barcode = TEST_BARCODE
     assert dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
         dummy_rotation_data_collection_group_info,

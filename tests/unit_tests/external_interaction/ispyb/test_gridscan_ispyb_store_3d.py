@@ -36,7 +36,6 @@ def dummy_collection_group_info():
         visit_string="cm31105-4",
         experiment_type="Mesh3D",
         sample_id="0001",
-        sample_barcode="12345A",
     )
 
 
@@ -292,7 +291,6 @@ def test_begin_deposition(
             "parentid": TEST_SESSION_ID,
             "experimenttype": "Mesh3D",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
     mx_acq.upsert_data_collection.assert_called_once()
@@ -363,6 +361,8 @@ def test_update_deposition(
     mx_acq.upsert_data_collection_group.assert_called_once()
     mx_acq.upsert_data_collection.assert_called_once()
 
+    dummy_collection_group_info.sample_barcode = TEST_BARCODE
+
     actual_rows = dummy_3d_gridscan_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, scan_data_infos_for_update
     )
@@ -381,7 +381,7 @@ def test_update_deposition(
             "parentid": TEST_SESSION_ID,
             "experimenttype": "Mesh3D",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
+            "sample_barcode": TEST_BARCODE,
         },
     )
 
