@@ -8,6 +8,9 @@ import numpy as np
 import pytest
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 
+from hyperion.external_interaction.nexus.nexus_utils import (
+    create_beam_and_attenuator_parameters,
+)
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -26,20 +29,22 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
             assert "end_time_estimated" in entry
 
 
+def create_nexus_writer(parameters, writer_num):
+    nexus_writer = NexusWriter(parameters, **parameters.get_nexus_info(writer_num))
+    nexus_writer.beam, nexus_writer.attenuator = create_beam_and_attenuator_parameters(
+        parameters.hyperion_params.ispyb_params
+    )
+    return nexus_writer
+
+
 @pytest.fixture
 def dummy_nexus_writers(test_fgs_params: GridscanInternalParameters):
-    nexus_info_1 = test_fgs_params.get_nexus_info(1)
-    nexus_writer_1 = NexusWriter(test_fgs_params, **nexus_info_1)
-    nexus_info_2 = test_fgs_params.get_nexus_info(2)
-    nexus_writer_2 = NexusWriter(
-        test_fgs_params,
-        **nexus_info_2,
-        vds_start_index=nexus_info_1["data_shape"][0],
-    )
+    writers = [create_nexus_writer(test_fgs_params, i) for i in [1, 2]]
+    writers[1].start_index = test_fgs_params.get_nexus_info(1)["data_shape"][0]
 
-    yield nexus_writer_1, nexus_writer_2
+    yield writers
 
-    for writer in [nexus_writer_1, nexus_writer_2]:
+    for writer in writers:
         os.remove(writer.nexus_file)
         os.remove(writer.master_file)
 
@@ -51,13 +56,15 @@ def create_nexus_writers_with_many_images(parameters: GridscanInternalParameters
     parameters.experiment_params.y_steps = y
     parameters.experiment_params.z_steps = z
     parameters.hyperion_params.detector_params.num_triggers = x * y + x * z
-    nexus_writer_1 = NexusWriter(parameters, **parameters.get_nexus_info(1))
-    nexus_writer_2 = NexusWriter(parameters, **parameters.get_nexus_info(2))
+
+    writers = [create_nexus_writer(parameters, i) for i in [1, 2]]
+    writers[1].start_index = parameters.get_nexus_info(1)["data_shape"][0]
+
     try:
-        yield nexus_writer_1, nexus_writer_2
+        yield writers
 
     finally:
-        for writer in [nexus_writer_1, nexus_writer_2]:
+        for writer in writers:
             os.remove(writer.nexus_file)
             os.remove(writer.master_file)
 

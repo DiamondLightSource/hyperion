@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
+)
+from hyperion.external_interaction.nexus.nexus_utils import (
+    create_beam_and_attenuator_parameters,
 )
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
@@ -41,6 +44,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         self.run_start_uid: str | None = None
         self.nexus_writer_1: NexusWriter | None = None
         self.nexus_writer_2: NexusWriter | None = None
+        self.descriptors: Dict[str, EventDescriptor] = {}
         self.log = NEXUS_LOGGER
 
     def activity_gated_start(self, doc: RunStart):
@@ -53,6 +57,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             self.run_start_uid = doc.get("uid")
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
+        self.descriptors[doc["uid"]] = doc
         if doc.get("name") == CONST.PLAN.ISPYB_HARDWARE_READ:
             assert (
                 self.parameters is not None
@@ -70,8 +75,13 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                 **nexus_data_2,
                 vds_start_index=nexus_data_1["data_shape"][0],
             )
-            self.nexus_writer_1.create_nexus_file()
-            self.nexus_writer_2.create_nexus_file()
+            for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
+                nexus_writer.beam, nexus_writer.attenuator = (
+                    create_beam_and_attenuator_parameters(
+                        self.parameters.hyperion_params.ispyb_params
+                    )
+                )
+                nexus_writer.create_nexus_file()
             NEXUS_LOGGER.info(
                 f"Nexus files created at {self.nexus_writer_1.full_filename} and {self.nexus_writer_1.full_filename}"
             )
