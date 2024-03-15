@@ -58,15 +58,21 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 "has no corresponding descriptor record"
             )
             return doc
+        if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
+            NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
+            data = doc["data"]
+            assert self.writer, "Nexus writer not initialised"
+            self.writer.beam, self.writer.attenuator = (
+                create_beam_and_attenuator_parameters(
+                    data["dcm_energy_in_kev"],
+                    data["flux_flux_reading"],
+                    data["attenuator_actual_transmission"],
+                )
+            )
         if event_descriptor.get("name") == CONST.PLAN.NEXUS_READ:
             NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
             assert self.writer is not None
-            self.writer.beam, self.writer.attenuator = (
-                create_beam_and_attenuator_parameters(
-                    self.parameters.hyperion_params.ispyb_params
-                )
-            )
             self.writer.create_nexus_file(vds_data_type)
             NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")
         return doc

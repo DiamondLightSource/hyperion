@@ -20,6 +20,8 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
 Note that the testing process does now write temporary files to disk."""
 
+TEST_FLUX = 1e10
+
 
 def assert_end_data_correct(nexus_writer: NexusWriter):
     for filename in [nexus_writer.nexus_file, nexus_writer.master_file]:
@@ -32,7 +34,7 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 def create_nexus_writer(parameters, writer_num):
     nexus_writer = NexusWriter(parameters, **parameters.get_nexus_info(writer_num))
     nexus_writer.beam, nexus_writer.attenuator = create_beam_and_attenuator_parameters(
-        parameters.hyperion_params.ispyb_params
+        20, TEST_FLUX, 0.5
     )
     return nexus_writer
 
@@ -135,7 +137,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],
                 h5py.Dataset,
             )
-            assert flux[()] == 9.0
+            assert flux[()] == TEST_FLUX
             assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
             assert isinstance(omega := data_path["omega"], h5py.Dataset)
             assert np.all(omega[:] == 0.0)
@@ -187,7 +189,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],
                 h5py.Dataset,
             )
-            assert flux[()] == 9.0
+            assert flux[()] == TEST_FLUX
             assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
             assert_contains_external_link(data_path, "data_000002", "dummy_0_000002.h5")
             assert isinstance(omega := data_path["omega"], h5py.Dataset)

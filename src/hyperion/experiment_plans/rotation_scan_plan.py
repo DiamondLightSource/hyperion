@@ -208,8 +208,6 @@ def rotation_scan_plan(
         yield from bps.wait("setup_zebra")
 
         # get some information for the ispyb deposition and trigger the callback
-        yield from read_hardware_for_nexus_writer(composite.eiger)
-
         yield from read_hardware_for_zocalo(composite.eiger)
 
         yield from read_hardware_for_ispyb_pre_collection(
@@ -222,6 +220,7 @@ def rotation_scan_plan(
         yield from read_hardware_for_ispyb_during_collection(
             composite.attenuator, composite.flux, composite.dcm
         )
+        yield from read_hardware_for_nexus_writer(composite.eiger)
 
         # Get ready for the actual scan
         yield from bps.abs_set(

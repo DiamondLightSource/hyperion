@@ -16,7 +16,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 
 if TYPE_CHECKING:
-    from event_model.documents import EventDescriptor, RunStart
+    from event_model.documents import Event, EventDescriptor, RunStart
 
 
 class GridscanNexusFileCallback(PlanReactiveCallback):
@@ -40,7 +40,6 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
 
     def __init__(self) -> None:
         super().__init__(NEXUS_LOGGER)
-        self.parameters: GridscanInternalParameters | None = None
         self.run_start_uid: str | None = None
         self.nexus_writer_1: NexusWriter | None = None
         self.nexus_writer_2: NexusWriter | None = None
@@ -51,37 +50,39 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         if doc.get("subplan_name") == CONST.PLAN.GRIDSCAN_OUTER:
             json_params = doc.get("hyperion_internal_parameters")
             NEXUS_LOGGER.info(
-                f"Nexus writer recieved start document with experiment parameters {json_params}"
+                f"Nexus writer received start document with experiment parameters {json_params}"
             )
-            self.parameters = GridscanInternalParameters.from_json(json_params)
+            parameters = GridscanInternalParameters.from_json(json_params)
+            nexus_data_1 = parameters.get_nexus_info(1)
+            nexus_data_2 = parameters.get_nexus_info(2)
+            self.nexus_writer_1 = NexusWriter(parameters, **nexus_data_1)
+            self.nexus_writer_2 = NexusWriter(
+                parameters,
+                **nexus_data_2,
+                vds_start_index=nexus_data_1["data_shape"][0],
+            )
             self.run_start_uid = doc.get("uid")
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
-        if doc.get("name") == CONST.PLAN.ISPYB_HARDWARE_READ:
-            assert (
-                self.parameters is not None
-            ), "Nexus callback did not receive parameters before being asked to write!"
-            # TODO instead of ispyb wait for detector parameter reading in plan
-            # https://github.com/DiamondLightSource/python-hyperion/issues/629
-            # and update parameters before creating writers
 
-            NEXUS_LOGGER.info("Initialising nexus writers...")
-            nexus_data_1 = self.parameters.get_nexus_info(1)
-            nexus_data_2 = self.parameters.get_nexus_info(2)
-            self.nexus_writer_1 = NexusWriter(self.parameters, **nexus_data_1)
-            self.nexus_writer_2 = NexusWriter(
-                self.parameters,
-                **nexus_data_2,
-                vds_start_index=nexus_data_1["data_shape"][0],
-            )
+    def activity_gated_event(self, doc: Event) -> Event | None:
+        event_descriptor = self.descriptors.get(doc["descriptor"])
+        if (
+            event_descriptor
+            and event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ
+        ):
+            data = doc["data"]
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
+                assert nexus_writer, "Nexus callback did not receive start doc"
                 nexus_writer.beam, nexus_writer.attenuator = (
                     create_beam_and_attenuator_parameters(
-                        self.parameters.hyperion_params.ispyb_params
+                        data["dcm_energy_in_kev"],
+                        data["flux_flux_reading"],
+                        data["attenuator_actual_transmission"],
                     )
                 )
                 nexus_writer.create_nexus_file()
-            NEXUS_LOGGER.info(
-                f"Nexus files created at {self.nexus_writer_1.full_filename} and {self.nexus_writer_1.full_filename}"
-            )
+                NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.full_filename}")
+
+        return super().activity_gated_event(doc)
