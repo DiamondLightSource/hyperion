@@ -6,7 +6,7 @@ import dodal.devices.zocalo.zocalo_interaction
 import ispyb.sqlalchemy
 import numpy as np
 import pytest
-from ispyb.sqlalchemy import DataCollection
+from ispyb.sqlalchemy import DataCollection, DataCollectionGroup
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -83,20 +83,37 @@ def get_current_datacollection_attribute(
     return data
 
 
-@pytest.fixture
-def fetch_comment() -> Callable:
-    url = ispyb.sqlalchemy.url(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
-    engine = create_engine(url, connect_args={"use_pure": True})
-    Session = sessionmaker(engine)
-    return partial(get_current_datacollection_comment, Session)
+def get_current_datacollectiongroup_attribute(
+    Session: Callable, dcg_id: int, attr: str
+):
+    with Session() as session:
+        query = session.query(DataCollectionGroup).filter(
+            DataCollection.dataCollectionGroupId == dcg_id
+        )
+        first_result = query.first()
+        return getattr(first_result, attr)
 
 
 @pytest.fixture
-def fetch_datacollection_attribute() -> Callable:
+def sqlalchemy_sessionmaker() -> sessionmaker:
     url = ispyb.sqlalchemy.url(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
     engine = create_engine(url, connect_args={"use_pure": True})
-    Session = sessionmaker(engine)
-    return partial(get_current_datacollection_attribute, Session)
+    return sessionmaker(engine)
+
+
+@pytest.fixture
+def fetch_comment(sqlalchemy_sessionmaker) -> Callable:
+    return partial(get_current_datacollection_comment, sqlalchemy_sessionmaker)
+
+
+@pytest.fixture
+def fetch_datacollection_attribute(sqlalchemy_sessionmaker) -> Callable:
+    return partial(get_current_datacollection_attribute, sqlalchemy_sessionmaker)
+
+
+@pytest.fixture
+def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
+    return partial(get_current_datacollectiongroup_attribute, sqlalchemy_sessionmaker)
 
 
 @pytest.fixture
