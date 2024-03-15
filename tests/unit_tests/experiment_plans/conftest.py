@@ -43,7 +43,6 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 BASIC_PRE_SETUP_DOC = {
     "undulator_current_gap": 0,
-    "undulator_gap": 0,
     "synchrotron_machine_status_synchrotron_mode": 0,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
@@ -220,3 +219,11 @@ def add_simple_oav_mxsc_callback_handlers(sim):
             },
         ),
     )
+
+
+def assert_event(mock_call, expected):
+    actual = mock_call.args[0]
+    if "data" in actual:
+        actual = actual["data"]
+    for k, v in expected.items():
+        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"

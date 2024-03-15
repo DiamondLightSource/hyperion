@@ -58,6 +58,8 @@ def scan_xy_data_info_for_update(scan_data_info_for_begin):
     scan_data_info_for_update.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
+    scan_data_info_for_update.data_collection_info.synchrotron_mode = "test"
+    scan_data_info_for_update.data_collection_info.flux = 10
     scan_data_info_for_update.data_collection_grid_info = DataCollectionGridInfo(
         dx_in_mm=0.1,
         dy_in_mm=0.1,

@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.4",
+    "params_version": "4.0.5",
     "hyperion_params": {
         "beamline": "BL03S",
         "insertion_prefix": "SR03S",
@@ -44,11 +44,8 @@
                 "test_3"
             ],
             "transmission_fraction": 1.0,
-            "flux": 10.0,
             "beam_size_x": 1.0,
             "beam_size_y": 1.0,
-            "slit_gap_size_x": 1.0,
-            "slit_gap_size_y": 1.0,
             "focal_spot_size_x": 1.0,
             "focal_spot_size_y": 1.0,
             "comment": "test",

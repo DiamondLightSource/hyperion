@@ -114,13 +114,24 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 self._event_driven_data_collection_info.transmission = (
                     doc["data"]["attenuator_actual_transmission"] * 100
                 )
+                # TODO 1173 Remove this once nexus_utils no longer needs it
+                self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
+                    "data"
+                ]["attenuator_actual_transmission"]
             self._event_driven_data_collection_info.flux = doc["data"][
                 "flux_flux_reading"
             ]
+            # TODO 1173 Remove this once nexus_utils no longer needs it
+            self.params.hyperion_params.ispyb_params.flux = (
+                self._event_driven_data_collection_info.flux
+            )
             if doc["data"]["dcm_energy_in_kev"]:
+                energy_ev = doc["data"]["dcm_energy_in_kev"] * 1000
                 self._event_driven_data_collection_info.wavelength = (
-                    convert_eV_to_angstrom(doc["data"]["dcm_energy_in_kev"] * 1000)
+                    convert_eV_to_angstrom(energy_ev)
                 )
+                # TODO 1173 Remove this once nexus_utils no longer needs wavelength_angstroms
+                self.params.hyperion_params.ispyb_params.current_energy_ev = energy_ev
 
             scan_data_infos = self.populate_info_for_update(
                 self._event_driven_data_collection_info, self.params
