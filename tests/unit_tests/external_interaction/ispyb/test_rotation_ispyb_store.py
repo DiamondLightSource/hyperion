@@ -1,7 +1,6 @@
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from mockito import mock
 
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -230,7 +229,7 @@ def test_begin_deposition(
     "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_begin_deposition_with_group_id_doesnt_insert(
+def test_begin_deposition_with_group_id_updates_but_doesnt_insert(
     mock_ispyb_conn,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
@@ -247,7 +246,16 @@ def test_begin_deposition_with_group_id_doesnt_insert(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
     )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-    mx_acq.upsert_data_collection_group.assert_not_called()
+    assert_upsert_call_with(
+        mx_acq.upsert_data_collection_group.mock_calls[0],
+        mx_acq.get_data_collection_group_params(),
+        {
+            "id": TEST_DATA_COLLECTION_GROUP_ID,
+            "parentid": TEST_SESSION_ID,
+            "experimenttype": "SAD",
+            "sampleid": TEST_SAMPLE_ID,
+        },
+    )
     assert (
         scan_data_info_for_begin.data_collection_info.parent_id
         == TEST_DATA_COLLECTION_GROUP_ID
@@ -495,22 +503,33 @@ def test_store_rotation_scan_failures(
 
 
 @pytest.mark.parametrize("dcgid", [2, 45, 61, 88, 13, 25])
-@patch("ispyb.open", new_callable=mock_open)
 def test_store_rotation_scan_uses_supplied_dcgid(
-    ispyb_conn,
+    mock_ispyb_conn,
     dcgid,
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
     scan_data_info_for_update,
 ):
-    ispyb_conn.return_value.mx_acquisition = MagicMock()
-    ispyb_conn.return_value.core = mock()
+    mock_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
+        dcgid
+    )
     store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.ROTATION)
     scan_data_info_for_begin.data_collection_info.parent_id = dcgid
     ispyb_ids = store_in_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, scan_data_info_for_begin
     )
     assert ispyb_ids.data_collection_group_id == dcgid
+    mx = mx_acquisition_from_conn(mock_ispyb_conn)
+    assert_upsert_call_with(
+        mx.upsert_data_collection_group.mock_calls[0],
+        mx.get_data_collection_group_params(),
+        {
+            "id": dcgid,
+            "parentid": TEST_SESSION_ID,
+            "experimenttype": "SAD",
+            "sampleid": TEST_SAMPLE_ID,
+        },
+    )
     assert (
         store_in_ispyb.update_deposition(
             ispyb_ids,
