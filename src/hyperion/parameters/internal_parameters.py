@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Any
 
 from dodal.devices.eiger import DetectorParams
-from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
+from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
 from pydantic import BaseModel, root_validator
 from semver import Version
 
@@ -159,7 +159,7 @@ class InternalParameters(BaseModel):
     def _preprocess_experiment_params(
         cls,
         experiment_params: dict[str, Any],
-    ) -> AbstractExperimentParameterBase: ...
+    ) -> AbstractExperimentWithBeamParams: ...
 
     @abstractmethod
     def _preprocess_hyperion_params(

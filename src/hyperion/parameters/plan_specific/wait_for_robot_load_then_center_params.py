@@ -56,9 +56,6 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     # plugin
     use_ophyd_pin_tip_detect: bool = False
 
-    def get_num_images(self):
-        return 0
-
 
 class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):
     experiment_params: WaitForRobotLoadThenCentreParams
