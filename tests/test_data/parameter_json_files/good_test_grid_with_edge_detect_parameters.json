@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.4",
+    "params_version": "5.0.0",
     "hyperion_params": {
         "beamline": "BL03S",
         "insertion_prefix": "SR03S",
@@ -23,7 +23,6 @@
                 20.0,
                 30.0
             ],
-            "transmission_fraction": 1.0,
             "flux": 10.0,
             "beam_size_x": 1.0,
             "beam_size_y": 1.0,
@@ -41,6 +40,7 @@
         "exposure_time": 0.1,
         "detector_distance": 100.0,
         "omega_start": 0.0,
-        "grid_width_microns": 151
+        "grid_width_microns": 151,
+        "transmission_fraction": 1.0
     }
 }

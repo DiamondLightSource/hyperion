@@ -81,7 +81,8 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
     assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
     assert isclose(
-        params_passed.hyperion_params.ispyb_params.resolution, 2.11338  # type: ignore
+        params_passed.hyperion_params.ispyb_params.resolution,
+        2.11338,  # type: ignore
     )
 
 

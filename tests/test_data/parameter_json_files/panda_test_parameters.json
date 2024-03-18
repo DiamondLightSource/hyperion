@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.4",
+    "params_version": "5.0.0",
     "hyperion_params": {
         "beamline": "BL03I",
         "insertion_prefix": "SR03I",
@@ -44,7 +44,6 @@
                 "test_2",
                 "test_3"
             ],
-            "transmission_fraction": 1.0,
             "flux": 10.0,
             "beam_size_x": 1.0,
             "beam_size_y": 1.0,
@@ -60,6 +59,7 @@
         "x_steps": 40,
         "y_steps": 20,
         "z_steps": 10,
+        "transmission_fraction": 1.0,
         "x_step_size": 0.1,
         "y_step_size": 0.1,
         "z_step_size": 0.1,
@@ -73,6 +73,5 @@
         "exposure_time": 0.1,
         "set_stub_offsets": true,
         "run_up_distance_mm": 0.1
-
     }
 }

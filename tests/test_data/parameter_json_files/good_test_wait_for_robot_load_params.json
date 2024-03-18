@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.4",
+    "params_version": "5.0.0",
     "hyperion_params": {
         "zocalo_environment": "artemis",
         "beamline": "BL03I",
@@ -21,7 +21,6 @@
                 0,
                 0
             ],
-            "transmission_fraction": 1.0,
             "flux": 10.0,
             "beam_size_x": 0.1,
             "beam_size_y": 0.1,
@@ -34,6 +33,7 @@
     },
     "experiment_params": {
         "omega_start": 0,
+        "transmission_fraction": 1.0,
         "exposure_time": 0.004,
         "detector_distance": 255,
         "snapshot_dir": "/tmp",

@@ -6,7 +6,6 @@ import numpy as np
 from dodal.devices.detector import TriggerMode
 from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
 from pydantic import validator
-from pydantic.dataclasses import dataclass
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
 from hyperion.parameters.internal_parameters import (
@@ -20,7 +19,6 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 
 
-@dataclass
 class GridScanWithEdgeDetectParams(AbstractExperimentWithBeamParams):
     """
     Holder class for the parameters of a grid scan that uses edge detection to detect the grid.

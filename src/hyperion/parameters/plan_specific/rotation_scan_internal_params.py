@@ -7,7 +7,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.motors import XYZLimitBundle
 from dodal.devices.zebra import RotationDirection
 from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
-from pydantic import BaseModel, validator
+from pydantic import validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -36,7 +36,7 @@ class RotationHyperionParameters(HyperionParameters):
         }
 
 
-class RotationScanParams(BaseModel, AbstractExperimentWithBeamParams):
+class RotationScanParams(AbstractExperimentWithBeamParams):
     """
     Holder class for the parameters of a rotation data collection.
     """

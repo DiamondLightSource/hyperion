@@ -47,10 +47,12 @@
         "set_stub_offsets": {
             "type": "boolean"
         },
+        "transmission_fraction": {
+            "type": "number"
+        },
         "run_up_distance_mm": {
             "type": "number"
         }
-
     },
     "minProperties": 12,
     "additionalProperties": false

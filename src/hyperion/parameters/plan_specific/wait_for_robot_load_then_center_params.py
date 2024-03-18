@@ -4,9 +4,8 @@ from typing import Any, Optional
 
 import numpy as np
 from dodal.devices.detector import DetectorParams, TriggerMode
-from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
+from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
 from pydantic import validator
-from pydantic.dataclasses import dataclass
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
@@ -33,8 +32,7 @@ class WaitForRobotLoadThenCentreHyperionParameters(HyperionParameters):
         }
 
 
-@dataclass
-class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
+class WaitForRobotLoadThenCentreParams(AbstractExperimentWithBeamParams):
     """
     Holder class for the parameters of a plan that waits for robot load then does a
     centre.
@@ -55,6 +53,9 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentParameterBase):
     # Whether to use the ophyd device for tip centring rather than the area detector
     # plugin
     use_ophyd_pin_tip_detect: bool = False
+
+    def get_num_images(self):
+        return 0
 
 
 class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):

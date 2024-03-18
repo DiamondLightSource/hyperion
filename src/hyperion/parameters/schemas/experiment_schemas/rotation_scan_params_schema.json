@@ -61,6 +61,9 @@
         },
         "shutter_opening_time_s": {
             "type": "number"
+        },
+        "transmission_fraction": {
+            "type": "number"
         }
     },
     "required": [

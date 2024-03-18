@@ -95,7 +95,6 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     test_config_files,
     sim_run_engine,
 ):
-
     mock_oav_callback.return_value.out_upper_left = [[1, 3], [3, 4]]
     mock_oav_callback.return_value.snapshot_filenames = [
         ["1.png", "2.png", "3.png"],
@@ -103,6 +102,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         ["1.png", "2.png", "3.png"],
     ]
     mock_grid_callback.return_value.get_grid_parameters.return_value = GridScanParams(
+        transmission_fraction=0.01,
         dwell_time_ms=0,
         x_start=0,
         y1_start=0,

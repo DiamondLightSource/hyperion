@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.4",
+    "params_version": "5.0.0",
     "hyperion_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",
@@ -37,7 +37,6 @@
                 "test_2_z",
                 "test_3_z"
             ],
-            "transmission_fraction": 1.0,
             "flux": 10.0,
             "beam_size_x": 0.1,
             "beam_size_y": 0.1,
@@ -54,6 +53,7 @@
         }
     },
     "experiment_params": {
+        "transmission_fraction": 1.0,
         "x_steps": 40,
         "y_steps": 20,
         "z_steps": 0,
