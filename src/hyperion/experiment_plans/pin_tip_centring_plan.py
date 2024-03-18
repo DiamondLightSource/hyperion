@@ -141,8 +141,6 @@ def pin_tip_centre_plan(
     Args:
         tip_offset_microns (float): The x offset from the tip where the centre is assumed
                                     to be.
-        use_ophyd_pin_tip_detect (bool): If true use the ophyd device to find the tip,
-                                    rather than the AD plugin.
     """
     oav: OAV = composite.oav
     smargon: Smargon = composite.smargon
