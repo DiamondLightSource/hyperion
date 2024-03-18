@@ -71,6 +71,8 @@ from .conftest import (
     run_generic_ispyb_handler_setup,
 )
 
+ReWithSubs = tuple[RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
+
 
 @pytest.fixture
 def ispyb_plan(test_fgs_params):
@@ -259,9 +261,7 @@ class TestFlyscanXrayCentrePlan:
         move_aperture: MagicMock,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE_with_subs: tuple[
-            RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-        ],
+        RE_with_subs: ReWithSubs,
     ):
         RE, _ = RE_with_subs
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
@@ -368,9 +368,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
-        RE_with_subs: tuple[
-            RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-        ],
+        RE_with_subs: ReWithSubs,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
     ):
@@ -401,9 +399,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
-        RE_with_subs: tuple[
-            RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-        ],
+        RE_with_subs: ReWithSubs,
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
@@ -436,9 +432,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
-        RE_with_subs: tuple[
-            RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-        ],
+        RE_with_subs: ReWithSubs,
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
@@ -468,9 +462,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        RE_with_subs: tuple[
-            RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-        ],
+        RE_with_subs: ReWithSubs,
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
@@ -496,9 +488,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         mock_mv: MagicMock,
-        RE_with_subs: tuple[
-            RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-        ],
+        RE_with_subs: ReWithSubs,
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
@@ -564,9 +554,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE_with_subs: tuple[
-            RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-        ],
+        RE_with_subs: ReWithSubs,
         done_status,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
@@ -652,9 +640,7 @@ class TestFlyscanXrayCentrePlan:
         mock_abs_set,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE_with_subs: tuple[
-            RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
-        ],
+        RE_with_subs: ReWithSubs,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         # Put both mocks in a parent to easily capture order
