@@ -101,13 +101,13 @@ async def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_s
 
 
 async def test_trigger_and_return_pin_tip_works_for_AD_pin_tip_detection(
-    oav: OAV, RE: RunEngine, pin_tip: PinTipDetection
+    oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
 ):
     mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(
         200, 100, *FAKE_EDGE_ARRAYS
     )
-    await pin_tip.validity_timeout._backend.put(0.15)
-    re_result = RE(trigger_and_return_pin_tip(pin_tip))
+    await mock_pin_tip.validity_timeout._backend.put(0.15)
+    re_result = RE(trigger_and_return_pin_tip(mock_pin_tip))
     assert re_result.plan_result == (200, 100)  # type: ignore
 
 
