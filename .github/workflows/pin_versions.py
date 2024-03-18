@@ -8,6 +8,7 @@ from functools import partial
 from sys import stderr, stdout
 
 SETUP_CFG_PATTERN = re.compile("(.*?)\\s*(@(.*))?\n")
+SETUP_UNPINNED_PATTERN = re.compile("(.*?)\\s*([<>=]+(.*))?\n")
 PIP = "pip"
 
 
@@ -77,7 +78,7 @@ def write_with_comment(comment, text, output_file):
 
 def update_setup_cfg_line(version_map: dict[str, str], line, output_file):
     stripped_line, comment = strip_comment(line)
-    if match := SETUP_CFG_PATTERN.match(stripped_line):
+    if match := SETUP_UNPINNED_PATTERN.match(stripped_line):
         normalized_name = normalize(match[1].strip())
         if normalized_name not in version_map:
             stderr.write(

@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from graypy import GELFTCPHandler
@@ -7,28 +7,33 @@ from hyperion.external_interaction.callbacks.__main__ import setup_logging
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
-)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+    StoreInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER
 
-from .conftest import TestData
+from ..conftest import TestData
 
 DC_IDS = (1, 2)
 DCG_ID = 4
+DC_GRID_IDS = (11, 12)
 td = TestData()
 
 
-def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIspyb:
-    mock = Store3DGridscanInIspyb("", params)
-    mock._store_grid_scan = MagicMock(return_value=[DC_IDS, None, DCG_ID])
-    mock._update_scan_with_end_time_and_status = MagicMock(return_value=None)
+def mock_store_in_ispyb(config, *args, **kwargs) -> StoreInIspyb:
+    mock = MagicMock(spec=StoreInIspyb)
+    mock.end_deposition = MagicMock(return_value=None)
     mock.begin_deposition = MagicMock(
         return_value=IspybIds(
             data_collection_group_id=DCG_ID, data_collection_ids=DC_IDS
+        )
+    )
+    mock.update_deposition = MagicMock(
+        return_value=IspybIds(
+            data_collection_group_id=DCG_ID,
+            data_collection_ids=DC_IDS,
+            grid_ids=DC_GRID_IDS,
         )
     )
     mock.append_to_comment = MagicMock()
@@ -36,11 +41,11 @@ def mock_store_in_ispyb(config, params, *args, **kwargs) -> Store3DGridscanInIsp
 
 
 @patch(
-    "hyperion.external_interaction.ispyb.ispyb_store.get_current_time_string",
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     MagicMock(return_value=td.DUMMY_TIME_STRING),
 )
 @patch(
-    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     mock_store_in_ispyb,
 )
 class TestXrayCentreIspybHandler:
@@ -57,25 +62,18 @@ class TestXrayCentreIspybHandler:
             td.test_descriptor_document_during_data_collection
         )
         ispyb_handler.activity_gated_event(
-            td.test_event_document_during_data_collection
+            td.test_event_document_during_data_collection  # pyright: ignore
         )
         ispyb_handler.activity_gated_stop(td.test_run_gridscan_failed_stop_document)
 
-        ispyb_handler.ispyb._update_scan_with_end_time_and_status.assert_has_calls(
-            [
-                call(
-                    td.DUMMY_TIME_STRING,
-                    td.BAD_ISPYB_RUN_STATUS,
-                    "could not connect to devices",
-                    id,
-                    DCG_ID,
-                )
-                for id in DC_IDS
-            ]
-        )
-        assert (
-            ispyb_handler.ispyb._update_scan_with_end_time_and_status.call_count
-            == len(DC_IDS)
+        ispyb_handler.ispyb.end_deposition.assert_called_once_with(
+            IspybIds(
+                data_collection_group_id=DCG_ID,
+                data_collection_ids=DC_IDS,
+                grid_ids=DC_GRID_IDS,
+            ),
+            "fail",
+            "could not connect to devices",
         )
 
     def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
@@ -95,21 +93,14 @@ class TestXrayCentreIspybHandler:
         )
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)
 
-        ispyb_handler.ispyb._update_scan_with_end_time_and_status.assert_has_calls(
-            [
-                call(
-                    td.DUMMY_TIME_STRING,
-                    td.GOOD_ISPYB_RUN_STATUS,
-                    "",
-                    id,
-                    DCG_ID,
-                )
-                for id in DC_IDS
-            ]
-        )
-        assert (
-            ispyb_handler.ispyb._update_scan_with_end_time_and_status.call_count
-            == len(DC_IDS)
+        ispyb_handler.ispyb.end_deposition.assert_called_once_with(
+            IspybIds(
+                data_collection_group_id=DCG_ID,
+                data_collection_ids=DC_IDS,
+                grid_ids=DC_GRID_IDS,
+            ),
+            "success",
+            "",
         )
 
     @pytest.mark.skip_log_setup

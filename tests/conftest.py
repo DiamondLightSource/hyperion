@@ -1,7 +1,6 @@
 import sys
 import threading
 from functools import partial
-from os import environ, getenv
 from typing import Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
@@ -89,7 +88,7 @@ def _destroy_loggers(loggers):
 
 def pytest_runtest_setup(item):
     markers = [m.name for m in item.own_markers]
-    if "skip_log_setup" not in markers:
+    if item.config.getoption("logging") and "skip_log_setup" not in markers:
         if LOGGER.handlers == []:
             if dodal_logger.handlers == []:
                 print("Initialising Hyperion logger for tests")
@@ -115,23 +114,6 @@ def pytest_runtest_setup(item):
     else:
         print("Skipping log setup for log test - deleting existing handlers")
         _destroy_loggers([*ALL_LOGGERS, dodal_logger])
-
-    if "s03" in markers:
-        print("Running s03 test - setting EPICS server ports variables...")
-        s03_epics_server_port = getenv("S03_EPICS_CA_SERVER_PORT")
-        s03_epics_repeater_port = getenv("S03_EPICS_CA_REPEATER_PORT")
-
-        assert (
-            s03_epics_server_port is not None and s03_epics_repeater_port is not None
-        ), (
-            "Please run the S03 launch script with the '-f' flag to run it on a port "
-            " which doesn't clash with the real EPICS ports."
-        )
-
-        environ["EPICS_CA_SERVER_PORT"] = s03_epics_server_port
-        print(f"[EPICS_CA_SERVER_PORT] = {s03_epics_server_port}")
-        environ["EPICS_CA_REPEATER_PORT"] = s03_epics_repeater_port
-        print(f"[EPICS_CA_REPEATER_PORT] = {s03_epics_repeater_port}")
 
 
 def pytest_runtest_teardown():
@@ -324,7 +306,9 @@ def attenuator():
         return_value=Status(done=True, success=True),
         autospec=True,
     ):
-        yield i03.attenuator(fake_with_ophyd_sim=True)
+        attenuator = i03.attenuator(fake_with_ophyd_sim=True)
+        attenuator.actual_transmission.sim_put(0.49118047952)  # type: ignore
+        yield attenuator
 
 
 @pytest.fixture
@@ -338,6 +322,7 @@ def xbpm_feedback(done_status):
 @pytest.fixture
 def dcm():
     dcm = i03.dcm(fake_with_ophyd_sim=True)
+    dcm.energy_in_kev.user_readback.sim_put(12.7)  # type: ignore
     dcm.pitch_in_mrad.user_setpoint._use_limits = False
     dcm.dcm_roll_converter_lookup_table_path = (
         "tests/test_data/test_beamline_dcm_roll_converter.txt"
@@ -439,6 +424,7 @@ def fake_create_devices(
     smargon: Smargon,
     zebra: Zebra,
     detector_motion: DetectorMotion,
+    aperture_scatterguard: ApertureScatterguard,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
@@ -455,6 +441,7 @@ def fake_create_devices(
         "zebra": zebra,
         "detector_motion": detector_motion,
         "backlight": i03.backlight(fake_with_ophyd_sim=True),
+        "ap_sg": aperture_scatterguard,
     }
     return devices
 
@@ -486,6 +473,8 @@ def fake_create_rotation_devices(
     smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
 
+    smargon.omega.max_velocity.sim_put(131)  # type: ignore
+
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
@@ -511,6 +500,15 @@ def zocalo(done_status):
     return zoc
 
 
+def mock_gridscan_kickoff_complete(gridscan):
+    gridscan_start = DeviceStatus(device=gridscan)
+    gridscan_start.set_finished()
+    gridscan_result = GridScanCompleteStatus(device=gridscan)
+    gridscan_result.set_finished()
+    gridscan.kickoff = MagicMock(return_value=gridscan_start)
+    gridscan.complete = MagicMock(return_value=gridscan_result)
+
+
 @pytest.fixture
 def fake_fgs_composite(
     smargon: Smargon,
@@ -521,12 +519,13 @@ def fake_fgs_composite(
     xbpm_feedback,
     aperture_scatterguard,
     zocalo,
+    dcm,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=i03.backlight(fake_with_ophyd_sim=True),
-        dcm=i03.dcm(fake_with_ophyd_sim=True),
+        dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
         fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),
@@ -544,6 +543,7 @@ def fake_fgs_composite(
     )
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
         test_fgs_params.hyperion_params.detector_params
     )
@@ -559,16 +559,9 @@ def fake_fgs_composite(
     fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
         False
     )
-    gridscan_start = DeviceStatus(device=fake_composite.fast_grid_scan)
-    gridscan_start.set_finished()
-    gridscan_result = GridScanCompleteStatus(device=fake_composite.fast_grid_scan)
-    gridscan_result.set_finished()
-    fake_composite.fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
-    fake_composite.fast_grid_scan.complete = MagicMock(return_value=gridscan_result)
-    fake_composite.panda_fast_grid_scan.kickoff = MagicMock(return_value=gridscan_start)
-    fake_composite.panda_fast_grid_scan.complete = MagicMock(
-        return_value=gridscan_result
-    )
+
+    mock_gridscan_kickoff_complete(fake_composite.fast_grid_scan)
+    mock_gridscan_kickoff_complete(fake_composite.panda_fast_grid_scan)
 
     test_result = {
         "centre_of_mass": [6, 6, 6],

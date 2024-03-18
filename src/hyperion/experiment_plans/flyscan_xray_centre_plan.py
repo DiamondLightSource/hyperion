@@ -201,7 +201,7 @@ def kickoff_and_complete_gridscan(
         LOGGER.info("Wait for all moves with no assigned group")
         yield from bps.wait()
         LOGGER.info("kicking off FGS")
-        yield from bps.kickoff(gridscan)
+        yield from bps.kickoff(gridscan, wait=True)
         LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
         yield from bps.wait(
             ZOCALO_STAGE_GROUP
@@ -246,7 +246,7 @@ def run_gridscan(
 
     LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
-
+    LOGGER.info("Waiting for gridscan validity check")
     yield from wait_for_gridscan_valid(fgs_motors)
 
     LOGGER.info("Waiting for arming to finish")
@@ -386,7 +386,7 @@ if __name__ == "__main__":
         GridscanInternalParameters,
     )
 
-    parameters = GridscanInternalParameters(**external_parameters.from_file())
+    parameters = GridscanInternalParameters(**external_parameters.conftest.from_file())
     subscriptions = XrayCentreCallbackCollection()
 
     context = setup_context(wait_for_connection=True)

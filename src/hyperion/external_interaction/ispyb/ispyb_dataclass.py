@@ -93,10 +93,10 @@ class IspybParams(BaseModel):
         return transmission_fraction
 
     @property
-    def wavelength_angstroms(self) -> float:
-        if self.current_energy_ev is None:
-            return 0.0
-        return convert_eV_to_angstrom(self.current_energy_ev)
+    def wavelength_angstroms(self) -> Optional[float]:
+        if self.current_energy_ev:
+            return convert_eV_to_angstrom(self.current_energy_ev)
+        return None  # Return None instead of 0 in order to avoid overwriting previously written values
 
 
 class RobotLoadIspybParams(IspybParams): ...

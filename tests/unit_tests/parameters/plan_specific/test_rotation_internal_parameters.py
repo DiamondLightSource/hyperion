@@ -5,7 +5,7 @@ import pytest
 from dodal.devices.detector.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.motors import XYZLimitBundle
 
-from hyperion.parameters import external_parameters
+import hyperion.parameters.external_parameters
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
@@ -43,7 +43,7 @@ def test_rotation_scan_param_validity():
 
 
 def test_rotation_parameters_load_from_file():
-    params = external_parameters.from_file(
+    params = hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
     internal_parameters = RotationInternalParameters(**params)
@@ -64,7 +64,7 @@ def test_rotation_parameters_load_from_file():
 
 
 def test_rotation_parameters_enum_interpretation():
-    params = external_parameters.from_file(
+    params = hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
     params["experiment_params"]["rotation_direction"] = "POSITIVE"
