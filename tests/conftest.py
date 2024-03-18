@@ -292,6 +292,7 @@ def ophyd_pin_tip_detection():
 
 @pytest.fixture
 def robot():
+    RunEngine()  # A RE is needed to start the bluesky loop
     robot = i03.robot(fake_with_ophyd_sim=True)
     set_sim_value(robot.barcode.bare_signal, ["BARCODE"])
     return robot
@@ -304,7 +305,9 @@ def attenuator():
         return_value=Status(done=True, success=True),
         autospec=True,
     ):
-        yield i03.attenuator(fake_with_ophyd_sim=True)
+        attenuator = i03.attenuator(fake_with_ophyd_sim=True)
+        attenuator.actual_transmission.sim_put(0.49118047952)  # type: ignore
+        yield attenuator
 
 
 @pytest.fixture
@@ -318,6 +321,7 @@ def xbpm_feedback(done_status):
 @pytest.fixture
 def dcm():
     dcm = i03.dcm(fake_with_ophyd_sim=True)
+    dcm.energy_in_kev.user_readback.sim_put(12.7)  # type: ignore
     dcm.pitch_in_mrad.user_setpoint._use_limits = False
     dcm.dcm_roll_converter_lookup_table_path = (
         "tests/test_data/test_beamline_dcm_roll_converter.txt"
@@ -514,12 +518,13 @@ def fake_fgs_composite(
     xbpm_feedback,
     aperture_scatterguard,
     zocalo,
+    dcm,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=i03.backlight(fake_with_ophyd_sim=True),
-        dcm=i03.dcm(fake_with_ophyd_sim=True),
+        dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
         fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),
