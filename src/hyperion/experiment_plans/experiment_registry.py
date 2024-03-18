@@ -42,8 +42,6 @@ from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params im
     WaitForRobotLoadThenCentreParams,
 )
 
-CallbackFactories = CallbacksFactory
-
 
 def not_implemented():
     raise NotImplementedError
