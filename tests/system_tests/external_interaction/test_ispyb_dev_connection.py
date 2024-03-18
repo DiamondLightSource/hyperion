@@ -335,18 +335,20 @@ def test_ispyb_deposition_in_rotation_plan(
     test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
     test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
     energy_ev = convert_angstrom_to_eV(test_wl)
-    fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(
+    fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(  # pyright: ignore
         energy_ev / 1000
     )
     fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)
-    fake_create_rotation_devices.synchrotron.machine_status.synchrotron_mode.sim_put(
+    fake_create_rotation_devices.synchrotron.machine_status.synchrotron_mode.sim_put(  # pyright: ignore
         test_synchrotron_mode.value
     )
-    fake_create_rotation_devices.synchrotron.top_up.start_countdown.sim_put(-1)
-    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(
+    fake_create_rotation_devices.synchrotron.top_up.start_countdown.sim_put(  # pyright: ignore
+        -1
+    )
+    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
         test_slit_gap_horiz
     )
-    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(
+    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
         test_slit_gap_vert
     )
     test_rotation_params.hyperion_params.detector_params.expected_energy_ev = energy_ev

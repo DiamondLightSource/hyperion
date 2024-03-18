@@ -180,7 +180,9 @@ def scan_data_info_for_update(scan_data_info_for_begin):
 
 @pytest.fixture
 def dummy_rotation_ispyb_with_experiment_type():
-    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, "Characterization")
+    store_in_ispyb = StoreInIspyb(
+        CONST.SIM.ISPYB_CONFIG, ExperimentType.CHARACTERIZATION
+    )
     return store_in_ispyb
 
 
