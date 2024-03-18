@@ -111,7 +111,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         return self._tag_doc(doc)
 
     @abstractmethod
-    def update_deposition(self, params):
+    def update_deposition(self, params) -> IspybIds:
         pass
 
     def activity_gated_stop(self, doc: RunStop) -> Optional[RunStop]:
