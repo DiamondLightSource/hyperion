@@ -261,13 +261,13 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
     def after_open_do(
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
     ):
-        callbacks[1].ispyb.begin_deposition.assert_called_once()  # pyright: ignore
-        callbacks[1].ispyb.update_deposition.assert_not_called()  # pyright: ignore
+        ispyb_callback.ispyb.begin_deposition.assert_called_once()  # pyright: ignore
+        ispyb_callback.ispyb.update_deposition.assert_not_called()  # pyright: ignore
 
     def after_main_do(
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
     ):
-        callbacks[1].ispyb.update_deposition.assert_called_once()  # pyright: ignore
+        ispyb_callback.ispyb.update_deposition.assert_called_once()  # pyright: ignore
         ispyb_callback.emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
 
     RE(
@@ -298,8 +298,8 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
     def after_open_do(
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
     ):
-        callbacks[1].activity_gated_start.assert_called_once()  # type: ignore
-        assert callbacks[1].uid_to_finalize_on is None
+        ispyb_callback.activity_gated_start.assert_called_once()  # type: ignore
+        assert ispyb_callback.uid_to_finalize_on is None
 
     def after_main_do(
         callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
@@ -307,8 +307,8 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
         ispyb_callback.ispyb_ids = IspybIds(
             data_collection_ids=(0,), data_collection_group_id=0
         )
-        assert callbacks[1].activity_gated_start.call_count == 2  # type: ignore
-        assert callbacks[1].uid_to_finalize_on is not None
+        assert ispyb_callback.activity_gated_start.call_count == 2  # type: ignore
+        assert ispyb_callback.uid_to_finalize_on is not None
 
     with patch(
         "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
