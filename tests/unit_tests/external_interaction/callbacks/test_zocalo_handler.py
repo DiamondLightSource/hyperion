@@ -117,8 +117,8 @@ class TestZocaloHandler:
         assert zocalo_handler.zocalo_interactor is not None
 
         expected_start_calls = [
-            call(ZocaloStartInfo(1, "test_path", 0, 200)),
-            call(ZocaloStartInfo(2, "test_path", 200, 300)),
+            call(ZocaloStartInfo(1, "test_path", 0, 200, 0)),
+            call(ZocaloStartInfo(2, "test_path", 200, 300, 1)),
         ]
 
         zocalo_handler.zocalo_interactor.run_start.assert_has_calls(

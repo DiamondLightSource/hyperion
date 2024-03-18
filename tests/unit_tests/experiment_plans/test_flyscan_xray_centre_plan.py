@@ -826,8 +826,8 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
 
     expected_start_infos = [
-        ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps),
-        ZocaloStartInfo(id_2, "test/filename", x_steps * y_steps, x_steps * z_steps),
+        ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps, 0),
+        ZocaloStartInfo(id_2, "test/filename", x_steps * y_steps, x_steps * z_steps, 1),
     ]
 
     expected_start_calls = [
