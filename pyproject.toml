@@ -10,7 +10,7 @@ markers = [
 ]
 addopts = "--cov=src/hyperion --cov-report term --cov-report xml:cov.xml"
 testpaths = "tests"
-
+asyncio_mode = "auto"
 
 [tool.ruff]
 src = ["src", "tests"]

@@ -4,17 +4,15 @@ from typing import Generator, Tuple
 import bluesky.plan_stubs as bps
 import numpy as np
 from bluesky.utils import Msg
-from dodal.devices.areadetector.plugins.MXSC import MXSC, PinTipDetect
 from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.oav.utils import ColorMode, EdgeOutputArrayImageType
+from dodal.devices.oav.utils import ColorMode
 from dodal.devices.smargon import Smargon
 
 from hyperion.exceptions import WarningException
-from hyperion.log import LOGGER
 
 Pixel = Tuple[int, int]
 oav_group = "oav_setup"
@@ -22,43 +20,8 @@ oav_group = "oav_setup"
 set_using_group = partial(bps.abs_set, group=oav_group)
 
 
-def start_mxsc(oav: OAV, min_callback_time, filename):
-    """
-    Sets PVs relevant to edge detection plugin.
-
-    Args:
-        min_callback_time: the value to set the minimum callback time to
-        filename: filename of the python script to detect edge waveforms from camera stream.
-    Returns: None
-    """
-    # Turns the area detector plugin on
-    yield from set_using_group(oav.mxsc.enable_callbacks, 1)
-
-    # Set the minimum time between updates of the plugin
-    yield from set_using_group(oav.mxsc.min_callback_time, min_callback_time)
-
-    # Stop the plugin from blocking the IOC and hogging all the CPU
-    yield from set_using_group(oav.mxsc.blocking_callbacks, 0)
-
-    # Set the python file to use for calculating the edge waveforms
-    current_filename = yield from bps.rd(oav.mxsc.filename)
-    if current_filename != filename:
-        LOGGER.info(
-            f"Current OAV MXSC plugin python file is {current_filename}, setting to {filename}"
-        )
-        yield from set_using_group(oav.mxsc.filename, filename)
-        yield from set_using_group(oav.mxsc.read_file, 1)
-
-    # Image annotations
-    yield from set_using_group(oav.mxsc.draw_tip, True)
-    yield from set_using_group(oav.mxsc.draw_edges, True)
-
-    # Use the original image type for the edge output array
-    yield from set_using_group(oav.mxsc.output_array, EdgeOutputArrayImageType.ORIGINAL)
-
-
 def setup_pin_tip_detection_params(
-    pin_tip_detect_device: MXSC | PinTipDetection, parameters: OAVParameters
+    pin_tip_detect_device: PinTipDetection, parameters: OAVParameters
 ):
     # select which blur to apply to image
     yield from set_using_group(
@@ -102,7 +65,7 @@ def setup_pin_tip_detection_params(
 def pre_centring_setup_oav(
     oav: OAV,
     parameters: OAVParameters,
-    pin_tip_detection_device: PinTipDetection | MXSC,
+    pin_tip_detection_device: PinTipDetection,
 ):
     """
     Setup OAV PVs with required values.
@@ -113,12 +76,6 @@ def pre_centring_setup_oav(
     yield from set_using_group(oav.cam.gain, parameters.gain)
 
     yield from setup_pin_tip_detection_params(pin_tip_detection_device, parameters)
-
-    yield from start_mxsc(
-        oav,
-        parameters.min_callback_time,
-        parameters.detection_script_filename,
-    )
 
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
@@ -131,10 +88,6 @@ def pre_centring_setup_oav(
         zoom_level_str,
         wait=True,
     )
-
-    # Connect MXSC output to MJPG input for debugging
-    if isinstance(pin_tip_detection_device, MXSC):
-        yield from set_using_group(oav.snapshot.input_plugin, "OAV.MXSC")
 
     yield from bps.wait(oav_group)
 
@@ -178,7 +131,7 @@ def get_move_required_so_that_beam_is_at_pixel(
 
 
 def wait_for_tip_to_be_found(
-    ophyd_pin_tip_detection: PinTipDetection | PinTipDetect,
+    ophyd_pin_tip_detection: PinTipDetection,
 ) -> Generator[Msg, None, Pixel]:
     yield from bps.trigger(ophyd_pin_tip_detection, wait=True)
     found_tip = yield from bps.rd(ophyd_pin_tip_detection.triggered_tip)

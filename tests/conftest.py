@@ -284,6 +284,11 @@ def flux():
 
 
 @pytest.fixture
+def pin_tip():
+    return i03.pin_tip_detection(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
 def ophyd_pin_tip_detection():
     RunEngine()  # A RE is needed to start the bluesky loop
     pin_tip_detection = i03.pin_tip_detection(fake_with_ophyd_sim=True)
