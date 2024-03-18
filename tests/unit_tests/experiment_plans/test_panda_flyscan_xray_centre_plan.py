@@ -180,16 +180,16 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.aperture_scatterguard,
                 )
             )
-
+            # fmt: off
             assert_event(
-                test_ispyb_callback.activity_gated_start.mock_calls[0],
+                test_ispyb_callback.activity_gated_start.mock_calls[0],  # pyright: ignore
                 {
                     "plan_name": "standalone_read_hardware_for_ispyb",
                     "subplan_name": "run_gridscan_move_and_tidy",
                 },
             )
             assert_event(
-                test_ispyb_callback.activity_gated_event.mock_calls[0],
+                test_ispyb_callback.activity_gated_event.mock_calls[0],  # pyright: ignore
                 {
                     "undulator_current_gap": undulator_test_value,
                     "synchrotron_machine_status_synchrotron_mode": synchrotron_test_value,
@@ -199,12 +199,13 @@ class TestFlyscanXrayCentrePlan:
                 },
             )
             assert_event(
-                test_ispyb_callback.activity_gated_event.mock_calls[1],
+                test_ispyb_callback.activity_gated_event.mock_calls[1],  # pyright: ignore
                 {
                     "attenuator_actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
                 },
             )
+            # fmt: on
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard._safe_move_within_datacollection_range",

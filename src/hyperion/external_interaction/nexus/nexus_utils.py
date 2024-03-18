@@ -134,6 +134,6 @@ def create_beam_and_attenuator_parameters(
     """
     return (
         # TODO 1173 Get this data from events rather than ispyb_params
-        Beam(convert_eV_to_angstrom(energy_kev * 1000), flux),
-        Attenuator(transmission_fraction),
+        Beam(convert_eV_to_angstrom(energy_kev * 1000), flux),  # pyright: ignore
+        Attenuator(transmission_fraction),  # pyright: ignore
     )
