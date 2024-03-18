@@ -6,7 +6,6 @@ from traceback import format_exception
 from typing import Any, Callable, Optional, Tuple
 
 from blueapi.core import BlueskyContext, MsgGenerator
-from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from flask import Flask, request
@@ -24,6 +23,9 @@ from hyperion.external_interaction.callbacks.__main__ import (
 from hyperion.external_interaction.callbacks.aperture_change_callback import (
     ApertureChangeCallback,
 )
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    CallbacksFactory,
+)
 from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
@@ -38,7 +40,6 @@ from hyperion.tracing import TRACER
 from hyperion.utils.context import setup_context
 
 VERBOSE_EVENT_LOGGING: Optional[bool] = None
-CallbackFactories = Callable[[], Tuple[CallbackBase, CallbackBase]]
 
 
 @dataclass
@@ -47,7 +48,7 @@ class Command:
     devices: Optional[Any] = None
     experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
     parameters: Optional[InternalParameters] = None
-    callbacks: Optional[CallbackFactories] = None
+    callbacks: Optional[CallbacksFactory] = None
 
 
 @dataclass
@@ -110,7 +111,7 @@ class BlueskyRunner:
         experiment: Callable,
         parameters: InternalParameters,
         plan_name: str,
-        callbacks: Optional[CallbackFactories],
+        callbacks: Optional[CallbacksFactory],
     ) -> StatusAndMessage:
         LOGGER.info(f"Started with parameters: {parameters}")
 
