@@ -72,7 +72,7 @@ class ZocaloCallback(CallbackBase):
 
     def event(self, doc: Event) -> Event:
         event_descriptor = self.descriptors[doc["descriptor"]]
-        if event_descriptor.get("name") == CONST.PLAN.ZOCALO_HW_READ:
+        if event_descriptor.get("name") == CONST.DESCRIPTORS.ZOCALO_HW_READ:
             filename = doc["data"]["eiger_odin_file_writer_id"]
             for start_info in self.zocalo_info:
                 start_info.filename = filename
