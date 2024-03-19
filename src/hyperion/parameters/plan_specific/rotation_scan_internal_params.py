@@ -55,11 +55,8 @@ class RotationScanParams(BaseModel, AbstractExperimentParameterBase):
     shutter_opening_time_s: float = 0.6
 
     @validator("rotation_direction", pre=True)
-    def _parse_direction(cls, rotation_direction: str | int):
-        if isinstance(rotation_direction, str):
-            return RotationDirection[rotation_direction]
-        else:
-            return RotationDirection(rotation_direction)
+    def _parse_direction(cls, rotation_direction: str):
+        return RotationDirection(rotation_direction)
 
     def xyz_are_valid(self, limits: XYZLimitBundle) -> bool:
         """

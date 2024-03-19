@@ -67,7 +67,7 @@
         "exposure_time": 0.01,
         "detector_distance": 300.0,
         "rotation_increment": 0.1,
-        "rotation_direction": "NEGATIVE",
+        "rotation_direction": "Negative",
         "shutter_opening_time_s": 0.6
     }
 }

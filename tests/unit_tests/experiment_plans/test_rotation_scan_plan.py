@@ -139,7 +139,7 @@ def test_rotation_scan_calculations(test_rotation_params: RotationInternalParame
         224,
     )
 
-    assert motion_values.direction == -1
+    assert motion_values.direction == "Negative"
     assert motion_values.start_scan_deg == 10
 
     assert motion_values.speed_for_rotation_deg_s == 0.5  # 0.1 deg per 0.2 sec
@@ -163,7 +163,6 @@ def test_rotation_scan(
     test_rotation_params,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-
     composite = fake_create_rotation_devices
     RE(rotation_scan(composite, test_rotation_params))
 
@@ -176,7 +175,7 @@ def test_rotation_plan_runs(setup_and_run_rotation_plan_for_tests_standard) -> N
     assert RE._exit_status == "success"
 
 
-def test_rotation_plan_zebra_settings(
+async def test_rotation_plan_zebra_settings(
     setup_and_run_rotation_plan_for_tests_standard,
 ) -> None:
     zebra: Zebra = setup_and_run_rotation_plan_for_tests_standard["zebra"]
@@ -185,9 +184,9 @@ def test_rotation_plan_zebra_settings(
     ]
     expt_params = params.experiment_params
 
-    assert zebra.pc.gate_start.get() == expt_params.omega_start
-    assert zebra.pc.gate_start.get() == expt_params.omega_start
-    assert zebra.pc.pulse_start.get() == expt_params.shutter_opening_time_s
+    assert await zebra.pc.gate_start.get_value() == expt_params.omega_start
+    assert await zebra.pc.gate_start.get_value() == expt_params.omega_start
+    assert await zebra.pc.pulse_start.get_value() == expt_params.shutter_opening_time_s
 
 
 def test_rotation_plan_energy_settings(setup_and_run_rotation_plan_for_tests_standard):
@@ -263,7 +262,6 @@ def test_cleanup_happens(
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
 ):
-
     class MyTestException(Exception):
         pass
 
