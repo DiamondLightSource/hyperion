@@ -6,7 +6,7 @@ from typing import cast
 
 import bluesky.plan_stubs as bps
 from blueapi.core import BlueskyContext, MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -21,7 +21,7 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.undulator_dcm import UndulatorDCM
@@ -113,10 +113,34 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     )
 
 
+def prepare_for_robot_load(composite: RobotLoadThenCentreComposite):
+    yield from bps.abs_set(
+        composite.aperture_scatterguard,
+        AperturePositions.ROBOT_LOAD,
+        group="prepare_robot_load",
+    )
+
+    yield from bps.mv(composite.smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)
+
+    # fmt: off
+    yield from bps.mv(composite.smargon.x, 0,
+                      composite.smargon.y, 0,
+                      composite.smargon.z, 0,
+                      composite.smargon.omega, 0,
+                      composite.smargon.chi, 0,
+
+                      composite.smargon.phi, 0)
+    # fmt: on
+
+    yield from bps.wait("prepare_robot_load")
+
+
 def robot_load_then_centre_plan(
     composite: RobotLoadThenCentreComposite,
     parameters: RobotLoadThenCentreInternalParameters,
 ):
+    yield from prepare_for_robot_load(composite)
+
     yield from bps.abs_set(
         composite.robot,
         SampleLocation(
