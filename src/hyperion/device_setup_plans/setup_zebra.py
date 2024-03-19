@@ -15,6 +15,7 @@ from dodal.devices.zebra import (
     TTL_SHUTTER,
     TTL_XSPRESS3,
     ArmDemand,
+    EncEnum,
     I03Axes,
     RotationDirection,
     Zebra,
@@ -61,7 +62,7 @@ def disarm_zebra(zebra: Zebra):
 @bluesky_retry
 def setup_zebra_for_rotation(
     zebra: Zebra,
-    axis: I03Axes = I03Axes.OMEGA,
+    axis: EncEnum = I03Axes.OMEGA,
     start_angle: float = 0,
     scan_width: float = 360,
     shutter_opening_deg: float = 2.5,

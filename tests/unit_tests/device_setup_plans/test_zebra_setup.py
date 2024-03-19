@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 from bluesky import plan_stubs as bps
+from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.zebra import (
     IN3_TTL,
@@ -28,13 +29,14 @@ from hyperion.device_setup_plans.setup_zebra import (
 
 @pytest.fixture
 def zebra():
+    RunEngine()
     return i03.zebra(fake_with_ophyd_sim=True)
 
 
-def test_zebra_set_up_for_gridscan(RE, zebra: Zebra):
+async def test_zebra_set_up_for_gridscan(RE, zebra: Zebra):
     RE(setup_zebra_for_gridscan(zebra, wait=True))
-    assert zebra.output.out_pvs[TTL_DETECTOR].get() == IN3_TTL
-    assert zebra.output.out_pvs[TTL_SHUTTER].get() == IN4_TTL
+    assert await zebra.output.out_pvs[TTL_DETECTOR].get_value() == IN3_TTL
+    assert await zebra.output.out_pvs[TTL_SHUTTER].get_value() == IN4_TTL
 
 
 def test_zebra_set_up_for_rotation(RE, zebra: Zebra):
