@@ -235,6 +235,7 @@ def smargon() -> Generator[Smargon, None, None]:
 
 @pytest.fixture
 def zebra():
+    RunEngine()
     zebra = i03.zebra(fake_with_ophyd_sim=True)
     mock_arm = MagicMock(
         side_effect=zebra.pc.arm.armed.set,
