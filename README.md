@@ -15,7 +15,7 @@ Left to do is:
 Development Installation
 =================
 
-Run `dls_dev_env.sh` (This assumes you're on a DLS machine. If you are not, you should be able to just run a subset of this script)
+Run `./utility_scripts/dls_dev_env.sh` (This assumes you're on a DLS machine. If you are not, you should be able to just run a subset of this script)
 
 Note that because Hyperion makes heavy use of [Dodal](https://github.com/DiamondLightSource/dodal) this will also pull a local editable version of dodal to the parent folder of this repo.
 
