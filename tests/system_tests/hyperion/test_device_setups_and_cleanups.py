@@ -36,10 +36,7 @@ async def test_zebra_set_up_for_gridscan(RE, connected_zebra: Zebra):
 @pytest.mark.s03
 async def test_zebra_set_up_for_rotation(RE, connected_zebra: Zebra):
     RE(setup_zebra_for_rotation(connected_zebra, wait=True))
-    assert (
-        await connected_zebra.pc.gate_trigger.get_value(as_string=True)
-        == I03Axes.OMEGA.value
-    )
+    assert await connected_zebra.pc.gate_trigger.get_value() == I03Axes.OMEGA.value
     assert await connected_zebra.pc.gate_width.get_value() == pytest.approx(360, 0.01)
 
 
