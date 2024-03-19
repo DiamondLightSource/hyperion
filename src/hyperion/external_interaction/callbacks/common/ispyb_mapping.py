@@ -127,6 +127,8 @@ def get_xtal_snapshots(ispyb_params):
 
 @dataclass
 class GridScanInfo:
-    upper_left: Union[list[int], ndarray]
+    upper_left: Union[list[int], ndarray]  # TODO REMOVE THIS
+    # upper_left_x: float
+    # upper_left_y: float
     y_steps: int
     y_step_size: float

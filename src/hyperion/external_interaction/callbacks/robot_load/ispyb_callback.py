@@ -54,7 +54,10 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event) -> Event | None:
         event_descriptor = self.descriptors.get(doc["descriptor"])
-        if event_descriptor and event_descriptor.get("name") == CONST.PLAN.ROBOT_LOAD:
+        if (
+            event_descriptor
+            and event_descriptor.get("name") == CONST.DESCRIPTORS.ROBOT_LOAD
+        ):
             assert (
                 self.action_id is not None
             ), "ISPyB Robot load callback event called unexpectedly"

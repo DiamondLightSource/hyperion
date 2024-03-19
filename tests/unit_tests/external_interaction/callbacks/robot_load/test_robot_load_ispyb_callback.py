@@ -114,7 +114,7 @@ def test_given_plan_reads_barcode_then_data_put_in_ispyb(
 
     @bpp.run_decorator(md=metadata)
     def my_plan():
-        yield from bps.create(name=CONST.PLAN.ROBOT_LOAD)
+        yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
         yield from bps.read(robot.barcode)
         yield from bps.save()
 

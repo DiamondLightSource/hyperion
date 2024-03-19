@@ -52,6 +52,9 @@ from hyperion.external_interaction.callbacks.grid_detection_callback import (
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from hyperion.log import LOGGER
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -135,6 +138,17 @@ def detect_grid_and_do_gridscan(
     parameters: GridScanWithEdgeDetectInternalParameters,
     oav_params: OAVParameters,
 ):
+    yield from ispyb_activation_wrapper(
+        parameters,
+        _detect_grid_and_do_gridscan(composite, parameters, oav_params),
+    )
+
+
+def _detect_grid_and_do_gridscan(
+    composite: GridDetectThenXRayCentreComposite,
+    parameters: GridScanWithEdgeDetectInternalParameters,
+    oav_params: OAVParameters,
+):
     assert composite.aperture_scatterguard.aperture_positions is not None
     experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
@@ -190,6 +204,7 @@ def detect_grid_and_do_gridscan(
     parameters.hyperion_params.ispyb_params.xtal_snapshots_omega_end = (
         oav_callback.snapshot_filenames[1][::-1]
     )
+    # TODO 1217 REMOVE THIS
     parameters.hyperion_params.ispyb_params.upper_left = out_upper_left
 
     yield from bps.abs_set(composite.backlight, Backlight.OUT)

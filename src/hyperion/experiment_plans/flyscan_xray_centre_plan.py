@@ -359,7 +359,6 @@ def flyscan_xray_centre(
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
             "hyperion_internal_parameters": old_parameters.json(),
             "activate_callbacks": [
-                "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],
         }

@@ -19,6 +19,7 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
@@ -39,13 +40,12 @@ def _fake_grid_detection(
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
     smargon = fake_smargon()
-    yield from bps.open_run()
     oav.snapshot.box_width.put(635.00986)
 
     # first grid detection: x * y
     oav.snapshot.num_boxes_x.put(10)
     oav.snapshot.num_boxes_y.put(4)
-    yield from bps.create("snapshot_to_ispyb")
+    yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
     yield from bps.read(oav.snapshot)
     yield from bps.read(smargon)
     yield from bps.save()
@@ -53,12 +53,10 @@ def _fake_grid_detection(
     # second grid detection: x * z, so num_boxes_y refers to smargon z
     oav.snapshot.num_boxes_x.put(10)
     oav.snapshot.num_boxes_y.put(1)
-    yield from bps.create("snapshot_to_ispyb")
+    yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
     yield from bps.read(oav.snapshot)
     yield from bps.read(smargon)
     yield from bps.save()
-
-    yield from bps.close_run()
 
 
 @pytest.fixture

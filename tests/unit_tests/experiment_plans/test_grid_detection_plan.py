@@ -1,5 +1,6 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import DEFAULT, AsyncMock, MagicMock, patch
 
+import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
@@ -25,8 +26,13 @@ from hyperion.external_interaction.callbacks.grid_detection_callback import (
 from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+    ispyb_activation_wrapper,
+)
 
 from ...conftest import RunEngineSimulator
+from .conftest import assert_event
 
 
 @pytest.fixture
@@ -90,15 +96,17 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     RE.subscribe(cb)
     composite, image = fake_devices
 
-    RE(
-        grid_detection_plan(
+    @bpp.run_decorator()
+    def decorated():
+        yield from grid_detection_plan(
             composite,
             parameters=params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
         )
-    )
+
+    RE(decorated())
     assert image.save.call_count == 6
 
     assert len(cb.snapshot_filenames) == 2
@@ -164,8 +172,10 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004, False)
     RE.subscribe(oav_cb)
     RE.subscribe(grid_param_cb)
-    RE(
-        grid_detection_plan(
+
+    @bpp.run_decorator()
+    def decorated():
+        yield from grid_detection_plan(
             composite,
             parameters=params,
             snapshot_dir="tmp",
@@ -173,7 +183,8 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
             grid_width_microns=161.2,
             box_size_um=0.2,
         )
-    )
+
+    RE(decorated())
 
     # 8, 2 based on tip x, and lowest value in the top array
     assert oav_cb.out_upper_left[0] == [8, 2 - box_size_y_pixels / 2]
@@ -210,25 +221,65 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
         cb = OavSnapshotCallback()
         RE.subscribe(cb)
 
-        RE(
-            grid_detection_plan(
+        @bpp.run_decorator()
+        def decorated():
+            yield from grid_detection_plan(
                 composite,
                 parameters=params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
                 grid_width_microns=161.2,
             )
-        )
+
+        RE(decorated())
     assert len(cb.snapshot_filenames) == 2
     assert len(cb.out_upper_left) == 2
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
+def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
+    fake_devices, RE: RunEngine, test_config_files, test_fgs_params
+):
+    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    composite, _ = fake_devices
+    composite.oav.parameters.micronsPerYPixel = 1.25
+    composite.oav.parameters.micronsPerXPixel = 1.25
+    cb = GridscanISPyBCallback()
+    RE.subscribe(cb)
+
+    def decorated():
+        yield from grid_detection_plan(
+            composite,
+            parameters=params,
+            snapshot_dir="tmp",
+            snapshot_template="test_{angle}",
+            grid_width_microns=161.2,
+        )
+
+    with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
+        RE(ispyb_activation_wrapper(test_fgs_params, decorated()))
+
+        assert_event(
+            cb.activity_gated_start.mock_calls[0],
+            {"activate_callbacks": ["GridscanISPyBCallback"]},
+        )
+        assert_event(
+            cb.activity_gated_event.mock_calls[0],
+            {
+                "oav_snapshot_top_left_x": 8,
+                "oav_snapshot_top_left_y": -6,
+                "oav_snapshot_num_boxes_x": 8,
+                "oav_snapshot_num_boxes_y": 2,
+                "oav_snapshot_box_width": 16,
+            },
+        )
+
+
+@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_values(
-    fake_devices,
-    RE: RunEngine,
-    test_config_files,
+    fake_devices, RE: RunEngine, test_config_files, test_fgs_params
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
@@ -236,15 +287,16 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     cb = GridDetectionCallback(composite.oav.parameters, 0.5, True)
     RE.subscribe(cb)
 
-    RE(
-        grid_detection_plan(
+    def decorated():
+        yield from grid_detection_plan(
             composite,
             parameters=params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
         )
-    )
+
+    RE(ispyb_activation_wrapper(test_fgs_params, decorated()))
 
     my_grid_params = cb.get_grid_parameters()
 

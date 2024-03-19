@@ -49,7 +49,31 @@ class TestData:
         CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         "hyperion_internal_parameters": dummy_params().json(),
     }
+    test_gridscan3d_start_document: RunStart = {  # type: ignore
+        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+        "scan_id": 1,
+        "plan_type": "generator",
+        "plan_name": "test",
+        "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
+        "hyperion_internal_parameters": dummy_params().json(),
+    }
     test_gridscan2d_start_document = {
+        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+        "scan_id": 1,
+        "plan_type": "generator",
+        "plan_name": "test",
+        "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
+        "hyperion_internal_parameters": dummy_params_2d().json(),
+    }
+    test_rotation_start_main_document = {
+        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+        "subplan_name": CONST.PLAN.ROTATION_MAIN,
+    }
+    test_gridscan_outer_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -57,11 +81,8 @@ class TestData:
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-        "hyperion_internal_parameters": dummy_params_2d().json(),
-    }
-    test_rotation_start_main_document = {
-        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "subplan_name": CONST.PLAN.ROTATION_MAIN,
+        CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+        "hyperion_internal_parameters": dummy_params().json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
@@ -104,26 +125,35 @@ class TestData:
         "zocalo_environment": "dev_artemis",
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
+    test_descriptor_document_oav_snapshot: EventDescriptor = {
+        "uid": "b5ba4aec-de49-4970-81a4-b4a847391d34",
+        "run_start": "?",
+        "name": CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED,
+    }  # type: ignore
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.PLAN.ISPYB_HARDWARE_READ,
+        "name": CONST.DESCRIPTORS.ISPYB_HARDWARE_READ,
     }  # type: ignore
     test_descriptor_document_during_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ,
+        "name": CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ,
     }  # type: ignore
     test_descriptor_document_zocalo_hardware: EventDescriptor = {
         "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.PLAN.ZOCALO_HW_READ,
+        "name": CONST.DESCRIPTORS.ZOCALO_HW_READ,
     }  # type: ignore
     test_descriptor_document_nexus_read: EventDescriptor = {
         "uid": "aaaaaa",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.PLAN.NEXUS_READ,
+        "name": CONST.DESCRIPTORS.NEXUS_READ,
     }  # type: ignore
+    test_event_document_oav_snapshot: Event = {
+        "descriptor": "b5ba4aec-de49-4970-81a4-b4a847391d34",
+        "data": {},
+    }
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.828203,

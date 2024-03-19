@@ -1,5 +1,7 @@
-from unittest.mock import MagicMock
+from unittest.mock import DEFAULT, MagicMock, patch
 
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
@@ -44,14 +46,6 @@ def test_activates_on_appropriate_start_doc(mocked_test_callback):
     assert mocked_test_callback.active is True
 
 
-def test_deactivates_on_inappropriate_start_doc(mocked_test_callback):
-    assert mocked_test_callback.active is False
-    mocked_test_callback.start({"activate_callbacks": ["MockReactiveCallback"]})
-    assert mocked_test_callback.active is True
-    mocked_test_callback.start({"activate_callbacks": ["TestNotCallback"]})
-    assert mocked_test_callback.active is False
-
-
 def test_deactivates_on_appropriate_stop_doc_uid(mocked_test_callback):
     assert mocked_test_callback.active is False
     mocked_test_callback.start(
@@ -73,7 +67,7 @@ def test_doesnt_deactivate_on_inappropriate_stop_doc_uid(mocked_test_callback):
 
 
 def test_activates_on_metadata(
-    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback]
+    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
 ):
     RE, callback = RE_with_mock_callback
     RE(get_test_plan("MockReactiveCallback")[0]())
@@ -84,7 +78,7 @@ def test_activates_on_metadata(
 
 
 def test_deactivates_after_closing(
-    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback]
+    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
 ):
     RE, callback = RE_with_mock_callback
     assert callback.active is False
@@ -93,7 +87,7 @@ def test_deactivates_after_closing(
 
 
 def test_doesnt_activate_on_wrong_metadata(
-    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback]
+    RE_with_mock_callback: tuple[RunEngine, MockReactiveCallback],
 ):
     RE, callback = RE_with_mock_callback
     RE(get_test_plan("TestNotCallback")[0]())
@@ -159,3 +153,66 @@ def test_emit_called_correctly():
     receiving_cb.activity_gated_event.assert_called_once_with(event_doc)
     test_cb.stop(stop_doc)
     receiving_cb.activity_gated_stop.assert_called_once_with(stop_doc)
+
+
+class OuterCallback(PlanReactiveCallback):
+    pass
+
+
+class InnerCallback(PlanReactiveCallback):
+    pass
+
+
+def test_activate_callbacks_doesnt_deactivate_unlisted_callbacks(RE: RunEngine):
+    @bpp.set_run_key_decorator("inner_plan")
+    @bpp.run_decorator(md={"activate_callbacks": ["InnerCallback"]})
+    def inner_plan():
+        yield from bps.null()
+
+    @bpp.set_run_key_decorator("outer_plan")
+    @bpp.run_decorator(md={"activate_callbacks": ["OuterCallback"]})
+    def outer_plan():
+        yield from inner_plan()
+
+    outer_callback = OuterCallback(MagicMock())
+    inner_callback = InnerCallback(MagicMock())
+
+    RE.subscribe(outer_callback)
+    RE.subscribe(inner_callback)
+
+    with patch.multiple(
+        outer_callback, activity_gated_start=DEFAULT, activity_gated_stop=DEFAULT
+    ):
+        with patch.multiple(
+            inner_callback, activity_gated_start=DEFAULT, activity_gated_stop=DEFAULT
+        ):
+            root_mock = MagicMock()
+            root_mock.attach_mock(outer_callback.activity_gated_start, "outer_start")
+            root_mock.attach_mock(outer_callback.activity_gated_stop, "outer_stop")
+            root_mock.attach_mock(inner_callback.activity_gated_start, "inner_start")
+            root_mock.attach_mock(inner_callback.activity_gated_stop, "inner_stop")
+            RE(outer_plan())
+
+            assert [call[0] for call in root_mock.mock_calls] == [
+                "outer_start",
+                "outer_start",
+                "inner_start",
+                "outer_stop",
+                "inner_stop",
+                "outer_stop",
+            ]
+
+            assert (
+                root_mock.mock_calls[0].args[0]["uid"]
+                != root_mock.mock_calls[1].args[0]["uid"]
+            )
+            assert root_mock.mock_calls[1].args[0] == root_mock.mock_calls[2].args[0]
+            assert root_mock.mock_calls[3].args[0] == root_mock.mock_calls[4].args[0]
+            assert (
+                root_mock.mock_calls[0].args[0]["uid"]
+                == root_mock.mock_calls[5].args[0]["run_start"]
+            )
+            assert (
+                root_mock.mock_calls[2].args[0]["uid"]
+                == root_mock.mock_calls[4].args[0]["run_start"]
+            )
