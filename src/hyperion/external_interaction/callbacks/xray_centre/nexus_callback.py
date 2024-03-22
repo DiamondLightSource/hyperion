@@ -68,17 +68,19 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         event_descriptor = self.descriptors.get(doc["descriptor"])
         if (
             event_descriptor
-            and event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ
+            and event_descriptor.get("name")
+            == CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ
         ):
             data = doc["data"]
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 assert nexus_writer, "Nexus callback did not receive start doc"
-                nexus_writer.beam, nexus_writer.attenuator = (
-                    create_beam_and_attenuator_parameters(
-                        data["dcm_energy_in_kev"],
-                        data["flux_flux_reading"],
-                        data["attenuator_actual_transmission"],
-                    )
+                (
+                    nexus_writer.beam,
+                    nexus_writer.attenuator,
+                ) = create_beam_and_attenuator_parameters(
+                    data["dcm_energy_in_kev"],
+                    data["flux_flux_reading"],
+                    data["attenuator_actual_transmission"],
                 )
                 nexus_writer.create_nexus_file()
                 NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.full_filename}")

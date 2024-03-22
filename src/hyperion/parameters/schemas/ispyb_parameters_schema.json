@@ -11,14 +11,6 @@
         "microns_per_pixel_y": {
             "type": "number"
         },
-        "upper_left": {
-            "type": "array",
-            "items": {
-                "type": "number"
-            },
-            "minItems": 3,
-            "maxItems": 3
-        },
         "position": {
             "type": "array",
             "items": {

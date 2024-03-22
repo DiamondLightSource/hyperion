@@ -1,3 +1,5 @@
+import re
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
@@ -8,6 +10,9 @@ from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
 
 from hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
+)
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
 )
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -62,7 +67,6 @@ def run_zocalo_with_dev_ispyb(
         dummy_params.hyperion_params.detector_params.prefix = sample_name
         _, ispyb_callback = create_gridscan_callbacks()
         ispyb_callback.ispyb_config = dummy_ispyb_3d.ISPYB_CONFIG_PATH
-        ispyb_callback.active = True
         RE.subscribe(ispyb_callback)
 
         @bpp.set_run_key_decorator("testing123")
@@ -84,7 +88,11 @@ def run_zocalo_with_dev_ispyb(
 
             yield from inner_plan()
 
-        RE(trigger_zocalo_after_fast_grid_scan())
+        RE(
+            ispyb_activation_wrapper(
+                dummy_params, trigger_zocalo_after_fast_grid_scan()
+            )
+        )
         centre = await zocalo_device.centres_of_mass.get_value()
         if centre.size == 0:
             centre = fallback
@@ -125,9 +133,11 @@ async def test_zocalo_adds_nonzero_comment_time(
     ispyb, zc, _ = await run_zocalo_with_dev_ispyb()
 
     comment = fetch_comment(ispyb.ispyb_ids.data_collection_ids[0])
-    assert comment[156:178] == "Zocalo processing took"
-    assert float(comment[179:184]) > 0
-    assert float(comment[179:184]) < 180
+    match = re.match(r"Zocalo processing took (\d+\.\d+) s", comment)
+    assert match
+    time_s = float(match.group(1))
+    assert time_s > 0
+    assert time_s < 180
 
 
 @pytest.mark.asyncio

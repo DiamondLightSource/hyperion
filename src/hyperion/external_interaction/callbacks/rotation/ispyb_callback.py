@@ -13,7 +13,6 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
-    construct_comment_for_rotation_scan,
     populate_data_collection_info_for_rotation,
 )
 from hyperion.external_interaction.ispyb.data_model import (
@@ -33,6 +32,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
+
+COMMENT_FOR_ROTATION_SCAN = "Hyperion rotation scan"
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -108,7 +109,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.params,
             )
             data_collection_info = populate_remaining_data_collection_info(
-                construct_comment_for_rotation_scan,
+                COMMENT_FOR_ROTATION_SCAN,
                 dcgid,
                 data_collection_info,
                 self.params.hyperion_params.detector_params,
@@ -129,6 +130,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def populate_info_for_update(
         self, event_sourced_data_collection_info: DataCollectionInfo, params
     ) -> Sequence[ScanDataInfo]:
+        assert (
+            self.ispyb_ids.data_collection_ids
+        ), "Expect an existing DataCollection to update"
         params = cast(RotationInternalParameters, params)
         initial_collection_info = populate_data_collection_info_for_rotation(
             params.hyperion_params.ispyb_params,
@@ -146,7 +150,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         return [
             ScanDataInfo(
                 data_collection_info=populate_remaining_data_collection_info(
-                    construct_comment_for_rotation_scan,
+                    COMMENT_FOR_ROTATION_SCAN,
                     self.ispyb_ids.data_collection_group_id,
                     initial_collection_info,
                     params.hyperion_params.detector_params,
@@ -155,6 +159,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 data_collection_position_info=populate_data_collection_position_info(
                     params.hyperion_params.ispyb_params
                 ),
+                data_collection_id=self.ispyb_ids.data_collection_ids[0],
             )
         ]
 
