@@ -8,6 +8,7 @@ from typing import TypeVar
 
 from dodal.devices.detector import DetectorParams
 from pydantic import BaseModel, Field
+from scanspec.core import AxesPoints
 from semver import Version
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
@@ -100,7 +101,7 @@ class DiffractionExperiment(HyperionParameters):
 class WithScan(BaseModel, ABC):
     @cached_property
     @abstractmethod
-    def scan_points(self): ...
+    def scan_points(self) -> AxesPoints: ...
 
     @property
     @abstractmethod

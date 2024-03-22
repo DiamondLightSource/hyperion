@@ -63,7 +63,9 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
         return DetectorParams(**detector_params)
 
     @cached_property
-    def ispyb_params(self):
+    def ispyb_params(  # pyright: ignore # cached_property[T] doesn't check subtypes of T
+        self,
+    ):
         ispyb_params = {
             "visit_path": self.visit_directory,
             "microns_per_pixel_x": 0,
@@ -217,7 +219,7 @@ class ThreeDGridScan(SpecifiedGridScan):
         return self.scan_1.num_images + self.scan_2.num_images
 
     @cached_property
-    def scan_points(self):
+    def scan_points(self):  # pyright: ignore
         # TODO: requires making the points for the 2D scans 3D points
         return NotImplemented
 

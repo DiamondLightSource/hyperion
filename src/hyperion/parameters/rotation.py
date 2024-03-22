@@ -6,9 +6,11 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.zebra import (
     RotationDirection,
 )
+from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from hyperion.external_interaction.ispyb.ispyb_dataclass import RotationIspybParams
 from hyperion.parameters.components import (
     DiffractionExperiment,
     OptionalGonioAngleStarts,
@@ -56,7 +58,36 @@ class RotationScan(
         return DetectorParams(**params)
 
     @cached_property
-    def scan_points(self):
+    def ispyb_params(self):  # pyright: ignore
+        ispyb_params = {
+            "visit_path": self.visit_directory,
+            "microns_per_pixel_x": 0,
+            "microns_per_pixel_y": 0,
+            "position": [0, 0, 0],
+            "transmission_fraction": self.transmission_frac,
+            "current_energy_ev": self.demand_energy_ev,
+            "beam_size_x": 0,
+            "beam_size_y": 0,
+            "focal_spot_size_x": 0,
+            "focal_spot_size_y": 0,
+            "comment": self.comment,
+            "resolution": 0,
+            "sample_id": self.sample_id,
+            "sample_barcode": "",
+            "flux": 0,
+            "undulator_gap": 0,
+            "synchrotron_mode": "",
+            "slit_gap_size_x": 0,
+            "slit_gap_size_y": 0,
+            "xtal_snapshots_omega_start": 0,
+            "xtal_snapshots_omega_end": 0,
+            "ispyb_experiment_type": "SAD",
+            "upper_left": [0, 0, 0],
+        }
+        return RotationIspybParams(**ispyb_params)
+
+    @cached_property  # type: ignore
+    def scan_points(self) -> AxesPoints:
         scan_spec = Line(
             axis="omega",
             start=self.omega_start_deg,
