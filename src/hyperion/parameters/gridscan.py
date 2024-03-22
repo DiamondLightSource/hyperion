@@ -168,8 +168,8 @@ class ThreeDGridScan(SpecifiedGridScan):
     x_step_size_um: float = CONST.PARAM.GRIDSCAN.APERTURE_SIZE
     y_step_size_um: float = CONST.PARAM.GRIDSCAN.APERTURE_SIZE
     z_step_size_um: float = CONST.PARAM.GRIDSCAN.APERTURE_SIZE
-    y2_start: float
-    z2_start: float
+    y2_start_um: float
+    z2_start_um: float
     x_steps: int
     y_steps: int
     z_steps: int
@@ -177,19 +177,23 @@ class ThreeDGridScan(SpecifiedGridScan):
     @cached_property
     def scan_1(self) -> TwoDGridScan:
         values = self.dict()
-        values["y_start"] = values["y1_start"]
-        values["z_start"] = values["z1_start"]
+        values["y_start"] = self.y_start_um
+        values["z_start"] = self.z_start_um
         values["axis_1"] = XyzAxis.X
         values["axis_2"] = XyzAxis.Y
+        values["axis_1_steps"] = self.x_steps
+        values["axis_2_steps"] = self.y_steps
         return TwoDGridScan(**values)
 
     @cached_property
     def scan_2(self) -> TwoDGridScan:
         values = self.dict()
-        values["y_start"] = values["y1_start"]
-        values["z_start"] = values["z1_start"]
+        values["y_start"] = self.y2_start_um
+        values["z_start"] = self.z2_start_um
         values["axis_1"] = XyzAxis.X
         values["axis_2"] = XyzAxis.Z
+        values["axis_1_steps"] = self.x_steps
+        values["axis_2_steps"] = self.z_steps
         return TwoDGridScan(**values)
 
     def FGS_params(self) -> GridScanParams:

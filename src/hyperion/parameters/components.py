@@ -21,6 +21,8 @@ T = TypeVar("T")
 class ParameterVersion(Version):
     @classmethod
     def _parse(cls, version):
+        if isinstance(version, cls):
+            return version
         return cls.parse(version)
 
     @classmethod
@@ -56,7 +58,15 @@ class XyzAxis(str, Enum):
                 return z
 
 
-class HyperionParameters(BaseModel, ABC):
+class HyperionParameters(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+        keep_untouched = (cached_property,)
+        use_enum_values = True
+        json_encoders = {
+            ParameterVersion: lambda pv: str(pv),
+        }
+
     parameter_model_version: ParameterVersion
 
 
