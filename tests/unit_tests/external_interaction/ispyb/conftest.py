@@ -7,6 +7,7 @@ from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionPositionInfo,
     ExperimentType,
+    ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
@@ -17,6 +18,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 
 from ..conftest import (
     TEST_DATA_COLLECTION_GROUP_ID,
+    TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
     default_raw_params,
 )
@@ -51,7 +53,9 @@ def dummy_2d_gridscan_ispyb():
 
 
 @pytest.fixture
-def scan_xy_data_info_for_update(scan_data_info_for_begin):
+def scan_xy_data_info_for_update(
+    scan_data_info_for_begin: ScanDataInfo,
+) -> ScanDataInfo:
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
     scan_data_info_for_update.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
@@ -73,4 +77,5 @@ def scan_xy_data_info_for_update(scan_data_info_for_begin):
     scan_data_info_for_update.data_collection_position_info = (
         DataCollectionPositionInfo(0, 0, 0)
     )
+    scan_data_info_for_update.data_collection_id = TEST_DATA_COLLECTION_IDS[0]
     return scan_data_info_for_update

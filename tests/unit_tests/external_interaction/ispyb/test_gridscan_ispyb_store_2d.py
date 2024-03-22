@@ -128,7 +128,7 @@ def dummy_collection_group_info():
     "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def scan_data_info_for_begin():
+def scan_data_info_for_begin() -> ScanDataInfo:
     return ScanDataInfo(
         data_collection_info=DataCollectionInfo(
             omega_start=0.0,

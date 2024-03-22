@@ -18,6 +18,7 @@ class OavSnapshotCallback(CallbackBase):
             ]
         )
 
+        # TODO 1217 REMOVE THIS
         self.out_upper_left.append(
             [data.get("oav_snapshot_top_left_x"), data.get("oav_snapshot_top_left_y")]
         )

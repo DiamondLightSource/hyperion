@@ -11,7 +11,6 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 
 
 def populate_xz_data_collection_info(
-    grid_scan_info: GridScanInfo,
     full_params,
     ispyb_params,
     detector_params,
@@ -28,7 +27,6 @@ def populate_xz_data_collection_info(
     info = DataCollectionInfo(
         omega_start=omega_start,
         data_collection_number=run_number,
-        n_images=full_params.experiment_params.x_steps * grid_scan_info.y_steps,
         axis_range=0,
         axis_end=omega_start,
     )
@@ -38,13 +36,10 @@ def populate_xz_data_collection_info(
     return info
 
 
-def populate_xy_data_collection_info(
-    grid_scan_info: GridScanInfo, full_params, ispyb_params, detector_params
-):
+def populate_xy_data_collection_info(ispyb_params, detector_params):
     info = DataCollectionInfo(
         omega_start=detector_params.omega_start,
         data_collection_number=detector_params.run_number,
-        n_images=full_params.experiment_params.x_steps * grid_scan_info.y_steps,
         axis_range=0,
         axis_end=detector_params.omega_start,
     )
@@ -55,29 +50,27 @@ def populate_xy_data_collection_info(
     return info
 
 
-def construct_comment_for_gridscan(full_params, ispyb_params, grid_scan_info) -> str:
+def construct_comment_for_gridscan(ispyb_params, grid_scan_info: GridScanInfo) -> str:
     assert (
-        ispyb_params is not None
-        and full_params is not None
-        and grid_scan_info is not None
+        ispyb_params is not None and grid_scan_info is not None
     ), "StoreGridScanInIspyb failed to get parameters"
 
     bottom_right = oav_utils.bottom_right_from_top_left(
-        grid_scan_info.upper_left,  # type: ignore
-        full_params.experiment_params.x_steps,
+        grid_scan_info.upper_left_px,  # type: ignore
+        grid_scan_info.x_steps,
         grid_scan_info.y_steps,
-        full_params.experiment_params.x_step_size,
-        grid_scan_info.y_step_size,
+        grid_scan_info.x_step_size_mm,
+        grid_scan_info.y_step_size_mm,
         ispyb_params.microns_per_pixel_x,
         ispyb_params.microns_per_pixel_y,
     )
     return (
         "Hyperion: Xray centring - Diffraction grid scan of "
-        f"{full_params.experiment_params.x_steps} by "
+        f"{grid_scan_info.x_steps} by "
         f"{grid_scan_info.y_steps} images in "
-        f"{(full_params.experiment_params.x_step_size * 1e3):.1f} um by "
-        f"{(grid_scan_info.y_step_size * 1e3):.1f} um steps. "
-        f"Top left (px): [{int(grid_scan_info.upper_left[0])},{int(grid_scan_info.upper_left[1])}], "
+        f"{(grid_scan_info.x_step_size_mm * 1e3):.1f} um by "
+        f"{(grid_scan_info.y_step_size_mm * 1e3):.1f} um steps. "
+        f"Top left (px): [{int(grid_scan_info.upper_left_px[0])},{int(grid_scan_info.upper_left_px[1])}], "
         f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
     )
 
@@ -87,13 +80,13 @@ def populate_data_collection_grid_info(full_params, grid_scan_info, ispyb_params
     assert full_params is not None
     dc_grid_info = DataCollectionGridInfo(
         dx_in_mm=full_params.experiment_params.x_step_size,
-        dy_in_mm=grid_scan_info.y_step_size,
+        dy_in_mm=grid_scan_info.y_step_size_mm,
         steps_x=full_params.experiment_params.x_steps,
         steps_y=grid_scan_info.y_steps,
         microns_per_pixel_x=ispyb_params.microns_per_pixel_x,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
-        snapshot_offset_x_pixel=int(grid_scan_info.upper_left[0]),
-        snapshot_offset_y_pixel=int(grid_scan_info.upper_left[1]),
+        snapshot_offset_x_pixel=int(grid_scan_info.upper_left_px[0]),
+        snapshot_offset_y_pixel=int(grid_scan_info.upper_left_px[1]),
         microns_per_pixel_y=ispyb_params.microns_per_pixel_y,
         orientation=Orientation.HORIZONTAL,
         snaked=True,

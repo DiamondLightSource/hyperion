@@ -121,6 +121,8 @@ def wait_for_robot_load_then_centre_plan(
 
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
+    # XXX 1278 this effectively casts between unrelated types which doesn't have all
+    # attributes needed for downstream e.g. grid_width_microns
     params_json = json.loads(parameters.json())
     pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
 

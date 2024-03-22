@@ -274,6 +274,16 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
                 "oav_snapshot_box_width": 16,
             },
         )
+        assert_event(
+            cb.activity_gated_event.mock_calls[1],
+            {
+                "oav_snapshot_top_left_x": 8,
+                "oav_snapshot_top_left_y": 2,
+                "oav_snapshot_num_boxes_x": 8,
+                "oav_snapshot_num_boxes_y": 1,
+                "oav_snapshot_box_width": 16,
+            },
+        )
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
