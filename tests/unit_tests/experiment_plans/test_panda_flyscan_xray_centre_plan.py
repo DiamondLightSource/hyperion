@@ -1,6 +1,6 @@
 import random
 import types
-from typing import Tuple
+from typing import Any, Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
@@ -352,7 +352,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
-        RE_with_subs: RunEngine,
+        RE_with_subs,
         mock_subscriptions: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: PandAGridscanInternalParameters,
@@ -396,7 +396,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
-        RE_with_subs: RunEngine,
+        RE_with_subs: tuple[RunEngine, Any],
         mock_subscriptions: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
         test_panda_fgs_params: PandAGridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
@@ -442,7 +442,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
-        RE_with_subs: RunEngine,
+        RE_with_subs: tuple[RunEngine, Any],
         mock_subscriptions: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
         test_panda_fgs_params: PandAGridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
@@ -487,7 +487,7 @@ class TestFlyscanXrayCentrePlan:
         setup_panda_for_flyscan: MagicMock,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        RE_with_subs: RunEngine,
+        RE_with_subs: tuple[RunEngine, Any],
         mock_subscriptions: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
         test_panda_fgs_params: PandAGridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,

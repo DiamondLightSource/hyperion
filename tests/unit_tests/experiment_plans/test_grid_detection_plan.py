@@ -238,11 +238,11 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
         RE(ispyb_activation_wrapper(test_fgs_params, decorated()))
 
         assert_event(
-            cb.activity_gated_start.mock_calls[0],
+            cb.activity_gated_start.mock_calls[0],  # pyright:ignore
             {"activate_callbacks": ["GridscanISPyBCallback"]},
         )
         assert_event(
-            cb.activity_gated_event.mock_calls[0],
+            cb.activity_gated_event.mock_calls[0],  # pyright: ignore
             {
                 "oav_snapshot_top_left_x": 8,
                 "oav_snapshot_top_left_y": -6,
@@ -255,7 +255,7 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
             },
         )
         assert_event(
-            cb.activity_gated_event.mock_calls[1],
+            cb.activity_gated_event.mock_calls[1],  # pyright:ignore
             {
                 "oav_snapshot_top_left_x": 8,
                 "oav_snapshot_top_left_y": 2,

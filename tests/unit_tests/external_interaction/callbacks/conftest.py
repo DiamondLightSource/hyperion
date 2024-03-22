@@ -152,6 +152,10 @@ class TestData:
     }  # type: ignore
     test_event_document_oav_snapshot_xy: Event = {
         "descriptor": "b5ba4aec-de49-4970-81a4-b4a847391d34",
+        "time": 1666604299.828203,
+        "timestamps": {},
+        "seq_num": 1,
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "data": {
             "oav_snapshot_top_left_x": 50,
             "oav_snapshot_top_left_y": 100,
@@ -165,6 +169,10 @@ class TestData:
     }
     test_event_document_oav_snapshot_xz: Event = {
         "descriptor": "b5ba4aec-de49-4970-81a4-b4a847391d34",
+        "time": 1666604299.828203,
+        "timestamps": {},
+        "seq_num": 1,
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "data": {
             "oav_snapshot_top_left_x": 50,
             "oav_snapshot_top_left_y": 0,

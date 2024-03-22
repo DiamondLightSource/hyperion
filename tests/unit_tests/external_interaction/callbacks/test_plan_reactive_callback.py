@@ -187,10 +187,12 @@ def test_activate_callbacks_doesnt_deactivate_unlisted_callbacks(RE: RunEngine):
             inner_callback, activity_gated_start=DEFAULT, activity_gated_stop=DEFAULT
         ):
             root_mock = MagicMock()
-            root_mock.attach_mock(outer_callback.activity_gated_start, "outer_start")
-            root_mock.attach_mock(outer_callback.activity_gated_stop, "outer_stop")
-            root_mock.attach_mock(inner_callback.activity_gated_start, "inner_start")
-            root_mock.attach_mock(inner_callback.activity_gated_stop, "inner_stop")
+            # fmt: off
+            root_mock.attach_mock(outer_callback.activity_gated_start, "outer_start")  # pyright: ignore
+            root_mock.attach_mock(outer_callback.activity_gated_stop, "outer_stop")  # pyright: ignore
+            root_mock.attach_mock(inner_callback.activity_gated_start, "inner_start")  # pyright: ignore
+            root_mock.attach_mock(inner_callback.activity_gated_stop, "inner_stop")  # pyright: ignore
+            # fmt: on
             RE(outer_plan())
 
             assert [call[0] for call in root_mock.mock_calls] == [

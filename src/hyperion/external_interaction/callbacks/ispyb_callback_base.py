@@ -55,7 +55,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         for self.ispyb_ids."""
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
-        self._oav_snapshot_event_idx: Optional[int] = None
+        self._oav_snapshot_event_idx: int = 0
         self._hwscan_data_collection_info: Optional[DataCollectionInfo] = None
         self._sample_barcode: Optional[str] = None
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
@@ -93,6 +93,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.debug("ISPyB handler received event document.")
         assert self.ispyb is not None, "ISPyB deposition wasn't initialised!"
         assert self.params is not None, "ISPyB handler didn't recieve parameters!"
+        assert (
+            self._hwscan_data_collection_info
+        ), "Processed unexpected event prior to callback activation"
 
         event_descriptor = self.descriptors.get(doc["descriptor"])
         if event_descriptor is None:
@@ -142,6 +145,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def _handle_oav_snapshot_triggered(self, doc):
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
+        assert self.params, "ISPyB handler didn't recieve parameters!"
         data = doc["data"]
         data_collection_id = None
         data_collection_info = DataCollectionInfo()
@@ -204,6 +208,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def _handle_ispyb_transmission_flux_read(self, doc):
         assert self._hwscan_data_collection_info
+        assert self.params
         if transmission := doc["data"]["attenuator_actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
             self._hwscan_data_collection_info.transmission = transmission * 100
