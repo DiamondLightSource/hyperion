@@ -42,11 +42,41 @@ class TriggerConstants:
 
 
 @dataclass(frozen=True)
+class GridscanParamConstants:
+    WIDTH_UM = 20.0
+    EXPOSURE_TIME_S = 0.02
+    USE_ROI = True
+    APERTURE_SIZE = 20.0
+
+
+@dataclass(frozen=True)
+class DetectorParamConstants:
+    BEAM_XY_LUT_PATH = (
+        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+    )
+
+
+@dataclass(frozen=True)
+class ExperimentParamConstants:
+    GRIDSCAN = GridscanParamConstants()
+    DETECTOR = DetectorParamConstants()
+
+
+@dataclass(frozen=True)
+class I03Constants:
+    BEAMLINE = "BL03S"
+    INSERTION_PREFIX = "SR03S"
+    BASE_DATA_DIR = "/dls/i03/data/"
+
+
+@dataclass(frozen=True)
 class HyperionConstants:
     SIM = SimConstants()
     PLAN = PlanNameConstants()
     HARDWARE = HardwareConstants()
     TRIGGER = TriggerConstants()
+    PARAM = ExperimentParamConstants()
+    I03 = I03Constants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
 
