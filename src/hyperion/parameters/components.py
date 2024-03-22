@@ -98,7 +98,7 @@ class DiffractionExperiment(HyperionParameters):
 
 
 class WithScan(BaseModel, ABC):
-    @property
+    @cached_property
     @abstractmethod
     def scan_points(self): ...
 

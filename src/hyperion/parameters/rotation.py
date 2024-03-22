@@ -27,7 +27,7 @@ class RotationScan(
     OptionalXyzStarts,
     WithSample,
 ):
-    omega_start_deg: float = 0
+    omega_start_deg: float = 0  # type: ignore
     rotation_axis: RotationAxis = RotationAxis.OMEGA
     rotation_angle_deg: float
     rotation_increment_deg: float

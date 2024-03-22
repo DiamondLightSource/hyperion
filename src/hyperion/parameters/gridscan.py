@@ -137,7 +137,7 @@ class TwoDGridScan(SpecifiedGridScan):
         return self.axis_2_start_um + self.axis_2_step_size_um * self.axis_2_steps
 
     @property
-    def num_images(self) -> float:
+    def num_images(self) -> int:
         return self.axis_1_steps * self.axis_2_steps
 
     @cached_property
@@ -213,7 +213,7 @@ class ThreeDGridScan(SpecifiedGridScan):
         )
 
     @property
-    def num_images(self) -> float:
+    def num_images(self) -> int:
         return self.scan_1.num_images + self.scan_2.num_images
 
     @cached_property
