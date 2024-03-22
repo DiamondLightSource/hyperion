@@ -334,7 +334,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(  # pyright: ignore
         energy_ev / 1000
     )
-    fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)
+    fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)  # pyright: ignore
     fake_create_rotation_devices.synchrotron.machine_status.synchrotron_mode.sim_put(  # pyright: ignore
         test_synchrotron_mode.value
     )
