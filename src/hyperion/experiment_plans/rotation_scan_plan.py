@@ -288,7 +288,8 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
                 composite.detector_motion,
                 composite.backlight,
                 composite.attenuator,
-                params.hyperion_params.ispyb_params.transmission_fraction,
+                # TODO 1033 don't use ispyb_params for this value, move it to experiment_params
+                params.hyperion_params.ispyb_params.transmission_fraction,  # pyright: ignore
                 params.hyperion_params.detector_params.detector_distance,
             )
             LOGGER.info("moving to position (if specified)")

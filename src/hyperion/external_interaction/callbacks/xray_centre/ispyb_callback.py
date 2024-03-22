@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from dataclasses import asdict, replace
 from time import time
-from typing import TYPE_CHECKING, Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, cast
 
 import numpy as np
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
@@ -22,7 +24,11 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     populate_xz_data_collection_info,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionInfo,
+    ExperimentType,
+    ScanDataInfo,
+)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -163,22 +169,24 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         return doc
 
-    def update_deposition(self, params):
-        data_collection_group_info = populate_data_collection_group(
-            self.ispyb.experiment_type,
-            params.hyperion_params.detector_params,
-            params.hyperion_params.ispyb_params,
-        )
-
-        scan_data_infos = [self.populate_xy_scan_data_info(params)]
+    def populate_info_for_update(
+        self, event_sourced_data_collection_info: DataCollectionInfo, params
+    ) -> Sequence[ScanDataInfo]:
+        params = cast(GridscanInternalParameters, params)
+        scan_data_infos = [
+            self.populate_xy_scan_data_info(params, event_sourced_data_collection_info)
+        ]
         if self.is_3d_gridscan():
-            scan_data_infos.append(self.populate_xz_scan_data_info(params))
+            scan_data_infos.append(
+                self.populate_xz_scan_data_info(
+                    params, event_sourced_data_collection_info
+                )
+            )
+        return scan_data_infos
 
-        return self.ispyb.update_deposition(
-            self.ispyb_ids, data_collection_group_info, scan_data_infos
-        )
-
-    def populate_xy_scan_data_info(self, params):
+    def populate_xy_scan_data_info(
+        self, params, event_sourced_data_collection_info: DataCollectionInfo
+    ):
         grid_scan_info = GridScanInfo(
             [
                 int(params.hyperion_params.ispyb_params.upper_left[0]),
@@ -193,6 +201,15 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             params,
             params.hyperion_params.ispyb_params,
             params.hyperion_params.detector_params,
+        )
+
+        xy_data_collection_info = replace(
+            xy_data_collection_info,
+            **{
+                k: v
+                for (k, v) in asdict(event_sourced_data_collection_info).items()
+                if v
+            },
         )
 
         def comment_constructor():
@@ -218,7 +235,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             ),
         )
 
-    def populate_xz_scan_data_info(self, params):
+    def populate_xz_scan_data_info(
+        self, params, event_sourced_data_collection_info: DataCollectionInfo
+    ):
         xz_grid_scan_info = GridScanInfo(
             [
                 int(params.hyperion_params.ispyb_params.upper_left[0]),
@@ -232,6 +251,14 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             params,
             params.hyperion_params.ispyb_params,
             params.hyperion_params.detector_params,
+        )
+        xz_data_collection_info = replace(
+            xz_data_collection_info,
+            **{
+                k: v
+                for (k, v) in asdict(event_sourced_data_collection_info).items()
+                if v
+            },
         )
 
         def xz_comment_constructor():

@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.4",
+    "params_version": "4.0.5",
     "hyperion_params": {
         "zocalo_environment": "dev_artemis",
         "beamline": "BL03S",
@@ -38,19 +38,13 @@
                 "test_3_z"
             ],
             "transmission_fraction": 1.0,
-            "flux": 10.0,
             "beam_size_x": 0.1,
             "beam_size_y": 0.1,
             "focal_spot_size_x": 0.0,
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
             "resolution": 1,
-            "sample_id": "0001",
-            "sample_barcode": "12345A",
-            "undulator_gap": 1.0,
-            "synchrotron_mode": null,
-            "slit_gap_size_x": 0.1,
-            "slit_gap_size_y": 0.1
+            "sample_id": "0001"
         }
     },
     "experiment_params": {

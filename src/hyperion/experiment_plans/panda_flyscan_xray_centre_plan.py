@@ -289,6 +289,7 @@ def panda_flyscan_xray_centre(
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite.xbpm_feedback,
         composite.attenuator,
+        # TODO 1033 don't use ispyb_params for this value, move it to experiment_params
         parameters.hyperion_params.ispyb_params.transmission_fraction,
     )
     def run_gridscan_and_move_and_tidy(fgs_composite, params):

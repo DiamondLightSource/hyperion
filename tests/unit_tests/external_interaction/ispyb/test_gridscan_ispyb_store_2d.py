@@ -1,25 +1,16 @@
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
 
-from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    GridScanInfo,
-    populate_data_collection_group,
-    populate_remaining_data_collection_info,
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionGroupInfo,
+    DataCollectionInfo,
+    ScanDataInfo,
 )
-from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
-    construct_comment_for_gridscan,
-    populate_xy_data_collection_info,
-)
-from hyperion.external_interaction.ispyb.data_model import ScanDataInfo
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
-)
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
 )
 
 from ..conftest import (
@@ -93,7 +84,6 @@ EMPTY_DATA_COLLECTION_PARAMS = {
     "focalspotsizeatsamplex": None,
     "focalspotsizeatsampley": None,
     "polarisation": None,
-    "flux": None,
     "processeddatafile": None,
     "datfile": None,
     "magnification": None,
@@ -125,11 +115,11 @@ def ispyb_conn(base_ispyb_conn):
 
 
 @pytest.fixture
-def dummy_collection_group_info(dummy_params):
-    return populate_data_collection_group(
-        "mesh",
-        dummy_params.hyperion_params.detector_params,
-        dummy_params.hyperion_params.ispyb_params,
+def dummy_collection_group_info():
+    return DataCollectionGroupInfo(
+        visit_string="cm31105-4",
+        experiment_type="mesh",
+        sample_id="0001",
     )
 
 
@@ -138,35 +128,57 @@ def dummy_collection_group_info(dummy_params):
     "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def scan_data_info_for_begin(dummy_params):
-    grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
-        dummy_params.experiment_params.y_steps,
-        dummy_params.experiment_params.y_step_size,
-    )
-    info = ScanDataInfo(
-        data_collection_info=populate_remaining_data_collection_info(
-            lambda: construct_comment_for_gridscan(
-                dummy_params, dummy_params.hyperion_params.ispyb_params, grid_scan_info
-            ),
-            None,
-            populate_xy_data_collection_info(
-                grid_scan_info,
-                dummy_params,
-                dummy_params.hyperion_params.ispyb_params,
-                dummy_params.hyperion_params.detector_params,
-            ),
-            dummy_params.hyperion_params.detector_params,
-            dummy_params.hyperion_params.ispyb_params,
+def scan_data_info_for_begin():
+    return ScanDataInfo(
+        data_collection_info=DataCollectionInfo(
+            omega_start=0.0,
+            data_collection_number=0,
+            xtal_snapshot1="test_1_y",
+            xtal_snapshot2="test_2_y",
+            xtal_snapshot3="test_3_y",
+            n_images=800,
+            axis_range=0,
+            axis_end=0.0,
+            kappa_start=None,
+            parent_id=None,
+            visit_string="cm31105-4",
+            sample_id="0001",
+            detector_id=78,
+            axis_start=0.0,
+            focal_spot_size_at_samplex=0.0,
+            focal_spot_size_at_sampley=0.0,
+            slitgap_vertical=0.1,
+            slitgap_horizontal=0.1,
+            beamsize_at_samplex=0.1,
+            beamsize_at_sampley=0.1,
+            transmission=100.0,
+            comments="Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700].",
+            detector_distance=100.0,
+            exp_time=0.1,
+            imgdir="/tmp/",
+            file_template="file_name_0_master.h5",
+            imgprefix="file_name",
+            imgsuffix="h5",
+            n_passes=1,
+            overlap=0,
+            start_image_number=1,
+            resolution=1.0,
+            wavelength=123.98419840550369,
+            xbeam=150.0,
+            ybeam=160.0,
+            synchrotron_mode=None,
+            undulator_gap1=1.0,
+            start_time="2024-02-08 14:03:59",
         ),
+        data_collection_id=None,
+        data_collection_position_info=None,
+        data_collection_grid_info=None,
     )
-    return info
 
 
 def test_begin_deposition(
     mock_ispyb_conn,
     dummy_2d_gridscan_ispyb,
-    dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
 ):
@@ -185,7 +197,6 @@ def test_begin_deposition(
             "parentid": TEST_SESSION_ID,
             "experimenttype": "mesh",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
     assert_upsert_call_with(
@@ -217,7 +228,6 @@ def test_begin_deposition(
             "imgsuffix": "h5",
             "n_passes": 1,
             "overlap": 0,
-            "flux": 10.0,
             "omegastart": 0,
             "start_image_number": 1,
             "resolution": 1.0,  # deferred
@@ -245,7 +255,6 @@ def test_begin_deposition(
 def test_update_deposition(
     mock_ispyb_conn,
     dummy_2d_gridscan_ispyb,
-    dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
@@ -256,6 +265,7 @@ def test_update_deposition(
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.assert_called_once()
     mx_acq.upsert_data_collection.assert_called_once()
+    dummy_collection_group_info.sample_barcode = TEST_BARCODE
     assert dummy_2d_gridscan_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]
     ) == IspybIds(
@@ -316,7 +326,7 @@ def test_update_deposition(
             "xtal_snapshot1": "test_1_y",
             "xtal_snapshot2": "test_2_y",
             "xtal_snapshot3": "test_3_y",
-            "synchrotron_mode": None,
+            "synchrotron_mode": "test",
             "undulator_gap1": 1.0,
             "starttime": EXPECTED_START_TIME,
             "filetemplate": "file_name_0_master.h5",
@@ -329,9 +339,9 @@ def test_update_deposition(
         mx_acq.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": dummy_params.hyperion_params.ispyb_params.position[0],
-            "pos_y": dummy_params.hyperion_params.ispyb_params.position[1],
-            "pos_z": dummy_params.hyperion_params.ispyb_params.position[2],
+            "pos_x": 0,
+            "pos_y": 0,
+            "pos_z": 0,
         },
     )
 
@@ -340,18 +350,14 @@ def test_update_deposition(
         mx_acq.get_dc_grid_params(),
         {
             "parentid": TEST_DATA_COLLECTION_IDS[0],
-            "dxinmm": dummy_params.experiment_params.x_step_size,
-            "dyinmm": dummy_params.experiment_params.y_step_size,
-            "stepsx": dummy_params.experiment_params.x_steps,
-            "stepsy": dummy_params.experiment_params.y_steps,
-            "micronsperpixelx": dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
-            "micronsperpixely": dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
-            "snapshotoffsetxpixel": dummy_params.hyperion_params.ispyb_params.upper_left[
-                0
-            ],
-            "snapshotoffsetypixel": dummy_params.hyperion_params.ispyb_params.upper_left[
-                1
-            ],
+            "dxinmm": 0.1,
+            "dyinmm": 0.1,
+            "stepsx": 40,
+            "stepsy": 20,
+            "micronsperpixelx": 1.25,
+            "micronsperpixely": 1.25,
+            "snapshotoffsetxpixel": 100,
+            "snapshotoffsetypixel": 100,
             "orientation": "horizontal",
             "snaked": True,
         },
@@ -371,7 +377,6 @@ def test_end_deposition_happy_path(
     get_current_time,
     mock_ispyb_conn,
     dummy_2d_gridscan_ispyb,
-    dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
@@ -431,7 +436,6 @@ def setup_mock_return_values(ispyb_conn):
 def test_param_keys(
     mock_ispyb_conn,
     dummy_2d_gridscan_ispyb,
-    dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
@@ -485,12 +489,10 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     ispyb_conn,
     dummy_2d_gridscan_ispyb,
-    dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
 ):
-    dummy_params.hyperion_params.ispyb_params.sample_id = None
     dummy_collection_group_info.sample_id = None
     scan_data_info_for_begin.data_collection_info.sample_id = None
     scan_xy_data_info_for_update.data_collection_info.sample_id = None
@@ -514,13 +516,11 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     ispyb_conn,
     dummy_2d_gridscan_ispyb: StoreInIspyb,
-    dummy_params: GridscanInternalParameters,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
 ):
     expected_sample_id = "0001"
-    dummy_params.hyperion_params.ispyb_params.sample_id = expected_sample_id
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")
@@ -540,7 +540,6 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
 def test_fail_result_run_results_in_bad_run_status(
     mock_ispyb_conn: MagicMock,
     dummy_2d_gridscan_ispyb: StoreInIspyb,
-    dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
@@ -569,7 +568,6 @@ def test_fail_result_run_results_in_bad_run_status(
 def test_no_exception_during_run_results_in_good_run_status(
     mock_ispyb_conn: MagicMock,
     dummy_2d_gridscan_ispyb: StoreInIspyb,
-    dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
@@ -599,7 +597,6 @@ def test_no_exception_during_run_results_in_good_run_status(
 def test_ispyb_deposition_comment_correct(
     mock_ispyb_conn: MagicMock,
     dummy_2d_gridscan_ispyb: StoreInIspyb,
-    dummy_params,
     dummy_collection_group_info,
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
@@ -618,69 +615,4 @@ def test_ispyb_deposition_comment_correct(
     assert upserted_param_value_list[29] == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
         "in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]."
-    )
-
-
-@patch("ispyb.open", autospec=True)
-def test_ispyb_deposition_rounds_position_to_int(
-    mock_ispyb_conn: MagicMock,
-    dummy_2d_gridscan_ispyb: StoreInIspyb,
-    dummy_params,
-    dummy_collection_group_info,
-    scan_data_info_for_begin,
-    scan_xy_data_info_for_update,
-):
-    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([0.01, 100, 50])
-
-    assert construct_comment_for_gridscan(
-        dummy_params,
-        dummy_params.hyperion_params.ispyb_params,
-        GridScanInfo(dummy_params.hyperion_params.ispyb_params.upper_left, 20, 0.1),
-    ) == (
-        "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
-        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [3200,1700]."
-    )
-
-
-@pytest.mark.parametrize(
-    ["raw", "rounded"],
-    [
-        (0.0012345, "1.2"),
-        (0.020000000, "20.0"),
-        (0.01999999, "20.0"),
-        (0.015257, "15.3"),
-        (0.0001234, "0.1"),
-        (0.0017345, "1.7"),
-        (0.0019945, "2.0"),
-    ],
-)
-@patch(
-    "hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping.oav_utils.bottom_right_from_top_left",
-    autospec=True,
-)
-def test_ispyb_deposition_rounds_box_size_int(
-    bottom_right_from_top_left: MagicMock,
-    dummy_2d_gridscan_ispyb: StoreInIspyb,
-    dummy_params: GridscanInternalParameters,
-    raw,
-    rounded,
-):
-    dummy_params.experiment_params.x_steps = 0
-    dummy_params.experiment_params.x_step_size = raw
-    grid_scan_info = GridScanInfo(
-        [
-            0,
-            0,
-            0,
-        ],
-        0,
-        raw,
-    )
-    bottom_right_from_top_left.return_value = grid_scan_info.upper_left
-
-    assert construct_comment_for_gridscan(
-        dummy_params, MagicMock(), grid_scan_info
-    ) == (
-        "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
-        f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."
     )
