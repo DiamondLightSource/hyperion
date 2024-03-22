@@ -117,7 +117,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                     None,
                     None,
                     populate_xy_data_collection_info(
-                        self.params.hyperion_params.ispyb_params,
                         self.params.hyperion_params.detector_params,
                     ),
                     self.params.hyperion_params.detector_params,
@@ -194,7 +193,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids.data_collection_ids
         ), "Expect at least one valid data collection to record scan data"
         xy_data_collection_info = populate_xy_data_collection_info(
-            params.hyperion_params.ispyb_params,
             params.hyperion_params.detector_params,
         )
 
@@ -230,7 +228,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     ):
         xz_data_collection_info = populate_xz_data_collection_info(
             params,
-            params.hyperion_params.ispyb_params,
             params.hyperion_params.detector_params,
         )
         xz_data_collection_info = replace(
