@@ -50,7 +50,7 @@ def populate_data_collection_position_info(ispyb_params):
 
 
 def populate_remaining_data_collection_info(
-    comment_constructor,
+    comment,
     data_collection_group_id,
     data_collection_info: DataCollectionInfo,
     detector_params,
@@ -65,7 +65,7 @@ def populate_remaining_data_collection_info(
     data_collection_info.focal_spot_size_at_sampley = ispyb_params.focal_spot_size_y
     data_collection_info.beamsize_at_samplex = ispyb_params.beam_size_x
     data_collection_info.beamsize_at_sampley = ispyb_params.beam_size_y
-    data_collection_info.comments = comment_constructor()
+    data_collection_info.comments = comment
     data_collection_info.detector_distance = detector_params.detector_distance
     data_collection_info.exp_time = detector_params.exposure_time
     data_collection_info.imgdir = detector_params.directory

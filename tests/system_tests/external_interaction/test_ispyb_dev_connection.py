@@ -5,6 +5,7 @@ from copy import deepcopy
 from typing import Any, Callable, Literal, Sequence
 from unittest.mock import patch
 
+import numpy
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.attenuator import Attenuator
@@ -60,19 +61,12 @@ def dummy_data_collection_group_info(dummy_params):
 
 @pytest.fixture
 def dummy_scan_data_info_for_begin(dummy_params):
-    grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
-        dummy_params.experiment_params.y_steps,
-        dummy_params.experiment_params.y_step_size,
-    )
     info = populate_xy_data_collection_info(
         dummy_params.hyperion_params.ispyb_params,
         dummy_params.hyperion_params.detector_params,
     )
     info = populate_remaining_data_collection_info(
-        lambda: construct_comment_for_gridscan(
-            dummy_params.hyperion_params.ispyb_params, grid_scan_info
-        ),
+        None,
         None,
         info,
         dummy_params.hyperion_params.detector_params,
@@ -89,8 +83,15 @@ def scan_xy_data_info_for_update(
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
     grid_scan_info = GridScanInfo(
         dummy_params.hyperion_params.ispyb_params.upper_left,
+        dummy_params.experiment_params.x_steps,
         dummy_params.experiment_params.y_steps,
+        dummy_params.experiment_params.x_step_size,
         dummy_params.experiment_params.y_step_size,
+    )
+    scan_data_info_for_update.data_collection_info.comments = (
+        construct_comment_for_gridscan(
+            dummy_params.hyperion_params.ispyb_params, grid_scan_info
+        )
     )
     scan_data_info_for_update.data_collection_info.parent_id = data_collection_group_id
     scan_data_info_for_update.data_collection_grid_info = (
@@ -109,10 +110,12 @@ def scan_xy_data_info_for_update(
 def scan_data_infos_for_update_3d(
     ispyb_ids, scan_xy_data_info_for_update, dummy_params
 ):
-    upper_left = dummy_params.hyperion_params.ispyb_params.upper_left
+    upper_left = numpy.array([100, 100, 50])
     xz_grid_scan_info = GridScanInfo(
         [upper_left[0], upper_left[2]],
+        dummy_params.experiment_params.x_steps,
         dummy_params.experiment_params.z_steps,
+        dummy_params.experiment_params.x_step_size,
         dummy_params.experiment_params.z_step_size,
     )
     xz_data_collection_info = populate_xz_data_collection_info(
@@ -121,13 +124,10 @@ def scan_data_infos_for_update_3d(
         dummy_params.hyperion_params.detector_params,
     )
 
-    def comment_constructor():
-        return construct_comment_for_gridscan(
-            dummy_params.hyperion_params.ispyb_params, xz_grid_scan_info
-        )
-
     xz_data_collection_info = populate_remaining_data_collection_info(
-        comment_constructor,
+        construct_comment_for_gridscan(
+            dummy_params.hyperion_params.ispyb_params, xz_grid_scan_info
+        ),
         ispyb_ids.data_collection_group_id,
         xz_data_collection_info,
         dummy_params.hyperion_params.detector_params,
@@ -180,7 +180,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb.end_deposition(ispyb_ids, "fail", "could not connect to devices")
     assert (
         fetch_comment(ispyb_ids.data_collection_ids[0])  # type: ignore
-        == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -290,6 +290,7 @@ def generate_scan_data_infos(
     xy_scan_data_info = scan_xy_data_info_for_update(
         ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
     )
+    xy_scan_data_info.data_collection_id = ispyb_ids.data_collection_ids[0]
     if experiment_type == ExperimentType.GRIDSCAN_3D:
         scan_data_infos = scan_data_infos_for_update_3d(
             ispyb_ids, xy_scan_data_info, dummy_params

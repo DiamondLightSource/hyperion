@@ -29,4 +29,4 @@ def populate_data_collection_info_for_rotation(
 
 
 def construct_comment_for_rotation_scan() -> str:
-    return "Hyperion rotation scan"
+    return
