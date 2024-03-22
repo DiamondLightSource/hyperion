@@ -84,10 +84,10 @@ def populate_data_collection_grid_info(full_params, grid_scan_info, ispyb_params
         steps_x=full_params.experiment_params.x_steps,
         steps_y=grid_scan_info.y_steps,
         microns_per_pixel_x=ispyb_params.microns_per_pixel_x,
+        microns_per_pixel_y=ispyb_params.microns_per_pixel_y,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
         snapshot_offset_x_pixel=int(grid_scan_info.upper_left_px[0]),
         snapshot_offset_y_pixel=int(grid_scan_info.upper_left_px[1]),
-        microns_per_pixel_y=ispyb_params.microns_per_pixel_y,
         orientation=Orientation.HORIZONTAL,
         snaked=True,
     )

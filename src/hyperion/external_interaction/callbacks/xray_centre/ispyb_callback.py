@@ -114,7 +114,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
             scan_data_info = ScanDataInfo(
                 data_collection_info=populate_remaining_data_collection_info(
-                    lambda: None,
+                    None,
                     None,
                     populate_xy_data_collection_info(
                         self.params.hyperion_params.ispyb_params,
@@ -208,7 +208,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         )
 
         xy_data_collection_info = populate_remaining_data_collection_info(
-            lambda: None,
+            None,
             self.ispyb_ids.data_collection_group_id,
             xy_data_collection_info,
             params.hyperion_params.detector_params,
@@ -243,7 +243,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         )
 
         xz_data_collection_info = populate_remaining_data_collection_info(
-            lambda: None,
+            None,
             self.ispyb_ids.data_collection_group_id,
             xz_data_collection_info,
             params.hyperion_params.detector_params,
