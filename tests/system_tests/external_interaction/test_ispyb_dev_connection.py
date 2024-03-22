@@ -66,14 +66,12 @@ def dummy_scan_data_info_for_begin(dummy_params):
         dummy_params.experiment_params.y_step_size,
     )
     info = populate_xy_data_collection_info(
-        grid_scan_info,
-        dummy_params,
         dummy_params.hyperion_params.ispyb_params,
         dummy_params.hyperion_params.detector_params,
     )
     info = populate_remaining_data_collection_info(
         lambda: construct_comment_for_gridscan(
-            dummy_params, dummy_params.hyperion_params.ispyb_params, grid_scan_info
+            dummy_params.hyperion_params.ispyb_params, grid_scan_info
         ),
         None,
         info,
@@ -118,7 +116,6 @@ def scan_data_infos_for_update_3d(
         dummy_params.experiment_params.z_step_size,
     )
     xz_data_collection_info = populate_xz_data_collection_info(
-        xz_grid_scan_info,
         dummy_params,
         dummy_params.hyperion_params.ispyb_params,
         dummy_params.hyperion_params.detector_params,
@@ -126,7 +123,7 @@ def scan_data_infos_for_update_3d(
 
     def comment_constructor():
         return construct_comment_for_gridscan(
-            dummy_params, dummy_params.hyperion_params.ispyb_params, xz_grid_scan_info
+            dummy_params.hyperion_params.ispyb_params, xz_grid_scan_info
         )
 
     xz_data_collection_info = populate_remaining_data_collection_info(

@@ -11,7 +11,6 @@ from bluesky import preprocessors as bpp
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    GridScanInfo,
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
@@ -20,8 +19,6 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
-    construct_comment_for_gridscan,
-    populate_data_collection_grid_info,
     populate_xy_data_collection_info,
     populate_xz_data_collection_info,
 )
@@ -119,26 +116,12 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 self.params.hyperion_params.detector_params,
                 self.params.hyperion_params.ispyb_params,
             )
-            grid_scan_info = GridScanInfo(
-                self.params.hyperion_params.ispyb_params.upper_left,
-                self.params.experiment_params.y_steps,
-                self.params.experiment_params.y_step_size,
-            )
-
-            def constructor():
-                return construct_comment_for_gridscan(
-                    self.params,
-                    self.params.hyperion_params.ispyb_params,
-                    grid_scan_info,
-                )
 
             scan_data_info = ScanDataInfo(
                 data_collection_info=populate_remaining_data_collection_info(
-                    constructor,
+                    lambda: None,
                     None,
                     populate_xy_data_collection_info(
-                        grid_scan_info,
-                        self.params,
                         self.params.hyperion_params.ispyb_params,
                         self.params.hyperion_params.detector_params,
                     ),
@@ -195,40 +178,14 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self, event_sourced_data_collection_info: DataCollectionInfo, params
     ) -> Sequence[ScanDataInfo]:
         params = cast(GridscanInternalParameters, params)
-        grid_scan_info = GridScanInfo(
-            [
-                int(params.hyperion_params.ispyb_params.upper_left[0]),
-                int(params.hyperion_params.ispyb_params.upper_left[1]),
-            ],
-            params.experiment_params.y_steps,
-            params.experiment_params.y_step_size,
-        )
         xy_scan_data_info = self.populate_xy_scan_data_info(
-            params, event_sourced_data_collection_info, grid_scan_info
-        )
-        xy_scan_data_info.data_collection_grid_info = (
-            populate_data_collection_grid_info(
-                params, grid_scan_info, params.hyperion_params.ispyb_params
-            )
+            params, event_sourced_data_collection_info
         )
         scan_data_infos = [xy_scan_data_info]
 
         if self.is_3d_gridscan():
-            xz_grid_scan_info = GridScanInfo(
-                [
-                    int(params.hyperion_params.ispyb_params.upper_left[0]),
-                    int(params.hyperion_params.ispyb_params.upper_left[2]),
-                ],
-                params.experiment_params.z_steps,
-                params.experiment_params.z_step_size,
-            )
             xz_scan_data_info = self.populate_xz_scan_data_info(
-                params, event_sourced_data_collection_info, xz_grid_scan_info
-            )
-            xz_scan_data_info.data_collection_grid_info = (
-                populate_data_collection_grid_info(
-                    params, xz_grid_scan_info, params.hyperion_params.ispyb_params
-                )
+                params, event_sourced_data_collection_info
             )
             scan_data_infos.append(xz_scan_data_info)
         return scan_data_infos
@@ -237,11 +194,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self,
         params,
         event_sourced_data_collection_info: DataCollectionInfo,
-        grid_scan_info: GridScanInfo,
     ):
+        assert (
+            self.ispyb_ids.data_collection_ids
+        ), "Expect at least one valid data collection to record scan data"
         xy_data_collection_info = populate_xy_data_collection_info(
-            grid_scan_info,
-            params,
             params.hyperion_params.ispyb_params,
             params.hyperion_params.detector_params,
         )
@@ -255,13 +212,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             },
         )
 
-        def comment_constructor():
-            return construct_comment_for_gridscan(
-                params, params.hyperion_params.ispyb_params, grid_scan_info
-            )
-
         xy_data_collection_info = populate_remaining_data_collection_info(
-            comment_constructor,
+            lambda: None,
             self.ispyb_ids.data_collection_group_id,
             xy_data_collection_info,
             params.hyperion_params.detector_params,
@@ -273,16 +225,15 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             data_collection_position_info=populate_data_collection_position_info(
                 params.hyperion_params.ispyb_params
             ),
+            data_collection_id=self.ispyb_ids.data_collection_ids[0],
         )
 
     def populate_xz_scan_data_info(
         self,
         params,
         event_sourced_data_collection_info: DataCollectionInfo,
-        xz_grid_scan_info: GridScanInfo,
     ):
         xz_data_collection_info = populate_xz_data_collection_info(
-            xz_grid_scan_info,
             params,
             params.hyperion_params.ispyb_params,
             params.hyperion_params.detector_params,
@@ -296,23 +247,24 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             },
         )
 
-        def xz_comment_constructor():
-            return construct_comment_for_gridscan(
-                params, params.hyperion_params.ispyb_params, xz_grid_scan_info
-            )
-
         xz_data_collection_info = populate_remaining_data_collection_info(
-            xz_comment_constructor,
+            lambda: None,
             self.ispyb_ids.data_collection_group_id,
             xz_data_collection_info,
             params.hyperion_params.detector_params,
             params.hyperion_params.ispyb_params,
+        )
+        data_collection_id = (
+            self.ispyb_ids.data_collection_ids[1]
+            if len(self.ispyb_ids.data_collection_ids) > 1
+            else None
         )
         return ScanDataInfo(
             data_collection_info=xz_data_collection_info,
             data_collection_position_info=populate_data_collection_position_info(
                 params.hyperion_params.ispyb_params
             ),
+            data_collection_id=data_collection_id,
         )
 
     def activity_gated_stop(self, doc: RunStop) -> Optional[RunStop]:

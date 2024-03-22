@@ -134,7 +134,7 @@ def scan_data_infos_for_update():
             undulator_gap1=1.0,
             start_time=EXPECTED_START_TIME,
         ),
-        data_collection_id=None,
+        data_collection_id=TEST_DATA_COLLECTION_IDS[0],
         data_collection_position_info=DataCollectionPositionInfo(
             pos_x=0, pos_y=0, pos_z=0
         ),
@@ -276,6 +276,7 @@ def test_store_3d_grid_scan(
     assert ispyb_ids == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+        data_collection_id=TEST_DATA_COLLECTION_IDS[0],
     )
 
     assert dummy_3d_gridscan_ispyb.update_deposition(

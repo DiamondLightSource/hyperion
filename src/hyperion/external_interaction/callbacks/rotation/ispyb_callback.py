@@ -129,6 +129,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def populate_info_for_update(
         self, event_sourced_data_collection_info: DataCollectionInfo, params
     ) -> Sequence[ScanDataInfo]:
+        assert (
+            self.ispyb_ids.data_collection_ids
+        ), "Expect an existing DataCollection to update"
         params = cast(RotationInternalParameters, params)
         initial_collection_info = populate_data_collection_info_for_rotation(
             params.hyperion_params.ispyb_params,
@@ -155,6 +158,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 data_collection_position_info=populate_data_collection_position_info(
                     params.hyperion_params.ispyb_params
                 ),
+                data_collection_id=self.ispyb_ids.data_collection_ids[0],
             )
         ]
 

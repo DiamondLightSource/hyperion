@@ -198,6 +198,7 @@ def _detect_grid_and_do_gridscan(
     )
 
     # Hack because the callback returns the list in inverted order
+    # TODO 1217 REMOVE THIS
     parameters.hyperion_params.ispyb_params.xtal_snapshots_omega_start = (
         oav_callback.snapshot_filenames[0][::-1]
     )

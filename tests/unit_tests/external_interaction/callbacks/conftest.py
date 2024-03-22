@@ -127,7 +127,7 @@ class TestData:
     }
     test_descriptor_document_oav_snapshot: EventDescriptor = {
         "uid": "b5ba4aec-de49-4970-81a4-b4a847391d34",
-        "run_start": "?",
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED,
     }  # type: ignore
     test_descriptor_document_pre_data_collection: EventDescriptor = {
@@ -150,9 +150,25 @@ class TestData:
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": CONST.DESCRIPTORS.NEXUS_READ,
     }  # type: ignore
-    test_event_document_oav_snapshot: Event = {
+    test_event_document_oav_snapshot_xy: Event = {
         "descriptor": "b5ba4aec-de49-4970-81a4-b4a847391d34",
-        "data": {},
+        "data": {
+            "oav_snapshot_top_left_x": 50,
+            "oav_snapshot_top_left_y": 100,
+            "oav_snapshot_num_boxes_x": 40,
+            "oav_snapshot_num_boxes_y": 20,
+            "oav_snapshot_box_width": 0.1 * 1000 / 1.25,  # size in pixels
+        },
+    }
+    test_event_document_oav_snapshot_xz: Event = {
+        "descriptor": "b5ba4aec-de49-4970-81a4-b4a847391d34",
+        "data": {
+            "oav_snapshot_top_left_x": 50,
+            "oav_snapshot_top_left_y": 0,
+            "oav_snapshot_num_boxes_x": 40,
+            "oav_snapshot_num_boxes_y": 10,
+            "oav_snapshot_box_width": 0.1 * 1000 / 1.25,  # size in pixels
+        },
     }
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",

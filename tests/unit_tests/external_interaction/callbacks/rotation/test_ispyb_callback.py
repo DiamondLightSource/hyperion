@@ -82,7 +82,7 @@ def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_documen
     "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_activity_gated_event(
+def test_hardware_and_flux_read_events(
     mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
 ):
     callback = RotationISPyBCallback()

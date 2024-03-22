@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import asdict
-from itertools import zip_longest
 from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
 import ispyb
@@ -13,6 +12,7 @@ from ispyb.strictordereddict import StrictOrderedDict
 from pydantic import BaseModel
 
 from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionGridInfo,
     DataCollectionGroupInfo,
     DataCollectionInfo,
     ExperimentType,
@@ -66,36 +66,46 @@ class StoreInIspyb(ABC):
     def update_deposition(
         self,
         ispyb_ids,
-        data_collection_group_info: DataCollectionGroupInfo,
+        data_collection_group_info: Optional[DataCollectionGroupInfo],
         scan_data_infos: Sequence[ScanDataInfo],
-    ):
+    ) -> IspybIds:
         assert (
             ispyb_ids.data_collection_group_id
         ), "Attempted to store scan data without a collection group"
         assert (
             ispyb_ids.data_collection_ids
         ), "Attempted to store scan data without a collection"
+        print(f"OBJECT PASSED IN IS {ispyb_ids}")
         return self._begin_or_update_deposition(
             ispyb_ids, data_collection_group_info, scan_data_infos
         )
 
     def _begin_or_update_deposition(
-        self, ispyb_ids, data_collection_group_info, scan_data_infos
-    ):
+        self,
+        ispyb_ids,
+        data_collection_group_info: Optional[DataCollectionGroupInfo],
+        scan_data_infos,
+    ) -> IspybIds:
+        print(f"OBJECT RECEIVED IS {ispyb_ids}")
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
-
-            ispyb_ids.data_collection_group_id = (
-                self._store_data_collection_group_table(
-                    conn, data_collection_group_info, ispyb_ids.data_collection_group_id
+            if data_collection_group_info:
+                ispyb_ids.data_collection_group_id = (
+                    self._store_data_collection_group_table(
+                        conn,
+                        data_collection_group_info,
+                        ispyb_ids.data_collection_group_id,
+                    )
                 )
-            )
+            else:
+                assert (
+                    ispyb_ids.data_collection_group_id
+                ), "Attempt to update data collection without a data collection group ID"
 
             grid_ids = []
-            data_collection_ids_out = []
-            for scan_data_info, data_collection_id in zip_longest(
-                scan_data_infos, ispyb_ids.data_collection_ids
-            ):
+            data_collection_ids_out = list(ispyb_ids.data_collection_ids)
+            for scan_data_info in scan_data_infos:
+                data_collection_id = scan_data_info.data_collection_id
                 if (
                     scan_data_info.data_collection_info
                     and not scan_data_info.data_collection_info.parent_id
@@ -104,10 +114,14 @@ class StoreInIspyb(ABC):
                         ispyb_ids.data_collection_group_id
                     )
 
-                data_collection_id, grid_id = self._store_single_scan_data(
+                new_data_collection_id, grid_id = self._store_single_scan_data(
                     conn, scan_data_info, data_collection_id
                 )
-                data_collection_ids_out.append(data_collection_id)
+                print(
+                    f"OLD_DC_ID = {data_collection_id} NEW DCID = {new_data_collection_id}"
+                )
+                if not data_collection_id:
+                    data_collection_ids_out.append(new_data_collection_id)
                 if grid_id:
                     grid_ids.append(grid_id)
             ispyb_ids = IspybIds(
@@ -115,6 +129,7 @@ class StoreInIspyb(ABC):
                 grid_ids=tuple(grid_ids),
                 data_collection_group_id=ispyb_ids.data_collection_group_id,
             )
+        print(f"NEW ISPYBIDS={ispyb_ids}")
         return ispyb_ids
 
     def end_deposition(self, ispyb_ids: IspybIds, success: str, reason: str):
@@ -214,9 +229,11 @@ class StoreInIspyb(ABC):
     def _store_single_scan_data(
         self, conn, scan_data_info, data_collection_id=None
     ) -> Tuple[int, Optional[int]]:
+        print(f"DCID IN IS {data_collection_id}")
         data_collection_id = self._store_data_collection_table(
             conn, data_collection_id, scan_data_info.data_collection_info
         )
+        print(f"DCID OUT IS {data_collection_id}")
 
         if scan_data_info.data_collection_position_info:
             self._store_position_table(
@@ -232,10 +249,14 @@ class StoreInIspyb(ABC):
                 data_collection_id,
                 scan_data_info.data_collection_grid_info,
             )
+        print(f"DCID OUT2 IS {data_collection_id}")
         return data_collection_id, grid_id
 
     def _store_grid_info_table(
-        self, conn: Connector, ispyb_data_collection_id: int, dc_grid_info
+        self,
+        conn: Connector,
+        ispyb_data_collection_id: int,
+        dc_grid_info: DataCollectionGridInfo,
     ) -> int:
         mx_acquisition: MXAcquisition = conn.mx_acquisition
         params = mx_acquisition.get_dc_grid_params()
@@ -251,10 +272,11 @@ class StoreInIspyb(ABC):
 
         if data_collection_id:
             params["id"] = data_collection_id
-        assert data_collection_info.visit_string
-        params["visit_id"] = get_session_id_from_visit(
-            conn, data_collection_info.visit_string
-        )
+        if data_collection_info.visit_string:
+            # This is only needed for populating the DataCollectionGroup
+            params["visit_id"] = get_session_id_from_visit(
+                conn, data_collection_info.visit_string
+            )
         params |= {
             k: v for k, v in asdict(data_collection_info).items() if k != "visit_string"
         }
