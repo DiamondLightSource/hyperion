@@ -17,11 +17,6 @@
             "visit_path": "/tmp/cm31105-4",
             "microns_per_pixel_x": 1.25,
             "microns_per_pixel_y": 1.25,
-            "upper_left": [
-                50,
-                100,
-                0
-            ],
             "position": [
                 0,
                 0,

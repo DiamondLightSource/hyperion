@@ -9,7 +9,6 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
-from numpy.testing import assert_array_equal
 
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -214,7 +213,6 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         assert isinstance(params, GridscanInternalParameters)
 
         ispyb_params = params.hyperion_params.ispyb_params
-        assert_array_equal(ispyb_params.upper_left, [1, 2, 3])
         assert ispyb_params.xtal_snapshots_omega_start == [
             "c",
             "b",
