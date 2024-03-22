@@ -4,7 +4,6 @@ import dataclasses
 import json
 from typing import Any
 
-import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
@@ -192,11 +191,6 @@ def _detect_grid_and_do_gridscan(
         experiment_params.snapshot_dir,
     )
 
-    # Hack because GDA only passes 3 values to ispyb
-    out_upper_left = np.array(
-        oav_callback.out_upper_left[0] + [oav_callback.out_upper_left[1][1]]
-    )
-
     # Hack because the callback returns the list in inverted order
     # TODO 1217 REMOVE THIS
     parameters.hyperion_params.ispyb_params.xtal_snapshots_omega_start = (
@@ -205,8 +199,6 @@ def _detect_grid_and_do_gridscan(
     parameters.hyperion_params.ispyb_params.xtal_snapshots_omega_end = (
         oav_callback.snapshot_filenames[1][::-1]
     )
-    # TODO 1217 REMOVE THIS
-    parameters.hyperion_params.ispyb_params.upper_left = out_upper_left
 
     yield from bps.abs_set(composite.backlight, Backlight.OUT)
 

@@ -82,7 +82,7 @@ def scan_xy_data_info_for_update(
 ):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
     grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
+        numpy.array([100, 100, 50]),
         dummy_params.experiment_params.x_steps,
         dummy_params.experiment_params.y_steps,
         dummy_params.experiment_params.x_step_size,

@@ -21,7 +21,6 @@ def test_FGS_parameters_load_from_file():
     ispyb_params = internal_parameters.hyperion_params.ispyb_params
 
     np.testing.assert_array_equal(ispyb_params.position, np.array([10, 20, 30]))
-    np.testing.assert_array_equal(ispyb_params.upper_left, np.array([10, 20, 30]))
 
     detector_params = internal_parameters.hyperion_params.detector_params
 

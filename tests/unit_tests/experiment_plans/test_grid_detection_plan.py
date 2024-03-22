@@ -114,9 +114,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     assert cb.snapshot_filenames[0][0] == "tmp/test_0.png"
     assert cb.snapshot_filenames[1][2] == "tmp/test_90_grid_overlay.png"
 
-    assert len(cb.out_upper_left) == 2
-    assert len(cb.out_upper_left[0])
-
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
@@ -186,10 +183,6 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
 
     RE(decorated())
 
-    # 8, 2 based on tip x, and lowest value in the top array
-    assert oav_cb.out_upper_left[0] == [8, 2 - box_size_y_pixels / 2]
-    assert oav_cb.out_upper_left[1] == [8, 2]
-
     gridscan_params = grid_param_cb.get_grid_parameters()
 
     assert gridscan_params.x_start == pytest.approx(0.0005)
@@ -233,7 +226,6 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
 
         RE(decorated())
     assert len(cb.snapshot_filenames) == 2
-    assert len(cb.out_upper_left) == 2
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
