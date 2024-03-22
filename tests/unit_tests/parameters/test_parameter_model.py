@@ -17,3 +17,4 @@ def test_minimal_3d_gridscan_params():
         z_steps=9,
     )
     assert test_params.num_images == 5 * 7 + 5 * 9
+    assert test_params.exposure_time_s == 0.02

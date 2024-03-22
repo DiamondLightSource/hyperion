@@ -10,7 +10,6 @@ from dodal.devices.zebra import (
 from pydantic import validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
-from scanspec.specs import Spec as ScanSpec
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
@@ -144,13 +143,13 @@ class TwoDGridScan(SpecifiedGridScan):
     @cached_property
     def scan_spec(self):
         line_1 = Line(
-            str(self.axis_1),
+            str(self.axis_1.value),
             self.axis_1_start_um,
             self.axis_1_end_um,
             self.axis_1_steps,
         )
         line_2 = Line(
-            str(self.axis_2),
+            str(self.axis_2.value),
             self.axis_2_start_um,
             self.axis_2_end_um,
             self.axis_2_steps,
@@ -218,12 +217,9 @@ class ThreeDGridScan(SpecifiedGridScan):
         return self.scan_1.num_images + self.scan_2.num_images
 
     @cached_property
-    def scan_spec(self) -> ScanSpec:
-        return self.scan_1.scan_spec.concat(self.scan_2.scan_spec)
-
-    @cached_property
     def scan_points(self):
-        return ScanPath(self.scan_spec.calculate()).consume().midpoints
+        # TODO: requires making the points for the 2D scans 3D points
+        return NotImplemented
 
 
 # Doesn't yet exist but will look something like this
