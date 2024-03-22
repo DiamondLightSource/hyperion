@@ -62,7 +62,6 @@ def dummy_data_collection_group_info(dummy_params):
 @pytest.fixture
 def dummy_scan_data_info_for_begin(dummy_params):
     info = populate_xy_data_collection_info(
-        dummy_params.hyperion_params.ispyb_params,
         dummy_params.hyperion_params.detector_params,
     )
     info = populate_remaining_data_collection_info(
@@ -120,7 +119,6 @@ def scan_data_infos_for_update_3d(
     )
     xz_data_collection_info = populate_xz_data_collection_info(
         dummy_params,
-        dummy_params.hyperion_params.ispyb_params,
         dummy_params.hyperion_params.detector_params,
     )
 

@@ -23,9 +23,6 @@ from hyperion.experiment_plans.oav_grid_detection_plan import (
 from hyperion.external_interaction.callbacks.grid_detection_callback import (
     GridDetectionCallback,
 )
-from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
-    OavSnapshotCallback,
-)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
     ispyb_activation_wrapper,
@@ -92,8 +89,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     fake_devices,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
-    cb = OavSnapshotCallback()
-    RE.subscribe(cb)
     composite, image = fake_devices
 
     @bpp.run_decorator()
@@ -108,11 +103,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 
     RE(decorated())
     assert image.save.call_count == 6
-
-    assert len(cb.snapshot_filenames) == 2
-    assert len(cb.snapshot_filenames[0]) == 3
-    assert cb.snapshot_filenames[0][0] == "tmp/test_0.png"
-    assert cb.snapshot_filenames[1][2] == "tmp/test_90_grid_overlay.png"
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -165,9 +155,7 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     composite.oav.parameters.beam_centre_j = 4
     box_size_y_pixels = box_size_um / composite.oav.parameters.micronsPerYPixel
 
-    oav_cb = OavSnapshotCallback()
     grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004, False)
-    RE.subscribe(oav_cb)
     RE.subscribe(grid_param_cb)
 
     @bpp.run_decorator()
@@ -211,8 +199,6 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     composite, _ = fake_devices
 
     for _ in range(2):
-        cb = OavSnapshotCallback()
-        RE.subscribe(cb)
 
         @bpp.run_decorator()
         def decorated():
@@ -225,7 +211,6 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
             )
 
         RE(decorated())
-    assert len(cb.snapshot_filenames) == 2
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -264,6 +249,9 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
                 "oav_snapshot_num_boxes_x": 8,
                 "oav_snapshot_num_boxes_y": 2,
                 "oav_snapshot_box_width": 16,
+                "oav_snapshot_last_path_full_overlay": "tmp/test_0_grid_overlay.png",
+                "oav_snapshot_last_path_outer": "tmp/test_0_outer_overlay.png",
+                "oav_snapshot_last_saved_path": "tmp/test_0.png",
             },
         )
         assert_event(
@@ -274,6 +262,9 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
                 "oav_snapshot_num_boxes_x": 8,
                 "oav_snapshot_num_boxes_y": 1,
                 "oav_snapshot_box_width": 16,
+                "oav_snapshot_last_path_full_overlay": "tmp/test_90_grid_overlay.png",
+                "oav_snapshot_last_path_outer": "tmp/test_90_outer_overlay.png",
+                "oav_snapshot_last_saved_path": "tmp/test_90.png",
             },
         )
 

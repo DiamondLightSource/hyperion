@@ -41,9 +41,6 @@ EXPECTED_DATA_COLLECTION_3D = {
     "wavelength": None,
     "xbeam": 150.0,
     "ybeam": 160.0,
-    "xtal_snapshot1": "test_1_y",
-    "xtal_snapshot2": "test_2_y",
-    "xtal_snapshot3": "test_3_y",
     "synchrotron_mode": None,
     "undulator_gap1": None,
     "starttime": EXPECTED_START_TIME,
@@ -76,9 +73,6 @@ EXPECTED_DATA_COLLECTION_2D = {
     "wavelength": None,
     "xbeam": 150.0,
     "ybeam": 160.0,
-    "xtal_snapshot1": "test_1_y",
-    "xtal_snapshot2": "test_2_y",
-    "xtal_snapshot3": "test_3_y",
     "synchrotron_mode": None,
     "undulator_gap1": None,
     "starttime": EXPECTED_START_TIME,
@@ -285,6 +279,9 @@ class TestXrayCentreISPyBCallback:
                 "id": TEST_DATA_COLLECTION_IDS[0],
                 "parentid": TEST_DATA_COLLECTION_GROUP_ID,
                 "nimages": 40 * 20,
+                "xtal_snapshot1": "test_1_y",
+                "xtal_snapshot2": "test_2_y",
+                "xtal_snapshot3": "test_3_y",
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
                 "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
                 "bottom right (px): [3250,1700].",
@@ -296,6 +293,9 @@ class TestXrayCentreISPyBCallback:
             {
                 "parentid": TEST_DATA_COLLECTION_GROUP_ID,
                 "nimages": 40 * 10,
+                "xtal_snapshot1": "test_1_z",
+                "xtal_snapshot2": "test_2_z",
+                "xtal_snapshot3": "test_3_z",
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
                 "images in 100.0 um by 100.0 um steps. Top left (px): [50,0], "
                 "bottom right (px): [3250,800].",

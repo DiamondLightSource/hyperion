@@ -145,6 +145,11 @@ class BaseISPyBCallback(PlanReactiveCallback):
         data = doc["data"]
         data_collection_id = None
         data_collection_info = DataCollectionInfo()
+        data_collection_info.xtal_snapshot1 = data.get(
+            "oav_snapshot_last_path_full_overlay"
+        )
+        data_collection_info.xtal_snapshot2 = data.get("oav_snapshot_last_path_outer")
+        data_collection_info.xtal_snapshot3 = data.get("oav_snapshot_last_saved_path")
         data_collection_info.n_images = (
             data["oav_snapshot_num_boxes_x"] * data["oav_snapshot_num_boxes_y"]
         )
@@ -170,7 +175,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 self._oav_snapshot_event_idx
             ]
 
-        # TODO 1217 populate xtal_snapshot1/2/3
         data_collection_grid_info = DataCollectionGridInfo(
             dx_in_mm=data["oav_snapshot_box_width"]
             * self.params.hyperion_params.ispyb_params.microns_per_pixel_x
@@ -211,10 +215,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self._hwscan_data_collection_info.wavelength = convert_eV_to_angstrom(
                 energy_ev
             )
-
-    def _deposit_grid_scan_info(self, doc: Event):
-        # TODO
-        pass
 
     def update_deposition(
         self,

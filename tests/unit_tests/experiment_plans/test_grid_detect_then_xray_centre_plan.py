@@ -15,9 +15,6 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
-from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
-    OavSnapshotCallback,
-)
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
@@ -100,12 +97,7 @@ def test_full_grid_scan(test_new_fgs_params, test_config_files):
     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
     autospec=True,
 )
-@patch(
-    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.OavSnapshotCallback",
-    autospec=True,
-)
 def test_detect_grid_and_do_gridscan(
-    mock_oav_callback_init: MagicMock,
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
@@ -113,10 +105,6 @@ def test_detect_grid_and_do_gridscan(
     test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
     test_config_files: Dict,
 ):
-    mock_oav_callback = OavSnapshotCallback()
-    mock_oav_callback.out_upper_left = [[0, 1], [2, 3]]
-    mock_oav_callback.snapshot_filenames = [["test"], ["test3"]]
-    mock_oav_callback_init.return_value = mock_oav_callback
     mock_grid_detection_plan.side_effect = _fake_grid_detection
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
@@ -142,9 +130,6 @@ def test_detect_grid_and_do_gridscan(
         # Verify we called the grid detection plan
         mock_grid_detection_plan.assert_called_once()
 
-        # Verify callback to oav snaposhot was called
-        mock_oav_callback_init.assert_called_once()
-
         # Check backlight was moved OUT
         assert grid_detect_devices.backlight.pos.get() == Backlight.OUT
 
@@ -165,12 +150,7 @@ def test_detect_grid_and_do_gridscan(
     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
     autospec=True,
 )
-@patch(
-    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.OavSnapshotCallback",
-    autospec=True,
-)
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
-    mock_oav_callback_init: MagicMock,
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     eiger: EigerDetector,
@@ -180,10 +160,6 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     test_config_files: Dict,
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
-    mock_oav_callback = OavSnapshotCallback()
-    mock_oav_callback.snapshot_filenames = [["a", "b", "c"], ["d", "e", "f"]]
-    mock_oav_callback.out_upper_left = [[1, 2], [1, 3]]
-    mock_oav_callback_init.return_value = mock_oav_callback
 
     mock_grid_detection_plan.side_effect = _fake_grid_detection
 
@@ -211,18 +187,6 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         ]
 
         assert isinstance(params, GridscanInternalParameters)
-
-        ispyb_params = params.hyperion_params.ispyb_params
-        assert ispyb_params.xtal_snapshots_omega_start == [
-            "c",
-            "b",
-            "a",
-        ]
-        assert ispyb_params.xtal_snapshots_omega_end == [
-            "f",
-            "e",
-            "d",
-        ]
 
         assert params.hyperion_params.detector_params.num_triggers == 50
 

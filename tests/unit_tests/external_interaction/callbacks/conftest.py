@@ -158,6 +158,9 @@ class TestData:
             "oav_snapshot_num_boxes_x": 40,
             "oav_snapshot_num_boxes_y": 20,
             "oav_snapshot_box_width": 0.1 * 1000 / 1.25,  # size in pixels
+            "oav_snapshot_last_path_full_overlay": "test_1_y",
+            "oav_snapshot_last_path_outer": "test_2_y",
+            "oav_snapshot_last_saved_path": "test_3_y",
         },
     }
     test_event_document_oav_snapshot_xz: Event = {
@@ -168,6 +171,9 @@ class TestData:
             "oav_snapshot_num_boxes_x": 40,
             "oav_snapshot_num_boxes_y": 10,
             "oav_snapshot_box_width": 0.1 * 1000 / 1.25,  # size in pixels
+            "oav_snapshot_last_path_full_overlay": "test_1_z",
+            "oav_snapshot_last_path_outer": "test_2_z",
+            "oav_snapshot_last_saved_path": "test_3_z",
         },
     }
     test_event_document_pre_data_collection: Event = {

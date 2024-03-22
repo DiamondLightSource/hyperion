@@ -48,9 +48,6 @@ from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
 from hyperion.external_interaction.callbacks.grid_detection_callback import (
     GridDetectionCallback,
 )
-from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
-    OavSnapshotCallback,
-)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
@@ -156,7 +153,6 @@ def _detect_grid_and_do_gridscan(
         f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
     )
 
-    oav_callback = OavSnapshotCallback()
     grid_params_callback = GridDetectionCallback(
         composite.oav.parameters,
         experiment_params.exposure_time,
@@ -164,7 +160,7 @@ def _detect_grid_and_do_gridscan(
         experiment_params.run_up_distance_mm,
     )
 
-    @bpp.subs_decorator([oav_callback, grid_params_callback])
+    @bpp.subs_decorator([grid_params_callback])
     def run_grid_detection_plan(
         oav_params,
         snapshot_template,
@@ -189,15 +185,6 @@ def _detect_grid_and_do_gridscan(
         oav_params,
         snapshot_template,
         experiment_params.snapshot_dir,
-    )
-
-    # Hack because the callback returns the list in inverted order
-    # TODO 1217 REMOVE THIS
-    parameters.hyperion_params.ispyb_params.xtal_snapshots_omega_start = (
-        oav_callback.snapshot_filenames[0][::-1]
-    )
-    parameters.hyperion_params.ispyb_params.xtal_snapshots_omega_end = (
-        oav_callback.snapshot_filenames[1][::-1]
     )
 
     yield from bps.abs_set(composite.backlight, Backlight.OUT)
