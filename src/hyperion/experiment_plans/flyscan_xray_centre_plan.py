@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import dataclasses
 from typing import TYPE_CHECKING, Any, List
 
@@ -8,8 +7,6 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
-from bluesky.run_engine import RunEngine
-from bluesky.utils import ProgressBarManager
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     SingleAperturePosition,
@@ -52,17 +49,13 @@ from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
-)
 from hyperion.log import LOGGER
-from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import CONST
 from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
 )
-from hyperion.utils.context import device_composite_from_context, setup_context
+from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -369,27 +362,3 @@ def flyscan_xray_centre(
         yield from run_gridscan_and_move(fgs_composite, params)
 
     return run_gridscan_and_move_and_tidy(composite, parameters)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--beamline",
-        help="The beamline prefix this is being run on",
-        default=CONST.SIM.BEAMLINE,
-    )
-    args = parser.parse_args()
-
-    RE = RunEngine({})
-    RE.waiting_hook = ProgressBarManager()  # type: ignore
-    from hyperion.parameters.plan_specific.gridscan_internal_params import (
-        GridscanInternalParameters,
-    )
-
-    parameters = GridscanInternalParameters(**external_parameters.conftest.from_file())
-    subscriptions = XrayCentreCallbackCollection()
-
-    context = setup_context(wait_for_connection=True)
-    composite = create_devices(context)
-
-    RE(flyscan_xray_centre(composite, parameters))

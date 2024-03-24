@@ -29,9 +29,6 @@ from hyperion.__main__ import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
-from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
-    AbstractPlanCallbackCollection,
-)
 from hyperion.log import LOGGER
 from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -353,10 +350,9 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     mock_params.hyperion_params.experiment_type = "test_experiment"
     mock_param_class = MagicMock()
     mock_param_class.from_json.return_value = mock_params
-    callback_class_mock = MagicMock(
-        spec=AbstractPlanCallbackCollection,
+    callbacks_mock = MagicMock(
         name="mock_callback_class",
-        return_value=["test_cb_1", "test_cb_2"],
+        return_value=("test_cb_1", "test_cb_2"),
     )
 
     TEST_REGISTRY = {
@@ -364,7 +360,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
             "setup": MagicMock(),
             "internal_param_type": mock_param_class,
             "experiment_param_type": MagicMock(),
-            "callback_collection_type": callback_class_mock,
+            "callback_collection_type": callbacks_mock,
         }
     }
 
@@ -398,8 +394,8 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
                 devices={},
                 experiment="test_experiment",
                 parameters={},
-                callbacks=callback_class_mock,
-            ),
+                callbacks=callbacks_mock,
+            ),  # type: ignore
             block=True,  # type: ignore
         )
         runner.shutdown()

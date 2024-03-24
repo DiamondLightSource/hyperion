@@ -11,8 +11,8 @@ from event_model import Event
 from ophyd.sim import make_fake_device
 from ophyd_async.core.async_status import AsyncStatus
 
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
@@ -139,16 +139,16 @@ def mock_subscriptions(test_fgs_params):
             )
         ),
     ):
-        subscriptions = XrayCentreCallbackCollection()
-        subscriptions.ispyb_handler.ispyb = MagicMock(spec=StoreInIspyb)
+        nexus_callback, ispyb_callback = create_gridscan_callbacks()
+        ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
         start_doc = {
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             "hyperion_internal_parameters": test_fgs_params.json(),
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         }
-        subscriptions.ispyb_handler.activity_gated_start(start_doc)  # type: ignore
+        ispyb_callback.activity_gated_start(start_doc)  # type: ignore
 
-    return subscriptions
+    return (nexus_callback, ispyb_callback)
 
 
 def fake_read(obj, initial_positions, _):

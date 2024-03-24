@@ -42,8 +42,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
-
-    Usually used as part of a RotationCallbackCollection.
     """
 
     def __init__(
@@ -151,7 +149,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
         return doc
 
-    def activity_gated_stop(self, doc: RunStop) -> None:
+    def activity_gated_stop(self, doc: RunStop) -> RunStop:
         if doc.get("run_start") == self.uid_to_finalize_on:
             self.uid_to_finalize_on = None
             return super().activity_gated_stop(doc)
