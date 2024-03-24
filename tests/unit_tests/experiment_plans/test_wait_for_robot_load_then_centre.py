@@ -296,5 +296,5 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     assert smargon.z.user_readback.get() == 0
     assert smargon.omega.user_readback.get() == 0
 
-    smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)
-    aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)
+    smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
+    aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)  # type: ignore
