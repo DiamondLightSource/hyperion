@@ -12,7 +12,7 @@ import hyperion.experiment_plans.rotation_scan_plan as rotation_scan_plan
 from hyperion.experiment_plans import (
     grid_detect_then_xray_centre_plan,
     pin_centre_then_xray_centre_plan,
-    wait_for_robot_load_then_centre_plan,
+    robot_load_then_centre_plan,
 )
 from hyperion.external_interaction.callbacks.common.callback_util import (
     CallbacksFactory,
@@ -33,13 +33,13 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
     PinCentreThenXrayCentreInternalParameters,
     PinCentreThenXrayCentreParams,
 )
+from hyperion.parameters.plan_specific.robot_load_then_center_params import (
+    RobotLoadThenCentreInternalParameters,
+    RobotLoadThenCentreParams,
+)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
     RotationScanParams,
-)
-from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
-    WaitForRobotLoadThenCentreInternalParameters,
-    WaitForRobotLoadThenCentreParams,
 )
 
 
@@ -58,7 +58,7 @@ class ExperimentRegistryEntry(TypedDict):
         | GridScanWithEdgeDetectInternalParameters
         | RotationInternalParameters
         | PinCentreThenXrayCentreInternalParameters
-        | WaitForRobotLoadThenCentreInternalParameters
+        | RobotLoadThenCentreInternalParameters
         | PandAGridscanInternalParameters
     ]
     experiment_param_type: type[AbstractExperimentParameterBase]
@@ -97,10 +97,10 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "experiment_param_type": PinCentreThenXrayCentreParams,
         "callbacks_factory": create_gridscan_callbacks,
     },
-    "wait_for_robot_load_then_centre": {
-        "setup": wait_for_robot_load_then_centre_plan.create_devices,
-        "internal_param_type": WaitForRobotLoadThenCentreInternalParameters,
-        "experiment_param_type": WaitForRobotLoadThenCentreParams,
+    "robot_load_then_centre": {
+        "setup": robot_load_then_centre_plan.create_devices,
+        "internal_param_type": RobotLoadThenCentreInternalParameters,
+        "experiment_param_type": RobotLoadThenCentreParams,
         "callbacks_factory": create_gridscan_callbacks,
     },
 }

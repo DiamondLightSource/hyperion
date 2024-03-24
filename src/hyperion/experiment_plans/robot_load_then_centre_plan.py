@@ -19,6 +19,7 @@ from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
+from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
@@ -47,14 +48,14 @@ from hyperion.log import LOGGER
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
-from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
-    WaitForRobotLoadThenCentreInternalParameters,
+from hyperion.parameters.plan_specific.robot_load_then_center_params import (
+    RobotLoadThenCentreInternalParameters,
 )
 from hyperion.utils.utils import convert_eV_to_angstrom
 
 
 @dataclasses.dataclass
-class WaitForRobotLoadThenCentreComposite:
+class RobotLoadThenCentreComposite:
     # common fields
     xbpm_feedback: XBPMFeedback
     attenuator: Attenuator
@@ -83,11 +84,14 @@ class WaitForRobotLoadThenCentreComposite:
     dcm: DCM
     undulator_dcm: UndulatorDCM
 
+    # RobotLoad fields
+    robot: BartRobot
 
-def create_devices(context: BlueskyContext) -> WaitForRobotLoadThenCentreComposite:
+
+def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
     from hyperion.utils.context import device_composite_from_context
 
-    return device_composite_from_context(context, WaitForRobotLoadThenCentreComposite)
+    return device_composite_from_context(context, RobotLoadThenCentreComposite)
 
 
 def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
@@ -109,15 +113,26 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     )
 
 
-def wait_for_robot_load_then_centre_plan(
-    composite: WaitForRobotLoadThenCentreComposite,
-    parameters: WaitForRobotLoadThenCentreInternalParameters,
+def robot_load_then_centre_plan(
+    composite: RobotLoadThenCentreComposite,
+    parameters: RobotLoadThenCentreInternalParameters,
 ):
+    yield from bps.abs_set(
+        composite.robot,
+        SampleLocation(
+            parameters.experiment_params.sample_puck,
+            parameters.experiment_params.sample_pin,
+        ),
+        group="robot_load",
+    )
+
     if parameters.experiment_params.requested_energy_kev:
         yield from set_energy_plan(
             parameters.experiment_params.requested_energy_kev,
             cast(SetEnergyComposite, composite),
         )
+
+    yield from bps.wait("robot_load")
 
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
@@ -129,9 +144,9 @@ def wait_for_robot_load_then_centre_plan(
     )
 
 
-def wait_for_robot_load_then_centre(
-    composite: WaitForRobotLoadThenCentreComposite,
-    parameters: WaitForRobotLoadThenCentreInternalParameters,
+def robot_load_then_centre(
+    composite: RobotLoadThenCentreComposite,
+    parameters: RobotLoadThenCentreInternalParameters,
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
 
@@ -160,5 +175,5 @@ def wait_for_robot_load_then_centre(
         eiger,
         composite.detector_motion,
         parameters.experiment_params.detector_distance,
-        wait_for_robot_load_then_centre_plan(composite, parameters),
+        robot_load_then_centre_plan(composite, parameters),
     )
