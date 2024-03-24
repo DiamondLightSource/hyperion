@@ -3,13 +3,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
+from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.smargon import Smargon
+from dodal.devices.smargon import Smargon, StubPosition
 from numpy import isclose
-from ophyd.sim import instantiate_fake_device
+from ophyd.sim import NullStatus, instantiate_fake_device
 
 from hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
+    prepare_for_robot_load,
     robot_load_then_centre,
 )
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
@@ -22,12 +24,17 @@ from hyperion.parameters.plan_specific.robot_load_then_center_params import (
 
 
 @pytest.fixture
-def robot_load_composite(smargon, dcm, robot) -> RobotLoadThenCentreComposite:
+def robot_load_composite(
+    smargon, dcm, robot, aperture_scatterguard
+) -> RobotLoadThenCentreComposite:
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
     composite.dcm = dcm
     composite.dcm.energy_in_kev.user_readback.sim_put(11.105)
     composite.robot = robot
+    composite.aperture_scatterguard = aperture_scatterguard
+    composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
+    composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
     return composite
 
 
@@ -78,7 +85,8 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
     assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
     assert isclose(
-        params_passed.hyperion_params.ispyb_params.resolution, 2.11338  # type: ignore
+        params_passed.hyperion_params.ispyb_params.resolution,  # type: ignore
+        2.11338,
     )
 
 
@@ -269,3 +277,24 @@ def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     idx_of_first_read_disabled_message = messages.index(list(read_disabled_messages)[0])
 
     assert idx_of_arm_message < idx_of_first_read_disabled_message
+
+
+def test_when_prepare_for_robot_load_called_then_moves_as_expected(
+    robot_load_composite: RobotLoadThenCentreComposite,
+):
+    smargon = robot_load_composite.smargon
+    aperture_scatterguard = robot_load_composite.aperture_scatterguard
+
+    smargon.x.user_readback.sim_put(10)  # type: ignore
+    smargon.z.user_readback.sim_put(5)  # type: ignore
+    smargon.omega.user_readback.sim_put(90)  # type: ignore
+
+    RE = RunEngine()
+    RE(prepare_for_robot_load(robot_load_composite))
+
+    assert smargon.x.user_readback.get() == 0
+    assert smargon.z.user_readback.get() == 0
+    assert smargon.omega.user_readback.get() == 0
+
+    smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)
+    aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)
