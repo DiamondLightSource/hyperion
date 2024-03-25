@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import datetime
 from abc import ABC, abstractmethod
 from enum import Enum
-from functools import cache, cached_property
+from functools import cache
 from pathlib import Path
 from typing import TypeVar
 
-from dodal.devices.detector import DetectorParams
+from dodal.devices.detector import DetectorParams, TriggerMode
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 from scanspec.core import AxesPoints
@@ -63,8 +64,8 @@ class XyzAxis(str, Enum):
 class HyperionParameters(BaseModel):
     class Config:
         arbitrary_types_allowed = True
-        keep_untouched = (cached_property,)
         use_enum_values = True
+        ignore_extra_fields = False
         json_encoders = {
             ParameterVersion: lambda pv: str(pv),
         }
@@ -84,13 +85,19 @@ class DiffractionExperiment(HyperionParameters):
     insertion_prefix: str = Field(
         default=CONST.I03.INSERTION_PREFIX, pattern=r"SR\d{2}[BIJS]"
     )
+    det_dist_to_beam_converter_path: str = Field(
+        default=CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
+    )
+    trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
     run_number: float | None = Field(default=None, ge=0)
 
     @property
     def visit_directory(self) -> Path:
-        return Path(CONST.I03.BASE_DATA_DIR) / self.visit
+        return (
+            Path(CONST.I03.BASE_DATA_DIR) / str(datetime.date.today().year) / self.visit
+        )
 
     @property
     @cache

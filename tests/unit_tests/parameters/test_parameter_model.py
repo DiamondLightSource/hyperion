@@ -1,5 +1,9 @@
 import json
 
+from dodal.devices.detector.det_dist_to_beam_converter import (
+    DetectorDistanceToBeamXYConverter,
+)
+
 from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -36,5 +40,12 @@ def test_new_params_equals_old():
     old_params = GridscanInternalParameters(**old_json_data)
     new_params = ThreeDGridScan(**new_json_data)
 
-    assert old_params.hyperion_params.detector_params == new_params.detector_params
+    old_detector_params = old_params.hyperion_params.detector_params
+    new_detector_params = new_params.detector_params
+
+    assert isinstance(
+        old_detector_params.beam_xy_converter, DetectorDistanceToBeamXYConverter
+    )
+
+    assert old_detector_params == new_detector_params
     assert old_params.hyperion_params.ispyb_params == new_params.ispyb_params

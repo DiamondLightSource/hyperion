@@ -1,6 +1,9 @@
+import os
 from enum import Enum
 
 from pydantic.dataclasses import dataclass
+
+TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
 
 
 @dataclass(frozen=True)
@@ -64,9 +67,9 @@ class ExperimentParamConstants:
 
 @dataclass(frozen=True)
 class I03Constants:
-    BEAMLINE = "BL03S"
-    INSERTION_PREFIX = "SR03S"
-    BASE_DATA_DIR = "/dls/i03/data/"
+    BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
+    INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
+    BASE_DATA_DIR = "/tmp/dls/i03/data/" if TEST_MODE else "/dls/i03/data/"
 
 
 @dataclass(frozen=True)

@@ -53,7 +53,9 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
         detector_params = {
             "expected_energy_ev": self.demand_energy_ev,
             "exposure_time": self.exposure_time_s,
-            "directory": str(self.visit_directory / "auto" / str(self.sample_id)),
+            "directory": str(
+                self.visit_directory / "xraycentring" / str(self.sample_id)
+            ),
             "prefix": self.file_name,
             "detector_distance": self.detector_distance_mm,
             "omega_start": self.omega_start_deg,
@@ -61,8 +63,9 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
             "num_images_per_trigger": 1,
             "num_triggers": self.num_images,
             "use_roi_mode": self.use_roi_mode,
-            "det_dist_to_beam_converter_path": CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH,
+            "det_dist_to_beam_converter_path": self.det_dist_to_beam_converter_path,
             "run_number": self.run_number,
+            "trigger_mode": self.trigger_mode,
         }
         return DetectorParams(**detector_params)
 
