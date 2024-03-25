@@ -235,18 +235,18 @@ class ThreeDGridScan(SpecifiedGridScan):
             x_step_size=self.x_step_size_um,
             y_step_size=self.y_step_size_um,
             z_step_size=self.z_step_size_um,
-            x_start=self.scan_1.axis_1_start_um,
-            y1_start=self.scan_1.axis_2_start_um,
-            z1_start=self.scan_1.normal_axis_start,
-            y2_start=self.scan_2.normal_axis_start,
-            z2_start=self.scan_2.axis_2_start_um,
+            x_start=self.scan_1.axis_1_start_um,  # pyright: ignore # bug in pyright https://github.com/microsoft/pyright/issues/6456
+            y1_start=self.scan_1.axis_2_start_um,  # pyright: ignore
+            z1_start=self.scan_1.normal_axis_start,  # pyright: ignore
+            y2_start=self.scan_2.normal_axis_start,  # pyright: ignore
+            z2_start=self.scan_2.axis_2_start_um,  # pyright: ignore
             set_stub_offsets=False,
             dwell_time_ms=self.exposure_time_s,
         )
 
     @property
     def num_images(self) -> int:
-        return self.scan_1.num_images + self.scan_2.num_images
+        return self.scan_1.num_images + self.scan_2.num_images  # pyright: ignore
 
     @property
     @cache
