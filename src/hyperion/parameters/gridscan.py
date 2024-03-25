@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from functools import cached_property
+from functools import cache
 
 import numpy as np
 from dodal.devices.detector import DetectorParams
@@ -48,25 +48,25 @@ class RobotLoadThenCentre(GridCommon, WithSample): ...
 
 
 class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
-    @cached_property
+    @property
     def detector_params(self):
         detector_params = {
             "expected_energy_ev": self.demand_energy_ev,
             "exposure_time": self.exposure_time_s,
-            "directory": self.visit_directory / "auto" / str(self.sample_id),
+            "directory": str(self.visit_directory / "auto" / str(self.sample_id)),
             "prefix": self.file_name,
             "detector_distance": self.detector_distance_mm,
             "omega_start": self.omega_start_deg,
             "omega_increment": 0,
             "num_images_per_trigger": 1,
             "num_triggers": self.num_images,
-            "use_roi_mode": self,
+            "use_roi_mode": self.use_roi_mode,
             "det_dist_to_beam_converter_path": CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH,
             "run_number": self.run_number,
         }
         return DetectorParams(**detector_params)
 
-    @cached_property
+    @property
     def ispyb_params(  # pyright: ignore # cached_property[T] doesn't check subtypes of T
         self,
     ):
@@ -154,7 +154,7 @@ class TwoDGridScan(SpecifiedGridScan):
     def num_images(self) -> int:
         return self.axis_1_steps * self.axis_2_steps
 
-    @cached_property
+    @property
     def scan_spec(self):
         line_1 = Line(
             str(self.axis_1.value),
@@ -170,7 +170,7 @@ class TwoDGridScan(SpecifiedGridScan):
         )
         return line_2 * ~line_1
 
-    @cached_property
+    @property
     def scan_points(self):
         return ScanPath(self.scan_spec.calculate()).consume().midpoints
 
@@ -187,7 +187,8 @@ class ThreeDGridScan(SpecifiedGridScan):
     y_steps: int
     z_steps: int
 
-    @cached_property
+    @property
+    @cache
     def scan_1(self) -> TwoDGridScan:
         values = self.dict()
         values["y_start"] = self.y_start_um
@@ -198,7 +199,8 @@ class ThreeDGridScan(SpecifiedGridScan):
         values["axis_2_steps"] = self.y_steps
         return TwoDGridScan(**values)
 
-    @cached_property
+    @property
+    @cache
     def scan_2(self) -> TwoDGridScan:
         values = self.dict()
         values["y_start"] = self.y2_start_um
@@ -230,7 +232,8 @@ class ThreeDGridScan(SpecifiedGridScan):
     def num_images(self) -> int:
         return self.scan_1.num_images + self.scan_2.num_images
 
-    @cached_property
+    @property
+    @cache
     def scan_points(self):  # pyright: ignore
         # TODO: requires making the points for the 2D scans 3D points
         return NotImplemented

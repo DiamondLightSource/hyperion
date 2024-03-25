@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from functools import cached_property
+from functools import cache
 
 from dodal.devices.detector import DetectorParams
 from dodal.devices.zebra import (
@@ -36,7 +36,8 @@ class RotationScan(
     rotation_direction: RotationDirection
     transmission_frac: float
 
-    @cached_property
+    @property
+    @cache
     def detector_params(self):
         assert (
             self._puck is not None and self._pin is not None
@@ -57,7 +58,8 @@ class RotationScan(
         }
         return DetectorParams(**params)
 
-    @cached_property
+    @property
+    @cache
     def ispyb_params(self):  # pyright: ignore
         ispyb_params = {
             "visit_path": self.visit_directory,
@@ -86,7 +88,8 @@ class RotationScan(
         }
         return RotationIspybParams(**ispyb_params)
 
-    @cached_property  # type: ignore
+    @property
+    @cache
     def scan_points(self) -> AxesPoints:
         scan_spec = Line(
             axis="omega",

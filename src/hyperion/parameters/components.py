@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
 from typing import TypeVar
 
@@ -69,6 +69,9 @@ class HyperionParameters(BaseModel):
             ParameterVersion: lambda pv: str(pv),
         }
 
+    def __hash__(self) -> int:
+        return self.json().__hash__()
+
     parameter_model_version: ParameterVersion
 
 
@@ -89,18 +92,21 @@ class DiffractionExperiment(HyperionParameters):
     def visit_directory(self) -> Path:
         return Path(CONST.I03.BASE_DATA_DIR) / self.visit
 
-    @cached_property
+    @property
+    @cache
     @abstractmethod
     def detector_params(self) -> DetectorParams: ...
 
-    @cached_property
+    @property
+    @cache
     @abstractmethod
     def ispyb_params(self) -> IspybParams:  # Soon to remove
         ...
 
 
 class WithScan(BaseModel, ABC):
-    @cached_property
+    @property
+    @cache
     @abstractmethod
     def scan_points(self) -> AxesPoints: ...
 
@@ -136,6 +142,9 @@ class OptionalGonioAngleStarts(BaseModel):
 
 class TemporaryIspybExtras(BaseModel):
     # for while we still need ISpyB params - to be removed in #1277 and/or #43
+    class Config:
+        arbitrary_types_allowed = True
+
     microns_per_pixel_x: int | None = None
     microns_per_pixel_y: int | None = None
     position: list[float] | NDArray | None = None

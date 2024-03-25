@@ -1,4 +1,9 @@
+import json
+
 from hyperion.parameters.gridscan import ThreeDGridScan
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanInternalParameters,
+)
 
 
 def test_minimal_3d_gridscan_params():
@@ -16,5 +21,20 @@ def test_minimal_3d_gridscan_params():
         y_steps=7,
         z_steps=9,
     )
-    assert test_params.num_images == 5 * 7 + 5 * 9
+    assert test_params.num_images == (5 * 7 + 5 * 9)
     assert test_params.exposure_time_s == 0.02
+
+
+def test_new_params_equals_old():
+    with open("tests/test_data/parameter_json_files/good_test_parameters.json") as f:
+        old_json_data = json.loads(f.read())
+    with open(
+        "tests/test_data/new_parameter_json_files/good_test_parameters.json"
+    ) as f:
+        new_json_data = json.loads(f.read())
+
+    old_params = GridscanInternalParameters(**old_json_data)
+    new_params = ThreeDGridScan(**new_json_data)
+
+    assert old_params.hyperion_params.detector_params == new_params.detector_params
+    assert old_params.hyperion_params.ispyb_params == new_params.ispyb_params
