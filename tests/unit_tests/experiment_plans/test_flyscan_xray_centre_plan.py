@@ -1,5 +1,6 @@
 import random
 import types
+from typing import Tuple
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
@@ -7,6 +8,8 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import FailedStatus
+from dodal.beamlines import i03
+from dodal.beamlines.beamline_utils import clear_device
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -19,6 +22,7 @@ from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_sim_value
 
+import hyperion.parameters.external_parameters
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
@@ -32,25 +36,25 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     run_gridscan_and_move,
     wait_for_gridscan_valid,
 )
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
+)
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
-)
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
+from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
 from hyperion.external_interaction.callbacks.zocalo_callback import (
     ZocaloCallback,
 )
-from hyperion.external_interaction.ispyb.gridscan_ispyb_store_3d import (
-    Store3DGridscanInIspyb,
-)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
+    StoreInIspyb,
 )
-from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -62,13 +66,15 @@ from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_MEDIUM,
     TEST_RESULT_SMALL,
 )
-from ..external_interaction.callbacks.xray_centre.conftest import TestData
+from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
     mock_zocalo_trigger,
     modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
 )
+
+ReWithSubs = tuple[RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
 
 
 @pytest.fixture
@@ -102,7 +108,7 @@ def mock_ispyb():
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.Store3DGridscanInIspyb",
+    "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
 class TestFlyscanXrayCentrePlan:
@@ -116,7 +122,7 @@ class TestFlyscanXrayCentrePlan:
             test_fgs_params.hyperion_params.detector_params.detector_size_constants.det_type_string
             == EIGER_TYPE_EIGER2_X_16M
         )
-        raw_params_dict = external_parameters.from_file()
+        raw_params_dict = hyperion.parameters.external_parameters.from_file()
         raw_params_dict["hyperion_params"]["detector_params"][
             "detector_size_constants"
         ] = EIGER_TYPE_EIGER2_X_4M
@@ -146,21 +152,19 @@ class TestFlyscanXrayCentrePlan:
 
         error = None
         with pytest.raises(FailedStatus) as exc:
-            with patch(
-                "hyperion.external_interaction.ispyb.ispyb_store.ispyb",
-                mock_ispyb,
-            ):
-                with patch.object(
-                    fake_fgs_composite.sample_motors.omega, "set"
-                ) as mock_set:
-                    error = AssertionError("Test Exception")
-                    mock_set.return_value = FailedStatus(error)
+            with patch.object(
+                fake_fgs_composite.sample_motors.omega, "set"
+            ) as mock_set:
+                error = AssertionError("Test Exception")
+                mock_set.return_value = FailedStatus(error)
 
-                    RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+                RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
         assert exc.value.args[0] is error
-        ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # pyright: ignore
-            "fail", "Test Exception"
+        ispyb_callback.ispyb.end_deposition.assert_called_once_with(
+            IspybIds(data_collection_group_id=0, data_collection_ids=(0, 0)),
+            "fail",
+            "Test Exception",
         )
 
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
@@ -203,7 +207,7 @@ class TestFlyscanXrayCentrePlan:
 
         test_ispyb_callback = GridscanISPyBCallback()
         test_ispyb_callback.active = True
-        test_ispyb_callback.ispyb = MagicMock(spec=Store3DGridscanInIspyb)
+        test_ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
         test_ispyb_callback.ispyb.begin_deposition.return_value = IspybIds(
             data_collection_ids=(2, 3), data_collection_group_id=5, grid_ids=(7, 8, 9)
         )
@@ -260,7 +264,7 @@ class TestFlyscanXrayCentrePlan:
         move_aperture: MagicMock,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        RE_with_subs: ReWithSubs,
     ):
         RE, _ = RE_with_subs
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
@@ -367,15 +371,13 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
-        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        RE_with_subs: ReWithSubs,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
     ):
-        RE, mock_subscriptions = RE_with_subs
+        RE, (_, ispyb_cb) = RE_with_subs
 
-        run_generic_ispyb_handler_setup(
-            mock_subscriptions.ispyb_handler, test_fgs_params
-        )
+        run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
         RE(
             run_gridscan_and_move(
                 fake_fgs_composite,
@@ -400,14 +402,12 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
-        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        RE_with_subs: ReWithSubs,
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        RE, mock_subscriptions = RE_with_subs
-        run_generic_ispyb_handler_setup(
-            mock_subscriptions.ispyb_handler, test_fgs_params
-        )
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
 
         RE(
             run_gridscan_and_move(
@@ -435,14 +435,12 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
-        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        RE_with_subs: ReWithSubs,
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        RE, mock_subscriptions = RE_with_subs
-        run_generic_ispyb_handler_setup(
-            mock_subscriptions.ispyb_handler, test_fgs_params
-        )
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -452,12 +450,58 @@ class TestFlyscanXrayCentrePlan:
                 test_fgs_params,
             )
         )
-        app_to_comment: MagicMock = (
-            mock_subscriptions.ispyb_handler.ispyb.append_to_comment
-        )  # type:ignore
+        app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
+
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+    )
+    def test_waits_for_motion_program(
+        self,
+        check_topup_and_wait,
+        RE,
+        test_fgs_params: GridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        done_status,
+    ):
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        clear_device("fast_grid_scan")
+        fgs = i03.fast_grid_scan(fake_with_ophyd_sim=True)
+        fgs.KICKOFF_TIMEOUT = 0.1
+        fgs.complete = MagicMock(return_value=done_status)
+        fgs.motion_program.running.sim_put(1)  # type: ignore
+        with pytest.raises(FailedStatus):
+            RE(
+                kickoff_and_complete_gridscan(
+                    fgs,
+                    fake_fgs_composite.eiger,
+                    fake_fgs_composite.synchrotron,
+                    "zocalo environment",
+                    [
+                        test_fgs_params.get_scan_points(1),
+                        test_fgs_params.get_scan_points(2),
+                    ],
+                )
+            )
+        fgs.KICKOFF_TIMEOUT = 1
+        fgs.motion_program.running.sim_put(0)  # type: ignore
+        fgs.status.sim_put(1)  # type: ignore
+        res = RE(
+            kickoff_and_complete_gridscan(
+                fgs,
+                fake_fgs_composite.eiger,
+                fake_fgs_composite.synchrotron,
+                "zocalo environment",
+                [
+                    test_fgs_params.get_scan_points(1),
+                    test_fgs_params.get_scan_points(2),
+                ],
+            )
+        )
+        assert res.exit_status == "success"
+        clear_device("fast_grid_scan")
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
@@ -469,14 +513,12 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
-        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        RE_with_subs: ReWithSubs,
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        RE, mock_subscriptions = RE_with_subs
-        run_generic_ispyb_handler_setup(
-            mock_subscriptions.ispyb_handler, test_fgs_params
-        )
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         RE(
             run_gridscan_and_move(
@@ -484,9 +526,7 @@ class TestFlyscanXrayCentrePlan:
                 test_fgs_params,
             )
         )
-        app_to_comment: MagicMock = (
-            mock_subscriptions.ispyb_handler.ispyb.append_to_comment
-        )  # type:ignore
+        app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
@@ -499,12 +539,12 @@ class TestFlyscanXrayCentrePlan:
         self,
         move_xyz: MagicMock,
         mock_mv: MagicMock,
-        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        RE_with_subs: ReWithSubs,
         test_fgs_params: GridscanInternalParameters,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
-        RE, mock_subscriptions = RE_with_subs
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         initial_x_y_z = np.array(
             [
@@ -516,9 +556,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.smargon.x.user_readback.sim_put(initial_x_y_z[0])  # type: ignore
         fake_fgs_composite.smargon.y.user_readback.sim_put(initial_x_y_z[1])  # type: ignore
         fake_fgs_composite.smargon.z.user_readback.sim_put(initial_x_y_z[2])  # type: ignore
-        run_generic_ispyb_handler_setup(
-            mock_subscriptions.ispyb_handler, test_fgs_params
-        )
+        run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         RE(
             run_gridscan_and_move(
@@ -567,17 +605,15 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        RE_with_subs: ReWithSubs,
         done_status,
     ):
-        RE, mock_subscriptions = RE_with_subs
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
         test_fgs_params.experiment_params.set_stub_offsets = False
-        run_generic_ispyb_handler_setup(
-            mock_subscriptions.ispyb_handler, test_fgs_params
-        )
+        run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
@@ -655,9 +691,9 @@ class TestFlyscanXrayCentrePlan:
         mock_abs_set,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
-        RE_with_subs: tuple[RunEngine, XrayCentreCallbackCollection],
+        RE_with_subs: ReWithSubs,
     ):
-        RE, mock_subscriptions = RE_with_subs
+        RE, (nexus_cb, ispyb_cb) = RE_with_subs
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
         fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
@@ -677,7 +713,7 @@ class TestFlyscanXrayCentrePlan:
             "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
-            [RE.subscribe(cb) for cb in list(mock_subscriptions)]
+            [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
             RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
 
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
@@ -693,10 +729,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: GridscanInternalParameters,
         RE: RunEngine,
+        done_status,
     ):
-        fake_fgs_composite.eiger.stage = MagicMock()
-        fake_fgs_composite.eiger.unstage = MagicMock()
-
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         RE(run_gridscan(fake_fgs_composite, test_fgs_params))
         fake_fgs_composite.eiger.stage.assert_called_once()
         fake_fgs_composite.eiger.unstage.assert_called_once()
@@ -749,8 +784,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 ):
     id_1, id_2 = 100, 200
 
-    cbs = XrayCentreCallbackCollection()
-    ispyb_cb = cbs.ispyb_handler
+    _, ispyb_cb = create_gridscan_callbacks()
     ispyb_cb.active = True
     ispyb_cb.ispyb = MagicMock()
     ispyb_cb.params = MagicMock()
@@ -782,8 +816,8 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
 
     expected_start_infos = [
-        ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps),
-        ZocaloStartInfo(id_2, "test/filename", x_steps * y_steps, x_steps * z_steps),
+        ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps, 0),
+        ZocaloStartInfo(id_2, "test/filename", x_steps * y_steps, x_steps * z_steps, 1),
     ]
 
     expected_start_calls = [

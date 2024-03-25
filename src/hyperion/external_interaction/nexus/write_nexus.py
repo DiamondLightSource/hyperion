@@ -7,15 +7,15 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from dodal.utils import get_beamline_name
-from nexgen.nxs_utils import Detector, Goniometer, Source
+from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
 from numpy.typing import DTypeLike
 
 from hyperion.external_interaction.nexus.nexus_utils import (
-    create_beam_and_attenuator_parameters,
     create_detector_parameters,
     create_goniometer_axes,
     get_start_and_predicted_end_time,
@@ -36,6 +36,8 @@ class NexusWriter:
         run_number: int | None = None,
         vds_start_index: int = 0,
     ) -> None:
+        self.beam: Optional[Beam] = None
+        self.attenuator: Optional[Attenuator] = None
         self.scan_points: dict = scan_points
         self.data_shape: tuple[int, int, int] = data_shape
         hyperion_parameters: HyperionParameters = (
@@ -52,9 +54,6 @@ class NexusWriter:
         )
         self.detector: Detector = create_detector_parameters(
             hyperion_parameters.detector_params
-        )
-        self.beam, self.attenuator = create_beam_and_attenuator_parameters(
-            hyperion_parameters.ispyb_params
         )
         self.source: Source = Source(get_beamline_name("S03"))
         self.directory: Path = Path(hyperion_parameters.detector_params.directory)

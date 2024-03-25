@@ -1,5 +1,5 @@
 import os
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Tuple
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -19,11 +19,11 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_nexus_writer,
     read_hardware_for_zocalo,
 )
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    create_rotation_callbacks,
+)
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
-)
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
 )
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
@@ -31,16 +31,11 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
-)
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
+from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
-)
-from hyperion.external_interaction.ispyb.rotation_ispyb_store import (
-    StoreRotationInIspyb,
 )
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.external_parameters import from_file
@@ -74,14 +69,17 @@ def test_main_start_doc():
     }
 
 
-def activate_callbacks(cbs: RotationCallbackCollection | XrayCentreCallbackCollection):
-    cbs.ispyb_handler.active = True
-    cbs.nexus_handler.active = True
+def activate_callbacks(cbs: Tuple[RotationNexusFileCallback, RotationISPyBCallback]):
+    cbs[1].active = True
+    cbs[0].active = True
 
 
 def fake_rotation_scan(
     params: RotationInternalParameters,
-    subscriptions: RotationCallbackCollection | Sequence[PlanReactiveCallback],
+    subscriptions: (
+        Tuple[RotationNexusFileCallback, RotationISPyBCallback]
+        | Sequence[PlanReactiveCallback]
+    ),
     after_open_do: Callable | None = None,
     after_main_do: Callable | None = None,
 ):
@@ -90,6 +88,7 @@ def fake_rotation_scan(
     dcm = make_fake_device(DCM)(
         name="dcm", daq_configuration_path=i03.DAQ_CONFIGURATION_PATH
     )
+    dcm.energy_in_kev.user_readback.sim_put(12.1)
     eiger = make_fake_device(EigerDetector)(name="eiger")
 
     @bpp.subs_decorator(list(subscriptions))
@@ -128,25 +127,25 @@ def fake_rotation_scan(
 
 @pytest.fixture
 def activated_mocked_cbs():
-    cb = RotationCallbackCollection()
-    cb.ispyb_handler.emit_cb = MagicMock
-    activate_callbacks(cb)
-    cb.nexus_handler.activity_gated_event = MagicMock(autospec=True)
-    cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
-    return cb
+    nexus_callback, ispyb_callback = create_rotation_callbacks()
+    ispyb_callback.emit_cb = MagicMock
+    activate_callbacks((nexus_callback, ispyb_callback))
+    nexus_callback.activity_gated_event = MagicMock(autospec=True)
+    nexus_callback.activity_gated_start = MagicMock(autospec=True)
+    return nexus_callback, ispyb_callback
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_nexus_handler_gets_documents_in_mock_plan(
     ispyb,
     RE: RunEngine,
     params: RotationInternalParameters,
-    activated_mocked_cbs: RotationCallbackCollection,
+    activated_mocked_cbs: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
 ):
-    nexus_handler = activated_mocked_cbs.nexus_handler
+    nexus_handler, _ = activated_mocked_cbs
     RE(fake_rotation_scan(params, [nexus_handler]))
 
     params.hyperion_params.ispyb_params.transmission_fraction = 1.0
@@ -208,7 +207,7 @@ def test_nexus_handler_triggers_write_file_when_told(
     autospec=True,
 )
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
@@ -220,14 +219,14 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     test_outer_start_doc,
 ):
     nexus_writer.return_value.full_filename = "test_full_filename"
-    cb = RotationCallbackCollection()
-    activate_callbacks(cb)
+    nexus_callback, ispyb_callback = create_rotation_callbacks()
+    activate_callbacks((nexus_callback, ispyb_callback))
 
-    cb.ispyb_handler.ispyb = MagicMock(spec=StoreRotationInIspyb)
-    cb.ispyb_handler.params = params
+    ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
+    ispyb_callback.params = params
     with pytest.raises(ISPyBDepositionNotMade):
-        RE(fake_rotation_scan(params, cb))
-    cb.ispyb_handler.emit_cb.zocalo_interactor.run_start.assert_not_called()  # type: ignore
+        RE(fake_rotation_scan(params, (nexus_callback, ispyb_callback)))
+    ispyb_callback.emit_cb.zocalo_interactor.run_start.assert_not_called()  # type: ignore
 
 
 @patch(
@@ -238,9 +237,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
     autospec=True,
 )
-@patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb"
-)
+@patch("hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb")
 def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zocalo(
     ispyb_store,
     zocalo_trigger,
@@ -257,21 +254,29 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
 
     ispyb_store.return_value = mock_store_in_ispyb_instance
     nexus_writer.return_value.full_filename = "test_full_filename"
-    cb = RotationCallbackCollection()
-    activate_callbacks(cb)
-    cb.ispyb_handler.emit_cb.stop = MagicMock()  # type: ignore
+    nexus_callback, ispyb_callback = create_rotation_callbacks()
+    activate_callbacks((nexus_callback, ispyb_callback))
+    ispyb_callback.emit_cb.stop = MagicMock()  # type: ignore
 
-    def after_open_do(callbacks: RotationCallbackCollection):
-        callbacks.ispyb_handler.ispyb.begin_deposition.assert_called_once()  # pyright: ignore
-        callbacks.ispyb_handler.ispyb.update_deposition.assert_not_called()  # pyright: ignore
+    def after_open_do(
+        callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
+    ):
+        ispyb_callback.ispyb.begin_deposition.assert_called_once()  # pyright: ignore
+        ispyb_callback.ispyb.update_deposition.assert_not_called()  # pyright: ignore
 
-    def after_main_do(callbacks: RotationCallbackCollection):
-        callbacks.ispyb_handler.ispyb.update_deposition.assert_called_once()  # pyright: ignore
-        cb.ispyb_handler.emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
+    def after_main_do(
+        callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
+    ):
+        ispyb_callback.ispyb.update_deposition.assert_called_once()  # pyright: ignore
+        ispyb_callback.emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
 
-    RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+    RE(
+        fake_rotation_scan(
+            params, (nexus_callback, ispyb_callback), after_open_do, after_main_do
+        )
+    )
 
-    cb.ispyb_handler.emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
+    ispyb_callback.emit_cb.zocalo_interactor.run_start.assert_called_once()  # type: ignore
 
 
 @patch(
@@ -281,61 +286,53 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
 def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
     zocalo, RE: RunEngine, params: RotationInternalParameters, test_outer_start_doc
 ):
-    cb = RotationCallbackCollection()
-    cb.ispyb_handler.emit_cb = None
-    activate_callbacks(cb)
-    cb.nexus_handler.activity_gated_event = MagicMock(autospec=True)
-    cb.nexus_handler.activity_gated_start = MagicMock(autospec=True)
-    cb.ispyb_handler.activity_gated_start = MagicMock(
-        autospec=True, side_effect=cb.ispyb_handler.activity_gated_start
+    (nexus_callback, ispyb_callback) = create_rotation_callbacks()
+    ispyb_callback.emit_cb = None
+    activate_callbacks((nexus_callback, ispyb_callback))
+    nexus_callback.activity_gated_event = MagicMock(autospec=True)
+    nexus_callback.activity_gated_start = MagicMock(autospec=True)
+    ispyb_callback.activity_gated_start = MagicMock(
+        autospec=True, side_effect=ispyb_callback.activity_gated_start
     )
 
-    def after_open_do(callbacks: RotationCallbackCollection):
-        callbacks.ispyb_handler.activity_gated_start.assert_called_once()
-        assert callbacks.ispyb_handler.uid_to_finalize_on is None
+    def after_open_do(
+        callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
+    ):
+        ispyb_callback.activity_gated_start.assert_called_once()  # type: ignore
+        assert ispyb_callback.uid_to_finalize_on is None
 
-    def after_main_do(callbacks: RotationCallbackCollection):
-        cb.ispyb_handler.ispyb_ids = IspybIds(
+    def after_main_do(
+        callbacks: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
+    ):
+        ispyb_callback.ispyb_ids = IspybIds(
             data_collection_ids=(0,), data_collection_group_id=0
         )
-        assert callbacks.ispyb_handler.activity_gated_start.call_count == 2
-        assert callbacks.ispyb_handler.uid_to_finalize_on is not None
+        assert ispyb_callback.activity_gated_start.call_count == 2  # type: ignore
+        assert ispyb_callback.uid_to_finalize_on is not None
 
     with patch(
-        "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+        "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
         autospec=True,
     ):
-        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+        RE(
+            fake_rotation_scan(
+                params, (nexus_callback, ispyb_callback), after_open_do, after_main_do
+            )
+        )
 
 
-ids = [
-    IspybIds(data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None),
-    IspybIds(data_collection_group_id=24, data_collection_ids=(48,), grid_ids=None),
-    IspybIds(data_collection_group_id=25, data_collection_ids=(51,), grid_ids=None),
-    IspybIds(data_collection_group_id=26, data_collection_ids=(111,), grid_ids=None),
-    IspybIds(data_collection_group_id=27, data_collection_ids=(238476,), grid_ids=None),
-    IspybIds(data_collection_group_id=36, data_collection_ids=(189765,), grid_ids=None),
-    IspybIds(data_collection_group_id=39, data_collection_ids=(0,), grid_ids=None),
-    IspybIds(data_collection_group_id=43, data_collection_ids=(89,), grid_ids=None),
-]
-
-
-@pytest.mark.parametrize("ispyb_ids", ids)
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb: MagicMock,
     RE: RunEngine,
     params: RotationInternalParameters,
-    ispyb_ids,
 ):
-    cb = [RotationISPyBCallback()]
-    cb[0].active = True
-    ispyb_ids = IspybIds(
-        data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None
-    )
+    ispyb_cb = RotationISPyBCallback()
+    ispyb_cb.active = True
+    ispyb_ids = IspybIds(data_collection_group_id=23, data_collection_ids=(45,))
     rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
 
     test_cases = zip(
@@ -354,19 +351,24 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         def after_main_do(callbacks: list[RotationISPyBCallback]):
             assert callbacks[0].uid_to_finalize_on is not None
 
-        RE(fake_rotation_scan(params, cb, after_open_do, after_main_do))
+        RE(fake_rotation_scan(params, [ispyb_cb], after_open_do, after_main_do))
 
+        begin_deposition_scan_data: ScanDataInfo = (
+            rotation_ispyb.return_value.begin_deposition.call_args.args[1]
+        )
         if same_dcgid:
-            assert rotation_ispyb.call_args.args[2] is not None
-            assert rotation_ispyb.call_args.args[2] is last_dcgid
+            assert begin_deposition_scan_data.data_collection_info.parent_id is not None
+            assert (
+                begin_deposition_scan_data.data_collection_info.parent_id is last_dcgid
+            )
         else:
-            assert rotation_ispyb.call_args.args[2] is None
+            assert begin_deposition_scan_data.data_collection_info.parent_id is None
 
-        last_dcgid = cb[0].ispyb_ids.data_collection_group_id
+        last_dcgid = ispyb_cb.ispyb_ids.data_collection_group_id
 
 
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
 def test_ispyb_specifies_experiment_type_if_supplied(
@@ -374,19 +376,18 @@ def test_ispyb_specifies_experiment_type_if_supplied(
     RE: RunEngine,
     params: RotationInternalParameters,
 ):
-    cb = [RotationISPyBCallback()]
-    cb[0].active = True
+    ispyb_cb = RotationISPyBCallback()
+    ispyb_cb.active = True
     params.hyperion_params.ispyb_params.ispyb_experiment_type = "Characterization"
     rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
-        data_collection_group_id=23, data_collection_ids=(45,), grid_ids=None
+        data_collection_group_id=23, data_collection_ids=(45,)
     )
 
     params.hyperion_params.ispyb_params.sample_id = "abc"
 
-    RE(fake_rotation_scan(params, cb))
+    RE(fake_rotation_scan(params, [ispyb_cb]))
 
-    assert rotation_ispyb.call_args.args[3] == "Characterization"
-    assert rotation_ispyb.call_args.args[2] is None
+    assert rotation_ispyb.call_args.args[1] == ExperimentType.CHARACTERIZATION
 
 
 n_images_store_id = [
@@ -410,7 +411,7 @@ n_images_store_id = [
 
 @pytest.mark.parametrize("n_images,store_id", n_images_store_id)
 @patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreRotationInIspyb",
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     new=MagicMock(),
 )
 def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(

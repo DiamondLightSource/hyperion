@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock
 
 import pytest
-from bluesky import FailedStatus
 from bluesky import plan_stubs as bps
+from bluesky.utils import FailedStatus
 from dodal.beamlines import i03
 from ophyd.status import Status
 

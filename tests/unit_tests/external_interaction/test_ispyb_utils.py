@@ -2,10 +2,10 @@ import re
 
 import pytest
 
-from hyperion.external_interaction.ispyb.ispyb_utils import (
-    get_current_time_string,
+from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     get_visit_string_from_path,
 )
+from hyperion.external_interaction.ispyb.ispyb_utils import get_current_time_string
 
 TIME_FORMAT_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 

@@ -1,6 +1,7 @@
 import argparse
 import os
 from subprocess import PIPE, CalledProcessError, Popen
+from uuid import uuid1
 
 from git import Repo
 from packaging.version import Version
@@ -51,10 +52,7 @@ class repo:
 
 
 # Get the release directory based off the beamline and the latest hyperion version
-def get_hyperion_release_dir_from_args(repo: repo) -> str:
-    if repo.name != "hyperion":
-        raise ValueError("This function should only be used with the hyperion repo")
-
+def get_hyperion_release_dir_from_args() -> str:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "beamline",
@@ -66,19 +64,26 @@ def get_hyperion_release_dir_from_args(repo: repo) -> str:
     args = parser.parse_args()
     if args.beamline == "dev":
         print("Running as dev")
-        return "/tmp/hyperion_release_test/bluesky"
+        return "/scratch/30day_tmp/hyperion_release_test/bluesky"
     else:
         return f"/dls_sw/{args.beamline}/software/bluesky"
 
 
 if __name__ == "__main__":
+    # Gives path to /bluesky
+    release_area = get_hyperion_release_dir_from_args()
+
+    this_repo_top = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+
+    print(f"Repo top is {this_repo_top}")
+
     hyperion_repo = repo(
         name="hyperion",
-        repo_args=os.path.join(os.path.dirname(__file__), "../.git"),
+        repo_args=os.path.join(this_repo_top, ".git"),
     )
 
-    # Gives path to /bluesky
-    release_area = get_hyperion_release_dir_from_args(hyperion_repo)
+    if hyperion_repo.name != "hyperion":
+        raise ValueError("This function should only be used with the hyperion repo")
 
     release_area_version = os.path.join(
         release_area, f"hyperion_{hyperion_repo.latest_version_str}"
@@ -88,7 +93,7 @@ if __name__ == "__main__":
 
     dodal_repo = repo(
         name="dodal",
-        repo_args=os.path.join(os.path.dirname(__file__), "../../dodal/.git"),
+        repo_args=os.path.join(this_repo_top, "../dodal/.git"),
     )
 
     dodal_repo.set_deploy_location(release_area_version)
@@ -113,9 +118,10 @@ if __name__ == "__main__":
     print(f"Setting up environment in {hyperion_repo.deploy_location}")
 
     if hyperion_repo.name == "hyperion":
-        with Popen(
-            "./dls_dev_env.sh", stdout=PIPE, bufsize=1, universal_newlines=True
-        ) as p:
+        env_script = os.path.join(
+            hyperion_repo.deploy_location, "utility_scripts/dls_dev_env.sh"
+        )
+        with Popen(env_script, stdout=PIPE, bufsize=1, universal_newlines=True) as p:
             if p.stdout is not None:
                 for line in p.stdout:
                     print(line, end="")
@@ -123,18 +129,41 @@ if __name__ == "__main__":
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, p.args)
 
+    def create_symlink_by_tmp_and_rename(dirname, target, linkname):
+        tmp_name = str(uuid1())
+        target_path = os.path.join(dirname, target)
+        linkname_path = os.path.join(dirname, linkname)
+        tmp_path = os.path.join(dirname, tmp_name)
+        os.symlink(target_path, tmp_path)
+        os.rename(tmp_path, linkname_path)
+
     move_symlink = input(
         """Move symlink (y/n)? WARNING: this will affect the running version!
 Only do so if you have informed the beamline scientist and you're sure Hyperion is not running.
 """
     )
-    # Creates symlink: software/bluesky/hyperion_version -> software/bluesky/hyperion
+    # Creates symlinks: software/bluesky/hyperion_latest -> software/bluesky/hyperion_{version}/hyperion
+    #                   software/bluesky/hyperion -> software/bluesky/hyperion_latest
     if move_symlink == "y":
-        live_location = os.path.join(release_area, "hyperion")
-        new_tmp_location = os.path.join(release_area, "tmp_art")
-        os.symlink(hyperion_repo.deploy_location, new_tmp_location)
-        os.rename(new_tmp_location, live_location)
-        print(f"New version moved to {live_location}")
+        old_live_location = os.path.relpath(
+            os.path.realpath(os.path.join(release_area, "hyperion")), release_area
+        )
+        make_live_stable_symlink = input(
+            f"The last live deployment was {old_live_location}, do you want to set this as the stable version? (y/n)"
+        )
+        if make_live_stable_symlink == "y":
+            create_symlink_by_tmp_and_rename(
+                release_area, old_live_location, "hyperion_stable"
+            )
+
+        relative_deploy_loc = os.path.join(
+            os.path.relpath(hyperion_repo.deploy_location, release_area)
+        )
+        create_symlink_by_tmp_and_rename(
+            release_area, relative_deploy_loc, "hyperion_latest"
+        )
+        create_symlink_by_tmp_and_rename(release_area, "hyperion_latest", "hyperion")
+        print(f"New version moved to {hyperion_repo.deploy_location}")
         print("To start this version run hyperion_restart from the beamline's GDA")
     else:
-        print("Quiting without latest version being updated")
+        print("Quitting without latest version being updated")

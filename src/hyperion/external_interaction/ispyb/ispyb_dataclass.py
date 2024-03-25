@@ -42,14 +42,14 @@ class IspybParams(BaseModel):
     position: np.ndarray
 
     transmission_fraction: float
-    # populated by wait_for_robot_load_then_centre
+    # populated by robot_load_then_centre
     current_energy_ev: Optional[float]
     beam_size_x: float
     beam_size_y: float
     focal_spot_size_x: float
     focal_spot_size_y: float
     comment: str
-    # populated by wait_for_robot_load_then_centre
+    # populated by robot_load_then_centre
     resolution: Optional[float]
 
     sample_id: Optional[str] = None
@@ -93,10 +93,10 @@ class IspybParams(BaseModel):
         return transmission_fraction
 
     @property
-    def wavelength_angstroms(self) -> float:
-        if self.current_energy_ev is None:
-            return 0.0
-        return convert_eV_to_angstrom(self.current_energy_ev)
+    def wavelength_angstroms(self) -> Optional[float]:
+        if self.current_energy_ev:
+            return convert_eV_to_angstrom(self.current_energy_ev)
+        return None  # Return None instead of 0 in order to avoid overwriting previously written values
 
 
 class RobotLoadIspybParams(IspybParams): ...

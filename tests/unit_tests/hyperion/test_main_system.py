@@ -18,6 +18,7 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.zebra import Zebra
 from flask.testing import FlaskClient
 
+import hyperion.parameters.external_parameters
 from hyperion.__main__ import (
     Actions,
     BlueskyRunner,
@@ -28,11 +29,7 @@ from hyperion.__main__ import (
 )
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
-from hyperion.external_interaction.callbacks.abstract_plan_callback_collection import (
-    AbstractPlanCallbackCollection,
-)
 from hyperion.log import LOGGER
-from hyperion.parameters import external_parameters
 from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -46,7 +43,7 @@ STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
-    external_parameters.from_file(
+    hyperion.parameters.external_parameters.from_file(
         "tests/test_data/parameter_json_files/test_parameter_defaults.json"
     )
 )
@@ -139,7 +136,8 @@ def test_env(request):
     mock_run_engine = MockRunEngine(test_name=repr(request))
     mock_context = BlueskyContext()
     real_plans_and_test_exps = dict(
-        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()}, **TEST_EXPTS  # type: ignore
+        {k: mock_dict_values(v) for k, v in PLAN_REGISTRY.items()},
+        **TEST_EXPTS,  # type: ignore
     )
     mock_context.plan_functions = {
         k: MagicMock() for k in real_plans_and_test_exps.keys()
@@ -352,10 +350,9 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     mock_params.hyperion_params.experiment_type = "test_experiment"
     mock_param_class = MagicMock()
     mock_param_class.from_json.return_value = mock_params
-    callback_class_mock = MagicMock(
-        spec=AbstractPlanCallbackCollection,
+    callbacks_mock = MagicMock(
         name="mock_callback_class",
-        return_value=["test_cb_1", "test_cb_2"],
+        return_value=("test_cb_1", "test_cb_2"),
     )
 
     TEST_REGISTRY = {
@@ -363,7 +360,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
             "setup": MagicMock(),
             "internal_param_type": mock_param_class,
             "experiment_param_type": MagicMock(),
-            "callback_collection_type": callback_class_mock,
+            "callback_collection_type": callbacks_mock,
         }
     }
 
@@ -392,7 +389,14 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
         mock_context = MagicMock()
         mock_context.plan_functions = {"test_experiment": MagicMock()}
         runner.command_queue.put(
-            MockCommand(action=Actions.START, devices={}, experiment="test_experiment", parameters={}, callbacks=callback_class_mock), block=True  # type: ignore
+            MockCommand(
+                action=Actions.START,
+                devices={},
+                experiment="test_experiment",
+                parameters={},
+                callbacks=callbacks_mock,
+            ),  # type: ignore
+            block=True,  # type: ignore
         )
         runner.shutdown()
         runner_thread.join()
@@ -552,4 +556,4 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         assert "rotation_scan" in plan_names
         assert "flyscan_xray_centre" in plan_names
         assert "pin_tip_centre_then_xray_centre" in plan_names
-        assert "wait_for_robot_load_then_centre" in plan_names
+        assert "robot_load_then_centre" in plan_names

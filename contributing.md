@@ -8,7 +8,7 @@ General Workflow
 1. An issue is created for the work. This issue should describe in as much detail as possible the work that needs to be done. Anyone is free to make a ticket and/or comment on one.
 2. If a developer is going to do the work they assign themselves to the issue.
 3. The developer makes a new branch with the format `issue_short_description` e.g. `122_create_a_contributing_file`. (External developers are also welcome to make forks)
-4. The developer does the work on this branch, adding their work in small commits. Commit messages should be informative and prefixed with the issue number e.g. `#122: Added contributing file`.
+4. The developer does the work on this branch, adding their work in small commits. Commit messages should be informative and prefixed with the issue number e.g. `(#122) Added contributing file`.
 5. The developer submits a PR for the work. In the pull request should start with `Fixes #issue_num` e.g. `Fixes #122`, this will ensure the issue is automatically closed when the PR is merged. The developer should also add some background on how the reviewer might test the change.
 6. If the developer has a particular person in mind to review the work they should assign that person to the PR as a reviewer.
 7. The reviewer and developer go back and forth on the code until the reviewer approves it. (See [Reviewing Work](#reviewing-work))
