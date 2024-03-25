@@ -1,8 +1,10 @@
 import json
 
+import pytest
 from dodal.devices.detector.det_dist_to_beam_converter import (
     DetectorDistanceToBeamXYConverter,
 )
+from pydantic import ValidationError
 
 from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -10,23 +12,43 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 
 
-def test_minimal_3d_gridscan_params():
-    test_params = ThreeDGridScan(
-        sample_id=123,
-        x_start_um=0,
-        y_start_um=0,
-        z_start_um=0,
-        parameter_model_version="5.0.0",  # type: ignore
-        visit="cm12345",
-        file_name="test_file_name",
-        y2_start_um=2,
-        z2_start_um=2,
-        x_steps=5,
-        y_steps=7,
-        z_steps=9,
-    )
+@pytest.fixture
+def minimal_3d_gridscan_params():
+    return {
+        "sample_id": 123,
+        "x_start_um": 0,
+        "y_start_um": 0,
+        "z_start_um": 0,
+        "parameter_model_version": "5.0.0",
+        "visit": "cm12345",
+        "file_name": "test_file_name",
+        "y2_start_um": 2,
+        "z2_start_um": 2,
+        "x_steps": 5,
+        "y_steps": 7,
+        "z_steps": 9,
+    }
+
+
+def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
+    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
     assert test_params.num_images == (5 * 7 + 5 * 9)
     assert test_params.exposure_time_s == 0.02
+
+
+def test_param_version(minimal_3d_gridscan_params):
+    with pytest.raises(ValidationError):
+        minimal_3d_gridscan_params["parameter_model_version"] = "4.3.0"
+        _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+    minimal_3d_gridscan_params["parameter_model_version"] = "5.0.0"
+    _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+    minimal_3d_gridscan_params["parameter_model_version"] = "5.3.0"
+    _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+    minimal_3d_gridscan_params["parameter_model_version"] = "5.3.7"
+    _ = ThreeDGridScan(**minimal_3d_gridscan_params)
+    with pytest.raises(ValidationError):
+        minimal_3d_gridscan_params["parameter_model_version"] = "6.3.7"
+        _ = ThreeDGridScan(**minimal_3d_gridscan_params)
 
 
 def test_new_params_equals_old():

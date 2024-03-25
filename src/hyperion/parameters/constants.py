@@ -70,6 +70,7 @@ class I03Constants:
     BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
     INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
     BASE_DATA_DIR = "/tmp/dls/i03/data/" if TEST_MODE else "/dls/i03/data/"
+    DETECTOR = "EIGER2_X_16M"
 
 
 @dataclass(frozen=True)
@@ -82,6 +83,7 @@ class HyperionConstants:
     I03 = I03Constants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
+    ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
 
 
 CONST = HyperionConstants()

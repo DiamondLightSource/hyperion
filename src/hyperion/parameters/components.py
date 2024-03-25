@@ -9,7 +9,7 @@ from typing import TypeVar
 
 from dodal.devices.detector import DetectorParams, TriggerMode
 from numpy.typing import NDArray
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Extra, Field, validator
 from scanspec.core import AxesPoints
 from semver import Version
 
@@ -39,6 +39,9 @@ class ParameterVersion(Version):
         field_schema.update(examples=["1.0.2", "2.15.3-alpha", "21.3.15-beta+12345"])
 
 
+PARAMETER_VERSION = ParameterVersion.parse("5.0.0")
+
+
 class RotationAxis(str, Enum):
     OMEGA = "omega"
     PHI = "phi"
@@ -65,7 +68,7 @@ class HyperionParameters(BaseModel):
     class Config:
         arbitrary_types_allowed = True
         use_enum_values = True
-        ignore_extra_fields = False
+        extra = Extra.forbid
         json_encoders = {
             ParameterVersion: lambda pv: str(pv),
         }
@@ -74,6 +77,16 @@ class HyperionParameters(BaseModel):
         return self.json().__hash__()
 
     parameter_model_version: ParameterVersion
+
+    @validator("parameter_model_version")
+    def _validate_bersion(cls, version: ParameterVersion):
+        assert version >= ParameterVersion(
+            major=PARAMETER_VERSION.major
+        ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
+        assert version <= ParameterVersion(
+            major=PARAMETER_VERSION.major + 1
+        ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
+        return version
 
 
 class DiffractionExperiment(HyperionParameters):
@@ -88,6 +101,8 @@ class DiffractionExperiment(HyperionParameters):
     det_dist_to_beam_converter_path: str = Field(
         default=CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
     )
+    zocalo_environment: str = Field(default=CONST.ZOCALO_ENV)
+    detector: str = Field(default=CONST.I03.DETECTOR)
     trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)

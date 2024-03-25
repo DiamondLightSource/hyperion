@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import cache
+from typing import Any
 
 import numpy as np
 from dodal.devices.detector import DetectorParams
@@ -190,28 +191,40 @@ class ThreeDGridScan(SpecifiedGridScan):
     y_steps: int
     z_steps: int
 
+    def _delete_excess(self, values: dict[str, Any]):
+        del values["x_step_size_um"]
+        del values["x_steps"]
+        del values["y2_start_um"]
+        del values["y_step_size_um"]
+        del values["y_steps"]
+        del values["z2_start_um"]
+        del values["z_step_size_um"]
+        del values["z_steps"]
+
     @property
     @cache
     def scan_1(self) -> TwoDGridScan:
         values = self.dict()
-        values["y_start"] = self.y_start_um
-        values["z_start"] = self.z_start_um
+        values["y_start_um"] = self.y_start_um
+        values["z_start_um"] = self.z_start_um
         values["axis_1"] = XyzAxis.X
         values["axis_2"] = XyzAxis.Y
         values["axis_1_steps"] = self.x_steps
         values["axis_2_steps"] = self.y_steps
+        self._delete_excess(values)
         return TwoDGridScan(**values)
 
     @property
     @cache
     def scan_2(self) -> TwoDGridScan:
         values = self.dict()
-        values["y_start"] = self.y2_start_um
-        values["z_start"] = self.z2_start_um
+        values["y_start_um"] = self.y2_start_um
+        values["z_start_um"] = self.z2_start_um
         values["axis_1"] = XyzAxis.X
         values["axis_2"] = XyzAxis.Z
         values["axis_1_steps"] = self.x_steps
         values["axis_2_steps"] = self.z_steps
+        self._delete_excess(values)
         return TwoDGridScan(**values)
 
     def FGS_params(self) -> GridScanParams:
