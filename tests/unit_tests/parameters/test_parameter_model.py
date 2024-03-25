@@ -36,6 +36,15 @@ def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
     assert test_params.exposure_time_s == 0.02
 
 
+def test_serialise_deserialise(minimal_3d_gridscan_params):
+    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    serialised = json.loads(test_params.json())
+    deserialised = ThreeDGridScan(**serialised)
+    assert deserialised.demand_energy_ev is None
+    assert deserialised.visit == "cm12345"
+    assert deserialised.x_start_um == 0.0
+
+
 def test_param_version(minimal_3d_gridscan_params):
     with pytest.raises(ValidationError):
         minimal_3d_gridscan_params["parameter_model_version"] = "4.3.0"

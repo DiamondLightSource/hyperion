@@ -50,6 +50,7 @@ class RobotLoadThenCentre(GridCommon, WithSample): ...
 
 class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
     @property
+    @cache
     def detector_params(self):
         detector_params = {
             "expected_energy_ev": self.demand_energy_ev,
@@ -71,7 +72,8 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
         return DetectorParams(**detector_params)
 
     @property
-    def ispyb_params(  # pyright: ignore # cached_property[T] doesn't check subtypes of T
+    @cache
+    def ispyb_params(
         self,
     ):
         assert self.ispyb_extras.microns_per_pixel_x is not None
@@ -175,6 +177,7 @@ class TwoDGridScan(SpecifiedGridScan):
         return line_2 * ~line_1
 
     @property
+    @cache
     def scan_points(self):
         return ScanPath(self.scan_spec.calculate()).consume().midpoints
 
@@ -227,6 +230,8 @@ class ThreeDGridScan(SpecifiedGridScan):
         self._delete_excess(values)
         return TwoDGridScan(**values)
 
+    @property
+    @cache
     def FGS_params(self) -> GridScanParams:
         return GridScanParams(
             x_steps=self.x_steps,

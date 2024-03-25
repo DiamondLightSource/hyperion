@@ -7,7 +7,10 @@ from functools import cache
 from pathlib import Path
 from typing import TypeVar
 
-from dodal.devices.detector import DetectorParams, TriggerMode
+from dodal.devices.detector import (
+    DetectorParams,
+    TriggerMode,
+)
 from numpy.typing import NDArray
 from pydantic import BaseModel, Extra, Field, validator
 from scanspec.core import AxesPoints
@@ -71,6 +74,7 @@ class HyperionParameters(BaseModel):
         extra = Extra.forbid
         json_encoders = {
             ParameterVersion: lambda pv: str(pv),
+            NDArray: lambda a: a.tolist(),
         }
 
     def __hash__(self) -> int:
