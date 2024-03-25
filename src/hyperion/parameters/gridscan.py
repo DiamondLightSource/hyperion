@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import cached_property
 
+import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.zebra import (
@@ -18,6 +19,7 @@ from hyperion.parameters.components import (
     DiffractionExperiment,
     OptionalGonioAngleStarts,
     RotationAxis,
+    TemporaryIspybExtras,
     WithSample,
     WithScan,
     XyzAxis,
@@ -31,6 +33,8 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
     exposure_time_s: float = CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S
     use_roi_mode: bool = CONST.PARAM.GRIDSCAN.USE_ROI
     transmission_frac: float = 1
+    # field rather than inherited to make it easier to track when it can be removed:
+    ispyb_extras: TemporaryIspybExtras = TemporaryIspybExtras()
 
 
 class GridScanWithEdgeDetect(GridCommon, WithSample): ...
@@ -66,32 +70,40 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
     def ispyb_params(  # pyright: ignore # cached_property[T] doesn't check subtypes of T
         self,
     ):
-        ispyb_params = {
-            "visit_path": self.visit_directory,
-            "microns_per_pixel_x": 0,
-            "microns_per_pixel_y": 0,
-            "position": [0, 0, 0],
-            "transmission_fraction": self.transmission_frac,
-            "current_energy_ev": self.demand_energy_ev,
-            "beam_size_x": 0,
-            "beam_size_y": 0,
-            "focal_spot_size_x": 0,
-            "focal_spot_size_y": 0,
-            "comment": self.comment,
-            "resolution": 0,
-            "sample_id": self.sample_id,
-            "sample_barcode": "",
-            "flux": 0,
-            "undulator_gap": 0,
-            "synchrotron_mode": "",
-            "slit_gap_size_x": 0,
-            "slit_gap_size_y": 0,
-            "xtal_snapshots_omega_start": 0,
-            "xtal_snapshots_omega_end": 0,
-            "ispyb_experiment_type": "",
-            "upper_left": [0, 0, 0],
-        }
-        return GridscanIspybParams(**ispyb_params)
+        assert self.ispyb_extras.microns_per_pixel_x is not None
+        assert self.ispyb_extras.microns_per_pixel_y is not None
+        assert self.ispyb_extras.beam_size_x is not None
+        assert self.ispyb_extras.beam_size_y is not None
+        assert self.ispyb_extras.focal_spot_size_x is not None
+        assert self.ispyb_extras.focal_spot_size_y is not None
+        assert self.sample_id is not None
+        assert self.ispyb_extras.xtal_snapshots_omega_start is not None
+        assert self.ispyb_extras.xtal_snapshots_omega_end is not None
+        return GridscanIspybParams(
+            visit_path=str(self.visit_directory),
+            microns_per_pixel_x=self.ispyb_extras.microns_per_pixel_x,
+            microns_per_pixel_y=self.ispyb_extras.microns_per_pixel_y,
+            position=np.array(self.ispyb_extras.position),
+            transmission_fraction=self.transmission_frac,
+            current_energy_ev=self.demand_energy_ev,
+            beam_size_x=self.ispyb_extras.beam_size_x,
+            beam_size_y=self.ispyb_extras.beam_size_y,
+            focal_spot_size_x=self.ispyb_extras.focal_spot_size_x,
+            focal_spot_size_y=self.ispyb_extras.focal_spot_size_y,
+            comment=self.comment,
+            resolution=self.ispyb_extras.resolution,
+            sample_id=str(self.sample_id),
+            sample_barcode=self.ispyb_extras.sample_barcode,
+            flux=self.ispyb_extras.flux,
+            undulator_gap=self.ispyb_extras.undulator_gap,
+            synchrotron_mode=self.ispyb_extras.synchrotron_mode,
+            slit_gap_size_x=self.ispyb_extras.slit_gap_size_x,
+            slit_gap_size_y=self.ispyb_extras.slit_gap_size_x,
+            xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
+            xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,
+            ispyb_experiment_type=self.ispyb_extras.ispyb_experiment_type,
+            upper_left=np.array(self.ispyb_extras.upper_left),
+        )
 
 
 class TwoDGridScan(SpecifiedGridScan):

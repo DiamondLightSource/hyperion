@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TypeVar
 
 from dodal.devices.detector import DetectorParams
+from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 from scanspec.core import AxesPoints
 from semver import Version
@@ -131,3 +132,25 @@ class OptionalGonioAngleStarts(BaseModel):
     phi_start_deg: float | None = None
     chi_start_deg: float | None = None
     kappa_start_deg: float | None = None
+
+
+class TemporaryIspybExtras(BaseModel):
+    # for while we still need ISpyB params - to be removed in #1277 and/or #43
+    microns_per_pixel_x: int | None = None
+    microns_per_pixel_y: int | None = None
+    position: list[float] | NDArray | None = None
+    beam_size_x: float | None = None
+    beam_size_y: float | None = None
+    focal_spot_size_x: float | None = None
+    focal_spot_size_y: float | None = None
+    resolution: float | None = None
+    sample_barcode: str | None = None
+    flux: float | None = None
+    undulator_gap: float | None = None
+    synchrotron_mode: str | None = None
+    slit_gap_size_x: float | None = None
+    slit_gap_size_y: float | None = None
+    xtal_snapshots_omega_start: list[str] | None = None
+    xtal_snapshots_omega_end: list[str] | None = None
+    ispyb_experiment_type: str | None = None
+    upper_left: list[float] | NDArray | None = None
