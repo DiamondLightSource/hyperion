@@ -157,7 +157,8 @@ def setup_panda_for_flyscan(
 
     LOGGER.info(f"Setting PandA sequencer values: {str(table)}")
 
-    yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
+    # Wait here since table values should be set before we arm the sequencer block
+    yield from bps.abs_set(panda.seq[1].table, table, wait=True)
 
     # Wait here since we need PCAP to be enabled before armed
     yield from bps.abs_set(panda.pcap.enable, Enabled.ENABLED.value, wait=True)  # type: ignore
