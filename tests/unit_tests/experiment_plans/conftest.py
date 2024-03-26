@@ -44,7 +44,7 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 BASIC_PRE_SETUP_DOC = {
     "undulator_current_gap": 0,
     "undulator_gap": 0,
-    "synchrotron_machine_status_synchrotron_mode": 0,
+    "synchrotron-synchrotron_mode": 0,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
     "robot-barcode": "BARCODE",

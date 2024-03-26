@@ -25,7 +25,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
@@ -270,7 +270,11 @@ def s4_slit_gaps():
 
 @pytest.fixture
 def synchrotron():
-    return i03.synchrotron(fake_with_ophyd_sim=True)
+    RunEngine()  # A RE is needed to start the bluesky loop
+    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
+    set_sim_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
+    set_sim_value(synchrotron.topup_start_countdown, 10)
+    return synchrotron
 
 
 @pytest.fixture

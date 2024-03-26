@@ -67,7 +67,7 @@ class TestData:
         "data": {
             "s4_slit_gaps_xgap": 0.1234,
             "s4_slit_gaps_ygap": 0.2345,
-            "synchrotron_machine_status_synchrotron_mode": "test",
+            "synchrotron-synchrotron_mode": "test",
             "undulator_current_gap": 1.234,
             "robot-barcode": "BARCODE",
         },
@@ -138,7 +138,7 @@ class TestData:
         "data": {
             "s4_slit_gaps_xgap": 0.1234,
             "s4_slit_gaps_ygap": 0.2345,
-            "synchrotron_machine_status_synchrotron_mode": "test",
+            "synchrotron-synchrotron_mode": "test",
             "undulator_current_gap": 1.234,
             "robot-barcode": "BARCODE",
         },
