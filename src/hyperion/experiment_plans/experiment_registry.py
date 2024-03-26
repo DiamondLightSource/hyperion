@@ -19,28 +19,25 @@ from hyperion.external_interaction.callbacks.common.callback_util import (
     create_gridscan_callbacks,
     create_rotation_callbacks,
 )
+from hyperion.parameters.gridscan import (
+    GridScanWithEdgeDetect,
+    PinTipCentreThenXrayCentre,
+    RobotLoadThenCentre,
+    ThreeDGridScan,
+)
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
     GridScanWithEdgeDetectParams,
 )
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandAGridscanInternalParameters,
-)
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
-    PinCentreThenXrayCentreInternalParameters,
     PinCentreThenXrayCentreParams,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
     RotationScanParams,
 )
 from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
-    WaitForRobotLoadThenCentreInternalParameters,
     WaitForRobotLoadThenCentreParams,
 )
+from hyperion.parameters.rotation import RotationScan
 
 
 def not_implemented():
@@ -54,12 +51,11 @@ def do_nothing():
 class ExperimentRegistryEntry(TypedDict):
     setup: Callable
     internal_param_type: type[
-        GridscanInternalParameters
-        | GridScanWithEdgeDetectInternalParameters
-        | RotationInternalParameters
-        | PinCentreThenXrayCentreInternalParameters
-        | WaitForRobotLoadThenCentreInternalParameters
-        | PandAGridscanInternalParameters
+        ThreeDGridScan
+        | GridScanWithEdgeDetect
+        | RotationScan
+        | PinTipCentreThenXrayCentre
+        | RobotLoadThenCentre
     ]
     experiment_param_type: type[AbstractExperimentParameterBase]
     callbacks_factory: CallbacksFactory
@@ -69,37 +65,37 @@ EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "panda_flyscan_xray_centre": {
         "setup": panda_flyscan_xray_centre_plan.create_devices,
-        "internal_param_type": PandAGridscanInternalParameters,
+        "internal_param_type": ThreeDGridScan,
         "experiment_param_type": PandAGridScanParams,
         "callbacks_factory": create_gridscan_callbacks,
     },
     "flyscan_xray_centre": {
         "setup": flyscan_xray_centre_plan.create_devices,
-        "internal_param_type": GridscanInternalParameters,
+        "internal_param_type": ThreeDGridScan,
         "experiment_param_type": GridScanParams,
         "callbacks_factory": create_gridscan_callbacks,
     },
     "grid_detect_then_xray_centre": {
         "setup": grid_detect_then_xray_centre_plan.create_devices,
-        "internal_param_type": GridScanWithEdgeDetectInternalParameters,
+        "internal_param_type": GridScanWithEdgeDetect,
         "experiment_param_type": GridScanWithEdgeDetectParams,
         "callbacks_factory": create_gridscan_callbacks,
     },
     "rotation_scan": {
         "setup": rotation_scan_plan.create_devices,
-        "internal_param_type": RotationInternalParameters,
+        "internal_param_type": RotationScan,
         "experiment_param_type": RotationScanParams,
         "callbacks_factory": create_rotation_callbacks,
     },
     "pin_tip_centre_then_xray_centre": {
         "setup": pin_centre_then_xray_centre_plan.create_devices,
-        "internal_param_type": PinCentreThenXrayCentreInternalParameters,
+        "internal_param_type": PinTipCentreThenXrayCentre,
         "experiment_param_type": PinCentreThenXrayCentreParams,
         "callbacks_factory": create_gridscan_callbacks,
     },
     "wait_for_robot_load_then_centre": {
         "setup": wait_for_robot_load_then_centre_plan.create_devices,
-        "internal_param_type": WaitForRobotLoadThenCentreInternalParameters,
+        "internal_param_type": RobotLoadThenCentre,
         "experiment_param_type": WaitForRobotLoadThenCentreParams,
         "callbacks_factory": create_gridscan_callbacks,
     },
