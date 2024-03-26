@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 from abc import ABC, abstractmethod
 from enum import Enum
-from functools import cache
 from pathlib import Path
 from typing import TypeVar
 
@@ -119,12 +118,10 @@ class DiffractionExperiment(HyperionParameters):
         )
 
     @property
-    @cache
     @abstractmethod
     def detector_params(self) -> DetectorParams: ...
 
     @property
-    @cache
     @abstractmethod
     def ispyb_params(self) -> IspybParams:  # Soon to remove
         ...
@@ -132,7 +129,6 @@ class DiffractionExperiment(HyperionParameters):
 
 class WithScan(BaseModel, ABC):
     @property
-    @cache
     @abstractmethod
     def scan_points(self) -> AxesPoints: ...
 

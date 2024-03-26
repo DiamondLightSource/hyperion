@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import cache
 from typing import Any
 
 import numpy as np
@@ -50,7 +49,6 @@ class RobotLoadThenCentre(GridCommon, WithSample): ...
 
 class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
     @property
-    @cache
     def detector_params(self):
         detector_params = {
             "expected_energy_ev": self.demand_energy_ev,
@@ -72,7 +70,6 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
         return DetectorParams(**detector_params)
 
     @property
-    @cache
     def ispyb_params(
         self,
     ):
@@ -177,7 +174,6 @@ class TwoDGridScan(SpecifiedGridScan):
         return line_2 * ~line_1
 
     @property
-    @cache
     def scan_points(self):
         return ScanPath(self.scan_spec.calculate()).consume().midpoints
 
@@ -205,7 +201,6 @@ class ThreeDGridScan(SpecifiedGridScan):
         del values["z_steps"]
 
     @property
-    @cache
     def scan_1(self) -> TwoDGridScan:
         values = self.dict()
         values["y_start_um"] = self.y_start_um
@@ -218,7 +213,6 @@ class ThreeDGridScan(SpecifiedGridScan):
         return TwoDGridScan(**values)
 
     @property
-    @cache
     def scan_2(self) -> TwoDGridScan:
         values = self.dict()
         values["y_start_um"] = self.y2_start_um
@@ -231,7 +225,6 @@ class ThreeDGridScan(SpecifiedGridScan):
         return TwoDGridScan(**values)
 
     @property
-    @cache
     def FGS_params(self) -> GridScanParams:
         return GridScanParams(
             x_steps=self.x_steps,
@@ -240,22 +233,21 @@ class ThreeDGridScan(SpecifiedGridScan):
             x_step_size=self.x_step_size_um,
             y_step_size=self.y_step_size_um,
             z_step_size=self.z_step_size_um,
-            x_start=self.scan_1.axis_1_start_um,  # pyright: ignore # bug in pyright https://github.com/microsoft/pyright/issues/6456
-            y1_start=self.scan_1.axis_2_start_um,  # pyright: ignore
-            z1_start=self.scan_1.normal_axis_start,  # pyright: ignore
-            y2_start=self.scan_2.normal_axis_start,  # pyright: ignore
-            z2_start=self.scan_2.axis_2_start_um,  # pyright: ignore
+            x_start=self.scan_1.axis_1_start_um,
+            y1_start=self.scan_1.axis_2_start_um,
+            z1_start=self.scan_1.normal_axis_start,
+            y2_start=self.scan_2.normal_axis_start,
+            z2_start=self.scan_2.axis_2_start_um,
             set_stub_offsets=False,
             dwell_time_ms=self.exposure_time_s,
         )
 
     @property
     def num_images(self) -> int:
-        return self.scan_1.num_images + self.scan_2.num_images  # pyright: ignore
+        return self.scan_1.num_images + self.scan_2.num_images
 
     @property
-    @cache
-    def scan_points(self):  # pyright: ignore
+    def scan_points(self):
         # TODO: requires making the points for the 2D scans 3D points
         return NotImplemented
 
