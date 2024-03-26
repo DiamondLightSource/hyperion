@@ -12,13 +12,14 @@ from hyperion.experiment_plans.wait_for_robot_load_then_centre_plan import (
     WaitForRobotLoadThenCentreComposite,
     wait_for_robot_load_then_centre,
 )
-from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
 from hyperion.parameters.plan_specific.wait_for_robot_load_then_center_params import (
     WaitForRobotLoadThenCentreInternalParameters,
 )
+
+from ...conftest import raw_params_from_file
 
 
 @pytest.fixture
@@ -81,7 +82,8 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
     assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
     assert isclose(
-        params_passed.hyperion_params.ispyb_params.resolution, 2.11338  # type: ignore
+        params_passed.hyperion_params.ispyb_params.resolution,
+        2.11338,  # type: ignore
     )
 
 

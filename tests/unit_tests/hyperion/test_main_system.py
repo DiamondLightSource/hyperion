@@ -18,7 +18,6 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.zebra import Zebra
 from flask.testing import FlaskClient
 
-import hyperion.parameters.external_parameters
 from hyperion.__main__ import (
     Actions,
     BlueskyRunner,
@@ -36,6 +35,8 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 from hyperion.utils.context import device_composite_from_context
 
+from ...conftest import raw_params_from_file
+
 FGS_ENDPOINT = "/flyscan_xray_centre/"
 START_ENDPOINT = FGS_ENDPOINT + Actions.START.value
 STOP_ENDPOINT = Actions.STOP.value
@@ -43,7 +44,7 @@ STATUS_ENDPOINT = Actions.STATUS.value
 SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
-    hyperion.parameters.external_parameters.from_file(
+    raw_params_from_file(
         "tests/test_data/parameter_json_files/test_parameter_defaults.json"
     )
 )

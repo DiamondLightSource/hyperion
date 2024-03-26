@@ -38,16 +38,17 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+
+from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
 def params():
     return RotationInternalParameters(
-        **from_file(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
