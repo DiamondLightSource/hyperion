@@ -1,3 +1,4 @@
+import json
 from abc import abstractmethod
 from typing import Any
 
@@ -7,7 +8,6 @@ from pydantic import BaseModel, root_validator
 from semver import Version
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
-from hyperion.parameters.external_parameters import from_json
 
 
 class ParameterVersion(Version):
@@ -134,7 +134,7 @@ class InternalParameters(BaseModel):
 
     @classmethod
     def from_json(cls, data):
-        return cls(**(from_json(data)))
+        return cls(**(json.loads(data)))
 
     @root_validator(pre=True)
     def _preprocess_all(cls, values):
