@@ -71,6 +71,7 @@ class I03Constants:
     INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
     BASE_DATA_DIR = "/tmp/dls/i03/data/" if TEST_MODE else "/dls/i03/data/"
     DETECTOR = "EIGER2_X_16M"
+    SHUTTER_TIME_S = 0.06
 
 
 @dataclass(frozen=True)

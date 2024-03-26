@@ -12,6 +12,7 @@
     "sample_id": 123456,
     "run_number": 0,
     "use_roi_mode": false,
+    "transmission_frac": 1.0,
     "zocalo_environment": "dev_artemis",
     "x_steps": 5,
     "y_steps": 10,
@@ -52,7 +53,6 @@
             "test_2",
             "test_3"
         ],
-        "transmission_fraction": 1.0,
         "flux": 10.0,
         "beam_size_x": 1.0,
         "beam_size_y": 1.0,

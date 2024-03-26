@@ -4,6 +4,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.zebra import (
     RotationDirection,
 )
+from pydantic import Field
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -14,6 +15,7 @@ from hyperion.parameters.components import (
     OptionalGonioAngleStarts,
     OptionalXyzStarts,
     RotationAxis,
+    TemporaryIspybExtras,
     WithSample,
     WithScan,
 )
@@ -32,25 +34,25 @@ class RotationScan(
     rotation_angle_deg: float
     rotation_increment_deg: float
     rotation_direction: RotationDirection
+    shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
     transmission_frac: float
+    ispyb_extras: TemporaryIspybExtras
 
     @property
     def detector_params(self):
-        assert (
-            self._puck is not None and self._pin is not None
-        ), "Must fill puck and pin details before using"
         params = {
             "expected_energy_ev": self.demand_energy_ev,
             "exposure_time": self.exposure_time_s,
-            "directory": self.visit_directory / "auto" / str(self.sample_id),
+            "directory": str(self.visit_directory / "auto" / str(self.sample_id)),
             "prefix": self.file_name,
             "detector_distance": self.detector_distance_mm,
             "omega_start": self.omega_start_deg,
             "omega_increment": self.rotation_increment_deg,
-            "num_images_per_trigger": 0,
+            "num_images_per_trigger": self.num_images,
             "num_triggers": 1,
             "use_roi_mode": False,
-            "det_dist_to_beam_converter_path": CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH,
+            "det_dist_to_beam_converter_path": self.det_dist_to_beam_converter_path
+            or CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH,
             "run_number": self.run_number,
         }
         return DetectorParams(**params)
@@ -58,29 +60,28 @@ class RotationScan(
     @property
     def ispyb_params(self):  # pyright: ignore
         ispyb_params = {
-            "visit_path": self.visit_directory,
-            "microns_per_pixel_x": 0,
-            "microns_per_pixel_y": 0,
-            "position": [0, 0, 0],
+            "visit_path": str(self.visit_directory),
+            "microns_per_pixel_x": self.ispyb_extras.microns_per_pixel_x,
+            "microns_per_pixel_y": self.ispyb_extras.microns_per_pixel_y,
+            "position": self.ispyb_extras.position,
             "transmission_fraction": self.transmission_frac,
             "current_energy_ev": self.demand_energy_ev,
-            "beam_size_x": 0,
-            "beam_size_y": 0,
-            "focal_spot_size_x": 0,
-            "focal_spot_size_y": 0,
+            "beam_size_x": self.ispyb_extras.beam_size_x,
+            "beam_size_y": self.ispyb_extras.beam_size_y,
+            "focal_spot_size_x": self.ispyb_extras.focal_spot_size_x,
+            "focal_spot_size_y": self.ispyb_extras.focal_spot_size_y,
             "comment": self.comment,
-            "resolution": 0,
-            "sample_id": self.sample_id,
-            "sample_barcode": "",
-            "flux": 0,
-            "undulator_gap": 0,
-            "synchrotron_mode": "",
-            "slit_gap_size_x": 0,
-            "slit_gap_size_y": 0,
-            "xtal_snapshots_omega_start": 0,
-            "xtal_snapshots_omega_end": 0,
+            "resolution": self.ispyb_extras.resolution,
+            "sample_id": str(self.sample_id),
+            "sample_barcode": self.ispyb_extras.sample_barcode,
+            "undulator_gap": self.ispyb_extras.undulator_gap,
+            "synchrotron_mode": self.ispyb_extras.synchrotron_mode,
+            "slit_gap_size_x": self.ispyb_extras.slit_gap_size_x,
+            "slit_gap_size_y": self.ispyb_extras.slit_gap_size_y,
+            "xtal_snapshots_omega_start": self.ispyb_extras.xtal_snapshots_omega_start,
+            "xtal_snapshots_omega_end": self.ispyb_extras.xtal_snapshots_omega_end,
             "ispyb_experiment_type": "SAD",
-            "upper_left": [0, 0, 0],
+            "upper_left": self.ispyb_extras.upper_left,
         }
         return RotationIspybParams(**ispyb_params)
 

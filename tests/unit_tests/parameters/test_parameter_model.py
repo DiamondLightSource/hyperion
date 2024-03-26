@@ -10,6 +10,10 @@ from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
+)
+from hyperion.parameters.rotation import RotationScan
 
 
 @pytest.fixture
@@ -60,7 +64,7 @@ def test_param_version(minimal_3d_gridscan_params):
         _ = ThreeDGridScan(**minimal_3d_gridscan_params)
 
 
-def test_new_params_equals_old():
+def test_new_gridscan_params_equals_old():
     with open("tests/test_data/parameter_json_files/good_test_parameters.json") as f:
         old_json_data = json.loads(f.read())
     with open(
@@ -70,6 +74,30 @@ def test_new_params_equals_old():
 
     old_params = GridscanInternalParameters(**old_json_data)
     new_params = ThreeDGridScan(**new_json_data)
+
+    old_detector_params = old_params.hyperion_params.detector_params
+    new_detector_params = new_params.detector_params
+
+    assert isinstance(
+        old_detector_params.beam_xy_converter, DetectorDistanceToBeamXYConverter
+    )
+
+    assert old_detector_params == new_detector_params
+    assert old_params.hyperion_params.ispyb_params == new_params.ispyb_params
+
+
+def test_new_rotation_params_equals_old():
+    with open(
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+    ) as f:
+        old_json_data = json.loads(f.read())
+    with open(
+        "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+    ) as f:
+        new_json_data = json.loads(f.read())
+
+    old_params = RotationInternalParameters(**old_json_data)
+    new_params = RotationScan(**new_json_data)
 
     old_detector_params = old_params.hyperion_params.detector_params
     new_detector_params = new_params.detector_params

@@ -166,6 +166,7 @@ class TemporaryIspybExtras(BaseModel):
     # for while we still need ISpyB params - to be removed in #1277 and/or #43
     class Config:
         arbitrary_types_allowed = True
+        extra = Extra.forbid
 
     microns_per_pixel_x: int | None = None
     microns_per_pixel_y: int | None = None
@@ -183,5 +184,6 @@ class TemporaryIspybExtras(BaseModel):
     slit_gap_size_y: float | None = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
+    xtal_snapshots: list[str] | None = None
     ispyb_experiment_type: str | None = None
     upper_left: list[float] | NDArray | None = None
