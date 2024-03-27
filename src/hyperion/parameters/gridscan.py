@@ -67,15 +67,6 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
     def ispyb_params(
         self,
     ):
-        assert self.ispyb_extras.microns_per_pixel_x is not None
-        assert self.ispyb_extras.microns_per_pixel_y is not None
-        assert self.ispyb_extras.beam_size_x is not None
-        assert self.ispyb_extras.beam_size_y is not None
-        assert self.ispyb_extras.focal_spot_size_x is not None
-        assert self.ispyb_extras.focal_spot_size_y is not None
-        assert self.sample_id is not None
-        assert self.ispyb_extras.xtal_snapshots_omega_start is not None
-        assert self.ispyb_extras.xtal_snapshots_omega_end is not None
         return GridscanIspybParams(
             visit_path=str(self.visit_directory),
             microns_per_pixel_x=self.ispyb_extras.microns_per_pixel_x,
@@ -96,18 +87,19 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
             synchrotron_mode=self.ispyb_extras.synchrotron_mode,
             slit_gap_size_x=self.ispyb_extras.slit_gap_size_x,
             slit_gap_size_y=self.ispyb_extras.slit_gap_size_x,
-            xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
-            xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,
+            xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start
+            or [],
+            xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
             ispyb_experiment_type=self.ispyb_extras.ispyb_experiment_type,
             upper_left=np.array(self.ispyb_extras.upper_left),
         )
 
 
 class TwoDGridScan(SpecifiedGridScan):
-    demand_energy_ev: float | None = None
-    omega_start_deg: float | None = None
-    axis_1_step_size_um: float = CONST.PARAM.GRIDSCAN.APERTURE_SIZE
-    axis_2_step_size_um: float = CONST.PARAM.GRIDSCAN.APERTURE_SIZE
+    demand_energy_ev: float | None = Field(default=None)
+    omega_start_deg: float | None = Field(default=None)
+    axis_1_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
+    axis_2_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
     axis_1: XyzAxis = XyzAxis.X
     axis_2: XyzAxis = XyzAxis.Y
     axis_1_steps: int
@@ -123,6 +115,7 @@ class TwoDGridScan(SpecifiedGridScan):
 
     @property
     def normal_axis(self) -> XyzAxis:
+        """The axis not used in the gridscan, e.g. Z for a scan in Y and X"""
         return ({XyzAxis.X, XyzAxis.Y, XyzAxis.Z} ^ {self.axis_1, self.axis_2}).pop()
 
     @property
