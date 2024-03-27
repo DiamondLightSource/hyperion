@@ -166,7 +166,6 @@ def pin_tip_centre_plan(
     # See #673 for improvements
     yield from bps.sleep(0.3)
 
-    # Set up the old pin tip centring as we will need it for grid detection. Remove once #1068 is done
     yield from pre_centring_setup_oav(oav, oav_params, pin_tip_setup)
 
     tip = yield from move_pin_into_view(pin_tip_detect, smargon)
