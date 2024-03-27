@@ -54,6 +54,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -143,7 +144,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         RE: RunEngine,
         fake_fgs_composite,
-        test_fgs_params,
+        test_new_fgs_params,
         mock_ispyb,
     ):
         ispyb_callback = GridscanISPyBCallback()
@@ -157,7 +158,7 @@ class TestFlyscanXrayCentrePlan:
                 error = AssertionError("Test Exception")
                 mock_set.return_value = FailedStatus(error)
 
-                RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+                RE(flyscan_xray_centre(fake_fgs_composite, test_new_fgs_params))
 
         assert exc.value.args[0] is error
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(
@@ -689,9 +690,12 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff,
         mock_abs_set,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_new_fgs_params: ThreeDGridScan,
         RE_with_subs: ReWithSubs,
     ):
+        test_new_fgs_params.x_steps = 8
+        test_new_fgs_params.y_steps = 10
+        test_new_fgs_params.z_steps = 12
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
@@ -713,7 +717,7 @@ class TestFlyscanXrayCentrePlan:
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
-            RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+            RE(flyscan_xray_centre(fake_fgs_composite, test_new_fgs_params))
 
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 

@@ -21,6 +21,10 @@ from hyperion.parameters.components import (
     XyzStarts,
 )
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.plan_specific.gridscan_internal_params import (
+    GridscanHyperionParameters,
+    GridscanInternalParameters,
+)
 
 
 class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
@@ -194,7 +198,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             y2_start=self.y2_start_um,
             z2_start=self.z2_start_um,
             set_stub_offsets=False,
-            dwell_time_ms=self.exposure_time_s,
+            dwell_time_ms=self.exposure_time_s * 1000,
         )
 
     @property
@@ -239,3 +243,17 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     @property
     def num_images(self) -> int:
         return len(self.scan_points["sam_x"])
+
+    def old_parameters(self):
+        return GridscanInternalParameters(
+            params_version=str(self.parameter_model_version),  # type: ignore
+            hyperion_params=GridscanHyperionParameters(
+                zocalo_environment=self.zocalo_environment,
+                beamline=self.beamline,
+                insertion_prefix=self.insertion_prefix,
+                experiment_type="flyscan_xray_centre",
+                detector_params=self.detector_params,
+                ispyb_params=self.ispyb_params,
+            ),
+            experiment_params=self.FGS_params,
+        )
