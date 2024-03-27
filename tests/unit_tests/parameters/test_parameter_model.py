@@ -20,9 +20,9 @@ from hyperion.parameters.rotation import RotationScan
 def minimal_3d_gridscan_params():
     return {
         "sample_id": 123,
-        "x_start_um": 0,
-        "y_start_um": 0,
-        "z_start_um": 0,
+        "x_start_um": 0.123,
+        "y_start_um": 0.777,
+        "z_start_um": 0.05,
         "parameter_model_version": "5.0.0",
         "visit": "cm12345",
         "file_name": "test_file_name",
@@ -31,6 +31,15 @@ def minimal_3d_gridscan_params():
         "x_steps": 5,
         "y_steps": 7,
         "z_steps": 9,
+        "ispyb_extras": {
+            "microns_per_pixel_x": 0,
+            "microns_per_pixel_y": 0,
+            "position": [0, 0, 0],
+            "beam_size_x": 0,
+            "beam_size_y": 0,
+            "focal_spot_size_x": 0,
+            "focal_spot_size_y": 0,
+        },
     }
 
 

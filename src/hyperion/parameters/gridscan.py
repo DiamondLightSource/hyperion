@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.zebra import (
-    RotationDirection,
-)
 from pydantic import validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -18,7 +13,6 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
 from hyperion.parameters.components import (
     DiffractionExperiment,
     OptionalGonioAngleStarts,
-    RotationAxis,
     TemporaryIspybExtras,
     WithSample,
     WithScan,
@@ -34,7 +28,7 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
     use_roi_mode: bool = CONST.PARAM.GRIDSCAN.USE_ROI
     transmission_frac: float = 1
     # field rather than inherited to make it easier to track when it can be removed:
-    ispyb_extras: TemporaryIspybExtras = TemporaryIspybExtras()
+    ispyb_extras: TemporaryIspybExtras
 
 
 class GridScanWithEdgeDetect(GridCommon, WithSample): ...
@@ -190,40 +184,6 @@ class ThreeDGridScan(SpecifiedGridScan):
     y_steps: int
     z_steps: int
 
-    def _delete_excess(self, values: dict[str, Any]):
-        del values["x_step_size_um"]
-        del values["x_steps"]
-        del values["y2_start_um"]
-        del values["y_step_size_um"]
-        del values["y_steps"]
-        del values["z2_start_um"]
-        del values["z_step_size_um"]
-        del values["z_steps"]
-
-    @property
-    def scan_1(self) -> TwoDGridScan:
-        values = self.dict()
-        values["y_start_um"] = self.y_start_um
-        values["z_start_um"] = self.z_start_um
-        values["axis_1"] = XyzAxis.X
-        values["axis_2"] = XyzAxis.Y
-        values["axis_1_steps"] = self.x_steps
-        values["axis_2_steps"] = self.y_steps
-        self._delete_excess(values)
-        return TwoDGridScan(**values)
-
-    @property
-    def scan_2(self) -> TwoDGridScan:
-        values = self.dict()
-        values["y_start_um"] = self.y2_start_um
-        values["z_start_um"] = self.z2_start_um
-        values["axis_1"] = XyzAxis.X
-        values["axis_2"] = XyzAxis.Z
-        values["axis_1_steps"] = self.x_steps
-        values["axis_2_steps"] = self.z_steps
-        self._delete_excess(values)
-        return TwoDGridScan(**values)
-
     @property
     def FGS_params(self) -> GridScanParams:
         return GridScanParams(
@@ -233,31 +193,38 @@ class ThreeDGridScan(SpecifiedGridScan):
             x_step_size=self.x_step_size_um,
             y_step_size=self.y_step_size_um,
             z_step_size=self.z_step_size_um,
-            x_start=self.scan_1.axis_1_start_um,
-            y1_start=self.scan_1.axis_2_start_um,
-            z1_start=self.scan_1.normal_axis_start,
-            y2_start=self.scan_2.normal_axis_start,
-            z2_start=self.scan_2.axis_2_start_um,
+            x_start=self.x_start_um,
+            y1_start=self.y_start_um,
+            z1_start=self.z_start_um,
+            y2_start=self.y2_start_um,
+            z2_start=self.z2_start_um,
             set_stub_offsets=False,
             dwell_time_ms=self.exposure_time_s,
         )
 
     @property
-    def num_images(self) -> int:
-        return self.scan_1.num_images + self.scan_2.num_images
+    def scan_spec(self):
+        x_end = self.x_start_um + self.x_step_size_um * self.x_steps
+        y1_end = self.y_start_um + self.y_step_size_um * self.y_steps
+        z2_end = self.z2_start_um + self.z_step_size_um * self.z_steps
+
+        scan_1_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+        scan_1_z = Line("sam_z", self.z_start_um, self.z_start_um, self.x_steps)
+        scan_1_y = Line("sam_y", self.y_start_um, y1_end, self.y_steps)
+        scan_1 = scan_1_x.zip(scan_1_z) * ~scan_1_y
+
+        scan_2_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+        scan_2_y = Line("sam_y", self.y2_start_um, self.y2_start_um, self.x_steps)
+        scan_2_z = Line("sam_z", self.z2_start_um, z2_end, self.z_steps)
+        scan_2 = scan_2_x.zip(scan_2_y) * ~scan_2_z
+
+        return scan_1.concat(scan_2)
 
     @property
     def scan_points(self):
-        # TODO: requires making the points for the 2D scans 3D points
-        return NotImplemented
+        points = ScanPath(self.scan_spec.calculate()).consume().midpoints
+        return points
 
-
-# Doesn't yet exist but will look something like this
-class DoOneUDC(GridCommon):
-    """Diffraction data is for grids at start"""
-
-    rotation_exposure_s: float
-    rotation_axis: RotationAxis = RotationAxis.OMEGA
-    rotation_angle_deg: float
-    rotation_increment_deg: float
-    rotation_direction: RotationDirection
+    @property
+    def num_images(self) -> int:
+        return len(self.scan_points["sam_x"])

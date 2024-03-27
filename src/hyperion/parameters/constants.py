@@ -46,7 +46,7 @@ class TriggerConstants:
 
 @dataclass(frozen=True)
 class GridscanParamConstants:
-    WIDTH_UM = 20.0
+    WIDTH_UM = 600.0
     EXPOSURE_TIME_S = 0.02
     USE_ROI = True
     APERTURE_SIZE = 20.0

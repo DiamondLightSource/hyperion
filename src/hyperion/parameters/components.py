@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import datetime
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TypeVar
+from typing import Sequence, SupportsInt, TypeVar
 
 from dodal.devices.detector import (
     DetectorParams,
@@ -109,7 +109,7 @@ class DiffractionExperiment(HyperionParameters):
     trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
-    run_number: float | None = Field(default=None, ge=0)
+    run_number: int | None = Field(default=None, ge=0)
 
     @property
     def visit_directory(self) -> Path:
@@ -127,7 +127,7 @@ class DiffractionExperiment(HyperionParameters):
         ...
 
 
-class WithScan(BaseModel, ABC):
+class WithScan(BaseModel):
     @property
     @abstractmethod
     def scan_points(self) -> AxesPoints: ...
@@ -135,6 +135,12 @@ class WithScan(BaseModel, ABC):
     @property
     @abstractmethod
     def num_images(self) -> int: ...
+
+
+class SplitScan(BaseModel):
+    @property
+    @abstractmethod
+    def scan_indices(self) -> Sequence[SupportsInt]: ...
 
 
 class WithSample(BaseModel):
@@ -168,13 +174,13 @@ class TemporaryIspybExtras(BaseModel):
         arbitrary_types_allowed = True
         extra = Extra.forbid
 
-    microns_per_pixel_x: int | None = None
-    microns_per_pixel_y: int | None = None
-    position: list[float] | NDArray | None = None
-    beam_size_x: float | None = None
-    beam_size_y: float | None = None
-    focal_spot_size_x: float | None = None
-    focal_spot_size_y: float | None = None
+    microns_per_pixel_x: int
+    microns_per_pixel_y: int
+    position: list[float] | NDArray
+    beam_size_x: float
+    beam_size_y: float
+    focal_spot_size_x: float
+    focal_spot_size_y: float
     resolution: float | None = None
     sample_barcode: str | None = None
     flux: float | None = None

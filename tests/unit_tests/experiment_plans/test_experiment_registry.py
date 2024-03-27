@@ -1,7 +1,7 @@
 from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
 
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY, do_nothing
-from hyperion.parameters.internal_parameters import InternalParameters
+from hyperion.parameters.components import HyperionParameters
 
 
 def test_experiment_registry_param_types():
@@ -11,7 +11,7 @@ def test_experiment_registry_param_types():
             AbstractExperimentParameterBase,
         )
         assert issubclass(
-            PLAN_REGISTRY[plan]["internal_param_type"], InternalParameters
+            PLAN_REGISTRY[plan]["internal_param_type"], HyperionParameters
         )
 
 
