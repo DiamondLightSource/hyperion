@@ -172,7 +172,7 @@ class TwoDGridScan(SpecifiedGridScan):
 
 class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     demand_energy_ev: float | None = Field(default=None)
-    omega_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_1)
+    omega_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_1)  # type :ignore
     omega2_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_2)
     x_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
     y_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
