@@ -140,7 +140,9 @@ class WithScan(BaseModel):
 class SplitScan(BaseModel):
     @property
     @abstractmethod
-    def scan_indices(self) -> Sequence[SupportsInt]: ...
+    def scan_indices(self) -> Sequence[SupportsInt]:
+        """Should return the first index of each scan (i.e. for each nexus file)"""
+        ...
 
 
 class WithSample(BaseModel):

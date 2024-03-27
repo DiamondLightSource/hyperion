@@ -13,6 +13,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
 from hyperion.parameters.components import (
     DiffractionExperiment,
     OptionalGonioAngleStarts,
+    SplitScan,
     TemporaryIspybExtras,
     WithSample,
     WithScan,
@@ -165,7 +166,7 @@ class TwoDGridScan(SpecifiedGridScan):
         return ScanPath(self.scan_spec.calculate()).consume().midpoints
 
 
-class ThreeDGridScan(SpecifiedGridScan):
+class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     demand_energy_ev: float | None = Field(default=None)
     omega_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_1)
     omega2_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_2)
@@ -197,10 +198,9 @@ class ThreeDGridScan(SpecifiedGridScan):
         )
 
     @property
-    def scan_spec(self):
+    def scan_1(self):
         x_end = self.x_start_um + self.x_step_size_um * self.x_steps
         y1_end = self.y_start_um + self.y_step_size_um * self.y_steps
-        z2_end = self.z2_start_um + self.z_step_size_um * self.z_steps
 
         scan_1_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
         scan_1_omega = Line(
@@ -208,7 +208,12 @@ class ThreeDGridScan(SpecifiedGridScan):
         )
         scan_1_z = Line("sam_z", self.z_start_um, self.z_start_um, self.x_steps)
         scan_1_y = Line("sam_y", self.y_start_um, y1_end, self.y_steps)
-        scan_1 = scan_1_x.zip(scan_1_z).zip(scan_1_omega) * ~scan_1_y
+        return scan_1_x.zip(scan_1_z).zip(scan_1_omega) * ~scan_1_y
+
+    @property
+    def scan_2(self):
+        x_end = self.x_start_um + self.x_step_size_um * self.x_steps
+        z2_end = self.z2_start_um + self.z_step_size_um * self.z_steps
 
         scan_2_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
         scan_2_omega = Line(
@@ -216,9 +221,16 @@ class ThreeDGridScan(SpecifiedGridScan):
         )
         scan_2_y = Line("sam_y", self.y2_start_um, self.y2_start_um, self.x_steps)
         scan_2_z = Line("sam_z", self.z2_start_um, z2_end, self.z_steps)
-        scan_2 = scan_2_x.zip(scan_2_y).zip(scan_2_omega) * ~scan_2_z
+        return scan_2_x.zip(scan_2_y).zip(scan_2_omega) * ~scan_2_z
 
-        return scan_1.concat(scan_2)
+    @property
+    def scan_indices(self):
+        """The first index of each gridscan"""
+        return [0, len(ScanPath(self.scan_1.calculate()).consume().midpoints["sam_x"])]
+
+    @property
+    def scan_spec(self):
+        return self.scan_1.concat(self.scan_2)
 
     @property
     def scan_points(self):
