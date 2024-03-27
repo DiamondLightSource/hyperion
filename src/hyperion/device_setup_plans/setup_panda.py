@@ -140,12 +140,16 @@ def setup_panda_for_flyscan(
 
     # Home the PandA X encoder using current motor position
     yield from bps.abs_set(
-        panda.inenc[1].setp, initial_x * MM_TO_ENCODER_COUNTS, wait=True  # type: ignore
+        panda.inenc[1].setp,
+        initial_x * MM_TO_ENCODER_COUNTS,
+        wait=True,  # type: ignore
     )
 
     LOGGER.info(f"Setting PandA clock to period {time_between_x_steps_ms}")
 
-    yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms, group="panda-config")  # type: ignore
+    yield from bps.abs_set(
+        panda.clock[1].period, time_between_x_steps_ms, group="panda-config"
+    )  # type: ignore
 
     yield from bps.abs_set(
         panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"

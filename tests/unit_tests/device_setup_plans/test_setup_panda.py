@@ -2,6 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from bluesky.plan_stubs import null
+from bluesky.run_engine import RunEngine
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from ophyd_async.panda import SeqTrigger
 
@@ -59,7 +61,7 @@ def test_setup_panda_performs_correct_plans(mock_load_device):
     )
     mock_load_device.assert_called_once()
     assert num_of_sets == 9
-    assert num_of_waits == 3
+    assert num_of_waits == 4
 
 
 @pytest.mark.parametrize(
@@ -150,6 +152,43 @@ def test_setup_panda_correctly_configures_table(
     )
 
     np.testing.assert_array_equal(table["outa2"], np.array([0, 1, 0, 0, 1, 0]))
+
+
+def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
+    wait_for_set_table = False
+
+    def handle_set(*args, **kwargs):
+        nonlocal wait_for_set_table
+        if "wait" in kwargs.keys() and isinstance(args[1], dict):
+            # Check that sequencer table has been set and waited on
+            if kwargs["wait"] and "outa2" in args[1].keys():
+                wait_for_set_table = True
+        yield from null()
+
+    def assert_set_table_has_been_waited_on(*args, **kwargs):
+        assert wait_for_set_table
+        yield from null()
+
+    with patch(
+        "hyperion.device_setup_plans.setup_panda.arm_panda_for_gridscan",
+        MagicMock(side_effect=assert_set_table_has_been_waited_on),
+    ), patch(
+        "hyperion.device_setup_plans.setup_panda.bps.abs_set",
+        MagicMock(side_effect=handle_set),
+    ), patch(
+        "hyperion.device_setup_plans.setup_panda.load_device"
+    ):
+        RE(
+            setup_panda_for_flyscan(
+                MagicMock(),
+                "path",
+                PandAGridScanParams(),
+                1,
+                1,
+                1,
+                get_smargon_speed(0.1, 1),
+            )
+        )
 
 
 # It also would be useful to have some system tests which check that (at least)
