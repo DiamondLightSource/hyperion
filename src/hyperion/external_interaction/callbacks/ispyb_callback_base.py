@@ -82,7 +82,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 "undulator_current_gap"
             ]
             self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][
-                "synchrotron_machine_status_synchrotron_mode"
+                "synchrotron-synchrotron_mode"
             ]
             self.params.hyperion_params.ispyb_params.slit_gap_size_x = doc["data"][
                 "s4_slit_gaps_xgap"

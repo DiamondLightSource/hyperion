@@ -9,7 +9,9 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import beamline_utils, i03
-from dodal.beamlines.beamline_parameters import GDABeamlineParameters
+from dodal.beamlines.beamline_parameters import (
+    GDABeamlineParameters,
+)
 from dodal.devices.aperturescatterguard import (
     ApertureFiveDimensionalLocation,
     AperturePositions,
@@ -26,7 +28,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
@@ -291,7 +293,11 @@ def s4_slit_gaps():
 
 @pytest.fixture
 def synchrotron():
-    return i03.synchrotron(fake_with_ophyd_sim=True)
+    RunEngine()  # A RE is needed to start the bluesky loop
+    synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
+    set_sim_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
+    set_sim_value(synchrotron.topup_start_countdown, 10)
+    return synchrotron
 
 
 @pytest.fixture
@@ -312,10 +318,11 @@ def ophyd_pin_tip_detection():
 
 
 @pytest.fixture
-def robot():
+def robot(done_status):
     RunEngine()  # A RE is needed to start the bluesky loop
     robot = i03.robot(fake_with_ophyd_sim=True)
     set_sim_value(robot.barcode.bare_signal, ["BARCODE"])
+    robot.set = MagicMock(return_value=done_status)
     return robot
 
 
@@ -383,33 +390,37 @@ def undulator_dcm():
 
 @pytest.fixture
 def aperture_scatterguard(done_status):
+    AperturePositions.LARGE = SingleAperturePosition(
+        location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
+        name="Large",
+        GDA_name="LARGE_APERTURE",
+        radius_microns=100,
+    )
+    AperturePositions.MEDIUM = SingleAperturePosition(
+        location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
+        name="Medium",
+        GDA_name="MEDIUM_APERTURE",
+        radius_microns=50,
+    )
+    AperturePositions.SMALL = SingleAperturePosition(
+        location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
+        name="Small",
+        GDA_name="SMALL_APERTURE",
+        radius_microns=20,
+    )
+    AperturePositions.ROBOT_LOAD = SingleAperturePosition(
+        location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
+        name="Robot_load",
+        GDA_name="ROBOT_LOAD",
+        radius_microns=None,
+    )
     ap_sg = i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,
         aperture_positions=AperturePositions(
-            SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
-                name="Large",
-                GDA_name="LARGE_APERTURE",
-                radius_microns=100,
-            ),
-            SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
-                name="Medium",
-                GDA_name="MEDIUM_APERTURE",
-                radius_microns=50,
-            ),
-            SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
-                name="Small",
-                GDA_name="SMALL_APERTURE",
-                radius_microns=20,
-            ),
-            SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
-                name="Robot_load",
-                GDA_name="ROBOT_LOAD",
-                radius_microns=None,
-            ),
+            AperturePositions.LARGE,
+            AperturePositions.MEDIUM,
+            AperturePositions.SMALL,
+            AperturePositions.ROBOT_LOAD,
         ),
     )
     ap_sg.aperture.z.user_setpoint.sim_put(2)  # type: ignore

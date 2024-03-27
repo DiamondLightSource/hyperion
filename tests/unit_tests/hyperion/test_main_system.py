@@ -557,4 +557,4 @@ def test_when_context_created_then_contains_expected_number_of_plans(
         assert "rotation_scan" in plan_names
         assert "flyscan_xray_centre" in plan_names
         assert "pin_tip_centre_then_xray_centre" in plan_names
-        assert "wait_for_robot_load_then_centre" in plan_names
+        assert "robot_load_then_centre" in plan_names
