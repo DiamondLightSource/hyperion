@@ -6,11 +6,13 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
-from ....conftest import default_raw_params
+from ....conftest import raw_params_from_file
 
 
 def test_FGS_parameters_load_from_file():
-    params = default_raw_params()
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_parameters.json"
+    )
     internal_parameters = GridscanInternalParameters(**params)
     internal_parameters.json()
 

@@ -58,7 +58,7 @@ def test_serialise_deserialise(minimal_3d_gridscan_params):
     deserialised = ThreeDGridScan(**serialised)
     assert deserialised.demand_energy_ev is None
     assert deserialised.visit == "cm12345"
-    assert deserialised.x_start_um == 0.0
+    assert deserialised.x_start_um == 0.123
 
 
 def test_param_version(minimal_3d_gridscan_params):

@@ -45,7 +45,7 @@ SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
     raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_parameter_defaults.json"
+        "tests/test_data/new_parameter_json_files/good_test_parameters.json"
     )
 )
 
@@ -291,7 +291,7 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.RE_takes_time = False
 
     with open(
-        "tests/test_data/parameter_json_files/test_parameters.json"
+        "tests/test_data/new_parameter_json_files/good_test_parameters.json"
     ) as test_params_file:
         test_params = test_params_file.read()
     response = test_env.client.put(START_ENDPOINT, data=test_params)
@@ -522,9 +522,9 @@ def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
     assert response.get("status") == Status.FAILED.value
     assert (
         response.get("message")
-        == "<ValidationError: \"{'bad': 1} does not have enough properties\">"
+        == 'ValueError("Supplied parameters don\'t match the plan for this endpoint")'
     )
-    assert response.get("exception_type") == "ValidationError"
+    assert response.get("exception_type") == "ValueError"
 
 
 @pytest.mark.skip(
