@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from pydantic import Field, validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -24,6 +25,10 @@ from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
     GridscanInternalParameters,
+    OddYStepsException,
+)
+from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
+    PandAGridscanInternalParameters,
 )
 
 
@@ -47,6 +52,8 @@ class RobotLoadThenCentre(GridCommon, WithSample): ...
 
 
 class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
+    panda_runup_distance_mm: float = Field(default=CONST.I03.PANDA_RUNUP_DIST_MM)
+
     @property
     def detector_params(self):
         detector_params = {
@@ -202,6 +209,24 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
         )
 
     @property
+    def panda_FGS_params(self) -> PandAGridScanParams:
+        return PandAGridScanParams(
+            x_steps=self.x_steps,
+            y_steps=self.y_steps,
+            z_steps=self.z_steps,
+            x_step_size=self.x_step_size_um,
+            y_step_size=self.y_step_size_um,
+            z_step_size=self.z_step_size_um,
+            x_start=self.x_start_um,
+            y1_start=self.y_start_um,
+            z1_start=self.z_start_um,
+            y2_start=self.y2_start_um,
+            z2_start=self.z2_start_um,
+            set_stub_offsets=False,
+            run_up_distance_mm=self.panda_runup_distance_mm,
+        )
+
+    @property
     def scan_1(self):
         x_end = self.x_start_um + self.x_step_size_um * self.x_steps
         y1_end = self.y_start_um + self.y_step_size_um * self.y_steps
@@ -256,4 +281,22 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
                 ispyb_params=self.ispyb_params,
             ),
             experiment_params=self.FGS_params,
+        )
+
+    def panda_old_parameters(self):
+        if self.y_steps % 2 and self.z_steps > 0:
+            raise OddYStepsException(
+                "The number of Y steps must be even for a PandA gridscan"
+            )
+        return PandAGridscanInternalParameters(
+            params_version=str(self.parameter_model_version),  # type: ignore
+            hyperion_params=GridscanHyperionParameters(
+                zocalo_environment=self.zocalo_environment,
+                beamline=self.beamline,
+                insertion_prefix=self.insertion_prefix,
+                experiment_type="flyscan_xray_centre",
+                detector_params=self.detector_params,
+                ispyb_params=self.ispyb_params,
+            ),
+            experiment_params=self.panda_FGS_params,
         )

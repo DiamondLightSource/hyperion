@@ -74,6 +74,7 @@ class I03Constants:
     BASE_DATA_DIR = "/tmp/dls/i03/data/" if TEST_MODE else "/dls/i03/data/"
     DETECTOR = "EIGER2_X_16M"
     SHUTTER_TIME_S = 0.06
+    PANDA_RUNUP_DIST_MM = 0.1
 
 
 @dataclass(frozen=True)
