@@ -8,7 +8,9 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import beamline_utils, i03
-from dodal.beamlines.beamline_parameters import GDABeamlineParameters
+from dodal.beamlines.beamline_parameters import (
+    GDABeamlineParameters,
+)
 from dodal.devices.aperturescatterguard import (
     ApertureFiveDimensionalLocation,
     AperturePositions,
@@ -367,33 +369,37 @@ def undulator_dcm():
 
 @pytest.fixture
 def aperture_scatterguard(done_status):
+    AperturePositions.LARGE = SingleAperturePosition(
+        location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
+        name="Large",
+        GDA_name="LARGE_APERTURE",
+        radius_microns=100,
+    )
+    AperturePositions.MEDIUM = SingleAperturePosition(
+        location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
+        name="Medium",
+        GDA_name="MEDIUM_APERTURE",
+        radius_microns=50,
+    )
+    AperturePositions.SMALL = SingleAperturePosition(
+        location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
+        name="Small",
+        GDA_name="SMALL_APERTURE",
+        radius_microns=20,
+    )
+    AperturePositions.ROBOT_LOAD = SingleAperturePosition(
+        location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
+        name="Robot_load",
+        GDA_name="ROBOT_LOAD",
+        radius_microns=None,
+    )
     ap_sg = i03.aperture_scatterguard(
         fake_with_ophyd_sim=True,
         aperture_positions=AperturePositions(
-            SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
-                name="Large",
-                GDA_name="LARGE_APERTURE",
-                radius_microns=100,
-            ),
-            SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
-                name="Medium",
-                GDA_name="MEDIUM_APERTURE",
-                radius_microns=50,
-            ),
-            SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
-                name="Small",
-                GDA_name="SMALL_APERTURE",
-                radius_microns=20,
-            ),
-            SingleAperturePosition(
-                location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
-                name="Robot_load",
-                GDA_name="ROBOT_LOAD",
-                radius_microns=None,
-            ),
+            AperturePositions.LARGE,
+            AperturePositions.MEDIUM,
+            AperturePositions.SMALL,
+            AperturePositions.ROBOT_LOAD,
         ),
     )
     ap_sg.aperture.z.user_setpoint.sim_put(2)  # type: ignore
