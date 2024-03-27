@@ -140,12 +140,18 @@ def setup_panda_for_flyscan(
 
     # Home the PandA X encoder using current motor position
     yield from bps.abs_set(
-        panda.inenc[1].setp, initial_x * MM_TO_ENCODER_COUNTS, wait=True  # type: ignore
+        panda.inenc[1].setp,  # type: ignore
+        initial_x * MM_TO_ENCODER_COUNTS,
+        wait=True,
     )
 
     LOGGER.info(f"Setting PandA clock to period {time_between_x_steps_ms}")
 
-    yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms, group="panda-config")  # type: ignore
+    yield from bps.abs_set(
+        panda.clock[1].period,  # type: ignore
+        time_between_x_steps_ms,
+        group="panda-config",
+    )
 
     yield from bps.abs_set(
         panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
@@ -157,7 +163,8 @@ def setup_panda_for_flyscan(
 
     LOGGER.info(f"Setting PandA sequencer values: {str(table)}")
 
-    yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
+    # Wait here since table values should be set before we arm the sequencer block
+    yield from bps.abs_set(panda.seq[1].table, table, wait=True)
 
     # Wait here since we need PCAP to be enabled before armed
     yield from bps.abs_set(panda.pcap.enable, Enabled.ENABLED.value, wait=True)  # type: ignore
