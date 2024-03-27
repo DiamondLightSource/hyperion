@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 from dodal.devices.detector.det_dist_to_beam_converter import (
@@ -45,6 +46,7 @@ def minimal_3d_gridscan_params():
 
 def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
     test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    assert {"sam_x", "sam_y", "sam_z", "omega"} == set(test_params.scan_points.keys())
     assert test_params.num_images == (5 * 7 + 5 * 9)
     assert test_params.exposure_time_s == 0.02
 
@@ -96,6 +98,7 @@ def test_new_gridscan_params_equals_old():
 
 
 def test_new_rotation_params_equals_old():
+    os.makedirs("/tmp/dls/i03/data/2024/cm31105-4/auto/123456", exist_ok=True)
     with open(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
     ) as f:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
-from pydantic import validator
+from pydantic import Field, validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -173,11 +173,12 @@ class TwoDGridScan(SpecifiedGridScan):
 
 
 class ThreeDGridScan(SpecifiedGridScan):
-    demand_energy_ev: float | None = None
-    omega_start_deg: float | None = None
-    x_step_size_um: float = CONST.PARAM.GRIDSCAN.APERTURE_SIZE
-    y_step_size_um: float = CONST.PARAM.GRIDSCAN.APERTURE_SIZE
-    z_step_size_um: float = CONST.PARAM.GRIDSCAN.APERTURE_SIZE
+    demand_energy_ev: float | None = Field(default=None)
+    omega_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_1)
+    omega2_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_2)
+    x_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
+    y_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
+    z_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
     y2_start_um: float
     z2_start_um: float
     x_steps: int
@@ -209,21 +210,26 @@ class ThreeDGridScan(SpecifiedGridScan):
         z2_end = self.z2_start_um + self.z_step_size_um * self.z_steps
 
         scan_1_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+        scan_1_omega = Line(
+            "omega", self.omega_start_deg, self.omega_start_deg, self.x_steps
+        )
         scan_1_z = Line("sam_z", self.z_start_um, self.z_start_um, self.x_steps)
         scan_1_y = Line("sam_y", self.y_start_um, y1_end, self.y_steps)
-        scan_1 = scan_1_x.zip(scan_1_z) * ~scan_1_y
+        scan_1 = scan_1_x.zip(scan_1_z).zip(scan_1_omega) * ~scan_1_y
 
         scan_2_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+        scan_2_omega = Line(
+            "omega", self.omega2_start_deg, self.omega2_start_deg, self.x_steps
+        )
         scan_2_y = Line("sam_y", self.y2_start_um, self.y2_start_um, self.x_steps)
         scan_2_z = Line("sam_z", self.z2_start_um, z2_end, self.z_steps)
-        scan_2 = scan_2_x.zip(scan_2_y) * ~scan_2_z
+        scan_2 = scan_2_x.zip(scan_2_y).zip(scan_2_omega) * ~scan_2_z
 
         return scan_1.concat(scan_2)
 
     @property
     def scan_points(self):
-        points = ScanPath(self.scan_spec.calculate()).consume().midpoints
-        return points
+        return ScanPath(self.scan_spec.calculate()).consume().midpoints
 
     @property
     def num_images(self) -> int:

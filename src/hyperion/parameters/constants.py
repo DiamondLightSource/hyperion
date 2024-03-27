@@ -50,6 +50,8 @@ class GridscanParamConstants:
     EXPOSURE_TIME_S = 0.02
     USE_ROI = True
     APERTURE_SIZE = 20.0
+    OMEGA_1 = 0.0
+    OMEGA_2 = 90.0
 
 
 @dataclass(frozen=True)
