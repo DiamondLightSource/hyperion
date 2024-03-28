@@ -4,6 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
+environ["HYPERION_TEST_MODE"] = "true"
+
 print("Adjusting S03 EPICS environment ...")
 s03_epics_server_port = getenv("S03_EPICS_CA_SERVER_PORT")
 s03_epics_repeater_port = getenv("S03_EPICS_CA_REPEATER_PORT")

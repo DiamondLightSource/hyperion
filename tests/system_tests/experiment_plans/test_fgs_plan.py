@@ -39,11 +39,11 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
 )
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file as default_raw_params
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 
+from ...conftest import default_raw_params
 from ..external_interaction.conftest import (  # noqa
     fetch_comment,
     zocalo_env,

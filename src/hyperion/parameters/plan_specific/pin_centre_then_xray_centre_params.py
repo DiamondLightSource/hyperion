@@ -9,6 +9,7 @@ from pydantic import validator
 from pydantic.dataclasses import dataclass
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
@@ -47,7 +48,7 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
     use_ophyd_pin_tip_detect: bool = False
 
     # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
-    run_up_distance_mm: float = 0.15
+    run_up_distance_mm: float = CONST.I03.PANDA_RUNUP_DIST_MM
 
     # Use constant motion panda scans instead of fast grid scans
     use_panda: bool = False
@@ -81,6 +82,8 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
+        if isinstance(experiment_params, PinCentreThenXrayCentreParams):
+            return experiment_params
         return PinCentreThenXrayCentreParams(
             **extract_experiment_params_from_flat_dict(
                 PinCentreThenXrayCentreParams, experiment_params
@@ -91,6 +94,8 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
     def _preprocess_hyperion_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
     ):
+        if isinstance(all_params.get("hyperion_params"), GridscanHyperionParameters):
+            return all_params["hyperion_params"]
         experiment_params: PinCentreThenXrayCentreParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])

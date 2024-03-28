@@ -17,10 +17,11 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+
+from ...conftest import raw_params_from_file
 
 TEST_EXAMPLE_NEXUS_FILE = Path("ins_8_5.nxs")
 TEST_DATA_DIRECTORY = Path("tests/test_data")
@@ -29,7 +30,7 @@ TEST_FILENAME = "rotation_scan_test_nexus"
 
 @pytest.fixture
 def test_params(tmpdir):
-    param_dict = from_file(
+    param_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
     param_dict["hyperion_params"]["detector_params"]["directory"] = "tests/test_data"

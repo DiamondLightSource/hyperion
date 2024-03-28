@@ -1,3 +1,4 @@
+import json
 import sys
 import threading
 from functools import partial
@@ -54,7 +55,7 @@ from hyperion.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
-from hyperion.parameters.external_parameters import from_file as raw_params_from_file
+from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
@@ -69,6 +70,17 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
+
+
+def raw_params_from_file(filename):
+    with open(filename) as f:
+        return json.loads(f.read())
+
+
+def default_raw_params():
+    return raw_params_from_file(
+        "tests/test_data/parameter_json_files/test_parameter_defaults.json"
+    )
 
 
 def create_dummy_scan_spec(x_steps, y_steps, z_steps):
@@ -168,6 +180,15 @@ def test_fgs_params():
     return GridscanInternalParameters(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/test_internal_parameter_defaults.json"
+        )
+    )
+
+
+@pytest.fixture
+def test_new_fgs_params():
+    return ThreeDGridScan(
+        **raw_params_from_file(
+            "tests/test_data/new_parameter_json_files/good_test_parameters.json"
         )
     )
 

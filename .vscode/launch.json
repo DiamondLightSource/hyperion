@@ -42,7 +42,7 @@
                 "debug-test"
             ],
             "env": {
-                "PYTEST_ADDOPTS": "--no-cov --random-order"
+                "PYTEST_ADDOPTS": "--no-cov --random-order -vv"
             },
         }
     ]

@@ -87,10 +87,10 @@ def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
     )
 
 
-def test_full_grid_scan(test_fgs_params, test_config_files):
+def test_full_grid_scan(test_new_fgs_params, test_config_files):
     devices = MagicMock()
     plan = grid_detect_then_xray_centre(
-        devices, test_fgs_params, test_config_files["oav_config_json"]
+        devices, test_new_fgs_params, test_config_files["oav_config_json"]
     )
     assert isinstance(plan, Generator)
 
