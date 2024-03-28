@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
+from dodal.log import LOGGER as DODAL_LOGGER
 
 from hyperion.external_interaction.callbacks.__main__ import (
     main,
@@ -49,11 +50,13 @@ def test_setup_callbacks():
     return_value=True,
 )
 def test_setup_logging(parse_callback_cli_args):
+    assert DODAL_LOGGER.parent != ISPYB_LOGGER
     assert len(ISPYB_LOGGER.handlers) == 0
     assert len(NEXUS_LOGGER.handlers) == 0
     setup_logging(parse_callback_cli_args())
     assert len(ISPYB_LOGGER.handlers) == 4
     assert len(NEXUS_LOGGER.handlers) == 4
+    assert DODAL_LOGGER.parent == ISPYB_LOGGER
     setup_logging(parse_callback_cli_args())
     assert len(ISPYB_LOGGER.handlers) == 4
     assert len(NEXUS_LOGGER.handlers) == 4
