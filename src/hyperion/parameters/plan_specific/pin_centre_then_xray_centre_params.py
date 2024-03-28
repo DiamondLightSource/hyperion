@@ -82,6 +82,8 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
+        if isinstance(experiment_params, PinCentreThenXrayCentreParams):
+            return experiment_params
         return PinCentreThenXrayCentreParams(
             **extract_experiment_params_from_flat_dict(
                 PinCentreThenXrayCentreParams, experiment_params
@@ -92,6 +94,8 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
     def _preprocess_hyperion_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
     ):
+        if isinstance(all_params.get("hyperion_params"), GridscanHyperionParameters):
+            return all_params["hyperion_params"]
         experiment_params: PinCentreThenXrayCentreParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])

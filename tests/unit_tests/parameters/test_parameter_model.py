@@ -7,9 +7,17 @@ from dodal.devices.detector.det_dist_to_beam_converter import (
 )
 from pydantic import ValidationError
 
-from hyperion.parameters.gridscan import RobotLoadThenCentre, ThreeDGridScan
+from hyperion.parameters.constants import CONST
+from hyperion.parameters.gridscan import (
+    PinTipCentreThenXrayCentre,
+    RobotLoadThenCentre,
+    ThreeDGridScan,
+)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
+)
+from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
+    PinCentreThenXrayCentreInternalParameters,
 )
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -144,3 +152,90 @@ def test_robot_load_then_centre_params():
     test_params = RobotLoadThenCentre(**params)
     assert test_params.visit_directory
     assert test_params.detector_params
+
+
+class TestNewGdaParams:
+    def test_pin_then_xray(self):
+        os.makedirs(
+            "/tmp/dls/i03/data/2024/cm66666-6/xraycentring/456789", exist_ok=True
+        )
+        energy = 12123
+        new_hyperion_params_dict = {
+            "parameter_model_version": "5.0.0",
+            "demand_energy_ev": energy,
+            "exposure_time_s": 0.004,
+            "detector_distance_mm": 242,
+            "visit": "cm66666-6",
+            "omega_start_deg": 0.023,
+            "file_name": "samplefilenametest",
+            "sample_id": 456789,
+            "use_roi_mode": False,
+            "transmission_frac": 45 / 100.0,
+            "zocalo_environment": "artemis",
+            "ispyb_extras": {
+                "microns_per_pixel_x": 0.7844,
+                "microns_per_pixel_y": 0.7111,
+                "position": [123.0, 234.0, 345.0],
+                "beam_size_x": 131 / 1000.0,
+                "beam_size_y": 204 / 1000.0,
+                "focal_spot_size_x": 468,
+                "focal_spot_size_y": 787,
+            },
+        }
+        old_hyperion_params_dict = {
+            "params_version": "5.0.0",
+            "hyperion_params": {
+                "beamline": CONST.I03.BEAMLINE,
+                "insertion_prefix": CONST.I03.INSERTION_PREFIX,
+                "zocalo_environment": "artemis",
+                "experiment_type": "pin_centre_then_xray_centre",
+                "detector_params": {
+                    "expected_energy_ev": energy,
+                    "directory": "/tmp/dls/i03/data/2024/cm66666-6/xraycentring/456789/",
+                    "prefix": "samplefilenametest",
+                    "use_roi_mode": False,
+                    "detector_size_constants": CONST.I03.DETECTOR,
+                    "run_number": 1,
+                    "det_dist_to_beam_converter_path": CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH,
+                },
+                "ispyb_params": {
+                    "current_energy_ev": energy,
+                    "sample_id": 456789,
+                    "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
+                    "undulator_gap": 0.5,
+                    "microns_per_pixel_x": 0.7844,
+                    "microns_per_pixel_y": 0.7111,
+                    "sample_barcode": "",
+                    "position": [123, 234, 345],
+                    "transmission_fraction": 45 / 100.0,
+                    "flux": 1000000,
+                    "beam_size_x": 131 / 1000.0,
+                    "beam_size_y": 204 / 1000.0,
+                    "slit_gap_size_x": 200 / 1000.0,
+                    "slit_gap_size_y": 200 / 1000.0,
+                    "focal_spot_size_x": 468,
+                    "focal_spot_size_y": 787,
+                    "resolution": 1.57,
+                    "comment": "",
+                },
+            },
+            "experiment_params": {
+                "snapshot_dir": "/tmp/dls/i03/data/2024/cm66666-6/snapshots",
+                "detector_distance": 242,
+                "exposure_time": 0.004,
+                "omega_start": 0.023,
+                "grid_width_microns": 600,
+                "tip_offset_microns": 0,
+                "set_stub_offsets": False,
+            },
+        }
+        new_params = PinTipCentreThenXrayCentre(**new_hyperion_params_dict)
+        old_params = PinCentreThenXrayCentreInternalParameters(
+            **old_hyperion_params_dict
+        )
+
+        new_old_params = new_params.old_parameters()
+
+        old_params.hyperion_params.ispyb_params.resolution = 0.0
+
+        assert new_old_params == old_params
