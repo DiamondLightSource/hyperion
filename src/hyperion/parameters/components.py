@@ -118,6 +118,10 @@ class DiffractionExperiment(HyperionParameters):
         )
 
     @property
+    def num_images(self) -> int:
+        return 0
+
+    @property
     @abstractmethod
     def detector_params(self) -> DetectorParams: ...
 

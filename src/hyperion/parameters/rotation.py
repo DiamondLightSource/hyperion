@@ -24,6 +24,11 @@ from hyperion.parameters.components import (
     WithScan,
 )
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationHyperionParameters,
+    RotationInternalParameters,
+    RotationScanParams,
+)
 
 
 class RotationScan(
@@ -110,3 +115,30 @@ class RotationScan(
     @property
     def num_images(self) -> int:
         return int(self.rotation_angle_deg / self.rotation_increment_deg)
+
+    def old_parameters(self) -> RotationInternalParameters:
+        return RotationInternalParameters(
+            params_version=str(self.parameter_model_version),  # type: ignore
+            experiment_params=RotationScanParams(
+                rotation_axis=self.rotation_axis,
+                rotation_angle=self.rotation_angle_deg,
+                image_width=self.rotation_increment_deg,
+                omega_start=self.omega_start_deg,
+                phi_start=self.phi_start_deg,
+                chi_start=self.chi_start_deg,
+                kappa_start=self.kappa_start_deg,
+                x=self.x_start_um,
+                y=self.y_start_um,
+                z=self.z_start_um,
+                rotation_direction=self.rotation_direction,
+                shutter_opening_time_s=self.shutter_opening_time_s,
+            ),
+            hyperion_params=RotationHyperionParameters(
+                zocalo_environment=self.zocalo_environment,
+                beamline=self.beamline,
+                insertion_prefix=self.insertion_prefix,
+                experiment_type="rotation_scan",
+                detector_params=self.detector_params,
+                ispyb_params=self.ispyb_params,
+            ),
+        )

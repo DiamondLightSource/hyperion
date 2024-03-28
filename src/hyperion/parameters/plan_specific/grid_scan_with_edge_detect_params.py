@@ -9,6 +9,7 @@ from pydantic import validator
 from pydantic.dataclasses import dataclass
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
@@ -38,7 +39,7 @@ class GridScanWithEdgeDetectParams(AbstractExperimentParameterBase):
     set_stub_offsets: bool = False
 
     # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
-    run_up_distance_mm: float = 0.15
+    run_up_distance_mm: float = CONST.I03.PANDA_RUNUP_DIST_MM
 
     use_panda: bool = False
 

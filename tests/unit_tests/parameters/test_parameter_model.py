@@ -7,7 +7,7 @@ from dodal.devices.detector.det_dist_to_beam_converter import (
 )
 from pydantic import ValidationError
 
-from hyperion.parameters.gridscan import ThreeDGridScan
+from hyperion.parameters.gridscan import RobotLoadThenCentre, ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -121,3 +121,26 @@ def test_new_rotation_params_equals_old():
 
     assert old_detector_params == new_detector_params
     assert old_params.hyperion_params.ispyb_params == new_params.ispyb_params
+
+
+def test_robot_load_then_centre_params():
+    os.makedirs("/tmp/dls/i03/data/2024/cm12345/xraycentring/123456", exist_ok=True)
+    params = {
+        "parameter_model_version": "5.0.0",
+        "sample_id": 123456,
+        "visit": "cm12345",
+        "file_name": "file_name",
+        "ispyb_extras": {
+            "microns_per_pixel_x": 0.5,
+            "microns_per_pixel_y": 0.5,
+            "beam_size_x": 0.05,
+            "beam_size_y": 0.05,
+            "focal_spot_size_x": 0.06,
+            "focal_spot_size_y": 0.06,
+            "position": [0, 0, 0],
+        },
+    }
+    params["detector_distance_mm"] = 200
+    test_params = RobotLoadThenCentre(**params)
+    assert test_params.visit_directory
+    assert test_params.detector_params

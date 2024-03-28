@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from dodal.devices.detector import DetectorParams
+from dodal.devices.detector import DetectorDistanceToBeamXYConverter, DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from pydantic import Field, validator
@@ -22,6 +22,10 @@ from hyperion.parameters.components import (
     XyzStarts,
 )
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
+    GridScanWithEdgeDetectInternalParameters,
+    GridScanWithEdgeDetectParams,
+)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanHyperionParameters,
     GridscanInternalParameters,
@@ -29,6 +33,14 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 )
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
     PandAGridscanInternalParameters,
+)
+from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
+    PinCentreThenXrayCentreInternalParameters,
+    PinCentreThenXrayCentreParams,
+)
+from hyperion.parameters.plan_specific.robot_load_then_center_params import (
+    RobotLoadThenCentreHyperionParameters,
+    RobotLoadThenCentreInternalParameters,
 )
 
 
@@ -39,41 +51,6 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
     transmission_frac: float = 1
     # field rather than inherited to make it easier to track when it can be removed:
     ispyb_extras: TemporaryIspybExtras
-
-
-class GridScanWithEdgeDetect(GridCommon, WithSample): ...
-
-
-class PinTipCentreThenXrayCentre(GridCommon):
-    tip_offset_um: float = 0
-
-
-class RobotLoadThenCentre(GridCommon, WithSample): ...
-
-
-class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
-    panda_runup_distance_mm: float = Field(default=CONST.I03.PANDA_RUNUP_DIST_MM)
-
-    @property
-    def detector_params(self):
-        detector_params = {
-            "expected_energy_ev": self.demand_energy_ev,
-            "exposure_time": self.exposure_time_s,
-            "directory": str(
-                self.visit_directory / "xraycentring" / str(self.sample_id)
-            ),
-            "prefix": self.file_name,
-            "detector_distance": self.detector_distance_mm,
-            "omega_start": self.omega_start_deg,
-            "omega_increment": 0,
-            "num_images_per_trigger": 1,
-            "num_triggers": self.num_images,
-            "use_roi_mode": self.use_roi_mode,
-            "det_dist_to_beam_converter_path": self.det_dist_to_beam_converter_path,
-            "run_number": self.run_number,
-            "trigger_mode": self.trigger_mode,
-        }
-        return DetectorParams(**detector_params)
 
     @property
     def ispyb_params(
@@ -105,6 +82,92 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
             ispyb_experiment_type=self.ispyb_extras.ispyb_experiment_type,
             upper_left=np.array(self.ispyb_extras.upper_left),
         )
+
+    @property
+    def detector_params(self):
+        self.det_dist_to_beam_converter_path = (
+            self.det_dist_to_beam_converter_path
+            or CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
+        )
+        optional_args = {}
+        if self.run_number:
+            optional_args["run_number"] = self.run_number
+        assert (
+            self.detector_distance_mm is not None
+        ), "Detector distance must be filled before generating DetectorParams"
+        return DetectorParams(
+            expected_energy_ev=self.demand_energy_ev,
+            exposure_time=self.exposure_time_s,
+            directory=str(self.visit_directory / "xraycentring" / str(self.sample_id)),
+            prefix=self.file_name,
+            detector_distance=self.detector_distance_mm,
+            omega_start=self.omega_start_deg or 0,
+            omega_increment=0,
+            num_images_per_trigger=self.num_images,
+            num_triggers=1,
+            use_roi_mode=False,
+            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
+            beam_xy_converter=DetectorDistanceToBeamXYConverter(
+                self.det_dist_to_beam_converter_path
+            ),
+            **optional_args,
+        )
+
+    @property
+    def old_gridscan_hyperion_params(self):
+        return GridscanHyperionParameters(
+            zocalo_environment=self.zocalo_environment,
+            beamline=self.beamline,
+            insertion_prefix=self.insertion_prefix,
+            experiment_type="flyscan_xray_centre",
+            detector_params=self.detector_params,
+            ispyb_params=self.ispyb_params,
+        )
+
+
+class GridScanWithEdgeDetect(GridCommon, WithSample):
+    def old_parameters(self) -> GridScanWithEdgeDetectInternalParameters:
+        return GridScanWithEdgeDetectInternalParameters(
+            hyperion_params=self.old_gridscan_hyperion_params,
+            experiment_params=GridScanWithEdgeDetectParams(
+                exposure_time=self.exposure_time_s,
+                snapshot_dir=str(self.visit_directory / "snapshots"),
+                detector_distance=self.detector_distance_mm,  # type: ignore #TODO: deal with None
+                omega_start=self.omega_start_deg or CONST.PARAM.GRIDSCAN.OMEGA_1,
+                grid_width_microns=self.grid_width_um,
+            ),
+        )
+
+
+class PinTipCentreThenXrayCentre(GridCommon):
+    tip_offset_um: float = 0
+
+    def old_parameters(self) -> PinCentreThenXrayCentreInternalParameters:
+        return PinCentreThenXrayCentreInternalParameters(
+            hyperion_params=self.old_gridscan_hyperion_params,
+            experiment_params=PinCentreThenXrayCentreParams(
+                tip_offset_microns=self.tip_offset_um,
+                exposure_time=self.exposure_time_s,
+                snapshot_dir=str(self.visit_directory / "snapshots"),
+                detector_distance=self.detector_distance_mm,  # type: ignore #TODO: deal with None
+                omega_start=self.omega_start_deg or CONST.PARAM.GRIDSCAN.OMEGA_1,
+                grid_width_microns=self.grid_width_um,
+            ),
+        )
+
+
+class RobotLoadThenCentre(GridCommon, WithSample):
+    def old_parameters(self) -> RobotLoadThenCentreInternalParameters:
+        return RobotLoadThenCentreInternalParameters(
+            hyperion_params=self.old_gridscan_hyperion_params,
+            experiment_params=RobotLoadThenCentreHyperionParameters(
+                detector_distance=self.detector_distance_mm,  # type: ignore #TODO: deal with None
+            ),
+        )
+
+
+class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
+    panda_runup_distance_mm: float = Field(default=CONST.I03.PANDA_RUNUP_DIST_MM)
 
 
 class TwoDGridScan(SpecifiedGridScan):
@@ -272,14 +335,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     def old_parameters(self):
         return GridscanInternalParameters(
             params_version=str(self.parameter_model_version),  # type: ignore
-            hyperion_params=GridscanHyperionParameters(
-                zocalo_environment=self.zocalo_environment,
-                beamline=self.beamline,
-                insertion_prefix=self.insertion_prefix,
-                experiment_type="flyscan_xray_centre",
-                detector_params=self.detector_params,
-                ispyb_params=self.ispyb_params,
-            ),
+            hyperion_params=self.old_gridscan_hyperion_params,
             experiment_params=self.FGS_params,
         )
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
@@ -19,6 +19,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -27,6 +28,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.panda import PandA
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -51,6 +53,11 @@ from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
     OavSnapshotCallback,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect
+from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
+    GridScanWithEdgeDetectInternalParameters,
+    GridScanWithEdgeDetectParams,
+)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,
@@ -63,14 +70,6 @@ from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
 )
 from hyperion.utils.context import device_composite_from_context
-
-if TYPE_CHECKING:
-    from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-        GridScanWithEdgeDetectInternalParameters,
-        GridScanWithEdgeDetectParams,
-    )
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
-from ophyd_async.panda import PandA
 
 
 @dataclasses.dataclass
@@ -249,28 +248,33 @@ def detect_grid_and_do_gridscan(
 
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: Any,
+    parameters: GridScanWithEdgeDetectInternalParameters | GridScanWithEdgeDetect | Any,
     oav_config: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
+    old_parameters = (
+        parameters
+        if isinstance(parameters, GridScanWithEdgeDetectInternalParameters)
+        else parameters.old_parameters()
+    )
     eiger: EigerDetector = composite.eiger
 
-    eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
+    eiger.set_detector_parameters(old_parameters.hyperion_params.detector_params)
 
     oav_params = OAVParameters("xrayCentring", oav_config)
 
     plan_to_perform = detect_grid_and_do_gridscan(
         composite,
-        parameters,
+        old_parameters,
         oav_params,
     )
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
         composite.detector_motion,
-        parameters.hyperion_params.detector_params.detector_distance,
+        old_parameters.hyperion_params.detector_params.detector_distance,
         plan_to_perform,
     )

@@ -12,6 +12,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     RobotLoadIspybParams,
 )
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
@@ -51,7 +52,7 @@ class RobotLoadThenCentreParams(AbstractExperimentParameterBase):
     requested_energy_kev: Optional[float] = None
 
     # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
-    run_up_distance_mm: float = 0.15
+    run_up_distance_mm: float = CONST.I03.PANDA_RUNUP_DIST_MM
 
     # Use constant motion panda scans instead of fast grid scans
     use_panda: bool = False
