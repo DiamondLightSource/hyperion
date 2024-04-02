@@ -1,3 +1,4 @@
+import logging
 import sys
 import threading
 from functools import partial
@@ -81,7 +82,16 @@ def create_dummy_scan_spec(x_steps, y_steps, z_steps):
     return [spec.consume().midpoints for spec in specs]
 
 
-def _destroy_loggers(loggers):
+def _reset_loggers(loggers):
+    """Clear all handlers and tear down the logging hierarchy, leave logger references intact."""
+    clear_log_handlers(loggers)
+    for logger in loggers:
+        if logger.name != "Hyperion":
+            # Hyperion parent is configured on module import, do not remove
+            logger.parent = logging.getLogger()
+
+
+def clear_log_handlers(loggers):
     for logger in loggers:
         for handler in logger.handlers:
             handler.close()
@@ -115,12 +125,15 @@ def pytest_runtest_setup(item):
             )
     else:
         print("Skipping log setup for log test - deleting existing handlers")
-        _destroy_loggers([*ALL_LOGGERS, dodal_logger])
+        _reset_loggers([*ALL_LOGGERS, dodal_logger])
 
 
-def pytest_runtest_teardown():
+def pytest_runtest_teardown(item):
     if "dodal.beamlines.beamline_utils" in sys.modules:
         sys.modules["dodal.beamlines.beamline_utils"].clear_devices()
+    markers = [m.name for m in item.own_markers]
+    if item.config.getoption("logging") and "skip_log_setup" in markers:
+        _reset_loggers([*ALL_LOGGERS, dodal_logger])
 
 
 @pytest.fixture
