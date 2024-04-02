@@ -16,9 +16,7 @@ from dodal.devices.zebra import (
 )
 
 from hyperion.device_setup_plans.setup_zebra import (
-    arm_zebra,
     bluesky_retry,
-    disarm_zebra,
     set_zebra_shutter_to_manual,
     setup_zebra_for_gridscan,
     setup_zebra_for_rotation,
@@ -47,26 +45,6 @@ async def test_zebra_cleanup(RE, zebra: Zebra):
     RE(set_zebra_shutter_to_manual(zebra, wait=True))
     assert await zebra.output.out_pvs[TTL_DETECTOR].get_value() == PC_PULSE
     assert await zebra.output.out_pvs[TTL_SHUTTER].get_value() == OR1
-
-
-async def test_zebra_arm_disarm(
-    RE,
-    zebra: Zebra,
-):
-    zebra.pc.arm.TIMEOUT = 0.5
-
-    RE(arm_zebra(zebra))
-    assert await zebra.pc.is_armed()
-
-    RE(disarm_zebra(zebra))
-    assert await zebra.pc.is_armed() is False
-
-    with pytest.raises(Exception):
-        zebra.pc.arm.armed.set(0)
-        RE(arm_zebra(zebra, 0.2))
-    with pytest.raises(Exception):
-        zebra.pc.arm.armed.set(1)
-        RE(disarm_zebra(zebra, 0.2))
 
 
 class MyException(Exception):
