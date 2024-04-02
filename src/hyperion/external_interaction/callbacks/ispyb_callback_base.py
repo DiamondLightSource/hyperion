@@ -82,7 +82,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 "undulator_current_gap"
             ]
             self.params.hyperion_params.ispyb_params.synchrotron_mode = doc["data"][
-                "synchrotron_machine_status_synchrotron_mode"
+                "synchrotron-synchrotron_mode"
             ]
             self.params.hyperion_params.ispyb_params.slit_gap_size_x = doc["data"][
                 "s4_slit_gaps_xgap"
@@ -111,10 +111,10 @@ class BaseISPyBCallback(PlanReactiveCallback):
         return self._tag_doc(doc)
 
     @abstractmethod
-    def update_deposition(self, params):
+    def update_deposition(self, params) -> IspybIds:
         pass
 
-    def activity_gated_stop(self, doc: RunStop) -> Optional[RunStop]:
+    def activity_gated_stop(self, doc: RunStop) -> RunStop:
         """Subclasses must check that they are recieving a stop document for the correct
         uid to use this method!"""
         assert isinstance(

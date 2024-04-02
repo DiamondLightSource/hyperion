@@ -6,8 +6,8 @@ import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.devices.zocalo import ZOCALO_READING_PLAN_NAME, ZocaloResults
 
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
 )
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -60,11 +60,10 @@ def run_zocalo_with_dev_ispyb(
 ):
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
         dummy_params.hyperion_params.detector_params.prefix = sample_name
-        cbs = XrayCentreCallbackCollection()
-        ispyb = cbs.ispyb_handler
-        ispyb.ispyb_config = dummy_ispyb_3d.ISPYB_CONFIG_PATH
-        ispyb.active = True
-        RE.subscribe(ispyb)
+        _, ispyb_callback = create_gridscan_callbacks()
+        ispyb_callback.ispyb_config = dummy_ispyb_3d.ISPYB_CONFIG_PATH
+        ispyb_callback.active = True
+        RE.subscribe(ispyb_callback)
 
         @bpp.set_run_key_decorator("testing123")
         def trigger_zocalo_after_fast_grid_scan():
@@ -92,7 +91,7 @@ def run_zocalo_with_dev_ispyb(
         else:
             centre = centre[0]
 
-        return ispyb, ispyb.emit_cb, centre
+        return ispyb_callback, ispyb_callback.emit_cb, centre
 
     return inner
 

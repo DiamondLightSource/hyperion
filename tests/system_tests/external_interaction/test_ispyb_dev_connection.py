@@ -23,8 +23,8 @@ from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
-from hyperion.external_interaction.callbacks.rotation.callback_collection import (
-    RotationCallbackCollection,
+from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
@@ -304,14 +304,8 @@ def generate_scan_data_infos(
 
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait")
-@patch("hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter")
-@patch(
-    "hyperion.external_interaction.callbacks.rotation.callback_collection.ZocaloCallback"
-)
 def test_ispyb_deposition_in_rotation_plan(
     bps_wait,
-    nexus_writer,
-    zocalo_callback,
     fake_create_rotation_devices: RotationScanComposite,
     RE: RunEngine,
     test_rotation_params: RotationInternalParameters,
@@ -343,9 +337,8 @@ def test_ispyb_deposition_in_rotation_plan(
     )
 
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
-    callbacks = RotationCallbackCollection()
-    for cb in list(callbacks):
-        RE.subscribe(cb)
+    ispyb_cb = RotationISPyBCallback()
+    RE.subscribe(ispyb_cb)
 
     composite = RotationScanComposite(
         attenuator=attenuator,
@@ -371,7 +364,7 @@ def test_ispyb_deposition_in_rotation_plan(
             )
         )
 
-    dcid = callbacks.ispyb_handler.ispyb_ids.data_collection_ids[0]
+    dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     comment = fetch_comment(dcid)
     assert comment == "Hyperion rotation scan"
