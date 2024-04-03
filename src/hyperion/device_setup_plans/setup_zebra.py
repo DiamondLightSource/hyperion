@@ -15,8 +15,10 @@ from dodal.devices.zebra import (
     TTL_SHUTTER,
     TTL_XSPRESS3,
     ArmDemand,
+    EncEnum,
     I03Axes,
     RotationDirection,
+    SoftInState,
     Zebra,
 )
 
@@ -61,7 +63,7 @@ def disarm_zebra(zebra: Zebra):
 @bluesky_retry
 def setup_zebra_for_rotation(
     zebra: Zebra,
-    axis: I03Axes = I03Axes.OMEGA,
+    axis: EncEnum = I03Axes.OMEGA,
     start_angle: float = 0,
     scan_width: float = 360,
     shutter_opening_deg: float = 2.5,
@@ -85,7 +87,8 @@ def setup_zebra_for_rotation(
         shutter_opening_s:  How many seconds it takes for the fast shutter to open. The
                             detector pulse is delayed after the shutter signal by this
                             amount.
-        direction:          RotationDirection enum for positive or negative
+        direction:          RotationDirection enum for positive or negative.
+                            Defaults to Positive.
         group:              A name for the group of statuses generated
         wait:               Block until all the settings have completed
     """
@@ -94,9 +97,11 @@ def setup_zebra_for_rotation(
             "Disallowed rotation direction provided to Zebra setup plan. "
             "Use RotationDirection.POSITIVE or RotationDirection.NEGATIVE."
         )
+    # TODO Actually set the rotation direction in here.
+    # See https://github.com/DiamondLightSource/hyperion/issues/1273
     LOGGER.info("ZEBRA SETUP: START")
     # must be on for shutter trigger to be enabled
-    yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=group)
+    yield from bps.abs_set(zebra.inputs.soft_in_1, SoftInState.YES, group=group)
     # Set gate start, adjust for shutter opening time if necessary
     LOGGER.info(f"ZEBRA SETUP: degrees to adjust for shutter = {shutter_opening_deg}")
     LOGGER.info(f"ZEBRA SETUP: start angle start: {start_angle}")
@@ -148,7 +153,9 @@ def set_zebra_shutter_to_manual(
 
 @bluesky_retry
 def make_trigger_safe(zebra: Zebra, group="make_zebra_safe", wait=True):
-    yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=wait, group=group)
+    yield from bps.abs_set(
+        zebra.inputs.soft_in_1, SoftInState.NO, wait=wait, group=group
+    )
 
 
 @bluesky_retry
