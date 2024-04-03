@@ -14,6 +14,9 @@ from hyperion.experiment_plans.robot_load_then_centre_plan import (
     prepare_for_robot_load,
     robot_load_then_centre,
 )
+from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+    RobotLoadISPyBCallback,
+)
 from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
@@ -298,3 +301,28 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
     aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)  # type: ignore
+
+
+@patch("hyperion.external_interaction.callbacks.robot_load.ispyb_callback.end_load")
+@patch("hyperion.external_interaction.callbacks.robot_load.ispyb_callback.start_load")
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+)
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
+def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_then_ispyb_deposited(
+    mock_centring_plan: MagicMock,
+    start_load: MagicMock,
+    end_load: MagicMock,
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
+):
+    RE = RunEngine()
+    RE.subscribe(RobotLoadISPyBCallback())
+
+    RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
+
+    start_load.assert_called_once_with("12345", 40, 3)
+    end_load.assert_called_once_with("success", "")

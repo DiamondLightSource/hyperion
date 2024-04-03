@@ -21,6 +21,8 @@ class PlanNameConstants:
     ISPYB_HARDWARE_READ = "ispyb_reading_hardware"
     ISPYB_TRANSMISSION_FLUX_READ = "ispyb_update_transmission_flux"
     ZOCALO_HW_READ = "zocalo_read_hardware_plan"
+    # Robot load
+    ROBOT_LOAD = "robot_load"
     # Gridscan
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
