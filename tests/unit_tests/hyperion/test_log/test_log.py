@@ -14,12 +14,12 @@ from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
 
-from .conftest import _destroy_loggers
+from ....conftest import clear_log_handlers
 
 
 @pytest.fixture(scope="function")
 def clear_and_mock_loggers():
-    _destroy_loggers([*log.ALL_LOGGERS, dodal_logger])
+    clear_log_handlers([*log.ALL_LOGGERS, dodal_logger])
     mock_open_with_tell = MagicMock()
     mock_open_with_tell.tell.return_value = 0
     with (
@@ -30,7 +30,7 @@ def clear_and_mock_loggers():
         graylog_emit.reset_mock()
         filehandler_emit.reset_mock()
         yield filehandler_emit, graylog_emit
-    _destroy_loggers([*log.ALL_LOGGERS, dodal_logger])
+    clear_log_handlers([*log.ALL_LOGGERS, dodal_logger])
 
 
 @pytest.mark.skip_log_setup
