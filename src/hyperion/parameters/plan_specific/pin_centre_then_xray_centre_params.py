@@ -43,10 +43,6 @@ class PinCentreThenXrayCentreParams(AbstractExperimentParameterBase):
     # Whether to set the stub offsets after centering
     set_stub_offsets: bool = False
 
-    # Whether to use the ophyd device for tip centring rather than the area detector
-    # plugin
-    use_ophyd_pin_tip_detect: bool = False
-
     # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
     run_up_distance_mm: float = CONST.I03.PANDA_RUNUP_DIST_MM
 

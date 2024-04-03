@@ -50,7 +50,7 @@ def test_rotation_parameters_load_from_file():
     internal_parameters = RotationInternalParameters(**params)
 
     assert isinstance(internal_parameters.experiment_params, RotationScanParams)
-    assert internal_parameters.experiment_params.rotation_direction == -1
+    assert internal_parameters.experiment_params.rotation_direction == "Negative"
 
     ispyb_params = internal_parameters.hyperion_params.ispyb_params
 
@@ -68,8 +68,8 @@ def test_rotation_parameters_enum_interpretation():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
-    params["experiment_params"]["rotation_direction"] = "POSITIVE"
+    params["experiment_params"]["rotation_direction"] = "Positive"
     internal_parameters = RotationInternalParameters(**params)
     assert isinstance(internal_parameters.experiment_params, RotationScanParams)
 
-    assert internal_parameters.experiment_params.rotation_direction == 1
+    assert internal_parameters.experiment_params.rotation_direction == "Positive"

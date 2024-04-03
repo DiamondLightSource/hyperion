@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.4",
+    "params_version": "4.0.5",
     "hyperion_params": {
         "beamline": "BL03S",
         "insertion_prefix": "SR03S",
@@ -63,7 +63,7 @@
         "exposure_time": 0.1,
         "detector_distance": 100.0,
         "rotation_increment": 0.1,
-        "rotation_direction": "NEGATIVE",
+        "rotation_direction": "Negative",
         "offset_deg": 1.0,
         "shutter_opening_time_s": 0.6
     }

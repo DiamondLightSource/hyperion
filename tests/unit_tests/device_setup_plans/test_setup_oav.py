@@ -92,7 +92,6 @@ def test_when_set_up_oav_with_different_zoom_levels_then_flat_field_applied_corr
 
     RE = RunEngine()
     RE(pre_centring_setup_oav(oav, mock_parameters, ophyd_pin_tip_detection))
-    assert oav.mxsc.input_plugin.get() == expected_plugin
     assert oav.snapshot.input_plugin.get() == expected_plugin
 
 

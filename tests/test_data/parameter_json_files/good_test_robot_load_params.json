@@ -1,5 +1,5 @@
 {
-    "params_version": "4.0.4",
+    "params_version": "4.0.5",
     "hyperion_params": {
         "zocalo_environment": "artemis",
         "beamline": "BL03I",
@@ -37,7 +37,6 @@
         "exposure_time": 0.004,
         "detector_distance": 255,
         "snapshot_dir": "/tmp",
-        "use_ophyd_pin_tip_detect": true,
         "requested_energy_kev": 11.1,
         "sample_puck": 40,
         "sample_pin": 3
