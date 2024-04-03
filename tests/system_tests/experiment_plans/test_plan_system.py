@@ -14,7 +14,8 @@ from hyperion.parameters.constants import CONST
 
 
 @pytest.mark.s03
-def test_getting_data_for_ispyb():
+@pytest.mark.asyncio
+async def test_getting_data_for_ispyb():
     undulator = Undulator(
         f"{CONST.SIM.INSERTION_PREFIX}-MO-SERVC-01:", name="undulator"
     )
@@ -28,7 +29,7 @@ def test_getting_data_for_ispyb():
     )
 
     undulator.wait_for_connection()
-    synchrotron.wait_for_connection()
+    await synchrotron.connect()
     slit_gaps.wait_for_connection()
     attenuator.wait_for_connection()
     flux.wait_for_connection()

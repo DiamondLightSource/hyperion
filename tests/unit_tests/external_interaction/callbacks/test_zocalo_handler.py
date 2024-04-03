@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from dodal.devices.zocalo import ZocaloStartInfo
 
-from hyperion.external_interaction.callbacks.xray_centre.callback_collection import (
-    XrayCentreCallbackCollection,
+from hyperion.external_interaction.callbacks.common.callback_util import (
+    create_gridscan_callbacks,
 )
 from hyperion.external_interaction.callbacks.zocalo_callback import ZocaloCallback
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
@@ -94,8 +94,7 @@ class TestZocaloHandler:
         mock_ids = IspybIds(data_collection_ids=dc_ids, data_collection_group_id=dcg_id)
         ispyb_store.return_value.mock_add_spec(StoreInIspyb)
 
-        callbacks = XrayCentreCallbackCollection()
-        ispyb_cb = callbacks.ispyb_handler
+        _, ispyb_cb = create_gridscan_callbacks()
         ispyb_cb.active = True
         assert isinstance(zocalo_handler := ispyb_cb.emit_cb, ZocaloCallback)
         zocalo_handler._reset_state()
@@ -117,8 +116,8 @@ class TestZocaloHandler:
         assert zocalo_handler.zocalo_interactor is not None
 
         expected_start_calls = [
-            call(ZocaloStartInfo(1, "test_path", 0, 200)),
-            call(ZocaloStartInfo(2, "test_path", 200, 300)),
+            call(ZocaloStartInfo(1, "test_path", 0, 200, 0)),
+            call(ZocaloStartInfo(2, "test_path", 200, 300, 1)),
         ]
 
         zocalo_handler.zocalo_interactor.run_start.assert_has_calls(

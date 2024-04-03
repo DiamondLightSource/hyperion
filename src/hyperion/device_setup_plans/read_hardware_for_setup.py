@@ -27,7 +27,7 @@ def read_hardware_for_ispyb_pre_collection(
         name=CONST.PLAN.ISPYB_HARDWARE_READ
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.current_gap)
-    yield from bps.read(synchrotron.machine_status.synchrotron_mode)
+    yield from bps.read(synchrotron.synchrotron_mode)
     yield from bps.read(s4_slit_gaps.xgap)
     yield from bps.read(s4_slit_gaps.ygap)
     yield from bps.read(aperture_scatterguard)

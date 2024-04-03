@@ -20,8 +20,8 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
+from dodal.plans.check_topup import check_topup_and_wait_if_necessary
 
-from hyperion.device_setup_plans.check_topup import check_topup_and_wait_if_necessary
 from hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     move_x_y_z,
@@ -82,6 +82,11 @@ DEFAULT_MAX_VELOCITY = 120
 # Use a slightly larger time to acceleration than EPICS as it's better to be cautious
 ACCELERATION_MARGIN = 1.5
 
+ROTATION_DIRECTION = {
+    RotationDirection.POSITIVE: 1,
+    RotationDirection.NEGATIVE: -1,
+}
+
 
 @dataclasses.dataclass
 class RotationMotionProfile:
@@ -112,7 +117,7 @@ def calculate_motion_profile(
     See https://github.com/DiamondLightSource/hyperion/wiki/rotation-scan-geometry
     for a simple pictorial explanation."""
 
-    direction = expt_params.rotation_direction
+    direction = ROTATION_DIRECTION[expt_params.rotation_direction]
     num_images = expt_params.get_num_images()
     shutter_time_s = expt_params.shutter_opening_time_s
     image_width_deg = detector_params.omega_increment
@@ -145,7 +150,7 @@ def calculate_motion_profile(
         start_motion_deg=start_motion_deg,
         scan_width_deg=scan_width_deg,
         shutter_time_s=shutter_time_s,
-        direction=direction,
+        direction=expt_params.rotation_direction,
         speed_for_rotation_deg_s=speed_for_rotation_deg_s,
         acceleration_offset_deg=acceleration_offset_deg,
         shutter_opening_deg=shutter_opening_deg,
@@ -208,8 +213,6 @@ def rotation_scan_plan(
         yield from bps.wait("setup_zebra")
 
         # get some information for the ispyb deposition and trigger the callback
-        yield from read_hardware_for_nexus_writer(composite.eiger)
-
         yield from read_hardware_for_zocalo(composite.eiger)
 
         yield from read_hardware_for_ispyb_pre_collection(
@@ -222,6 +225,7 @@ def rotation_scan_plan(
         yield from read_hardware_for_ispyb_during_collection(
             composite.attenuator, composite.flux, composite.dcm
         )
+        yield from read_hardware_for_nexus_writer(composite.eiger)
 
         # Get ready for the actual scan
         yield from bps.abs_set(

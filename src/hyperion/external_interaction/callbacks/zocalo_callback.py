@@ -53,14 +53,15 @@ class ZocaloCallback(CallbackBase):
                 and len(ispyb_ids) > 0
             ):
                 ids_and_shape = list(zip(ispyb_ids, scan_points))
-                start_idx = 0
+                start_frame = 0
                 self.zocalo_info = []
-                for id, shape in ids_and_shape:
+                for idx, id_and_shape in enumerate(ids_and_shape):
+                    id, shape = id_and_shape
                     num_frames = number_of_frames_from_scan_spec(shape)
                     self.zocalo_info.append(
-                        ZocaloStartInfo(id, None, start_idx, num_frames)
+                        ZocaloStartInfo(id, None, start_frame, num_frames, idx)
                     )
-                    start_idx += num_frames
+                    start_frame += num_frames
             else:
                 raise ISPyBDepositionNotMade(
                     f"No ISPyB IDs received by the start of {self.triggering_plan=}"

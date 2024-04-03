@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check we're in the right place
+dir_name=${PWD##*/}
+if [ "$dir_name" != "hyperion" ]; then
+  echo "This script should be run from the 'hyperion' directory"
+  exit 1
+fi
+
 # controls_dev sets pip up to look at a local pypi server, which is incomplete
 module unload controls_dev 
 
