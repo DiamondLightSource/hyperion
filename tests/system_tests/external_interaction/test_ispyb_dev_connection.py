@@ -13,6 +13,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
+from ophyd_async.core import set_sim_value
 
 from hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -335,11 +336,13 @@ def test_ispyb_deposition_in_rotation_plan(
         energy_ev / 1000
     )
     fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)  # pyright: ignore
-    fake_create_rotation_devices.synchrotron.machine_status.synchrotron_mode.sim_put(  # pyright: ignore
-        test_synchrotron_mode.value
+    set_sim_value(
+        fake_create_rotation_devices.synchrotron.synchrotron_mode,
+        test_synchrotron_mode,
     )
-    fake_create_rotation_devices.synchrotron.top_up.start_countdown.sim_put(  # pyright: ignore
-        -1
+    set_sim_value(
+        fake_create_rotation_devices.synchrotron.topup_start_countdown,  # pyright: ignore
+        -1,
     )
     fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
         test_slit_gap_horiz

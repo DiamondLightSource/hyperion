@@ -255,7 +255,7 @@ class TestXrayCentreISPyBCallback:
                 "id": TEST_DATA_COLLECTION_IDS[1],
                 "slitgaphorizontal": 0.1234,
                 "slitgapvertical": 0.2345,
-                "synchrotronmode": "test",
+                "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
                 "wavelength": 1.1164718451643736,
                 "transmission": 100,
