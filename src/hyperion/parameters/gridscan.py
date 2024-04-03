@@ -45,17 +45,15 @@ from hyperion.parameters.plan_specific.robot_load_then_center_params import (
 
 
 class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
-    grid_width_um = CONST.PARAM.GRIDSCAN.WIDTH_UM
-    exposure_time_s: float = CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S
-    use_roi_mode: bool = CONST.PARAM.GRIDSCAN.USE_ROI
-    transmission_frac: float = 1
+    grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
+    exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
+    use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)
+    transmission_frac: float = Field(default=1)
     # field rather than inherited to make it easier to track when it can be removed:
     ispyb_extras: TemporaryIspybExtras
 
     @property
-    def ispyb_params(
-        self,
-    ):
+    def ispyb_params(self):
         return GridscanIspybParams(
             visit_path=str(self.visit_directory),
             microns_per_pixel_x=self.ispyb_extras.microns_per_pixel_x,
@@ -174,16 +172,20 @@ class RobotLoadThenCentre(GridCommon, WithSample):
 
 
 class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
+    """A specified grid scan is one which has defined values for the start position,
+    grid and box sizes, etc., as opposed to parameters for a plan which will create
+    those parameters at some point (e.g. through optical pin detection)."""
+
     panda_runup_distance_mm: float = Field(default=CONST.I03.PANDA_RUNUP_DIST_MM)
 
 
 class TwoDGridScan(SpecifiedGridScan):
     demand_energy_ev: float | None = Field(default=None)
     omega_start_deg: float | None = Field(default=None)
-    axis_1_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
-    axis_2_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
-    axis_1: XyzAxis = XyzAxis.X
-    axis_2: XyzAxis = XyzAxis.Y
+    axis_1_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
+    axis_2_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
+    axis_1: XyzAxis = Field(default=XyzAxis.X)
+    axis_2: XyzAxis = Field(default=XyzAxis.Y)
     axis_1_steps: int
     axis_2_steps: int
 
@@ -251,14 +253,14 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     demand_energy_ev: float | None = Field(default=None)
     omega_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_1)  # type: ignore
     omega2_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_2)
-    x_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
-    y_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
-    z_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.APERTURE_SIZE)
+    x_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
+    y_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
+    z_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
     y2_start_um: float
     z2_start_um: float
-    x_steps: int
-    y_steps: int
-    z_steps: int
+    x_steps: int = Field(gt=0)
+    y_steps: int = Field(gt=0)
+    z_steps: int = Field(gt=0)
 
     @property
     def FGS_params(self) -> GridScanParams:

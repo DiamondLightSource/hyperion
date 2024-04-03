@@ -38,12 +38,12 @@ class RotationScan(
     OptionalXyzStarts,
     WithSample,
 ):
-    omega_start_deg: float = 0  # type: ignore
-    rotation_axis: RotationAxis = RotationAxis.OMEGA
+    omega_start_deg: float = Field(default=0)  # type: ignore
+    rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
+    shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
     rotation_angle_deg: float
     rotation_increment_deg: float
     rotation_direction: RotationDirection
-    shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
     transmission_frac: float
     ispyb_extras: TemporaryIspybExtras
 

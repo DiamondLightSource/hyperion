@@ -94,9 +94,9 @@ class HyperionParameters(BaseModel):
 
 class DiffractionExperiment(HyperionParameters):
     visit: str = Field(min_length=1)
-    file_name: str = Field(min_length=1)
+    file_name: str = Field(pattern=r"[\w]{2}[\d]+-[\d]+")
     exposure_time_s: float = Field(gt=0)
-    comment: str = ""
+    comment: str = Field(default="")
     beamline: str = Field(default=CONST.I03.BEAMLINE, pattern=r"BL\d{2}[BIJS]")
     insertion_prefix: str = Field(
         default=CONST.I03.INSERTION_PREFIX, pattern=r"SR\d{2}[BIJS]"
