@@ -3,7 +3,7 @@
     "type": "object",
     "properties": {
         "params_version": {
-            "const": "5.0.0"
+            "const": "4.0.5"
         },
         "hyperion_params": {
             "type": "object",

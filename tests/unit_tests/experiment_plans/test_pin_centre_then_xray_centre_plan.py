@@ -20,11 +20,6 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
     PinCentreThenXrayCentreInternalParameters,
 )
 
-from .conftest import (
-    add_simple_oav_mxsc_callback_handlers,
-    add_simple_pin_tip_centre_handlers,
-)
-
 
 @pytest.fixture
 def test_pin_centre_then_xray_centre_params():
@@ -120,8 +115,6 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     )
 
     sim_run_engine.add_handler_for_callback_subscribes()
-    add_simple_pin_tip_centre_handlers(sim_run_engine)
-    add_simple_oav_mxsc_callback_handlers(sim_run_engine)
 
     sim_run_engine.add_handler(
         "read",
