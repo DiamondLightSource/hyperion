@@ -12,7 +12,6 @@ markers = [
 addopts = "--cov=src/hyperion --cov-report term --cov-report xml:cov.xml"
 testpaths = "tests"
 
-
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 88
