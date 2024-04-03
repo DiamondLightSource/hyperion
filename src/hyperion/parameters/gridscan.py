@@ -326,15 +326,18 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
 
     @property
     def scan_indices(self):
-        """The first index of each gridscan"""
+        """The first index of each gridscan, useful for writing nexus files/VDS"""
         return [0, len(ScanPath(self.scan_1.calculate()).consume().midpoints["sam_x"])]
 
     @property
     def scan_spec(self):
+        """A fully specified ScanSpec object representing both grids, with x, y, z and
+        omega positions."""
         return self.scan_1.concat(self.scan_2)
 
     @property
     def scan_points(self):
+        """A list of all the points in the scan_spec."""
         return ScanPath(self.scan_spec.calculate()).consume().midpoints
 
     @property
