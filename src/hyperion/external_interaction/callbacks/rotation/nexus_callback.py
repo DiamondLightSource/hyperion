@@ -8,7 +8,10 @@ from numpy.typing import DTypeLike
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.external_interaction.nexus.nexus_utils import vds_type_based_on_bit_depth
+from hyperion.external_interaction.nexus.nexus_utils import (
+    create_beam_and_attenuator_parameters,
+    vds_type_based_on_bit_depth,
+)
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.constants import CONST
@@ -31,8 +34,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
-
-    Usually used as part of a RotationCallbackCollection.
     """
 
     def __init__(self) -> None:
@@ -48,12 +49,24 @@ class RotationNexusFileCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event):
         event_descriptor = self.descriptors.get(doc["descriptor"])
+        assert isinstance(self.parameters, RotationInternalParameters)
         if event_descriptor is None:
             NEXUS_LOGGER.warning(
                 f"Rotation Nexus handler {self} received event doc {doc} and "
                 "has no corresponding descriptor record"
             )
             return doc
+        if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
+            NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
+            data = doc["data"]
+            assert self.writer, "Nexus writer not initialised"
+            self.writer.beam, self.writer.attenuator = (
+                create_beam_and_attenuator_parameters(
+                    data["dcm_energy_in_kev"],
+                    data["flux_flux_reading"],
+                    data["attenuator_actual_transmission"],
+                )
+            )
         if event_descriptor.get("name") == CONST.PLAN.NEXUS_READ:
             NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])

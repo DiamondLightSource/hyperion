@@ -9,8 +9,8 @@ from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Go
 from nexgen.nxs_utils.Axes import TransformationType
 from numpy.typing import DTypeLike
 
-from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from hyperion.log import NEXUS_LOGGER
+from hyperion.utils.utils import convert_eV_to_angstrom
 
 
 def vds_type_based_on_bit_depth(detector_bit_depth: int) -> DTypeLike:
@@ -125,17 +125,14 @@ def create_detector_parameters(detector_params: DetectorParams) -> Detector:
 
 
 def create_beam_and_attenuator_parameters(
-    ispyb_params: IspybParams,
+    energy_kev: float, flux: float, transmission_fraction: float
 ) -> tuple[Beam, Attenuator]:
-    """Create beam and attenuator dictionaries that nexgen can understand.
-
-    Args:
-        ispyb_params (IspybParams): An IspybParams object holding all required data.
+    """Create beam and attenuator objects that nexgen can understands
 
     Returns:
         tuple[Beam, Attenuator]: Descriptions of the beam and attenuator for nexgen.
     """
     return (
-        Beam(ispyb_params.wavelength_angstroms, ispyb_params.flux),
-        Attenuator(ispyb_params.transmission_fraction),
+        Beam(convert_eV_to_angstrom(energy_kev * 1000), flux),
+        Attenuator(transmission_fraction),
     )

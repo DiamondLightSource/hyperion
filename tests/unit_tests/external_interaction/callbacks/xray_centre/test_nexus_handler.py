@@ -1,38 +1,12 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from event_model.documents.event_descriptor import EventDescriptor
 
 from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file as default_raw_params
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 
-test_start_document = {
-    "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-    "time": 1666604299.6149616,
-    "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
-    "scan_id": 1,
-    "plan_type": "generator",
-    "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
-}
-
-test_event_descriptor = EventDescriptor(
-    data_keys=dict(),
-    run_start="d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-    time=0,
-    uid="",
-)
-test_event_descriptor["name"] = CONST.PLAN.ISPYB_HARDWARE_READ
-
-
-@pytest.fixture
-def dummy_params():
-    return GridscanInternalParameters(**default_raw_params())
+from ..conftest import TestData
 
 
 @pytest.fixture
@@ -43,73 +17,29 @@ def nexus_writer():
 
 def test_writers_not_setup_on_plan_start_doc(
     nexus_writer: MagicMock,
-    dummy_params: GridscanInternalParameters,
 ):
     nexus_handler = GridscanNexusFileCallback()
     nexus_writer.assert_not_called()
-    nexus_handler.activity_gated_start(
-        {
-            "subplan_name": "run_gridscan_move_and_tidy",
-            "hyperion_internal_parameters": dummy_params.json(),
-        }
-    )
+    nexus_handler.activity_gated_start(TestData.test_start_document)
     nexus_writer.assert_not_called()
 
 
+@patch("hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter")
 def test_writers_dont_create_on_init_but_do_on_ispyb_event(
-    nexus_writer: MagicMock,
-    dummy_params: GridscanInternalParameters,
+    mock_nexus_writer: MagicMock,
 ):
     nexus_handler = GridscanNexusFileCallback()
 
     assert nexus_handler.nexus_writer_1 is None
     assert nexus_handler.nexus_writer_2 is None
 
-    nexus_handler.activity_gated_start(
-        {
-            "subplan_name": "run_gridscan_move_and_tidy",
-            "hyperion_internal_parameters": dummy_params.json(),
-        }
+    nexus_handler.activity_gated_start(TestData.test_start_document)
+    nexus_handler.activity_gated_descriptor(
+        TestData.test_descriptor_document_during_data_collection
     )
-
-    assert nexus_handler.nexus_writer_1 is None
-    assert nexus_handler.nexus_writer_2 is None
-
-    mock_writer = MagicMock()
-
-    with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter",
-        mock_writer,
-    ):
-        nexus_handler.activity_gated_descriptor(test_event_descriptor)
-
-    assert nexus_handler.nexus_writer_1 is not None
-    assert nexus_handler.nexus_writer_2 is not None
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_called()
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_called()
-
-
-def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
-    nexus_writer: MagicMock, dummy_params
-):
-    nexus_writer.side_effect = [MagicMock(), MagicMock()]
-
-    nexus_handler = GridscanNexusFileCallback()
-    nexus_handler.activity_gated_start(
-        {
-            "subplan_name": "run_gridscan_move_and_tidy",
-            "hyperion_internal_parameters": dummy_params.json(),
-        }
+    nexus_handler.activity_gated_event(
+        TestData.test_event_document_during_data_collection
     )
-    nexus_handler.activity_gated_start(
-        {
-            "subplan_name": CONST.PLAN.GRIDSCAN_MAIN,
-        }
-    )
-    with patch(
-        "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
-    ):
-        nexus_handler.activity_gated_descriptor(test_event_descriptor)
 
     assert nexus_handler.nexus_writer_1 is not None
     assert nexus_handler.nexus_writer_2 is not None
@@ -118,10 +48,15 @@ def test_writers_do_create_one_file_each_on_start_doc_for_run_gridscan(
 
 
 def test_sensible_error_if_writing_triggered_before_params_received(
-    nexus_writer: MagicMock, dummy_params
+    nexus_writer: MagicMock,
 ):
     nexus_handler = GridscanNexusFileCallback()
     with pytest.raises(AssertionError) as excinfo:
-        nexus_handler.activity_gated_descriptor(test_event_descriptor)
+        nexus_handler.activity_gated_descriptor(
+            TestData.test_descriptor_document_during_data_collection
+        )
+        nexus_handler.activity_gated_event(
+            TestData.test_event_document_during_data_collection
+        )
 
-    assert "Nexus callback did not receive parameters" in excinfo.value.args[0]
+    assert "Nexus callback did not receive start doc" in excinfo.value.args[0]

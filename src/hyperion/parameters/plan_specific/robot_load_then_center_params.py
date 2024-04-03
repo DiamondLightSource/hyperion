@@ -19,8 +19,8 @@ from hyperion.parameters.internal_parameters import (
 )
 
 
-class WaitForRobotLoadThenCentreHyperionParameters(HyperionParameters):
-    ispyb_params: RobotLoadIspybParams = RobotLoadIspybParams(
+class RobotLoadThenCentreHyperionParameters(HyperionParameters):
+    ispyb_params: RobotLoadIspybParams = RobotLoadIspybParams(  # type: ignore
         **GRIDSCAN_ISPYB_PARAM_DEFAULTS
     )
 
@@ -32,7 +32,7 @@ class WaitForRobotLoadThenCentreHyperionParameters(HyperionParameters):
         }
 
 
-class WaitForRobotLoadThenCentreParams(AbstractExperimentWithBeamParams):
+class RobotLoadThenCentreParams(AbstractExperimentWithBeamParams):
     """
     Holder class for the parameters of a plan that waits for robot load then does a
     centre.
@@ -42,6 +42,10 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentWithBeamParams):
     detector_distance: float
     omega_start: float
     snapshot_dir: str
+
+    sample_puck: int
+    sample_pin: int
+
     requested_energy_kev: Optional[float] = None
 
     # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
@@ -58,9 +62,9 @@ class WaitForRobotLoadThenCentreParams(AbstractExperimentWithBeamParams):
         return 0
 
 
-class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):
-    experiment_params: WaitForRobotLoadThenCentreParams
-    hyperion_params: WaitForRobotLoadThenCentreHyperionParameters
+class RobotLoadThenCentreInternalParameters(InternalParameters):
+    experiment_params: RobotLoadThenCentreParams
+    hyperion_params: RobotLoadThenCentreHyperionParameters
 
     class Config:
         arbitrary_types_allowed = True
@@ -83,9 +87,9 @@ class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
-        return WaitForRobotLoadThenCentreParams(
+        return RobotLoadThenCentreParams(
             **extract_experiment_params_from_flat_dict(
-                WaitForRobotLoadThenCentreParams, experiment_params
+                RobotLoadThenCentreParams, experiment_params
             )
         )
 
@@ -93,9 +97,7 @@ class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):
     def _preprocess_hyperion_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
     ):
-        experiment_params: WaitForRobotLoadThenCentreParams = values[
-            "experiment_params"
-        ]
+        experiment_params: RobotLoadThenCentreParams = values["experiment_params"]
         all_params["num_images"] = 0
         all_params["exposure_time"] = experiment_params.exposure_time
         all_params["position"] = np.array(all_params["position"])
@@ -105,7 +107,7 @@ class WaitForRobotLoadThenCentreInternalParameters(InternalParameters):
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
         all_params["upper_left"] = np.zeros(3, dtype=np.int32)
         all_params["expected_energy_ev"] = None
-        return WaitForRobotLoadThenCentreHyperionParameters(
+        return RobotLoadThenCentreHyperionParameters(
             **extract_hyperion_params_from_flat_dict(
                 all_params, cls._hyperion_param_key_definitions()
             )

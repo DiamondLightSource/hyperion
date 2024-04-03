@@ -3,6 +3,7 @@ requires = ["setuptools<57", "wheel==0.33.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 markers = [
     "s03: marks tests as requiring the s03 simulator running (deselect with '-m \"not s03\"')",
     "dlstbx: marks tests as requiring dlstbx (deselect with '-m \"not dlstbx\"')",

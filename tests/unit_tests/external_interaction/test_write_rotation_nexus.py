@@ -7,11 +7,12 @@ import h5py
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.eiger import EigerDetector
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_ispyb_during_collection,
     read_hardware_for_nexus_writer,
 )
+from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
@@ -44,14 +45,13 @@ def test_params(tmpdir):
     params.experiment_params.y = 0
     params.experiment_params.z = 0
     params.hyperion_params.detector_params.exposure_time = 0.004
-    params.hyperion_params.ispyb_params.transmission_fraction = 0.49118047952
     return params
 
 
 def fake_rotation_scan(
     parameters: RotationInternalParameters,
     subscription: RotationNexusFileCallback,
-    eiger: EigerDetector,
+    rotation_devices: RotationScanComposite,
 ):
     @bpp.subs_decorator(subscription)
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
@@ -63,19 +63,24 @@ def fake_rotation_scan(
         }
     )
     def plan():
-        yield from read_hardware_for_nexus_writer(eiger)
+        yield from read_hardware_for_ispyb_during_collection(
+            rotation_devices.attenuator, rotation_devices.flux, rotation_devices.dcm
+        )
+        yield from read_hardware_for_nexus_writer(rotation_devices.eiger)
 
     return plan()
 
 
 def test_rotation_scan_nexus_output_compared_to_existing_file(
-    test_params: RotationInternalParameters, tmpdir, eiger
+    test_params: RotationInternalParameters,
+    tmpdir,
+    fake_create_rotation_devices: RotationScanComposite,
 ):
     run_number = test_params.hyperion_params.detector_params.run_number
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
     master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"
 
-    eiger.bit_depth.sim_put(32)  # type: ignore
+    fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
 
     RE = RunEngine({})
 
@@ -83,7 +88,11 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         "hyperion.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
         return_value=("test_time", "test_time"),
     ):
-        RE(fake_rotation_scan(test_params, RotationNexusFileCallback(), eiger))
+        RE(
+            fake_rotation_scan(
+                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
+            )
+        )
 
     assert os.path.isfile(nexus_filename)
     assert os.path.isfile(master_filename)
@@ -181,13 +190,13 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
 def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
     mock_nexus_writer,
     test_params: RotationInternalParameters,
-    eiger: EigerDetector,
+    fake_create_rotation_devices: RotationScanComposite,
     bit_depth,
     expected_type,
 ):
     write_vds_mock = mock_nexus_writer.return_value.write_vds
 
-    eiger.bit_depth.sim_put(bit_depth)  # type: ignore
+    fake_create_rotation_devices.eiger.bit_depth.sim_put(bit_depth)  # type: ignore
 
     RE = RunEngine({})
 
@@ -195,7 +204,11 @@ def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
         "hyperion.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
         return_value=("test_time", "test_time"),
     ):
-        RE(fake_rotation_scan(test_params, RotationNexusFileCallback(), eiger))
+        RE(
+            fake_rotation_scan(
+                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
+            )
+        )
 
         for call in write_vds_mock.mock_calls:
             assert call.kwargs["vds_dtype"] == expected_type

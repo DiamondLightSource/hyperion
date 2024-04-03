@@ -5,6 +5,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.synchrotron import SynchrotronMode
 
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     create_parameters_for_grid_detection,
@@ -121,6 +122,12 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     sim_run_engine.add_handler_for_callback_subscribes()
     add_simple_pin_tip_centre_handlers(sim_run_engine)
     add_simple_oav_mxsc_callback_handlers(sim_run_engine)
+
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-synchrotron_mode",
+        lambda msg_: {"values": {"value": SynchrotronMode.SHUTDOWN}},
+    )
 
     def add_handlers_to_simulate_detector_motion(msg: Msg):
         sim_run_engine.add_handler(

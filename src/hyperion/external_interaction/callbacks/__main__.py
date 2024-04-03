@@ -4,6 +4,7 @@ from time import sleep
 from typing import Callable, Sequence
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
+from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 
 from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
@@ -65,6 +66,7 @@ def setup_logging(dev_mode: bool):
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
     nexgen_logger = logging.getLogger("nexgen")
     nexgen_logger.parent = NEXUS_LOGGER
+    dodal_logger.parent = ISPYB_LOGGER
     log_debug("nexgen logger added to nexus logger")
 
 
