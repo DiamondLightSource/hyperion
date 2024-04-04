@@ -82,7 +82,7 @@ class HyperionParameters(BaseModel):
     parameter_model_version: ParameterVersion
 
     @validator("parameter_model_version")
-    def _validate_bersion(cls, version: ParameterVersion):
+    def _validate_version(cls, version: ParameterVersion):
         assert version >= ParameterVersion(
             major=PARAMETER_VERSION.major
         ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
