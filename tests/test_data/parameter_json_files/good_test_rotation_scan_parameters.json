@@ -43,7 +43,6 @@
                 "test_2",
                 "test_3"
             ],
-            "transmission_fraction": 1.0,
             "flux": 10.0,
             "beam_size_x": 1.0,
             "beam_size_y": 1.0,
@@ -62,6 +61,7 @@
         "phi_start": 0.0,
         "chi_start": 0,
         "x": 1.0,
+        "transmission_fraction": 1.0,
         "y": 2.0,
         "z": 3.0,
         "exposure_time": 0.1,

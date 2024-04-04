@@ -4,9 +4,8 @@ from typing import Any, Optional
 
 import numpy as np
 from dodal.devices.detector import DetectorParams, TriggerMode
-from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
+from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
 from pydantic import validator
-from pydantic.dataclasses import dataclass
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
@@ -33,8 +32,7 @@ class RobotLoadThenCentreHyperionParameters(HyperionParameters):
         }
 
 
-@dataclass
-class RobotLoadThenCentreParams(AbstractExperimentParameterBase):
+class RobotLoadThenCentreParams(AbstractExperimentWithBeamParams):
     """
     Holder class for the parameters of a plan that waits for robot load then does a
     centre.

@@ -45,9 +45,6 @@
                 "type": "string"
             }
         },
-        "transmission_fraction": {
-            "type": "number"
-        },
         "flux": {
             "type": "number"
         },
@@ -76,7 +73,10 @@
             "type": "number"
         },
         "ispyb_experiment_type": {
-            "type": ["string", "null"]
+            "type": [
+                "string",
+                "null"
+            ]
         }
     },
     "required": [
@@ -84,7 +84,6 @@
         "microns_per_pixel_x",
         "microns_per_pixel_y",
         "position",
-        "transmission_fraction",
         "flux",
         "beam_size_x",
         "beam_size_y",

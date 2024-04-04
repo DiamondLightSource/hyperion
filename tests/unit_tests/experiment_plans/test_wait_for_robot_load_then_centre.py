@@ -84,10 +84,10 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
     assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
-    assert isclose(
-        params_passed.hyperion_params.ispyb_params.resolution,  # type: ignore
-        2.11338,
+    assert isinstance(
+        resolution := params_passed.hyperion_params.ispyb_params.resolution, float
     )
+    assert isclose(resolution, 2.11338)
 
 
 @patch(

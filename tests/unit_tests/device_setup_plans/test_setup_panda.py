@@ -43,7 +43,13 @@ def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
         smargon_speed = get_smargon_speed(0.1, 1)
         sim.simulate_plan(
             setup_panda_for_flyscan(
-                mock_panda, "path", PandAGridScanParams(), 1, 1, 1, smargon_speed
+                mock_panda,
+                "path",
+                PandAGridScanParams(transmission_fraction=0.01),
+                1,
+                1,
+                1,
+                smargon_speed,
             )
         )
     elif plan == "disarm":
@@ -102,6 +108,7 @@ def test_setup_panda_correctly_configures_table(
         x_step_size=x_step_size,
         x_start=x_start,
         run_up_distance_mm=run_up_distance_mm,
+        transmission_fraction=0.01,
     )
 
     exposure_distance_mm = int(sample_velocity_mm_per_s * exposure_time_s)

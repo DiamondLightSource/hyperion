@@ -65,7 +65,7 @@ def test_good_params_gridparams_validates():
 
 
 def test_serialised_grid_scan_params_validate():
-    params = GridScanParams()
+    params = GridScanParams(transmission_fraction=0.01)
     json_params = params.json()
     jsonschema.validate(json.loads(json_params), grid_scan_schema, resolver=resolver)
 
