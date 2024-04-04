@@ -14,6 +14,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 
 def test_rotation_scan_param_validity():
     test_params = RotationScanParams(
+        transmission_fraction=0.01,
         rotation_axis="omega",
         rotation_angle=360,
         image_width=0.1,

@@ -47,6 +47,9 @@
         "omega_start": {
             "type": "number"
         },
+        "transmission_fraction": {
+            "type": "number"
+        },
         "set_stub_offsets": {
             "type": "boolean"
         }

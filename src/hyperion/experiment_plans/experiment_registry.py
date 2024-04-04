@@ -4,7 +4,7 @@ from typing import Callable, TypedDict, Union
 
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
-from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
+from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
 
 import hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
 import hyperion.experiment_plans.panda_flyscan_xray_centre_plan as panda_flyscan_xray_centre_plan
@@ -61,7 +61,7 @@ class ExperimentRegistryEntry(TypedDict):
         | RobotLoadThenCentreInternalParameters
         | PandAGridscanInternalParameters
     ]
-    experiment_param_type: type[AbstractExperimentParameterBase]
+    experiment_param_type: type[AbstractExperimentWithBeamParams]
     callbacks_factory: CallbacksFactory
 
 

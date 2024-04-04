@@ -22,8 +22,10 @@
         },
         "use_panda": {
             "type": "boolean"
+        },
+        "transmission_fraction": {
+            "type": "number"
         }
-
     },
     "required": [
         "exposure_time",

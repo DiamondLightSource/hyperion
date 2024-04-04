@@ -43,7 +43,6 @@
                 "test_2",
                 "test_3"
             ],
-            "transmission_fraction": 1.0,
             "flux": 10.0,
             "beam_size_x": 1.0,
             "beam_size_y": 1.0,
@@ -56,6 +55,7 @@
         }
     },
     "experiment_params": {
+        "transmission_fraction": 1.0,
         "rotation_axis": "omega",
         "rotation_angle": 180.0,
         "omega_start": 0.0,
