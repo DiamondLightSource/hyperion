@@ -146,6 +146,7 @@ def robot_load_then_centre_plan(
         md={
             "subplan_name": CONST.PLAN.ROBOT_LOAD,
             "metadata": {
+                "visit_path": parameters.hyperion_params.ispyb_params.visit_path,
                 "sample_id": parameters.hyperion_params.ispyb_params.sample_id,
                 "sample_puck": parameters.experiment_params.sample_puck,
                 "sample_pin": parameters.experiment_params.sample_pin,

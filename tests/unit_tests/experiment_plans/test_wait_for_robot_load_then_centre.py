@@ -322,7 +322,10 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
 
+    action_id = 1098
+    start_load.return_value = action_id
+
     RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
 
-    start_load.assert_called_once_with("12345", 40, 3)
-    end_load.assert_called_once_with("success", "")
+    start_load.assert_called_once_with("cm31105", 4, "12345", 40, 3)
+    end_load.assert_called_once_with(action_id, "success", "")
