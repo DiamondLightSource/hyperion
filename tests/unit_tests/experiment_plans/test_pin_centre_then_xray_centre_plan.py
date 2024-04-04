@@ -99,6 +99,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         ["1.png", "2.png", "3.png"],
     ]
     mock_grid_callback.return_value.get_grid_parameters.return_value = GridScanParams(
+        transmission_fraction=0.01,
         dwell_time_ms=0,
         x_start=0,
         y1_start=0,

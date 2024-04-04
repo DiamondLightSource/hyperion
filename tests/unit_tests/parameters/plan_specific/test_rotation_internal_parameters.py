@@ -15,6 +15,7 @@ from ....conftest import raw_params_from_file
 
 def test_rotation_scan_param_validity():
     test_params = RotationScanParams(
+        transmission_fraction=0.01,
         rotation_axis="omega",
         rotation_angle=360,
         image_width=0.1,

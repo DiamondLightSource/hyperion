@@ -8,8 +8,8 @@
 import dataclasses
 from typing import Any, Generator
 
-from bluesky import Msg
 from bluesky import plan_stubs as bps
+from bluesky.utils import Msg
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.DCM import DCM
 from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages

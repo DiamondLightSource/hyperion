@@ -191,7 +191,7 @@ def test_xbpm_feedback_decorator(
     @transmission_and_xbpm_feedback_for_collection_decorator(
         fxc_composite.xbpm_feedback,
         fxc_composite.attenuator,
-        params.hyperion_params.ispyb_params.transmission_fraction,
+        params.experiment_params.transmission_fraction,
     )
     def decorated_plan():
         yield from bps.sleep(0.1)

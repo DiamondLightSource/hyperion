@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import Any
 
 from dodal.devices.eiger import DetectorParams
-from dodal.parameters.experiment_parameter_base import AbstractExperimentParameterBase
+from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
 from pydantic import BaseModel, root_validator
 from semver import Version
 
@@ -73,10 +73,7 @@ def extract_experiment_params_from_flat_dict(
     experiment_param_class, flat_params: dict[str, Any]
 ):
     # Use __fields__ to get inherited attributes from BaseModels
-    if issubclass(experiment_param_class, BaseModel):
-        experiment_field_keys = list(experiment_param_class.__fields__.keys())
-    else:
-        experiment_field_keys = list(experiment_param_class.__annotations__.keys())
+    experiment_field_keys = list(experiment_param_class.__fields__.keys())
 
     experiment_params_args = fetch_subdict_from_bucket(
         experiment_field_keys, flat_params
@@ -159,7 +156,7 @@ class InternalParameters(BaseModel):
     def _preprocess_experiment_params(
         cls,
         experiment_params: dict[str, Any],
-    ) -> AbstractExperimentParameterBase: ...
+    ) -> AbstractExperimentWithBeamParams: ...
 
     @abstractmethod
     def _preprocess_hyperion_params(

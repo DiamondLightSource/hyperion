@@ -366,7 +366,7 @@ def flyscan_xray_centre(
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite.xbpm_feedback,
         composite.attenuator,
-        old_parameters.hyperion_params.ispyb_params.transmission_fraction,
+        old_parameters.experiment_params.transmission_fraction,
     )
     def run_gridscan_and_move_and_tidy(fgs_composite, params):
         yield from run_gridscan_and_move(fgs_composite, params)

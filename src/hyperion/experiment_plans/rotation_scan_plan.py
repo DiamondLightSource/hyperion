@@ -299,7 +299,7 @@ def rotation_scan(
                 composite.detector_motion,
                 composite.backlight,
                 composite.attenuator,
-                params.hyperion_params.ispyb_params.transmission_fraction,
+                params.experiment_params.transmission_fraction,
                 params.hyperion_params.detector_params.detector_distance,
             )
             LOGGER.info("moving to position (if specified)")
