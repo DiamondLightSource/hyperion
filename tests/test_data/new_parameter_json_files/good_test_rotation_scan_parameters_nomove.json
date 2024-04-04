@@ -11,7 +11,7 @@
     "file_name": "file_name",
     "rotation_angle_deg": 180.0,
     "rotation_axis": "omega",
-    "rotation_direction": -1,
+    "rotation_direction": "Negative",
     "rotation_increment_deg": 0.1,
     "run_number": 0,
     "sample_id": 123456,
@@ -20,6 +20,7 @@
     "zocalo_environment": "dev_artemis",
     "transmission_frac": 0.1,
     "ispyb_extras": {
+        "flux": 10.0,
         "microns_per_pixel_x": 1.0,
         "microns_per_pixel_y": 1.0,
         "upper_left": [

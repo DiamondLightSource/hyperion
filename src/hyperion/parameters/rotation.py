@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_dist_to_beam_converter import (
@@ -48,6 +50,12 @@ class RotationScan(
     ispyb_extras: TemporaryIspybExtras
 
     @property
+    def directory(self):
+        directory = str(self.visit_directory / "auto" / str(self.sample_id))
+        os.makedirs(directory, exist_ok=True)
+        return directory
+
+    @property
     def detector_params(self):
         self.det_dist_to_beam_converter_path = (
             self.det_dist_to_beam_converter_path
@@ -60,7 +68,7 @@ class RotationScan(
         return DetectorParams(
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
-            directory=str(self.visit_directory / "auto" / str(self.sample_id)),
+            directory=self.directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
             omega_start=self.omega_start_deg,
@@ -99,6 +107,7 @@ class RotationScan(
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,
             ispyb_experiment_type="SAD",
+            flux=self.ispyb_extras.flux,
         )
 
     @property
@@ -132,6 +141,7 @@ class RotationScan(
                 z=self.z_start_um,
                 rotation_direction=self.rotation_direction,
                 shutter_opening_time_s=self.shutter_opening_time_s,
+                transmission_fraction=self.transmission_frac,
             ),
             hyperion_params=RotationHyperionParameters(
                 zocalo_environment=self.zocalo_environment,

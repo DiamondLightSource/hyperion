@@ -206,8 +206,7 @@ class TestNewGdaParams:
                     "microns_per_pixel_x": 0.7844,
                     "microns_per_pixel_y": 0.7111,
                     "sample_barcode": "",
-                    "position": [123, 234, 345],
-                    "transmission_fraction": 45 / 100.0,
+                    "position": [123.0, 234.0, 345.0],
                     "flux": 1000000,
                     "beam_size_x": 131 / 1000.0,
                     "beam_size_y": 204 / 1000.0,
@@ -220,6 +219,7 @@ class TestNewGdaParams:
                 },
             },
             "experiment_params": {
+                "transmission_fraction": 45 / 100.0,
                 "snapshot_dir": "/tmp/dls/i03/data/2024/cm66666-6/snapshots",
                 "detector_distance": 242,
                 "exposure_time": 0.004,
@@ -236,6 +236,13 @@ class TestNewGdaParams:
 
         new_old_params = new_params.old_parameters()
 
-        old_params.hyperion_params.ispyb_params.resolution = 0.0
+        old_params.hyperion_params.ispyb_params.resolution = None
+        old_params.hyperion_params.ispyb_params.flux = None
+        old_params.hyperion_params.ispyb_params.sample_barcode = None
+        old_params.hyperion_params.ispyb_params.undulator_gap = None
+        old_params.hyperion_params.ispyb_params.slit_gap_size_x = None
+        old_params.hyperion_params.ispyb_params.slit_gap_size_y = None
+        old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end = []
+        old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = []
 
         assert new_old_params == old_params

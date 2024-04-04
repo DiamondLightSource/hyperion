@@ -57,7 +57,7 @@
         }
     },
     "experiment_params": {
-        "transmission_fraction": 1.0,
+        "transmission_fraction": 0.1,
         "rotation_axis": "omega",
         "rotation_angle": 180.0,
         "omega_start": 0.0,

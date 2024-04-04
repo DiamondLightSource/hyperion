@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import numpy as np
 from dodal.devices.detector import DetectorDistanceToBeamXYConverter, DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
@@ -53,6 +55,12 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
     ispyb_extras: TemporaryIspybExtras
 
     @property
+    def directory(self):
+        directory = str(self.visit_directory / "xraycentring" / str(self.sample_id))
+        os.makedirs(directory, exist_ok=True)
+        return directory
+
+    @property
     def ispyb_params(self):
         return GridscanIspybParams(
             visit_path=str(self.visit_directory),
@@ -78,7 +86,9 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
             or [],
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
             ispyb_experiment_type=self.ispyb_extras.ispyb_experiment_type,
-            upper_left=np.array(self.ispyb_extras.upper_left or [0, 0, 0]),
+            upper_left=np.array(
+                self.ispyb_extras.upper_left or [0, 0, 0], dtype=np.int32
+            ),
         )
 
     @property
@@ -96,7 +106,7 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
         return DetectorParams(
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
-            directory=str(self.visit_directory / "xraycentring" / str(self.sample_id)),
+            directory=self.directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
             omega_start=self.omega_start_deg or 0,
@@ -149,6 +159,7 @@ class PinTipCentreThenXrayCentre(GridCommon):
                 "pin_centre_then_xray_centre"
             ),
             experiment_params=PinCentreThenXrayCentreParams(
+                transmission_fraction=self.transmission_frac,
                 tip_offset_microns=self.tip_offset_um,
                 exposure_time=self.exposure_time_s,
                 snapshot_dir=str(self.visit_directory / "snapshots"),
@@ -278,6 +289,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             z2_start=self.z2_start_um,
             set_stub_offsets=False,
             dwell_time_ms=self.exposure_time_s * 1000,
+            transmission_fraction=self.transmission_frac,
         )
 
     @property
@@ -296,6 +308,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             z2_start=self.z2_start_um,
             set_stub_offsets=False,
             run_up_distance_mm=self.panda_runup_distance_mm,
+            transmission_fraction=self.transmission_frac,
         )
 
     @property

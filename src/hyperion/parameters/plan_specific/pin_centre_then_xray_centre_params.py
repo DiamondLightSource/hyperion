@@ -78,11 +78,11 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
     ):
         if isinstance(experiment_params, PinCentreThenXrayCentreParams):
             return experiment_params
-        return PinCentreThenXrayCentreParams(
-            **extract_experiment_params_from_flat_dict(
-                PinCentreThenXrayCentreParams, experiment_params
-            )
+        params_args = extract_experiment_params_from_flat_dict(
+            PinCentreThenXrayCentreParams, experiment_params
         )
+        params = PinCentreThenXrayCentreParams(**params_args)
+        return params
 
     @validator("hyperion_params", pre=True)
     def _preprocess_hyperion_params(
