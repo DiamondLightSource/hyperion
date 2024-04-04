@@ -67,6 +67,12 @@ class ExpeyeInteraction:
         response = self._send_and_get_response(url, data, post)
         return response["robotActionId"]
 
+    def update_barcode(self, action_id: RobotActionID, barcode: str):
+        url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
+
+        data = {"sampleBarcode": barcode}
+        self._send_and_get_response(url, data, patch)
+
     def end_load(self, action_id: RobotActionID, status: str, reason: str):
         url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
 

@@ -15,7 +15,11 @@ def test_start_and_end_robot_load():
 
     robot_action_id = expeye.start_load("cm37235", 2, 5289780, 40, 3)
 
-    sleep(1)
+    sleep(0.5)
+
+    expeye.update_barcode(robot_action_id, "test_barcode")
+
+    sleep(0.5)
 
     expeye.end_load(robot_action_id, "fail", "Oh no!")
 

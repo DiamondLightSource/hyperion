@@ -4,6 +4,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.robot import BartRobot
 
 from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
@@ -90,3 +91,35 @@ def test_given_end_called_but_no_start_then_exception_raised(end_load):
     with pytest.raises(AssertionError):
         callback.activity_gated_stop({"run_uid": None})  # type: ignore
     end_load.assert_not_called()
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
+)
+@patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
+)
+@patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode"
+)
+def test_given_plan_reads_barcode_then_data_put_in_ispyb(
+    update_barcode: MagicMock,
+    start_load: MagicMock,
+    end_load: MagicMock,
+    robot: BartRobot,
+):
+    RE = RunEngine()
+    RE.subscribe(RobotLoadISPyBCallback())
+    start_load.return_value = ACTION_ID
+
+    @bpp.run_decorator(md=metadata)
+    def my_plan():
+        yield from bps.create(name=CONST.PLAN.ROBOT_LOAD)
+        yield from bps.read(robot.barcode)
+        yield from bps.save()
+
+    RE(my_plan())
+
+    start_load.assert_called_once_with("cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN)
+    update_barcode.assert_called_once_with(ACTION_ID, "BARCODE")
+    end_load.assert_called_once_with(ACTION_ID, "success", "")

@@ -118,3 +118,18 @@ def test_given_server_does_not_respond_when_end_load_called_then_error(mock_patc
     expeye_interactor = ExpeyeInteraction()
     with pytest.raises(ISPyBDepositionNotMade):
         expeye_interactor.end_load(1, "", "")
+
+
+@patch("hyperion.external_interaction.ispyb.exp_eye_store.patch")
+def test_when_update_barcode_called_with_success_then_correct_expected_url_posted_to_with_expected_data(
+    mock_patch,
+):
+    expeye_interactor = ExpeyeInteraction()
+    expeye_interactor.update_barcode(3, "test")
+
+    mock_patch.assert_called_once()
+    assert mock_patch.call_args.args[0] == "http://blah/core/robot-actions/3"
+    expected_data = {
+        "sampleBarcode": "test",
+    }
+    assert mock_patch.call_args.kwargs["json"] == expected_data

@@ -307,6 +307,9 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
 )
 @patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode"
+)
+@patch(
     "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
 )
 @patch(
@@ -319,6 +322,7 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_then_ispyb_deposited(
     mock_centring_plan: MagicMock,
     start_load: MagicMock,
+    update_barcode: MagicMock,
     end_load: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
@@ -332,4 +336,5 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
 
     start_load.assert_called_once_with("cm31105", 4, "12345", 40, 3)
+    update_barcode.assert_called_once_with(action_id, "BARCODE")
     end_load.assert_called_once_with(action_id, "success", "")

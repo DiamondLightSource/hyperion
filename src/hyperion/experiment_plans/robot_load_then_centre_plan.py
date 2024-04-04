@@ -174,6 +174,10 @@ def robot_load_then_centre_plan(
 
         yield from bps.wait("robot_load")
 
+        yield from bps.create(name=CONST.PLAN.ROBOT_LOAD)
+        yield from bps.read(composite.robot.barcode)
+        yield from bps.save()
+
         yield from wait_for_smargon_not_disabled(composite.smargon)
 
     yield from robot_load()
