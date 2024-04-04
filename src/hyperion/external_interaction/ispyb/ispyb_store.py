@@ -51,16 +51,16 @@ class StoreInIspyb(ABC):
     def begin_deposition(
         self,
         data_collection_group_info: DataCollectionGroupInfo,
-        scan_data_info: ScanDataInfo,
+        scan_data_infos: Sequence[ScanDataInfo],
     ) -> IspybIds:
         ispyb_ids = IspybIds()
-        if scan_data_info.data_collection_info:
-            ispyb_ids.data_collection_group_id = (
-                scan_data_info.data_collection_info.parent_id
-            )
+        if scan_data_infos[0].data_collection_info:
+            ispyb_ids.data_collection_group_id = scan_data_infos[
+                0
+            ].data_collection_info.parent_id
 
         return self._begin_or_update_deposition(
-            ispyb_ids, data_collection_group_info, [scan_data_info]
+            ispyb_ids, data_collection_group_info, scan_data_infos
         )
 
     def update_deposition(

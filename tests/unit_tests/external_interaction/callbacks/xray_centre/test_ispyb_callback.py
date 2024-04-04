@@ -15,7 +15,7 @@ from ...conftest import (
 )
 from ..conftest import TestData
 
-EXPECTED_DATA_COLLECTION_3D = {
+EXPECTED_DATA_COLLECTION_3D_XY = {
     "visitid": TEST_SESSION_ID,
     "parentid": TEST_DATA_COLLECTION_GROUP_ID,
     "sampleid": TEST_SAMPLE_ID,
@@ -45,6 +45,15 @@ EXPECTED_DATA_COLLECTION_3D = {
     "undulator_gap1": None,
     "starttime": EXPECTED_START_TIME,
     "filetemplate": "file_name_0_master.h5",
+}
+
+EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
+    "omegastart": 90,
+    "axis_range": 0,
+    "axisend": 90,
+    "axisstart": 90,
+    "data_collection_number": 1,
+    "filetemplate": "file_name_1_master.h5",
 }
 
 EXPECTED_DATA_COLLECTION_2D = {
@@ -141,8 +150,8 @@ class TestXrayCentreISPyBCallback:
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),
-            EXPECTED_DATA_COLLECTION_2D
-            | {
+            {
+                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
                 "id": TEST_DATA_COLLECTION_IDS[0],
                 "slitgaphorizontal": 0.1234,
                 "slitgapvertical": 0.2345,
@@ -183,7 +192,12 @@ class TestXrayCentreISPyBCallback:
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),
-            EXPECTED_DATA_COLLECTION_3D,
+            EXPECTED_DATA_COLLECTION_3D_XY,
+        )
+        assert_upsert_call_with(
+            mx_acq.upsert_data_collection.mock_calls[1],
+            mx_acq.get_data_collection_params(),
+            EXPECTED_DATA_COLLECTION_3D_XZ,
         )
         mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
@@ -221,12 +235,27 @@ class TestXrayCentreISPyBCallback:
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),
-            EXPECTED_DATA_COLLECTION_3D
-            | {
+            {
+                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
                 "id": TEST_DATA_COLLECTION_IDS[0],
                 "slitgaphorizontal": 0.1234,
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
+                "undulatorgap1": 1.234,
+                "wavelength": 1.1164718451643736,
+                "transmission": 100,
+                "flux": 10,
+            },
+        )
+        assert_upsert_call_with(
+            mx_acq.upsert_data_collection.mock_calls[1],
+            mx_acq.get_data_collection_params(),
+            {
+                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+                "id": TEST_DATA_COLLECTION_IDS[1],
+                "slitgaphorizontal": 0.1234,
+                "slitgapvertical": 0.2345,
+                "synchrotronmode": "test",
                 "undulatorgap1": 1.234,
                 "wavelength": 1.1164718451643736,
                 "transmission": 100,
@@ -261,7 +290,6 @@ class TestXrayCentreISPyBCallback:
             TestData.test_gridscan3d_start_document
         )  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        mx_acq.upsert_data_collection.assert_called_once()
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
 
@@ -291,6 +319,7 @@ class TestXrayCentreISPyBCallback:
             mx_acq.upsert_data_collection.mock_calls[1],
             mx_acq.get_data_collection_params(),
             {
+                "id": TEST_DATA_COLLECTION_IDS[1],
                 "parentid": TEST_DATA_COLLECTION_GROUP_ID,
                 "nimages": 40 * 10,
                 "xtal_snapshot1": "test_1_z",

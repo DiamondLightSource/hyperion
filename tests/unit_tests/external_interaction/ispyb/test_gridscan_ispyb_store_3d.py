@@ -243,7 +243,7 @@ def test_ispyb_deposition_comment_for_3D_correct(
     mock_mx_aquisition = mx_acquisition_from_conn(mock_ispyb_conn)
     mock_upsert_dc = mock_mx_aquisition.upsert_data_collection
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     dummy_3d_gridscan_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, scan_data_infos_for_update
@@ -271,7 +271,7 @@ def test_store_3d_grid_scan(
     assert dummy_3d_gridscan_ispyb.experiment_type == "Mesh3D"
 
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     assert ispyb_ids == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
@@ -299,7 +299,7 @@ def test_begin_deposition(
     scan_data_info_for_begin,
 ):
     assert dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
@@ -377,7 +377,7 @@ def test_update_deposition(
     scan_data_infos_for_update,
 ):
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.assert_called_once()
@@ -578,7 +578,7 @@ def test_end_deposition_happy_path(
     scan_data_infos_for_update,
 ):
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     ispyb_ids = dummy_3d_gridscan_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, scan_data_infos_for_update
@@ -634,7 +634,7 @@ def test_param_keys(
     scan_xy_data_info_for_update,
 ):
     ispyb_ids = dummy_2d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     assert dummy_2d_gridscan_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]
@@ -656,7 +656,7 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 ):
     setup_mock_return_values(ispyb_conn)
     ispyb_ids = dummy_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     dummy_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, [scan_data_info_for_update]
@@ -744,7 +744,7 @@ def test_fail_result_run_results_in_bad_run_status(
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
 
     ispyb_ids = dummy_2d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     ispyb_ids = dummy_2d_gridscan_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]
@@ -773,7 +773,7 @@ def test_no_exception_during_run_results_in_good_run_status(
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
 
     ispyb_ids = dummy_2d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     ispyb_ids = dummy_2d_gridscan_ispyb.update_deposition(
         ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]

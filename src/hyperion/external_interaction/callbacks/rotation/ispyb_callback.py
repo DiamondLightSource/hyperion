@@ -120,7 +120,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 data_collection_info=data_collection_info,
             )
             self.ispyb_ids = self.ispyb.begin_deposition(
-                data_collection_group_info, scan_data_info
+                data_collection_group_info, [scan_data_info]
             )
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_MAIN:
@@ -134,13 +134,8 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids.data_collection_ids
         ), "Expect an existing DataCollection to update"
         params = cast(RotationInternalParameters, params)
-        initial_collection_info = populate_data_collection_info_for_rotation(
-            params.hyperion_params.ispyb_params,
-            params.hyperion_params.detector_params,
-            params,
-        )
-        initial_collection_info = replace(
-            initial_collection_info,
+        data_collection_info = replace(
+            DataCollectionInfo(),
             **{
                 k: v
                 for (k, v) in asdict(event_sourced_data_collection_info).items()
@@ -149,13 +144,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         )
         return [
             ScanDataInfo(
-                data_collection_info=populate_remaining_data_collection_info(
-                    COMMENT_FOR_ROTATION_SCAN,
-                    self.ispyb_ids.data_collection_group_id,
-                    initial_collection_info,
-                    params.hyperion_params.detector_params,
-                    params.hyperion_params.ispyb_params,
-                ),
+                data_collection_info=data_collection_info,
                 data_collection_position_info=populate_data_collection_position_info(
                     params.hyperion_params.ispyb_params
                 ),

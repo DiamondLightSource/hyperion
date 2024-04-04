@@ -117,19 +117,37 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 self.params.hyperion_params.ispyb_params,
             )
 
-            scan_data_info = ScanDataInfo(
-                data_collection_info=populate_remaining_data_collection_info(
-                    None,
-                    None,
-                    populate_xy_data_collection_info(
+            scan_data_infos = [
+                ScanDataInfo(
+                    data_collection_info=populate_remaining_data_collection_info(
+                        None,
+                        None,
+                        populate_xy_data_collection_info(
+                            self.params.hyperion_params.detector_params,
+                        ),
                         self.params.hyperion_params.detector_params,
+                        self.params.hyperion_params.ispyb_params,
                     ),
-                    self.params.hyperion_params.detector_params,
-                    self.params.hyperion_params.ispyb_params,
-                ),
-            )
+                )
+            ]
+            if self.is_3d_gridscan():
+                scan_data_infos.append(
+                    ScanDataInfo(
+                        data_collection_info=populate_remaining_data_collection_info(
+                            None,
+                            None,
+                            populate_xz_data_collection_info(
+                                self.params,
+                                self.params.hyperion_params.detector_params,
+                            ),
+                            self.params.hyperion_params.detector_params,
+                            self.params.hyperion_params.ispyb_params,
+                        )
+                    )
+                )
+
             self.ispyb_ids = self.ispyb.begin_deposition(
-                data_collection_group_info, scan_data_info
+                data_collection_group_info, scan_data_infos
             )
             set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
         return super().activity_gated_start(doc)
@@ -197,25 +215,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert (
             self.ispyb_ids.data_collection_ids
         ), "Expect at least one valid data collection to record scan data"
-        xy_data_collection_info = populate_xy_data_collection_info(
-            params.hyperion_params.detector_params,
-        )
-
         xy_data_collection_info = replace(
-            xy_data_collection_info,
+            DataCollectionInfo(),
             **{
                 k: v
                 for (k, v) in asdict(event_sourced_data_collection_info).items()
                 if v
             },
-        )
-
-        xy_data_collection_info = populate_remaining_data_collection_info(
-            None,
-            self.ispyb_ids.data_collection_group_id,
-            xy_data_collection_info,
-            params.hyperion_params.detector_params,
-            params.hyperion_params.ispyb_params,
         )
 
         return ScanDataInfo(
@@ -231,12 +237,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         params,
         event_sourced_data_collection_info: DataCollectionInfo,
     ):
-        xz_data_collection_info = populate_xz_data_collection_info(
-            params,
-            params.hyperion_params.detector_params,
-        )
         xz_data_collection_info = replace(
-            xz_data_collection_info,
+            DataCollectionInfo(),
             **{
                 k: v
                 for (k, v) in asdict(event_sourced_data_collection_info).items()
@@ -244,13 +246,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             },
         )
 
-        xz_data_collection_info = populate_remaining_data_collection_info(
-            None,
-            self.ispyb_ids.data_collection_group_id,
-            xz_data_collection_info,
-            params.hyperion_params.detector_params,
-            params.hyperion_params.ispyb_params,
-        )
         data_collection_id = (
             self.ispyb_ids.data_collection_ids[1]
             if len(self.ispyb_ids.data_collection_ids) > 1

@@ -119,8 +119,8 @@ def test_hardware_and_flux_read_events(
     assert_upsert_call_with(
         mx.upsert_data_collection.mock_calls[0],
         mx.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION
-        | {
+        {
+            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
             "id": TEST_DATA_COLLECTION_IDS[0],
             "slitgaphorizontal": 0.1234,
             "slitgapvertical": 0.2345,
