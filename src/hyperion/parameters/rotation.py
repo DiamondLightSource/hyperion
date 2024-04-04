@@ -125,6 +125,7 @@ class RotationScan(
     def num_images(self) -> int:
         return int(self.rotation_angle_deg / self.rotation_increment_deg)
 
+    # Can be removed in #1277
     def old_parameters(self) -> RotationInternalParameters:
         return RotationInternalParameters(
             params_version=str(self.parameter_model_version),  # type: ignore

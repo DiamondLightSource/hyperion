@@ -85,6 +85,7 @@ def test_param_version(minimal_3d_gridscan_params):
 
 
 def test_new_gridscan_params_equals_old():
+    # Can be removed in #1277
     with open("tests/test_data/parameter_json_files/good_test_parameters.json") as f:
         old_json_data = json.loads(f.read())
     with open(
@@ -107,6 +108,7 @@ def test_new_gridscan_params_equals_old():
 
 
 def test_new_rotation_params_equals_old():
+    # Can be removed in #1277
     with open(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
     ) as f:
@@ -153,6 +155,7 @@ def test_robot_load_then_centre_params():
 
 
 class TestNewGdaParams:
+    # Can be removed in #1277
     def test_pin_then_xray(self):
         os.makedirs(
             "/tmp/dls/i03/data/2024/cm66666-6/xraycentring/456789", exist_ok=True

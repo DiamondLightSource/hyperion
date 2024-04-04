@@ -122,6 +122,7 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
             **optional_args,
         )
 
+    # Can be removed in #1277
     def old_gridscan_hyperion_params(self, experiment_type):
         return GridscanHyperionParameters(
             zocalo_environment=self.zocalo_environment,
@@ -134,6 +135,7 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
 
 
 class GridScanWithEdgeDetect(GridCommon, WithSample):
+    # Can be removed in #1277
     def old_parameters(self) -> GridScanWithEdgeDetectInternalParameters:
         return GridScanWithEdgeDetectInternalParameters(
             hyperion_params=self.old_gridscan_hyperion_params(
@@ -152,6 +154,7 @@ class GridScanWithEdgeDetect(GridCommon, WithSample):
 class PinTipCentreThenXrayCentre(GridCommon):
     tip_offset_um: float = 0
 
+    # Can be removed in #1277
     def old_parameters(self) -> PinCentreThenXrayCentreInternalParameters:
         return PinCentreThenXrayCentreInternalParameters(
             params_version=str(self.parameter_model_version),  # type: ignore
@@ -171,6 +174,7 @@ class PinTipCentreThenXrayCentre(GridCommon):
 
 
 class RobotLoadThenCentre(GridCommon, WithSample):
+    # Can be removed in #1277
     def old_parameters(self) -> RobotLoadThenCentreInternalParameters:
         return RobotLoadThenCentreInternalParameters(
             hyperion_params=self.old_gridscan_hyperion_params(
@@ -357,6 +361,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     def num_images(self) -> int:
         return len(self.scan_points["sam_x"])
 
+    # Can be removed in #1277
     def old_parameters(self):
         return GridscanInternalParameters(
             params_version=str(self.parameter_model_version),  # type: ignore
@@ -364,6 +369,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             experiment_params=self.FGS_params,
         )
 
+    # Can be removed in #1277
     def panda_old_parameters(self):
         if self.y_steps % 2 and self.z_steps > 0:
             raise OddYStepsException(
