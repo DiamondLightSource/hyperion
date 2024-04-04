@@ -159,17 +159,15 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 data["oav_snapshot_num_boxes_x"] * data["oav_snapshot_num_boxes_y"]
             ),
         )
+        microns_per_pixel_x = data["oav_snapshot_microns_per_pixel_x"]
+        microns_per_pixel_y = data["oav_snapshot_microns_per_pixel_y"]
         data_collection_grid_info = DataCollectionGridInfo(
-            dx_in_mm=data["oav_snapshot_box_width"]
-            * self.params.hyperion_params.ispyb_params.microns_per_pixel_x
-            / 1000,
-            dy_in_mm=data["oav_snapshot_box_width"]
-            * self.params.hyperion_params.ispyb_params.microns_per_pixel_y
-            / 1000,
+            dx_in_mm=data["oav_snapshot_box_width"] * microns_per_pixel_x / 1000,
+            dy_in_mm=data["oav_snapshot_box_width"] * microns_per_pixel_y / 1000,
             steps_x=data["oav_snapshot_num_boxes_x"],
             steps_y=data["oav_snapshot_num_boxes_y"],
-            microns_per_pixel_x=self.params.hyperion_params.ispyb_params.microns_per_pixel_x,
-            microns_per_pixel_y=self.params.hyperion_params.ispyb_params.microns_per_pixel_y,
+            microns_per_pixel_x=microns_per_pixel_x,
+            microns_per_pixel_y=microns_per_pixel_y,
             snapshot_offset_x_pixel=int(data["oav_snapshot_top_left_x"]),
             snapshot_offset_y_pixel=int(data["oav_snapshot_top_left_y"]),
             orientation=Orientation.HORIZONTAL,

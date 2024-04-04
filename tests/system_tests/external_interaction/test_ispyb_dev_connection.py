@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from copy import deepcopy
 from typing import Any, Callable, Literal, Sequence
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -12,8 +12,14 @@ from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
+from ophyd.status import Status
 from ophyd_async.core import set_sim_value
 
+from hyperion.experiment_plans import oav_grid_detection_plan
+from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
+    GridDetectThenXRayCentreComposite,
+    grid_detect_then_xray_centre,
+)
 from hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan,
@@ -42,6 +48,10 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.external_parameters import from_file
+from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
+    GridScanWithEdgeDetectInternalParameters,
+)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -74,6 +84,97 @@ def dummy_scan_data_info_for_begin(dummy_params):
     return ScanDataInfo(
         data_collection_info=info,
     )
+
+
+@pytest.fixture
+def grid_detect_then_xray_centre_parameters():
+    json_dict = from_file(
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
+    )
+    return GridScanWithEdgeDetectInternalParameters(**json_dict)
+
+
+# noinspection PyUnreachableCode
+@pytest.fixture
+def grid_detect_then_xray_centre_composite(
+    fast_grid_scan,
+    backlight,
+    smargon,
+    undulator,
+    synchrotron,
+    s4_slit_gaps,
+    attenuator,
+    xbpm_feedback,
+    detector_motion,
+    zocalo,
+    aperture_scatterguard,
+    zebra,
+    eiger,
+    robot,
+    oav,
+    dcm,
+    flux,
+    ophyd_pin_tip_detection,
+):
+    composite = GridDetectThenXRayCentreComposite(
+        fast_grid_scan=fast_grid_scan,
+        pin_tip_detection=ophyd_pin_tip_detection,
+        backlight=backlight,
+        panda_fast_grid_scan=None,  # type: ignore
+        smargon=smargon,
+        undulator=undulator,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        attenuator=attenuator,
+        xbpm_feedback=xbpm_feedback,
+        detector_motion=detector_motion,
+        zocalo=zocalo,
+        aperture_scatterguard=aperture_scatterguard,
+        zebra=zebra,
+        eiger=eiger,
+        panda=None,  # type: ignore
+        robot=robot,
+        oav=oav,
+        dcm=dcm,
+        flux=flux,
+    )
+    eiger.odin.fan.consumers_connected.sim_put(True)
+    eiger.odin.fan.on.sim_put(True)
+    eiger.odin.meta.initialised.sim_put(True)
+    oav.zoom_controller.zrst.set("1.0x")
+    oav.snapshot.x_size.sim_put(1024)
+    oav.snapshot.y_size.sim_put(768)
+
+    unpatched_method = oav.parameters.load_microns_per_pixel
+
+    def patch_lmpp(zoom, xsize, ysize):
+        print("Patch called")
+        unpatched_method(zoom, 1024, 768)
+
+    def mock_pin_tip_detect():
+        yield from []
+        return 100, 200
+
+    with (
+        patch.object(eiger.odin.nodes, "get_init_state", return_value=True),
+        patch.object(eiger, "wait_on_arming_if_started"),
+        # xsize, ysize will always be wrong since computed as 0 before we get here
+        # patch up load_microns_per_pixel connect to receive non-zero values
+        patch.object(
+            oav.parameters,
+            "load_microns_per_pixel",
+            new=MagicMock(side_effect=patch_lmpp),
+        ),
+        patch.object(
+            oav_grid_detection_plan,
+            "wait_for_tip_to_be_found",
+            side_effect=mock_pin_tip_detect,
+        ),
+        patch.object(
+            oav.snapshot, "trigger", return_value=Status(success=True, done=True)
+        ),
+    ):
+        yield composite
 
 
 def scan_xy_data_info_for_update(
@@ -300,6 +401,20 @@ def generate_scan_data_infos(
     else:
         scan_data_infos = [xy_scan_data_info]
     return scan_data_infos
+
+
+@pytest.mark.s03
+def test_ispyb_deposition_in_gridscan(
+    RE: RunEngine,
+    grid_detect_then_xray_centre_composite: GridDetectThenXRayCentreComposite,
+    grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetectInternalParameters,
+):
+    RE(
+        grid_detect_then_xray_centre(
+            grid_detect_then_xray_centre_composite,
+            grid_detect_then_xray_centre_parameters,
+        )
+    )
 
 
 @pytest.mark.s03

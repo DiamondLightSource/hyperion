@@ -262,9 +262,14 @@ def smargon() -> Generator[Smargon, None, None]:
     smargon.y.user_readback.sim_put(0.0)  # type: ignore
     smargon.z.user_readback.sim_put(0.0)  # type: ignore
 
-    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
-        smargon.y
-    ), patch_motor(smargon.z), patch_motor(smargon.chi), patch_motor(smargon.phi):
+    with (
+        patch_motor(smargon.omega),
+        patch_motor(smargon.x),
+        patch_motor(smargon.y),
+        patch_motor(smargon.z),
+        patch_motor(smargon.chi),
+        patch_motor(smargon.phi),
+    ):
         yield smargon
 
 
@@ -284,6 +289,11 @@ def zebra():
 @pytest.fixture
 def backlight():
     return i03.backlight(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def fast_grid_scan():
+    return i03.fast_grid_scan(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -453,9 +463,13 @@ def aperture_scatterguard(done_status):
     )
     ap_sg.aperture.z.user_setpoint.sim_put(2)  # type: ignore
     ap_sg.aperture.z.motor_done_move.sim_put(1)  # type: ignore
-    with patch_motor(ap_sg.aperture.x), patch_motor(ap_sg.aperture.y), patch_motor(
-        ap_sg.aperture.z
-    ), patch_motor(ap_sg.scatterguard.x), patch_motor(ap_sg.scatterguard.y):
+    with (
+        patch_motor(ap_sg.aperture.x),
+        patch_motor(ap_sg.aperture.y),
+        patch_motor(ap_sg.aperture.z),
+        patch_motor(ap_sg.scatterguard.x),
+        patch_motor(ap_sg.scatterguard.y),
+    ):
         ap_sg.set(ap_sg.aperture_positions.SMALL)  # type: ignore
         yield ap_sg
 
