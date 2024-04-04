@@ -10,9 +10,8 @@ from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
 from hyperion.external_interaction.ispyb.exp_eye_store import (
+    ExpeyeInteraction,
     RobotActionID,
-    end_load,
-    start_load,
 )
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
@@ -28,6 +27,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
         self.run_uid: Optional[str] = None
         self.descriptors: Dict[str, EventDescriptor] = {}
         self.action_id: RobotActionID | None = None
+        self.expeye = ExpeyeInteraction()
 
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.debug("ISPyB robot load handler received start document.")
@@ -38,7 +38,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 visit := get_visit_string_from_path(metadata["visit_path"]), str
             )
             proposal, session = get_proposal_and_session_from_visit_string(visit)
-            self.action_id = start_load(
+            self.action_id = self.expeye.start_load(
                 proposal,
                 session,
                 metadata["sample_id"],
@@ -57,5 +57,6 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 doc.get("exit_status") or "Exit status not available in stop document!"
             )
             reason = doc.get("reason") or ""
-            end_load(self.action_id, exit_status, reason)
+            self.expeye.end_load(self.action_id, exit_status, reason)
+            self.action_id = None
         return super().activity_gated_stop(doc)

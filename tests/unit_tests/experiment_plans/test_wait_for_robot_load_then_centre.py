@@ -303,8 +303,12 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)  # type: ignore
 
 
-@patch("hyperion.external_interaction.callbacks.robot_load.ispyb_callback.end_load")
-@patch("hyperion.external_interaction.callbacks.robot_load.ispyb_callback.start_load")
+@patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
+)
+@patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
+)
 @patch(
     "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
