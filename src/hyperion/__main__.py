@@ -1,7 +1,6 @@
 import atexit
 import threading
 from dataclasses import asdict
-from logging.handlers import TimedRotatingFileHandler
 from queue import Queue
 from traceback import format_exception
 from typing import Any, Callable, Optional, Tuple
@@ -27,7 +26,7 @@ from hyperion.external_interaction.callbacks.aperture_change_callback import (
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
-from hyperion.log import LOGGER, do_default_logging_setup, get_memory_handler
+from hyperion.log import LOGGER, do_default_logging_setup, flush_debug_handler
 from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.constants import CALLBACK_0MQ_PROXY_PORTS, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
@@ -274,13 +273,8 @@ class StopOrStatus(Resource):
 class FlushLogs(Resource):
     def put(self, **kwargs):
         try:
-            handler = get_memory_handler()
-            assert isinstance(
-                handler.target, TimedRotatingFileHandler
-            ), "Circular memory handler doesn't have an appropriate fileHandler target"
-            handler.flush()
             status_and_message = StatusAndMessage(
-                Status.SUCCESS, f"Flushed debug log to {handler.target.baseFilename}"
+                Status.SUCCESS, f"Flushed debug log to {flush_debug_handler()}"
             )
         except Exception as e:
             status_and_message = StatusAndMessage(
