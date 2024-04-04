@@ -57,7 +57,9 @@ class GridscanParamConstants:
 @dataclass(frozen=True)
 class DetectorParamConstants:
     BEAM_XY_LUT_PATH = (
-        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+        "tests/test_data/test_det_dist_converter.txt"
+        if TEST_MODE
+        else "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     )
 
 

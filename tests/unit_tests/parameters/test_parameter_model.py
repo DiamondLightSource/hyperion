@@ -107,7 +107,6 @@ def test_new_gridscan_params_equals_old():
 
 
 def test_new_rotation_params_equals_old():
-    os.makedirs("/tmp/dls/i03/data/2024/cm31105-4/auto/123456", exist_ok=True)
     with open(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
     ) as f:
@@ -132,7 +131,6 @@ def test_new_rotation_params_equals_old():
 
 
 def test_robot_load_then_centre_params():
-    os.makedirs("/tmp/dls/i03/data/2024/cm12345/xraycentring/123456", exist_ok=True)
     params = {
         "parameter_model_version": "5.0.0",
         "sample_id": 123456,
