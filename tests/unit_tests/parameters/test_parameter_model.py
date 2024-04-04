@@ -234,6 +234,8 @@ class TestNewGdaParams:
 
         new_old_params = new_params.old_parameters()
 
+        # This should all be stuff that is no longer needed because
+        # we get it from devices!
         old_params.hyperion_params.ispyb_params.resolution = None
         old_params.hyperion_params.ispyb_params.flux = None
         old_params.hyperion_params.ispyb_params.sample_barcode = None
