@@ -1,5 +1,4 @@
 import json
-import os
 
 import pytest
 from dodal.devices.detector.det_dist_to_beam_converter import (
@@ -156,31 +155,49 @@ def test_robot_load_then_centre_params():
 
 class TestNewGdaParams:
     # Can be removed in #1277
+
+    energy = 12123
+    filename = "samplefilenametest"
+    omega_start = 0.023
+    transmission = 45 / 100
+    visit = "cm66666-6"
+    microns_per_pixel_x = 0.7844
+    microns_per_pixel_y = 0.7111
+    position = [123.0, 234.0, 345.0]
+    beam_size_x = 131 / 1000.0
+    beam_size_y = 204 / 1000.0
+    focal_spot_size_x = 468
+    focal_spot_size_y = 787
+    sample_id = 456789
+    exposure_time_s = 0.004
+    detector_distance_mm = 242
+    chi = 27.0
+    rotation_inc = 0.56
+    rotation_axis = "omega"
+    rotation_direction = "Negative"
+    rotation_comment = "Hyperion rotation scan - "
+
     def test_pin_then_xray(self):
-        os.makedirs(
-            "/tmp/dls/i03/data/2024/cm66666-6/xraycentring/456789", exist_ok=True
-        )
-        energy = 12123
         new_hyperion_params_dict = {
             "parameter_model_version": "5.0.0",
-            "demand_energy_ev": energy,
-            "exposure_time_s": 0.004,
-            "detector_distance_mm": 242,
-            "visit": "cm66666-6",
-            "omega_start_deg": 0.023,
-            "file_name": "samplefilenametest",
-            "sample_id": 456789,
+            "demand_energy_ev": self.energy,
+            "exposure_time_s": self.exposure_time_s,
+            "detector_distance_mm": self.detector_distance_mm,
+            "visit": self.visit,
+            "omega_start_deg": self.omega_start,
+            "file_name": self.filename,
+            "sample_id": self.sample_id,
             "use_roi_mode": False,
-            "transmission_frac": 45 / 100.0,
+            "transmission_frac": self.transmission,
             "zocalo_environment": "artemis",
             "ispyb_extras": {
-                "microns_per_pixel_x": 0.7844,
-                "microns_per_pixel_y": 0.7111,
-                "position": [123.0, 234.0, 345.0],
-                "beam_size_x": 131 / 1000.0,
-                "beam_size_y": 204 / 1000.0,
-                "focal_spot_size_x": 468,
-                "focal_spot_size_y": 787,
+                "microns_per_pixel_x": self.microns_per_pixel_x,
+                "microns_per_pixel_y": self.microns_per_pixel_y,
+                "position": self.position,
+                "beam_size_x": self.beam_size_x,
+                "beam_size_y": self.beam_size_y,
+                "focal_spot_size_x": self.focal_spot_size_x,
+                "focal_spot_size_y": self.focal_spot_size_y,
             },
         }
         old_hyperion_params_dict = {
@@ -191,40 +208,40 @@ class TestNewGdaParams:
                 "zocalo_environment": "artemis",
                 "experiment_type": "pin_centre_then_xray_centre",
                 "detector_params": {
-                    "expected_energy_ev": energy,
+                    "expected_energy_ev": self.energy,
                     "directory": "/tmp/dls/i03/data/2024/cm66666-6/xraycentring/456789/",
-                    "prefix": "samplefilenametest",
+                    "prefix": self.filename,
                     "use_roi_mode": False,
                     "detector_size_constants": CONST.I03.DETECTOR,
                     "run_number": 1,
                     "det_dist_to_beam_converter_path": CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH,
                 },
                 "ispyb_params": {
-                    "current_energy_ev": energy,
-                    "sample_id": 456789,
+                    "current_energy_ev": self.energy,
+                    "sample_id": self.sample_id,
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
                     "undulator_gap": 0.5,
-                    "microns_per_pixel_x": 0.7844,
-                    "microns_per_pixel_y": 0.7111,
+                    "microns_per_pixel_x": self.microns_per_pixel_x,
+                    "microns_per_pixel_y": self.microns_per_pixel_y,
                     "sample_barcode": "",
-                    "position": [123.0, 234.0, 345.0],
+                    "position": self.position,
                     "flux": 1000000,
-                    "beam_size_x": 131 / 1000.0,
-                    "beam_size_y": 204 / 1000.0,
+                    "beam_size_x": self.beam_size_x,
+                    "beam_size_y": self.beam_size_y,
                     "slit_gap_size_x": 200 / 1000.0,
                     "slit_gap_size_y": 200 / 1000.0,
-                    "focal_spot_size_x": 468,
-                    "focal_spot_size_y": 787,
+                    "focal_spot_size_x": self.focal_spot_size_x,
+                    "focal_spot_size_y": self.focal_spot_size_y,
                     "resolution": 1.57,
                     "comment": "",
                 },
             },
             "experiment_params": {
-                "transmission_fraction": 45 / 100.0,
+                "transmission_fraction": self.transmission,
                 "snapshot_dir": "/tmp/dls/i03/data/2024/cm66666-6/snapshots",
-                "detector_distance": 242,
-                "exposure_time": 0.004,
-                "omega_start": 0.023,
+                "detector_distance": self.detector_distance_mm,
+                "exposure_time": self.exposure_time_s,
+                "omega_start": self.omega_start,
                 "grid_width_microns": 600,
                 "tip_offset_microns": 0,
                 "set_stub_offsets": False,
@@ -247,5 +264,109 @@ class TestNewGdaParams:
         old_params.hyperion_params.ispyb_params.slit_gap_size_y = None
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end = []
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = []
+
+        assert new_old_params == old_params
+
+    def test_rotation_new_params(self):
+        new_hyperion_params_dict = {
+            "parameter_model_version": "5.0.0",
+            "comment": self.rotation_comment,
+            "detector_distance_mm": self.detector_distance_mm,
+            "demand_energy_ev": self.energy,
+            "exposure_time_s": self.exposure_time_s,
+            "omega_start_deg": self.omega_start,
+            "chi_start_deg": self.chi,
+            "file_name": self.filename,
+            "rotation_angle_deg": self.rotation_inc * 1001,
+            "rotation_axis": self.rotation_axis,
+            "rotation_direction": self.rotation_direction,
+            "rotation_increment_deg": self.rotation_inc,
+            "sample_id": self.sample_id,
+            "visit": self.visit,
+            "zocalo_environment": "artemis",
+            "transmission_frac": self.transmission,
+            "ispyb_extras": {
+                "microns_per_pixel_x": self.microns_per_pixel_x,
+                "microns_per_pixel_y": self.microns_per_pixel_y,
+                "xtal_snapshots_omega_start": ["test1", "test2", "test3"],
+                "xtal_snapshots_omega_end": ["", "", ""],
+                "position": self.position,
+                "beam_size_x": self.beam_size_x,
+                "beam_size_y": self.beam_size_y,
+                "focal_spot_size_x": self.focal_spot_size_x,
+                "focal_spot_size_y": self.focal_spot_size_y,
+            },
+        }
+
+        old_hyperion_params_dict = {
+            "params_version": "5.0.0",
+            "hyperion_params": {
+                "beamline": CONST.I03.BEAMLINE,
+                "insertion_prefix": CONST.I03.INSERTION_PREFIX,
+                "detector": "EIGER2_X_16M",
+                "zocalo_environment": "artemis",
+                "experiment_type": "SAD",
+                "detector_params": {
+                    "expected_energy_ev": self.energy,
+                    "directory": "/tmp/dls/i03/data/2024/cm66666-6/auto/456789/",
+                    "prefix": self.filename,
+                    "use_roi_mode": False,
+                    "detector_size_constants": CONST.I03.DETECTOR,
+                    "run_number": 1,
+                    "det_dist_to_beam_converter_path": CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH,
+                },
+                "ispyb_params": {
+                    "ispyb_experiment_type": "SAD",
+                    "current_energy_ev": self.energy,
+                    "sample_id": self.sample_id,
+                    "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
+                    "undulator_gap": 0.5,
+                    "microns_per_pixel_x": self.microns_per_pixel_x,
+                    "microns_per_pixel_y": self.microns_per_pixel_y,
+                    "sample_barcode": "",
+                    "position": self.position,
+                    "flux": 1000000,
+                    "beam_size_x": self.beam_size_x,
+                    "beam_size_y": self.beam_size_y,
+                    "slit_gap_size_x": 200 / 1000.0,
+                    "slit_gap_size_y": 200 / 1000.0,
+                    "focal_spot_size_x": self.focal_spot_size_x,
+                    "focal_spot_size_y": self.focal_spot_size_y,
+                    "resolution": 1.57,
+                    "comment": self.rotation_comment,
+                    "upper_left": [0, 0, 0],
+                    "xtal_snapshots_omega_start": ["test1", "test2", "test3"],
+                    "xtal_snapshots_omega_end": ["", "", ""],
+                    "xtal_snapshots": ["", "", ""],
+                },
+            },
+            "experiment_params": {
+                "transmission_fraction": self.transmission,
+                "rotation_axis": self.rotation_axis,
+                "chi_start": self.chi,
+                "rotation_angle": self.rotation_inc * 1001,
+                "omega_start": self.omega_start,
+                "exposure_time": self.exposure_time_s,
+                "detector_distance": self.detector_distance_mm,
+                "rotation_increment": self.rotation_inc,
+                "image_width": self.rotation_inc,
+                "positive_rotation_direction": False,
+                "shutter_opening_time_s": 0.06,
+            },
+        }
+
+        new_params = RotationScan(**new_hyperion_params_dict)
+        old_params = RotationInternalParameters(**old_hyperion_params_dict)
+
+        new_old_params = new_params.old_parameters()
+
+        # This should all be stuff that is no longer needed because
+        # we get it from devices!
+        old_params.hyperion_params.ispyb_params.resolution = None
+        old_params.hyperion_params.ispyb_params.flux = None
+        old_params.hyperion_params.ispyb_params.sample_barcode = None
+        old_params.hyperion_params.ispyb_params.undulator_gap = None
+        old_params.hyperion_params.ispyb_params.slit_gap_size_x = None
+        old_params.hyperion_params.ispyb_params.slit_gap_size_y = None
 
         assert new_old_params == old_params

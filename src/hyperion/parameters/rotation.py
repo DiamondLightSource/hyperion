@@ -148,7 +148,7 @@ class RotationScan(
                 zocalo_environment=self.zocalo_environment,
                 beamline=self.beamline,
                 insertion_prefix=self.insertion_prefix,
-                experiment_type="rotation_scan",
+                experiment_type="SAD",
                 detector_params=self.detector_params,
                 ispyb_params=self.ispyb_params,
             ),

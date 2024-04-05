@@ -6,6 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Sequence, SupportsInt, TypeVar
 
+import numpy as np
 from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
@@ -182,7 +183,7 @@ class TemporaryIspybExtras(BaseModel):
 
     microns_per_pixel_x: float
     microns_per_pixel_y: float
-    position: list[float] | NDArray
+    position: list[float] | NDArray = Field(default=np.array([0, 0, 0]))
     beam_size_x: float
     beam_size_y: float
     focal_spot_size_x: float
