@@ -14,7 +14,7 @@ from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.sim import make_fake_device
 from ophyd.status import Status

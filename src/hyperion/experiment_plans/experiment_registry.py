@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, TypedDict, Union
 
-from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from dodal.devices.fast_grid_scan import GridScanParams, PandAGridScanParams
 from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
 
 import hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan

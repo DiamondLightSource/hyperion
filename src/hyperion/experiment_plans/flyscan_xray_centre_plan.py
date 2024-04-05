@@ -16,10 +16,12 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan import (
+    FastGridScanCommon,
+    PandAFastGridScan,
+)
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 from dodal.devices.flux import Flux
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon, StubPosition
@@ -133,7 +135,7 @@ def set_aperture_for_bbox_size(
     yield from set_aperture()
 
 
-def wait_for_gridscan_valid(fgs_motors: PandaOrZebraGridscan, timeout=0.5):
+def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
     LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -160,7 +162,7 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
 
 
 def kickoff_and_complete_gridscan(
-    gridscan: PandaOrZebraGridscan,
+    gridscan: FastGridScanCommon,
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,

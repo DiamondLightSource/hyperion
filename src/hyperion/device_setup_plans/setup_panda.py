@@ -2,7 +2,7 @@ from enum import Enum
 
 import bluesky.plan_stubs as bps
 from blueapi.core import MsgGenerator
-from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from dodal.devices.fast_grid_scan import PandAGridScanParams
 from ophyd_async.core import load_device
 from ophyd_async.panda import (
     HDFPanda,

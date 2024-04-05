@@ -27,7 +27,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import GridScanCompleteStatus
+from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.robot import BartRobot
@@ -41,7 +41,7 @@ from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import NullStatus
-from ophyd.status import DeviceStatus, Status
+from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
 from ophyd_async.epics.motion.motor import Motor
@@ -573,13 +573,14 @@ def zocalo(done_status):
     return zoc
 
 
-def mock_gridscan_kickoff_complete(gridscan):
-    gridscan_start = DeviceStatus(device=gridscan)
-    gridscan_start.set_finished()
-    gridscan_result = GridScanCompleteStatus(device=gridscan)
-    gridscan_result.set_finished()
-    gridscan.kickoff = MagicMock(return_value=gridscan_start)
-    gridscan.complete = MagicMock(return_value=gridscan_result)
+@AsyncStatus.wrap
+async def async_status_done(_):
+    await asyncio.sleep(0)
+
+
+def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
+    gridscan.kickoff = MagicMock(return_value=async_status_done)
+    gridscan.complete = MagicMock(return_value=async_status_done)
 
 
 @pytest.fixture
@@ -643,8 +644,8 @@ def fake_fgs_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
-    fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
+    set_mock_value(fake_composite.fast_grid_scan.scan_invalid, False)
+    set_mock_value(fake_composite.fast_grid_scan.position_counter, 0)
     fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
 
     set_mock_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])

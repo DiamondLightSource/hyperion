@@ -7,7 +7,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.beamlines.beamline_utils import get_directory_provider
-from dodal.devices.panda_fast_grid_scan import (
+from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params,
 )
 from dodal.devices.smargon import StubPosition
@@ -156,7 +156,7 @@ def run_gridscan_and_move(
     LOGGER.info("Setting up Panda for flyscan")
 
     run_up_distance_mm = yield from bps.rd(
-        fgs_composite.panda_fast_grid_scan.run_up_distance
+        fgs_composite.panda_fast_grid_scan.run_up_distance_mm
     )
 
     # Set the time between x steps pv
