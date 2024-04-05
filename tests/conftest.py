@@ -26,6 +26,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
 from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -325,9 +326,12 @@ def synchrotron():
 
 
 @pytest.fixture
-def oav():
+def oav(test_config_files):
     oav = i03.oav(fake_with_ophyd_sim=True)
     oav.snapshot.trigger = MagicMock(return_value=NullStatus())
+    oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
     return oav
 
 

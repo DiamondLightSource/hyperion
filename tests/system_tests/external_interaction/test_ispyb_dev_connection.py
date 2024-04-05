@@ -32,6 +32,9 @@ from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+)
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
     populate_xy_data_collection_info,
@@ -48,7 +51,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
@@ -58,6 +60,117 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 from hyperion.utils.utils import convert_angstrom_to_eV
 
 from ...conftest import fake_read
+from .conftest import raw_params_from_file
+
+# Map all the case-sensitive column names from their normalised versions
+DATA_COLLECTION_COLUMN_MAP = {
+    s.lower(): s
+    for s in [
+        "dataCollectionId",
+        "BLSAMPLEID",
+        "SESSIONID",
+        "experimenttype",
+        "dataCollectionNumber",
+        "startTime",
+        "endTime",
+        "runStatus",
+        "axisStart",
+        "axisEnd",
+        "axisRange",
+        "overlap",
+        "numberOfImages",
+        "startImageNumber",
+        "numberOfPasses",
+        "exposureTime",
+        "imageDirectory",
+        "imagePrefix",
+        "imageSuffix",
+        "imageContainerSubPath",
+        "fileTemplate",
+        "wavelength",
+        "resolution",
+        "detectorDistance",
+        "xBeam",
+        "yBeam",
+        "comments",
+        "printableForReport",
+        "CRYSTALCLASS",
+        "slitGapVertical",
+        "slitGapHorizontal",
+        "transmission",
+        "synchrotronMode",
+        "xtalSnapshotFullPath1",
+        "xtalSnapshotFullPath2",
+        "xtalSnapshotFullPath3",
+        "xtalSnapshotFullPath4",
+        "rotationAxis",
+        "phiStart",
+        "kappaStart",
+        "omegaStart",
+        "chiStart",
+        "resolutionAtCorner",
+        "detector2Theta",
+        "DETECTORMODE",
+        "undulatorGap1",
+        "undulatorGap2",
+        "undulatorGap3",
+        "beamSizeAtSampleX",
+        "beamSizeAtSampleY",
+        "centeringMethod",
+        "averageTemperature",
+        "ACTUALSAMPLEBARCODE",
+        "ACTUALSAMPLESLOTINCONTAINER",
+        "ACTUALCONTAINERBARCODE",
+        "ACTUALCONTAINERSLOTINSC",
+        "actualCenteringPosition",
+        "beamShape",
+        "dataCollectionGroupId",
+        "POSITIONID",
+        "detectorId",
+        "FOCALSPOTSIZEATSAMPLEX",
+        "POLARISATION",
+        "FOCALSPOTSIZEATSAMPLEY",
+        "APERTUREID",
+        "screeningOrigId",
+        "flux",
+        "strategySubWedgeOrigId",
+        "blSubSampleId",
+        "processedDataFile",
+        "datFullPath",
+        "magnification",
+        "totalAbsorbedDose",
+        "binning",
+        "particleDiameter",
+        "boxSize",
+        "minResolution",
+        "minDefocus",
+        "maxDefocus",
+        "defocusStepSize",
+        "amountAstigmatism",
+        "extractSize",
+        "bgRadius",
+        "voltage",
+        "objAperture",
+        "c1aperture",
+        "c2aperture",
+        "c3aperture",
+        "c1lens",
+        "c2lens",
+        "c3lens",
+        "startPositionId",
+        "endPositionId",
+        "flux",
+        "bestWilsonPlotPath",
+        "totalExposedDose",
+        "nominalMagnification",
+        "nominalDefocus",
+        "imageSizeX",
+        "imageSizeY",
+        "pixelSizeOnImage",
+        "phasePlate",
+        "dataCollectionPlanId",
+    ]
+}
 
 
 @pytest.fixture
@@ -88,8 +201,8 @@ def dummy_scan_data_info_for_begin(dummy_params):
 
 @pytest.fixture
 def grid_detect_then_xray_centre_parameters():
-    json_dict = from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
+    json_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
     )
     return GridScanWithEdgeDetectInternalParameters(**json_dict)
 
@@ -144,16 +257,30 @@ def grid_detect_then_xray_centre_composite(
     oav.zoom_controller.zrst.set("1.0x")
     oav.snapshot.x_size.sim_put(1024)
     oav.snapshot.y_size.sim_put(768)
-
     unpatched_method = oav.parameters.load_microns_per_pixel
+    eiger.stale_params.sim_put(0)
+    eiger.odin.meta.ready.sim_put(1)
+    eiger.odin.fan.ready.sim_put(1)
 
     def patch_lmpp(zoom, xsize, ysize):
         print("Patch called")
         unpatched_method(zoom, 1024, 768)
 
-    def mock_pin_tip_detect():
+    def mock_pin_tip_detect(_):
         yield from []
         return 100, 200
+
+    def mock_set_file_name(val, timeout):
+        eiger.odin.meta.file_name.sim_put(val)  # type: ignore
+        eiger.odin.file_writer.id.sim_put(val)  # type: ignore
+        return Status(success=True, done=True)
+
+    unpatched_complete = fast_grid_scan.complete
+
+    def mock_complete_status():
+        status = unpatched_complete()
+        status.set_finished()
+        return status
 
     with (
         patch.object(eiger.odin.nodes, "get_init_state", return_value=True),
@@ -173,6 +300,16 @@ def grid_detect_then_xray_centre_composite(
         patch.object(
             oav.snapshot, "trigger", return_value=Status(success=True, done=True)
         ),
+        patch.object(
+            eiger.odin.file_writer.file_name,
+            "set",
+            side_effect=mock_set_file_name,
+        ),
+        patch.object(
+            fast_grid_scan, "kickoff", return_value=Status(success=True, done=True)
+        ),
+        patch.object(fast_grid_scan, "complete", side_effect=mock_complete_status),
+        patch.object(zocalo, "trigger", return_value=Status(success=True, done=True)),
     ):
         yield composite
 
@@ -408,13 +545,66 @@ def test_ispyb_deposition_in_gridscan(
     RE: RunEngine,
     grid_detect_then_xray_centre_composite: GridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetectInternalParameters,
+    fetch_datacollection_attribute: Callable[..., Any],
 ):
+    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
+    grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback.sim_put(0.1)
+    grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback.sim_put(0.1)
+    ispyb_callback = GridscanISPyBCallback()
+    RE.subscribe(ispyb_callback)
     RE(
         grid_detect_then_xray_centre(
             grid_detect_then_xray_centre_composite,
             grid_detect_then_xray_centre_parameters,
         )
     )
+
+    ispyb_ids = ispyb_callback.ispyb_ids
+    dcid = ispyb_ids.data_collection_ids[0]
+    expected_values = {
+        # "visitid": TEST_SESSION_ID,
+        # "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+        # "sampleid": TEST_SAMPLE_ID,
+        "detectorid": 78,
+        "axisstart": 0.0,
+        "axisrange": 0,
+        "axisend": 0,
+        "focalspotsizeatsamplex": 1.0,
+        "focalspotsizeatsampley": 1.0,
+        "slitgapvertical": 0.1,
+        "slitgaphorizontal": 0.1,
+        "beamsizeatsamplex": 1,
+        "beamsizeatsampley": 1,
+        "transmission": 49.118,
+        "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
+        "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
+        "bottom right (px): [3250,1700].",
+        "datacollectionnumber": 0,
+        "detectordistance": 100.0,
+        "exptime": 0.1,
+        "imgdir": "/tmp/",
+        "imgprefix": "file_name",
+        "imgsuffix": "h5",
+        "npasses": 1,
+        "overlap": 0,
+        "omegastart": 0,
+        "startimagenumber": 1,
+        "resolution": 1.0,  # deferred
+        "wavelength": 123.98419840550369,
+        "xbeam": 150.0,
+        "ybeam": 160.0,
+        "xtalsnapshot1": "test1y",
+        "xtalsnapshot2": "test2y",
+        "xtalsnapshot3": "test3y",
+        "synchrotronmode": None,
+        "undulatorgap1": 1.0,
+        # "starttime": EXPECTED_START_TIME,
+        "filetemplate": "file_name_0_master.h5",
+        "nimages": 40 * 20,
+    }
+    for k, v in expected_values.items():
+        actual = fetch_datacollection_attribute(dcid, DATA_COLLECTION_COLUMN_MAP[k])
+        assert actual == v, f"expected {k} {actual} == {v}"
 
 
 @pytest.mark.s03
