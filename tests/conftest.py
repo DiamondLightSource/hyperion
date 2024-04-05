@@ -573,8 +573,7 @@ def zocalo(done_status):
     return zoc
 
 
-@AsyncStatus.wrap
-async def async_status_done(_):
+async def async_status_done():
     await asyncio.sleep(0)
 
 
@@ -584,7 +583,7 @@ def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
 
 
 @pytest.fixture
-def fake_fgs_composite(
+async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: ThreeDGridScan,
     RE: RunEngine,
@@ -624,8 +623,12 @@ def fake_fgs_composite(
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_odin_state = lambda: True
 
-    mock_gridscan_kickoff_complete(fake_composite.fast_grid_scan)
-    mock_gridscan_kickoff_complete(fake_composite.panda_fast_grid_scan)
+    # fake_composite.fast_grid_scan.complete = MagicMock(
+    #     return_value=(AsyncStatus(async_status_done()))
+    # )
+    # fake_composite.fast_grid_scan.kickoff = MagicMock(
+    #     return_value=(AsyncStatus(async_status_done()))
+    # )
 
     test_result = {
         "centre_of_mass": [6, 6, 6],
