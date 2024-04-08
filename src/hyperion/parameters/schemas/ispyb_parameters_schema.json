@@ -45,9 +45,6 @@
                 "type": "string"
             }
         },
-        "flux": {
-            "type": ["number", "null"]
-        },
         "beam_size_x": {
             "type": "number"
         },

@@ -139,9 +139,6 @@ def activated_mocked_cbs():
     "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     autospec=True,
 )
-@pytest.mark.skip(
-    reason="TODO 1173 fix this test and nexus_callback implementation so that it doesn't assume that hw info is available at activity_gated_start()"
-)
 def test_nexus_handler_gets_documents_in_mock_plan(
     ispyb,
     RE: RunEngine,
@@ -150,8 +147,6 @@ def test_nexus_handler_gets_documents_in_mock_plan(
 ):
     nexus_handler, _ = activated_mocked_cbs
     RE(fake_rotation_scan(params, [nexus_handler]))
-
-    params.hyperion_params.ispyb_params.flux = 10.0
 
     assert nexus_handler.activity_gated_start.call_count == 2  # type: ignore
     call_content_outer = nexus_handler.activity_gated_start.call_args_list[0].args[0]  # type: ignore

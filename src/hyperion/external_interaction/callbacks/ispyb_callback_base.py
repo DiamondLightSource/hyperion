@@ -117,10 +117,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self._event_driven_data_collection_info.flux = doc["data"][
                 "flux_flux_reading"
             ]
-            # TODO 1173 Remove this once nexus_utils no longer needs it
-            self.params.hyperion_params.ispyb_params.flux = (
-                self._event_driven_data_collection_info.flux
-            )
             if doc["data"]["dcm_energy_in_kev"]:
                 energy_ev = doc["data"]["dcm_energy_in_kev"] * 1000
                 self._event_driven_data_collection_info.wavelength = (
