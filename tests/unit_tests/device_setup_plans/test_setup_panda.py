@@ -61,7 +61,7 @@ def test_setup_panda_performs_correct_plans(mock_load_device):
     )
     mock_load_device.assert_called_once()
     assert num_of_sets == 9
-    assert num_of_waits == 4
+    assert num_of_waits == 3
 
 
 @pytest.mark.parametrize(
@@ -155,28 +155,27 @@ def test_setup_panda_correctly_configures_table(
 
 
 def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
-    wait_for_set_table = False
+    bps_wait_done = False
 
-    def handle_set(*args, **kwargs):
-        nonlocal wait_for_set_table
-        if "wait" in kwargs.keys() and isinstance(args[1], dict):
-            # Check that sequencer table has been set and waited on
-            if kwargs["wait"] and "outa2" in args[1].keys():
-                wait_for_set_table = True
+    def handle_wait(*args, **kwargs):
+        nonlocal bps_wait_done
+        bps_wait_done = True
         yield from null()
 
     def assert_set_table_has_been_waited_on(*args, **kwargs):
-        assert wait_for_set_table
+        assert bps_wait_done
         yield from null()
 
     with patch(
         "hyperion.device_setup_plans.setup_panda.arm_panda_for_gridscan",
         MagicMock(side_effect=assert_set_table_has_been_waited_on),
     ), patch(
-        "hyperion.device_setup_plans.setup_panda.bps.abs_set",
-        MagicMock(side_effect=handle_set),
+        "hyperion.device_setup_plans.setup_panda.bps.wait",
+        MagicMock(side_effect=handle_wait),
     ), patch(
         "hyperion.device_setup_plans.setup_panda.load_device"
+    ), patch(
+        "hyperion.device_setup_plans.setup_panda.bps.abs_set"
     ):
         RE(
             setup_panda_for_flyscan(

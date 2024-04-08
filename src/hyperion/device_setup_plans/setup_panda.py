@@ -163,15 +163,18 @@ def setup_panda_for_flyscan(
 
     LOGGER.info(f"Setting PandA sequencer values: {str(table)}")
 
-    # Wait here since table values should be set before we arm the sequencer block
-    yield from bps.abs_set(panda.seq[1].table, table, wait=True)
+    yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
-    # Wait here since we need PCAP to be enabled before armed
-    yield from bps.abs_set(panda.pcap.enable, Enabled.ENABLED.value, wait=True)  # type: ignore
+    yield from bps.abs_set(
+        panda.pcap.enable,  # type: ignore
+        Enabled.ENABLED.value,
+        group="panda-config",
+    )
 
-    yield from arm_panda_for_gridscan(panda, group="panda-config")
-
+    # Values need to be set before blocks are enabled, so wait here
     yield from bps.wait(group="panda-config", timeout=GENERAL_TIMEOUT)
+
+    yield from arm_panda_for_gridscan(panda)
 
 
 def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
@@ -179,6 +182,7 @@ def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
     yield from bps.abs_set(panda.pulse[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.counter[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.pcap.arm, PcapArm.ARMED.value, group=group)  # type: ignore
+    yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
 
 
 def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenerator:
