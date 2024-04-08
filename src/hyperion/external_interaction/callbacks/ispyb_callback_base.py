@@ -130,8 +130,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 self._event_driven_data_collection_info.wavelength = (
                     convert_eV_to_angstrom(energy_ev)
                 )
-                # TODO 1173 Remove this once nexus_utils no longer needs wavelength_angstroms
-                self.params.hyperion_params.ispyb_params.current_energy_ev = energy_ev
 
             scan_data_infos = self.populate_info_for_update(
                 self._event_driven_data_collection_info, self.params
