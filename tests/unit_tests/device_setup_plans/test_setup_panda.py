@@ -188,7 +188,7 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
             setup_panda_for_flyscan(
                 MagicMock(),
                 "path",
-                PandAGridScanParams(),
+                PandAGridScanParams(transmission_fraction=0.01),
                 1,
                 1,
                 1,
