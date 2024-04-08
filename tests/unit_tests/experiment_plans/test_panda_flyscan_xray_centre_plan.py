@@ -61,6 +61,7 @@ from ...system_tests.external_interaction.conftest import (
 )
 from ..external_interaction.callbacks.conftest import TestData
 from .conftest import (
+    assert_event,
     mock_zocalo_trigger,
     modified_interactor_mock,
     modified_store_grid_scan_mock,
@@ -816,11 +817,3 @@ def test_tidy_up_plans_disable_panda_and_zebra(
     RE(tidy_up_plans(MagicMock()))
     mock_panda_tidy.assert_called_once()
     mock_zebra_tidy.assert_called_once()
-
-
-def assert_event(mock_call, expected):
-    actual = mock_call.args[0]
-    if "data" in actual:
-        actual = actual["data"]
-    for k, v in expected.items():
-        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"
