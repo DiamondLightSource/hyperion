@@ -151,7 +151,6 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     nexus_handler, _ = activated_mocked_cbs
     RE(fake_rotation_scan(params, [nexus_handler]))
 
-    params.hyperion_params.ispyb_params.transmission_fraction = 1.0
     params.hyperion_params.ispyb_params.flux = 10.0
 
     assert nexus_handler.activity_gated_start.call_count == 2  # type: ignore

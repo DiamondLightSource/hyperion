@@ -109,15 +109,11 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
         if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
             assert self._event_driven_data_collection_info
-            if doc["data"]["attenuator_actual_transmission"]:
+            if transmission := doc["data"]["attenuator_actual_transmission"]:
                 # Ispyb wants the transmission in a percentage, we use fractions
                 self._event_driven_data_collection_info.transmission = (
-                    doc["data"]["attenuator_actual_transmission"] * 100
+                    transmission * 100
                 )
-                # TODO 1173 Remove this once nexus_utils no longer needs it
-                self.params.hyperion_params.ispyb_params.transmission_fraction = doc[
-                    "data"
-                ]["attenuator_actual_transmission"]
             self._event_driven_data_collection_info.flux = doc["data"][
                 "flux_flux_reading"
             ]

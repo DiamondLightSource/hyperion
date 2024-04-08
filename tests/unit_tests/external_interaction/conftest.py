@@ -76,7 +76,6 @@ def test_rotation_params():
     params.experiment_params.y = 0
     params.experiment_params.z = 0
     params.hyperion_params.detector_params.exposure_time = 0.004
-    params.hyperion_params.ispyb_params.transmission_fraction = 0.49118047952
     return params
 
 
@@ -84,7 +83,6 @@ def test_rotation_params():
 def test_fgs_params(request):
     params = GridscanInternalParameters(**default_raw_params())
     params.hyperion_params.ispyb_params.flux = 9.0
-    params.hyperion_params.ispyb_params.transmission_fraction = 0.5
     params.hyperion_params.detector_params.expected_energy_ev = convert_angstrom_to_eV(
         1.0
     )
