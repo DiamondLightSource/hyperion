@@ -37,20 +37,19 @@
             "focal_spot_size_x": 1.0,
             "focal_spot_size_y": 1.0,
             "comment": "test",
-            "resolution": 1.0
+            "resolution": 1.0,
+            "microns_per_pixel_x": -1,
+            "microns_per_pixel_y": -1
         }
     },
     "experiment_params": {
-//        "x_steps": 40,
-//        "y_steps": 20,
-//        "z_steps": 10,
-        "x_step_size": 0.1,
-        "y_step_size": 0.1,
-        "z_step_size": 0.1,
+        "z_steps": 10,
         "snapshot_dir": "/tmp",
         "exposure_time": 0.1,
         "detector_distance": 100.0,
         "omega_start": 0.0,
-        "grid_width_microns": 151
+        "grid_width_microns": 400,
+        "exposure_time": 0.12,
+        "requested_energy_kev": 12.7
     }
 }

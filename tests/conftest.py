@@ -327,11 +327,11 @@ def synchrotron():
 
 @pytest.fixture
 def oav(test_config_files):
-    oav = i03.oav(fake_with_ophyd_sim=True)
-    oav.snapshot.trigger = MagicMock(return_value=NullStatus())
-    oav.parameters = OAVConfigParams(
+    parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
+    oav.snapshot.trigger = MagicMock(return_value=NullStatus())
     return oav
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from copy import deepcopy
 from typing import Any, Callable, Literal, Sequence
 from unittest.mock import MagicMock, patch
@@ -255,20 +256,47 @@ def grid_detect_then_xray_centre_composite(
     eiger.odin.fan.on.sim_put(True)
     eiger.odin.meta.initialised.sim_put(True)
     oav.zoom_controller.zrst.set("1.0x")
+    oav.cam.array_size.array_size_x.sim_put(1024)
+    oav.cam.array_size.array_size_y.sim_put(768)
     oav.snapshot.x_size.sim_put(1024)
     oav.snapshot.y_size.sim_put(768)
+    oav.snapshot.top_left_x.set(50)
+    oav.snapshot.top_left_y.set(100)
+    oav.snapshot.box_width.set(0.1 * 1000 / 1.25)  # size in pixels
+    oav.snapshot.last_path_full_overlay.set("test_1_y")
+    oav.snapshot.last_path_outer.set("test_2_y")
+    oav.snapshot.last_saved_path.set("test_3_y")
+    undulator.current_gap.sim_put(1.11)
+
     unpatched_method = oav.parameters.load_microns_per_pixel
     eiger.stale_params.sim_put(0)
     eiger.odin.meta.ready.sim_put(1)
     eiger.odin.fan.ready.sim_put(1)
 
     def patch_lmpp(zoom, xsize, ysize):
-        print("Patch called")
         unpatched_method(zoom, 1024, 768)
 
     def mock_pin_tip_detect(_):
+        tip_x_px = 100
+        tip_y_px = 200
+        microns_per_pixel = 2.87  # from zoom levels .xml
+        grid_width_px = int(400 / microns_per_pixel)
+        target_grid_height_px = 70
+        top_edge_data = ([0] * tip_x_px) + (
+            [(tip_y_px - target_grid_height_px // 2)] * grid_width_px
+        )
+        bottom_edge_data = [0] * tip_x_px + [
+            (tip_y_px + target_grid_height_px // 2)
+        ] * grid_width_px
+        ophyd_pin_tip_detection.triggered_top_edge._backend._set_value(
+            numpy.array(top_edge_data, dtype=numpy.uint32)
+        )
+
+        ophyd_pin_tip_detection.triggered_bottom_edge._backend._set_value(
+            numpy.array(bottom_edge_data, dtype=numpy.uint32)
+        )
         yield from []
-        return 100, 200
+        return tip_x_px, tip_y_px
 
     def mock_set_file_name(val, timeout):
         eiger.odin.meta.file_name.sim_put(val)  # type: ignore
@@ -336,7 +364,6 @@ def scan_xy_data_info_for_update(
     )
     scan_data_info_for_update.data_collection_info.comments = (
         construct_comment_for_gridscan(
-            dummy_params.hyperion_params.ispyb_params,
             scan_data_info_for_update.data_collection_grid_info,
         )
     )
@@ -371,9 +398,7 @@ def scan_data_infos_for_update_3d(
         snaked=True,
     )
     xz_data_collection_info = populate_remaining_data_collection_info(
-        construct_comment_for_gridscan(
-            dummy_params.hyperion_params.ispyb_params, data_collection_grid_info
-        ),
+        construct_comment_for_gridscan(data_collection_grid_info),
         ispyb_ids.data_collection_group_id,
         xz_data_collection_info,
         dummy_params.hyperion_params.detector_params,
@@ -560,11 +585,7 @@ def test_ispyb_deposition_in_gridscan(
     )
 
     ispyb_ids = ispyb_callback.ispyb_ids
-    dcid = ispyb_ids.data_collection_ids[0]
     expected_values = {
-        # "visitid": TEST_SESSION_ID,
-        # "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-        # "sampleid": TEST_SAMPLE_ID,
         "detectorid": 78,
         "axisstart": 0.0,
         "axisrange": 0,
@@ -576,35 +597,103 @@ def test_ispyb_deposition_in_gridscan(
         "beamsizeatsamplex": 1,
         "beamsizeatsampley": 1,
         "transmission": 49.118,
-        "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
-        "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
-        "bottom right (px): [3250,1700].",
         "datacollectionnumber": 0,
         "detectordistance": 100.0,
-        "exptime": 0.1,
-        "imgdir": "/tmp/",
-        "imgprefix": "file_name",
-        "imgsuffix": "h5",
-        "npasses": 1,
+        "exposuretime": 0.12,
+        "imagedirectory": "/tmp/",
+        "imageprefix": "file_name",
+        "imagesuffix": "h5",
+        "numberofpasses": 1,
         "overlap": 0,
         "omegastart": 0,
         "startimagenumber": 1,
-        "resolution": 1.0,  # deferred
-        "wavelength": 123.98419840550369,
+        "resolution": 1.0,
+        "wavelength": 0.976254,
         "xbeam": 150.0,
         "ybeam": 160.0,
-        "xtalsnapshot1": "test1y",
-        "xtalsnapshot2": "test2y",
-        "xtalsnapshot3": "test3y",
-        "synchrotronmode": None,
-        "undulatorgap1": 1.0,
-        # "starttime": EXPECTED_START_TIME,
+        "xtalsnapshotfullpath1": "test_1_y",
+        "xtalsnapshotfullpath2": "test_2_y",
+        "xtalsnapshotfullpath3": "test_3_y",
+        "synchrotronmode": "User",
+        "undulatorgap1": 1.11,
         "filetemplate": "file_name_0_master.h5",
-        "nimages": 40 * 20,
+        "numberofimages": 20 * 12,
     }
+    compare_comment(
+        fetch_datacollection_attribute,
+        ispyb_ids.data_collection_ids[0],
+        "Hyperion: Xray centring - Diffraction grid scan of 20 by 12 "
+        "images in 20.0 um by 20.0 um steps. Top left (px): [100,161], "
+        "bottom right (px): [239,245].",
+    )
+    compare_actual_and_expected(
+        ispyb_ids.data_collection_ids[0],
+        expected_values,
+        fetch_datacollection_attribute,
+    )
+    expected_values = {
+        "detectorid": 78,
+        "axisstart": 90.0,
+        "axisrange": 0,
+        "axisend": 90,
+        "focalspotsizeatsamplex": 1.0,
+        "focalspotsizeatsampley": 1.0,
+        "slitgapvertical": 0.1,
+        "slitgaphorizontal": 0.1,
+        "beamsizeatsamplex": 1,
+        "beamsizeatsampley": 1,
+        "transmission": 49.118,
+        "datacollectionnumber": 1,
+        "detectordistance": 100.0,
+        "exposuretime": 0.12,
+        "imagedirectory": "/tmp/",
+        "imageprefix": "file_name",
+        "imagesuffix": "h5",
+        "numberofpasses": 1,
+        "overlap": 0,
+        "omegastart": 90,
+        "startimagenumber": 1,
+        "resolution": 1.0,
+        "wavelength": 0.976254,
+        "xbeam": 150.0,
+        "ybeam": 160.0,
+        "xtalsnapshotfullpath1": "test_1_y",
+        "xtalsnapshotfullpath2": "test_2_y",
+        "xtalsnapshotfullpath3": "test_3_y",
+        "synchrotronmode": "User",
+        "undulatorgap1": 1.11,
+        "filetemplate": "file_name_1_master.h5",
+        "numberofimages": 20 * 11,
+    }
+    compare_actual_and_expected(
+        ispyb_ids.data_collection_ids[1],
+        expected_values,
+        fetch_datacollection_attribute,
+    )
+    compare_comment(
+        fetch_datacollection_attribute,
+        ispyb_ids.data_collection_ids[1],
+        "Hyperion: Xray centring - Diffraction grid scan of 20 by 11 "
+        "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
+        "bottom right (px): [239,241].",
+    )
+
+
+def compare_comment(
+    fetch_datacollection_attribute, data_collection_id, expected_comment
+):
+    actual_comment = fetch_datacollection_attribute(
+        data_collection_id, DATA_COLLECTION_COLUMN_MAP["comments"]
+    )
+    match = re.search(" Zocalo processing took", actual_comment)
+    truncated_comment = actual_comment[: match.start()] if match else actual_comment
+    assert truncated_comment == expected_comment
+
+
+def compare_actual_and_expected(dcid, expected_values, fetch_datacollection_attribute):
     for k, v in expected_values.items():
         actual = fetch_datacollection_attribute(dcid, DATA_COLLECTION_COLUMN_MAP[k])
-        assert actual == v, f"expected {k} {actual} == {v}"
+        assert actual == v, f"expected {k} {v} == {actual}"
 
 
 @pytest.mark.s03

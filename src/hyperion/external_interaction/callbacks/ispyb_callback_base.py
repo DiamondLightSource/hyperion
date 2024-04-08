@@ -174,7 +174,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             snaked=True,
         )
         data_collection_info.comments = construct_comment_for_gridscan(
-            self.params.hyperion_params.ispyb_params, data_collection_grid_info
+            data_collection_grid_info
         )
         if len(self.ispyb_ids.data_collection_ids) > self._oav_snapshot_event_idx:
             data_collection_id = self.ispyb_ids.data_collection_ids[

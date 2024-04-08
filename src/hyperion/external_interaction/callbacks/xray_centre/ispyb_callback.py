@@ -83,9 +83,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
 
-    def is_3d_gridscan(self):
-        return self.params.experiment_params.is_3d_grid_scan
-
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.DO_FGS:
             self._start_of_fgs_uid = doc.get("uid")
@@ -97,14 +94,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.params = GridscanInternalParameters.from_json(json_params)
-            self.ispyb = StoreInIspyb(
-                self.ispyb_config,
-                (
-                    ExperimentType.GRIDSCAN_3D
-                    if self.is_3d_gridscan()
-                    else ExperimentType.GRIDSCAN_2D
-                ),
-            )
+            self.ispyb = StoreInIspyb(self.ispyb_config, ExperimentType.GRIDSCAN_3D)
             data_collection_group_info = populate_data_collection_group(
                 self.ispyb.experiment_type,
                 self.params.hyperion_params.detector_params,
@@ -122,22 +112,20 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                         self.params.hyperion_params.detector_params,
                         self.params.hyperion_params.ispyb_params,
                     ),
-                )
-            ]
-            if self.is_3d_gridscan():
-                scan_data_infos.append(
-                    ScanDataInfo(
-                        data_collection_info=populate_remaining_data_collection_info(
-                            None,
-                            None,
-                            populate_xz_data_collection_info(
-                                self.params.hyperion_params.detector_params
-                            ),
-                            self.params.hyperion_params.detector_params,
-                            self.params.hyperion_params.ispyb_params,
-                        )
+                ),
+                ScanDataInfo(
+                    data_collection_info=populate_remaining_data_collection_info(
+                        None,
+                        None,
+                        populate_xz_data_collection_info(
+
+                            self.params.hyperion_params.detector_params
+                        ),
+                        self.params.hyperion_params.detector_params,
+                        self.params.hyperion_params.ispyb_params,
                     )
-                )
+                ),
+            ]
 
             self.ispyb_ids = self.ispyb.begin_deposition(
                 data_collection_group_info, scan_data_infos
@@ -200,20 +188,19 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         )
         scan_data_infos = [xy_scan_data_info]
 
-        if self.is_3d_gridscan():
-            data_collection_id = (
-                self.ispyb_ids.data_collection_ids[1]
-                if len(self.ispyb_ids.data_collection_ids) > 1
-                else None
-            )
-            xz_scan_data_info = ScanDataInfo(
-                data_collection_info=event_sourced_data_collection_info,
-                data_collection_position_info=populate_data_collection_position_info(
-                    params.hyperion_params.ispyb_params
-                ),
-                data_collection_id=data_collection_id,
-            )
-            scan_data_infos.append(xz_scan_data_info)
+        data_collection_id = (
+            self.ispyb_ids.data_collection_ids[1]
+            if len(self.ispyb_ids.data_collection_ids) > 1
+            else None
+        )
+        xz_scan_data_info = ScanDataInfo(
+            data_collection_info=event_sourced_data_collection_info,
+            data_collection_position_info=populate_data_collection_position_info(
+                params.hyperion_params.ispyb_params
+            ),
+            data_collection_id=data_collection_id,
+        )
+        scan_data_infos.append(xz_scan_data_info)
         return scan_data_infos
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
