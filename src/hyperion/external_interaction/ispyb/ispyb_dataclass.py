@@ -4,8 +4,6 @@ from typing import Any, Dict, Optional
 import numpy as np
 from pydantic import BaseModel, validator
 
-from hyperion.utils.utils import convert_eV_to_angstrom
-
 GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
     "visit_path": "",
@@ -81,12 +79,6 @@ class IspybParams(BaseModel):
                 "Transmission_fraction of >1 given. Did you give a percentage instead of a fraction?"
             )
         return transmission_fraction
-
-    @property
-    def wavelength_angstroms(self) -> Optional[float]:
-        if self.current_energy_ev:
-            return convert_eV_to_angstrom(self.current_energy_ev)
-        return None  # Return None instead of 0 in order to avoid overwriting previously written values
 
 
 class RobotLoadIspybParams(IspybParams): ...
