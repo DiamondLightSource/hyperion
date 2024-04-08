@@ -5,6 +5,7 @@ import json
 from typing import cast
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
@@ -45,6 +46,7 @@ from hyperion.experiment_plans.set_energy_plan import (
     set_energy_plan,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
@@ -128,7 +130,6 @@ def prepare_for_robot_load(composite: RobotLoadThenCentreComposite):
                       composite.smargon.z, 0,
                       composite.smargon.omega, 0,
                       composite.smargon.chi, 0,
-
                       composite.smargon.phi, 0)
     # fmt: on
 
@@ -141,24 +142,45 @@ def robot_load_then_centre_plan(
 ):
     yield from prepare_for_robot_load(composite)
 
-    yield from bps.abs_set(
-        composite.robot,
-        SampleLocation(
-            parameters.experiment_params.sample_puck,
-            parameters.experiment_params.sample_pin,
-        ),
-        group="robot_load",
+    @bpp.run_decorator(
+        md={
+            "subplan_name": CONST.PLAN.ROBOT_LOAD,
+            "metadata": {
+                "visit_path": parameters.hyperion_params.ispyb_params.visit_path,
+                "sample_id": parameters.hyperion_params.ispyb_params.sample_id,
+                "sample_puck": parameters.experiment_params.sample_puck,
+                "sample_pin": parameters.experiment_params.sample_pin,
+            },
+            "activate_callbacks": [
+                "RobotLoadISPyBCallback",
+            ],
+        }
     )
-
-    if parameters.experiment_params.requested_energy_kev:
-        yield from set_energy_plan(
-            parameters.experiment_params.requested_energy_kev,
-            cast(SetEnergyComposite, composite),
+    def robot_load():
+        yield from bps.abs_set(
+            composite.robot,
+            SampleLocation(
+                parameters.experiment_params.sample_puck,
+                parameters.experiment_params.sample_pin,
+            ),
+            group="robot_load",
         )
 
-    yield from bps.wait("robot_load")
+        if parameters.experiment_params.requested_energy_kev:
+            yield from set_energy_plan(
+                parameters.experiment_params.requested_energy_kev,
+                cast(SetEnergyComposite, composite),
+            )
 
-    yield from wait_for_smargon_not_disabled(composite.smargon)
+        yield from bps.wait("robot_load")
+
+        yield from bps.create(name=CONST.PLAN.ROBOT_LOAD)
+        yield from bps.read(composite.robot.barcode)
+        yield from bps.save()
+
+        yield from wait_for_smargon_not_disabled(composite.smargon)
+
+    yield from robot_load()
 
     params_json = json.loads(parameters.json())
     pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
