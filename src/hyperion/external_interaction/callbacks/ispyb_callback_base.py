@@ -190,8 +190,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
             steps_y=data["oav_snapshot_num_boxes_y"],
             microns_per_pixel_x=self.params.hyperion_params.ispyb_params.microns_per_pixel_x,
             microns_per_pixel_y=self.params.hyperion_params.ispyb_params.microns_per_pixel_y,
-            snapshot_offset_x_pixel=data["oav_snapshot_top_left_x"],
-            snapshot_offset_y_pixel=data["oav_snapshot_top_left_y"],
+            snapshot_offset_x_pixel=int(data["oav_snapshot_top_left_x"]),
+            snapshot_offset_y_pixel=int(data["oav_snapshot_top_left_y"]),
             orientation=Orientation.HORIZONTAL,
             snaked=True,
         )
