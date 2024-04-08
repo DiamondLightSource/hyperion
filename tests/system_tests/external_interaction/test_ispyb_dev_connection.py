@@ -174,7 +174,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dummy_scan_data_info_for_begin,
 ):
     ispyb_ids = dummy_ispyb.begin_deposition(
-        dummy_data_collection_group_info, dummy_scan_data_info_for_begin
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )
     dummy_ispyb.end_deposition(ispyb_ids, "fail", "could not connect to devices")
     assert (
@@ -192,7 +192,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_scan_data_info_for_begin,
 ):
     ispyb_ids = dummy_ispyb_3d.begin_deposition(
-        dummy_data_collection_group_info, dummy_scan_data_info_for_begin
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )
     scan_data_infos = generate_scan_data_infos(
         dummy_params,
@@ -239,7 +239,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
         CONST.SIM.DEV_ISPYB_DATABASE_CFG, experiment_type
     )
     ispyb_ids: IspybIds = ispyb.begin_deposition(
-        dummy_data_collection_group_info, dummy_scan_data_info_for_begin
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )
     scan_data_infos = generate_scan_data_infos(
         dummy_params, dummy_scan_data_info_for_begin, experiment_type, ispyb_ids
