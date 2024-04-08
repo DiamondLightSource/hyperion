@@ -220,6 +220,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
     test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
     test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
+    # TODO 1173 this should not be set here
     test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )

@@ -43,7 +43,6 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 BASIC_PRE_SETUP_DOC = {
     "undulator_current_gap": 0,
-    "undulator_gap": 0,
     "synchrotron-synchrotron_mode": 0,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
@@ -119,24 +118,31 @@ def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
 
 @pytest.fixture
 def mock_subscriptions(test_fgs_params):
-    with patch(
-        "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
-        modified_interactor_mock,
-    ), patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
-    ), patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
-        new=MagicMock(
-            return_value=IspybIds(
-                data_collection_ids=(0, 0), data_collection_group_id=0
-            )
+    with (
+        patch(
+            "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+            modified_interactor_mock,
         ),
-    ), patch(
-        "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
-        new=MagicMock(
-            return_value=IspybIds(
-                data_collection_ids=(0, 0), data_collection_group_id=0, grid_ids=(0, 0)
-            )
+        patch(
+            "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
+        ),
+        patch(
+            "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
+            new=MagicMock(
+                return_value=IspybIds(
+                    data_collection_ids=(0, 0), data_collection_group_id=0
+                )
+            ),
+        ),
+        patch(
+            "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
+            new=MagicMock(
+                return_value=IspybIds(
+                    data_collection_ids=(0, 0),
+                    data_collection_group_id=0,
+                    grid_ids=(0, 0),
+                )
+            ),
         ),
     ):
         nexus_callback, ispyb_callback = create_gridscan_callbacks()
@@ -173,3 +179,11 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_file
     )
     oav.parameters.update_on_zoom(7.5, 1024, 768)
     return magic_mock
+
+
+def assert_event(mock_call, expected):
+    actual = mock_call.args[0]
+    if "data" in actual:
+        actual = actual["data"]
+    for k, v in expected.items():
+        assert actual[k] == v, f"Mismatch in key {k}, {actual} <=> {expected}"

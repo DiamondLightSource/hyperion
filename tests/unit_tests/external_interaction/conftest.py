@@ -69,7 +69,7 @@ def test_rotation_params():
     )
     param_dict["hyperion_params"]["detector_params"]["directory"] = "tests/test_data"
     param_dict["hyperion_params"]["detector_params"]["prefix"] = "TEST_FILENAME"
-    param_dict["hyperion_params"]["detector_params"]["current_energy_ev"] = 12700
+    param_dict["hyperion_params"]["detector_params"]["expected_energy_ev"] = 12700
     param_dict["hyperion_params"]["ispyb_params"]["current_energy_ev"] = 12700
     param_dict["experiment_params"]["rotation_angle"] = 360.0
     params = RotationInternalParameters(**param_dict)
@@ -196,7 +196,6 @@ def dummy_rotation_params():
         )
     )
     dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
-    dummy_params.hyperion_params.ispyb_params.sample_barcode = TEST_BARCODE
     return dummy_params
 
 

@@ -15,7 +15,7 @@
             "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
         },
         "ispyb_params": {
-            "current_energy_ev": 12700,
+            "expected_energy_ev": 12700,
             "visit_path": "/dls/i03/data/2023/cm33866-5/",
             "microns_per_pixel_x": 1.0,
             "microns_per_pixel_y": 1.0,
@@ -44,11 +44,8 @@
                 "test_2",
                 "test_3"
             ],
-            "flux": 10.0,
             "beam_size_x": 1.0,
             "beam_size_y": 1.0,
-            "slit_gap_size_x": 1.0,
-            "slit_gap_size_y": 1.0,
             "focal_spot_size_x": 1.0,
             "focal_spot_size_y": 1.0,
             "comment": "test",

@@ -14,7 +14,7 @@
             "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
         },
         "ispyb_params": {
-            "current_energy_ev": 100,
+            "expected_energy_ev": 100,
             "visit_path": "/tmp/cm31105-4",
             "microns_per_pixel_x": 1.0,
             "microns_per_pixel_y": 1.0,
@@ -38,19 +38,13 @@
                 "test_2_z",
                 "test_3_z"
             ],
-            "flux": 10.0,
             "beam_size_x": 0.1,
             "beam_size_y": 0.1,
             "focal_spot_size_x": 0.0,
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
             "resolution": 1,
-            "sample_id": null,
-            "sample_barcode": null,
-            "undulator_gap": 1.0,
-            "synchrotron_mode": null,
-            "slit_gap_size_x": 0.1,
-            "slit_gap_size_y": 0.1
+            "sample_id": null
         }
     },
     "experiment_params": {

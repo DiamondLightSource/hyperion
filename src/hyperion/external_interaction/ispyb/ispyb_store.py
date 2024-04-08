@@ -53,24 +53,15 @@ class StoreInIspyb(ABC):
         data_collection_group_info: DataCollectionGroupInfo,
         scan_data_info: ScanDataInfo,
     ) -> IspybIds:
-        with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
-            assert conn is not None
-            assert (
-                scan_data_info.data_collection_info.visit_string
-            ), "No visit string supplied for ispyb"
-            data_collection_group_id = scan_data_info.data_collection_info.parent_id
-            if not data_collection_group_id:
-                data_collection_group_id = self._store_data_collection_group_table(
-                    conn, data_collection_group_info
-                )
-                scan_data_info.data_collection_info.parent_id = data_collection_group_id
-            data_collection_id = self._store_data_collection_table(
-                conn, None, scan_data_info.data_collection_info
+        ispyb_ids = IspybIds()
+        if scan_data_info.data_collection_info:
+            ispyb_ids.data_collection_group_id = (
+                scan_data_info.data_collection_info.parent_id
             )
-            return IspybIds(
-                data_collection_group_id=data_collection_group_id,
-                data_collection_ids=(data_collection_id,),
-            )
+
+        return self._begin_or_update_deposition(
+            ispyb_ids, data_collection_group_info, [scan_data_info]
+        )
 
     def update_deposition(
         self,
@@ -78,17 +69,26 @@ class StoreInIspyb(ABC):
         data_collection_group_info: DataCollectionGroupInfo,
         scan_data_infos: Sequence[ScanDataInfo],
     ):
+        assert (
+            ispyb_ids.data_collection_group_id
+        ), "Attempted to store scan data without a collection group"
+        assert (
+            ispyb_ids.data_collection_ids
+        ), "Attempted to store scan data without a collection"
+        return self._begin_or_update_deposition(
+            ispyb_ids, data_collection_group_info, scan_data_infos
+        )
+
+    def _begin_or_update_deposition(
+        self, ispyb_ids, data_collection_group_info, scan_data_infos
+    ):
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
-            assert (
-                ispyb_ids.data_collection_group_id
-            ), "Attempted to store scan data without a collection group"
-            assert (
-                ispyb_ids.data_collection_ids
-            ), "Attempted to store scan data without a collection"
 
-            self._store_data_collection_group_table(
-                conn, data_collection_group_info, ispyb_ids.data_collection_group_id
+            ispyb_ids.data_collection_group_id = (
+                self._store_data_collection_group_table(
+                    conn, data_collection_group_info, ispyb_ids.data_collection_group_id
+                )
             )
 
             grid_ids = []
@@ -96,6 +96,14 @@ class StoreInIspyb(ABC):
             for scan_data_info, data_collection_id in zip_longest(
                 scan_data_infos, ispyb_ids.data_collection_ids
             ):
+                if (
+                    scan_data_info.data_collection_info
+                    and not scan_data_info.data_collection_info.parent_id
+                ):
+                    scan_data_info.data_collection_info.parent_id = (
+                        ispyb_ids.data_collection_group_id
+                    )
+
                 data_collection_id, grid_id = self._store_single_scan_data(
                     conn, scan_data_info, data_collection_id
                 )
@@ -195,18 +203,6 @@ class StoreInIspyb(ABC):
 
         return self._upsert_data_collection_group(conn, params)
 
-    @staticmethod
-    @TRACER.start_as_current_span("_upsert_data_collection_group")
-    def _upsert_data_collection_group(
-        conn: Connector, params: StrictOrderedDict
-    ) -> int:
-        return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
-
-    @staticmethod
-    @TRACER.start_as_current_span("_upsert_data_collection")
-    def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
-        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
-
     def _store_data_collection_table(
         self, conn, data_collection_id, data_collection_info
     ):
@@ -264,3 +260,15 @@ class StoreInIspyb(ABC):
         }
 
         return params
+
+    @staticmethod
+    @TRACER.start_as_current_span("_upsert_data_collection_group")
+    def _upsert_data_collection_group(
+        conn: Connector, params: StrictOrderedDict
+    ) -> int:
+        return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
+
+    @staticmethod
+    @TRACER.start_as_current_span("_upsert_data_collection")
+    def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
+        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
