@@ -53,6 +53,20 @@ class ExpeyeInteraction:
         dewar_location: int,
         container_location: int,
     ) -> RobotActionID:
+        """Create a robot load entry in ispyb.
+
+        Args:
+            proposal_reference (str): The proposal of the experiment e.g. cm37235
+            visit_number (int): The visit number for the proposal, usually this can be
+                                found added to the end of the proposal e.g. the data for
+                                visit number 2 of proposal cm37235 is in cm37235-2
+            sample_id (int): The id of the sample in the database
+            dewar_location (int): Which puck in the dewar the sample is in
+            container_location (int): Which pin in that puck has the sample
+
+        Returns:
+            RobotActionID: The id of the robot load action that is created
+        """
         url = self.base_url + self.CREATE_ROBOT_ACTION.format(
             proposal=proposal_reference, visit_number=visit_number
         )
@@ -68,12 +82,26 @@ class ExpeyeInteraction:
         return response["robotActionId"]
 
     def update_barcode(self, action_id: RobotActionID, barcode: str):
+        """Update the barcode of an existing robot action.
+
+        Args:
+            action_id (RobotActionID): The id of the action to update
+            barcode (str): The barcode to give the action
+        """
         url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
 
         data = {"sampleBarcode": barcode}
         self._send_and_get_response(url, data, patch)
 
     def end_load(self, action_id: RobotActionID, status: str, reason: str):
+        """Finish an existing robot action, providing final information about how it went
+
+        Args:
+            action_id (RobotActionID): The action to finish.
+            status (str): The status of the action at the end, "success" for success,
+                          otherwise error
+            reason (str): If the status is in error than the reason for that error
+        """
         url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
 
         run_status = "SUCCESS" if status == "success" else "ERROR"
