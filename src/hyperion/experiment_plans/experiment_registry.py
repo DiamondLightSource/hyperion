@@ -17,6 +17,7 @@ from hyperion.experiment_plans import (
 from hyperion.external_interaction.callbacks.common.callback_util import (
     CallbacksFactory,
     create_gridscan_callbacks,
+    create_robot_load_and_centre_callbacks,
     create_rotation_callbacks,
 )
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
@@ -101,7 +102,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": robot_load_then_centre_plan.create_devices,
         "internal_param_type": RobotLoadThenCentreInternalParameters,
         "experiment_param_type": RobotLoadThenCentreParams,
-        "callbacks_factory": create_gridscan_callbacks,
+        "callbacks_factory": create_robot_load_and_centre_callbacks,
     },
 }
 EXPERIMENT_NAMES = list(PLAN_REGISTRY.keys())

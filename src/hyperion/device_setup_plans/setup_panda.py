@@ -140,12 +140,18 @@ def setup_panda_for_flyscan(
 
     # Home the PandA X encoder using current motor position
     yield from bps.abs_set(
-        panda.inenc[1].setp, initial_x * MM_TO_ENCODER_COUNTS, wait=True  # type: ignore
+        panda.inenc[1].setp,  # type: ignore
+        initial_x * MM_TO_ENCODER_COUNTS,
+        wait=True,
     )
 
     LOGGER.info(f"Setting PandA clock to period {time_between_x_steps_ms}")
 
-    yield from bps.abs_set(panda.clock[1].period, time_between_x_steps_ms, group="panda-config")  # type: ignore
+    yield from bps.abs_set(
+        panda.clock[1].period,  # type: ignore
+        time_between_x_steps_ms,
+        group="panda-config",
+    )
 
     yield from bps.abs_set(
         panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
@@ -159,12 +165,16 @@ def setup_panda_for_flyscan(
 
     yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
-    # Wait here since we need PCAP to be enabled before armed
-    yield from bps.abs_set(panda.pcap.enable, Enabled.ENABLED.value, wait=True)  # type: ignore
+    yield from bps.abs_set(
+        panda.pcap.enable,  # type: ignore
+        Enabled.ENABLED.value,
+        group="panda-config",
+    )
 
-    yield from arm_panda_for_gridscan(panda, group="panda-config")
-
+    # Values need to be set before blocks are enabled, so wait here
     yield from bps.wait(group="panda-config", timeout=GENERAL_TIMEOUT)
+
+    yield from arm_panda_for_gridscan(panda)
 
 
 def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
@@ -172,6 +182,7 @@ def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
     yield from bps.abs_set(panda.pulse[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.counter[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.pcap.arm, PcapArm.ARMED.value, group=group)  # type: ignore
+    yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
 
 
 def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenerator:

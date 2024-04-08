@@ -89,6 +89,12 @@ def populate_remaining_data_collection_info(
     return data_collection_info
 
 
+def get_proposal_and_session_from_visit_string(visit_string: str) -> tuple[str, int]:
+    visit_parts = visit_string.split("-")
+    assert len(visit_parts) == 2, f"Unexpected visit string {visit_string}"
+    return visit_parts[0], int(visit_parts[1])
+
+
 def get_visit_string_from_path(path: Optional[str]) -> Optional[str]:
     match = re.search(VISIT_PATH_REGEX, path) if path else None
     return str(match.group(1)) if match else None

@@ -26,7 +26,8 @@
             "focal_spot_size_x": 0.0,
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
-            "sample_id": null
+            "sample_id": 12345,
+            "sample_barcode": null
         }
     },
     "experiment_params": {
