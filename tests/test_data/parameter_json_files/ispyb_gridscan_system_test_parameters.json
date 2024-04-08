@@ -45,7 +45,7 @@
     "experiment_params": {
         "z_steps": 10,
         "snapshot_dir": "/tmp",
-        "exposure_time": 0.1,
+        "transmission_fraction": 1.0,
         "detector_distance": 100.0,
         "omega_start": 0.0,
         "grid_width_microns": 400,
