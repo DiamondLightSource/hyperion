@@ -10,6 +10,8 @@ on:
 jobs:
   pin_dependency_versions:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
     steps:
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -28,7 +30,8 @@ jobs:
           MSG=$(.github/workflows/pin_versions.py)
           echo "COMMIT_MESSAGE=\"$MSG\"" >> "$GITHUB_OUTPUT"
       - name: Add setup.cfg
-        run: git add setup.cfg
+        run: |
+          git add setup.cfg
       - name: Commit changes
         run: |
           git config --global user.name "GitHub Workflow"
@@ -36,3 +39,10 @@ jobs:
           git commit -m ${{steps.pin_versions.outputs.COMMIT_MESSAGE}}
           git tag ${{inputs.tagName}}
           git push origin ${{inputs.tagName}}
+      - name: Create Release
+        run: gh release create --generate-notes --draft ${{inputs.tagName}}
+      - name: Edit Release Notes
+        run: |
+          echo -e "${{ steps.pin_versions.outputs.COMMIT_MESSAGE }}\n\n" > "$RUNNER_TEMP/relnotes.txt" 
+          gh release view ${{ inputs.tagName }} | sed '0,/^--$/d' >> "$RUNNER_TEMP/relnotes.txt"
+          gh release edit ${{ inputs.tagName }} --notes-file "$RUNNER_TEMP/relnotes.txt"
