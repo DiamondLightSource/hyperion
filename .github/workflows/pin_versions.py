@@ -88,7 +88,7 @@ def update_setup_cfg_line(version_map: dict[str, str], line, output_file):
 
         write_with_comment(
             comment,
-            f"    {normalized_name} @ {version_map[normalized_name]}",
+            f"    {normalized_name} == {version_map[normalized_name]}",
             output_file,
         )
     else:
