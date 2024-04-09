@@ -4,7 +4,6 @@ import numpy
 from dodal.devices.oav import utils as oav_utils
 
 from hyperion.external_interaction.ispyb.data_model import (
-    DataCollectionGridInfo,
     DataCollectionInfo,
 )
 

@@ -55,8 +55,6 @@ def params():
     params = GridscanInternalParameters(**default_raw_params())
     params.hyperion_params.beamline = CONST.SIM.BEAMLINE
     params.hyperion_params.zocalo_environment = "dev_artemis"
-    params.hyperion_params.ispyb_params.microns_per_pixel_x = 10
-    params.hyperion_params.ispyb_params.microns_per_pixel_y = 10
     yield params
 
 
@@ -76,9 +74,11 @@ def reset_positions(smargon: Smargon):
 
 @pytest_asyncio.fixture
 async def fxc_composite():
-    with patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"), patch(
-        "dodal.devices.zocalo.zocalo_results.workflows.recipe"
-    ), patch("dodal.devices.zocalo.zocalo_results.workflows.recipe"):
+    with (
+        patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
+        patch("dodal.devices.zocalo.zocalo_results.workflows.recipe"),
+        patch("dodal.devices.zocalo.zocalo_results.workflows.recipe"),
+    ):
         zocalo = i03.zocalo()
 
     composite = FlyScanXRayCentreComposite(
