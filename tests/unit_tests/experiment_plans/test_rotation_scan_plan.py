@@ -189,20 +189,6 @@ async def test_rotation_plan_zebra_settings(
     assert await zebra.pc.pulse_start.get_value() == expt_params.shutter_opening_time_s
 
 
-def test_rotation_plan_energy_settings(setup_and_run_rotation_plan_for_tests_standard):
-    params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests_standard[
-        "test_rotation_params"
-    ]
-
-    assert (
-        params.hyperion_params.detector_params.expected_energy_ev == 100
-    )  # from good_test_rotation_scan_parameters.json
-    assert (
-        params.hyperion_params.detector_params.expected_energy_ev
-        == params.hyperion_params.ispyb_params.current_energy_ev
-    )
-
-
 def test_full_rotation_plan_smargon_settings(
     run_full_rotation_plan,
     test_rotation_params,

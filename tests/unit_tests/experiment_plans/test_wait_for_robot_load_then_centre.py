@@ -86,7 +86,6 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 
     assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
-    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
     assert isinstance(
         resolution := params_passed.hyperion_params.ispyb_params.resolution, float
     )
@@ -121,7 +120,6 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
         mock_centring_plan.call_args[0][1]
     )
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
-    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
 
 
 @patch(
@@ -153,7 +151,6 @@ def test_robot_load_then_centre_doesnt_set_energy_if_not_specified(
         mock_centring_plan.call_args[0][1]
     )
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11105
-    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
 
 
 def run_simulating_smargon_wait(

@@ -4,21 +4,16 @@ from typing import Any, Dict, Optional
 import numpy as np
 from pydantic import BaseModel, validator
 
-from hyperion.utils.utils import convert_eV_to_angstrom
-
 GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
     "visit_path": "",
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
-    "current_energy_ev": None,
     # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
     "upper_left": [0, 0, 0],
     "position": [0, 0, 0],
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
-    "transmission_fraction": None,
-    "flux": None,
     "beam_size_x": 0.1,
     "beam_size_y": 0.1,
     "focal_spot_size_x": 0.0,
@@ -35,9 +30,6 @@ class IspybParams(BaseModel):
     microns_per_pixel_y: float
     position: np.ndarray
 
-    transmission_fraction: Optional[float]  # TODO 1033 this is now deprecated
-    # populated by robot_load_then_centre
-    current_energy_ev: Optional[float]
     beam_size_x: float
     beam_size_y: float
     focal_spot_size_x: float
@@ -49,7 +41,6 @@ class IspybParams(BaseModel):
     sample_id: Optional[str] = None
 
     # Optional from GDA as populated by Ophyd
-    flux: Optional[float] = None
     undulator_gap: Optional[float] = None
     xtal_snapshots_omega_start: Optional[list[str]] = None
     xtal_snapshots_omega_end: Optional[list[str]] = None
@@ -73,20 +64,6 @@ class IspybParams(BaseModel):
         if isinstance(position, np.ndarray):
             return position
         return np.array(position)
-
-    @validator("transmission_fraction")
-    def _transmission_not_percentage(cls, transmission_fraction: Optional[float]):
-        if transmission_fraction and transmission_fraction > 1:
-            raise ValueError(
-                "Transmission_fraction of >1 given. Did you give a percentage instead of a fraction?"
-            )
-        return transmission_fraction
-
-    @property
-    def wavelength_angstroms(self) -> Optional[float]:
-        if self.current_energy_ev:
-            return convert_eV_to_angstrom(self.current_energy_ev)
-        return None  # Return None instead of 0 in order to avoid overwriting previously written values
 
 
 class RobotLoadIspybParams(IspybParams): ...

@@ -54,7 +54,6 @@ from ..external_interaction.conftest import (  # noqa
 def params():
     params = GridscanInternalParameters(**default_raw_params())
     params.hyperion_params.beamline = CONST.SIM.BEAMLINE
-    params.hyperion_params.ispyb_params.current_energy_ev = 10000
     params.hyperion_params.zocalo_environment = "dev_artemis"
     params.hyperion_params.ispyb_params.microns_per_pixel_x = 10
     params.hyperion_params.ispyb_params.microns_per_pixel_y = 10

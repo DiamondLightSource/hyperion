@@ -4,7 +4,7 @@
     "insertion_prefix": "SR03S",
     "experiment_type": "flyscan_xray_centre",
     "detector_params": {
-        "current_energy_ev": 100.0,
+        "expected_energy_ev": 100.0,
         "exposure_time": 0.1,
         "directory": "/tmp/",
         "prefix": "file_name",
@@ -34,8 +34,6 @@
             20.0,
             30.0
         ],
-        "current_energy_ev": 100.0,
-        "transmission_fraction": 1.0,
         "beam_size_x": 1.0,
         "beam_size_y": 1.0,
         "focal_spot_size_x": 1.0,
