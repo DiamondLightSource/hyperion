@@ -132,6 +132,11 @@ class TestData:
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": CONST.PLAN.ZOCALO_HW_READ,
     }  # type: ignore
+    test_descriptor_document_nexus_read: EventDescriptor = {
+        "uid": "aaaaaa",
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "name": CONST.PLAN.NEXUS_READ,
+    }  # type: ignore
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.828203,
@@ -159,6 +164,15 @@ class TestData:
         "seq_num": 1,
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "filled": {},
+    }
+    test_event_document_nexus_read: Event = {
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
+        "time": 1709654583.9770422,
+        "data": {"eiger_bit_depth": "16"},
+        "timestamps": {"eiger_bit_depth": 1666604299.8220396},
+        "seq_num": 1,
+        "filled": {},
+        "descriptor": "aaaaaa",
     }
     test_event_document_zocalo_hardware: Event = {
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",

@@ -22,6 +22,7 @@ from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
+    read_hardware_for_nexus_writer,
 )
 from hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
@@ -114,6 +115,7 @@ def run_gridscan(
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
+        yield from read_hardware_for_nexus_writer(fgs_composite.eiger)
 
     fgs_motors = fgs_composite.panda_fast_grid_scan
 
