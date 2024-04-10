@@ -78,8 +78,12 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_VDS_size(
 
     assert nexus_handler.nexus_writer_1 is not None
     assert nexus_handler.nexus_writer_2 is not None
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_called_once_with(vds_type)
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_called_once_with(vds_type)
+    nexus_handler.nexus_writer_1.create_nexus_file.assert_called_once_with(  # type:ignore
+        vds_type
+    )
+    nexus_handler.nexus_writer_2.create_nexus_file.assert_called_once_with(  # type:ignore
+        vds_type
+    )
 
 
 @patch("hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter")
