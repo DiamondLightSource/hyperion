@@ -118,7 +118,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
     grid_scan_params: GridScanParams = test_fgs_params.experiment_params
-    nexus_writer_1.create_nexus_file()
+    nexus_writer_1.create_nexus_file(np.uint16)
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
@@ -170,7 +170,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
     assert_data_edge_at(nexus_writer_1.nexus_file, 799)
     assert_end_data_correct(nexus_writer_1)
 
-    nexus_writer_2.create_nexus_file()
+    nexus_writer_2.create_nexus_file(np.uint16)
 
     for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
@@ -281,8 +281,8 @@ def check_validity_through_zocalo(nexus_writers: tuple[NexusWriter, NexusWriter]
 
     nexus_writer_1, nexus_writer_2 = nexus_writers
 
-    nexus_writer_1.create_nexus_file()
-    nexus_writer_2.create_nexus_file()
+    nexus_writer_1.create_nexus_file(np.uint16)
+    nexus_writer_2.create_nexus_file(np.uint16)
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
@@ -317,8 +317,8 @@ def test_given_some_datafiles_outside_of_VDS_range_THEN_they_are_not_in_nexus_fi
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers_with_more_images
 
-    nexus_writer_1.create_nexus_file()
-    nexus_writer_2.create_nexus_file()
+    nexus_writer_1.create_nexus_file(np.uint16)
+    nexus_writer_2.create_nexus_file(np.uint16)
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
@@ -343,8 +343,8 @@ def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_fi
         nexus_writer_1,
         nexus_writer_2,
     ):
-        nexus_writer_1.create_nexus_file()
-        nexus_writer_2.create_nexus_file()
+        nexus_writer_1.create_nexus_file(np.uint16)
+        nexus_writer_2.create_nexus_file(np.uint16)
 
         for filename in [
             nexus_writer_1.nexus_file,
