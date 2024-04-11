@@ -108,6 +108,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         return self._tag_doc(doc)
 
     def _handle_ispyb_hardware_read(self, doc):
+        assert self.params, "Event handled before activity_gated_start received params"
         ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
         assert isinstance(
             synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],

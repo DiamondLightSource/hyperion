@@ -35,7 +35,7 @@ def test_ispyb_deposition_rounds_position_to_int(
     assert construct_comment_for_gridscan(
         dummy_params.hyperion_params.ispyb_params,
         DataCollectionGridInfo(
-            0.1, 0.1, 40, 20, 1.25, 1.25, 0.01, 100, Orientation.HORIZONTAL, True
+            0.1, 0.1, 40, 20, 1.25, 1.25, 0.01, 100, Orientation.HORIZONTAL, True  # type: ignore
         ),
     ) == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
