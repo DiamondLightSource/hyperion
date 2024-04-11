@@ -1,12 +1,15 @@
 import argparse
 import os
+import re
 from subprocess import PIPE, CalledProcessError, Popen
 from uuid import uuid1
 
 from git import Repo
-from packaging.version import Version
+from packaging.version import VERSION_PATTERN, Version
 
 recognised_beamlines = ["dev", "i03", "i04"]
+
+VERSION_PATTERN_COMPILED = re.compile(VERSION_PATTERN, re.VERBOSE | re.IGNORECASE)
 
 
 class repo:
@@ -18,7 +21,9 @@ class repo:
         self.origin = self.repo.remotes.origin
         self.origin.fetch()
 
-        self.versions = [t.name for t in self.repo.tags]
+        self.versions = [
+            t.name for t in self.repo.tags if VERSION_PATTERN_COMPILED.match(t.name)
+        ]
         self.versions.sort(key=Version, reverse=True)
         print(f"Found {self.name}_versions:\n{os.linesep.join(self.versions)}")
         self.latest_version_str = self.versions[0]
