@@ -57,15 +57,6 @@ class XyzAxis(str, Enum):
     Y = "sam_y"
     Z = "sam_z"
 
-    def for_axis(self, x: T, y: T, z: T) -> T:
-        match self:
-            case XyzAxis.X:
-                return x
-            case XyzAxis.Y:
-                return y
-            case XyzAxis.Z:
-                return z
-
 
 class HyperionParameters(BaseModel):
     class Config:
@@ -166,6 +157,15 @@ class XyzStarts(BaseModel):
     x_start_um: float
     y_start_um: float
     z_start_um: float
+
+    def _start_for_axis(self, axis: XyzAxis) -> float:
+        match axis:
+            case XyzAxis.X:
+                return self.x_start_um
+            case XyzAxis.Y:
+                return self.y_start_um
+            case XyzAxis.Z:
+                return self.z_start_um
 
 
 class OptionalGonioAngleStarts(BaseModel):

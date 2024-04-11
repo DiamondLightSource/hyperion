@@ -6,7 +6,7 @@ import numpy as np
 from dodal.devices.detector import DetectorDistanceToBeamXYConverter, DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
-from pydantic import Field, validator
+from pydantic import Field
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -20,7 +20,6 @@ from hyperion.parameters.components import (
     TemporaryIspybExtras,
     WithSample,
     WithScan,
-    XyzAxis,
     XyzStarts,
 )
 from hyperion.parameters.constants import CONST
@@ -192,76 +191,6 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
     those parameters at some point (e.g. through optical pin detection)."""
 
     panda_runup_distance_mm: float = Field(default=CONST.I03.PANDA_RUNUP_DIST_MM)
-
-
-class TwoDGridScan(SpecifiedGridScan):
-    demand_energy_ev: float | None = Field(default=None)
-    omega_start_deg: float | None = Field(default=None)
-    axis_1_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
-    axis_2_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
-    axis_1: XyzAxis = Field(default=XyzAxis.X)
-    axis_2: XyzAxis = Field(default=XyzAxis.Y)
-    axis_1_steps: int
-    axis_2_steps: int
-
-    @validator("axis_2")
-    def _validate_axis_2(cls, axis_2: XyzAxis, values) -> XyzAxis:
-        if axis_2 == values["axis_1"]:
-            raise ValueError(
-                f"Axis 1 ({values['axis_1']}) and axis 2 ({axis_2}) cannot be equal!"
-            )
-        return axis_2
-
-    @property
-    def normal_axis(self) -> XyzAxis:
-        """The axis not used in the gridscan, e.g. Z for a scan in Y and X"""
-        return ({XyzAxis.X, XyzAxis.Y, XyzAxis.Z} ^ {self.axis_1, self.axis_2}).pop()
-
-    @property
-    def axis_1_start_um(self) -> float:
-        return self.axis_1.for_axis(self.x_start_um, self.y_start_um, self.z_start_um)
-
-    @property
-    def axis_2_start_um(self) -> float:
-        return self.axis_2.for_axis(self.x_start_um, self.y_start_um, self.z_start_um)
-
-    @property
-    def normal_axis_start(self) -> float:
-        return self.normal_axis.for_axis(
-            self.x_start_um, self.y_start_um, self.z_start_um
-        )
-
-    @property
-    def axis_1_end_um(self) -> float:
-        return self.axis_1_start_um + self.axis_1_step_size_um * self.axis_1_steps
-
-    @property
-    def axis_2_end_um(self) -> float:
-        return self.axis_2_start_um + self.axis_2_step_size_um * self.axis_2_steps
-
-    @property
-    def num_images(self) -> int:
-        return self.axis_1_steps * self.axis_2_steps
-
-    @property
-    def scan_spec(self):
-        line_1 = Line(
-            str(self.axis_1.value),
-            self.axis_1_start_um,
-            self.axis_1_end_um,
-            self.axis_1_steps,
-        )
-        line_2 = Line(
-            str(self.axis_2.value),
-            self.axis_2_start_um,
-            self.axis_2_end_um,
-            self.axis_2_steps,
-        )
-        return line_2 * ~line_1
-
-    @property
-    def scan_points(self):
-        return ScanPath(self.scan_spec.calculate()).consume().midpoints
 
 
 class ThreeDGridScan(SpecifiedGridScan, SplitScan):
