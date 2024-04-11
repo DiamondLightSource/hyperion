@@ -220,9 +220,6 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
     test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
     test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
-    test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
-        convert_angstrom_to_eV(test_wl)
-    )
     test_rotation_params.hyperion_params.detector_params.expected_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )
@@ -251,9 +248,9 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
         )
 
     sleep(1)
-    assert isfile("tmp/dev/hyperion_ispyb_callback.txt")
+    assert isfile("tmp/dev/hyperion_ispyb_callback.log")
     ispyb_log_tail = subprocess.run(
-        ["tail", "tmp/dev/hyperion_ispyb_callback.txt"],
+        ["tail", "tmp/dev/hyperion_ispyb_callback.log"],
         timeout=1,
         stdout=subprocess.PIPE,
     ).stdout.decode("utf-8")

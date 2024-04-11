@@ -10,7 +10,7 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
 
 from hyperion.experiment_plans.rotation_scan_plan import (
@@ -311,6 +311,7 @@ def test_ispyb_deposition_in_rotation_plan(
     test_rotation_params: RotationInternalParameters,
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
+    fetch_datacollectiongroup_attribute: Callable[..., Any],
     undulator: Undulator,
     attenuator: Attenuator,
     synchrotron: Synchrotron,
@@ -324,17 +325,33 @@ def test_ispyb_deposition_in_rotation_plan(
     test_bs_y = 0.047
     test_exp_time = 0.023
     test_img_wid = 0.27
+    test_undulator_current_gap = 1.12
+    test_synchrotron_mode = SynchrotronMode.USER
+    test_slit_gap_horiz = 0.123
+    test_slit_gap_vert = 0.234
 
     test_rotation_params.experiment_params.image_width = test_img_wid
     test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
     test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
     test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
-    test_rotation_params.hyperion_params.ispyb_params.current_energy_ev = (
-        convert_angstrom_to_eV(test_wl)
+    energy_ev = convert_angstrom_to_eV(test_wl)
+    fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(  # pyright: ignore
+        energy_ev / 1000
     )
-    test_rotation_params.hyperion_params.detector_params.expected_energy_ev = (
-        convert_angstrom_to_eV(test_wl)
+    fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)
+    fake_create_rotation_devices.synchrotron.machine_status.synchrotron_mode.sim_put(  # pyright: ignore
+        test_synchrotron_mode.value
     )
+    fake_create_rotation_devices.synchrotron.top_up.start_countdown.sim_put(  # pyright: ignore
+        -1
+    )
+    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
+        test_slit_gap_horiz
+    )
+    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
+        test_slit_gap_vert
+    )
+    test_rotation_params.hyperion_params.detector_params.expected_energy_ev = energy_ev
 
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_cb = RotationISPyBCallback()
@@ -366,14 +383,22 @@ def test_ispyb_deposition_in_rotation_plan(
 
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
-    comment = fetch_comment(dcid)
-    assert comment == "Hyperion rotation scan"
-    wavelength = fetch_datacollection_attribute(dcid, "wavelength")
-    beamsize_x = fetch_datacollection_attribute(dcid, "beamSizeAtSampleX")
-    beamsize_y = fetch_datacollection_attribute(dcid, "beamSizeAtSampleY")
-    exposure = fetch_datacollection_attribute(dcid, "exposureTime")
-
-    assert wavelength == test_wl
-    assert beamsize_x == test_bs_x
-    assert beamsize_y == test_bs_y
-    assert exposure == test_exp_time
+    assert fetch_comment(dcid) == "Hyperion rotation scan"
+    assert fetch_datacollection_attribute(dcid, "wavelength") == test_wl
+    assert fetch_datacollection_attribute(dcid, "beamSizeAtSampleX") == test_bs_x
+    assert fetch_datacollection_attribute(dcid, "beamSizeAtSampleY") == test_bs_y
+    assert fetch_datacollection_attribute(dcid, "exposureTime") == test_exp_time
+    assert (
+        fetch_datacollection_attribute(dcid, "undulatorGap1")
+        == test_undulator_current_gap
+    )
+    assert (
+        fetch_datacollection_attribute(dcid, "synchrotronMode")
+        == test_synchrotron_mode.value
+    )
+    assert (
+        fetch_datacollection_attribute(dcid, "slitGapHorizontal") == test_slit_gap_horiz
+    )
+    assert fetch_datacollection_attribute(dcid, "slitGapVertical") == test_slit_gap_vert
+    # TODO Can't test barcode as need BLSample which needs Dewar, Shipping, Container entries for the
+    # upsert stored proc to use it.

@@ -7,7 +7,7 @@
         "zocalo_environment": "dev_artemis",
         "experiment_type": "grid_scan",
         "detector_params": {
-            "current_energy_ev": 100,
+            "expected_energy_ev": 100,
             "exposure_time": 0.1,
             "directory": "/tmp",
             "prefix": "file_name",
@@ -47,12 +47,8 @@
                 "test_2",
                 "test_3"
             ],
-            "transmission_fraction": 1.0,
-            "flux": 10.0,
             "beam_size_x": 1.0,
             "beam_size_y": 1.0,
-            "slit_gap_size_x": 1.0,
-            "slit_gap_size_y": 1.0,
             "focal_spot_size_x": 1.0,
             "focal_spot_size_y": 1.0,
             "comment": "test",

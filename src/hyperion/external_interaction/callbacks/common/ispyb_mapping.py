@@ -24,12 +24,17 @@ from hyperion.external_interaction.ispyb.ispyb_utils import (
 from hyperion.log import ISPYB_LOGGER
 
 
-def populate_data_collection_group(experiment_type, detector_params, ispyb_params):
+def populate_data_collection_group(
+    experiment_type: str,
+    detector_params: DetectorParams,
+    ispyb_params: IspybParams,
+    sample_barcode: Optional[str] = None,
+):
     dcg_info = DataCollectionGroupInfo(
         visit_string=get_visit_string(ispyb_params, detector_params),
         experiment_type=experiment_type,
         sample_id=ispyb_params.sample_id,
-        sample_barcode=ispyb_params.sample_barcode,
+        sample_barcode=sample_barcode,
     )
     return dcg_info
 
@@ -58,12 +63,8 @@ def populate_remaining_data_collection_info(
     data_collection_info.axis_start = data_collection_info.omega_start
     data_collection_info.focal_spot_size_at_samplex = ispyb_params.focal_spot_size_x
     data_collection_info.focal_spot_size_at_sampley = ispyb_params.focal_spot_size_y
-    data_collection_info.slitgap_vertical = ispyb_params.slit_gap_size_y
-    data_collection_info.slitgap_horizontal = ispyb_params.slit_gap_size_x
     data_collection_info.beamsize_at_samplex = ispyb_params.beam_size_x
     data_collection_info.beamsize_at_sampley = ispyb_params.beam_size_y
-    # Ispyb wants the transmission in a percentage, we use fractions
-    data_collection_info.transmission = ispyb_params.transmission_fraction * 100
     data_collection_info.comments = comment_constructor()
     data_collection_info.detector_distance = detector_params.detector_distance
     data_collection_info.exp_time = detector_params.exposure_time
@@ -74,22 +75,24 @@ def populate_remaining_data_collection_info(
     # planned to be removed later
     data_collection_info.n_passes = 1
     data_collection_info.overlap = 0
-    data_collection_info.flux = ispyb_params.flux
     data_collection_info.start_image_number = 1
     data_collection_info.resolution = ispyb_params.resolution
-    data_collection_info.wavelength = ispyb_params.wavelength_angstroms
     beam_position = detector_params.get_beam_position_mm(
         detector_params.detector_distance
     )
     data_collection_info.xbeam = beam_position[0]
     data_collection_info.ybeam = beam_position[1]
-    data_collection_info.synchrotron_mode = ispyb_params.synchrotron_mode
-    data_collection_info.undulator_gap1 = ispyb_params.undulator_gap
     data_collection_info.start_time = get_current_time_string()
     # temporary file template until nxs filewriting is integrated and we can use
     # that file name
     data_collection_info.file_template = f"{detector_params.prefix}_{data_collection_info.data_collection_number}_master.h5"
     return data_collection_info
+
+
+def get_proposal_and_session_from_visit_string(visit_string: str) -> tuple[str, int]:
+    visit_parts = visit_string.split("-")
+    assert len(visit_parts) == 2, f"Unexpected visit string {visit_string}"
+    return visit_parts[0], int(visit_parts[1])
 
 
 def get_visit_string_from_path(path: Optional[str]) -> Optional[str]:

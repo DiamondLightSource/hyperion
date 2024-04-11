@@ -14,6 +14,9 @@ from hyperion.experiment_plans.robot_load_then_centre_plan import (
     prepare_for_robot_load,
     robot_load_then_centre,
 )
+from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+    RobotLoadISPyBCallback,
+)
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
@@ -84,7 +87,6 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 
     assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
-    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
     assert isinstance(
         resolution := params_passed.hyperion_params.ispyb_params.resolution, float
     )
@@ -119,7 +121,6 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
         mock_centring_plan.call_args[0][1]
     )
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
-    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
 
 
 @patch(
@@ -151,7 +152,6 @@ def test_robot_load_then_centre_doesnt_set_energy_if_not_specified(
         mock_centring_plan.call_args[0][1]
     )
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11105
-    assert params_passed.hyperion_params.ispyb_params.current_energy_ev == 11105
 
 
 def run_simulating_smargon_wait(
@@ -299,3 +299,40 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
     aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)  # type: ignore
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
+)
+@patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode"
+)
+@patch(
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
+)
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+)
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
+def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_then_ispyb_deposited(
+    mock_centring_plan: MagicMock,
+    start_load: MagicMock,
+    update_barcode: MagicMock,
+    end_load: MagicMock,
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
+):
+    RE = RunEngine()
+    RE.subscribe(RobotLoadISPyBCallback())
+
+    action_id = 1098
+    start_load.return_value = action_id
+
+    RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
+
+    start_load.assert_called_once_with("cm31105", 4, "12345", 40, 3)
+    update_barcode.assert_called_once_with(action_id, "BARCODE")
+    end_load.assert_called_once_with(action_id, "success", "")

@@ -133,6 +133,6 @@ def create_beam_and_attenuator_parameters(
         tuple[Beam, Attenuator]: Descriptions of the beam and attenuator for nexgen.
     """
     return (
-        Beam(convert_eV_to_angstrom(energy_kev * 1000), flux),
-        Attenuator(transmission_fraction),
+        Beam(convert_eV_to_angstrom(energy_kev * 1000), flux),  # pyright: ignore
+        Attenuator(transmission_fraction),  # pyright: ignore
     )

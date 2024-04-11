@@ -7,7 +7,6 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
 from ...conftest import (
     EXPECTED_END_TIME,
     EXPECTED_START_TIME,
-    TEST_BARCODE,
     TEST_DATA_COLLECTION_GROUP_ID,
     TEST_DATA_COLLECTION_IDS,
     TEST_SAMPLE_ID,
@@ -27,11 +26,8 @@ EXPECTED_DATA_COLLECTION = {
     "axisend": 180,
     "focal_spot_size_at_samplex": 1.0,
     "focal_spot_size_at_sampley": 1.0,
-    "slitgap_vertical": 1,
-    "slitgap_horizontal": 1,
     "beamsize_at_samplex": 1,
     "beamsize_at_sampley": 1,
-    "transmission": 100.0,
     "comments": "Hyperion rotation scan",
     "data_collection_number": 0,
     "detector_distance": 100.0,
@@ -41,11 +37,9 @@ EXPECTED_DATA_COLLECTION = {
     "imgsuffix": "h5",
     "n_passes": 1,
     "overlap": 0,
-    "flux": 10.0,
     "omegastart": 0,
     "start_image_number": 1,
     "resolution": 1.0,  # deferred
-    "wavelength": 123.98419840550369,
     "xbeam": 150.0,
     "ybeam": 160.0,
     "xtal_snapshot1": "test_1_y",
@@ -75,7 +69,6 @@ def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_documen
             "parentid": TEST_SESSION_ID,
             "experimenttype": "SAD",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
         },
     )
     assert_upsert_call_with(

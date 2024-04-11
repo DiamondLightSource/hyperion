@@ -70,15 +70,6 @@ def test_cant_initialise_abstract_internalparams():
         internal_parameters = InternalParameters(**default_raw_params())  # noqa
 
 
-def test_ispyb_param_wavelength():
-    from hyperion.utils.utils import convert_eV_to_angstrom
-
-    ispyb_params = GridscanIspybParams(**GRIDSCAN_ISPYB_PARAM_DEFAULTS)
-    assert ispyb_params.wavelength_angstroms == pytest.approx(
-        convert_eV_to_angstrom(GRIDSCAN_ISPYB_PARAM_DEFAULTS["current_energy_ev"])
-    )
-
-
 def test_ispyb_param_dict():
     ispyb_params = GridscanIspybParams(**GRIDSCAN_ISPYB_PARAM_DEFAULTS)
     as_dict = ispyb_params.dict()

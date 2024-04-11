@@ -37,19 +37,13 @@
                 "test_2_z",
                 "test_3_z"
             ],
-            "flux": 10.0,
             "beam_size_x": 0.1,
             "beam_size_y": 0.1,
             "focal_spot_size_x": 0.0,
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
             "resolution": 1,
-            "sample_id": null,
-            "sample_barcode": null,
-            "undulator_gap": 1.0,
-            "synchrotron_mode": null,
-            "slit_gap_size_x": 0.1,
-            "slit_gap_size_y": 0.1
+            "sample_id": null
         }
     },
     "experiment_params": {

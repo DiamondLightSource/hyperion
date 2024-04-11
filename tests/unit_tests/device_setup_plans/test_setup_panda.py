@@ -2,6 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from bluesky.plan_stubs import null
+from bluesky.run_engine import RunEngine
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from ophyd_async.panda import SeqTrigger
 
@@ -157,6 +159,42 @@ def test_setup_panda_correctly_configures_table(
     )
 
     np.testing.assert_array_equal(table["outa2"], np.array([0, 1, 0, 0, 1, 0]))
+
+
+def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
+    bps_wait_done = False
+
+    def handle_wait(*args, **kwargs):
+        nonlocal bps_wait_done
+        bps_wait_done = True
+        yield from null()
+
+    def assert_set_table_has_been_waited_on(*args, **kwargs):
+        assert bps_wait_done
+        yield from null()
+
+    with patch(
+        "hyperion.device_setup_plans.setup_panda.arm_panda_for_gridscan",
+        MagicMock(side_effect=assert_set_table_has_been_waited_on),
+    ), patch(
+        "hyperion.device_setup_plans.setup_panda.bps.wait",
+        MagicMock(side_effect=handle_wait),
+    ), patch(
+        "hyperion.device_setup_plans.setup_panda.load_device"
+    ), patch(
+        "hyperion.device_setup_plans.setup_panda.bps.abs_set"
+    ):
+        RE(
+            setup_panda_for_flyscan(
+                MagicMock(),
+                "path",
+                PandAGridScanParams(transmission_fraction=0.01),
+                1,
+                1,
+                1,
+                get_smargon_speed(0.1, 1),
+            )
+        )
 
 
 # It also would be useful to have some system tests which check that (at least)

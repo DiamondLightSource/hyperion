@@ -14,7 +14,7 @@ class SimConstants:
     # this one is for unit tests
     ISPYB_CONFIG = "tests/test_data/test_config.cfg"
     # this one is for system tests
-    DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-dev.cfg"
+    DEV_ISPYB_DATABASE_CFG = "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-dev.cfg"
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,8 @@ class PlanNameConstants:
     ISPYB_HARDWARE_READ = "ispyb_reading_hardware"
     ISPYB_TRANSMISSION_FLUX_READ = "ispyb_update_transmission_flux"
     ZOCALO_HW_READ = "zocalo_read_hardware_plan"
+    # Robot load
+    ROBOT_LOAD = "robot_load"
     # Gridscan
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     GRIDSCAN_AND_MOVE = "run_gridscan_and_move"

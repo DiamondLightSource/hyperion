@@ -51,8 +51,8 @@ def setup_callbacks():
 
 def setup_logging(dev_mode: bool):
     for logger, filename in [
-        (ISPYB_LOGGER, "hyperion_ispyb_callback.txt"),
-        (NEXUS_LOGGER, "hyperion_nexus_callback.txt"),
+        (ISPYB_LOGGER, "hyperion_ispyb_callback.log"),
+        (NEXUS_LOGGER, "hyperion_nexus_callback.log"),
     ]:
         if logger.handlers == []:
             handlers = set_up_all_logging_handlers(
