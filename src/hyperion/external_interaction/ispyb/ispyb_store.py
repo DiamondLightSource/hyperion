@@ -75,7 +75,6 @@ class StoreInIspyb(ABC):
         assert (
             ispyb_ids.data_collection_ids
         ), "Attempted to store scan data without a collection"
-        print(f"OBJECT PASSED IN IS {ispyb_ids}")
         return self._begin_or_update_deposition(
             ispyb_ids, data_collection_group_info, scan_data_infos
         )
@@ -86,7 +85,6 @@ class StoreInIspyb(ABC):
         data_collection_group_info: Optional[DataCollectionGroupInfo],
         scan_data_infos,
     ) -> IspybIds:
-        print(f"OBJECT RECEIVED IS {ispyb_ids}")
         with ispyb.open(self.ISPYB_CONFIG_PATH) as conn:
             assert conn is not None, "Failed to connect to ISPyB"
             if data_collection_group_info:
@@ -117,9 +115,6 @@ class StoreInIspyb(ABC):
                 new_data_collection_id, grid_id = self._store_single_scan_data(
                     conn, scan_data_info, data_collection_id
                 )
-                print(
-                    f"OLD_DC_ID = {data_collection_id} NEW DCID = {new_data_collection_id}"
-                )
                 if not data_collection_id:
                     data_collection_ids_out.append(new_data_collection_id)
                 if grid_id:
@@ -129,7 +124,6 @@ class StoreInIspyb(ABC):
                 grid_ids=tuple(grid_ids),
                 data_collection_group_id=ispyb_ids.data_collection_group_id,
             )
-        print(f"NEW ISPYBIDS={ispyb_ids}")
         return ispyb_ids
 
     def end_deposition(self, ispyb_ids: IspybIds, success: str, reason: str):
@@ -229,11 +223,9 @@ class StoreInIspyb(ABC):
     def _store_single_scan_data(
         self, conn, scan_data_info, data_collection_id=None
     ) -> Tuple[int, Optional[int]]:
-        print(f"DCID IN IS {data_collection_id}")
         data_collection_id = self._store_data_collection_table(
             conn, data_collection_id, scan_data_info.data_collection_info
         )
-        print(f"DCID OUT IS {data_collection_id}")
 
         if scan_data_info.data_collection_position_info:
             self._store_position_table(
@@ -249,7 +241,6 @@ class StoreInIspyb(ABC):
                 data_collection_id,
                 scan_data_info.data_collection_grid_info,
             )
-        print(f"DCID OUT2 IS {data_collection_id}")
         return data_collection_id, grid_id
 
     def _store_grid_info_table(

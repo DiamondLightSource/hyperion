@@ -135,8 +135,7 @@ def detect_grid_and_do_gridscan(
     oav_params: OAVParameters,
 ):
     yield from ispyb_activation_wrapper(
-        parameters,
-        _detect_grid_and_do_gridscan(composite, parameters, oav_params),
+        _detect_grid_and_do_gridscan(composite, parameters, oav_params), parameters
     )
 
 

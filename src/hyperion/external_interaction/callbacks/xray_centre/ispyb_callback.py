@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import asdict, replace
-from functools import wraps
 from time import time
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, cast
 
@@ -43,8 +41,9 @@ if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
 
-def ispyb_activation_wrapper(parameters, plan_generator):
-    @bpp.run_decorator(
+def ispyb_activation_wrapper(plan_generator, parameters):
+    return bpp.run_wrapper(
+        plan_generator,
         md={
             "activate_callbacks": ["GridscanISPyBCallback"],
             "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
@@ -53,13 +52,8 @@ def ispyb_activation_wrapper(parameters, plan_generator):
                 if isinstance(parameters, ThreeDGridScan)
                 else parameters
             ).json(),
-        }
+        },
     )
-    @wraps(plan_generator)
-    def wrapped():
-        return plan_generator
-
-    yield from wrapped()
 
 
 class GridscanISPyBCallback(BaseISPyBCallback):
@@ -215,17 +209,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert (
             self.ispyb_ids.data_collection_ids
         ), "Expect at least one valid data collection to record scan data"
-        xy_data_collection_info = replace(
-            DataCollectionInfo(),
-            **{
-                k: v
-                for (k, v) in asdict(event_sourced_data_collection_info).items()
-                if v
-            },
-        )
 
         return ScanDataInfo(
-            data_collection_info=xy_data_collection_info,
+            data_collection_info=event_sourced_data_collection_info,
             data_collection_position_info=populate_data_collection_position_info(
                 params.hyperion_params.ispyb_params
             ),
@@ -237,22 +223,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         params,
         event_sourced_data_collection_info: DataCollectionInfo,
     ):
-        xz_data_collection_info = replace(
-            DataCollectionInfo(),
-            **{
-                k: v
-                for (k, v) in asdict(event_sourced_data_collection_info).items()
-                if v
-            },
-        )
-
         data_collection_id = (
             self.ispyb_ids.data_collection_ids[1]
             if len(self.ispyb_ids.data_collection_ids) > 1
             else None
         )
         return ScanDataInfo(
-            data_collection_info=xz_data_collection_info,
+            data_collection_info=event_sourced_data_collection_info,
             data_collection_position_info=populate_data_collection_position_info(
                 params.hyperion_params.ispyb_params
             ),

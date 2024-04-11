@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import numpy
 from dodal.devices.oav import utils as oav_utils
 
-from hyperion.external_interaction.callbacks.common.ispyb_mapping import GridScanInfo
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionInfo,
 )
-from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 
 
 def populate_xz_data_collection_info(
@@ -40,45 +39,30 @@ def populate_xy_data_collection_info(detector_params):
     return info
 
 
-def construct_comment_for_gridscan(ispyb_params, grid_scan_info: GridScanInfo) -> str:
+def construct_comment_for_gridscan(
+    ispyb_params, grid_info: DataCollectionGridInfo
+) -> str:
     assert (
-        ispyb_params is not None and grid_scan_info is not None
+        ispyb_params is not None and grid_info is not None
     ), "StoreGridScanInIspyb failed to get parameters"
 
     bottom_right = oav_utils.bottom_right_from_top_left(
-        grid_scan_info.upper_left_px,  # type: ignore
-        grid_scan_info.x_steps,
-        grid_scan_info.y_steps,
-        grid_scan_info.x_step_size_mm,
-        grid_scan_info.y_step_size_mm,
+        numpy.array(
+            [grid_info.snapshot_offset_x_pixel, grid_info.snapshot_offset_y_pixel]
+        ),  # type: ignore
+        grid_info.steps_x,
+        grid_info.steps_y,
+        grid_info.dx_in_mm,
+        grid_info.dy_in_mm,
         ispyb_params.microns_per_pixel_x,
         ispyb_params.microns_per_pixel_y,
     )
     return (
         "Hyperion: Xray centring - Diffraction grid scan of "
-        f"{grid_scan_info.x_steps} by "
-        f"{grid_scan_info.y_steps} images in "
-        f"{(grid_scan_info.x_step_size_mm * 1e3):.1f} um by "
-        f"{(grid_scan_info.y_step_size_mm * 1e3):.1f} um steps. "
-        f"Top left (px): [{int(grid_scan_info.upper_left_px[0])},{int(grid_scan_info.upper_left_px[1])}], "
+        f"{grid_info.steps_x} by "
+        f"{grid_info.steps_y} images in "
+        f"{(grid_info.dx_in_mm * 1e3):.1f} um by "
+        f"{(grid_info.dy_in_mm * 1e3):.1f} um steps. "
+        f"Top left (px): [{int(grid_info.snapshot_offset_x_pixel)},{int(grid_info.snapshot_offset_y_pixel)}], "
         f"bottom right (px): [{bottom_right[0]},{bottom_right[1]}]."
     )
-
-
-def populate_data_collection_grid_info(full_params, grid_scan_info, ispyb_params):
-    assert ispyb_params is not None
-    assert full_params is not None
-    dc_grid_info = DataCollectionGridInfo(
-        dx_in_mm=full_params.experiment_params.x_step_size,
-        dy_in_mm=grid_scan_info.y_step_size_mm,
-        steps_x=full_params.experiment_params.x_steps,
-        steps_y=grid_scan_info.y_steps,
-        microns_per_pixel_x=ispyb_params.microns_per_pixel_x,
-        microns_per_pixel_y=ispyb_params.microns_per_pixel_y,
-        # cast coordinates from numpy int64 to avoid mysql type conversion issues
-        snapshot_offset_x_pixel=int(grid_scan_info.upper_left_px[0]),
-        snapshot_offset_y_pixel=int(grid_scan_info.upper_left_px[1]),
-        orientation=Orientation.HORIZONTAL,
-        snaked=True,
-    )
-    return dc_grid_info

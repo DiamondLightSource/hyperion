@@ -4,11 +4,9 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
-import numpy
 from dodal.devices.synchrotron import SynchrotronMode
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    GridScanInfo,
     populate_data_collection_group,
 )
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
@@ -157,28 +155,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         data_collection_info.n_images = (
             data["oav_snapshot_num_boxes_x"] * data["oav_snapshot_num_boxes_y"]
         )
-        grid_scan_info = GridScanInfo(
-            upper_left_px=numpy.array(
-                [data["oav_snapshot_top_left_x"], data["oav_snapshot_top_left_y"]]
-            ),
-            x_steps=data["oav_snapshot_num_boxes_x"],
-            y_steps=data["oav_snapshot_num_boxes_y"],
-            # convert pixels back to mm
-            x_step_size_mm=data["oav_snapshot_box_width"]
-            * self.params.hyperion_params.ispyb_params.microns_per_pixel_x
-            / 1000,
-            y_step_size_mm=data["oav_snapshot_box_width"]
-            * self.params.hyperion_params.ispyb_params.microns_per_pixel_y
-            / 1000,
-        )
-        data_collection_info.comments = construct_comment_for_gridscan(
-            self.params.hyperion_params.ispyb_params, grid_scan_info
-        )
-        if len(self.ispyb_ids.data_collection_ids) > self._oav_snapshot_event_idx:
-            data_collection_id = self.ispyb_ids.data_collection_ids[
-                self._oav_snapshot_event_idx
-            ]
-
         data_collection_grid_info = DataCollectionGridInfo(
             dx_in_mm=data["oav_snapshot_box_width"]
             * self.params.hyperion_params.ispyb_params.microns_per_pixel_x
@@ -195,6 +171,14 @@ class BaseISPyBCallback(PlanReactiveCallback):
             orientation=Orientation.HORIZONTAL,
             snaked=True,
         )
+        data_collection_info.comments = construct_comment_for_gridscan(
+            self.params.hyperion_params.ispyb_params, data_collection_grid_info
+        )
+        if len(self.ispyb_ids.data_collection_ids) > self._oav_snapshot_event_idx:
+            data_collection_id = self.ispyb_ids.data_collection_ids[
+                self._oav_snapshot_event_idx
+            ]
+
         scan_data_info = ScanDataInfo(
             data_collection_info=data_collection_info,
             data_collection_id=data_collection_id,
@@ -204,7 +188,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.ispyb_ids, None, [scan_data_info]
         )
         self._oav_snapshot_event_idx += 1
-        pass
 
     def _handle_ispyb_transmission_flux_read(self, doc):
         assert self._hwscan_data_collection_info

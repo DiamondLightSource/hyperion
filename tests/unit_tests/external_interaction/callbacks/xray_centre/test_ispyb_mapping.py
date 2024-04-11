@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
-from hyperion.external_interaction.callbacks.common.ispyb_mapping import GridScanInfo
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
+from hyperion.external_interaction.ispyb.data_model import DataCollectionGridInfo
+from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -34,7 +34,9 @@ def test_ispyb_deposition_rounds_position_to_int(
 ):
     assert construct_comment_for_gridscan(
         dummy_params.hyperion_params.ispyb_params,
-        GridScanInfo(np.array([0.01, 100, 50]), 40, 20, 0.1, 0.1),
+        DataCollectionGridInfo(
+            0.1, 0.1, 40, 20, 1.25, 1.25, 0.01, 100, Orientation.HORIZONTAL, True
+        ),
     ) == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
         "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [3200,1700]."
@@ -63,20 +65,12 @@ def test_ispyb_deposition_rounds_box_size_int(
     raw,
     rounded,
 ):
-    grid_scan_info = GridScanInfo(
-        [
-            0,
-            0,
-            0,
-        ],
-        0,
-        0,
-        raw,
-        raw,
+    data_collection_grid_info = DataCollectionGridInfo(
+        raw, raw, 0, 0, 1.25, 1.25, 0, 0, Orientation.HORIZONTAL, True
     )
-    bottom_right_from_top_left.return_value = grid_scan_info.upper_left_px
+    bottom_right_from_top_left.return_value = [0, 0]
 
-    assert construct_comment_for_gridscan(MagicMock(), grid_scan_info) == (
+    assert construct_comment_for_gridscan(MagicMock(), data_collection_grid_info) == (
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
         f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."
     )

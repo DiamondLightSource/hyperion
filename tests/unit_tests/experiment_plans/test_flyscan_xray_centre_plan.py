@@ -166,8 +166,8 @@ class TestFlyscanXrayCentrePlan:
 
                 RE(
                     ispyb_activation_wrapper(
-                        test_new_fgs_params,
                         flyscan_xray_centre(fake_fgs_composite, test_new_fgs_params),
+                        test_new_fgs_params,
                     )
                 )
 
@@ -404,7 +404,7 @@ class TestFlyscanXrayCentrePlan:
                 test_fgs_params,
             )
 
-        RE(ispyb_activation_wrapper(test_fgs_params, wrapped_gridscan_and_move()))
+        RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         run_gridscan.assert_called_once()
         move_xyz.assert_called_once()
 
@@ -436,7 +436,7 @@ class TestFlyscanXrayCentrePlan:
                 test_fgs_params,
             )
 
-        RE(ispyb_activation_wrapper(test_fgs_params, wrapped_gridscan_and_move()))
+        RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         assert (
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 1
@@ -472,7 +472,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-        RE(ispyb_activation_wrapper(test_fgs_params, _wrapped_gridscan_and_move()))
+        RE(ispyb_activation_wrapper(_wrapped_gridscan_and_move(), test_fgs_params))
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
@@ -550,7 +550,7 @@ class TestFlyscanXrayCentrePlan:
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
-        RE(ispyb_activation_wrapper(test_fgs_params, wrapped_gridscan_and_move()))
+        RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
@@ -590,7 +590,7 @@ class TestFlyscanXrayCentrePlan:
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
-        RE(ispyb_activation_wrapper(test_fgs_params, wrapped_gridscan_and_move()))
+        RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         assert np.all(move_xyz.call_args[0][1:] == initial_x_y_z)
 
     @patch(
@@ -650,7 +650,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
-        RE(ispyb_activation_wrapper(test_fgs_params, wrapped_gridscan_and_move()))
+        RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         assert (
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 0
@@ -750,8 +750,8 @@ class TestFlyscanXrayCentrePlan:
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
             RE(
                 ispyb_activation_wrapper(
-                    test_new_fgs_params,
                     flyscan_xray_centre(fake_fgs_composite, test_new_fgs_params),
+                    test_new_fgs_params,
                 )
             )
 

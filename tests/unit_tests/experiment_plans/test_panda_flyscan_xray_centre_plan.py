@@ -368,7 +368,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE_with_subs[0](
             ispyb_activation_wrapper(
-                test_panda_fgs_params, wrapped_run_gridscan_and_move()
+                wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
         run_gridscan.assert_called_once()
@@ -412,7 +412,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE_with_subs[0](
             ispyb_activation_wrapper(
-                test_panda_fgs_params, wrapped_run_gridscan_and_move()
+                wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
         assert (
@@ -460,7 +460,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE_with_subs[0](
             ispyb_activation_wrapper(
-                test_panda_fgs_params, wrapped_run_gridscan_and_move()
+                wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
         app_to_comment: MagicMock = mock_subscriptions[
@@ -505,7 +505,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE_with_subs[0](
             ispyb_activation_wrapper(
-                test_panda_fgs_params, wrapped_run_gridscan_and_move()
+                wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
         app_to_comment: MagicMock = mock_subscriptions[
@@ -561,7 +561,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE(
             ispyb_activation_wrapper(
-                test_panda_fgs_params, wrapped_run_gridscan_and_move()
+                wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
         assert np.all(move_xyz.call_args[0][1:] == initial_x_y_z)
@@ -641,7 +641,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE(
             ispyb_activation_wrapper(
-                test_panda_fgs_params, wrapped_run_gridscan_and_move()
+                wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
         assert (
@@ -742,19 +742,22 @@ class TestFlyscanXrayCentrePlan:
         )
         fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
 
-        with patch(
-            "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
-            autospec=True,
-        ), patch(
-            "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
-            lambda _: modified_interactor_mock(mock_parent.run_end),
+        with (
+            patch(
+                "hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
+                autospec=True,
+            ),
+            patch(
+                "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+                lambda _: modified_interactor_mock(mock_parent.run_end),
+            ),
         ):
             RE(
                 ispyb_activation_wrapper(
-                    test_panda_fgs_params,
                     panda_flyscan_xray_centre(
                         fake_fgs_composite, test_panda_fgs_params
                     ),
+                    test_panda_fgs_params,
                 )
             )
 

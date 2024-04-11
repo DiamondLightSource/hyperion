@@ -90,7 +90,7 @@ def run_zocalo_with_dev_ispyb(
 
         RE(
             ispyb_activation_wrapper(
-                dummy_params, trigger_zocalo_after_fast_grid_scan()
+                trigger_zocalo_after_fast_grid_scan(), dummy_params
             )
         )
         centre = await zocalo_device.centres_of_mass.get_value()

@@ -65,9 +65,10 @@ def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
     oav.zoom_controller.frst.set("7.0x")
     oav.zoom_controller.fvst.set("9.0x")
 
-    with patch("dodal.devices.areadetector.plugins.MJPG.requests"), patch(
-        "dodal.devices.areadetector.plugins.MJPG.Image"
-    ) as mock_image_class:
+    with (
+        patch("dodal.devices.areadetector.plugins.MJPG.requests"),
+        patch("dodal.devices.areadetector.plugins.MJPG.Image") as mock_image_class,
+    ):
         mock_image = MagicMock()
         mock_image_class.open.return_value.__enter__.return_value = mock_image
 
@@ -235,7 +236,7 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
         )
 
     with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
-        RE(ispyb_activation_wrapper(test_fgs_params, decorated()))
+        RE(ispyb_activation_wrapper(decorated(), test_fgs_params))
 
         assert_event(
             cb.activity_gated_start.mock_calls[0],  # pyright:ignore
@@ -289,7 +290,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
             grid_width_microns=161.2,
         )
 
-    RE(ispyb_activation_wrapper(test_fgs_params, decorated()))
+    RE(ispyb_activation_wrapper(decorated(), test_fgs_params))
 
     my_grid_params = cb.get_grid_parameters()
 
