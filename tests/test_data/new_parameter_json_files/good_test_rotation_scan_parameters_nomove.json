@@ -21,7 +21,6 @@
     "zocalo_environment": "dev_artemis",
     "transmission_frac": 0.1,
     "ispyb_extras": {
-        "flux": 10.0,
         "microns_per_pixel_x": 1.0,
         "microns_per_pixel_y": 1.0,
         "upper_left": [
@@ -51,8 +50,6 @@
         ],
         "beam_size_x": 1.0,
         "beam_size_y": 1.0,
-        "slit_gap_size_x": 1.0,
-        "slit_gap_size_y": 1.0,
         "focal_spot_size_x": 1.0,
         "focal_spot_size_y": 1.0,
         "resolution": 1.0

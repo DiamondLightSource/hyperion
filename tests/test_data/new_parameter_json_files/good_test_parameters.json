@@ -54,11 +54,8 @@
             "test_2",
             "test_3"
         ],
-        "flux": 10.0,
         "beam_size_x": 1.0,
         "beam_size_y": 1.0,
-        "slit_gap_size_x": 1.0,
-        "slit_gap_size_y": 1.0,
         "focal_spot_size_x": 1.0,
         "focal_spot_size_y": 1.0,
         "resolution": 1.0

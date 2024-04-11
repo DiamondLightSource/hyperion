@@ -82,8 +82,6 @@ class RotationScan(
             microns_per_pixel_x=self.ispyb_extras.microns_per_pixel_x,
             microns_per_pixel_y=self.ispyb_extras.microns_per_pixel_y,
             position=np.array(self.ispyb_extras.position),
-            transmission_fraction=self.transmission_frac,
-            current_energy_ev=self.demand_energy_ev,
             beam_size_x=self.ispyb_extras.beam_size_x,
             beam_size_y=self.ispyb_extras.beam_size_y,
             focal_spot_size_x=self.ispyb_extras.focal_spot_size_x,
@@ -91,15 +89,10 @@ class RotationScan(
             comment=self.comment,
             resolution=self.ispyb_extras.resolution,
             sample_id=str(self.sample_id),
-            sample_barcode=self.ispyb_extras.sample_barcode,
             undulator_gap=self.ispyb_extras.undulator_gap,
-            synchrotron_mode=self.ispyb_extras.synchrotron_mode,
-            slit_gap_size_x=self.ispyb_extras.slit_gap_size_x,
-            slit_gap_size_y=self.ispyb_extras.slit_gap_size_y,
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,
             ispyb_experiment_type="SAD",
-            flux=self.ispyb_extras.flux,
         )
 
     @property

@@ -190,12 +190,7 @@ class TemporaryIspybExtras(BaseModel):
     focal_spot_size_x: float
     focal_spot_size_y: float
     resolution: float | None = None
-    sample_barcode: str | None = None
-    flux: float | None = None
     undulator_gap: float | None = None
-    synchrotron_mode: str | None = None
-    slit_gap_size_x: float | None = None
-    slit_gap_size_y: float | None = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None

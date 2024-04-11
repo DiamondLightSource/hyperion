@@ -229,11 +229,8 @@ class TestNewGdaParams:
                     "microns_per_pixel_y": self.microns_per_pixel_y,
                     "sample_barcode": "",
                     "position": self.position,
-                    "flux": 1000000,
                     "beam_size_x": self.beam_size_x,
                     "beam_size_y": self.beam_size_y,
-                    "slit_gap_size_x": 200 / 1000.0,
-                    "slit_gap_size_y": 200 / 1000.0,
                     "focal_spot_size_x": self.focal_spot_size_x,
                     "focal_spot_size_y": self.focal_spot_size_y,
                     "resolution": 1.57,
@@ -261,11 +258,7 @@ class TestNewGdaParams:
         # This should all be stuff that is no longer needed because
         # we get it from devices!
         old_params.hyperion_params.ispyb_params.resolution = None
-        old_params.hyperion_params.ispyb_params.flux = None
-        old_params.hyperion_params.ispyb_params.sample_barcode = None
         old_params.hyperion_params.ispyb_params.undulator_gap = None
-        old_params.hyperion_params.ispyb_params.slit_gap_size_x = None
-        old_params.hyperion_params.ispyb_params.slit_gap_size_y = None
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end = []
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = []
 
@@ -330,11 +323,8 @@ class TestNewGdaParams:
                     "microns_per_pixel_y": self.microns_per_pixel_y,
                     "sample_barcode": "",
                     "position": self.position,
-                    "flux": 1000000,
                     "beam_size_x": self.beam_size_x,
                     "beam_size_y": self.beam_size_y,
-                    "slit_gap_size_x": 200 / 1000.0,
-                    "slit_gap_size_y": 200 / 1000.0,
                     "focal_spot_size_x": self.focal_spot_size_x,
                     "focal_spot_size_y": self.focal_spot_size_y,
                     "resolution": 1.57,
@@ -368,10 +358,6 @@ class TestNewGdaParams:
         # This should all be stuff that is no longer needed because
         # we get it from devices!
         old_params.hyperion_params.ispyb_params.resolution = None
-        old_params.hyperion_params.ispyb_params.flux = None
-        old_params.hyperion_params.ispyb_params.sample_barcode = None
         old_params.hyperion_params.ispyb_params.undulator_gap = None
-        old_params.hyperion_params.ispyb_params.slit_gap_size_x = None
-        old_params.hyperion_params.ispyb_params.slit_gap_size_y = None
 
         assert new_old_params == old_params
