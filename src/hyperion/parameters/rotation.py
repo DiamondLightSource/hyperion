@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_dist_to_beam_converter import (
@@ -43,17 +41,11 @@ class RotationScan(
     omega_start_deg: float = Field(default=0)  # type: ignore
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
     shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
-    rotation_angle_deg: float
-    rotation_increment_deg: float
-    rotation_direction: RotationDirection
+    scan_width_deg: float = Field(default=360, gt=0)
+    rotation_increment_deg: float = Field(default=0.1, gt=0)
+    rotation_direction: RotationDirection = Field(default=RotationDirection.NEGATIVE)
     transmission_frac: float
     ispyb_extras: TemporaryIspybExtras
-
-    @property
-    def directory(self):
-        directory = str(self.visit_directory / "auto" / str(self.sample_id))
-        os.makedirs(directory, exist_ok=True)
-        return directory
 
     @property
     def detector_params(self):
@@ -68,7 +60,7 @@ class RotationScan(
         return DetectorParams(
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
-            directory=self.directory,
+            directory=self.storage_directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
             omega_start=self.omega_start_deg,
@@ -115,7 +107,7 @@ class RotationScan(
         scan_spec = Line(
             axis="omega",
             start=self.omega_start_deg,
-            stop=(self.rotation_angle_deg + self.omega_start_deg),
+            stop=(self.scan_width_deg + self.omega_start_deg),
             num=self.num_images,
         )
         scan_path = ScanPath(scan_spec.calculate())
@@ -123,7 +115,7 @@ class RotationScan(
 
     @property
     def num_images(self) -> int:
-        return int(self.rotation_angle_deg / self.rotation_increment_deg)
+        return int(self.scan_width_deg / self.rotation_increment_deg)
 
     # Can be removed in #1277
     def old_parameters(self) -> RotationInternalParameters:
@@ -131,7 +123,7 @@ class RotationScan(
             params_version=str(self.parameter_model_version),  # type: ignore
             experiment_params=RotationScanParams(
                 rotation_axis=self.rotation_axis,
-                rotation_angle=self.rotation_angle_deg,
+                rotation_angle=self.scan_width_deg,
                 image_width=self.rotation_increment_deg,
                 omega_start=self.omega_start_deg,
                 phi_start=self.phi_start_deg,

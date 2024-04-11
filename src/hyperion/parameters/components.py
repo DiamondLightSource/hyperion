@@ -102,6 +102,7 @@ class DiffractionExperiment(HyperionParameters):
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
     run_number: int | None = Field(default=None, ge=0)
+    storage_directory: str
 
     @property
     def visit_directory(self) -> Path:

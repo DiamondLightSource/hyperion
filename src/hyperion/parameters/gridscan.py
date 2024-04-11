@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import os
-
 import numpy as np
 from dodal.devices.detector import DetectorDistanceToBeamXYConverter, DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from pydantic import Field
 from scanspec.core import Path as ScanPath
-from scanspec.specs import Line
+from scanspec.specs import Line, Static
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
@@ -52,12 +50,6 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
     transmission_frac: float = Field(default=1)
     # field rather than inherited to make it easier to track when it can be removed:
     ispyb_extras: TemporaryIspybExtras
-
-    @property
-    def directory(self):
-        directory = str(self.visit_directory / "xraycentring" / str(self.sample_id))
-        os.makedirs(directory, exist_ok=True)
-        return directory
 
     @property
     def ispyb_params(self):
@@ -105,7 +97,7 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
         return DetectorParams(
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
-            directory=self.directory,
+            directory=self.storage_directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
             omega_start=self.omega_start_deg or 0,
@@ -194,9 +186,12 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
 
 
 class ThreeDGridScan(SpecifiedGridScan, SplitScan):
+    """Parameters representing a so-called 3D grid scan, which consists of doing a
+    gridscan in X and Y, followed by one in X and Z."""
+
     demand_energy_ev: float | None = Field(default=None)
-    omega_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_1)  # type: ignore
-    omega2_start_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_2)
+    grid1_omega_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_1)  # type: ignore
+    grid2_omega_deg: float = Field(default=CONST.PARAM.GRIDSCAN.OMEGA_2)
     x_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
     y_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
     z_step_size_um: float = Field(default=CONST.PARAM.GRIDSCAN.BOX_WIDTH_UM)
@@ -245,41 +240,38 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
         )
 
     @property
-    def scan_1(self):
+    def grid_1_spec(self):
         x_end = self.x_start_um + self.x_step_size_um * self.x_steps
         y1_end = self.y_start_um + self.y_step_size_um * self.y_steps
-
-        scan_1_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
-        scan_1_omega = Line(
-            "omega", self.omega_start_deg, self.omega_start_deg, self.x_steps
-        )
-        scan_1_z = Line("sam_z", self.z_start_um, self.z_start_um, self.x_steps)
-        scan_1_y = Line("sam_y", self.y_start_um, y1_end, self.y_steps)
-        return scan_1_x.zip(scan_1_z).zip(scan_1_omega) * ~scan_1_y
+        grid_1_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+        grid_1_y = Line("sam_y", self.y_start_um, y1_end, self.y_steps)
+        grid_1_omega = Static("omega", self.grid1_omega_deg)
+        grid_1_z = Static("sam_z", self.z_start_um)
+        return grid_1_x.zip(grid_1_z).zip(grid_1_omega) * ~grid_1_y
 
     @property
-    def scan_2(self):
+    def grid_2_spec(self):
         x_end = self.x_start_um + self.x_step_size_um * self.x_steps
         z2_end = self.z2_start_um + self.z_step_size_um * self.z_steps
-
-        scan_2_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
-        scan_2_omega = Line(
-            "omega", self.omega2_start_deg, self.omega2_start_deg, self.x_steps
-        )
-        scan_2_y = Line("sam_y", self.y2_start_um, self.y2_start_um, self.x_steps)
-        scan_2_z = Line("sam_z", self.z2_start_um, z2_end, self.z_steps)
-        return scan_2_x.zip(scan_2_y).zip(scan_2_omega) * ~scan_2_z
+        grid_2_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+        grid_2_z = Line("sam_z", self.z2_start_um, z2_end, self.z_steps)
+        grid_2_omega = Static("omega", self.grid2_omega_deg)
+        grid_2_y = Static("sam_y", self.y2_start_um)
+        return grid_2_x.zip(grid_2_y).zip(grid_2_omega) * ~grid_2_z
 
     @property
     def scan_indices(self):
         """The first index of each gridscan, useful for writing nexus files/VDS"""
-        return [0, len(ScanPath(self.scan_1.calculate()).consume().midpoints["sam_x"])]
+        return [
+            0,
+            len(ScanPath(self.grid_1_spec.calculate()).consume().midpoints["sam_x"]),
+        ]
 
     @property
     def scan_spec(self):
         """A fully specified ScanSpec object representing both grids, with x, y, z and
         omega positions."""
-        return self.scan_1.concat(self.scan_2)
+        return self.grid_1_spec.concat(self.grid_2_spec)
 
     @property
     def scan_points(self):

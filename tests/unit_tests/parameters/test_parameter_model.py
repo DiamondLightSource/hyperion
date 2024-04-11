@@ -39,6 +39,7 @@ def minimal_3d_gridscan_params():
         "x_steps": 5,
         "y_steps": 7,
         "z_steps": 9,
+        "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
         "ispyb_extras": {
             "microns_per_pixel_x": 0,
             "microns_per_pixel_y": 0,
@@ -137,6 +138,7 @@ def test_robot_load_then_centre_params():
         "sample_id": 123456,
         "visit": "cm12345",
         "file_name": "file_name",
+        "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
         "ispyb_extras": {
             "microns_per_pixel_x": 0.5,
             "microns_per_pixel_y": 0.5,
@@ -176,6 +178,7 @@ class TestNewGdaParams:
     rotation_axis = "omega"
     rotation_direction = "Negative"
     rotation_comment = "Hyperion rotation scan - "
+    directory = "/tmp/dls/i03/data/2024/cm66666-6/xraycentring/456789/"
 
     def test_pin_then_xray(self):
         new_hyperion_params_dict = {
@@ -190,6 +193,7 @@ class TestNewGdaParams:
             "use_roi_mode": False,
             "transmission_frac": self.transmission,
             "zocalo_environment": "artemis",
+            "storage_directory": self.directory,
             "ispyb_extras": {
                 "microns_per_pixel_x": self.microns_per_pixel_x,
                 "microns_per_pixel_y": self.microns_per_pixel_y,
@@ -209,7 +213,7 @@ class TestNewGdaParams:
                 "experiment_type": "pin_centre_then_xray_centre",
                 "detector_params": {
                     "expected_energy_ev": self.energy,
-                    "directory": "/tmp/dls/i03/data/2024/cm66666-6/xraycentring/456789/",
+                    "directory": self.directory,
                     "prefix": self.filename,
                     "use_roi_mode": False,
                     "detector_size_constants": CONST.I03.DETECTOR,
@@ -277,8 +281,9 @@ class TestNewGdaParams:
             "omega_start_deg": self.omega_start,
             "chi_start_deg": self.chi,
             "file_name": self.filename,
-            "rotation_angle_deg": self.rotation_inc * 1001,
+            "scan_width_deg": self.rotation_inc * 1001,
             "rotation_axis": self.rotation_axis,
+            "storage_directory": self.directory,
             "rotation_direction": self.rotation_direction,
             "rotation_increment_deg": self.rotation_inc,
             "sample_id": self.sample_id,
@@ -308,7 +313,7 @@ class TestNewGdaParams:
                 "experiment_type": "SAD",
                 "detector_params": {
                     "expected_energy_ev": self.energy,
-                    "directory": "/tmp/dls/i03/data/2024/cm66666-6/auto/456789/",
+                    "directory": self.directory,
                     "prefix": self.filename,
                     "use_roi_mode": False,
                     "detector_size_constants": CONST.I03.DETECTOR,
