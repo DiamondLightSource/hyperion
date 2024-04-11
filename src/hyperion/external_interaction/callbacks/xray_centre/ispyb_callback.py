@@ -189,52 +189,33 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self, event_sourced_data_collection_info: DataCollectionInfo, params
     ) -> Sequence[ScanDataInfo]:
         params = cast(GridscanInternalParameters, params)
-        xy_scan_data_info = self.populate_xy_scan_data_info(
-            params, event_sourced_data_collection_info
-        )
-        scan_data_infos = [xy_scan_data_info]
-
-        if self.is_3d_gridscan():
-            xz_scan_data_info = self.populate_xz_scan_data_info(
-                params, event_sourced_data_collection_info
-            )
-            scan_data_infos.append(xz_scan_data_info)
-        return scan_data_infos
-
-    def populate_xy_scan_data_info(
-        self,
-        params,
-        event_sourced_data_collection_info: DataCollectionInfo,
-    ):
         assert (
             self.ispyb_ids.data_collection_ids
         ), "Expect at least one valid data collection to record scan data"
-
-        return ScanDataInfo(
+        xy_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
             data_collection_position_info=populate_data_collection_position_info(
                 params.hyperion_params.ispyb_params
             ),
             data_collection_id=self.ispyb_ids.data_collection_ids[0],
         )
+        scan_data_infos = [xy_scan_data_info]
 
-    def populate_xz_scan_data_info(
-        self,
-        params,
-        event_sourced_data_collection_info: DataCollectionInfo,
-    ):
-        data_collection_id = (
-            self.ispyb_ids.data_collection_ids[1]
-            if len(self.ispyb_ids.data_collection_ids) > 1
-            else None
-        )
-        return ScanDataInfo(
-            data_collection_info=event_sourced_data_collection_info,
-            data_collection_position_info=populate_data_collection_position_info(
-                params.hyperion_params.ispyb_params
-            ),
-            data_collection_id=data_collection_id,
-        )
+        if self.is_3d_gridscan():
+            data_collection_id = (
+                self.ispyb_ids.data_collection_ids[1]
+                if len(self.ispyb_ids.data_collection_ids) > 1
+                else None
+            )
+            xz_scan_data_info = ScanDataInfo(
+                data_collection_info=event_sourced_data_collection_info,
+                data_collection_position_info=populate_data_collection_position_info(
+                    params.hyperion_params.ispyb_params
+                ),
+                data_collection_id=data_collection_id,
+            )
+            scan_data_infos.append(xz_scan_data_info)
+        return scan_data_infos
 
     def activity_gated_stop(self, doc: RunStop) -> Optional[RunStop]:
         if doc.get("run_start") == self._start_of_fgs_uid:

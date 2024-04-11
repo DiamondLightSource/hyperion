@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import asdict, replace
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
@@ -134,17 +133,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids.data_collection_ids
         ), "Expect an existing DataCollection to update"
         params = cast(RotationInternalParameters, params)
-        data_collection_info = replace(
-            DataCollectionInfo(),
-            **{
-                k: v
-                for (k, v) in asdict(event_sourced_data_collection_info).items()
-                if v
-            },
-        )
         return [
             ScanDataInfo(
-                data_collection_info=data_collection_info,
+                data_collection_info=event_sourced_data_collection_info,
                 data_collection_position_info=populate_data_collection_position_info(
                     params.hyperion_params.ispyb_params
                 ),

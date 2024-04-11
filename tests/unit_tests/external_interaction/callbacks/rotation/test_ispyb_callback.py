@@ -82,7 +82,7 @@ def test_activity_gated_start(mock_ispyb_conn, test_rotation_start_outer_documen
     "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
-def test_hardware_and_flux_read_events(
+def test_hardware_read_events(
     mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
 ):
     callback = RotationISPyBCallback()
@@ -99,12 +99,6 @@ def test_hardware_and_flux_read_events(
         TestData.test_descriptor_document_pre_data_collection
     )
     callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-    callback.activity_gated_descriptor(
-        TestData.test_descriptor_document_during_data_collection
-    )
-    callback.activity_gated_event(
-        TestData.test_rotation_event_document_during_data_collection
-    )
     assert_upsert_call_with(
         mx.upsert_data_collection_group.mock_calls[0],
         mx.get_data_collection_group_params(),
@@ -126,9 +120,6 @@ def test_hardware_and_flux_read_events(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "wavelength": 1.1164718451643736,
-            "transmission": 98,
-            "flux": 9.81,
         },
     )
     assert_upsert_call_with(
@@ -139,6 +130,46 @@ def test_hardware_and_flux_read_events(
             "pos_x": dummy_rotation_params.hyperion_params.ispyb_params.position[0],
             "pos_y": dummy_rotation_params.hyperion_params.ispyb_params.position[1],
             "pos_z": dummy_rotation_params.hyperion_params.ispyb_params.position[2],
+        },
+    )
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
+    new=MagicMock(return_value=EXPECTED_START_TIME),
+)
+def test_flux_read_events(
+    mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
+):
+    callback = RotationISPyBCallback()
+    callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
+    callback.activity_gated_start(
+        TestData.test_rotation_start_main_document  # pyright: ignore
+    )
+    mx = mx_acquisition_from_conn(mock_ispyb_conn)
+    callback.activity_gated_descriptor(
+        TestData.test_descriptor_document_pre_data_collection
+    )
+    callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+    mx.upsert_data_collection_group.reset_mock()
+    mx.upsert_data_collection.reset_mock()
+    callback.activity_gated_descriptor(
+        TestData.test_descriptor_document_during_data_collection
+    )
+    callback.activity_gated_event(
+        TestData.test_rotation_event_document_during_data_collection
+    )
+
+    mx.upsert_data_collection_group.assert_not_called()
+    assert_upsert_call_with(
+        mx.upsert_data_collection.mock_calls[0],
+        mx.get_data_collection_params(),
+        {
+            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+            "id": TEST_DATA_COLLECTION_IDS[0],
+            "wavelength": 1.1164718451643736,
+            "transmission": 98,
+            "flux": 9.81,
         },
     )
 

@@ -54,7 +54,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
         self._oav_snapshot_event_idx: int = 0
-        self._hwscan_data_collection_info: Optional[DataCollectionInfo] = None
         self._sample_barcode: Optional[str] = None
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
@@ -77,7 +76,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         self._oav_snapshot_event_idx = 0
-        self._hwscan_data_collection_info = DataCollectionInfo()
         self._sample_barcode = None
         return self._tag_doc(doc)
 
@@ -90,10 +88,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         hyperion.log"""
         ISPYB_LOGGER.debug("ISPyB handler received event document.")
         assert self.ispyb is not None, "ISPyB deposition wasn't initialised!"
-        assert self.params is not None, "ISPyB handler didn't recieve parameters!"
-        assert (
-            self._hwscan_data_collection_info
-        ), "Processed unexpected event prior to callback activation"
+        assert self.params is not None, "ISPyB handler didn't receive parameters!"
 
         event_descriptor = self.descriptors.get(doc["descriptor"])
         if event_descriptor is None:
@@ -109,37 +104,31 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 self._handle_oav_snapshot_triggered(doc)
             case CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ:
                 self._handle_ispyb_transmission_flux_read(doc)
-
-                scan_data_infos = self.populate_info_for_update(
-                    self._hwscan_data_collection_info, self.params
-                )
-                ISPYB_LOGGER.info("Updating ispyb entry.")
-                self.ispyb_ids = self.update_deposition(
-                    self.params,
-                    scan_data_infos,
-                    self._sample_barcode,
-                )
-                ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
+        ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
 
     def _handle_ispyb_hardware_read(self, doc):
-        assert self._hwscan_data_collection_info
         ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
-        self._hwscan_data_collection_info.undulator_gap1 = doc["data"][
-            "undulator_current_gap"
-        ]
         assert isinstance(
             synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],
             SynchrotronMode,
         )
-        self._hwscan_data_collection_info.synchrotron_mode = synchrotron_mode.value
-        self._hwscan_data_collection_info.slitgap_horizontal = doc["data"][
-            "s4_slit_gaps_xgap"
-        ]
-        self._hwscan_data_collection_info.slitgap_vertical = doc["data"][
-            "s4_slit_gaps_ygap"
-        ]
+        hwscan_data_collection_info = DataCollectionInfo(
+            undulator_gap1=doc["data"]["undulator_current_gap"],
+            synchrotron_mode=synchrotron_mode.value,
+            slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
+            slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
+        )
         self._sample_barcode = doc["data"]["robot-barcode"]
+        scan_data_infos = self.populate_info_for_update(
+            hwscan_data_collection_info, self.params
+        )
+        ISPYB_LOGGER.info(
+            "Updating ispyb data collection and group after hardware read."
+        )
+        self.ispyb_ids = self.update_deposition(
+            self.params, scan_data_infos, self._sample_barcode
+        )
 
     def _handle_oav_snapshot_triggered(self, doc):
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
@@ -184,25 +173,30 @@ class BaseISPyBCallback(PlanReactiveCallback):
             data_collection_id=data_collection_id,
             data_collection_grid_info=data_collection_grid_info,
         )
+        ISPYB_LOGGER.info(
+            "Updating ispyb data collection and group after oav snapshot."
+        )
         self.ispyb_ids = self.ispyb.update_deposition(
             self.ispyb_ids, None, [scan_data_info]
         )
         self._oav_snapshot_event_idx += 1
 
     def _handle_ispyb_transmission_flux_read(self, doc):
-        assert self._hwscan_data_collection_info
         assert self.params
+        hwscan_data_collection_info = DataCollectionInfo(
+            flux=doc["data"]["flux_flux_reading"]
+        )
         if transmission := doc["data"]["attenuator_actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
-            self._hwscan_data_collection_info.transmission = transmission * 100
-
-        self._hwscan_data_collection_info.flux = doc["data"]["flux_flux_reading"]
-
+            hwscan_data_collection_info.transmission = transmission * 100
         if doc["data"]["dcm_energy_in_kev"]:
             energy_ev = doc["data"]["dcm_energy_in_kev"] * 1000
-            self._hwscan_data_collection_info.wavelength = convert_eV_to_angstrom(
-                energy_ev
-            )
+            hwscan_data_collection_info.wavelength = convert_eV_to_angstrom(energy_ev)
+        scan_data_infos = self.populate_info_for_update(
+            hwscan_data_collection_info, self.params
+        )
+        ISPYB_LOGGER.info("Updating ispyb data collection after flux read.")
+        self.ispyb.update_deposition(self.ispyb_ids, None, scan_data_infos)
 
     def update_deposition(
         self,

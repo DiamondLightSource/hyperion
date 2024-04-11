@@ -117,7 +117,7 @@ class TestXrayCentreISPyBCallback:
         mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
 
-    def test_hardware_and_flux_read_events_2d(self, mock_ispyb_conn):
+    def test_hardware_read_event_2d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
         callback.activity_gated_start(
             TestData.test_gridscan2d_start_document  # pyright: ignore
@@ -129,12 +129,6 @@ class TestXrayCentreISPyBCallback:
             TestData.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-        callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_during_data_collection
-        )
-        callback.activity_gated_event(
-            TestData.test_event_document_during_data_collection
-        )
 
         assert_upsert_call_with(
             mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
@@ -157,6 +151,45 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
+            },
+        )
+        assert_upsert_call_with(
+            mx_acq.update_dc_position.mock_calls[0],
+            mx_acq.get_dc_position_params(),
+            {
+                "id": TEST_DATA_COLLECTION_IDS[0],
+                "pos_x": 0,
+                "pos_y": 0,
+                "pos_z": 0,
+            },
+        )
+        mx_acq.upsert_dc_grid.assert_not_called()
+
+    def test_flux_read_event_2d(self, mock_ispyb_conn):
+        callback = GridscanISPyBCallback()
+        callback.activity_gated_start(
+            TestData.test_gridscan2d_start_document  # pyright: ignore
+        )
+        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
+        callback.activity_gated_descriptor(
+            TestData.test_descriptor_document_pre_data_collection
+        )
+        callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+        mx_acq.upsert_data_collection_group.reset_mock()
+        mx_acq.upsert_data_collection.reset_mock()
+        callback.activity_gated_descriptor(
+            TestData.test_descriptor_document_during_data_collection
+        )
+        callback.activity_gated_event(
+            TestData.test_event_document_during_data_collection
+        )
+
+        assert_upsert_call_with(
+            mx_acq.upsert_data_collection.mock_calls[0],
+            mx_acq.get_data_collection_params(),
+            {
+                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+                "id": TEST_DATA_COLLECTION_IDS[0],
                 "wavelength": 1.1164718451643736,
                 "transmission": 100,
                 "flux": 10,
@@ -202,7 +235,7 @@ class TestXrayCentreISPyBCallback:
         mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
         mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
 
-    def test_hardware_and_flux_read_events_3d(self, mock_ispyb_conn):
+    def test_hardware_read_event_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
         callback.activity_gated_start(
             TestData.test_gridscan3d_start_document
@@ -214,13 +247,6 @@ class TestXrayCentreISPyBCallback:
             TestData.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-        callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_during_data_collection
-        )
-        callback.activity_gated_event(
-            TestData.test_event_document_during_data_collection
-        )
-
         assert_upsert_call_with(
             mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
             mx_acq.get_data_collection_group_params(),
@@ -242,9 +268,6 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
-                "wavelength": 1.1164718451643736,
-                "transmission": 100,
-                "flux": 10,
             },
         )
         assert_upsert_call_with(
@@ -257,6 +280,46 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
+            },
+        )
+
+    def test_flux_read_events_3d(self, mock_ispyb_conn):
+        callback = GridscanISPyBCallback()
+        callback.activity_gated_start(
+            TestData.test_gridscan3d_start_document
+        )  # pyright: ignore
+        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
+        callback.activity_gated_descriptor(
+            TestData.test_descriptor_document_pre_data_collection
+        )
+        callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+        mx_acq.upsert_data_collection_group.reset_mock()
+        mx_acq.upsert_data_collection.reset_mock()
+
+        callback.activity_gated_descriptor(
+            TestData.test_descriptor_document_during_data_collection
+        )
+        callback.activity_gated_event(
+            TestData.test_event_document_during_data_collection
+        )
+
+        assert_upsert_call_with(
+            mx_acq.upsert_data_collection.mock_calls[0],
+            mx_acq.get_data_collection_params(),
+            {
+                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+                "id": TEST_DATA_COLLECTION_IDS[0],
+                "wavelength": 1.1164718451643736,
+                "transmission": 100,
+                "flux": 10,
+            },
+        )
+        assert_upsert_call_with(
+            mx_acq.upsert_data_collection.mock_calls[1],
+            mx_acq.get_data_collection_params(),
+            {
+                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+                "id": TEST_DATA_COLLECTION_IDS[1],
                 "wavelength": 1.1164718451643736,
                 "transmission": 100,
                 "flux": 10,
