@@ -253,7 +253,7 @@ def zebra():
     RunEngine()
     zebra = i03.zebra(fake_with_ophyd_sim=True)
     mock_arm = MagicMock(
-        side_effect=zebra.pc.arm.armed.set,
+        side_effect=zebra.pc.arm.armed._backend._set_value,
         return_value=Status(done=True, success=True),
     )
     with patch.object(zebra.pc.arm.arm_set, "set", mock_arm):
