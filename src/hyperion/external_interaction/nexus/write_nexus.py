@@ -9,7 +9,6 @@ import math
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
@@ -78,14 +77,17 @@ class NexusWriter:
             self.omega_start, self.scan_points, chi=chi
         )
 
-    def create_nexus_file(self, bit_depth: DTypeLike = np.uint16):
+    def create_nexus_file(self, bit_depth: DTypeLike):
         """
-        Creates a nexus file based on the parameters supplied when this obect was
+        Creates a nexus file based on the parameters supplied when this object was
         initialised.
         """
         start_time, est_end_time = get_start_and_predicted_end_time(
             self.detector.exp_time * self.full_num_of_images
         )
+
+        assert self.beam is not None
+        assert self.attenuator is not None
 
         vds_shape = self.data_shape
 

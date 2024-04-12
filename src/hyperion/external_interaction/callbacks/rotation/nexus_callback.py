@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict
 
-import numpy as np
-from numpy.typing import DTypeLike
-
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -42,7 +39,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
         self.parameters: RotationInternalParameters | None = None
         self.writer: NexusWriter | None = None
         self.descriptors: Dict[str, EventDescriptor] = {}
-        self.data_bit_depth: DTypeLike = np.uint16
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
