@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import numpy as np
 from dodal.devices.detector import DetectorDistanceToBeamXYConverter, DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
@@ -87,6 +89,7 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
         assert (
             self.detector_distance_mm is not None
         ), "Detector distance must be filled before generating DetectorParams"
+        os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,

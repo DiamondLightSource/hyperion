@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_dist_to_beam_converter import (
@@ -57,6 +59,7 @@ class RotationScan(
         if self.run_number:
             optional_args["run_number"] = self.run_number
         assert self.detector_distance_mm is not None
+        os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
