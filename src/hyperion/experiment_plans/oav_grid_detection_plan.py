@@ -150,19 +150,12 @@ def grid_detection_plan(
         yield from bps.abs_set(oav.snapshot.box_width, box_size_x_pixels)
         yield from bps.abs_set(oav.snapshot.num_boxes_x, x_steps)
         yield from bps.abs_set(oav.snapshot.num_boxes_y, y_steps)
-        yield from bps.abs_set(
-            oav.snapshot.microns_per_pixel_x, oav.parameters.micronsPerXPixel
-        )
-        yield from bps.abs_set(
-            oav.snapshot.microns_per_pixel_y, oav.parameters.micronsPerYPixel
-        )
 
         snapshot_filename = snapshot_template.format(angle=abs(angle))
 
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
         yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
-
         yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
 
         yield from bps.read(oav.snapshot)

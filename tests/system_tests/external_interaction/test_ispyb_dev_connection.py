@@ -293,15 +293,18 @@ def grid_detect_then_xray_centre_composite(
     oav.snapshot.top_left_x.set(50)
     oav.snapshot.top_left_y.set(100)
     oav.snapshot.box_width.set(0.1 * 1000 / 1.25)  # size in pixels
-    oav.snapshot.last_path_full_overlay.set("test_1_y")
-    oav.snapshot.last_path_outer.set("test_2_y")
-    oav.snapshot.last_saved_path.set("test_3_y")
     undulator.current_gap.sim_put(1.11)
 
     unpatched_method = oav.parameters.load_microns_per_pixel
     eiger.stale_params.sim_put(0)
     eiger.odin.meta.ready.sim_put(1)
     eiger.odin.fan.ready.sim_put(1)
+
+    def mock_snapshot_trigger():
+        oav.snapshot.last_path_full_overlay.set("test_1_y")
+        oav.snapshot.last_path_outer.set("test_2_y")
+        oav.snapshot.last_saved_path.set("test_3_y")
+        return Status(success=True, done=True)
 
     def patch_lmpp(zoom, xsize, ysize):
         unpatched_method(zoom, 1024, 768)
@@ -355,9 +358,7 @@ def grid_detect_then_xray_centre_composite(
             "wait_for_tip_to_be_found",
             side_effect=mock_pin_tip_detect,
         ),
-        patch.object(
-            oav.snapshot, "trigger", return_value=Status(success=True, done=True)
-        ),
+        patch.object(oav.snapshot, "trigger", side_effect=mock_snapshot_trigger),
         patch.object(
             eiger.odin.file_writer.file_name,
             "set",
@@ -604,8 +605,8 @@ def test_ispyb_deposition_in_gridscan(
     fetch_datacollection_position_attribute: Callable[..., Any],
 ):
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
-    grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback.sim_put(0.1)
-    grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback.sim_put(0.1)
+    grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback.sim_put(0.1)  # type: ignore
+    grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback.sim_put(0.1)  # type: ignore
     ispyb_callback = GridscanISPyBCallback()
     RE.subscribe(ispyb_callback)
     RE(

@@ -38,7 +38,7 @@ def test_ispyb_deposition_rounds_position_to_int(
             20,
             1.25,
             1.25,
-            0.01,
+            0.01,  # type: ignore
             100,
             Orientation.HORIZONTAL,
             True,  # type: ignore
