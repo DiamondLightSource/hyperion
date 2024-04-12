@@ -457,9 +457,11 @@ def fake_create_devices(
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
-    mock_arm_disarm = MagicMock(
-        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
-    )
+    def mock_side(*args, **kwargs):
+        zebra.pc.arm.armed._backend._set_value(*args, **kwargs)  # type: ignore
+        return Status(done=True, success=True)
+
+    mock_arm_disarm = MagicMock(side_effect=mock_side)
     zebra.pc.arm.set = mock_arm_disarm
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
@@ -495,9 +497,12 @@ def fake_create_rotation_devices(
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
     mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
 
-    mock_arm_disarm = MagicMock(
-        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
-    )
+    def mock_side(*args, **kwargs):
+        zebra.pc.arm.armed._backend._set_value(*args, **kwargs)  # type: ignore
+        return Status(done=True, success=True)
+
+    mock_arm_disarm = MagicMock(side_effect=mock_side)
+
     zebra.pc.arm.set = mock_arm_disarm
     smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
