@@ -91,7 +91,7 @@ def _reset_loggers(loggers):
             logger.parent = logging.getLogger()
 
 
-def clear_log_handlers(loggers):
+def clear_log_handlers(loggers: Sequence[logging.Logger]):
     for logger in loggers:
         for handler in logger.handlers:
             handler.close()

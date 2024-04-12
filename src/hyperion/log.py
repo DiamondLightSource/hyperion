@@ -60,7 +60,7 @@ def do_default_logging_setup(dev_mode=False):
         dev_mode,
         ERROR_LOG_BUFFER_LINES,
     )
-    integrate_bluesky_and_ophyd_logging(dodal_logger, handlers)
+    integrate_bluesky_and_ophyd_logging(dodal_logger)
     handlers["graylog_handler"].addFilter(tag_filter)
 
     global __logger_handlers
