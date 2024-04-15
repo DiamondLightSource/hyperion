@@ -91,7 +91,7 @@ def _reset_loggers(loggers):
             logger.parent = logging.getLogger()
 
 
-def clear_log_handlers(loggers):
+def clear_log_handlers(loggers: Sequence[logging.Logger]):
     for logger in loggers:
         for handler in logger.handlers:
             handler.close()
@@ -252,12 +252,13 @@ def smargon() -> Generator[Smargon, None, None]:
 def zebra():
     RunEngine()
     zebra = i03.zebra(fake_with_ophyd_sim=True)
-    mock_arm = MagicMock(
-        side_effect=zebra.pc.arm.armed._backend._set_value,
-        return_value=Status(done=True, success=True),
-    )
-    with patch.object(zebra.pc.arm.arm_set, "set", mock_arm):
-        return i03.zebra(fake_with_ophyd_sim=True)
+
+    def mock_side(*args, **kwargs):
+        zebra.pc.arm.armed._backend._set_value(*args, **kwargs)  # type: ignore
+        return Status(done=True, success=True)
+
+    zebra.pc.arm.set = MagicMock(side_effect=mock_side)
+    return zebra
 
 
 @pytest.fixture
@@ -457,10 +458,6 @@ def fake_create_devices(
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
 
-    mock_arm_disarm = MagicMock(
-        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
-    )
-    zebra.pc.arm.set = mock_arm_disarm
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
 
@@ -495,10 +492,6 @@ def fake_create_rotation_devices(
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
     mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
 
-    mock_arm_disarm = MagicMock(
-        side_effect=zebra.pc.arm.armed.set, return_value=Status(done=True, success=True)
-    )
-    zebra.pc.arm.set = mock_arm_disarm
     smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
 
