@@ -8,6 +8,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
+from bluesky.tracing import trace_plan
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -20,6 +21,7 @@ from hyperion.device_setup_plans.setup_oav import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
+from hyperion.tracing import TRACER
 from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
@@ -58,6 +60,7 @@ def get_min_and_max_y_of_pin(
 
 
 @bpp.run_decorator()
+@trace_plan(TRACER, "grid_detection_plan")
 def grid_detection_plan(
     composite: OavGridDetectionComposite,
     parameters: OAVParameters,
