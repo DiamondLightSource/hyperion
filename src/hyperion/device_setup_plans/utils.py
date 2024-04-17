@@ -10,8 +10,10 @@ from hyperion.device_setup_plans.position_detector import (
     set_detector_z_position,
     set_shutter,
 )
+from hyperion.tracing import TRACER
 
 
+@TRACER.start_as_current_span("Start preparing then do plan")
 def start_preparing_data_collection_then_do_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,

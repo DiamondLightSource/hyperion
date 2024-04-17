@@ -36,7 +36,7 @@ from hyperion.log import LOGGER, do_default_logging_setup, flush_debug_handler
 from hyperion.parameters.cli import parse_cli_args
 from hyperion.parameters.constants import CONST, Actions, Status
 from hyperion.parameters.internal_parameters import InternalParameters
-from hyperion.tracing import TRACER
+from hyperion.tracing import TRACER, setup_tracing
 from hyperion.utils.context import setup_context
 
 VERBOSE_EVENT_LOGGING: Optional[bool] = None
@@ -336,6 +336,7 @@ def create_app(
 def create_targets():
     hyperion_port = 5005
     args = parse_cli_args()
+    setup_tracing()
     do_default_logging_setup(dev_mode=args.dev_mode)
     if not args.use_external_callbacks:
         setup_callback_logging(args.dev_mode)

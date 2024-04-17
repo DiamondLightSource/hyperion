@@ -33,6 +33,7 @@ from dodal.devices.zocalo.zocalo_results import (
     get_processing_result,
 )
 from dodal.plans.check_topup import check_topup_and_wait_if_necessary
+from opentelemetry import trace
 from ophyd_async.panda import PandA
 
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
@@ -52,11 +53,13 @@ from hyperion.device_setup_plans.xbpm_feedback import (
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
 )
 from hyperion.utils.context import device_composite_from_context
+
+tracer = trace.get_tracer(__name__)
+_SPAN_NAME_PREFIX = "Flyscan Xray Centre"
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.gridscan_internal_params import (
@@ -168,42 +171,44 @@ def kickoff_and_complete_gridscan(
     zocalo_environment: str,
     scan_points: List[AxesPoints[Axis]],
 ):
-    @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
-    @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
-    @bpp.run_decorator(
-        md={
-            "subplan_name": CONST.PLAN.DO_FGS,
-            "zocalo_environment": zocalo_environment,
-            "scan_points": scan_points,
-        }
-    )
-    @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(eiger)),
-        else_plan=lambda: (yield from bps.unstage(eiger)),
-    )
-    def do_fgs():
-        # Check topup gate
-        expected_images = yield from bps.rd(gridscan.expected_images)
-        exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)
-        LOGGER.info("waiting for topup if necessary...")
-        yield from check_topup_and_wait_if_necessary(
-            synchrotron,
-            expected_images * exposure_sec_per_image,
-            30.0,
-        )
-        yield from read_hardware_for_zocalo(eiger)
-        LOGGER.info("Wait for all moves with no assigned group")
-        yield from bps.wait()
-        LOGGER.info("kicking off FGS")
-        yield from bps.kickoff(gridscan, wait=True)
-        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
-        yield from bps.wait(
-            ZOCALO_STAGE_GROUP
-        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
-        LOGGER.info("completing FGS")
-        yield from bps.complete(gridscan, wait=True)
+    with tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} kickoff and complete "):
 
-    yield from do_fgs()
+        @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
+        @bpp.run_decorator(
+            md={
+                "subplan_name": CONST.PLAN.DO_FGS,
+                "zocalo_environment": zocalo_environment,
+                "scan_points": scan_points,
+            }
+        )
+        @bpp.contingency_decorator(
+            except_plan=lambda e: (yield from bps.stop(eiger)),
+            else_plan=lambda: (yield from bps.unstage(eiger)),
+        )
+        def do_fgs():
+            with tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} do_fgs"):
+                # Check topup gate
+                expected_images = yield from bps.rd(gridscan.expected_images)
+                exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)
+                LOGGER.info("waiting for topup if necessary...")
+                yield from check_topup_and_wait_if_necessary(
+                    synchrotron,
+                    expected_images * exposure_sec_per_image,
+                    30.0,
+                )
+                yield from read_hardware_for_zocalo(eiger)
+                LOGGER.info("Wait for all moves with no assigned group")
+                yield from bps.wait()
+                LOGGER.info("kicking off FGS")
+                yield from bps.kickoff(gridscan, wait=True)
+                LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
+                yield from bps.wait(
+                    ZOCALO_STAGE_GROUP
+                )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+                LOGGER.info("completing FGS")
+                yield from bps.complete(gridscan, wait=True)
+
+        yield from do_fgs()
 
 
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
@@ -218,13 +223,13 @@ def run_gridscan(
     sample_motors = fgs_composite.sample_motors
 
     # Currently gridscan only works for omega 0, see #
-    with TRACER.start_span("moving_omega_to_0"):
+    with tracer.start_span("moving_omega_to_0"):
         yield from bps.abs_set(sample_motors.omega, 0)
 
     # We only subscribe to the communicator callback for run_gridscan, so this is where
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
-    with TRACER.start_span("ispyb_hardware_readings"):
+    with tracer.start_span("ispyb_hardware_readings"):
         yield from read_hardware_for_ispyb_pre_collection(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
@@ -266,62 +271,66 @@ def run_gridscan_and_move(
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
-
-    # We get the initial motor positions so we can return to them on zocalo failure
-    initial_xyz = np.array(
-        [
-            (yield from bps.rd(fgs_composite.sample_motors.x)),
-            (yield from bps.rd(fgs_composite.sample_motors.y)),
-            (yield from bps.rd(fgs_composite.sample_motors.z)),
-        ]
-    )
-
-    yield from setup_zebra_for_gridscan(fgs_composite.zebra, wait=True)
-
-    LOGGER.info("Starting grid scan")
-    yield from bps.stage(
-        fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
-    )  # connect to zocalo and make sure the queue is clear
-    yield from run_gridscan(fgs_composite, parameters)
-
-    LOGGER.info("Grid scan finished, getting results.")
-
-    with TRACER.start_span("wait_for_zocalo"):
-        yield from bps.trigger_and_read(
-            [fgs_composite.zocalo], name=ZOCALO_READING_PLAN_NAME
+    with tracer.start_as_current_span(f"{_SPAN_NAME_PREFIX} main"):
+        # We get the initial motor positions so we can return to them on zocalo failure
+        initial_xyz = np.array(
+            [
+                (yield from bps.rd(fgs_composite.sample_motors.x)),
+                (yield from bps.rd(fgs_composite.sample_motors.y)),
+                (yield from bps.rd(fgs_composite.sample_motors.z)),
+            ]
         )
-        LOGGER.info("Zocalo triggered and read, interpreting results.")
-        xray_centre, bbox_size = yield from get_processing_result(fgs_composite.zocalo)
-        LOGGER.info(f"Got xray centre: {xray_centre}, bbox size: {bbox_size}")
-        if xray_centre is not None:
-            xray_centre = parameters.experiment_params.grid_position_to_motor_position(
-                xray_centre
+
+        yield from setup_zebra_for_gridscan(fgs_composite.zebra, wait=True)
+
+        LOGGER.info("Starting grid scan")
+        yield from bps.stage(
+            fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
+        )  # connect to zocalo and make sure the queue is clear
+        yield from run_gridscan(fgs_composite, parameters)
+
+        LOGGER.info("Grid scan finished, getting results.")
+
+        with tracer.start_span("wait_for_zocalo"):
+            yield from bps.trigger_and_read(
+                [fgs_composite.zocalo], name=ZOCALO_READING_PLAN_NAME
             )
-        else:
-            xray_centre = initial_xyz
-            LOGGER.warning("No X-ray centre recieved")
-        if bbox_size is not None:
-            with TRACER.start_span("change_aperture"):
-                yield from set_aperture_for_bbox_size(
-                    fgs_composite.aperture_scatterguard, bbox_size
+            LOGGER.info("Zocalo triggered and read, interpreting results.")
+            xray_centre, bbox_size = yield from get_processing_result(
+                fgs_composite.zocalo
+            )
+            LOGGER.info(f"Got xray centre: {xray_centre}, bbox size: {bbox_size}")
+            if xray_centre is not None:
+                xray_centre = (
+                    parameters.experiment_params.grid_position_to_motor_position(
+                        xray_centre
+                    )
                 )
-        else:
-            LOGGER.warning("No bounding box size recieved")
+            else:
+                xray_centre = initial_xyz
+                LOGGER.warning("No X-ray centre recieved")
+            if bbox_size is not None:
+                with tracer.start_span("change_aperture"):
+                    yield from set_aperture_for_bbox_size(
+                        fgs_composite.aperture_scatterguard, bbox_size
+                    )
+            else:
+                LOGGER.warning("No bounding box size recieved")
 
-    # once we have the results, go to the appropriate position
-    LOGGER.info("Moving to centre of mass.")
-    with TRACER.start_span("move_to_result"):
-        yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
+        # once we have the results, go to the appropriate position
+        LOGGER.info("Moving to centre of mass.")
+        with tracer.start_span("move_to_result"):
+            yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
-    if parameters.experiment_params.set_stub_offsets:
-        LOGGER.info("Recentring smargon co-ordinate system to this point.")
-        yield from bps.mv(
-            fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
-        )
+        if parameters.experiment_params.set_stub_offsets:
+            LOGGER.info("Recentring smargon co-ordinate system to this point.")
+            yield from bps.mv(
+                fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
+            )
 
-    # Wait on everything before returning to GDA (particularly apertures), can be removed
-    # when we do not return to GDA here
-    yield from bps.wait()
+        # Wait on everything before returning to GDA (particularly apertures), can be removed
+        # when we do not return to GDA here
+        yield from bps.wait()
 
 
 def flyscan_xray_centre(

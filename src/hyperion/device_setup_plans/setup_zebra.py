@@ -23,6 +23,7 @@ from dodal.devices.zebra import (
 )
 
 from hyperion.log import LOGGER
+from hyperion.tracing import TRACER
 
 ZEBRA_STATUS_TIMEOUT = 30
 
@@ -92,41 +93,54 @@ def setup_zebra_for_rotation(
         group:              A name for the group of statuses generated
         wait:               Block until all the settings have completed
     """
-    if not isinstance(direction, RotationDirection):
-        raise ValueError(
-            "Disallowed rotation direction provided to Zebra setup plan. "
-            "Use RotationDirection.POSITIVE or RotationDirection.NEGATIVE."
+    with TRACER.start_as_current_span("Setup Zebra"):
+        if not isinstance(direction, RotationDirection):
+            raise ValueError(
+                "Disallowed rotation direction provided to Zebra setup plan. "
+                "Use RotationDirection.POSITIVE or RotationDirection.NEGATIVE."
+            )
+        # TODO Actually set the rotation direction in here.
+        # See https://github.com/DiamondLightSource/hyperion/issues/1273
+        LOGGER.info("ZEBRA SETUP: START")
+        # must be on for shutter trigger to be enabled
+        yield from bps.abs_set(zebra.inputs.soft_in_1, SoftInState.YES, group=group)
+        # Set gate start, adjust for shutter opening time if necessary
+        LOGGER.info(
+            f"ZEBRA SETUP: degrees to adjust for shutter = {shutter_opening_deg}"
         )
-    # TODO Actually set the rotation direction in here.
-    # See https://github.com/DiamondLightSource/hyperion/issues/1273
-    LOGGER.info("ZEBRA SETUP: START")
-    # must be on for shutter trigger to be enabled
-    yield from bps.abs_set(zebra.inputs.soft_in_1, SoftInState.YES, group=group)
-    # Set gate start, adjust for shutter opening time if necessary
-    LOGGER.info(f"ZEBRA SETUP: degrees to adjust for shutter = {shutter_opening_deg}")
-    LOGGER.info(f"ZEBRA SETUP: start angle start: {start_angle}")
-    LOGGER.info(f"ZEBRA SETUP: start angle adjusted, gate start set to: {start_angle}")
-    yield from bps.abs_set(zebra.pc.gate_start, start_angle, group=group)
-    # set gate width to total width
-    yield from bps.abs_set(
-        zebra.pc.gate_width, scan_width + shutter_opening_deg, group=group
-    )
-    LOGGER.info(
-        f"Pulse start set to shutter open time, set to: {abs(shutter_opening_s)}"
-    )
-    yield from bps.abs_set(zebra.pc.pulse_start, abs(shutter_opening_s), group=group)
-    # Set gate position to be angle of interest
-    yield from bps.abs_set(zebra.pc.gate_trigger, axis.value, group=group)
-    # Trigger the shutter with the gate (from PC_GATE & SOFTIN1 -> OR1)
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
-    # Trigger the detector with a pulse
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
-    # Don't use the fluorescence detector
-    yield from bps.abs_set(zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group)
-    yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
-    LOGGER.info(f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion")
-    if wait:
-        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
+        LOGGER.info(f"ZEBRA SETUP: start angle start: {start_angle}")
+        LOGGER.info(
+            f"ZEBRA SETUP: start angle adjusted, gate start set to: {start_angle}"
+        )
+        yield from bps.abs_set(zebra.pc.gate_start, start_angle, group=group)
+        # set gate width to total width
+        yield from bps.abs_set(
+            zebra.pc.gate_width, scan_width + shutter_opening_deg, group=group
+        )
+        LOGGER.info(
+            f"Pulse start set to shutter open time, set to: {abs(shutter_opening_s)}"
+        )
+        yield from bps.abs_set(
+            zebra.pc.pulse_start, abs(shutter_opening_s), group=group
+        )
+        # Set gate position to be angle of interest
+        yield from bps.abs_set(zebra.pc.gate_trigger, axis.value, group=group)
+        # Trigger the shutter with the gate (from PC_GATE & SOFTIN1 -> OR1)
+        yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
+        # Trigger the detector with a pulse
+        yield from bps.abs_set(
+            zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group
+        )
+        # Don't use the fluorescence detector
+        yield from bps.abs_set(
+            zebra.output.out_pvs[TTL_XSPRESS3], DISCONNECT, group=group
+        )
+        yield from bps.abs_set(zebra.output.pulse_1.input, DISCONNECT, group=group)
+        LOGGER.info(
+            f"ZEBRA SETUP: END - {'' if wait else 'not'} waiting for completion"
+        )
+        if wait:
+            yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
 @bluesky_retry

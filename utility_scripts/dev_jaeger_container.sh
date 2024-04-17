@@ -1,3 +1,5 @@
+#!/bin/bash
+
 podman run -d --name jaeger \
   -e COLLECTOR_ZIPKIN_HOST_PORT=:9411 \
   -e COLLECTOR_OTLP_ENABLED=true \

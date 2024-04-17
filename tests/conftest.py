@@ -68,6 +68,18 @@ from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params impo
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+from hyperion.tracing import TRACER, setup_tracing
+
+setup_tracing()
+
+
+@pytest.fixture(autouse=True)
+def tracing_span(request):
+    with TRACER.start_as_current_span(
+        "Hyperion Unit Test", attributes={"test_name": request.node.name}
+    ):
+        yield
+
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
