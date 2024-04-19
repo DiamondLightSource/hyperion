@@ -1,4 +1,5 @@
 import pytest
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
@@ -60,21 +61,6 @@ class TestData:
     test_rotation_start_main_document = {
         "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
         "subplan_name": CONST.PLAN.ROTATION_MAIN,
-    }
-    test_rotation_event_document_pre_data_collection: Event = {
-        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 1666604299.828203,
-        "data": {
-            "s4_slit_gaps_xgap": 0.1234,
-            "s4_slit_gaps_ygap": 0.2345,
-            "synchrotron-synchrotron_mode": "test",
-            "undulator_current_gap": 1.234,
-            "robot-barcode": "BARCODE",
-        },
-        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
-        "seq_num": 1,
-        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "filled": {},
     }
     test_rotation_event_document_during_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
@@ -143,7 +129,7 @@ class TestData:
         "data": {
             "s4_slit_gaps_xgap": 0.1234,
             "s4_slit_gaps_ygap": 0.2345,
-            "synchrotron-synchrotron_mode": "test",
+            "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator_current_gap": 1.234,
             "robot-barcode": "BARCODE",
         },
