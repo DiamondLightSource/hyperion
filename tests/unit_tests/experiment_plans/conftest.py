@@ -6,6 +6,7 @@ import pytest
 from bluesky.utils import Msg
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
 from ophyd.sim import make_fake_device
@@ -43,7 +44,7 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 BASIC_PRE_SETUP_DOC = {
     "undulator_current_gap": 0,
-    "synchrotron-synchrotron_mode": 0,
+    "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
     "robot-barcode": "BARCODE",
