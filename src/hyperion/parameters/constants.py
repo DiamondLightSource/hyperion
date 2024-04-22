@@ -50,6 +50,7 @@ class HyperionConstants:
     PLAN = PlanNameConstants()
     HARDWARE = HardwareConstants()
     TRIGGER = TriggerConstants()
+    GRAYLOG_PORT = 12232
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
 
