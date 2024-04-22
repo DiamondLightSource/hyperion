@@ -17,13 +17,14 @@ from hyperion.experiment_plans.robot_load_then_centre_plan import (
 from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
-from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
 from hyperion.parameters.plan_specific.robot_load_then_center_params import (
     RobotLoadThenCentreInternalParameters,
 )
+
+from ...conftest import raw_params_from_file
 
 
 @pytest.fixture

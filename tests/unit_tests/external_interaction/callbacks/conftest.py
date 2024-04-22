@@ -4,21 +4,22 @@ from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 from tests.conftest import create_dummy_scan_spec
 
+from ....conftest import default_raw_params, raw_params_from_file
+
 
 def dummy_params():
-    dummy_params = GridscanInternalParameters(**from_file())
+    dummy_params = GridscanInternalParameters(**default_raw_params())
     return dummy_params
 
 
 def dummy_params_2d():
     return GridscanInternalParameters(
-        **from_file(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/test_parameter_defaults_2d.json"
         )
     )

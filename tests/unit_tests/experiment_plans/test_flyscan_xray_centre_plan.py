@@ -22,7 +22,6 @@ from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_sim_value
 
-import hyperion.parameters.external_parameters
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
     read_hardware_for_ispyb_pre_collection,
@@ -59,11 +58,13 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 from tests.conftest import create_dummy_scan_spec
 
+from ...conftest import default_raw_params
 from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
@@ -126,7 +127,7 @@ class TestFlyscanXrayCentrePlan:
             test_fgs_params.hyperion_params.detector_params.detector_size_constants.det_type_string
             == EIGER_TYPE_EIGER2_X_16M
         )
-        raw_params_dict = hyperion.parameters.external_parameters.from_file()
+        raw_params_dict = default_raw_params()
         raw_params_dict["hyperion_params"]["detector_params"][
             "detector_size_constants"
         ] = EIGER_TYPE_EIGER2_X_4M
@@ -148,7 +149,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         RE: RunEngine,
         fake_fgs_composite,
-        test_fgs_params,
+        test_new_fgs_params,
         mock_ispyb,
     ):
         ispyb_callback = GridscanISPyBCallback()
@@ -162,7 +163,7 @@ class TestFlyscanXrayCentrePlan:
                 error = AssertionError("Test Exception")
                 mock_set.return_value = FailedStatus(error)
 
-                RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+                RE(flyscan_xray_centre(fake_fgs_composite, test_new_fgs_params))
 
         assert exc.value.args[0] is error
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(
@@ -703,9 +704,12 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff,
         mock_abs_set,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_new_fgs_params: ThreeDGridScan,
         RE_with_subs: ReWithSubs,
     ):
+        test_new_fgs_params.x_steps = 8
+        test_new_fgs_params.y_steps = 10
+        test_new_fgs_params.z_steps = 12
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
@@ -727,7 +731,7 @@ class TestFlyscanXrayCentrePlan:
             lambda _: modified_interactor_mock(mock_parent.run_end),
         ):
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
-            RE(flyscan_xray_centre(fake_fgs_composite, test_fgs_params))
+            RE(flyscan_xray_centre(fake_fgs_composite, test_new_fgs_params))
 
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 

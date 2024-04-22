@@ -7,12 +7,10 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import GridScanParams
 from pydantic import ValidationError
 
-import hyperion.parameters.external_parameters
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     GridscanIspybParams,
 )
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.internal_parameters import (
     InternalParameters,
     extract_hyperion_params_from_flat_dict,
@@ -29,17 +27,19 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
+from ...conftest import default_raw_params, raw_params_from_file
+
 
 @pytest.fixture
 def raw_params():
-    return hyperion.parameters.external_parameters.from_file(
+    return raw_params_from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
 
 
 @pytest.fixture
 def rotation_raw_params():
-    return hyperion.parameters.external_parameters.from_file(
+    return raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
 
@@ -67,7 +67,7 @@ TEST_PARAM_DICT = {
 
 def test_cant_initialise_abstract_internalparams():
     with pytest.raises(TypeError):
-        InternalParameters(**hyperion.parameters.external_parameters.from_file())
+        internal_parameters = InternalParameters(**default_raw_params())  # noqa
 
 
 def test_ispyb_param_dict():
@@ -84,7 +84,7 @@ def test_ispyb_param_dict():
 
 
 def test_internal_param_serialisation_deserialisation():
-    data = from_file()
+    data = default_raw_params()
     internal_parameters = GridscanInternalParameters(**data)
 
     serialised = internal_parameters.json(indent=2)
@@ -96,7 +96,7 @@ def test_internal_param_serialisation_deserialisation():
 
 
 def test_flatten():
-    params = hyperion.parameters.external_parameters.from_file(
+    params = raw_params_from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
     flat_dict = flatten_dict(params)
@@ -228,7 +228,7 @@ def test_param_fields_match_components_they_should_use(
 
 
 def test_internal_params_eq():
-    params = hyperion.parameters.external_parameters.from_file(
+    params = raw_params_from_file(
         "tests/test_data/parameter_json_files/test_parameters.json"
     )
     internal_params = GridscanInternalParameters(**params)
@@ -267,7 +267,9 @@ def test_internal_params_eq():
 
 
 def test_panda_y_steps_must_be_even():
-    params = from_file("tests/test_data/parameter_json_files/test_parameters.json")
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/test_parameters.json"
+    )
     params["experiment_params"]["y_steps"] = 11
 
     from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (

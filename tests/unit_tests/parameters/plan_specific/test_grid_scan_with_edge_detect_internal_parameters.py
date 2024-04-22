@@ -1,15 +1,16 @@
 import numpy as np
 from dodal.devices.detector.det_dim_constants import EIGER2_X_16M_SIZE
 
-import hyperion.parameters.external_parameters
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
     GridScanWithEdgeDetectParams,
 )
 
+from ....conftest import raw_params_from_file
+
 
 def test_grid_scan_with_edge_detect_parameters_load_from_file():
-    params = hyperion.parameters.external_parameters.from_file(
+    params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
     internal_parameters = GridScanWithEdgeDetectInternalParameters(**params)

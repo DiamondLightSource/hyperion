@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import json
+from typing import Any
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
@@ -16,6 +19,7 @@ from hyperion.experiment_plans.pin_tip_centring_plan import (
     pin_tip_centre_plan,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectInternalParameters,
 )
@@ -81,18 +85,26 @@ def pin_centre_then_xray_centre_plan(
 
 def pin_tip_centre_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: PinCentreThenXrayCentreInternalParameters,
+    parameters: (
+        PinTipCentreThenXrayCentre | PinCentreThenXrayCentreInternalParameters | Any
+    ),
     oav_config_file: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
 
+    old_parameters = (
+        parameters
+        if isinstance(parameters, PinCentreThenXrayCentreInternalParameters)
+        else parameters.old_parameters()
+    )
+
     eiger: EigerDetector = composite.eiger
 
-    eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
+    eiger.set_detector_parameters(old_parameters.hyperion_params.detector_params)
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
         composite.detector_motion,
-        parameters.experiment_params.detector_distance,
-        pin_centre_then_xray_centre_plan(composite, parameters, oav_config_file),
+        old_parameters.experiment_params.detector_distance,
+        pin_centre_then_xray_centre_plan(composite, old_parameters, oav_config_file),
     )

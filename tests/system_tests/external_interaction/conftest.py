@@ -13,10 +13,11 @@ from sqlalchemy.orm import sessionmaker
 from hyperion.external_interaction.ispyb.data_model import ExperimentType
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+from ...conftest import raw_params_from_file
 
 TEST_RESULT_LARGE = [
     {
@@ -119,7 +120,7 @@ def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
 @pytest.fixture
 def dummy_params():
     dummy_params = GridscanInternalParameters(
-        **from_file(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
         )
     )
