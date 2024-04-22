@@ -85,6 +85,8 @@ class HyperionParameters(BaseModel):
 
 
 class DiffractionExperiment(HyperionParameters):
+    """For all experiments which use beam"""
+
     visit: str = Field(min_length=1)
     file_name: str = Field(pattern=r"[\w]{2}[\d]+-[\d]+")
     exposure_time_s: float = Field(gt=0)
@@ -125,6 +127,8 @@ class DiffractionExperiment(HyperionParameters):
 
 
 class WithScan(BaseModel):
+    """For experiments where the scan is known"""
+
     @property
     @abstractmethod
     def scan_points(self) -> AxesPoints: ...
