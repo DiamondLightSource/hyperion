@@ -98,9 +98,7 @@ def test_activity_gated_event(
     callback.activity_gated_descriptor(
         TestData.test_descriptor_document_pre_data_collection
     )
-    callback.activity_gated_event(
-        TestData.test_rotation_event_document_pre_data_collection
-    )
+    callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
     callback.activity_gated_descriptor(
         TestData.test_descriptor_document_during_data_collection
     )
@@ -126,7 +124,7 @@ def test_activity_gated_event(
             "id": TEST_DATA_COLLECTION_IDS[0],
             "slitgaphorizontal": 0.1234,
             "slitgapvertical": 0.2345,
-            "synchrotronmode": "test",
+            "synchrotronmode": "User",
             "undulatorgap1": 1.234,
             "wavelength": 1.1164718451643736,
             "transmission": 98,

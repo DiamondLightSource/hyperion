@@ -37,7 +37,7 @@ class GridScanWithEdgeDetectParams(AbstractExperimentWithBeamParams):
     set_stub_offsets: bool = False
 
     # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
-    run_up_distance_mm: float = CONST.I03.PANDA_RUNUP_DIST_MM
+    run_up_distance_mm: float = CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
 
     use_panda: bool = False
 

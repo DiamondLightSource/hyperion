@@ -4,6 +4,8 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
+from dodal.devices.synchrotron import SynchrotronMode
+
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
 )
@@ -96,9 +98,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self._event_driven_data_collection_info.undulator_gap1 = doc["data"][
                 "undulator_current_gap"
             ]
-            self._event_driven_data_collection_info.synchrotron_mode = doc["data"][
-                "synchrotron-synchrotron_mode"
-            ]
+            assert isinstance(
+                synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],
+                SynchrotronMode,
+            )
+            self._event_driven_data_collection_info.synchrotron_mode = (
+                synchrotron_mode.value
+            )
             self._event_driven_data_collection_info.slitgap_horizontal = doc["data"][
                 "s4_slit_gaps_xgap"
             ]
