@@ -10,7 +10,6 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
-from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -24,6 +23,7 @@ from dodal.plans.check_topup import check_topup_and_wait_if_necessary
 
 from hyperion.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
+    move_phi_chi_omega,
     move_x_y_z,
     setup_sample_environment,
 )
@@ -41,10 +41,6 @@ from hyperion.device_setup_plans.setup_zebra import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-    RotationScanParams,
-)
 from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.context import device_composite_from_context
 
@@ -101,8 +97,7 @@ class RotationMotionProfile:
 
 
 def calculate_motion_profile(
-    detector_params: DetectorParams,
-    expt_params: RotationScanParams,
+    params: RotationScan,
     motor_time_to_speed_s: float,
     max_velocity_deg_s: float,
 ) -> RotationMotionProfile:
@@ -114,19 +109,19 @@ def calculate_motion_profile(
     See https://github.com/DiamondLightSource/hyperion/wiki/rotation-scan-geometry
     for a simple pictorial explanation."""
 
-    direction = ROTATION_DIRECTION[expt_params.rotation_direction]
-    num_images = expt_params.get_num_images()
-    shutter_time_s = expt_params.shutter_opening_time_s
-    image_width_deg = detector_params.omega_increment
-    exposure_time_s = detector_params.exposure_time
+    direction = ROTATION_DIRECTION[params.rotation_direction]
+    num_images = params.num_images
+    shutter_time_s = params.shutter_opening_time_s
+    image_width_deg = params.rotation_increment_deg
+    exposure_time_s = params.exposure_time_s
     motor_time_to_speed_s *= ACCELERATION_MARGIN
-    start_scan_deg = detector_params.omega_start
+    start_scan_deg = params.omega_start_deg
 
     LOGGER.info("Calculating rotation scan motion profile:")
     LOGGER.info(
         f"{num_images=}, {shutter_time_s=}, {image_width_deg=}, {exposure_time_s=}, {direction=}"
     )
-    LOGGER.info(f"{(scan_width_deg := num_images * detector_params.omega_increment)=}")
+    LOGGER.info(f"{(scan_width_deg := num_images * params.rotation_increment_deg)=}")
     LOGGER.info(f"{(speed_for_rotation_deg_s := image_width_deg / exposure_time_s)=}")
     LOGGER.info(
         f"{(acceleration_offset_deg := motor_time_to_speed_s * speed_for_rotation_deg_s)=}"
@@ -135,7 +130,7 @@ def calculate_motion_profile(
         f"{(start_motion_deg := start_scan_deg - (acceleration_offset_deg * direction))=}"
     )
     LOGGER.info(
-        f"{(shutter_opening_deg := speed_for_rotation_deg_s * expt_params.shutter_opening_time_s)=}"
+        f"{(shutter_opening_deg := speed_for_rotation_deg_s * shutter_time_s)=}"
     )
     LOGGER.info(f"{(total_exposure_s := num_images * exposure_time_s)=}")
     LOGGER.info(
@@ -147,7 +142,7 @@ def calculate_motion_profile(
         start_motion_deg=start_motion_deg,
         scan_width_deg=scan_width_deg,
         shutter_time_s=shutter_time_s,
-        direction=expt_params.rotation_direction,
+        direction=params.rotation_direction,
         speed_for_rotation_deg_s=speed_for_rotation_deg_s,
         acceleration_offset_deg=acceleration_offset_deg,
         shutter_opening_deg=shutter_opening_deg,
@@ -159,7 +154,7 @@ def calculate_motion_profile(
 
 def rotation_scan_plan(
     composite: RotationScanComposite,
-    params: RotationInternalParameters,
+    params: RotationScan,
     motion_values: RotationMotionProfile,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
@@ -170,8 +165,8 @@ def rotation_scan_plan(
     @bpp.run_decorator(
         md={
             "subplan_name": CONST.PLAN.ROTATION_MAIN,
-            "zocalo_environment": params.hyperion_params.zocalo_environment,
-            "scan_points": [params.get_scan_points()],
+            "zocalo_environment": params.zocalo_environment,
+            "scan_points": [params.scan_points],
         }
     )
     def _rotation_scan_plan(
@@ -188,7 +183,7 @@ def rotation_scan_plan(
         yield from bps.abs_set(
             axis,
             motion_values.start_motion_deg,
-            group="move_to_start",
+            group="move_to_rotation_start",
             wait=True,
         )
         yield from setup_zebra_for_rotation(
@@ -205,8 +200,8 @@ def rotation_scan_plan(
         LOGGER.info("Wait for any previous moves...")
         # wait for all the setup tasks at once
         yield from bps.wait("setup_senv")
-        yield from bps.wait("move_x_y_z")
-        yield from bps.wait("move_to_start")
+        yield from bps.wait("move_gonio_to_start")
+        yield from bps.wait("move_to_rotation_start")
         yield from bps.wait("setup_zebra")
 
         # get some information for the ispyb deposition and trigger the callback
@@ -253,20 +248,14 @@ def cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
 
 def rotation_scan(
     composite: RotationScanComposite,
-    parameters: RotationScan | RotationInternalParameters | Any,
+    parameters: RotationScan | Any,
 ) -> MsgGenerator:
-    old_parameters = (
-        parameters
-        if isinstance(parameters, RotationInternalParameters)
-        else parameters.old_parameters()
-    )
-
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-            "hyperion_internal_parameters": parameters.json(),
+            "hyperion_internal_parameters": parameters.old_parameters().json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
@@ -274,7 +263,7 @@ def rotation_scan(
         }
     )
     def rotation_scan_plan_with_stage_and_cleanup(
-        params: RotationInternalParameters,
+        params: RotationScan,
     ):
         motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
         max_vel = (
@@ -282,33 +271,38 @@ def rotation_scan(
             or DEFAULT_MAX_VELOCITY
         )
         motion_values = calculate_motion_profile(
-            params.hyperion_params.detector_params,
-            params.experiment_params,
+            params,
             motor_time_to_speed,
             max_vel,
         )
 
         eiger: EigerDetector = composite.eiger
-        eiger.set_detector_parameters(params.hyperion_params.detector_params)
+        eiger.set_detector_parameters(params.detector_params)
 
         @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: cleanup_plan(composite, max_vel))
-        def rotation_with_cleanup_and_stage(params: RotationInternalParameters):
+        def rotation_with_cleanup_and_stage(params: RotationScan):
             LOGGER.info("setting up sample environment...")
             yield from setup_sample_environment(
                 composite.detector_motion,
                 composite.backlight,
                 composite.attenuator,
-                params.experiment_params.transmission_fraction,
-                params.hyperion_params.detector_params.detector_distance,
+                params.transmission_frac,
+                params.detector_params.detector_distance,
             )
             LOGGER.info("moving to position (if specified)")
             yield from move_x_y_z(
                 composite.smargon,
-                params.experiment_params.x,
-                params.experiment_params.y,
-                params.experiment_params.z,
-                group="move_x_y_z",
+                params.x_start_um,
+                params.y_start_um,
+                params.z_start_um,
+                group="move_gonio_to_start",
+            )
+            yield from move_phi_chi_omega(
+                composite.smargon,
+                params.phi_start_deg,
+                params.chi_start_deg,
+                group="move_gonio_to_start",
             )
             yield from rotation_scan_plan(
                 composite,
@@ -319,4 +313,4 @@ def rotation_scan(
         LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
 
-    yield from rotation_scan_plan_with_stage_and_cleanup(old_parameters)
+    yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
