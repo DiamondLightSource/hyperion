@@ -66,9 +66,7 @@ from hyperion.parameters.plan_specific.gridscan_internal_params import (
 from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
     PandAGridscanInternalParameters,
 )
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -217,18 +215,18 @@ def test_panda_fgs_params():
 
 @pytest.fixture
 def test_rotation_params():
-    return RotationInternalParameters(
+    return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
 
 
 @pytest.fixture
 def test_rotation_params_nomove():
-    return RotationInternalParameters(
+    return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+            "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
         )
     )
 
