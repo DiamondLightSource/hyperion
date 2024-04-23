@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import Any
+from typing import Any, Union
 
 import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
@@ -248,7 +248,9 @@ def detect_grid_and_do_gridscan(
 
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: GridScanWithEdgeDetectInternalParameters | GridScanWithEdgeDetect | Any,
+    parameters: Union[
+        GridScanWithEdgeDetectInternalParameters, GridScanWithEdgeDetect, Any
+    ],
     oav_config: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
