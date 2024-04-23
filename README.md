@@ -15,7 +15,7 @@ Left to do is:
 Development Installation
 =================
 
-This project rquires Python 3.11.
+This project supports only the most recent Python version for which our dependencies are available - currently Python 3.11.
 
 Run `./utility_scripts/dls_dev_env.sh` (This assumes you're on a DLS machine. If you are not, you should be able to just run a subset of this script)
 
