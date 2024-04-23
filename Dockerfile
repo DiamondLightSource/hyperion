@@ -1,4 +1,4 @@
-FROM python:3.10 AS build
+FROM python:3.11 AS build
 ADD . /project/
 WORKDIR "/project"
 RUN pip install -e .[dev]
