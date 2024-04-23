@@ -98,19 +98,16 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 "has no corresponding descriptor record"
             )
             return doc
+        data_collection_group_info = None
         match event_descriptor.get("name"):
             case CONST.DESCRIPTORS.ISPYB_HARDWARE_READ:
                 data_collection_group_info, scan_data_infos = (
                     self._handle_ispyb_hardware_read(doc)
                 )
             case CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED:
-                data_collection_group_info, scan_data_infos = (
-                    self._handle_oav_snapshot_triggered(doc)
-                )
+                scan_data_infos = self._handle_oav_snapshot_triggered(doc)
             case CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ:
-                data_collection_group_info, scan_data_infos = (
-                    self._handle_ispyb_transmission_flux_read(doc)
-                )
+                scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
                 return self._tag_doc(doc)
         self.ispyb_ids = self.ispyb.update_deposition(
@@ -149,9 +146,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         return data_collection_group_info, scan_data_infos
 
-    def _handle_oav_snapshot_triggered(
-        self, doc
-    ) -> tuple[DataCollectionGroupInfo, Sequence[ScanDataInfo]]:
+    def _handle_oav_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
         assert self.params, "ISPyB handler didn't recieve parameters!"
         data = doc["data"]
@@ -197,11 +192,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             "Updating ispyb data collection and group after oav snapshot."
         )
         self._oav_snapshot_event_idx += 1
-        return None, [scan_data_info]
+        return [scan_data_info]
 
-    def _handle_ispyb_transmission_flux_read(
-        self, doc
-    ) -> tuple[DataCollectionGroupInfo, Sequence[ScanDataInfo]]:
+    def _handle_ispyb_transmission_flux_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params
         hwscan_data_collection_info = DataCollectionInfo(
             flux=doc["data"]["flux_flux_reading"]
@@ -216,7 +209,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             hwscan_data_collection_info, self.params
         )
         ISPYB_LOGGER.info("Updating ispyb data collection after flux read.")
-        return None, scan_data_infos
+        return scan_data_infos
 
     def update_deposition(
         self,
