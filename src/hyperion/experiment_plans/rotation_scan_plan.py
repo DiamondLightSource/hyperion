@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Any
+from typing import Any, Union
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -253,7 +253,7 @@ def cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
 
 def rotation_scan(
     composite: RotationScanComposite,
-    parameters: RotationScan | RotationInternalParameters | Any,
+    parameters: Union[RotationScan, RotationInternalParameters, Any],
 ) -> MsgGenerator:
     old_parameters = (
         parameters

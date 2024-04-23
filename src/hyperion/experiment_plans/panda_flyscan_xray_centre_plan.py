@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -255,7 +255,7 @@ def run_gridscan_and_move(
 
 def panda_flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan | PandAGridscanInternalParameters | Any,
+    parameters: Union[ThreeDGridScan, PandAGridscanInternalParameters, Any],
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
 

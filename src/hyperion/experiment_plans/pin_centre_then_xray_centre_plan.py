@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Union
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.eiger import EigerDetector
@@ -85,9 +85,9 @@ def pin_centre_then_xray_centre_plan(
 
 def pin_tip_centre_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: (
-        PinTipCentreThenXrayCentre | PinCentreThenXrayCentreInternalParameters | Any
-    ),
+    parameters: Union[
+        PinTipCentreThenXrayCentre, PinCentreThenXrayCentreInternalParameters, Any
+    ],
     oav_config_file: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """Starts preparing for collection then performs the pin tip centre and xray centre"""
