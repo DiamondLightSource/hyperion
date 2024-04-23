@@ -11,7 +11,7 @@ from typing import Optional
 
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
-from nexgen.nxs_write.NXmxWriter import NXmxFileWriter
+from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
 from numpy.typing import DTypeLike
 
 from hyperion.external_interaction.nexus.nexus_utils import (
