@@ -31,10 +31,7 @@ class PinCentreThenXrayCentreParams(AbstractExperimentWithBeamParams):
     omega_start: float
 
     tip_offset_microns: float = 0
-    oav_centring_file: str = (
-        "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json"
-    )
-
+    oav_centring_file: str = CONST.I03.OAV_CENTRING_FILE
     # Width for single pin
     grid_width_microns: float = 600
 

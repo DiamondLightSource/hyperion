@@ -113,6 +113,10 @@ class DiffractionExperiment(HyperionParameters):
         )
 
     @property
+    def snapshot_directory(self) -> Path:
+        return self.visit_directory / "snapshots"
+
+    @property
     def num_images(self) -> int:
         return 0
 
@@ -150,6 +154,10 @@ class WithSample(BaseModel):
     sample_id: int  # Will be used to work out puck/pin
     _puck: int | None = None
     _pin: int | None = None
+
+
+class WithOavCentring(BaseModel):
+    oav_centring_file: str = Field(default=CONST.I03.OAV_CENTRING_FILE)
 
 
 class OptionalXyzStarts(BaseModel):
