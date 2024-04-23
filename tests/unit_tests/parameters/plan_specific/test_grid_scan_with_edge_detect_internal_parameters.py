@@ -22,7 +22,6 @@ def test_grid_scan_with_edge_detect_parameters_load_from_file():
     ispyb_params = internal_parameters.hyperion_params.ispyb_params
 
     np.testing.assert_array_equal(ispyb_params.position, np.array([10, 20, 30]))
-    np.testing.assert_array_equal(ispyb_params.upper_left, np.array([0, 0, 0]))
 
     detector_params = internal_parameters.hyperion_params.detector_params
 

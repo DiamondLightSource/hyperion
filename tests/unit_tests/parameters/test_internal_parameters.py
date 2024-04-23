@@ -223,8 +223,6 @@ def test_param_fields_match_components_they_should_use(
         g_calculated_ispyb_param_keys
         == base_ispyb_annotation_keys + g_ispyb_annotation_keys
     )
-    assert "upper_left" in g_ispyb_annotation_keys
-    assert "upper_left" not in r_ispyb_annotation_keys
 
 
 def test_internal_params_eq():

@@ -85,7 +85,6 @@ class GridscanInternalParameters(InternalParameters):
         all_params["num_triggers"] = all_params["num_images"]
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
-        all_params["upper_left"] = np.array(all_params["upper_left"])
         hyperion_param_dict = extract_hyperion_params_from_flat_dict(
             all_params, cls._hyperion_param_key_definitions()
         )

@@ -19,11 +19,6 @@
             "microns_per_pixel_x": 1.0,
             "microns_per_pixel_y": 1.0,
             "sample_id": "123456",
-            "upper_left": [
-                10.0,
-                20.0,
-                30.0
-            ],
             "position": [
                 10.0,
                 20.0,
