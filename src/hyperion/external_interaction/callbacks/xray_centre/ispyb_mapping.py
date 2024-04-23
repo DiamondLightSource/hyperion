@@ -9,14 +9,10 @@ from hyperion.external_interaction.ispyb.data_model import (
 )
 
 
-def populate_xz_data_collection_info(
-    full_params,
-    detector_params,
-) -> DataCollectionInfo:
+def populate_xz_data_collection_info(detector_params) -> DataCollectionInfo:
     assert (
         detector_params.omega_start is not None
         and detector_params.run_number is not None
-        and full_params is not None
     ), "StoreGridscanInIspyb failed to get parameters"
     omega_start = detector_params.omega_start + 90
     run_number = detector_params.run_number + 1

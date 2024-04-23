@@ -26,7 +26,3 @@ def populate_data_collection_info_for_rotation(
         info.xtal_snapshot3,
     ) = get_xtal_snapshots(ispyb_params)
     return info
-
-
-def construct_comment_for_rotation_scan() -> str:
-    return

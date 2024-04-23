@@ -114,8 +114,7 @@ def scan_data_infos_for_update_3d(
     ispyb_ids, scan_xy_data_info_for_update, dummy_params
 ):
     xz_data_collection_info = populate_xz_data_collection_info(
-        dummy_params,
-        dummy_params.hyperion_params.detector_params,
+        dummy_params.hyperion_params.detector_params
     )
 
     assert dummy_params.hyperion_params.ispyb_params is not None

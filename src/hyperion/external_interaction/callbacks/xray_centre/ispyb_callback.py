@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from time import time
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, List, cast
 
 import numpy as np
 from bluesky import preprocessors as bpp
@@ -131,8 +131,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                             None,
                             None,
                             populate_xz_data_collection_info(
-                                self.params,
-                                self.params.hyperion_params.detector_params,
+                                self.params.hyperion_params.detector_params
                             ),
                             self.params.hyperion_params.detector_params,
                             self.params.hyperion_params.ispyb_params,
@@ -217,7 +216,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             scan_data_infos.append(xz_scan_data_info)
         return scan_data_infos
 
-    def activity_gated_stop(self, doc: RunStop) -> Optional[RunStop]:
+    def activity_gated_stop(self, doc: RunStop) -> RunStop:
         if doc.get("run_start") == self._start_of_fgs_uid:
             self._processing_start_time = time()
         if doc.get("run_start") == self.uid_to_finalize_on:
