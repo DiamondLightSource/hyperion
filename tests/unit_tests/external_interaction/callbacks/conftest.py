@@ -4,6 +4,7 @@ from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -13,7 +14,7 @@ from ....conftest import default_raw_params, raw_params_from_file
 
 
 def dummy_params():
-    dummy_params = GridscanInternalParameters(**default_raw_params())
+    dummy_params = ThreeDGridScan(**default_raw_params())
     return dummy_params
 
 
@@ -47,7 +48,7 @@ class TestData:
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-        "hyperion_internal_parameters": dummy_params().json(),
+        "hyperion_internal_parameters": dummy_params().old_parameters().json(),
     }
     test_gridscan3d_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -57,7 +58,7 @@ class TestData:
         "plan_type": "generator",
         "plan_name": "test",
         "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
-        "hyperion_internal_parameters": dummy_params().json(),
+        "hyperion_internal_parameters": dummy_params().old_parameters().json(),
     }
     test_gridscan2d_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -82,7 +83,7 @@ class TestData:
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-        "hyperion_internal_parameters": dummy_params().json(),
+        "hyperion_internal_parameters": dummy_params().old_parameters().json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",

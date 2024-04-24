@@ -7,7 +7,6 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.fast_grid_scan import GridAxis
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -174,14 +173,14 @@ def test_given_when_grid_detect_then_start_position_as_expected(
 
     gridscan_params = grid_param_cb.get_grid_parameters()
 
-    assert gridscan_params.x_start == pytest.approx(0.0005)
-    assert gridscan_params.y1_start == pytest.approx(
+    assert gridscan_params["x_start_um"] == pytest.approx(0.0005)
+    assert gridscan_params["y_start_um"] == pytest.approx(
         -0.0001
         - (
             (box_size_y_pixels / 2) * composite.oav.parameters.micronsPerYPixel * 1e-3
         )  # microns to mm
     )
-    assert gridscan_params.z1_start == pytest.approx(-0.0001)
+    assert gridscan_params["z_start_um"] == pytest.approx(-0.0001)
 
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
@@ -294,44 +293,25 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 
     my_grid_params = cb.get_grid_parameters()
 
-    test_x_grid_axis = GridAxis(
-        start=my_grid_params.x_start,
-        step_size=my_grid_params.x_step_size,
-        full_steps=my_grid_params.x_steps,
+    assert my_grid_params["x_start_um"] == pytest.approx(-0.7942199999999999)
+    assert my_grid_params["y_start_um"] == pytest.approx(
+        -0.53984 - (box_size_um * 1e-3 / 2)
     )
-
-    test_y_grid_axis = GridAxis(
-        start=my_grid_params.y1_start,
-        step_size=my_grid_params.y_step_size,
-        full_steps=my_grid_params.y_steps,
+    assert my_grid_params["y2_start_um"] == pytest.approx(
+        -0.53984 - (box_size_um * 1e-3 / 2)
     )
-
-    test_z_grid_axis = GridAxis(
-        start=my_grid_params.z2_start,
-        step_size=my_grid_params.z_step_size,
-        full_steps=my_grid_params.z_steps,
-    )
-
-    assert my_grid_params.x_start == pytest.approx(-0.7942199999999999)
-    assert my_grid_params.y1_start == pytest.approx(-0.53984 - (box_size_um * 1e-3 / 2))
-    assert my_grid_params.y2_start == pytest.approx(-0.53984 - (box_size_um * 1e-3 / 2))
-    assert my_grid_params.z1_start == pytest.approx(-0.53984)
-    assert my_grid_params.z2_start == pytest.approx(-0.53984)
-    assert my_grid_params.x_step_size == pytest.approx(0.02)
-    assert my_grid_params.y_step_size == pytest.approx(0.02)
-    assert my_grid_params.z_step_size == pytest.approx(0.02)
-    assert my_grid_params.x_steps == pytest.approx(9)
-    assert my_grid_params.y_steps == pytest.approx(2)
-    assert my_grid_params.z_steps == pytest.approx(1)
+    assert my_grid_params["z_start_um"] == pytest.approx(-0.53984)
+    assert my_grid_params["z2_start_um"] == pytest.approx(-0.53984)
+    assert my_grid_params["x_step_size_um"] == pytest.approx(0.02)
+    assert my_grid_params["y_step_size_um"] == pytest.approx(0.02)
+    assert my_grid_params["z_step_size_um"] == pytest.approx(0.02)
+    assert my_grid_params["x_steps"] == pytest.approx(9)
+    assert my_grid_params["y_steps"] == pytest.approx(2)
+    assert my_grid_params["z_steps"] == pytest.approx(1)
     assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
 
-    assert my_grid_params.dwell_time_ms == pytest.approx(500)
-
-    assert my_grid_params.x_axis == test_x_grid_axis
-    assert my_grid_params.y_axis == test_y_grid_axis
-    assert my_grid_params.z_axis == test_z_grid_axis
-
-    assert my_grid_params.set_stub_offsets is True
+    assert my_grid_params["exposure_time_s"] == pytest.approx(0.5)
+    assert my_grid_params["set_stub_offsets"] is True
 
 
 @pytest.mark.parametrize(

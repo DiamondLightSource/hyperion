@@ -57,12 +57,6 @@ from hyperion.log import (
     do_default_logging_setup,
 )
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandAGridscanInternalParameters,
-)
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -77,7 +71,7 @@ def raw_params_from_file(filename):
 
 def default_raw_params():
     return raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_parameter_defaults.json"
+        "tests/test_data/new_parameter_json_files/test_gridscan_param_defaults.json"
     )
 
 
@@ -187,15 +181,6 @@ def beamline_parameters():
 
 @pytest.fixture
 def test_fgs_params():
-    return GridscanInternalParameters(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_internal_parameter_defaults.json"
-        )
-    )
-
-
-@pytest.fixture
-def test_new_fgs_params():
     return ThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/new_parameter_json_files/good_test_parameters.json"
@@ -204,12 +189,9 @@ def test_new_fgs_params():
 
 
 @pytest.fixture
-def test_panda_fgs_params():
-    return PandAGridscanInternalParameters(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/panda_test_parameters.json"
-        )
-    )
+def test_panda_fgs_params(test_fgs_params: ThreeDGridScan):
+    test_fgs_params.use_panda = True
+    return test_fgs_params
 
 
 @pytest.fixture
@@ -552,7 +534,7 @@ def mock_gridscan_kickoff_complete(gridscan):
 @pytest.fixture
 def fake_fgs_composite(
     smargon: Smargon,
-    test_fgs_params: GridscanInternalParameters,
+    test_fgs_params: ThreeDGridScan,
     RE: RunEngine,
     done_status,
     attenuator,
@@ -585,9 +567,7 @@ def fake_fgs_composite(
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
     # unstage should be mocked on a per-test basis because several rely on unstage
-    fake_composite.eiger.set_detector_parameters(
-        test_fgs_params.hyperion_params.detector_params
-    )
+    fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_odin_state = lambda: True

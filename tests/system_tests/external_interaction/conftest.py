@@ -120,7 +120,7 @@ def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
 def dummy_params():
     dummy_params = GridscanInternalParameters(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
+            "tests/test_data/parameter_json_files/system_test_gridscan_param_defaults.json"
         )
     )
     dummy_params.hyperion_params.ispyb_params.visit_path = (

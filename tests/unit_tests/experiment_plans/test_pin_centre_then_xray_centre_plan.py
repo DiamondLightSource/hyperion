@@ -4,7 +4,6 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.synchrotron import SynchrotronMode
 
 from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
@@ -80,22 +79,22 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     test_config_files,
     sim_run_engine,
 ):
-    mock_grid_callback.return_value.get_grid_parameters.return_value = GridScanParams(
-        transmission_fraction=0.01,
-        dwell_time_ms=0,
-        x_start=0,
-        y1_start=0,
-        y2_start=0,
-        z1_start=0,
-        z2_start=0,
-        x_steps=10,
-        y_steps=10,
-        z_steps=10,
-        x_step_size=0.1,
-        y_step_size=0.1,
-        z_step_size=0.1,
-        set_stub_offsets=False,
-    )
+    mock_grid_callback.return_value.get_grid_parameters.return_value = {
+        "transmission_frac": 1.0,
+        "exposure_time_s": 0,
+        "x_start_um": 0,
+        "y_start_um": 0,
+        "y2_start_um": 0,
+        "z_start_um": 0,
+        "z2_start_um": 0,
+        "x_steps": 10,
+        "y_steps": 10,
+        "z_steps": 10,
+        "x_step_size_um": 0.1,
+        "y_step_size_um": 0.1,
+        "z_step_size_um": 0.1,
+        "set_stub_offsets": False,
+    }
 
     sim_run_engine.add_handler_for_callback_subscribes()
 

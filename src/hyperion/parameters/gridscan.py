@@ -3,7 +3,10 @@ from __future__ import annotations
 import os
 
 import numpy as np
-from dodal.devices.detector import DetectorDistanceToBeamXYConverter, DetectorParams
+from dodal.devices.detector import (
+    DetectorDistanceToBeamXYConverter,
+    DetectorParams,
+)
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from pydantic import Field
@@ -96,6 +99,7 @@ class GridCommon(
         ), "Detector distance must be filled before generating DetectorParams"
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
+            detector_size_constants=self.detector,  # type: ignore
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
             directory=self.storage_directory,
