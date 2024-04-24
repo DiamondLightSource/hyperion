@@ -10,6 +10,7 @@ from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
 from numpy import isclose
 from ophyd.sim import NullStatus, instantiate_fake_device
+from ophyd_async.core import set_sim_value
 
 from hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
@@ -310,7 +311,7 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.end_load"
 )
 @patch(
-    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode"
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode_and_snapshots"
 )
 @patch(
     "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
@@ -325,11 +326,15 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_then_ispyb_deposited(
     mock_centring_plan: MagicMock,
     start_load: MagicMock,
-    update_barcode: MagicMock,
+    update_barcode_and_snapshots: MagicMock,
     end_load: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
 ):
+    robot_load_composite.oav.snapshot.last_saved_path.put("test_oav_snapshot")  # type: ignore
+    set_sim_value(robot_load_composite.webcam.last_saved_path, "test_webcam_snapshot")
+    robot_load_composite.webcam.trigger = MagicMock(return_value=NullStatus())
+
     RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
 
@@ -339,7 +344,9 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
 
     start_load.assert_called_once_with("cm31105", 4, "12345", 40, 3)
-    update_barcode.assert_called_once_with(action_id, "BARCODE")
+    update_barcode_and_snapshots.assert_called_once_with(
+        action_id, "BARCODE", "test_oav_snapshot", "test_webcam_snapshot"
+    )
     end_load.assert_called_once_with(action_id, "success", "")
 
 
