@@ -142,7 +142,7 @@ async def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
+def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices,
     RE: RunEngine,
     test_config_files,

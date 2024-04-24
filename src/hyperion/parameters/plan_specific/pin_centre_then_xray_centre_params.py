@@ -94,7 +94,6 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
         all_params["num_triggers"] = all_params["num_images"]
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
-        all_params["upper_left"] = np.zeros(3, dtype=np.int32)
         return GridscanHyperionParameters(
             **extract_hyperion_params_from_flat_dict(
                 all_params, cls._hyperion_param_key_definitions()

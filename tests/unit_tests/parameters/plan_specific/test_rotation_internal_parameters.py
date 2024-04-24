@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
 import numpy as np
-import pytest
 from dodal.devices.detector.det_dim_constants import EIGER2_X_16M_SIZE
 from dodal.devices.motors import XYZLimitBundle
 
@@ -56,8 +55,6 @@ def test_rotation_parameters_load_from_file():
     ispyb_params = internal_parameters.hyperion_params.ispyb_params
 
     np.testing.assert_array_equal(ispyb_params.position, np.array([10, 20, 30]))
-    with pytest.raises(AttributeError):
-        ispyb_params.upper_left
 
     detector_params = internal_parameters.hyperion_params.detector_params
 

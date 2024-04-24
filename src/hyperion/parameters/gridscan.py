@@ -80,9 +80,6 @@ class GridCommon(
             or [],
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
             ispyb_experiment_type=self.ispyb_extras.ispyb_experiment_type,
-            upper_left=np.array(
-                self.ispyb_extras.upper_left or [0, 0, 0], dtype=np.int32
-            ),
         )
 
     @property

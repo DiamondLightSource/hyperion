@@ -207,4 +207,3 @@ class TemporaryIspybExtras(BaseModel):
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None
     ispyb_experiment_type: str | None = None
-    upper_left: list[float] | NDArray | None = None
