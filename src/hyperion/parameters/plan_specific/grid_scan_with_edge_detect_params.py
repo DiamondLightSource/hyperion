@@ -73,6 +73,8 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
+        if isinstance(experiment_params, GridScanWithEdgeDetectParams):
+            return experiment_params
         return GridScanWithEdgeDetectParams(
             **extract_experiment_params_from_flat_dict(
                 GridScanWithEdgeDetectParams, experiment_params
@@ -83,6 +85,8 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
     def _preprocess_hyperion_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
     ):
+        if isinstance(all_params["hyperion_params"], GridscanHyperionParameters):
+            return all_params["hyperion_params"]
         experiment_params: GridScanWithEdgeDetectParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])
@@ -90,7 +94,6 @@ class GridScanWithEdgeDetectInternalParameters(InternalParameters):
         all_params["num_triggers"] = all_params["num_images"]
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
-        all_params["upper_left"] = np.zeros(3, dtype=np.int32)
         return GridscanHyperionParameters(
             **extract_hyperion_params_from_flat_dict(
                 all_params, cls._hyperion_param_key_definitions()

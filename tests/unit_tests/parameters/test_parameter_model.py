@@ -329,7 +329,6 @@ class TestNewGdaParams:
                     "focal_spot_size_y": self.focal_spot_size_y,
                     "resolution": 1.57,
                     "comment": self.rotation_comment,
-                    "upper_left": [0, 0, 0],
                     "xtal_snapshots_omega_start": ["test1", "test2", "test3"],
                     "xtal_snapshots_omega_end": ["", "", ""],
                     "xtal_snapshots": ["", "", ""],

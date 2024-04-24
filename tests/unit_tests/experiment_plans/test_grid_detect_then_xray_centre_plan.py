@@ -16,9 +16,7 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
-)
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -102,7 +100,7 @@ def test_detect_grid_and_do_gridscan(
     mock_grid_detection_plan: MagicMock,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
-    test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
 ):
     mock_grid_detection_plan.side_effect = _fake_grid_detection
@@ -156,7 +154,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     eiger: EigerDetector,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
-    test_full_grid_scan_params: GridScanWithEdgeDetectInternalParameters,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])

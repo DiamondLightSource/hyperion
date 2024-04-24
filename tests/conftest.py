@@ -56,10 +56,7 @@ from hyperion.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
-from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
-)
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -464,9 +461,9 @@ def test_config_files():
 @pytest.fixture
 def test_full_grid_scan_params():
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
+        "tests/test_data/new_parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
-    return GridScanWithEdgeDetectInternalParameters(**params)
+    return GridScanWithEdgeDetect(**params)
 
 
 @pytest.fixture()
