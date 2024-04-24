@@ -67,18 +67,22 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event) -> Event | None:
         assert (event_descriptor := self.descriptors.get(doc["descriptor"])) is not None
-        if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
+        if (
+            event_descriptor.get("name")
+            == CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ
+        ):
             data = doc["data"]
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 assert nexus_writer, "Nexus callback did not receive start doc"
-                nexus_writer.beam, nexus_writer.attenuator = (
-                    create_beam_and_attenuator_parameters(
-                        data["dcm_energy_in_kev"],
-                        data["flux_flux_reading"],
-                        data["attenuator_actual_transmission"],
-                    )
+                (
+                    nexus_writer.beam,
+                    nexus_writer.attenuator,
+                ) = create_beam_and_attenuator_parameters(
+                    data["dcm_energy_in_kev"],
+                    data["flux_flux_reading"],
+                    data["attenuator_actual_transmission"],
                 )
-        if event_descriptor.get("name") == CONST.PLAN.NEXUS_READ:
+        if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
             NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 vds_data_type = vds_type_based_on_bit_depth(

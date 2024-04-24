@@ -4,7 +4,6 @@ from typing import Callable
 
 import dodal.devices.zocalo.zocalo_interaction
 import ispyb.sqlalchemy
-import numpy as np
 import pytest
 from ispyb.sqlalchemy import DataCollection, DataCollectionGroup
 from sqlalchemy import create_engine
@@ -13,10 +12,11 @@ from sqlalchemy.orm import sessionmaker
 from hyperion.external_interaction.ispyb.data_model import ExperimentType
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+from ...conftest import raw_params_from_file
 
 TEST_RESULT_LARGE = [
     {
@@ -119,11 +119,10 @@ def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
 @pytest.fixture
 def dummy_params():
     dummy_params = GridscanInternalParameters(
-        **from_file(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
         )
     )
-    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.hyperion_params.ispyb_params.visit_path = (
         "/dls/i03/data/2022/cm31105-5/"
     )

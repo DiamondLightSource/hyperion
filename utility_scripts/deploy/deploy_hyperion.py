@@ -9,7 +9,9 @@ from packaging.version import VERSION_PATTERN, Version
 
 recognised_beamlines = ["dev", "i03", "i04"]
 
-VERSION_PATTERN_COMPILED = re.compile(VERSION_PATTERN, re.VERBOSE | re.IGNORECASE)
+VERSION_PATTERN_COMPILED = re.compile(
+    f"^{VERSION_PATTERN}$", re.VERBOSE | re.IGNORECASE
+)
 
 
 class repo:

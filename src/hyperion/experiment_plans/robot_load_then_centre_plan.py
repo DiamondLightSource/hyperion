@@ -174,7 +174,7 @@ def robot_load_then_centre_plan(
 
         yield from bps.wait("robot_load")
 
-        yield from bps.create(name=CONST.PLAN.ROBOT_LOAD)
+        yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
         yield from bps.read(composite.robot.barcode)
         yield from bps.save()
 
@@ -182,6 +182,8 @@ def robot_load_then_centre_plan(
 
     yield from robot_load()
 
+    # XXX 1278 this effectively casts between unrelated types which doesn't have all
+    # attributes needed for downstream e.g. grid_width_microns
     params_json = json.loads(parameters.json())
     pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
 

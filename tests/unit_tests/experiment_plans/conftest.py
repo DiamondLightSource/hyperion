@@ -80,7 +80,7 @@ def run_generic_ispyb_handler_setup(
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "123abc", "name": CONST.PLAN.ISPYB_HARDWARE_READ}  # type: ignore
+        {"uid": "123abc", "name": CONST.DESCRIPTORS.ISPYB_HARDWARE_READ}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -89,7 +89,7 @@ def run_generic_ispyb_handler_setup(
         )
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "abc123", "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ}  # type: ignore
+        {"uid": "abc123", "name": CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -148,12 +148,6 @@ def mock_subscriptions(test_fgs_params):
     ):
         nexus_callback, ispyb_callback = create_gridscan_callbacks()
         ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
-        start_doc = {
-            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": test_fgs_params.json(),
-            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-        }
-        ispyb_callback.activity_gated_start(start_doc)  # type: ignore
 
     return (nexus_callback, ispyb_callback)
 
