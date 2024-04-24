@@ -5,7 +5,9 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.webcam import Webcam
 from numpy import isclose
 from ophyd.sim import NullStatus, instantiate_fake_device
 
@@ -13,6 +15,7 @@ from hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
     prepare_for_robot_load,
     robot_load_then_centre,
+    take_robot_snapshots,
 )
 from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
@@ -29,7 +32,7 @@ from ...conftest import raw_params_from_file
 
 @pytest.fixture
 def robot_load_composite(
-    smargon, dcm, robot, aperture_scatterguard
+    smargon, dcm, robot, aperture_scatterguard, oav, webcam
 ) -> RobotLoadThenCentreComposite:
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
@@ -39,6 +42,8 @@ def robot_load_composite(
     composite.aperture_scatterguard = aperture_scatterguard
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
+    composite.oav = oav
+    composite.webcam = webcam
     return composite
 
 
@@ -336,3 +341,26 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     start_load.assert_called_once_with("cm31105", 4, "12345", 40, 3)
     update_barcode.assert_called_once_with(action_id, "BARCODE")
     end_load.assert_called_once_with(action_id, "success", "")
+
+
+@patch("hyperion.experiment_plans.robot_load_then_centre_plan.datetime")
+async def test_when_take_snapshots_called_then_filename_and_directory_set_and_device_triggered(
+    mock_datetime: MagicMock, oav: OAV, webcam: Webcam
+):
+    TEST_DIRECTORY = "TEST"
+
+    mock_datetime.now.return_value.strftime.return_value = "TIME"
+
+    RE = RunEngine()
+    oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
+    webcam.trigger = MagicMock(return_value=NullStatus())
+
+    RE(take_robot_snapshots(oav, webcam, TEST_DIRECTORY))
+
+    oav.snapshot.trigger.assert_called_once()
+    assert oav.snapshot.filename.get() == "TIME_oav_snapshot_after_load"
+    assert oav.snapshot.directory.get() == TEST_DIRECTORY
+
+    webcam.trigger.assert_called_once()
+    assert (await webcam.filename.get_value()) == "TIME_webcam_after_load"
+    assert (await webcam.directory.get_value()) == TEST_DIRECTORY
