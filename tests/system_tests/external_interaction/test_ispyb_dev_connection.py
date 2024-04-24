@@ -12,13 +12,13 @@ from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
+from ophyd_async.core import set_sim_value
 
 from hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan,
 )
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    GridScanInfo,
     populate_data_collection_group,
     populate_data_collection_position_info,
     populate_remaining_data_collection_info,
@@ -28,14 +28,15 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
-    populate_data_collection_grid_info,
     populate_xy_data_collection_info,
     populate_xz_data_collection_info,
 )
 from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionGridInfo,
     ExperimentType,
     ScanDataInfo,
 )
+from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -60,21 +61,11 @@ def dummy_data_collection_group_info(dummy_params):
 
 @pytest.fixture
 def dummy_scan_data_info_for_begin(dummy_params):
-    grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
-        dummy_params.experiment_params.y_steps,
-        dummy_params.experiment_params.y_step_size,
-    )
     info = populate_xy_data_collection_info(
-        grid_scan_info,
-        dummy_params,
-        dummy_params.hyperion_params.ispyb_params,
         dummy_params.hyperion_params.detector_params,
     )
     info = populate_remaining_data_collection_info(
-        lambda: construct_comment_for_gridscan(
-            dummy_params, dummy_params.hyperion_params.ispyb_params, grid_scan_info
-        ),
+        None,
         None,
         info,
         dummy_params.hyperion_params.detector_params,
@@ -89,15 +80,26 @@ def scan_xy_data_info_for_update(
     data_collection_group_id, dummy_params, scan_data_info_for_begin
 ):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
-    grid_scan_info = GridScanInfo(
-        dummy_params.hyperion_params.ispyb_params.upper_left,
-        dummy_params.experiment_params.y_steps,
-        dummy_params.experiment_params.y_step_size,
-    )
     scan_data_info_for_update.data_collection_info.parent_id = data_collection_group_id
-    scan_data_info_for_update.data_collection_grid_info = (
-        populate_data_collection_grid_info(
-            dummy_params, grid_scan_info, dummy_params.hyperion_params.ispyb_params
+    assert dummy_params.hyperion_params.ispyb_params is not None
+    assert dummy_params is not None
+    scan_data_info_for_update.data_collection_grid_info = DataCollectionGridInfo(
+        dx_in_mm=dummy_params.experiment_params.x_step_size,
+        dy_in_mm=dummy_params.experiment_params.y_step_size,
+        steps_x=dummy_params.experiment_params.x_steps,
+        steps_y=dummy_params.experiment_params.y_steps,
+        microns_per_pixel_x=dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
+        microns_per_pixel_y=dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
+        # cast coordinates from numpy int64 to avoid mysql type conversion issues
+        snapshot_offset_x_pixel=100,
+        snapshot_offset_y_pixel=100,
+        orientation=Orientation.HORIZONTAL,
+        snaked=True,
+    )
+    scan_data_info_for_update.data_collection_info.comments = (
+        construct_comment_for_gridscan(
+            dummy_params.hyperion_params.ispyb_params,
+            scan_data_info_for_update.data_collection_grid_info,
         )
     )
     scan_data_info_for_update.data_collection_position_info = (
@@ -111,26 +113,29 @@ def scan_xy_data_info_for_update(
 def scan_data_infos_for_update_3d(
     ispyb_ids, scan_xy_data_info_for_update, dummy_params
 ):
-    upper_left = dummy_params.hyperion_params.ispyb_params.upper_left
-    xz_grid_scan_info = GridScanInfo(
-        [upper_left[0], upper_left[2]],
-        dummy_params.experiment_params.z_steps,
-        dummy_params.experiment_params.z_step_size,
-    )
     xz_data_collection_info = populate_xz_data_collection_info(
-        xz_grid_scan_info,
-        dummy_params,
-        dummy_params.hyperion_params.ispyb_params,
-        dummy_params.hyperion_params.detector_params,
+        dummy_params.hyperion_params.detector_params
     )
 
-    def comment_constructor():
-        return construct_comment_for_gridscan(
-            dummy_params, dummy_params.hyperion_params.ispyb_params, xz_grid_scan_info
-        )
-
+    assert dummy_params.hyperion_params.ispyb_params is not None
+    assert dummy_params is not None
+    data_collection_grid_info = DataCollectionGridInfo(
+        dx_in_mm=dummy_params.experiment_params.x_step_size,
+        dy_in_mm=dummy_params.experiment_params.z_step_size,
+        steps_x=dummy_params.experiment_params.x_steps,
+        steps_y=dummy_params.experiment_params.z_steps,
+        microns_per_pixel_x=dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x,
+        microns_per_pixel_y=dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y,
+        # cast coordinates from numpy int64 to avoid mysql type conversion issues
+        snapshot_offset_x_pixel=100,
+        snapshot_offset_y_pixel=50,
+        orientation=Orientation.HORIZONTAL,
+        snaked=True,
+    )
     xz_data_collection_info = populate_remaining_data_collection_info(
-        comment_constructor,
+        construct_comment_for_gridscan(
+            dummy_params.hyperion_params.ispyb_params, data_collection_grid_info
+        ),
         ispyb_ids.data_collection_group_id,
         xz_data_collection_info,
         dummy_params.hyperion_params.detector_params,
@@ -140,13 +145,7 @@ def scan_data_infos_for_update_3d(
 
     scan_xz_data_info_for_update = ScanDataInfo(
         data_collection_info=xz_data_collection_info,
-        data_collection_grid_info=(
-            populate_data_collection_grid_info(
-                dummy_params,
-                xz_grid_scan_info,
-                dummy_params.hyperion_params.ispyb_params,
-            )
-        ),
+        data_collection_grid_info=(data_collection_grid_info),
         data_collection_position_info=(
             populate_data_collection_position_info(
                 dummy_params.hyperion_params.ispyb_params
@@ -178,12 +177,12 @@ def test_ispyb_deposition_comment_correct_on_failure(
     dummy_scan_data_info_for_begin,
 ):
     ispyb_ids = dummy_ispyb.begin_deposition(
-        dummy_data_collection_group_info, dummy_scan_data_info_for_begin
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )
     dummy_ispyb.end_deposition(ispyb_ids, "fail", "could not connect to devices")
     assert (
         fetch_comment(ispyb_ids.data_collection_ids[0])  # type: ignore
-        == "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images in 100.0 um by 100.0 um steps. Top left (px): [100,100], bottom right (px): [3300,1700]. DataCollection Unsuccessful reason: could not connect to devices"
+        == "DataCollection Unsuccessful reason: could not connect to devices"
     )
 
 
@@ -196,7 +195,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     dummy_scan_data_info_for_begin,
 ):
     ispyb_ids = dummy_ispyb_3d.begin_deposition(
-        dummy_data_collection_group_info, dummy_scan_data_info_for_begin
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )
     scan_data_infos = generate_scan_data_infos(
         dummy_params,
@@ -243,7 +242,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
         CONST.SIM.DEV_ISPYB_DATABASE_CFG, experiment_type
     )
     ispyb_ids: IspybIds = ispyb.begin_deposition(
-        dummy_data_collection_group_info, dummy_scan_data_info_for_begin
+        dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )
     scan_data_infos = generate_scan_data_infos(
         dummy_params, dummy_scan_data_info_for_begin, experiment_type, ispyb_ids
@@ -293,6 +292,7 @@ def generate_scan_data_infos(
     xy_scan_data_info = scan_xy_data_info_for_update(
         ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
     )
+    xy_scan_data_info.data_collection_id = ispyb_ids.data_collection_ids[0]
     if experiment_type == ExperimentType.GRIDSCAN_3D:
         scan_data_infos = scan_data_infos_for_update_3d(
             ispyb_ids, xy_scan_data_info, dummy_params
@@ -338,12 +338,14 @@ def test_ispyb_deposition_in_rotation_plan(
     fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(  # pyright: ignore
         energy_ev / 1000
     )
-    fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)
-    fake_create_rotation_devices.synchrotron.machine_status.synchrotron_mode.sim_put(  # pyright: ignore
-        test_synchrotron_mode.value
+    fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)  # pyright: ignore
+    set_sim_value(
+        fake_create_rotation_devices.synchrotron.synchrotron_mode,
+        test_synchrotron_mode,
     )
-    fake_create_rotation_devices.synchrotron.top_up.start_countdown.sim_put(  # pyright: ignore
-        -1
+    set_sim_value(
+        fake_create_rotation_devices.synchrotron.topup_start_countdown,  # pyright: ignore
+        -1,
     )
     fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
         test_slit_gap_horiz

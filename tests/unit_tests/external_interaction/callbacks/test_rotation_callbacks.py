@@ -38,16 +38,17 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+
+from ....conftest import raw_params_from_file
 
 
 @pytest.fixture
 def params():
     return RotationInternalParameters(
-        **from_file(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
@@ -351,7 +352,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         RE(fake_rotation_scan(params, [ispyb_cb], after_open_do, after_main_do))
 
         begin_deposition_scan_data: ScanDataInfo = (
-            rotation_ispyb.return_value.begin_deposition.call_args.args[1]
+            rotation_ispyb.return_value.begin_deposition.call_args.args[1][0]
         )
         if same_dcgid:
             assert begin_deposition_scan_data.data_collection_info.parent_id is not None

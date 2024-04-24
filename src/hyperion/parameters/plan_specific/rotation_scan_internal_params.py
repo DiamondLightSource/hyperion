@@ -105,6 +105,8 @@ class RotationInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
+        if isinstance(experiment_params, RotationScanParams):
+            return experiment_params
         return RotationScanParams(
             **extract_experiment_params_from_flat_dict(
                 RotationScanParams, experiment_params
@@ -115,6 +117,8 @@ class RotationInternalParameters(InternalParameters):
     def _preprocess_hyperion_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
     ):
+        if isinstance(all_params.get("hyperion_params"), RotationHyperionParameters):
+            return all_params["hyperion_params"]
         experiment_params: RotationScanParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])

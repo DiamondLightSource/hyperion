@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import argparse
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
-from bluesky.run_engine import RunEngine
-from bluesky.utils import ProgressBarManager
 from dodal.devices.panda_fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params,
 )
@@ -41,14 +38,14 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     set_aperture_for_bbox_size,
     wait_for_gridscan_valid,
 )
-from hyperion.external_interaction.callbacks.common.callback_util import (
-    create_gridscan_callbacks,
-)
 from hyperion.log import LOGGER
-from hyperion.parameters import external_parameters
 from hyperion.parameters.constants import CONST
+from hyperion.parameters.gridscan import ThreeDGridScan
+from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
+    PandAGridscanInternalParameters,
+)
 from hyperion.tracing import TRACER
-from hyperion.utils.context import device_composite_from_context, setup_context
+from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
     from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
@@ -258,7 +255,7 @@ def run_gridscan_and_move(
 
 def panda_flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
-    parameters: Any,
+    parameters: Union[ThreeDGridScan, PandAGridscanInternalParameters, Any],
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -271,9 +268,20 @@ def panda_flyscan_xray_centre(
     Returns:
         Generator: The plan for the gridscan
     """
-    composite.eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
 
-    composite.zocalo.zocalo_environment = parameters.hyperion_params.zocalo_environment
+    old_parameters = (
+        parameters
+        if isinstance(parameters, PandAGridscanInternalParameters)
+        else parameters.panda_old_parameters()
+    )
+
+    composite.eiger.set_detector_parameters(
+        old_parameters.hyperion_params.detector_params
+    )
+
+    composite.zocalo.zocalo_environment = (
+        old_parameters.hyperion_params.zocalo_environment
+    )
 
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -282,7 +290,6 @@ def panda_flyscan_xray_centre(
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
             "hyperion_internal_parameters": parameters.json(),
             "activate_callbacks": [
-                "GridscanISPyBCallback",
                 "GridscanNexusFileCallback",
             ],
         }
@@ -291,33 +298,9 @@ def panda_flyscan_xray_centre(
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite.xbpm_feedback,
         composite.attenuator,
-        parameters.experiment_params.transmission_fraction,
+        old_parameters.experiment_params.transmission_fraction,
     )
     def run_gridscan_and_move_and_tidy(fgs_composite, params):
         yield from run_gridscan_and_move(fgs_composite, params)
 
     return run_gridscan_and_move_and_tidy(composite, parameters)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--beamline",
-        help="The beamline prefix this is being run on",
-        default=CONST.SIM.BEAMLINE,
-    )
-    args = parser.parse_args()
-
-    RE = RunEngine({})
-    RE.waiting_hook = ProgressBarManager()  # type: ignore
-    from hyperion.parameters.plan_specific.gridscan_internal_params import (
-        GridscanInternalParameters,
-    )
-
-    parameters = GridscanInternalParameters(**external_parameters.from_file())
-    subscriptions = create_gridscan_callbacks()
-
-    context = setup_context(wait_for_connection=True)
-    composite = create_devices(context)
-
-    RE(panda_flyscan_xray_centre(composite, parameters))

@@ -12,13 +12,14 @@ from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_centre_then_xray_centre_plan,
     pin_tip_centre_then_xray_centre,
 )
-from hyperion.parameters.external_parameters import from_file as raw_params_from_file
 from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
     GridScanWithEdgeDetectParams,
 )
 from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
     PinCentreThenXrayCentreInternalParameters,
 )
+
+from ...conftest import raw_params_from_file
 
 
 @pytest.fixture
@@ -71,9 +72,6 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.GridDetectionCallback",
 )
 @patch(
-    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.OavSnapshotCallback",
-)
-@patch(
     "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
     autospec=True,
 )
@@ -84,19 +82,12 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_grid_detect: MagicMock,
     mock_pin_tip_centre: MagicMock,
-    mock_oav_callback: MagicMock,
     mock_grid_callback: MagicMock,
     test_pin_centre_then_xray_centre_params: PinCentreThenXrayCentreInternalParameters,
     simple_beamline,
     test_config_files,
     sim_run_engine,
 ):
-    mock_oav_callback.return_value.out_upper_left = [[1, 3], [3, 4]]
-    mock_oav_callback.return_value.snapshot_filenames = [
-        ["1.png", "2.png", "3.png"],
-        ["1.png", "2.png", "3.png"],
-        ["1.png", "2.png", "3.png"],
-    ]
     mock_grid_callback.return_value.get_grid_parameters.return_value = GridScanParams(
         transmission_fraction=0.01,
         dwell_time_ms=0,
