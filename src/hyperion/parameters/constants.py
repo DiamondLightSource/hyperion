@@ -19,14 +19,11 @@ class SimConstants:
 
 @dataclass(frozen=True)
 class PlanNameConstants:
-    # For callbacks to use
-    NEXUS_READ = "nexus_read_plan"
-    ISPYB_HARDWARE_READ = "ispyb_reading_hardware"
-    ISPYB_TRANSMISSION_FLUX_READ = "ispyb_update_transmission_flux"
-    ZOCALO_HW_READ = "zocalo_read_hardware_plan"
-    # Robot load
+    # Robot load subplan
     ROBOT_LOAD = "robot_load"
     # Gridscan
+    GRID_DETECT_AND_DO_GRIDSCAN = "grid_detect_and_do_gridscan"
+    GRID_DETECT_INNER = "grid_detect"
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
     GRIDSCAN_MAIN = "run_gridscan"
@@ -34,6 +31,18 @@ class PlanNameConstants:
     # Rotation scan
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
+
+
+@dataclass(frozen=True)
+class DocDescriptorNames:
+    # Robot load event descriptor
+    ROBOT_LOAD = "robot_load"
+    # For callbacks to use
+    OAV_SNAPSHOT_TRIGGERED = "snapshot_to_ispyb"
+    NEXUS_READ = "nexus_read_plan"
+    ISPYB_HARDWARE_READ = "ispyb_reading_hardware"
+    ISPYB_TRANSMISSION_FLUX_READ = "ispyb_update_transmission_flux"
+    ZOCALO_HW_READ = "zocalo_read_hardware_plan"
 
 
 @dataclass(frozen=True)
@@ -91,6 +100,7 @@ class HyperionConstants:
     PARAM = ExperimentParamConstants()
     I03 = I03Constants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
+    DESCRIPTORS = DocDescriptorNames()
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
 

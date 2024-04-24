@@ -352,7 +352,7 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         RE(fake_rotation_scan(params, [ispyb_cb], after_open_do, after_main_do))
 
         begin_deposition_scan_data: ScanDataInfo = (
-            rotation_ispyb.return_value.begin_deposition.call_args.args[1]
+            rotation_ispyb.return_value.begin_deposition.call_args.args[1][0]
         )
         if same_dcgid:
             assert begin_deposition_scan_data.data_collection_info.parent_id is not None

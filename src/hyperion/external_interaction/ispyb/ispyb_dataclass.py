@@ -9,8 +9,6 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "visit_path": "",
     "microns_per_pixel_x": 0.0,
     "microns_per_pixel_y": 0.0,
-    # gets stored as 2x2D coords - (x, y) and (x, z). Values in pixels
-    "upper_left": [0, 0, 0],
     "position": [0, 0, 0],
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
@@ -73,21 +71,9 @@ class RotationIspybParams(IspybParams): ...
 
 
 class GridscanIspybParams(IspybParams):
-    upper_left: np.ndarray
-
     def dict(self, **kwargs):
         as_dict = super().dict(**kwargs)
-        as_dict["upper_left"] = as_dict["upper_left"].tolist()
         return as_dict
-
-    @validator("upper_left", pre=True)
-    def _parse_upper_left(
-        cls, upper_left: list[int | float] | np.ndarray, values: Dict[str, Any]
-    ) -> np.ndarray:
-        assert len(upper_left) == 3
-        if isinstance(upper_left, np.ndarray):
-            return upper_left
-        return np.array(upper_left)
 
 
 class Orientation(Enum):

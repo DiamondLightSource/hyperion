@@ -10,7 +10,7 @@ fi
 # controls_dev sets pip up to look at a local pypi server, which is incomplete
 module unload controls_dev 
 
-module load python/3.10
+module load python/3.11
 
 if [ -d "./.venv" ]
 then
@@ -35,6 +35,6 @@ fi
 pip install -e ../dodal[dev]
 
 # get dlstbx into our env
-ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ .venv/lib/python3.10/site-packages/dlstbx
+ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ .venv/lib/python3.11/site-packages/dlstbx
 
 pytest -m "not s03"

@@ -4,7 +4,6 @@ from typing import Callable
 
 import dodal.devices.zocalo.zocalo_interaction
 import ispyb.sqlalchemy
-import numpy as np
 import pytest
 from ispyb.sqlalchemy import DataCollection, DataCollectionGroup
 from sqlalchemy import create_engine
@@ -124,7 +123,6 @@ def dummy_params():
             "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
         )
     )
-    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.hyperion_params.ispyb_params.visit_path = (
         "/dls/i03/data/2022/cm31105-5/"
     )
