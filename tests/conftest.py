@@ -383,7 +383,7 @@ def qbpm1():
 
 
 @pytest.fixture
-def vfm():
+def vfm(RE):
     vfm = i03.vfm(fake_with_ophyd_sim=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"

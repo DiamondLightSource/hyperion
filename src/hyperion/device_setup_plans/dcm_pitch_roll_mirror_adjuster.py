@@ -3,7 +3,7 @@ import json
 import bluesky.plan_stubs as bps
 from dodal.devices.DCM import DCM
 from dodal.devices.focusing_mirror import (
-    FocusingMirror,
+    FocusingMirrorWithStripes,
     MirrorStripe,
     VFMMirrorVoltages,
 )
@@ -19,7 +19,9 @@ DCM_GROUP = "DCM_GROUP"
 
 
 def _apply_and_wait_for_voltages_to_settle(
-    stripe: MirrorStripe, mirror: FocusingMirror, mirror_voltages: VFMMirrorVoltages
+    stripe: MirrorStripe,
+    mirror: FocusingMirrorWithStripes,
+    mirror_voltages: VFMMirrorVoltages,
 ):
     with open(mirror_voltages.voltage_lookup_table_path) as lut_file:
         json_obj = json.load(lut_file)
@@ -51,7 +53,7 @@ def _apply_and_wait_for_voltages_to_settle(
 
 
 def adjust_mirror_stripe(
-    energy_kev, mirror: FocusingMirror, mirror_voltages: VFMMirrorVoltages
+    energy_kev, mirror: FocusingMirrorWithStripes, mirror_voltages: VFMMirrorVoltages
 ):
     """Feedback should be OFF prior to entry, in order to prevent
     feedback from making unnecessary corrections while beam is being adjusted."""
@@ -60,7 +62,7 @@ def adjust_mirror_stripe(
     LOGGER.info(
         f"Adjusting mirror stripe for {energy_kev}keV selecting {stripe} stripe"
     )
-    yield from bps.abs_set(mirror.stripe, stripe.value, wait=True)
+    yield from bps.abs_set(mirror.stripe, stripe, wait=True)
     yield from bps.abs_set(mirror.apply_stripe, 1)
 
     LOGGER.info("Adjusting mirror voltages...")
@@ -69,7 +71,7 @@ def adjust_mirror_stripe(
 
 def adjust_dcm_pitch_roll_vfm_from_lut(
     dcm: DCM,
-    vfm: FocusingMirror,
+    vfm: FocusingMirrorWithStripes,
     vfm_mirror_voltages: VFMMirrorVoltages,
     energy_kev,
 ):
@@ -120,9 +122,10 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     yield from bps.wait(DCM_GROUP)
 
     # VFM Adjust - for I03 this table always returns the same value
+    assert (vfm_lut := vfm.bragg_to_lat_lookup_table_path) is not None
     vfm_x_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(vfm.bragg_to_lat_lookup_table_path),
-        vfm.lat_mm,
+        linear_interpolation_lut(vfm_lut),
+        vfm.x_mm,
         bragg_deg,
     )
     LOGGER.info("Waiting for VFM Lat (Horizontal Translation) to complete...")
