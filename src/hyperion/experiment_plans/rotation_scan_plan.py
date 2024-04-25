@@ -6,7 +6,7 @@ from typing import Any, Union
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.DCM import DCM
@@ -14,6 +14,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -60,6 +61,7 @@ class RotationScanComposite:
     detector_motion: DetectorMotion
     eiger: EigerDetector
     flux: Flux
+    oav: OAV
     robot: BartRobot
     smargon: Smargon
     undulator: Undulator
@@ -157,6 +159,28 @@ def calculate_motion_profile(
     )
 
 
+def pre_collection_snapshots(composite: RotationScanComposite):
+    """Before taking rotation data snapshots are taken at various angles to ensure
+    correct centring.
+    """
+    yield from bps.abs_set(composite.backlight, Backlight.IN, group="prepare_snapshots")
+    yield from bps.abs_set(
+        composite.aperture_scatterguard,
+        AperturePositions.ROBOT_LOAD,
+        group="prepare_snapshots",
+    )
+    yield from bps.wait("prepare_snapshots")
+    yield from bps.wait("move_x_y_z")
+
+    for _ in range(2):
+        yield from bps.rel_set(composite.smargon.omega, 90, wait=True)
+        yield from bps.trigger(composite.oav.snapshot, wait=True)
+        yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
+        yield from bps.read(composite.oav.snapshot)
+        yield from bps.read(composite.smargon)
+        yield from bps.save()
+
+
 def rotation_scan_plan(
     composite: RotationScanComposite,
     params: RotationInternalParameters,
@@ -205,7 +229,6 @@ def rotation_scan_plan(
         LOGGER.info("Wait for any previous moves...")
         # wait for all the setup tasks at once
         yield from bps.wait("setup_senv")
-        yield from bps.wait("move_x_y_z")
         yield from bps.wait("move_to_start")
         yield from bps.wait("setup_zebra")
 
@@ -294,21 +317,24 @@ def rotation_scan(
         @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: cleanup_plan(composite, max_vel))
         def rotation_with_cleanup_and_stage(params: RotationInternalParameters):
-            LOGGER.info("setting up sample environment...")
-            yield from setup_sample_environment(
-                composite.detector_motion,
-                composite.backlight,
-                composite.attenuator,
-                params.experiment_params.transmission_fraction,
-                params.hyperion_params.detector_params.detector_distance,
-            )
-            LOGGER.info("moving to position (if specified)")
+            LOGGER.info("Moving to position (if specified)")
             yield from move_x_y_z(
                 composite.smargon,
                 params.experiment_params.x,
                 params.experiment_params.y,
                 params.experiment_params.z,
                 group="move_x_y_z",
+            )
+            LOGGER.info("Taking snapshots")
+            yield from pre_collection_snapshots(composite)
+            LOGGER.info("Setting up sample environment...")
+            yield from setup_sample_environment(
+                composite.detector_motion,
+                composite.backlight,
+                composite.attenuator,
+                params.experiment_params.transmission_fraction,
+                params.hyperion_params.detector_params.detector_distance,
+                # move aperture_scatterguard back to correct place here
             )
             yield from rotation_scan_plan(
                 composite,

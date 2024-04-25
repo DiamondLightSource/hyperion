@@ -26,6 +26,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
 from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -35,6 +36,7 @@ from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
+from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
 from ophyd_async.core import set_sim_value
 from ophyd_async.core.async_status import AsyncStatus
@@ -313,8 +315,15 @@ def synchrotron():
 
 
 @pytest.fixture
-def oav():
-    return i03.oav(fake_with_ophyd_sim=True)
+def oav(test_config_files):
+    params = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    params.micronsPerXPixel = 2.87
+    params.micronsPerYPixel = 2.87
+    oav = i03.oav(fake_with_ophyd_sim=True, params=params)
+    oav.snapshot.trigger = MagicMock(return_value=NullStatus())
+    return oav
 
 
 @pytest.fixture
@@ -505,6 +514,7 @@ def fake_create_rotation_devices(
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
     robot: BartRobot,
+    oav: OAV,
     done_status,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
@@ -512,6 +522,7 @@ def fake_create_rotation_devices(
 
     smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
+    smargon.omega.user_readback.sim_put(0)  # type: ignore
 
     smargon.omega.max_velocity.sim_put(131)  # type: ignore
 
@@ -529,6 +540,7 @@ def fake_create_rotation_devices(
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
         robot=robot,
+        oav=oav,
     )
 
 

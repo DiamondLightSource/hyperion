@@ -210,7 +210,7 @@ def test_full_rotation_plan_smargon_settings(
     assert smargon.x.user_readback.get() == expt_params.x
     assert smargon.y.user_readback.get() == expt_params.y
     assert smargon.z.user_readback.get() == expt_params.z
-    assert omega_set.call_count == 2
+    assert omega_set.call_count == 4
     assert omega_velocity_set.call_count == 3
     assert omega_velocity_set.call_args_list == [
         call(test_max_velocity),
