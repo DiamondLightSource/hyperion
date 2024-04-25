@@ -3,7 +3,7 @@ import logging
 import sys
 import threading
 from functools import partial
-from typing import Callable, Generator, Optional, Sequence
+from typing import Any, Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -31,6 +31,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
+from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
@@ -409,8 +410,10 @@ def undulator_dcm():
 
 
 @pytest.fixture
-def webcam(RE):
-    return i03.webcam(fake_with_ophyd_sim=True)
+def webcam(RE) -> Generator[Webcam, Any, Any]:
+    webcam = i03.webcam(fake_with_ophyd_sim=True)
+    with patch.object(webcam, "_write_image"):
+        yield webcam
 
 
 @pytest.fixture
