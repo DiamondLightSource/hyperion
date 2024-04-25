@@ -34,11 +34,10 @@ from .conftest import assert_event
 
 @pytest.fixture
 def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
-    oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True)
-
-    oav.parameters = OAVConfigParams(
+    params = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True, params=params)
     oav.parameters.update_on_zoom = MagicMock()
     oav.parameters.load_microns_per_pixel = MagicMock()
     oav.parameters.micronsPerXPixel = 1.58
