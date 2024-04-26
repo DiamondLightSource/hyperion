@@ -87,7 +87,7 @@ async def fxc_composite():
         backlight=i03.backlight(),
         dcm=i03.dcm(fake_with_ophyd_sim=True),
         eiger=i03.eiger(),
-        fast_grid_scan=i03.fast_grid_scan(),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
         robot=i03.robot(fake_with_ophyd_sim=True),
         panda=i03.panda(fake_with_ophyd_sim=True),
@@ -308,8 +308,8 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     callbacks,
     done_status,
 ):
-    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
-    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
+    fxc_composite.zebra_fast_grid_scan.kickoff = MagicMock(return_value=done_status)
+    fxc_composite.zebra_fast_grid_scan.complete = MagicMock(return_value=done_status)
 
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
@@ -346,8 +346,8 @@ def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     callbacks,
     done_status,
 ):
-    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
-    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
+    fxc_composite.zebra_fast_grid_scan.kickoff = MagicMock(return_value=done_status)
+    fxc_composite.zebra_fast_grid_scan.complete = MagicMock(return_value=done_status)
 
     params.hyperion_params.detector_params.directory = "./tmp"
     params.hyperion_params.detector_params.prefix = str(uuid.uuid1())

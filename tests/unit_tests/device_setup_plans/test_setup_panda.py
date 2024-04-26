@@ -2,6 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from bluesky.plan_stubs import null
+from bluesky.run_engine import RunEngine
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from ophyd_async.panda import SeqTrigger
 
@@ -177,7 +179,9 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
     ), patch(
         "hyperion.device_setup_plans.setup_panda.bps.wait",
         MagicMock(side_effect=handle_wait),
-    ), patch("hyperion.device_setup_plans.setup_panda.load_device"), patch(
+    ), patch(
+        "hyperion.device_setup_plans.setup_panda.load_device"
+    ), patch(
         "hyperion.device_setup_plans.setup_panda.bps.abs_set"
     ):
         RE(

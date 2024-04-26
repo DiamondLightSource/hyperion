@@ -298,7 +298,7 @@ def backlight():
 
 @pytest.fixture
 def fast_grid_scan():
-    return i03.fast_grid_scan(fake_with_ophyd_sim=True)
+    return i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -602,7 +602,7 @@ async def fake_fgs_composite(
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
-        fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True),
         flux=i03.flux(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
         smargon=smargon,

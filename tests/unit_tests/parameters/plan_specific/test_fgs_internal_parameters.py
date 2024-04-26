@@ -1,6 +1,6 @@
 import numpy as np
 from dodal.devices.detector.det_dim_constants import EIGER2_X_16M_SIZE
-from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.fast_grid_scan import ZebraGridScanParams
 
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -16,7 +16,7 @@ def test_FGS_parameters_load_from_file():
     internal_parameters = GridscanInternalParameters(**params)
     internal_parameters.json()
 
-    assert isinstance(internal_parameters.experiment_params, GridScanParams)
+    assert isinstance(internal_parameters.experiment_params, ZebraGridScanParams)
 
     ispyb_params = internal_parameters.hyperion_params.ispyb_params
 

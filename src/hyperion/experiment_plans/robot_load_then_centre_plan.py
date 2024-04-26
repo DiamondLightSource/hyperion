@@ -14,7 +14,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScan, PandAFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, VFMMirrorVoltages
 from dodal.devices.oav.oav_detector import OAV
@@ -66,7 +66,7 @@ class RobotLoadThenCentreComposite:
     backlight: Backlight
     detector_motion: DetectorMotion
     eiger: EigerDetector
-    fast_grid_scan: FastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScan
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection

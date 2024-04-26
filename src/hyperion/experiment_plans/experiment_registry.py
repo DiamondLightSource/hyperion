@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, TypedDict, Union
 
-from dodal.devices.fast_grid_scan import GridScanParams, PandAGridScanParams
+from dodal.devices.fast_grid_scan import PandAGridScanParams, ZebraGridScanParams
 from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBeamParams
 
 import hyperion.experiment_plans.flyscan_xray_centre_plan as flyscan_xray_centre_plan
@@ -61,7 +61,7 @@ class ExperimentRegistryEntry(TypedDict):
     callbacks_factory: CallbacksFactory
 
 
-EXPERIMENT_TYPES = Union[GridScanParams, RotationScanParams]
+EXPERIMENT_TYPES = Union[ZebraGridScanParams, RotationScanParams]
 PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "panda_flyscan_xray_centre": {
         "setup": panda_flyscan_xray_centre_plan.create_devices,
@@ -72,7 +72,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
     "flyscan_xray_centre": {
         "setup": flyscan_xray_centre_plan.create_devices,
         "internal_param_type": ThreeDGridScan,
-        "experiment_param_type": GridScanParams,
+        "experiment_param_type": ZebraGridScanParams,
         "callbacks_factory": create_gridscan_callbacks,
     },
     "grid_detect_then_xray_centre": {

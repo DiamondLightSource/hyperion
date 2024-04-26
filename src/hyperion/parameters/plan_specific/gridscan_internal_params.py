@@ -4,7 +4,7 @@ from typing import Any
 
 import numpy as np
 from dodal.devices.detector import DetectorParams, TriggerMode
-from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
+from dodal.devices.fast_grid_scan import GridAxis, ZebraGridScanParams
 from pydantic import validator
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -40,7 +40,7 @@ class GridscanHyperionParameters(HyperionParameters):
 
 
 class GridscanInternalParameters(InternalParameters):
-    experiment_params: GridScanParams
+    experiment_params: ZebraGridScanParams
     hyperion_params: GridscanHyperionParameters
 
     class Config:
@@ -64,11 +64,11 @@ class GridscanInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
-        if isinstance(experiment_params, GridScanParams):
+        if isinstance(experiment_params, ZebraGridScanParams):
             return experiment_params
-        return GridScanParams(
+        return ZebraGridScanParams(
             **extract_experiment_params_from_flat_dict(
-                GridScanParams, experiment_params
+                ZebraGridScanParams, experiment_params
             )
         )
 
@@ -78,7 +78,7 @@ class GridscanInternalParameters(InternalParameters):
     ):
         if isinstance(all_params.get("hyperion_params"), GridscanHyperionParameters):
             return all_params["hyperion_params"]
-        experiment_params: GridScanParams = values["experiment_params"]
+        experiment_params: ZebraGridScanParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])
         all_params["omega_increment"] = 0

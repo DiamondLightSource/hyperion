@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pytest
 from dodal.devices.detector import DetectorParams
-from dodal.devices.fast_grid_scan import GridScanParams
+from dodal.devices.fast_grid_scan import ZebraGridScanParams
 from pydantic import ValidationError
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
@@ -177,10 +177,10 @@ def test_hyperion_params_eq(raw_params):
 def test_get_extracted_experiment_and_flat_hyperion_params(raw_params):
     flat_params = flatten_dict(raw_params)
     processed_params = get_extracted_experiment_and_flat_hyperion_params(
-        GridScanParams, flat_params
+        ZebraGridScanParams, flat_params
     )
     assert processed_params.get("experiment_params") not in [None, {}]
-    experiment_params = GridScanParams(**processed_params.get("experiment_params"))
+    experiment_params = ZebraGridScanParams(**processed_params.get("experiment_params"))
     assert experiment_params.x_steps == flat_params["x_steps"]
     assert experiment_params.y_steps == flat_params["y_steps"]
     assert experiment_params.z_steps == flat_params["z_steps"]

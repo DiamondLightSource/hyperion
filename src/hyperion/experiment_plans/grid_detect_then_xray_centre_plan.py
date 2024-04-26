@@ -68,7 +68,7 @@ class GridDetectThenXRayCentreComposite:
     dcm: DCM
     detector_motion: DetectorMotion
     eiger: EigerDetector
-    fast_grid_scan: ZebraFastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScan
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
@@ -178,7 +178,7 @@ def _detect_grid_and_do_gridscan(
         zebra=composite.zebra,
         zocalo=composite.zocalo,
         panda=composite.panda,
-        fast_grid_scan=composite.fast_grid_scan,
+        zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
         dcm=composite.dcm,
         robot=composite.robot,
     )

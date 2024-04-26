@@ -19,6 +19,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
     PandAFastGridScan,
+    ZebraFastGridScan,
 )
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 from dodal.devices.flux import Flux
@@ -63,7 +64,7 @@ from hyperion.utils.aperturescatterguard import (
 from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
-    PandaOrZebraGridscan = FastGridScan | PandAFastGridScan
+    PandaOrZebraGridscan = ZebraFastGridScan | PandAFastGridScan
     from scanspec.core import AxesPoints, Axis
 
 
@@ -76,7 +77,7 @@ class FlyScanXRayCentreComposite:
     backlight: Backlight
     dcm: DCM
     eiger: EigerDetector
-    fast_grid_scan: FastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScan
     flux: Flux
     s4_slit_gaps: S4SlitGaps
     smargon: Smargon
@@ -242,7 +243,7 @@ def run_gridscan(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
 
-    fgs_motors = fgs_composite.fast_grid_scan
+    fgs_motors = fgs_composite.zebra_fast_grid_scan
 
     LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.FGS_params)

@@ -16,7 +16,7 @@ from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.status import Status
@@ -485,8 +485,8 @@ class TestFlyscanXrayCentrePlan:
         done_status,
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        clear_device("fast_grid_scan")
-        fgs = i03.fast_grid_scan(fake_with_ophyd_sim=True)
+        clear_device("zebra_fast_grid_scan")
+        fgs = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(return_value=done_status)
         set_sim_value(fgs.motion_program.running, 1)
@@ -519,7 +519,7 @@ class TestFlyscanXrayCentrePlan:
             )
         )
         assert res.exit_status == "success"
-        clear_device("fast_grid_scan")
+        clear_device("zebra_fast_grid_scan")
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.run_gridscan", autospec=True
@@ -665,7 +665,7 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: FastGridScan = i03.fast_grid_scan(fake_with_ophyd_sim=True)
+        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
 
         set_sim_value(test_fgs.position_counter, 0)
         set_sim_value(test_fgs.scan_invalid, False)
@@ -680,7 +680,7 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: FastGridScan = i03.fast_grid_scan(fake_with_ophyd_sim=True)
+        test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
 
         set_sim_value(test_fgs.scan_invalid, True)
         set_sim_value(test_fgs.position_counter, 0)
@@ -856,7 +856,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     RE.subscribe(ispyb_cb)
     RE(
         kickoff_and_complete_gridscan(
-            fake_fgs_composite.fast_grid_scan,
+            fake_fgs_composite.zebra_fast_grid_scan,
             fake_fgs_composite.eiger,
             fake_fgs_composite.synchrotron,
             zocalo_env,
