@@ -100,7 +100,7 @@ class StoreInIspyb(ABC):
                     ispyb_ids.data_collection_group_id
                 ), "Attempt to update data collection without a data collection group ID"
 
-            grid_ids = []
+            grid_ids = list(ispyb_ids.grid_ids)
             data_collection_ids_out = list(ispyb_ids.data_collection_ids)
             for scan_data_info in scan_data_infos:
                 data_collection_id = scan_data_info.data_collection_id
