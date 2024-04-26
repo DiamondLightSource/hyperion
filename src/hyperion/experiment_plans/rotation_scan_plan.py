@@ -159,7 +159,9 @@ def calculate_motion_profile(
     )
 
 
-def pre_collection_snapshots(composite: RotationScanComposite):
+def pre_collection_snapshots(
+    composite: RotationScanComposite, filename_prefix: str, directory: str
+):
     """Before taking rotation data snapshots are taken at various angles to ensure
     correct centring.
     """
@@ -169,15 +171,23 @@ def pre_collection_snapshots(composite: RotationScanComposite):
         AperturePositions.ROBOT_LOAD,
         group="prepare_snapshots",
     )
+    yield from bps.abs_set(
+        composite.oav.snapshot.directory, directory, group="prepare_snapshots"
+    )
     yield from bps.wait("prepare_snapshots")
     yield from bps.wait("move_x_y_z")
 
-    for _ in range(2):
-        yield from bps.rel_set(composite.smargon.omega, 90, wait=True)
+    for _ in range(3):
+        assert isinstance(
+            omega_angle := (yield from bps.rd(composite.smargon.omega)), float
+        )
+        yield from bps.abs_set(
+            composite.oav.snapshot.filename, filename_prefix + str(omega_angle)
+        )
         yield from bps.trigger(composite.oav.snapshot, wait=True)
+        yield from bps.rel_set(composite.smargon.omega, 90, wait=True)
         yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
         yield from bps.read(composite.oav.snapshot)
-        yield from bps.read(composite.smargon)
         yield from bps.save()
 
 
@@ -326,7 +336,14 @@ def rotation_scan(
                 group="move_x_y_z",
             )
             LOGGER.info("Taking snapshots")
-            yield from pre_collection_snapshots(composite)
+            snapshot_directory = (
+                params.hyperion_params.detector_params.directory + "snapshots/"
+            )
+            yield from pre_collection_snapshots(
+                composite,
+                params.hyperion_params.detector_params.prefix,
+                snapshot_directory,
+            )
             LOGGER.info("Setting up sample environment...")
             yield from setup_sample_environment(
                 composite.detector_motion,
