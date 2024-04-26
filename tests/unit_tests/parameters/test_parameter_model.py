@@ -41,8 +41,6 @@ def minimal_3d_gridscan_params():
         "z_steps": 9,
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
         "ispyb_extras": {
-            "microns_per_pixel_x": 0,
-            "microns_per_pixel_y": 0,
             "position": [0, 0, 0],
             "beam_size_x": 0,
             "beam_size_y": 0,
@@ -140,8 +138,6 @@ def test_robot_load_then_centre_params():
         "file_name": "file_name",
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
         "ispyb_extras": {
-            "microns_per_pixel_x": 0.5,
-            "microns_per_pixel_y": 0.5,
             "beam_size_x": 0.05,
             "beam_size_y": 0.05,
             "focal_spot_size_x": 0.06,
@@ -195,8 +191,6 @@ class TestNewGdaParams:
             "zocalo_environment": "artemis",
             "storage_directory": self.directory,
             "ispyb_extras": {
-                "microns_per_pixel_x": self.microns_per_pixel_x,
-                "microns_per_pixel_y": self.microns_per_pixel_y,
                 "position": self.position,
                 "beam_size_x": self.beam_size_x,
                 "beam_size_y": self.beam_size_y,
@@ -284,8 +278,6 @@ class TestNewGdaParams:
             "zocalo_environment": "artemis",
             "transmission_frac": self.transmission,
             "ispyb_extras": {
-                "microns_per_pixel_x": self.microns_per_pixel_x,
-                "microns_per_pixel_y": self.microns_per_pixel_y,
                 "xtal_snapshots_omega_start": ["test1", "test2", "test3"],
                 "xtal_snapshots_omega_end": ["", "", ""],
                 "position": self.position,

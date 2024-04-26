@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from pathlib import Path
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky import plan_stubs as bps
@@ -156,7 +157,7 @@ def _detect_grid_and_do_gridscan(
     def run_grid_detection_plan(
         oav_params,
         snapshot_template,
-        snapshot_dir,
+        snapshot_dir: Path,
     ):
         grid_detect_composite = OavGridDetectionComposite(
             backlight=composite.backlight,
@@ -169,7 +170,7 @@ def _detect_grid_and_do_gridscan(
             grid_detect_composite,
             oav_params,
             snapshot_template,
-            snapshot_dir,
+            str(snapshot_dir),
             grid_width_microns=parameters.grid_width_um,
         )
 

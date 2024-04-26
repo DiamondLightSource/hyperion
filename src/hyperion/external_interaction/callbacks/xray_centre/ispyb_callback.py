@@ -32,7 +32,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -49,7 +48,7 @@ def ispyb_activation_wrapper(plan_generator, parameters):
             "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
             "hyperion_internal_parameters": (
                 parameters.old_parameters()
-                if isinstance(parameters, ThreeDGridScan)
+                if callable(getattr(parameters, "old_parameters", 0))
                 else parameters
             ).json(),
         },
@@ -118,7 +117,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                         None,
                         None,
                         populate_xz_data_collection_info(
-
                             self.params.hyperion_params.detector_params
                         ),
                         self.params.hyperion_params.detector_params,

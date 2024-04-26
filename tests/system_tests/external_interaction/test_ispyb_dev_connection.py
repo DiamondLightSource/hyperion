@@ -54,9 +54,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
-)
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
@@ -233,9 +231,9 @@ def dummy_scan_data_info_for_begin(dummy_params):
 @pytest.fixture
 def grid_detect_then_xray_centre_parameters():
     json_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
+        "tests/test_data/new_parameter_json_files/ispyb_gridscan_system_test_parameters.json"
     )
-    return GridScanWithEdgeDetectInternalParameters(**json_dict)
+    return GridScanWithEdgeDetect(**json_dict)
 
 
 # noinspection PyUnreachableCode
@@ -599,7 +597,7 @@ def generate_scan_data_infos(
 def test_ispyb_deposition_in_gridscan(
     RE: RunEngine,
     grid_detect_then_xray_centre_composite: GridDetectThenXRayCentreComposite,
-    grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetectInternalParameters,
+    grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetect,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_grid_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
@@ -629,7 +627,7 @@ def test_ispyb_deposition_in_gridscan(
         "beamsizeatsamplex": 1,
         "beamsizeatsampley": 1,
         "transmission": 49.118,
-        "datacollectionnumber": 0,
+        "datacollectionnumber": 1,
         "detectordistance": 100.0,
         "exposuretime": 0.12,
         "imagedirectory": "/tmp/",
@@ -648,7 +646,7 @@ def test_ispyb_deposition_in_gridscan(
         "xtalsnapshotfullpath3": "test_3_y",
         "synchrotronmode": "User",
         "undulatorgap1": 1.11,
-        "filetemplate": "file_name_0_master.h5",
+        "filetemplate": "file_name_1_master.h5",
         "numberofimages": 20 * 12,
     }
     compare_comment(
@@ -704,7 +702,7 @@ def test_ispyb_deposition_in_gridscan(
         "beamsizeatsamplex": 1,
         "beamsizeatsampley": 1,
         "transmission": 49.118,
-        "datacollectionnumber": 1,
+        "datacollectionnumber": 2,
         "detectordistance": 100.0,
         "exposuretime": 0.12,
         "imagedirectory": "/tmp/",
@@ -723,7 +721,7 @@ def test_ispyb_deposition_in_gridscan(
         "xtalsnapshotfullpath3": "test_3_y",
         "synchrotronmode": "User",
         "undulatorgap1": 1.11,
-        "filetemplate": "file_name_1_master.h5",
+        "filetemplate": "file_name_2_master.h5",
         "numberofimages": 20 * 11,
     }
     compare_actual_and_expected(
