@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from datetime import datetime
 from typing import cast
 
 import bluesky.plan_stubs as bps
@@ -26,6 +27,7 @@ from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.undulator_dcm import UndulatorDCM
+from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
@@ -88,6 +90,7 @@ class RobotLoadThenCentreComposite:
 
     # RobotLoad fields
     robot: BartRobot
+    webcam: Webcam
 
 
 def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
@@ -113,6 +116,18 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     raise TimeoutError(
         "Timed out waiting for smargon to become enabled after robot load"
     )
+
+
+def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: str):
+    time_now = datetime.now()
+    snapshot_format = f"{time_now.strftime('%H%M%S')}_{{device}}_after_load"
+    for device in [oav.snapshot, webcam]:
+        yield from bps.abs_set(
+            device.filename, snapshot_format.format(device=device.name)
+        )
+        yield from bps.abs_set(device.directory, directory)
+        yield from bps.trigger(device, group="snapshots")
+    yield from bps.wait("snapshots")
 
 
 def prepare_for_robot_load(composite: RobotLoadThenCentreComposite):
@@ -174,8 +189,14 @@ def robot_load_then_centre_plan(
 
         yield from bps.wait("robot_load")
 
+        yield from take_robot_snapshots(
+            composite.oav, composite.webcam, parameters.experiment_params.snapshot_dir
+        )
+
         yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
         yield from bps.read(composite.robot.barcode)
+        yield from bps.read(composite.oav.snapshot)
+        yield from bps.read(composite.webcam)
         yield from bps.save()
 
         yield from wait_for_smargon_not_disabled(composite.smargon)

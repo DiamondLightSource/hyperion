@@ -3,7 +3,7 @@ import logging
 import sys
 import threading
 from functools import partial
-from typing import Callable, Generator, Optional, Sequence
+from typing import Any, Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -31,10 +31,12 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
+from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
+from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
 from ophyd_async.core import set_sim_value
 from ophyd_async.core.async_status import AsyncStatus
@@ -314,7 +316,9 @@ def synchrotron():
 
 @pytest.fixture
 def oav():
-    return i03.oav(fake_with_ophyd_sim=True)
+    oav = i03.oav(fake_with_ophyd_sim=True)
+    oav.snapshot.trigger = MagicMock(return_value=NullStatus())
+    return oav
 
 
 @pytest.fixture
@@ -403,6 +407,13 @@ def vfm_mirror_voltages():
 def undulator_dcm():
     yield i03.undulator_dcm(fake_with_ophyd_sim=True)
     beamline_utils.clear_devices()
+
+
+@pytest.fixture
+def webcam(RE) -> Generator[Webcam, Any, Any]:
+    webcam = i03.webcam(fake_with_ophyd_sim=True)
+    with patch.object(webcam, "_write_image"):
+        yield webcam
 
 
 @pytest.fixture
