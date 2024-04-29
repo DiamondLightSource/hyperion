@@ -494,9 +494,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
         ExperimentType.GRIDSCAN_3D,
         ispyb_ids,
     )
-    ispyb_ids = dummy_ispyb_3d.update_deposition(
-        ispyb_ids, dummy_data_collection_group_info, scan_data_infos
-    )
+    ispyb_ids = dummy_ispyb_3d.update_deposition(ispyb_ids, scan_data_infos)
     dcid1 = ispyb_ids.data_collection_ids[0]  # type: ignore
     dcid2 = ispyb_ids.data_collection_ids[1]  # type: ignore
     dummy_ispyb_3d.end_deposition(ispyb_ids, "fail", "could not connect to devices")
@@ -539,9 +537,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
         dummy_params, dummy_scan_data_info_for_begin, experiment_type, ispyb_ids
     )
 
-    ispyb_ids = ispyb.update_deposition(
-        ispyb_ids, dummy_data_collection_group_info, scan_data_infos
-    )
+    ispyb_ids = ispyb.update_deposition(ispyb_ids, scan_data_infos)
     assert len(ispyb_ids.data_collection_ids) == exp_num_of_grids  # type: ignore
     assert len(ispyb_ids.grid_ids) == exp_num_of_grids  # type: ignore
     assert isinstance(ispyb_ids.data_collection_group_id, int)
@@ -893,5 +889,3 @@ def test_ispyb_deposition_in_rotation_plan(
         fetch_datacollection_attribute(dcid, "slitGapHorizontal") == test_slit_gap_horiz
     )
     assert fetch_datacollection_attribute(dcid, "slitGapVertical") == test_slit_gap_vert
-    # TODO Can't test barcode as need BLSample which needs Dewar, Shipping, Container entries for the
-    # upsert stored proc to use it.

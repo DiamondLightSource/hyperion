@@ -161,8 +161,6 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-        set_sim_value(fake_fgs_composite.robot.barcode.bare_signal, ["BARCODE"])
-
         test_ispyb_callback = PlanReactiveCallback(ISPYB_LOGGER)
         test_ispyb_callback.active = True
         with patch.multiple(
@@ -199,7 +197,6 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
-                    "robot-barcode": "BARCODE",
                 },
             )
             assert_event(
