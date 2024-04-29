@@ -59,7 +59,7 @@ from dodal.devices.zocalo import (
 )
 
 PANDA_SETUP_PATH = (
-    "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_base.yaml"
+    "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_pcap_ignore_seq.yaml"
 )
 
 
