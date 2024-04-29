@@ -142,7 +142,6 @@ class TestXrayCentreISPyBCallback:
                 "parentid": TEST_SESSION_ID,
                 "experimenttype": "Mesh3D",
                 "sampleid": TEST_SAMPLE_ID,
-                "sample_barcode": "BARCODE",  # deferred
             },
         )
         assert_upsert_call_with(

@@ -55,7 +55,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
         self._oav_snapshot_event_idx: int = 0
-        self._sample_barcode: Optional[str] = None
         self.params: GridscanInternalParameters | RotationInternalParameters | None = (
             None
         )
@@ -77,7 +76,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         self._oav_snapshot_event_idx = 0
-        self._sample_barcode = None
         return self._tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
@@ -131,7 +129,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
             slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
         )
-        self._sample_barcode = doc["data"]["robot-barcode"]
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params
         )
@@ -142,7 +139,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.ispyb.experiment_type,
             self.params.hyperion_params.detector_params,
             self.params.hyperion_params.ispyb_params,
-            self._sample_barcode,
         )
         return data_collection_group_info, scan_data_infos
 
@@ -210,16 +206,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
         return scan_data_infos
 
     def update_deposition(
-        self,
-        params,
-        scan_data_infos: Sequence[ScanDataInfo],
-        sample_barcode: Optional[str],
+        self, params, scan_data_infos: Sequence[ScanDataInfo]
     ) -> IspybIds:
         data_collection_group_info = populate_data_collection_group(
             self.ispyb.experiment_type,
             params.hyperion_params.detector_params,
             params.hyperion_params.ispyb_params,
-            sample_barcode,
         )
 
         return self.ispyb.update_deposition(

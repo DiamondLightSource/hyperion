@@ -893,5 +893,3 @@ def test_ispyb_deposition_in_rotation_plan(
         fetch_datacollection_attribute(dcid, "slitGapHorizontal") == test_slit_gap_horiz
     )
     assert fetch_datacollection_attribute(dcid, "slitGapVertical") == test_slit_gap_vert
-    # TODO Can't test barcode as need BLSample which needs Dewar, Shipping, Container entries for the
-    # upsert stored proc to use it.

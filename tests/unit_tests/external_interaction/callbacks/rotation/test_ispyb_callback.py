@@ -107,7 +107,6 @@ def test_hardware_read_events(
             "parentid": TEST_SESSION_ID,
             "experimenttype": "SAD",
             "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": "BARCODE",
         },
     )
     assert_upsert_call_with(

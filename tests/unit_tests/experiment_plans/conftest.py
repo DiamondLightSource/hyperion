@@ -47,7 +47,6 @@ BASIC_PRE_SETUP_DOC = {
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
-    "robot-barcode": "BARCODE",
 }
 
 BASIC_POST_SETUP_DOC = {
