@@ -1,5 +1,6 @@
 import random
 import types
+from pathlib import Path
 from typing import Any, Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
@@ -469,6 +470,40 @@ class TestFlyscanXrayCentrePlan:
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
+
+    @patch(
+        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
+        new=MagicMock(return_value=Status(done=True, success=True)),
+    )
+    @patch(
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.move_x_y_z",
+        new=MagicMock(autospec=True),
+    )
+    @patch(
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
+        new=MagicMock(autospec=True),
+    )
+    @patch(
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
+        new=MagicMock(return_value=iter([])),
+    )
+    @patch(
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.udc_directory_provider.set_directory",
+        autospec=True,
+    )
+    def test_when_gridscan_run_panda_directory_applied(
+        self,
+        set_directory,
+        RE_with_subs: tuple[RunEngine, Any],
+        test_panda_fgs_params: PandAGridscanInternalParameters,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+    ):
+        RE_with_subs[0].subscribe(VerbosePlanExecutionLoggingCallback())
+        RE_with_subs[0](
+            run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params)
+        )
+        expected_path = Path("/dls/i03/data/2023/cm33866-5/test_hyperion")
+        set_directory.assert_called_once_with(expected_path)
 
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
