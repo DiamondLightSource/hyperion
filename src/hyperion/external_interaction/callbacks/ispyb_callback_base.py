@@ -6,9 +6,6 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
 from dodal.devices.synchrotron import SynchrotronMode
 
-from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
-    populate_data_collection_group,
-)
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -17,7 +14,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 )
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
-    DataCollectionGroupInfo,
     DataCollectionInfo,
     ScanDataInfo,
 )
@@ -96,27 +92,20 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 "has no corresponding descriptor record"
             )
             return doc
-        data_collection_group_info = None
         match event_descriptor.get("name"):
             case CONST.DESCRIPTORS.ISPYB_HARDWARE_READ:
-                data_collection_group_info, scan_data_infos = (
-                    self._handle_ispyb_hardware_read(doc)
-                )
+                scan_data_infos = self._handle_ispyb_hardware_read(doc)
             case CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED:
                 scan_data_infos = self._handle_oav_snapshot_triggered(doc)
             case CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ:
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
                 return self._tag_doc(doc)
-        self.ispyb_ids = self.ispyb.update_deposition(
-            self.ispyb_ids, data_collection_group_info, scan_data_infos
-        )
+        self.ispyb_ids = self.ispyb.update_deposition(self.ispyb_ids, scan_data_infos)
         ISPYB_LOGGER.info(f"Recieved ISPYB IDs: {self.ispyb_ids}")
         return self._tag_doc(doc)
 
-    def _handle_ispyb_hardware_read(
-        self, doc
-    ) -> tuple[DataCollectionGroupInfo, Sequence[ScanDataInfo]]:
+    def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params, "Event handled before activity_gated_start received params"
         ISPYB_LOGGER.info("ISPyB handler received event from read hardware")
         assert isinstance(
@@ -132,15 +121,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params
         )
-        ISPYB_LOGGER.info(
-            "Updating ispyb data collection and group after hardware read."
-        )
-        data_collection_group_info = populate_data_collection_group(
-            self.ispyb.experiment_type,
-            self.params.hyperion_params.detector_params,
-            self.params.hyperion_params.ispyb_params,
-        )
-        return data_collection_group_info, scan_data_infos
+        ISPYB_LOGGER.info("Updating ispyb data collection after hardware read.")
+        return scan_data_infos
 
     def _handle_oav_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
@@ -182,9 +164,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             data_collection_id=data_collection_id,
             data_collection_grid_info=data_collection_grid_info,
         )
-        ISPYB_LOGGER.info(
-            "Updating ispyb data collection and group after oav snapshot."
-        )
+        ISPYB_LOGGER.info("Updating ispyb data collection after oav snapshot.")
         self._oav_snapshot_event_idx += 1
         return [scan_data_info]
 
@@ -204,19 +184,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         ISPYB_LOGGER.info("Updating ispyb data collection after flux read.")
         return scan_data_infos
-
-    def update_deposition(
-        self, params, scan_data_infos: Sequence[ScanDataInfo]
-    ) -> IspybIds:
-        data_collection_group_info = populate_data_collection_group(
-            self.ispyb.experiment_type,
-            params.hyperion_params.detector_params,
-            params.hyperion_params.ispyb_params,
-        )
-
-        return self.ispyb.update_deposition(
-            self.ispyb_ids, data_collection_group_info, scan_data_infos
-        )
 
     @abstractmethod
     def populate_info_for_update(

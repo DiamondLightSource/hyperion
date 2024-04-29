@@ -134,16 +134,7 @@ class TestXrayCentreISPyBCallback:
             TestData.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
-            mx_acq.get_data_collection_group_params(),
-            {
-                "id": TEST_DATA_COLLECTION_GROUP_ID,
-                "parentid": TEST_SESSION_ID,
-                "experimenttype": "Mesh3D",
-                "sampleid": TEST_SAMPLE_ID,
-            },
-        )
+        mx_acq.upsert_data_collection_group.assert_not_called()
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),

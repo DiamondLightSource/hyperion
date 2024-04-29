@@ -66,7 +66,6 @@ class StoreInIspyb(ABC):
     def update_deposition(
         self,
         ispyb_ids,
-        data_collection_group_info: Optional[DataCollectionGroupInfo],
         scan_data_infos: Sequence[ScanDataInfo],
     ) -> IspybIds:
         assert (
@@ -75,9 +74,7 @@ class StoreInIspyb(ABC):
         assert (
             ispyb_ids.data_collection_ids
         ), "Attempted to store scan data without a collection"
-        return self._begin_or_update_deposition(
-            ispyb_ids, data_collection_group_info, scan_data_infos
-        )
+        return self._begin_or_update_deposition(ispyb_ids, None, scan_data_infos)
 
     def _begin_or_update_deposition(
         self,
