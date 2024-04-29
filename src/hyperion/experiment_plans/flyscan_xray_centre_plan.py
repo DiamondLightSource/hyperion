@@ -33,7 +33,7 @@ from dodal.devices.zocalo.zocalo_results import (
     get_processing_result,
 )
 from dodal.plans.check_topup import check_topup_and_wait_if_necessary
-from ophyd_async.panda import PandA
+from ophyd_async.panda import HDFPanda
 
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -85,7 +85,7 @@ class FlyScanXRayCentreComposite:
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zocalo: ZocaloResults
-    panda: PandA
+    panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
 
