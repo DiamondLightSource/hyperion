@@ -122,7 +122,8 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     yield from bps.wait(DCM_GROUP)
 
     # VFM Adjust - for I03 this table always returns the same value
-    assert (vfm_lut := vfm.bragg_to_lat_lookup_table_path) is not None
+    vfm_lut = vfm.bragg_to_lat_lookup_table_path
+    assert vfm_lut is not None
     vfm_x_adjuster = lookup_table_adjuster(
         linear_interpolation_lut(vfm_lut),
         vfm.x_mm,

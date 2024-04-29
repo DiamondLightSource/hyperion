@@ -48,7 +48,7 @@ class DocDescriptorNames:
 @dataclass(frozen=True)
 class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
-    PANDA_FGS_RUN_UP_DEFAULT = 0.16
+    PANDA_FGS_RUN_UP_DEFAULT = 0.17
 
 
 @dataclass(frozen=True)
