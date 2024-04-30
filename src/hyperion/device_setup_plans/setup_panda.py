@@ -174,7 +174,7 @@ def setup_panda_for_flyscan(
 
     LOGGER.info(f"PandA sequencer table has been set to: {str(table)}")
     table_readback = yield from bps.rd(panda.seq[1].table)
-    LOGGER.info(f"PandA sequencer table readback is: {str(table_readback)}")
+    LOGGER.debug(f"PandA sequencer table readback is: {str(table_readback)}")
 
     yield from arm_panda_for_gridscan(panda)
 

@@ -204,6 +204,8 @@ def kickoff_and_complete_gridscan(
         )  # Make sure ZocaloResults queue is clear and ready to accept our new data
         LOGGER.info("completing FGS")
         yield from bps.complete(gridscan, wait=True)
+
+        # Remove this logging statement once metrics have been added
         LOGGER.info(
             f"Gridscan motion program took {round(time()-gridscan_start_time,2)} to complete"
         )
