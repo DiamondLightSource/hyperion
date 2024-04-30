@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+from time import time
 from typing import TYPE_CHECKING, Any, List, Union
 
 import bluesky.plan_stubs as bps
@@ -196,12 +197,18 @@ def kickoff_and_complete_gridscan(
         yield from bps.wait()
         LOGGER.info("kicking off FGS")
         yield from bps.kickoff(gridscan, wait=True)
+        gridscan_start_time = time()
         LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
         yield from bps.wait(
             ZOCALO_STAGE_GROUP
         )  # Make sure ZocaloResults queue is clear and ready to accept our new data
         LOGGER.info("completing FGS")
         yield from bps.complete(gridscan, wait=True)
+
+        # Remove this logging statement once metrics have been added
+        LOGGER.info(
+            f"Gridscan motion program took {round(time()-gridscan_start_time,2)} to complete"
+        )
 
     yield from do_fgs()
 
