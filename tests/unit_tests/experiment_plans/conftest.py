@@ -6,6 +6,7 @@ import pytest
 from bluesky.utils import Msg
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
 from ophyd.sim import make_fake_device
@@ -43,10 +44,9 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 BASIC_PRE_SETUP_DOC = {
     "undulator_current_gap": 0,
-    "synchrotron-synchrotron_mode": 0,
+    "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
-    "robot-barcode": "BARCODE",
 }
 
 BASIC_POST_SETUP_DOC = {
@@ -79,7 +79,7 @@ def run_generic_ispyb_handler_setup(
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "123abc", "name": CONST.PLAN.ISPYB_HARDWARE_READ}  # type: ignore
+        {"uid": "123abc", "name": CONST.DESCRIPTORS.ISPYB_HARDWARE_READ}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -88,7 +88,7 @@ def run_generic_ispyb_handler_setup(
         )
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "abc123", "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ}  # type: ignore
+        {"uid": "abc123", "name": CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -147,12 +147,6 @@ def mock_subscriptions(test_fgs_params):
     ):
         nexus_callback, ispyb_callback = create_gridscan_callbacks()
         ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
-        start_doc = {
-            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": test_fgs_params.json(),
-            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-        }
-        ispyb_callback.activity_gated_start(start_doc)  # type: ignore
 
     return (nexus_callback, ispyb_callback)
 

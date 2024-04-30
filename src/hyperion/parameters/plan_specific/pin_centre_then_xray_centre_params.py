@@ -8,6 +8,7 @@ from dodal.parameters.experiment_parameter_base import AbstractExperimentWithBea
 from pydantic import validator
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import GridscanIspybParams
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.internal_parameters import (
     HyperionParameters,
     InternalParameters,
@@ -30,10 +31,7 @@ class PinCentreThenXrayCentreParams(AbstractExperimentWithBeamParams):
     omega_start: float
 
     tip_offset_microns: float = 0
-    oav_centring_file: str = (
-        "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json"
-    )
-
+    oav_centring_file: str = CONST.I03.OAV_CENTRING_FILE
     # Width for single pin
     grid_width_microns: float = 600
 
@@ -41,7 +39,7 @@ class PinCentreThenXrayCentreParams(AbstractExperimentWithBeamParams):
     set_stub_offsets: bool = False
 
     # Distance for the smargon to accelerate into the grid and decelerate out of the grid when using the panda
-    run_up_distance_mm: float = 0.15
+    run_up_distance_mm: float = CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
 
     # Use constant motion panda scans instead of fast grid scans
     use_panda: bool = False
@@ -75,16 +73,20 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
         cls,
         experiment_params: dict[str, Any],
     ):
-        return PinCentreThenXrayCentreParams(
-            **extract_experiment_params_from_flat_dict(
-                PinCentreThenXrayCentreParams, experiment_params
-            )
+        if isinstance(experiment_params, PinCentreThenXrayCentreParams):
+            return experiment_params
+        params_args = extract_experiment_params_from_flat_dict(
+            PinCentreThenXrayCentreParams, experiment_params
         )
+        params = PinCentreThenXrayCentreParams(**params_args)
+        return params
 
     @validator("hyperion_params", pre=True)
     def _preprocess_hyperion_params(
         cls, all_params: dict[str, Any], values: dict[str, Any]
     ):
+        if isinstance(all_params.get("hyperion_params"), GridscanHyperionParameters):
+            return all_params["hyperion_params"]
         experiment_params: PinCentreThenXrayCentreParams = values["experiment_params"]
         all_params["num_images"] = experiment_params.get_num_images()
         all_params["position"] = np.array(all_params["position"])
@@ -92,7 +94,6 @@ class PinCentreThenXrayCentreInternalParameters(InternalParameters):
         all_params["num_triggers"] = all_params["num_images"]
         all_params["num_images_per_trigger"] = 1
         all_params["trigger_mode"] = TriggerMode.FREE_RUN
-        all_params["upper_left"] = np.zeros(3, dtype=np.int32)
         return GridscanHyperionParameters(
             **extract_hyperion_params_from_flat_dict(
                 all_params, cls._hyperion_param_key_definitions()

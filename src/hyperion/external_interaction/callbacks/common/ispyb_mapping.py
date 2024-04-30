@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
 
 from dodal.devices.detector import DetectorParams
-from numpy import ndarray
 
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -25,16 +23,12 @@ from hyperion.log import ISPYB_LOGGER
 
 
 def populate_data_collection_group(
-    experiment_type: str,
-    detector_params: DetectorParams,
-    ispyb_params: IspybParams,
-    sample_barcode: Optional[str] = None,
+    experiment_type: str, detector_params: DetectorParams, ispyb_params: IspybParams
 ):
     dcg_info = DataCollectionGroupInfo(
         visit_string=get_visit_string(ispyb_params, detector_params),
         experiment_type=experiment_type,
         sample_id=ispyb_params.sample_id,
-        sample_barcode=sample_barcode,
     )
     return dcg_info
 
@@ -50,7 +44,7 @@ def populate_data_collection_position_info(ispyb_params):
 
 
 def populate_remaining_data_collection_info(
-    comment_constructor,
+    comment,
     data_collection_group_id,
     data_collection_info: DataCollectionInfo,
     detector_params,
@@ -65,7 +59,7 @@ def populate_remaining_data_collection_info(
     data_collection_info.focal_spot_size_at_sampley = ispyb_params.focal_spot_size_y
     data_collection_info.beamsize_at_samplex = ispyb_params.beam_size_x
     data_collection_info.beamsize_at_sampley = ispyb_params.beam_size_y
-    data_collection_info.comments = comment_constructor()
+    data_collection_info.comments = comment
     data_collection_info.detector_distance = detector_params.detector_distance
     data_collection_info.exp_time = detector_params.exposure_time
     data_collection_info.imgdir = detector_params.directory
@@ -123,10 +117,3 @@ def get_xtal_snapshots(ispyb_params):
         ISPYB_LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
         xtal_snapshots = []
     return xtal_snapshots + [None] * (3 - len(xtal_snapshots))
-
-
-@dataclass
-class GridScanInfo:
-    upper_left: Union[list[int], ndarray]
-    y_steps: int
-    y_step_size: float

@@ -81,16 +81,28 @@ class ExpeyeInteraction:
         response = self._send_and_get_response(url, data, post)
         return response["robotActionId"]
 
-    def update_barcode(self, action_id: RobotActionID, barcode: str):
-        """Update the barcode of an existing robot action.
+    def update_barcode_and_snapshots(
+        self,
+        action_id: RobotActionID,
+        barcode: str,
+        snapshot_before_path: str,
+        snapshot_after_path: str,
+    ):
+        """Update the barcode and snapshots of an existing robot action.
 
         Args:
             action_id (RobotActionID): The id of the action to update
             barcode (str): The barcode to give the action
+            snapshot_before_path (str): Path to the snapshot before robot load
+            snapshot_after_path (str): Path to the snapshot after robot load
         """
         url = self.base_url + self.UPDATE_ROBOT_ACTION.format(action_id=action_id)
 
-        data = {"sampleBarcode": barcode}
+        data = {
+            "sampleBarcode": barcode,
+            "xtalSnapshotBefore": snapshot_before_path,
+            "xtalSnapshotAfter": snapshot_after_path,
+        }
         self._send_and_get_response(url, data, patch)
 
     def end_load(self, action_id: RobotActionID, status: str, reason: str):

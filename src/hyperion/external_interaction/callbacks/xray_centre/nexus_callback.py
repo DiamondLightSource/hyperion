@@ -7,6 +7,7 @@ from hyperion.external_interaction.callbacks.plan_reactive_callback import (
 )
 from hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
+    vds_type_based_on_bit_depth,
 )
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
@@ -65,22 +66,30 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         self.descriptors[doc["uid"]] = doc
 
     def activity_gated_event(self, doc: Event) -> Event | None:
-        event_descriptor = self.descriptors.get(doc["descriptor"])
+        assert (event_descriptor := self.descriptors.get(doc["descriptor"])) is not None
         if (
-            event_descriptor
-            and event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ
+            event_descriptor.get("name")
+            == CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ
         ):
             data = doc["data"]
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 assert nexus_writer, "Nexus callback did not receive start doc"
-                nexus_writer.beam, nexus_writer.attenuator = (
-                    create_beam_and_attenuator_parameters(
-                        data["dcm_energy_in_kev"],
-                        data["flux_flux_reading"],
-                        data["attenuator_actual_transmission"],
-                    )
+                (
+                    nexus_writer.beam,
+                    nexus_writer.attenuator,
+                ) = create_beam_and_attenuator_parameters(
+                    data["dcm_energy_in_kev"],
+                    data["flux_flux_reading"],
+                    data["attenuator_actual_transmission"],
                 )
-                nexus_writer.create_nexus_file()
+        if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
+            NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
+            for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
+                vds_data_type = vds_type_based_on_bit_depth(
+                    doc["data"]["eiger_bit_depth"]
+                )
+                assert nexus_writer, "Nexus callback did not receive start doc"
+                nexus_writer.create_nexus_file(vds_data_type)
                 NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.full_filename}")
 
         return super().activity_gated_event(doc)

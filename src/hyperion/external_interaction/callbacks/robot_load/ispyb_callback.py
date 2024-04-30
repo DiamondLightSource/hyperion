@@ -54,12 +54,20 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event) -> Event | None:
         event_descriptor = self.descriptors.get(doc["descriptor"])
-        if event_descriptor and event_descriptor.get("name") == CONST.PLAN.ROBOT_LOAD:
+        if (
+            event_descriptor
+            and event_descriptor.get("name") == CONST.DESCRIPTORS.ROBOT_LOAD
+        ):
             assert (
                 self.action_id is not None
             ), "ISPyB Robot load callback event called unexpectedly"
             barcode = doc["data"]["robot-barcode"]
-            self.expeye.update_barcode(self.action_id, barcode)
+            oav_snapshot = doc["data"]["oav_snapshot_last_saved_path"]
+            webcam_snapshot = doc["data"]["webcam-last_saved_path"]
+            # I03 uses oav/webcam snapshots in place of before/after snapshots
+            self.expeye.update_barcode_and_snapshots(
+                self.action_id, barcode, oav_snapshot, webcam_snapshot
+            )
 
         return super().activity_gated_event(doc)
 

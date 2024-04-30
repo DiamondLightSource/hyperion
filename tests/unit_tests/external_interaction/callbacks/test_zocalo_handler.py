@@ -103,7 +103,8 @@ class TestZocaloHandler:
         ispyb_store.return_value.begin_deposition.return_value = mock_ids
         ispyb_store.return_value.update_deposition.return_value = mock_ids
 
-        ispyb_cb.start(td.test_start_document)  # type: ignore
+        ispyb_cb.start(td.test_gridscan3d_start_document)  # type: ignore
+        ispyb_cb.start(td.test_gridscan_outer_start_document)  # type: ignore
         ispyb_cb.start(td.test_do_fgs_start_document)  # type: ignore
         ispyb_cb.descriptor(td.test_descriptor_document_pre_data_collection)  # type: ignore
         ispyb_cb.event(td.test_event_document_pre_data_collection)

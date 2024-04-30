@@ -1,22 +1,22 @@
 import os
 from functools import partial
-from typing import Callable
+from typing import Any, Callable
 
 import dodal.devices.zocalo.zocalo_interaction
 import ispyb.sqlalchemy
-import numpy as np
 import pytest
-from ispyb.sqlalchemy import DataCollection, DataCollectionGroup
+from ispyb.sqlalchemy import DataCollection, DataCollectionGroup, GridInfo, Position
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from hyperion.external_interaction.ispyb.data_model import ExperimentType
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
+
+from ...conftest import raw_params_from_file
 
 TEST_RESULT_LARGE = [
     {
@@ -83,6 +83,24 @@ def get_current_datacollection_attribute(
     return data
 
 
+def get_current_datacollection_grid_attribute(
+    Session: Callable, grid_id: int, attr: str
+) -> Any:
+    with Session() as session:
+        query = session.query(GridInfo).filter(GridInfo.gridInfoId == grid_id)
+        first_result = query.first()
+        return getattr(first_result, attr)
+
+
+def get_current_position_attribute(
+    Session: Callable, position_id: int, attr: str
+) -> Any:
+    with Session() as session:
+        query = session.query(Position).filter(Position.positionId == position_id)
+        first_result = query.first()
+        return getattr(first_result, attr)
+
+
 def get_current_datacollectiongroup_attribute(
     Session: Callable, dcg_id: int, attr: str
 ):
@@ -112,6 +130,16 @@ def fetch_datacollection_attribute(sqlalchemy_sessionmaker) -> Callable:
 
 
 @pytest.fixture
+def fetch_datacollection_grid_attribute(sqlalchemy_sessionmaker) -> Callable:
+    return partial(get_current_datacollection_grid_attribute, sqlalchemy_sessionmaker)
+
+
+@pytest.fixture
+def fetch_datacollection_position_attribute(sqlalchemy_sessionmaker) -> Callable:
+    return partial(get_current_position_attribute, sqlalchemy_sessionmaker)
+
+
+@pytest.fixture
 def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
     return partial(get_current_datacollectiongroup_attribute, sqlalchemy_sessionmaker)
 
@@ -119,11 +147,10 @@ def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
 @pytest.fixture
 def dummy_params():
     dummy_params = GridscanInternalParameters(
-        **from_file(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
         )
     )
-    dummy_params.hyperion_params.ispyb_params.upper_left = np.array([100, 100, 50])
     dummy_params.hyperion_params.ispyb_params.visit_path = (
         "/dls/i03/data/2022/cm31105-5/"
     )

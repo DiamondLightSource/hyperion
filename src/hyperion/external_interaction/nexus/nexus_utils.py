@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import numpy as np
 from dodal.devices.detector import DetectorParams
 from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Goniometer
-from nexgen.nxs_utils.Axes import TransformationType
+from nexgen.nxs_utils.axes import TransformationType
 from numpy.typing import DTypeLike
 
 from hyperion.log import NEXUS_LOGGER

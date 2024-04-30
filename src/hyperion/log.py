@@ -13,6 +13,8 @@ from dodal.log import (
 )
 from dodal.log import LOGGER as dodal_logger
 
+from hyperion.parameters.constants import CONST
+
 LOGGER = logging.getLogger("Hyperion")
 LOGGER.setLevel("DEBUG")
 LOGGER.parent = dodal_logger
@@ -59,8 +61,9 @@ def do_default_logging_setup(dev_mode=False):
         "hyperion.log",
         dev_mode,
         ERROR_LOG_BUFFER_LINES,
+        CONST.GRAYLOG_PORT,
     )
-    integrate_bluesky_and_ophyd_logging(dodal_logger, handlers)
+    integrate_bluesky_and_ophyd_logging(dodal_logger)
     handlers["graylog_handler"].addFilter(tag_filter)
 
     global __logger_handlers

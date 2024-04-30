@@ -5,7 +5,6 @@ import math
 from typing import TYPE_CHECKING, Tuple
 
 import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
 from dodal.devices.backlight import Backlight
@@ -57,7 +56,6 @@ def get_min_and_max_y_of_pin(
     return min_y, max_y
 
 
-@bpp.run_decorator()
 def grid_detection_plan(
     composite: OavGridDetectionComposite,
     parameters: OAVParameters,
@@ -158,8 +156,7 @@ def grid_detection_plan(
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
         yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
-
-        yield from bps.create("snapshot_to_ispyb")
+        yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
 
         yield from bps.read(oav.snapshot)
         yield from bps.read(smargon)

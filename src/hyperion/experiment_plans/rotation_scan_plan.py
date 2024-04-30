@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import Any, Union
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -42,14 +42,11 @@ from hyperion.device_setup_plans.setup_zebra import (
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
+    RotationInternalParameters,
     RotationScanParams,
 )
+from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.context import device_composite_from_context
-
-if TYPE_CHECKING:
-    from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-        RotationInternalParameters,
-    )
 
 
 @dataclasses.dataclass
@@ -254,7 +251,16 @@ def cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
     yield from bpp.finalize_wrapper(disarm_zebra(composite.zebra), bps.wait("cleanup"))
 
 
-def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGenerator:
+def rotation_scan(
+    composite: RotationScanComposite,
+    parameters: Union[RotationScan, RotationInternalParameters, Any],
+) -> MsgGenerator:
+    old_parameters = (
+        parameters
+        if isinstance(parameters, RotationInternalParameters)
+        else parameters.old_parameters()
+    )
+
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
@@ -313,4 +319,4 @@ def rotation_scan(composite: RotationScanComposite, parameters: Any) -> MsgGener
         LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
 
-    yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
+    yield from rotation_scan_plan_with_stage_and_cleanup(old_parameters)

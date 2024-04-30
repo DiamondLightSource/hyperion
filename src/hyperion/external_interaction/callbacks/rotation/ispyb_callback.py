@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import asdict, replace
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
@@ -13,7 +12,6 @@ from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
 from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
-    construct_comment_for_rotation_scan,
     populate_data_collection_info_for_rotation,
 )
 from hyperion.external_interaction.ispyb.data_model import (
@@ -33,6 +31,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
+
+COMMENT_FOR_ROTATION_SCAN = "Hyperion rotation scan"
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -108,7 +108,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.params,
             )
             data_collection_info = populate_remaining_data_collection_info(
-                construct_comment_for_rotation_scan,
+                COMMENT_FOR_ROTATION_SCAN,
                 dcgid,
                 data_collection_info,
                 self.params.hyperion_params.detector_params,
@@ -119,7 +119,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 data_collection_info=data_collection_info,
             )
             self.ispyb_ids = self.ispyb.begin_deposition(
-                data_collection_group_info, scan_data_info
+                data_collection_group_info, [scan_data_info]
             )
         ISPYB_LOGGER.info("ISPYB handler received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_MAIN:
@@ -129,32 +129,17 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def populate_info_for_update(
         self, event_sourced_data_collection_info: DataCollectionInfo, params
     ) -> Sequence[ScanDataInfo]:
+        assert (
+            self.ispyb_ids.data_collection_ids
+        ), "Expect an existing DataCollection to update"
         params = cast(RotationInternalParameters, params)
-        initial_collection_info = populate_data_collection_info_for_rotation(
-            params.hyperion_params.ispyb_params,
-            params.hyperion_params.detector_params,
-            params,
-        )
-        initial_collection_info = replace(
-            initial_collection_info,
-            **{
-                k: v
-                for (k, v) in asdict(event_sourced_data_collection_info).items()
-                if v
-            },
-        )
         return [
             ScanDataInfo(
-                data_collection_info=populate_remaining_data_collection_info(
-                    construct_comment_for_rotation_scan,
-                    self.ispyb_ids.data_collection_group_id,
-                    initial_collection_info,
-                    params.hyperion_params.detector_params,
-                    params.hyperion_params.ispyb_params,
-                ),
+                data_collection_info=event_sourced_data_collection_info,
                 data_collection_position_info=populate_data_collection_position_info(
                     params.hyperion_params.ispyb_params
                 ),
+                data_collection_id=self.ispyb_ids.data_collection_ids[0],
             )
         ]
 

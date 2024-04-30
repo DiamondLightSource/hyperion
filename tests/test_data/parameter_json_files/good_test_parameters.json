@@ -8,21 +8,16 @@
         "experiment_type": "flyscan_xray_centre",
         "detector_params": {
             "expected_energy_ev": 100,
-            "directory": "/tmp",
+            "directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
             "prefix": "file_name",
-            "run_number": 0,
+            "run_number": 1,
             "use_roi_mode": false,
             "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
         },
         "ispyb_params": {
-            "visit_path": "/tmp/cm31105-4/",
-            "microns_per_pixel_x": 1.0,
-            "microns_per_pixel_y": 1.0,
-            "upper_left": [
-                10.0,
-                20.0,
-                30.0
-            ],
+            "sample_id": "123456",
+            "visit_path": "/tmp/dls/i03/data/2024/cm31105-4",
+            "current_energy_ev": 100,
             "position": [
                 10.0,
                 20.0,

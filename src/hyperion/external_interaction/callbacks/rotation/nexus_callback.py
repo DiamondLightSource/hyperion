@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict
 
-import numpy as np
-from numpy.typing import DTypeLike
-
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -42,7 +39,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
         self.parameters: RotationInternalParameters | None = None
         self.writer: NexusWriter | None = None
         self.descriptors: Dict[str, EventDescriptor] = {}
-        self.data_bit_depth: DTypeLike = np.uint16
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
@@ -56,18 +52,22 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 "has no corresponding descriptor record"
             )
             return doc
-        if event_descriptor.get("name") == CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ:
+        if (
+            event_descriptor.get("name")
+            == CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ
+        ):
             NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
             data = doc["data"]
             assert self.writer, "Nexus writer not initialised"
-            self.writer.beam, self.writer.attenuator = (
-                create_beam_and_attenuator_parameters(
-                    data["dcm_energy_in_kev"],
-                    data["flux_flux_reading"],
-                    data["attenuator_actual_transmission"],
-                )
+            (
+                self.writer.beam,
+                self.writer.attenuator,
+            ) = create_beam_and_attenuator_parameters(
+                data["dcm_energy_in_kev"],
+                data["flux_flux_reading"],
+                data["attenuator_actual_transmission"],
             )
-        if event_descriptor.get("name") == CONST.PLAN.NEXUS_READ:
+        if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
             NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
             assert self.writer is not None

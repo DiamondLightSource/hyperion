@@ -1,23 +1,25 @@
 import pytest
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.external_parameters import from_file
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
 from tests.conftest import create_dummy_scan_spec
 
+from ....conftest import default_raw_params, raw_params_from_file
+
 
 def dummy_params():
-    dummy_params = GridscanInternalParameters(**from_file())
+    dummy_params = GridscanInternalParameters(**default_raw_params())
     return dummy_params
 
 
 def dummy_params_2d():
     return GridscanInternalParameters(
-        **from_file(
+        **raw_params_from_file(
             "tests/test_data/parameter_json_files/test_parameter_defaults_2d.json"
         )
     )
@@ -47,7 +49,31 @@ class TestData:
         CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         "hyperion_internal_parameters": dummy_params().json(),
     }
+    test_gridscan3d_start_document: RunStart = {  # type: ignore
+        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+        "scan_id": 1,
+        "plan_type": "generator",
+        "plan_name": "test",
+        "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
+        "hyperion_internal_parameters": dummy_params().json(),
+    }
     test_gridscan2d_start_document = {
+        "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "time": 1666604299.6149616,
+        "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
+        "scan_id": 1,
+        "plan_type": "generator",
+        "plan_name": "test",
+        "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
+        "hyperion_internal_parameters": dummy_params_2d().json(),
+    }
+    test_rotation_start_main_document = {
+        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
+        "subplan_name": CONST.PLAN.ROTATION_MAIN,
+    }
+    test_gridscan_outer_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "time": 1666604299.6149616,
         "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
@@ -55,26 +81,8 @@ class TestData:
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-        "hyperion_internal_parameters": dummy_params_2d().json(),
-    }
-    test_rotation_start_main_document = {
-        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "subplan_name": CONST.PLAN.ROTATION_MAIN,
-    }
-    test_rotation_event_document_pre_data_collection: Event = {
-        "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
-        "time": 1666604299.828203,
-        "data": {
-            "s4_slit_gaps_xgap": 0.1234,
-            "s4_slit_gaps_ygap": 0.2345,
-            "synchrotron-synchrotron_mode": "test",
-            "undulator_current_gap": 1.234,
-            "robot-barcode": "BARCODE",
-        },
-        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
-        "seq_num": 1,
-        "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
-        "filled": {},
+        CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+        "hyperion_internal_parameters": dummy_params().json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
@@ -117,30 +125,77 @@ class TestData:
         "zocalo_environment": "dev_artemis",
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
+    test_descriptor_document_oav_snapshot: EventDescriptor = {
+        "uid": "b5ba4aec-de49-4970-81a4-b4a847391d34",
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "name": CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED,
+    }  # type: ignore
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.PLAN.ISPYB_HARDWARE_READ,
+        "name": CONST.DESCRIPTORS.ISPYB_HARDWARE_READ,
     }  # type: ignore
     test_descriptor_document_during_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.PLAN.ISPYB_TRANSMISSION_FLUX_READ,
+        "name": CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ,
     }  # type: ignore
     test_descriptor_document_zocalo_hardware: EventDescriptor = {
         "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.PLAN.ZOCALO_HW_READ,
+        "name": CONST.DESCRIPTORS.ZOCALO_HW_READ,
     }  # type: ignore
+    test_descriptor_document_nexus_read: EventDescriptor = {
+        "uid": "aaaaaa",
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "name": CONST.DESCRIPTORS.NEXUS_READ,
+    }  # type: ignore
+    test_event_document_oav_snapshot_xy: Event = {
+        "descriptor": "b5ba4aec-de49-4970-81a4-b4a847391d34",
+        "time": 1666604299.828203,
+        "timestamps": {},
+        "seq_num": 1,
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
+        "data": {
+            "oav_snapshot_top_left_x": 50,
+            "oav_snapshot_top_left_y": 100,
+            "oav_snapshot_num_boxes_x": 40,
+            "oav_snapshot_num_boxes_y": 20,
+            "oav_snapshot_microns_per_pixel_x": 1.25,
+            "oav_snapshot_microns_per_pixel_y": 1.5,
+            "oav_snapshot_box_width": 0.1 * 1000 / 1.25,  # size in pixels
+            "oav_snapshot_last_path_full_overlay": "test_1_y",
+            "oav_snapshot_last_path_outer": "test_2_y",
+            "oav_snapshot_last_saved_path": "test_3_y",
+        },
+    }
+    test_event_document_oav_snapshot_xz: Event = {
+        "descriptor": "b5ba4aec-de49-4970-81a4-b4a847391d34",
+        "time": 1666604299.828203,
+        "timestamps": {},
+        "seq_num": 1,
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
+        "data": {
+            "oav_snapshot_top_left_x": 50,
+            "oav_snapshot_top_left_y": 0,
+            "oav_snapshot_num_boxes_x": 40,
+            "oav_snapshot_num_boxes_y": 10,
+            "oav_snapshot_microns_per_pixel_x": 1.25,
+            "oav_snapshot_microns_per_pixel_y": 1.5,
+            "oav_snapshot_box_width": 0.1 * 1000 / 1.25,  # size in pixels
+            "oav_snapshot_last_path_full_overlay": "test_1_z",
+            "oav_snapshot_last_path_outer": "test_2_z",
+            "oav_snapshot_last_saved_path": "test_3_z",
+        },
+    }
     test_event_document_pre_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 1666604299.828203,
         "data": {
             "s4_slit_gaps_xgap": 0.1234,
             "s4_slit_gaps_ygap": 0.2345,
-            "synchrotron-synchrotron_mode": "test",
+            "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator_current_gap": 1.234,
-            "robot-barcode": "BARCODE",
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,
@@ -159,6 +214,15 @@ class TestData:
         "seq_num": 1,
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "filled": {},
+    }
+    test_event_document_nexus_read: Event = {
+        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
+        "time": 1709654583.9770422,
+        "data": {"eiger_bit_depth": "16"},
+        "timestamps": {"eiger_bit_depth": 1666604299.8220396},
+        "seq_num": 1,
+        "filled": {},
+        "descriptor": "aaaaaa",
     }
     test_event_document_zocalo_hardware: Event = {
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",

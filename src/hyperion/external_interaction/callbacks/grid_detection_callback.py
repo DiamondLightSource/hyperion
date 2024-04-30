@@ -7,6 +7,7 @@ from event_model.documents import Event
 
 from hyperion.device_setup_plans.setup_oav import calculate_x_y_z_of_pixel
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import CONST
 
 
 class GridDetectionCallback(CallbackBase):
@@ -15,7 +16,7 @@ class GridDetectionCallback(CallbackBase):
         oav_params: OAVConfigParams,
         exposure_time: float,
         set_stub_offsets: bool,
-        run_up_distance_mm: float = 0.15,
+        run_up_distance_mm: float = CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT,
         *args,
     ) -> None:
         super().__init__(*args)
@@ -63,7 +64,7 @@ class GridDetectionCallback(CallbackBase):
 
     def get_grid_parameters(self) -> GridScanParams:
         return GridScanParams(
-            transmission_fraction=0.01,
+            transmission_fraction=1.0,
             dwell_time_ms=self.exposure_time * 1000,
             x_start=self.start_positions[0][0],
             y1_start=self.start_positions[0][1],
@@ -81,7 +82,7 @@ class GridDetectionCallback(CallbackBase):
 
     def get_panda_grid_parameters(self) -> PandAGridScanParams:
         return PandAGridScanParams(
-            transmission_fraction=0.01,
+            transmission_fraction=1.0,
             run_up_distance_mm=self.run_up_distance_mm,
             x_start=self.start_positions[0][0],
             y1_start=self.start_positions[0][1],
