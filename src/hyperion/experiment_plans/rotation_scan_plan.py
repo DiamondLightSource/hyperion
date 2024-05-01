@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -248,7 +247,7 @@ def cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
 
 def rotation_scan(
     composite: RotationScanComposite,
-    parameters: RotationScan | Any,
+    parameters: RotationScan,
 ) -> MsgGenerator:
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
