@@ -16,8 +16,6 @@
         "ispyb_params": {
             "expected_energy_ev": 100,
             "visit_path": "/tmp/cm31105-4",
-            "microns_per_pixel_x": 1.0,
-            "microns_per_pixel_y": 1.0,
             "position": [
                 0,
                 0,

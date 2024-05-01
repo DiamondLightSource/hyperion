@@ -1,11 +1,11 @@
 import os
 from functools import partial
-from typing import Callable
+from typing import Any, Callable
 
 import dodal.devices.zocalo.zocalo_interaction
 import ispyb.sqlalchemy
 import pytest
-from ispyb.sqlalchemy import DataCollection, DataCollectionGroup
+from ispyb.sqlalchemy import DataCollection, DataCollectionGroup, GridInfo, Position
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -83,6 +83,24 @@ def get_current_datacollection_attribute(
     return data
 
 
+def get_current_datacollection_grid_attribute(
+    Session: Callable, grid_id: int, attr: str
+) -> Any:
+    with Session() as session:
+        query = session.query(GridInfo).filter(GridInfo.gridInfoId == grid_id)
+        first_result = query.first()
+        return getattr(first_result, attr)
+
+
+def get_current_position_attribute(
+    Session: Callable, position_id: int, attr: str
+) -> Any:
+    with Session() as session:
+        query = session.query(Position).filter(Position.positionId == position_id)
+        first_result = query.first()
+        return getattr(first_result, attr)
+
+
 def get_current_datacollectiongroup_attribute(
     Session: Callable, dcg_id: int, attr: str
 ):
@@ -109,6 +127,16 @@ def fetch_comment(sqlalchemy_sessionmaker) -> Callable:
 @pytest.fixture
 def fetch_datacollection_attribute(sqlalchemy_sessionmaker) -> Callable:
     return partial(get_current_datacollection_attribute, sqlalchemy_sessionmaker)
+
+
+@pytest.fixture
+def fetch_datacollection_grid_attribute(sqlalchemy_sessionmaker) -> Callable:
+    return partial(get_current_datacollection_grid_attribute, sqlalchemy_sessionmaker)
+
+
+@pytest.fixture
+def fetch_datacollection_position_attribute(sqlalchemy_sessionmaker) -> Callable:
+    return partial(get_current_position_attribute, sqlalchemy_sessionmaker)
 
 
 @pytest.fixture

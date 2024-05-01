@@ -21,8 +21,6 @@ from ...conftest import (
 def dummy_params():
     dummy_params = GridscanInternalParameters(**default_raw_params())
     dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 1.25
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 1.25
     dummy_params.hyperion_params.detector_params.run_number = 0
     return dummy_params
 
@@ -33,9 +31,17 @@ def test_ispyb_deposition_rounds_position_to_int(
     dummy_params,
 ):
     assert construct_comment_for_gridscan(
-        dummy_params.hyperion_params.ispyb_params,
         DataCollectionGridInfo(
-            0.1, 0.1, 40, 20, 1.25, 1.25, 0.01, 100, Orientation.HORIZONTAL, True  # type: ignore
+            0.1,
+            0.1,
+            40,
+            20,
+            1.25,
+            1.25,
+            0.01,  # type: ignore
+            100,
+            Orientation.HORIZONTAL,
+            True,  # type: ignore
         ),
     ) == (
         "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
@@ -70,7 +76,7 @@ def test_ispyb_deposition_rounds_box_size_int(
     )
     bottom_right_from_top_left.return_value = [0, 0]
 
-    assert construct_comment_for_gridscan(MagicMock(), data_collection_grid_info) == (
+    assert construct_comment_for_gridscan(data_collection_grid_info) == (
         "Hyperion: Xray centring - Diffraction grid scan of 0 by 0 images in "
         f"{rounded} um by {rounded} um steps. Top left (px): [0,0], bottom right (px): [0,0]."
     )

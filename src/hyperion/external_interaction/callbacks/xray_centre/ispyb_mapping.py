@@ -35,12 +35,8 @@ def populate_xy_data_collection_info(detector_params):
     return info
 
 
-def construct_comment_for_gridscan(
-    ispyb_params, grid_info: DataCollectionGridInfo
-) -> str:
-    assert (
-        ispyb_params is not None and grid_info is not None
-    ), "StoreGridScanInIspyb failed to get parameters"
+def construct_comment_for_gridscan(grid_info: DataCollectionGridInfo) -> str:
+    assert grid_info is not None, "StoreGridScanInIspyb failed to get parameters"
 
     bottom_right = oav_utils.bottom_right_from_top_left(
         numpy.array(
@@ -50,8 +46,8 @@ def construct_comment_for_gridscan(
         grid_info.steps_y,
         grid_info.dx_in_mm,
         grid_info.dy_in_mm,
-        ispyb_params.microns_per_pixel_x,
-        ispyb_params.microns_per_pixel_y,
+        grid_info.microns_per_pixel_x,
+        grid_info.microns_per_pixel_y,
     )
     return (
         "Hyperion: Xray centring - Diffraction grid scan of "

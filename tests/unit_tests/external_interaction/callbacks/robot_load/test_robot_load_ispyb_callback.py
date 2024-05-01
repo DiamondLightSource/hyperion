@@ -4,7 +4,10 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot
+from dodal.devices.webcam import Webcam
+from ophyd_async.core import set_sim_value
 
 from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
@@ -100,26 +103,35 @@ def test_given_end_called_but_no_start_then_exception_raised(end_load):
     "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.start_load"
 )
 @patch(
-    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode"
+    "hyperion.external_interaction.callbacks.robot_load.ispyb_callback.ExpeyeInteraction.update_barcode_and_snapshots"
 )
 def test_given_plan_reads_barcode_then_data_put_in_ispyb(
-    update_barcode: MagicMock,
+    update_barcode_and_snapshots: MagicMock,
     start_load: MagicMock,
     end_load: MagicMock,
     robot: BartRobot,
+    oav: OAV,
+    webcam: Webcam,
 ):
     RE = RunEngine()
     RE.subscribe(RobotLoadISPyBCallback())
     start_load.return_value = ACTION_ID
 
+    oav.snapshot.last_saved_path.put("test_oav_snapshot")  # type: ignore
+    set_sim_value(webcam.last_saved_path, "test_webcam_snapshot")
+
     @bpp.run_decorator(md=metadata)
     def my_plan():
         yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
         yield from bps.read(robot.barcode)
+        yield from bps.read(oav.snapshot)
+        yield from bps.read(webcam)
         yield from bps.save()
 
     RE(my_plan())
 
     start_load.assert_called_once_with("cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN)
-    update_barcode.assert_called_once_with(ACTION_ID, "BARCODE")
+    update_barcode_and_snapshots.assert_called_once_with(
+        ACTION_ID, "BARCODE", "test_oav_snapshot", "test_webcam_snapshot"
+    )
     end_load.assert_called_once_with(ACTION_ID, "success", "")
