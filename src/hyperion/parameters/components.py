@@ -112,6 +112,10 @@ class DiffractionExperiment(HyperionParameters):
         )
 
     @property
+    def snapshot_directory(self) -> Path:
+        return self.visit_directory / "snapshots"
+
+    @property
     def num_images(self) -> int:
         return 0
 
@@ -151,6 +155,10 @@ class WithSample(BaseModel):
     _pin: int | None = None
 
 
+class WithOavCentring(BaseModel):
+    oav_centring_file: str = Field(default=CONST.I03.OAV_CENTRING_FILE)
+
+
 class OptionalXyzStarts(BaseModel):
     x_start_um: float | None = None
     y_start_um: float | None = None
@@ -185,8 +193,6 @@ class TemporaryIspybExtras(BaseModel):
         arbitrary_types_allowed = True
         extra = Extra.forbid
 
-    microns_per_pixel_x: float
-    microns_per_pixel_y: float
     position: list[float] | NDArray = Field(default=np.array([0, 0, 0]))
     beam_size_x: float
     beam_size_y: float
@@ -198,4 +204,3 @@ class TemporaryIspybExtras(BaseModel):
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None
     ispyb_experiment_type: str | None = None
-    upper_left: list[float] | NDArray | None = None

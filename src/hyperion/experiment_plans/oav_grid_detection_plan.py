@@ -156,7 +156,6 @@ def grid_detection_plan(
         yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
         yield from bps.abs_set(oav.snapshot.directory, snapshot_dir)
         yield from bps.trigger(oav.snapshot, wait=True)
-
         yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
 
         yield from bps.read(oav.snapshot)

@@ -48,7 +48,7 @@ class DocDescriptorNames:
 @dataclass(frozen=True)
 class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
-    PANDA_FGS_RUN_UP_DEFAULT = 0.16
+    PANDA_FGS_RUN_UP_DEFAULT = 0.17
 
 
 @dataclass(frozen=True)
@@ -77,30 +77,36 @@ class DetectorParamConstants:
 
 @dataclass(frozen=True)
 class ExperimentParamConstants:
-    GRIDSCAN = GridscanParamConstants()
     DETECTOR = DetectorParamConstants()
+    GRIDSCAN = GridscanParamConstants()
+
+
+_test_oav_file = "tests/test_data/test_OAVCentring.json"
+_live_oav_file = "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json"
 
 
 @dataclass(frozen=True)
 class I03Constants:
-    BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
-    INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
     BASE_DATA_DIR = "/tmp/dls/i03/data/" if TEST_MODE else "/dls/i03/data/"
+    BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
     DETECTOR = "EIGER2_X_16M"
+    INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
+    OAV_CENTRING_FILE = _test_oav_file if TEST_MODE else _live_oav_file
     SHUTTER_TIME_S = 0.06
-    PANDA_RUNUP_DIST_MM = 0.15
+    USE_PANDA_FOR_GRIDSCAN = False
 
 
 @dataclass(frozen=True)
 class HyperionConstants:
-    SIM = SimConstants()
-    PLAN = PlanNameConstants()
     HARDWARE = HardwareConstants()
-    TRIGGER = TriggerConstants()
-    PARAM = ExperimentParamConstants()
     I03 = I03Constants()
+    PARAM = ExperimentParamConstants()
+    PLAN = PlanNameConstants()
+    SIM = SimConstants()
+    TRIGGER = TriggerConstants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()
+    GRAYLOG_PORT = 12232
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
 

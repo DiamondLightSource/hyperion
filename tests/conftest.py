@@ -3,7 +3,7 @@ import logging
 import sys
 import threading
 from functools import partial
-from typing import Callable, Generator, Optional, Sequence
+from typing import Any, Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -26,15 +26,18 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
 from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
+from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
+from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
 from ophyd_async.core import set_sim_value
 from ophyd_async.core.async_status import AsyncStatus
@@ -56,10 +59,7 @@ from hyperion.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
-from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
-)
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
 )
@@ -261,9 +261,14 @@ def smargon() -> Generator[Smargon, None, None]:
     smargon.y.user_readback.sim_put(0.0)  # type: ignore
     smargon.z.user_readback.sim_put(0.0)  # type: ignore
 
-    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
-        smargon.y
-    ), patch_motor(smargon.z), patch_motor(smargon.chi), patch_motor(smargon.phi):
+    with (
+        patch_motor(smargon.omega),
+        patch_motor(smargon.x),
+        patch_motor(smargon.y),
+        patch_motor(smargon.z),
+        patch_motor(smargon.chi),
+        patch_motor(smargon.phi),
+    ):
         yield smargon
 
 
@@ -283,6 +288,11 @@ def zebra():
 @pytest.fixture
 def backlight():
     return i03.backlight(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def fast_grid_scan():
+    return i03.fast_grid_scan(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -314,8 +324,13 @@ def synchrotron():
 
 
 @pytest.fixture
-def oav():
-    return i03.oav(fake_with_ophyd_sim=True)
+def oav(test_config_files):
+    parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
+    oav.snapshot.trigger = MagicMock(return_value=NullStatus())
+    return oav
 
 
 @pytest.fixture
@@ -407,6 +422,13 @@ def undulator_dcm():
 
 
 @pytest.fixture
+def webcam(RE) -> Generator[Webcam, Any, Any]:
+    webcam = i03.webcam(fake_with_ophyd_sim=True)
+    with patch.object(webcam, "_write_image"):
+        yield webcam
+
+
+@pytest.fixture
 def aperture_scatterguard(done_status):
     AperturePositions.LARGE = SingleAperturePosition(
         location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
@@ -443,9 +465,13 @@ def aperture_scatterguard(done_status):
     )
     ap_sg.aperture.z.user_setpoint.sim_put(2)  # type: ignore
     ap_sg.aperture.z.motor_done_move.sim_put(1)  # type: ignore
-    with patch_motor(ap_sg.aperture.x), patch_motor(ap_sg.aperture.y), patch_motor(
-        ap_sg.aperture.z
-    ), patch_motor(ap_sg.scatterguard.x), patch_motor(ap_sg.scatterguard.y):
+    with (
+        patch_motor(ap_sg.aperture.x),
+        patch_motor(ap_sg.aperture.y),
+        patch_motor(ap_sg.aperture.z),
+        patch_motor(ap_sg.scatterguard.x),
+        patch_motor(ap_sg.scatterguard.y),
+    ):
         ap_sg.set(ap_sg.aperture_positions.SMALL)  # type: ignore
         yield ap_sg
 
@@ -462,9 +488,9 @@ def test_config_files():
 @pytest.fixture
 def test_full_grid_scan_params():
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
+        "tests/test_data/new_parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
-    return GridScanWithEdgeDetectInternalParameters(**params)
+    return GridScanWithEdgeDetect(**params)
 
 
 @pytest.fixture()

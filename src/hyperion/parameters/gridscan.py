@@ -18,6 +18,7 @@ from hyperion.parameters.components import (
     OptionalGonioAngleStarts,
     SplitScan,
     TemporaryIspybExtras,
+    WithOavCentring,
     WithSample,
     WithScan,
     XyzStarts,
@@ -45,11 +46,18 @@ from hyperion.parameters.plan_specific.robot_load_then_center_params import (
 )
 
 
-class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
+class GridCommon(
+    DiffractionExperiment, OptionalGonioAngleStarts, WithSample, WithOavCentring
+):
     grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
     exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
     use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)
     transmission_frac: float = Field(default=1)
+    panda_runup_distance_mm: float = Field(
+        default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
+    )
+    set_stub_offsets: bool = Field(default=False)
+    use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
     # field rather than inherited to make it easier to track when it can be removed:
     ispyb_extras: TemporaryIspybExtras
 
@@ -57,8 +65,6 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
     def ispyb_params(self):
         return GridscanIspybParams(
             visit_path=str(self.visit_directory),
-            microns_per_pixel_x=self.ispyb_extras.microns_per_pixel_x,
-            microns_per_pixel_y=self.ispyb_extras.microns_per_pixel_y,
             position=np.array(self.ispyb_extras.position),
             beam_size_x=self.ispyb_extras.beam_size_x,
             beam_size_y=self.ispyb_extras.beam_size_y,
@@ -72,9 +78,6 @@ class GridCommon(DiffractionExperiment, OptionalGonioAngleStarts, WithSample):
             or [],
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
             ispyb_experiment_type=self.ispyb_extras.ispyb_experiment_type,
-            upper_left=np.array(
-                self.ispyb_extras.upper_left or [0, 0, 0], dtype=np.int32
-            ),
         )
 
     @property
@@ -125,12 +128,14 @@ class GridScanWithEdgeDetect(GridCommon, WithSample):
     # Can be removed in #1277
     def old_parameters(self) -> GridScanWithEdgeDetectInternalParameters:
         return GridScanWithEdgeDetectInternalParameters(
+            params_version="0.0.0",
             hyperion_params=self.old_gridscan_hyperion_params(
                 "pin_centre_then_xray_centre"
             ),
             experiment_params=GridScanWithEdgeDetectParams(
+                transmission_fraction=self.transmission_frac,
                 exposure_time=self.exposure_time_s,
-                snapshot_dir=str(self.visit_directory / "snapshots"),
+                snapshot_dir=str(self.snapshot_directory),
                 detector_distance=self.detector_distance_mm,  # type: ignore #TODO: deal with None
                 omega_start=self.omega_start_deg or CONST.PARAM.GRIDSCAN.OMEGA_1,
                 grid_width_microns=self.grid_width_um,
@@ -152,7 +157,7 @@ class PinTipCentreThenXrayCentre(GridCommon):
                 transmission_fraction=self.transmission_frac,
                 tip_offset_microns=self.tip_offset_um,
                 exposure_time=self.exposure_time_s,
-                snapshot_dir=str(self.visit_directory / "snapshots"),
+                snapshot_dir=str(self.snapshot_directory),
                 detector_distance=self.detector_distance_mm,  # type: ignore #TODO: deal with None
                 omega_start=self.omega_start_deg or CONST.PARAM.GRIDSCAN.OMEGA_1,
                 grid_width_microns=self.grid_width_um,
@@ -178,7 +183,7 @@ class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
     grid and box sizes, etc., as opposed to parameters for a plan which will create
     those parameters at some point (e.g. through optical pin detection)."""
 
-    panda_runup_distance_mm: float = Field(default=CONST.I03.PANDA_RUNUP_DIST_MM)
+    ...
 
 
 class ThreeDGridScan(SpecifiedGridScan, SplitScan):

@@ -5,7 +5,7 @@ from blueapi.core import MsgGenerator
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from ophyd_async.core import load_device
 from ophyd_async.panda import (
-    PandA,
+    HDFPanda,
     SeqTable,
     SeqTableRow,
     SeqTrigger,
@@ -109,7 +109,7 @@ def get_seq_table(
 
 
 def setup_panda_for_flyscan(
-    panda: PandA,
+    panda: HDFPanda,
     config_yaml_path: str,
     parameters: PandAGridScanParams,
     initial_x: float,
@@ -123,7 +123,7 @@ def setup_panda_for_flyscan(
     created using ophyd_async.core.save_device()
 
     Args:
-        panda (PandA): The PandA Ophyd device
+        panda (HDFPanda): The PandA Ophyd device
         config_yaml_path (str): Path to the yaml file containing the desired PandA PVs
         parameters (PandAGridScanParams): Grid parameters
         initial_x (float): Motor positions at time of PandA setup
@@ -161,8 +161,6 @@ def setup_panda_for_flyscan(
 
     table = get_seq_table(parameters, exposure_distance_mm)
 
-    LOGGER.info(f"Setting PandA sequencer values: {str(table)}")
-
     yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
     yield from bps.abs_set(
@@ -174,15 +172,20 @@ def setup_panda_for_flyscan(
     # Values need to be set before blocks are enabled, so wait here
     yield from bps.wait(group="panda-config", timeout=GENERAL_TIMEOUT)
 
+    LOGGER.info(f"PandA sequencer table has been set to: {str(table)}")
+    table_readback = yield from bps.rd(panda.seq[1].table)
+    LOGGER.debug(f"PandA sequencer table readback is: {str(table_readback)}")
+
     yield from arm_panda_for_gridscan(panda)
 
 
-def arm_panda_for_gridscan(panda: PandA, group="arm_panda_gridscan"):
+def arm_panda_for_gridscan(panda: HDFPanda, group="arm_panda_gridscan"):
     yield from bps.abs_set(panda.seq[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.pulse[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.counter[1].enable, Enabled.ENABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.pcap.arm, PcapArm.ARMED.value, group=group)  # type: ignore
     yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
+    LOGGER.info("PandA has been armed")
 
 
 def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenerator:

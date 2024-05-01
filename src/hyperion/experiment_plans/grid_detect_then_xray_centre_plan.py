@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import Any, Union
+from pathlib import Path
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky import plan_stubs as bps
@@ -27,7 +27,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.panda import PandA
+from ophyd_async.panda import HDFPanda
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -53,10 +53,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect
-from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
-    GridScanWithEdgeDetectParams,
-)
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
     GridScanParams,
@@ -92,7 +88,7 @@ class GridDetectThenXRayCentreComposite:
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zocalo: ZocaloResults
-    panda: PandA
+    panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
 
@@ -108,10 +104,11 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
 
 
 def create_parameters_for_flyscan_xray_centre(
-    grid_scan_with_edge_params: GridScanWithEdgeDetectInternalParameters,
+    grid_scan_with_edge_params: GridScanWithEdgeDetect,
     grid_parameters: GridScanParams,
 ) -> GridscanInternalParameters:
-    params_json = json.loads(grid_scan_with_edge_params.json())
+    old_params = grid_scan_with_edge_params.old_parameters()
+    params_json = json.loads(old_params.json())
     params_json["experiment_params"] = json.loads(grid_parameters.json())
     flyscan_xray_centre_parameters = GridscanInternalParameters(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
@@ -119,10 +116,11 @@ def create_parameters_for_flyscan_xray_centre(
 
 
 def create_parameters_for_panda_flyscan_xray_centre(
-    grid_scan_with_edge_params: GridScanWithEdgeDetectInternalParameters,
+    grid_scan_with_edge_params: GridScanWithEdgeDetect,
     grid_parameters: PandAGridScanParams,
 ) -> PandAGridscanInternalParameters:
-    params_json = json.loads(grid_scan_with_edge_params.json())
+    old_params = grid_scan_with_edge_params.old_parameters()
+    params_json = json.loads(old_params.json())
     params_json["experiment_params"] = json.loads(grid_parameters.json())
     flyscan_xray_centre_parameters = PandAGridscanInternalParameters(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
@@ -131,7 +129,7 @@ def create_parameters_for_panda_flyscan_xray_centre(
 
 def detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: GridScanWithEdgeDetectInternalParameters,
+    parameters: GridScanWithEdgeDetect,
     oav_params: OAVParameters,
 ):
     yield from ispyb_activation_wrapper(
@@ -141,29 +139,25 @@ def detect_grid_and_do_gridscan(
 
 def _detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: GridScanWithEdgeDetectInternalParameters,
+    parameters: GridScanWithEdgeDetect,
     oav_params: OAVParameters,
 ):
     assert composite.aperture_scatterguard.aperture_positions is not None
-    experiment_params: GridScanWithEdgeDetectParams = parameters.experiment_params
 
-    detector_params = parameters.hyperion_params.detector_params
-    snapshot_template = (
-        f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
-    )
+    snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
     grid_params_callback = GridDetectionCallback(
         composite.oav.parameters,
-        experiment_params.exposure_time,
-        experiment_params.set_stub_offsets,
-        experiment_params.run_up_distance_mm,
+        parameters.exposure_time_s,
+        parameters.set_stub_offsets,
+        parameters.panda_runup_distance_mm,
     )
 
     @bpp.subs_decorator([grid_params_callback])
     def run_grid_detection_plan(
         oav_params,
         snapshot_template,
-        snapshot_dir,
+        snapshot_dir: Path,
     ):
         grid_detect_composite = OavGridDetectionComposite(
             backlight=composite.backlight,
@@ -176,14 +170,14 @@ def _detect_grid_and_do_gridscan(
             grid_detect_composite,
             oav_params,
             snapshot_template,
-            snapshot_dir,
-            grid_width_microns=experiment_params.grid_width_microns,
+            str(snapshot_dir),
+            grid_width_microns=parameters.grid_width_um,
         )
 
     yield from run_grid_detection_plan(
         oav_params,
         snapshot_template,
-        experiment_params.snapshot_dir,
+        parameters.snapshot_directory,
     )
 
     yield from bps.abs_set(composite.backlight, Backlight.OUT)
@@ -216,7 +210,7 @@ def _detect_grid_and_do_gridscan(
         robot=composite.robot,
     )
 
-    if parameters.experiment_params.use_panda:
+    if parameters.use_panda:
         grid_params = grid_params_callback.get_panda_grid_parameters()
 
         flyscan_xray_centre_parameters = (
@@ -242,35 +236,29 @@ def _detect_grid_and_do_gridscan(
 
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: Union[
-        GridScanWithEdgeDetectInternalParameters, GridScanWithEdgeDetect, Any
-    ],
+    parameters: GridScanWithEdgeDetect,
     oav_config: str = OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
     """
-    old_parameters = (
-        parameters
-        if isinstance(parameters, GridScanWithEdgeDetectInternalParameters)
-        else parameters.old_parameters()
-    )
+
     eiger: EigerDetector = composite.eiger
 
-    eiger.set_detector_parameters(old_parameters.hyperion_params.detector_params)
+    eiger.set_detector_parameters(parameters.detector_params)
 
     oav_params = OAVParameters("xrayCentring", oav_config)
 
     plan_to_perform = detect_grid_and_do_gridscan(
         composite,
-        old_parameters,
+        parameters,
         oav_params,
     )
 
     return start_preparing_data_collection_then_do_plan(
         eiger,
         composite.detector_motion,
-        old_parameters.hyperion_params.detector_params.detector_distance,
+        parameters.detector_params.detector_distance,
         plan_to_perform,
     )

@@ -142,7 +142,7 @@ async def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
 
 @patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
+def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices,
     RE: RunEngine,
     test_config_files,
@@ -250,6 +250,8 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
                 "oav_snapshot_num_boxes_x": 8,
                 "oav_snapshot_num_boxes_y": 2,
                 "oav_snapshot_box_width": 16,
+                "oav_snapshot_microns_per_pixel_x": 1.25,
+                "oav_snapshot_microns_per_pixel_y": 1.25,
                 "oav_snapshot_last_path_full_overlay": "tmp/test_0_grid_overlay.png",
                 "oav_snapshot_last_path_outer": "tmp/test_0_outer_overlay.png",
                 "oav_snapshot_last_saved_path": "tmp/test_0.png",
@@ -263,6 +265,8 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
                 "oav_snapshot_num_boxes_x": 8,
                 "oav_snapshot_num_boxes_y": 1,
                 "oav_snapshot_box_width": 16,
+                "oav_snapshot_microns_per_pixel_x": 1.25,
+                "oav_snapshot_microns_per_pixel_y": 1.25,
                 "oav_snapshot_last_path_full_overlay": "tmp/test_90_grid_overlay.png",
                 "oav_snapshot_last_path_outer": "tmp/test_90_outer_overlay.png",
                 "oav_snapshot_last_saved_path": "tmp/test_90.png",

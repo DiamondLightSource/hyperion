@@ -1,0 +1,42 @@
+{
+    "parameter_model_version": "5.0.0",
+    "beamline": "BL03S",
+    "insertion_prefix": "SR03S",
+    "detector": "EIGER2_X_16M",
+    "zocalo_environment": "devrmq",
+    "storage_directory": "/tmp",
+    "file_name": "file_name",
+    "run_number": 0,
+    "sample_id": 123456,
+    "use_roi_mode": false,
+    "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt",
+    "exposure_time_s": 0.1,
+    "detector_distance_mm": 100.0,
+    "omega_start_deg": 0.0,
+    "grid_width_um": 290.6,
+    "oav_centring_file": "tests/test_data/test_OAVCentring.json",
+    "transmission_frac": 1.0,
+    "visit": "cm31105-4",
+    "ispyb_extras": {
+        "position": [
+            10.0,
+            20.0,
+            30.0
+        ],
+        "xtal_snapshots_omega_start": [
+            "c",
+            "b",
+            "a"
+        ],
+        "xtal_snapshots_omega_end": [
+            "f",
+            "e",
+            "d"
+        ],
+        "beam_size_x": 1.0,
+        "beam_size_y": 1.0,
+        "focal_spot_size_x": 1.0,
+        "focal_spot_size_y": 1.0,
+        "resolution": 1.0
+    }
+}
