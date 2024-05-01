@@ -94,119 +94,6 @@ EXPECTED_DATA_COLLECTION_2D = {
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 class TestXrayCentreISPyBCallback:
-    def test_activity_gated_start_2d(self, mock_ispyb_conn):
-        callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan2d_start_document  # pyright: ignore
-        )
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
-            mx_acq.get_data_collection_group_params(),
-            {
-                "parentid": TEST_SESSION_ID,
-                "experimenttype": "mesh",
-                "sampleid": TEST_SAMPLE_ID,
-            },
-        )
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[0],
-            mx_acq.get_data_collection_params(),
-            EXPECTED_DATA_COLLECTION_2D,
-        )
-        mx_acq.upsert_data_collection.update_dc_position.assert_not_called()
-        mx_acq.upsert_data_collection.upsert_dc_grid.assert_not_called()
-
-    def test_hardware_read_event_2d(self, mock_ispyb_conn):
-        callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan2d_start_document  # pyright: ignore
-        )
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        mx_acq.upsert_data_collection_group.reset_mock()
-        mx_acq.upsert_data_collection.reset_mock()
-        callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_pre_data_collection
-        )
-        callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
-            mx_acq.get_data_collection_group_params(),
-            {
-                "id": TEST_DATA_COLLECTION_GROUP_ID,
-                "parentid": TEST_SESSION_ID,
-                "experimenttype": "mesh",
-                "sampleid": TEST_SAMPLE_ID,
-                "sample_barcode": "BARCODE",  # deferred
-            },
-        )
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[0],
-            mx_acq.get_data_collection_params(),
-            {
-                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "slitgaphorizontal": 0.1234,
-                "slitgapvertical": 0.2345,
-                "synchrotronmode": "User",
-                "undulatorgap1": 1.234,
-            },
-        )
-        assert_upsert_call_with(
-            mx_acq.update_dc_position.mock_calls[0],
-            mx_acq.get_dc_position_params(),
-            {
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "pos_x": 0,
-                "pos_y": 0,
-                "pos_z": 0,
-            },
-        )
-        mx_acq.upsert_dc_grid.assert_not_called()
-
-    def test_flux_read_event_2d(self, mock_ispyb_conn):
-        callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan2d_start_document  # pyright: ignore
-        )
-        mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-        callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_pre_data_collection
-        )
-        callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-        mx_acq.upsert_data_collection_group.reset_mock()
-        mx_acq.upsert_data_collection.reset_mock()
-        callback.activity_gated_descriptor(
-            TestData.test_descriptor_document_during_data_collection
-        )
-        callback.activity_gated_event(
-            TestData.test_event_document_during_data_collection
-        )
-
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection.mock_calls[0],
-            mx_acq.get_data_collection_params(),
-            {
-                "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "wavelength": 1.1164718451643736,
-                "transmission": 100,
-                "flux": 10,
-            },
-        )
-        assert_upsert_call_with(
-            mx_acq.update_dc_position.mock_calls[0],
-            mx_acq.get_dc_position_params(),
-            {
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "pos_x": 0,
-                "pos_y": 0,
-                "pos_z": 0,
-            },
-        )
-        mx_acq.upsert_dc_grid.assert_not_called()
-
     def test_activity_gated_start_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
         callback.activity_gated_start(
@@ -247,17 +134,7 @@ class TestXrayCentreISPyBCallback:
             TestData.test_descriptor_document_pre_data_collection
         )
         callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
-        assert_upsert_call_with(
-            mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
-            mx_acq.get_data_collection_group_params(),
-            {
-                "id": TEST_DATA_COLLECTION_GROUP_ID,
-                "parentid": TEST_SESSION_ID,
-                "experimenttype": "Mesh3D",
-                "sampleid": TEST_SAMPLE_ID,
-                "sample_barcode": "BARCODE",  # deferred
-            },
-        )
+        mx_acq.upsert_data_collection_group.assert_not_called()
         assert_upsert_call_with(
             mx_acq.upsert_data_collection.mock_calls[0],
             mx_acq.get_data_collection_params(),
@@ -374,7 +251,7 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot2": "test_2_y",
                 "xtal_snapshot3": "test_3_y",
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
-                "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
+                "images in 100.0 um by 120.0 um steps. Top left (px): [50,100], "
                 "bottom right (px): [3250,1700].",
             },
         )
@@ -389,7 +266,7 @@ class TestXrayCentreISPyBCallback:
                 "xtal_snapshot2": "test_2_z",
                 "xtal_snapshot3": "test_3_z",
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
-                "images in 100.0 um by 100.0 um steps. Top left (px): [50,0], "
+                "images in 100.0 um by 120.0 um steps. Top left (px): [50,0], "
                 "bottom right (px): [3250,800].",
             },
         )
@@ -399,11 +276,11 @@ class TestXrayCentreISPyBCallback:
             {
                 "parentid": TEST_DATA_COLLECTION_IDS[0],
                 "dxinmm": 0.1,
-                "dyinmm": 0.1,
+                "dyinmm": 0.12,
                 "stepsx": 40,
                 "stepsy": 20,
                 "micronsperpixelx": 1.25,
-                "micronsperpixely": 1.25,
+                "micronsperpixely": 1.5,
                 "snapshotoffsetxpixel": 50,
                 "snapshotoffsetypixel": 100,
                 "orientation": "horizontal",
@@ -416,11 +293,11 @@ class TestXrayCentreISPyBCallback:
             {
                 "parentid": TEST_DATA_COLLECTION_IDS[1],
                 "dxinmm": 0.1,
-                "dyinmm": 0.1,
+                "dyinmm": 0.12,
                 "stepsx": 40,
                 "stepsy": 10,
                 "micronsperpixelx": 1.25,
-                "micronsperpixely": 1.25,
+                "micronsperpixely": 1.5,
                 "snapshotoffsetxpixel": 50,
                 "snapshotoffsetypixel": 0,
                 "orientation": "horizontal",

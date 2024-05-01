@@ -27,8 +27,6 @@ from ..conftest import (
 def dummy_params():
     dummy_params = GridscanInternalParameters(**default_raw_params())
     dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_x = 1.25
-    dummy_params.hyperion_params.ispyb_params.microns_per_pixel_y = 1.25
     dummy_params.hyperion_params.detector_params.run_number = 0
     return dummy_params
 

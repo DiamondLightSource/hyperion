@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, List
+from time import time
+from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -33,7 +34,7 @@ from dodal.devices.zocalo.zocalo_results import (
     get_processing_result,
 )
 from dodal.plans.check_topup import check_topup_and_wait_if_necessary
-from ophyd_async.panda import PandA
+from ophyd_async.panda import HDFPanda
 
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -82,7 +83,7 @@ class FlyScanXRayCentreComposite:
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zocalo: ZocaloResults
-    panda: PandA
+    panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
 
@@ -163,7 +164,7 @@ def kickoff_and_complete_gridscan(
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,
-    scan_points: List[AxesPoints[Axis]],
+    scan_points: list[AxesPoints[Axis]],
 ):
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
@@ -193,12 +194,18 @@ def kickoff_and_complete_gridscan(
         yield from bps.wait()
         LOGGER.info("kicking off FGS")
         yield from bps.kickoff(gridscan, wait=True)
+        gridscan_start_time = time()
         LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
         yield from bps.wait(
             ZOCALO_STAGE_GROUP
         )  # Make sure ZocaloResults queue is clear and ready to accept our new data
         LOGGER.info("completing FGS")
         yield from bps.complete(gridscan, wait=True)
+
+        # Remove this logging statement once metrics have been added
+        LOGGER.info(
+            f"Gridscan motion program took {round(time()-gridscan_start_time,2)} to complete"
+        )
 
     yield from do_fgs()
 

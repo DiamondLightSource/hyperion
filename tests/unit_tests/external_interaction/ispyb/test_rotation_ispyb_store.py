@@ -325,23 +325,12 @@ def test_update_deposition(
 
     assert dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
-        dummy_rotation_data_collection_group_info,
         [scan_data_info_for_update],
     ) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
     )
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection_group.mock_calls[0],
-        mx_acq.get_data_collection_group_params(),
-        {
-            "id": TEST_DATA_COLLECTION_GROUP_ID,
-            "parentid": TEST_SESSION_ID,
-            "experimenttype": "SAD",
-            "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
-        },
-    )
+    mx_acq.upsert_data_collection_group.assert_not_called()
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
@@ -395,23 +384,12 @@ def test_update_deposition_with_group_id_updates(
     dummy_rotation_data_collection_group_info.sample_barcode = TEST_BARCODE
     assert dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
-        dummy_rotation_data_collection_group_info,
         [scan_data_info_for_update],
     ) == IspybIds(
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
     )
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection_group.mock_calls[0],
-        mx_acq.get_data_collection_group_params(),
-        {
-            "id": TEST_DATA_COLLECTION_GROUP_ID,
-            "parentid": TEST_SESSION_ID,
-            "experimenttype": "SAD",
-            "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,  # deferred
-        },
-    )
+    mx_acq.upsert_data_collection_group.assert_not_called()
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
@@ -461,7 +439,6 @@ def test_end_deposition_happy_path(
     scan_data_info_for_update.data_collection_id = ispyb_ids.data_collection_ids[0]
     ispyb_ids = dummy_rotation_ispyb.update_deposition(
         ispyb_ids,
-        dummy_rotation_data_collection_group_info,
         [scan_data_info_for_update],
     )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
@@ -534,7 +511,6 @@ def test_store_rotation_scan_uses_supplied_dcgid(
     assert (
         store_in_ispyb.update_deposition(
             ispyb_ids,
-            dummy_rotation_data_collection_group_info,
             [scan_data_info_for_update],
         ).data_collection_group_id
         == dcgid

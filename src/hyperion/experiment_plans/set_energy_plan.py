@@ -1,8 +1,8 @@
 """Plan that comprises:
-    * Disable feedback
-    * Set undulator energy to the requested amount
-    * Adjust DCM and mirrors for the new energy
-    * reenable feedback
+* Disable feedback
+* Set undulator energy to the requested amount
+* Adjust DCM and mirrors for the new energy
+* reenable feedback
 """
 
 import dataclasses

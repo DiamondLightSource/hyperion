@@ -27,8 +27,6 @@
     "z2_start_um": 0.0,
     "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
     "ispyb_extras": {
-        "microns_per_pixel_x": 1.0,
-        "microns_per_pixel_y": 1.0,
         "position": [
             10.0,
             20.0,

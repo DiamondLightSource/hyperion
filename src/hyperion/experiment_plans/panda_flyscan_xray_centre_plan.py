@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.common import udc_directory_provider
 from dodal.devices.panda_fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params,
 )
@@ -46,7 +49,7 @@ from hyperion.tracing import TRACER
 from hyperion.utils.context import device_composite_from_context
 
 PANDA_SETUP_PATH = (
-    "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_base.yaml"
+    "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_pcap_ignore_seq.yaml"
 )
 
 
@@ -182,6 +185,7 @@ def run_gridscan_and_move(
         time_between_x_steps_ms,
     )
 
+    udc_directory_provider.set_directory(Path(parameters.storage_directory))
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         PANDA_SETUP_PATH,

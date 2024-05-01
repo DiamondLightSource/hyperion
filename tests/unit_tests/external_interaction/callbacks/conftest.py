@@ -162,6 +162,8 @@ class TestData:
             "oav_snapshot_top_left_y": 100,
             "oav_snapshot_num_boxes_x": 40,
             "oav_snapshot_num_boxes_y": 20,
+            "oav_snapshot_microns_per_pixel_x": 1.25,
+            "oav_snapshot_microns_per_pixel_y": 1.5,
             "oav_snapshot_box_width": 0.1 * 1000 / 1.25,  # size in pixels
             "oav_snapshot_last_path_full_overlay": "test_1_y",
             "oav_snapshot_last_path_outer": "test_2_y",
@@ -179,6 +181,8 @@ class TestData:
             "oav_snapshot_top_left_y": 0,
             "oav_snapshot_num_boxes_x": 40,
             "oav_snapshot_num_boxes_y": 10,
+            "oav_snapshot_microns_per_pixel_x": 1.25,
+            "oav_snapshot_microns_per_pixel_y": 1.5,
             "oav_snapshot_box_width": 0.1 * 1000 / 1.25,  # size in pixels
             "oav_snapshot_last_path_full_overlay": "test_1_z",
             "oav_snapshot_last_path_outer": "test_2_z",
@@ -193,7 +197,6 @@ class TestData:
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator_current_gap": 1.234,
-            "robot-barcode": "BARCODE",
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,

@@ -14,8 +14,6 @@
         },
         "ispyb_params": {
             "visit_path": "/tmp/cm31105-4",
-            "microns_per_pixel_x": 0.0,
-            "microns_per_pixel_y": 0.0,
             "position": [
                 0,
                 0,
@@ -26,8 +24,7 @@
             "focal_spot_size_x": 0.0,
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
-            "sample_id": 12345,
-            "sample_barcode": null
+            "sample_id": 12345
         }
     },
     "experiment_params": {

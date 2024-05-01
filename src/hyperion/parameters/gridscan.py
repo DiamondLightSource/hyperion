@@ -68,8 +68,6 @@ class GridCommon(
     def ispyb_params(self):
         return GridscanIspybParams(
             visit_path=str(self.visit_directory),
-            microns_per_pixel_x=self.ispyb_extras.microns_per_pixel_x,
-            microns_per_pixel_y=self.ispyb_extras.microns_per_pixel_y,
             position=np.array(self.ispyb_extras.position),
             beam_size_x=self.ispyb_extras.beam_size_x,
             beam_size_y=self.ispyb_extras.beam_size_y,
