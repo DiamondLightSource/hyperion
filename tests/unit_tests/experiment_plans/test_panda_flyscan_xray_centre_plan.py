@@ -493,7 +493,7 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs[0](
             run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params)
         )
-        expected_path = Path("/dls/i03/data/2023/cm33866-5/test_hyperion")
+        expected_path = Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
         set_directory.assert_called_once_with(expected_path)
 
     @patch(

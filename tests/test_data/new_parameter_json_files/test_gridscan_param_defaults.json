@@ -29,8 +29,6 @@
     "exposure_time_s": 0.1,
     "set_stub_offsets": true,
     "ispyb_extras": {
-        "microns_per_pixel_x": 1.25,
-        "microns_per_pixel_y": 1.25,
         "position": [
             0,
             0,
