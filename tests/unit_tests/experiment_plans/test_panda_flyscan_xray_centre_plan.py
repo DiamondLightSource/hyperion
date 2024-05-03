@@ -142,7 +142,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
+        set_sim_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
 
         synchrotron_test_value = SynchrotronMode.USER
         set_sim_value(
@@ -193,7 +193,7 @@ class TestFlyscanXrayCentrePlan:
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[0],  # pyright: ignore
                 {
-                    "undulator_current_gap": undulator_test_value,
+                    "undulator-current_gap": undulator_test_value,
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
