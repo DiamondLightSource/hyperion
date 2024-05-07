@@ -3,6 +3,7 @@ import types
 from typing import Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
+import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
@@ -212,8 +213,11 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-        fake_fgs_composite.aperture_scatterguard.set(
-            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE  # type: ignore
+        RE(
+            bps.abs_set(
+                fake_fgs_composite.aperture_scatterguard,
+                fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE,  # type: ignore
+            )
         )
 
         test_ispyb_callback = PlanReactiveCallback(ISPYB_LOGGER)
