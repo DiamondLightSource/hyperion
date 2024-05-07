@@ -34,21 +34,21 @@ def _fake_grid_detection(
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
     smargon = fake_smargon()
-    oav.snapshot.box_width.put(635.00986)
+    oav.grid_snapshot.box_width.put(635.00986)
 
     # first grid detection: x * y
-    oav.snapshot.num_boxes_x.put(10)
-    oav.snapshot.num_boxes_y.put(4)
+    oav.grid_snapshot.num_boxes_x.put(10)
+    oav.grid_snapshot.num_boxes_y.put(4)
     yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.snapshot)
+    yield from bps.read(oav.grid_snapshot)
     yield from bps.read(smargon)
     yield from bps.save()
 
     # second grid detection: x * z, so num_boxes_y refers to smargon z
-    oav.snapshot.num_boxes_x.put(10)
-    oav.snapshot.num_boxes_y.put(1)
+    oav.grid_snapshot.num_boxes_x.put(10)
+    oav.grid_snapshot.num_boxes_y.put(1)
     yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.snapshot)
+    yield from bps.read(oav.grid_snapshot)
     yield from bps.read(smargon)
     yield from bps.save()
 
