@@ -3,7 +3,7 @@ from __future__ import annotations
 import bluesky.plan_stubs as bps
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.DCM import DCM
+from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot

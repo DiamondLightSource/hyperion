@@ -1,8 +1,8 @@
 """Plan that comprises:
-    * Disable feedback
-    * Set undulator energy to the requested amount
-    * Adjust DCM and mirrors for the new energy
-    * reenable feedback
+* Disable feedback
+* Set undulator energy to the requested amount
+* Adjust DCM and mirrors for the new energy
+* reenable feedback
 """
 
 import dataclasses
@@ -11,7 +11,7 @@ from typing import Any, Generator
 from bluesky import plan_stubs as bps
 from bluesky.utils import Msg
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.DCM import DCM
+from dodal.devices.dcm import DCM
 from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages
 from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -42,7 +42,7 @@ def _set_energy_plan(
 ):
     yield from bps.abs_set(composite.undulator_dcm, energy_kev, group=UNDULATOR_GROUP)
     yield from dcm_pitch_roll_mirror_adjuster.adjust_dcm_pitch_roll_vfm_from_lut(
-        composite.dcm,
+        composite.undulator_dcm,
         composite.vfm,
         composite.vfm_mirror_voltages,
         energy_kev,

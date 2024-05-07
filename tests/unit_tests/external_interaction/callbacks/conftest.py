@@ -90,7 +90,7 @@ class TestData:
         "data": {
             "attenuator_actual_transmission": 0.98,
             "flux_flux_reading": 9.81,
-            "dcm_energy_in_kev": 11.105,
+            "dcm-energy_in_kev": 11.105,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,
@@ -195,7 +195,7 @@ class TestData:
             "s4_slit_gaps_xgap": 0.1234,
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-            "undulator_current_gap": 1.234,
+            "undulator-current_gap": 1.234,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,
@@ -208,7 +208,7 @@ class TestData:
         "data": {
             "attenuator_actual_transmission": 1,
             "flux_flux_reading": 10,
-            "dcm_energy_in_kev": 11.105,
+            "dcm-energy_in_kev": 11.105,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,

@@ -21,7 +21,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.DCM import DCM
+from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
@@ -382,16 +382,10 @@ def xbpm_feedback(done_status):
 
 
 @pytest.fixture
-def dcm():
+def dcm(RE):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
-    dcm.energy_in_kev.user_readback.sim_put(12.7)  # type: ignore
-    dcm.pitch_in_mrad.user_setpoint._use_limits = False
-    dcm.dcm_roll_converter_lookup_table_path = (
-        "tests/test_data/test_beamline_dcm_roll_converter.txt"
-    )
-    dcm.dcm_pitch_converter_lookup_table_path = (
-        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
-    )
+    set_sim_value(dcm.energy_in_kev.user_readback, 12.7)
+    set_sim_value(dcm.pitch_in_mrad.user_readback, 1)
     return dcm
 
 
@@ -418,8 +412,16 @@ def vfm_mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm():
-    yield i03.undulator_dcm(fake_with_ophyd_sim=True)
+def undulator_dcm(RE, dcm):
+    undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
+    undulator_dcm.dcm = dcm
+    undulator_dcm.dcm_roll_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_roll_converter.txt"
+    )
+    undulator_dcm.dcm_pitch_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
+    )
+    yield undulator_dcm
     beamline_utils.clear_devices()
 
 

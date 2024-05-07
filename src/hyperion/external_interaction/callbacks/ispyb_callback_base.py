@@ -113,7 +113,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             SynchrotronMode,
         )
         hwscan_data_collection_info = DataCollectionInfo(
-            undulator_gap1=doc["data"]["undulator_current_gap"],
+            undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
             slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
@@ -177,8 +177,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         if transmission := doc["data"]["attenuator_actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
-        if doc["data"]["dcm_energy_in_kev"]:
-            energy_ev = doc["data"]["dcm_energy_in_kev"] * 1000
+        if doc["data"]["dcm-energy_in_kev"]:
+            energy_ev = doc["data"]["dcm-energy_in_kev"] * 1000
             hwscan_data_collection_info.wavelength = convert_eV_to_angstrom(energy_ev)
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params
