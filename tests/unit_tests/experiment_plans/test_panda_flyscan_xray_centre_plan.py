@@ -485,7 +485,7 @@ class TestFlyscanXrayCentrePlan:
         new=MagicMock(return_value=iter([])),
     )
     @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.get_directory_provider.update",
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.get_directory_provider",
         autospec=True,
     )
     def test_when_gridscan_run_panda_directory_applied(
