@@ -55,6 +55,10 @@ class RotationScanParams(AbstractExperimentWithBeamParams):
     shutter_opening_time_s: float = 0.6
 
     @validator("rotation_direction", pre=True)
+    def _parse_validator(cls, rotation_direction: str):
+        return RotationDirection(rotation_direction)
+
+    @validator("rotation_direction", pre=True)
     def _parse_direction(cls, rotation_direction: str):
         return RotationDirection(rotation_direction)
 
