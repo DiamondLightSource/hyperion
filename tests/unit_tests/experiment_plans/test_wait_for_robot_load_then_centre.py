@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -346,7 +347,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
     webcam.trigger = MagicMock(return_value=NullStatus())
 
-    RE(take_robot_snapshots(oav, webcam, TEST_DIRECTORY))
+    RE(take_robot_snapshots(oav, webcam, Path(TEST_DIRECTORY)))
 
     oav.snapshot.trigger.assert_called_once()
     assert oav.snapshot.filename.get() == "TIME_oav_snapshot_after_load"
