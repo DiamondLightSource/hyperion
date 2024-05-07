@@ -23,16 +23,12 @@ from hyperion.log import ISPYB_LOGGER
 
 
 def populate_data_collection_group(
-    experiment_type: str,
-    detector_params: DetectorParams,
-    ispyb_params: IspybParams,
-    sample_barcode: Optional[str] = None,
+    experiment_type: str, detector_params: DetectorParams, ispyb_params: IspybParams
 ):
     dcg_info = DataCollectionGroupInfo(
         visit_string=get_visit_string(ispyb_params, detector_params),
         experiment_type=experiment_type,
         sample_id=ispyb_params.sample_id,
-        sample_barcode=sample_barcode,
     )
     return dcg_info
 

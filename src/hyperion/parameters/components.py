@@ -194,8 +194,6 @@ class TemporaryIspybExtras(BaseModel):
         arbitrary_types_allowed = True
         extra = Extra.forbid
 
-    microns_per_pixel_x: float
-    microns_per_pixel_y: float
     position: list[float] | NDArray = Field(default=np.array([0, 0, 0]))
     beam_size_x: float
     beam_size_y: float

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from pathlib import Path
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky import plan_stubs as bps
@@ -26,7 +27,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.panda import PandA
+from ophyd_async.panda import HDFPanda
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -87,7 +88,7 @@ class GridDetectThenXRayCentreComposite:
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zocalo: ZocaloResults
-    panda: PandA
+    panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
 
@@ -156,7 +157,7 @@ def _detect_grid_and_do_gridscan(
     def run_grid_detection_plan(
         oav_params,
         snapshot_template,
-        snapshot_dir,
+        snapshot_dir: Path,
     ):
         grid_detect_composite = OavGridDetectionComposite(
             backlight=composite.backlight,
@@ -169,7 +170,7 @@ def _detect_grid_and_do_gridscan(
             grid_detect_composite,
             oav_params,
             snapshot_template,
-            snapshot_dir,
+            str(snapshot_dir),
             grid_width_microns=parameters.grid_width_um,
         )
 
