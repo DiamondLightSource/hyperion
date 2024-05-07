@@ -197,8 +197,8 @@ def mock_async_motor_move(motor: Motor, val, *args, **kwargs):
 def patch_async_motor(motor: Motor, initial_position=0):
     set_sim_value(motor.user_setpoint, initial_position)
     set_sim_value(motor.user_readback, initial_position)
-    motor.deadband._backend._set_value(0.001)  # type: ignore
-    motor.motor_done_move._backend._set_value(1)  # type: ignore
+    set_sim_value(motor.deadband, 0.001)
+    set_sim_value(motor.motor_done_move, 1)
     return patch.object(
         motor, "_move", AsyncMock(side_effect=partial(mock_async_motor_move, motor))
     )
