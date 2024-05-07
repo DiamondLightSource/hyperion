@@ -196,7 +196,9 @@ def run_gridscan_and_move(
         time_between_x_steps_ms,
     )
 
-    get_directory_provider().update(directory=Path(parameters.hyperion_params.detector_params.directory))
+    get_directory_provider().update(
+        directory=Path(parameters.hyperion_params.detector_params.directory)
+    )
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         PANDA_SETUP_PATH,
