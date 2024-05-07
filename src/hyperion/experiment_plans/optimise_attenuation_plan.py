@@ -6,7 +6,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.sample_shutter import OpenState, SampleShutter
+from dodal.devices.shutter import OpenState, Shutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
 
 from hyperion.log import LOGGER
@@ -27,7 +27,7 @@ class OptimizeAttenuationComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     attenuator: Attenuator
-    sample_shutter: SampleShutter
+    sample_shutter: Shutter
     xspress3mini: Xspress3Mini
 
 
@@ -192,19 +192,15 @@ def deadtime_optimisation(
 
     Here we use the percentage deadtime - the percentage of time to which the detector is unable to process events.
 
-    This algorithm gradually increases the transmisssion until the percentage deadtime goes beneath the specified threshold. It then increases
+    This algorithm gradually increases the transmission until the percentage deadtime goes beneath the specified threshold. It then increases
     the transmission and stops when the deadtime goes above the threshold. A smaller increment will provide a better optimised value, but take more
     cycles to complete.
 
     Args:
-        attenuator: (Attenuator) Ophyd device
-
-        xspress3mini: (Xspress3Mini) Ophyd device
-
-        sample_shutter: (SampleShutter) Ophyd device for the fast shutter
+        composite: (OptimizeAttenuationComposite) The collection of ophyd devices needed for the plan
 
         transmission: (float)
-        The intial transmission value to use for the optimising
+        The initial transmission value to use for the optimising
 
         increment: (float)
         The factor to increase / decrease the transmission by each iteration
@@ -302,14 +298,10 @@ def total_counts_optimisation(
     defined by the lower and upper limit. To protect the sample, the transmission has a maximum value of 10%.
 
     Args:
-        attenuator: (Attenuator) Ophyd device
-
-        xspress3mini: (Xspress3Mini) Ophyd device
-
-        sample_shutter: (SampleShutter) Ophyd device for the fast shutter
+        composite: (OptimizeAttenuationComposite) The collection of ophyd devices needed for the plan
 
         transmission: (float)
-        The intial transmission value to use for the optimising
+        The initial transmission value to use for the optimising
 
         low_roi: (float)
         Lower region of interest at which to include in the counts
