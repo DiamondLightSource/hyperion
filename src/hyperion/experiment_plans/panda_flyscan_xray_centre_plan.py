@@ -293,7 +293,7 @@ def panda_flyscan_xray_centre(
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-            "hyperion_internal_parameters": parameters.json(),
+            "hyperion_internal_parameters": old_parameters.json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
             ],
