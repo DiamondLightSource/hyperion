@@ -500,7 +500,7 @@ class TestFlyscanXrayCentrePlan:
             run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params)
         )
         expected_path = Path("/dls/i03/data/2023/cm33866-5/test_hyperion")
-        get_directory_provider().update.assert_called_once_with(expected_path)
+        get_directory_provider().update.assert_called_once_with(directory=expected_path)
 
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
