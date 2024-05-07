@@ -1,12 +1,12 @@
 import json
 
 import bluesky.plan_stubs as bps
-from dodal.devices.DCM import DCM
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
     MirrorStripe,
     VFMMirrorVoltages,
 )
+from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.util.adjuster_plans import lookup_table_adjuster
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
@@ -70,7 +70,7 @@ def adjust_mirror_stripe(
 
 
 def adjust_dcm_pitch_roll_vfm_from_lut(
-    dcm: DCM,
+    undulator_dcm: UndulatorDCM,
     vfm: FocusingMirrorWithStripes,
     vfm_mirror_voltages: VFMMirrorVoltages,
     energy_kev,
@@ -82,11 +82,12 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     feedback from making unnecessary corrections while beam is being adjusted."""
 
     # DCM Pitch
+    dcm = undulator_dcm.dcm
     LOGGER.info(f"Adjusting DCM and VFM for {energy_kev} keV")
     bragg_deg = yield from bps.rd(dcm.bragg_in_degrees.user_readback)
     LOGGER.info(f"Read Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(dcm.dcm_pitch_converter_lookup_table_path),
+        linear_interpolation_lut(undulator_dcm.dcm_pitch_converter_lookup_table_path),
         dcm.pitch_in_mrad,
         bragg_deg,
     )
@@ -96,7 +97,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
 
     # DCM Roll
     dcm_roll_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(dcm.dcm_roll_converter_lookup_table_path),
+        linear_interpolation_lut(undulator_dcm.dcm_roll_converter_lookup_table_path),
         dcm.roll_in_mrad,
         bragg_deg,
     )
@@ -104,7 +105,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     LOGGER.info("Waiting for DCM roll adjust to complete...")
 
     # DCM Perp pitch
-    offset_mm = dcm.fixed_offset_mm
+    offset_mm = undulator_dcm.dcm_fixed_offset_mm
     LOGGER.info(f"Adjusting DCM offset to {offset_mm} mm")
     yield from bps.abs_set(dcm.offset_in_mm, offset_mm, group=DCM_GROUP)
 

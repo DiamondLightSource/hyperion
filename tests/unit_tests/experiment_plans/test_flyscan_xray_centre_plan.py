@@ -187,7 +187,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
+        set_sim_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
 
         synchrotron_test_value = SynchrotronMode.USER
         set_sim_value(
@@ -200,8 +200,9 @@ class TestFlyscanXrayCentrePlan:
         )
 
         current_energy_kev_test_value = 12.05
-        fake_fgs_composite.dcm.energy_in_kev.user_readback.sim_put(  # type: ignore
-            current_energy_kev_test_value
+        set_sim_value(
+            fake_fgs_composite.dcm.energy_in_kev.user_readback,
+            current_energy_kev_test_value,
         )
 
         xgap_test_value = 0.1234
@@ -248,7 +249,7 @@ class TestFlyscanXrayCentrePlan:
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[0],  # pyright: ignore
                 {
-                    "undulator_current_gap": undulator_test_value,
+                    "undulator-current_gap": undulator_test_value,
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
@@ -259,7 +260,7 @@ class TestFlyscanXrayCentrePlan:
                 {
                     "attenuator_actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
-                    "dcm_energy_in_kev": current_energy_kev_test_value,
+                    "dcm-energy_in_kev": current_energy_kev_test_value,
                 },
             )
             # fmt: on

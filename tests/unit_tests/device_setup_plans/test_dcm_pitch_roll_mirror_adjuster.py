@@ -4,13 +4,13 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines.beamline_parameters import GDABeamlineParameters
-from dodal.devices.DCM import DCM
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
     MirrorStripe,
     MirrorVoltageDemand,
     VFMMirrorVoltages,
 )
+from dodal.devices.undulator_dcm import UndulatorDCM
 from ophyd import EpicsSignal
 from ophyd.sim import NullStatus
 from ophyd.status import Status
@@ -140,10 +140,10 @@ def test_adjust_mirror_stripe(
         new_callable=_all_demands_accepted(vfm_mirror_voltages),
     ):
         vfm.stripe.set = MagicMock(return_value=NullStatus())
-        vfm.apply_stripe.set = MagicMock()
+        vfm.apply_stripe.set = MagicMock()  # type: ignore
         parent = MagicMock()
         parent.attach_mock(vfm.stripe.set, "stripe_set")
-        parent.attach_mock(vfm.apply_stripe.set, "apply_stripe")
+        parent.attach_mock(vfm.apply_stripe.set, "apply_stripe")  # type: ignore
 
         RE(adjust_mirror_stripe(energy_kev, vfm, vfm_mirror_voltages))
 
@@ -158,7 +158,7 @@ def test_adjust_mirror_stripe(
 
 
 def test_adjust_dcm_pitch_roll_vfm_from_lut(
-    dcm: DCM,
+    undulator_dcm: UndulatorDCM,
     vfm: FocusingMirrorWithStripes,
     vfm_mirror_voltages: VFMMirrorVoltages,
     beamline_parameters: GDABeamlineParameters,
@@ -167,32 +167,32 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_run_engine.add_handler(
         "read",
-        "dcm_bragg_in_degrees",
-        lambda msg: {"dcm_bragg_in_degrees": {"value": 5.0}},
+        "dcm-bragg_in_degrees",
+        lambda msg: {"dcm-bragg_in_degrees": {"value": 5.0}},
     )
 
     messages = sim_run_engine.simulate_plan(
-        adjust_dcm_pitch_roll_vfm_from_lut(dcm, vfm, vfm_mirror_voltages, 7.5)
+        adjust_dcm_pitch_roll_vfm_from_lut(undulator_dcm, vfm, vfm_mirror_voltages, 7.5)
     )
 
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm_pitch_in_mrad"
+        and msg.obj.name == "dcm-pitch_in_mrad"
         and abs(msg.args[0] - -0.75859) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm_roll_in_mrad"
+        and msg.obj.name == "dcm-roll_in_mrad"
         and abs(msg.args[0] - 4.0) < 1e-5
         and msg.kwargs["group"] == "DCM_GROUP",
     )
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm_offset_in_mm"
+        and msg.obj.name == "dcm-offset_in_mm"
         and msg.args == (25.6,)
         and msg.kwargs["group"] == "DCM_GROUP",
     )
