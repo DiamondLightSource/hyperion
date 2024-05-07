@@ -169,6 +169,16 @@ class PinTipCentreThenXrayCentre(GridCommon):
 
 
 class RobotLoadThenCentre(GridCommon, WithSample):
+    def pin_centre_then_xray_centre_params(
+        self, *, energy_ev: float | None = None, ispyb_resolution: float | None = None
+    ):
+        params = PinTipCentreThenXrayCentre(**self.dict())
+        if energy_ev is not None:
+            params.demand_energy_ev = energy_ev
+        if ispyb_resolution is not None:
+            params.ispyb_extras.resolution = ispyb_resolution
+        return params
+
     # Can be removed in #1277
     def old_parameters(self) -> RobotLoadThenCentreInternalParameters:
         return RobotLoadThenCentreInternalParameters(
