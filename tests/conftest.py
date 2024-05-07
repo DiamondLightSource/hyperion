@@ -189,14 +189,14 @@ async def mock_good_coroutine():
 
 
 def mock_async_motor_move(motor: Motor, val, *args, **kwargs):
-    motor.user_setpoint._backend._set_value(val)  # type: ignore
-    motor.user_readback._backend._set_value(val)  # type: ignore
+    set_sim_value(motor.user_setpoint, val)
+    set_sim_value(motor.user_readback, val)
     return mock_good_coroutine()  # type: ignore
 
 
 def patch_async_motor(motor: Motor, initial_position=0):
-    motor.user_setpoint._backend._set_value(initial_position)  # type: ignore
-    motor.user_readback._backend._set_value(initial_position)  # type: ignore
+    set_sim_value(motor.user_setpoint, initial_position)
+    set_sim_value(motor.user_readback, initial_position)
     motor.deadband._backend._set_value(0.001)  # type: ignore
     motor.motor_done_move._backend._set_value(1)  # type: ignore
     return patch.object(
@@ -490,12 +490,10 @@ def aperture_scatterguard(done_status, RE):
             AperturePositions.ROBOT_LOAD,
         ),
     )
-    ap_sg.aperture.z.user_setpoint._backend._set_value(2)  # type: ignore
-    ap_sg.aperture.z.motor_done_move._backend._set_value(1)  # type: ignore
     with (
         patch_async_motor(ap_sg.aperture.x),
         patch_async_motor(ap_sg.aperture.y),
-        patch_async_motor(ap_sg.aperture.z),
+        patch_async_motor(ap_sg.aperture.z, 2),
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
