@@ -55,9 +55,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_angstrom_to_eV
 
 from ...conftest import fake_read
@@ -206,22 +204,22 @@ GRID_INFO_COLUMN_MAP = {
 def dummy_data_collection_group_info(dummy_params):
     return populate_data_collection_group(
         IspybExperimentType.GRIDSCAN_2D.value,
-        dummy_params.hyperion_params.detector_params,
-        dummy_params.hyperion_params.ispyb_params,
+        dummy_params.detector_params,
+        dummy_params.ispyb_params,
     )
 
 
 @pytest.fixture
 def dummy_scan_data_info_for_begin(dummy_params):
     info = populate_xy_data_collection_info(
-        dummy_params.hyperion_params.detector_params,
+        dummy_params.detector_params,
     )
     info = populate_remaining_data_collection_info(
         None,
         None,
         info,
-        dummy_params.hyperion_params.detector_params,
-        dummy_params.hyperion_params.ispyb_params,
+        dummy_params.detector_params,
+        dummy_params.ispyb_params,
     )
     return ScanDataInfo(
         data_collection_info=info,
@@ -231,7 +229,7 @@ def dummy_scan_data_info_for_begin(dummy_params):
 @pytest.fixture
 def grid_detect_then_xray_centre_parameters():
     json_dict = raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/ispyb_gridscan_system_test_parameters.json"
+        "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
     )
     return GridScanWithEdgeDetect(**json_dict)
 
@@ -383,8 +381,8 @@ def scan_xy_data_info_for_update(
     scan_data_info_for_update.data_collection_grid_info = DataCollectionGridInfo(
         dx_in_mm=dummy_params.experiment_params.x_step_size,
         dy_in_mm=dummy_params.experiment_params.y_step_size,
-        steps_x=dummy_params.experiment_params.x_steps,
-        steps_y=dummy_params.experiment_params.y_steps,
+        steps_x=dummy_params.x_steps,
+        steps_y=dummy_params.y_steps,
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -399,9 +397,7 @@ def scan_xy_data_info_for_update(
         )
     )
     scan_data_info_for_update.data_collection_position_info = (
-        populate_data_collection_position_info(
-            dummy_params.hyperion_params.ispyb_params
-        )
+        populate_data_collection_position_info(dummy_params.ispyb_params)
     )
     return scan_data_info_for_update
 
@@ -410,16 +406,16 @@ def scan_data_infos_for_update_3d(
     ispyb_ids, scan_xy_data_info_for_update, dummy_params
 ):
     xz_data_collection_info = populate_xz_data_collection_info(
-        dummy_params.hyperion_params.detector_params
+        dummy_params.detector_params
     )
 
-    assert dummy_params.hyperion_params.ispyb_params is not None
+    assert dummy_params.ispyb_params is not None
     assert dummy_params is not None
     data_collection_grid_info = DataCollectionGridInfo(
         dx_in_mm=dummy_params.experiment_params.x_step_size,
         dy_in_mm=dummy_params.experiment_params.z_step_size,
-        steps_x=dummy_params.experiment_params.x_steps,
-        steps_y=dummy_params.experiment_params.z_steps,
+        steps_x=dummy_params.x_steps,
+        steps_y=dummy_params.z_steps,
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -432,8 +428,8 @@ def scan_data_infos_for_update_3d(
         construct_comment_for_gridscan(data_collection_grid_info),
         ispyb_ids.data_collection_group_id,
         xz_data_collection_info,
-        dummy_params.hyperion_params.detector_params,
-        dummy_params.hyperion_params.ispyb_params,
+        dummy_params.detector_params,
+        dummy_params.ispyb_params,
     )
     xz_data_collection_info.parent_id = ispyb_ids.data_collection_group_id
 
@@ -441,9 +437,7 @@ def scan_data_infos_for_update_3d(
         data_collection_info=xz_data_collection_info,
         data_collection_grid_info=(data_collection_grid_info),
         data_collection_position_info=(
-            populate_data_collection_position_info(
-                dummy_params.hyperion_params.ispyb_params
-            )
+            populate_data_collection_position_info(dummy_params.ispyb_params)
         ),
     )
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
@@ -796,7 +790,7 @@ def test_ispyb_deposition_in_rotation_plan(
     bps_wait,
     fake_create_rotation_devices: RotationScanComposite,
     RE: RunEngine,
-    test_rotation_params: RotationInternalParameters,
+    test_rotation_params: RotationScan,
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
@@ -818,10 +812,10 @@ def test_ispyb_deposition_in_rotation_plan(
     test_slit_gap_horiz = 0.123
     test_slit_gap_vert = 0.234
 
-    test_rotation_params.experiment_params.image_width = test_img_wid
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
-    test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
+    test_rotation_params.rotation_increment_deg = test_img_wid
+    test_rotation_params.ispyb_extras.beam_size_x = test_bs_x
+    test_rotation_params.ispyb_extras.beam_size_y = test_bs_y
+    test_rotation_params.exposure_time_s = test_exp_time
     energy_ev = convert_angstrom_to_eV(test_wl)
     fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(  # pyright: ignore
         energy_ev / 1000
@@ -841,7 +835,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
         test_slit_gap_vert
     )
-    test_rotation_params.hyperion_params.detector_params.expected_energy_ev = energy_ev
+    test_rotation_params.detector_params.expected_energy_ev = energy_ev
 
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_cb = RotationISPyBCallback()

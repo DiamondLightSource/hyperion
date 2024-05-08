@@ -70,7 +70,7 @@ def run_generic_ispyb_handler_setup(
     ispyb_handler.activity_gated_start(
         {
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": params.old_parameters().json(),
+            "hyperion_parameters": params.json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(

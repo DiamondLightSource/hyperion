@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy
+from dodal.devices.detector import DetectorParams
 from dodal.devices.oav import utils as oav_utils
 
 from hyperion.external_interaction.ispyb.data_model import (
@@ -9,7 +10,9 @@ from hyperion.external_interaction.ispyb.data_model import (
 )
 
 
-def populate_xz_data_collection_info(detector_params) -> DataCollectionInfo:
+def populate_xz_data_collection_info(
+    detector_params: DetectorParams,
+) -> DataCollectionInfo:
     assert (
         detector_params.omega_start is not None
         and detector_params.run_number is not None
@@ -25,7 +28,7 @@ def populate_xz_data_collection_info(detector_params) -> DataCollectionInfo:
     return info
 
 
-def populate_xy_data_collection_info(detector_params):
+def populate_xy_data_collection_info(detector_params: DetectorParams):
     info = DataCollectionInfo(
         omega_start=detector_params.omega_start,
         data_collection_number=detector_params.run_number,

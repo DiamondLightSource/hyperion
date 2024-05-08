@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 from abc import abstractmethod
 from enum import StrEnum
 from pathlib import Path
@@ -126,6 +127,11 @@ class HyperionParameters(BaseModel):
             major=PARAMETER_VERSION.major + 1
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
+
+    @classmethod
+    def from_json(cls, input: str | None):
+        assert input is not None
+        return cls(**json.loads(input))
 
 
 class DiffractionExperiment(HyperionParameters):

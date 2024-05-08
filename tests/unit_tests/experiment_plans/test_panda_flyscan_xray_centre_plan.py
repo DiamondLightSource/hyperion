@@ -87,7 +87,7 @@ def ispyb_plan(test_panda_fgs_params):
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": test_panda_fgs_params.json(),
+            "hyperion_parameters": test_panda_fgs_params.json(),
         }
     )
     def standalone_read_hardware_for_ispyb(

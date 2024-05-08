@@ -12,9 +12,7 @@ from hyperion.external_interaction.nexus.nexus_utils import (
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
@@ -47,18 +45,20 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.GRIDSCAN_OUTER:
-            json_params = doc.get("hyperion_internal_parameters")
+            json_params = doc.get("hyperion_parameters")
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {json_params}"
             )
-            parameters = GridscanInternalParameters.from_json(json_params)
-            nexus_data_1 = parameters.get_nexus_info(1)
-            nexus_data_2 = parameters.get_nexus_info(2)
-            self.nexus_writer_1 = NexusWriter(parameters, **nexus_data_1)
+            parameters = ThreeDGridScan.from_json(json_params)
+            d_size = parameters.detector_params.detector_size_constants.det_size_pixels
+            grid_n_img_1 = parameters.scan_indices[1]
+            grid_n_img_2 = parameters.num_images - grid_n_img_1
+            data_shape_1 = (grid_n_img_1, d_size.width, d_size.height)
+            data_shape_2 = (grid_n_img_2, d_size.width, d_size.height)
+            run_number_2 = parameters.detector_params.run_number + 1
+            self.nexus_writer_1 = NexusWriter(parameters, data_shape_1)
             self.nexus_writer_2 = NexusWriter(
-                parameters,
-                **nexus_data_2,
-                vds_start_index=nexus_data_1["data_shape"][0],
+                parameters, data_shape_2, run_number_2, parameters.scan_indices[1]
             )
             self.run_start_uid = doc.get("uid")
 

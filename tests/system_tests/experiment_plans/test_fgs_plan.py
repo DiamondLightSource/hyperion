@@ -39,9 +39,7 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
 )
 from hyperion.external_interaction.ispyb.ispyb_store import IspybIds
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 from ...conftest import default_raw_params
 from ..external_interaction.conftest import (  # noqa
@@ -52,9 +50,9 @@ from ..external_interaction.conftest import (  # noqa
 
 @pytest.fixture
 def params():
-    params = GridscanInternalParameters(**default_raw_params())
-    params.hyperion_params.beamline = CONST.SIM.BEAMLINE
-    params.hyperion_params.zocalo_environment = "dev_artemis"
+    params = ThreeDGridScan(**default_raw_params())
+    params.beamline = CONST.SIM.BEAMLINE
+    params.zocalo_environment = "dev_artemis"
     yield params
 
 
@@ -112,15 +110,13 @@ async def fxc_composite():
         gda_beamline_parameters
     )
     composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
-    composite.aperture_scatterguard._set_raw_unsafe(
+    await composite.aperture_scatterguard._set_raw_unsafe(
         aperture_positions.LARGE.location
-    ).wait()
+    )
     composite.eiger.cam.manual_trigger.put("Yes")
     composite.eiger.odin.check_odin_initialised = lambda: (True, "")
     composite.eiger.stage = MagicMock(return_value=Status(done=True, success=True))
     composite.eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
-
-    composite.aperture_scatterguard.scatterguard.x.set_lim(-4.8, 5.7)
 
     composite.xbpm_feedback.pos_ok.sim_put(1)  # type: ignore
     composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
@@ -180,7 +176,7 @@ def test_read_hardware_for_ispyb_pre_collection(
 def test_xbpm_feedback_decorator(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: GridscanInternalParameters,
+    params: ThreeDGridScan,
     callbacks: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     # This test is currently kind of more a unit test since we are faking XBPM feedback
@@ -190,7 +186,7 @@ def test_xbpm_feedback_decorator(
     @transmission_and_xbpm_feedback_for_collection_decorator(
         fxc_composite.xbpm_feedback,
         fxc_composite.attenuator,
-        params.experiment_params.transmission_fraction,
+        params.transmission_frac,
     )
     def decorated_plan():
         yield from bps.sleep(0.1)
@@ -219,7 +215,7 @@ def test_full_plan_tidies_at_end(
     kickoff: MagicMock,
     wait: MagicMock,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: GridscanInternalParameters,
+    params: ThreeDGridScan,
     RE: RunEngine,
     callbacks: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
@@ -255,7 +251,7 @@ def test_full_plan_tidies_at_end_when_plan_fails(
     kickoff: MagicMock,
     wait: MagicMock,
     fxc_composite: FlyScanXRayCentreComposite,
-    params: GridscanInternalParameters,
+    params: ThreeDGridScan,
     RE: RunEngine,
 ):
     run_gridscan_and_move.side_effect = Exception()
@@ -272,16 +268,15 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     fetch_comment: Callable,
-    params: GridscanInternalParameters,
+    params: ThreeDGridScan,
     callbacks: Tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
 ):
     _, ispyb_cb = callbacks
-    params.hyperion_params.detector_params.directory = "./tmp"
-    params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
-    params.hyperion_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    params.storage_directory = "./tmp"
+    params.file_name = str(uuid.uuid1())
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    params.experiment_params.z_steps = 100
+    params.z_steps = 100
     RE(reset_positions(fxc_composite.smargon))
 
     [RE.subscribe(cb) for cb in callbacks]
@@ -304,21 +299,20 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,
-    params: GridscanInternalParameters,
+    params: ThreeDGridScan,
     callbacks,
     done_status,
 ):
     fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
     fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
 
-    params.hyperion_params.detector_params.directory = "./tmp"
-    params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
-    params.hyperion_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    params.storage_directory = "./tmp"
+    params.file_name = str(uuid.uuid1())
 
-    params.experiment_params.set_stub_offsets = False
+    params.set_stub_offsets = False
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    params.experiment_params.z_steps = 1
+    params.z_steps = 1
 
     RE(reset_positions(fxc_composite.smargon))
 
@@ -342,21 +336,20 @@ def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
     zocalo_env: None,
-    params: GridscanInternalParameters,
+    params: ThreeDGridScan,
     callbacks,
     done_status,
 ):
     fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
     fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
 
-    params.hyperion_params.detector_params.directory = "./tmp"
-    params.hyperion_params.detector_params.prefix = str(uuid.uuid1())
-    params.hyperion_params.ispyb_params.visit_path = "/dls/i03/data/2022/cm31105-5/"
+    params.storage_directory = "./tmp"
+    params.file_name = str(uuid.uuid1())
 
-    params.experiment_params.set_stub_offsets = False
+    params.set_stub_offsets = False
 
     # Currently s03 calls anything with z_steps > 1 invalid
-    params.experiment_params.z_steps = 1
+    params.z_steps = 1
 
     RE(reset_positions(fxc_composite.smargon))
 

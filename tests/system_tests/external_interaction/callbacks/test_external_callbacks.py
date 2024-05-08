@@ -30,12 +30,8 @@ from hyperion.experiment_plans.rotation_scan_plan import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
+from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_angstrom_to_eV
 
 from ....conftest import fake_read
@@ -146,7 +142,7 @@ def test_RE_with_external_callbacks_starts_and_stops(
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,
     zocalo_env,
-    test_fgs_params: GridscanInternalParameters,
+    test_fgs_params: ThreeDGridScan,
     fake_fgs_composite: FlyScanXRayCentreComposite,
     done_status,
     zocalo_device: ZocaloResults,
@@ -157,7 +153,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     locally at DLS."""
 
     RE = RE_with_external_callbacks
-    test_fgs_params.hyperion_params.zocalo_environment = "dev_artemis"
+    test_fgs_params.zocalo_environment = "dev_artemis"
 
     fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint.sim_put(  # type: ignore
         2
@@ -199,7 +195,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
 @pytest.mark.s03()
 def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     RE_with_external_callbacks: RunEngine,
-    test_rotation_params: RotationInternalParameters,
+    test_rotation_params: RotationScan,
     fetch_comment,
     fetch_datacollection_attribute,
     undulator,
@@ -216,16 +212,15 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     test_exp_time = 0.023
     test_img_wid = 0.27
 
-    test_rotation_params.experiment_params.image_width = test_img_wid
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
-    test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
-    test_rotation_params.hyperion_params.detector_params.expected_energy_ev = (
-        convert_angstrom_to_eV(test_wl)
-    )
+    test_rotation_params.rotation_increment_deg = test_img_wid
+    test_rotation_params.ispyb_extras.beam_size_x = test_bs_x
+    test_rotation_params.ispyb_extras.beam_size_y = test_bs_y
+    test_rotation_params.exposure_time_s = test_exp_time
+    test_rotation_params.demand_energy_ev = convert_angstrom_to_eV(test_wl)
 
     composite = RotationScanComposite(
         attenuator=attenuator,
+        aperture_scatterguard=fake_create_devices["ap_sg"],
         backlight=fake_create_devices["backlight"],
         dcm=fake_create_devices["dcm"],
         detector_motion=fake_create_devices["detector_motion"],

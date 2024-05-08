@@ -116,9 +116,9 @@ def test_hardware_read_events(
         mx.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": dummy_rotation_params.hyperion_params.ispyb_params.position[0],
-            "pos_y": dummy_rotation_params.hyperion_params.ispyb_params.position[1],
-            "pos_z": dummy_rotation_params.hyperion_params.ispyb_params.position[2],
+            "pos_x": dummy_rotation_params.ispyb_params.position[0],
+            "pos_y": dummy_rotation_params.ispyb_params.position[1],
+            "pos_z": dummy_rotation_params.ispyb_params.position[2],
         },
     )
 

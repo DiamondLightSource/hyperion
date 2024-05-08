@@ -26,18 +26,15 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.internal_parameters import InternalParameters
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
+from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_eV_to_angstrom
 
 D = TypeVar("D")
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart, RunStop
+
+ALL_PLAN_PARAMS = ThreeDGridScan | RotationScan
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
@@ -52,9 +49,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
         self._oav_snapshot_event_idx: int = 0
-        self.params: GridscanInternalParameters | RotationInternalParameters | None = (
-            None
-        )
+        self.params: ALL_PLAN_PARAMS | None = None
         self.ispyb: StoreInIspyb
         self.descriptors: Dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
@@ -198,7 +193,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
-        params: InternalParameters,
+        params: ALL_PLAN_PARAMS,
     ) -> Sequence[ScanDataInfo]:
         pass
 

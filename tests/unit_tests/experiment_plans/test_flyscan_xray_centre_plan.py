@@ -90,7 +90,7 @@ def ispyb_plan(test_fgs_params):
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": test_fgs_params.json(),
+            "hyperion_parameters": test_fgs_params.json(),
         }
     )
     def standalone_read_hardware_for_ispyb(
@@ -498,10 +498,8 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.eiger,
                     fake_fgs_composite.synchrotron,
                     "zocalo environment",
-                    [
-                        test_fgs_params.old_parameters().get_scan_points(1),
-                        test_fgs_params.old_parameters().get_scan_points(2),
-                    ],
+                    test_fgs_params.scan_points,
+                    test_fgs_params.scan_indices,
                 )
             )
         fgs.KICKOFF_TIMEOUT = 1
@@ -513,10 +511,8 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
                 "zocalo environment",
-                [
-                    test_fgs_params.old_parameters().get_scan_points(1),
-                    test_fgs_params.old_parameters().get_scan_points(2),
-                ],
+                test_fgs_params.scan_points,
+                test_fgs_params.scan_indices,
             )
         )
         assert res.exit_status == "success"
@@ -845,6 +841,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
             fake_fgs_composite.synchrotron,
             zocalo_env,
             scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
+            scan_start_indices=[0, x_steps * y_steps],
         )
     )
 

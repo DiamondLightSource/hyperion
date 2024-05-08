@@ -213,9 +213,7 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
     if experiment_registry_entry is None:
         raise PlanNotFound(f"Experiment plan '{plan_name}' not found in registry.")
 
-    experiment_internal_param_type = experiment_registry_entry.get(
-        "internal_param_type"
-    )
+    experiment_internal_param_type = experiment_registry_entry.get("param_type")
     callback_type = experiment_registry_entry.get("callback_collection_type")
     plan = context.plan_functions.get(plan_name)
     if experiment_internal_param_type is None:

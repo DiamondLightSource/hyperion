@@ -76,7 +76,7 @@ def raw_params_from_file(filename):
 
 def default_raw_params():
     return raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/test_gridscan_param_defaults.json"
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
     )
 
 
@@ -208,7 +208,7 @@ def beamline_parameters():
 def test_fgs_params():
     return ThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/new_parameter_json_files/good_test_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_parameters.json"
         )
     )
 
@@ -223,7 +223,7 @@ def test_panda_fgs_params(test_fgs_params: ThreeDGridScan):
 def test_rotation_params():
     return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
 
@@ -232,7 +232,7 @@ def test_rotation_params():
 def test_rotation_params_nomove():
     return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
         )
     )
 
@@ -494,7 +494,7 @@ def test_config_files():
 @pytest.fixture
 def test_full_grid_scan_params():
     params = raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
     return GridScanWithEdgeDetect(**params)
 

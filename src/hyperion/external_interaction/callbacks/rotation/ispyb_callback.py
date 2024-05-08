@@ -25,9 +25,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
@@ -56,7 +54,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         emit: Callable[..., Any] | None = None,
     ) -> None:
         super().__init__(emit=emit)
-        self.last_sample_id: str | None = None
+        self.last_sample_id: int | None = None
         self.ispyb_ids: IspybIds = IspybIds()
 
     def activity_gated_start(self, doc: RunStart):
@@ -64,17 +62,13 @@ class RotationISPyBCallback(BaseISPyBCallback):
             ISPYB_LOGGER.info(
                 "ISPyB callback recieved start document with experiment parameters."
             )
-            json_params = doc.get("hyperion_internal_parameters")
-            self.params = RotationInternalParameters.from_json(json_params)
+            self.params = RotationScan.from_json(doc.get("hyperion_parameters"))
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
-                if (
-                    self.params.hyperion_params.ispyb_params.sample_id
-                    == self.last_sample_id
-                )
+                if (self.params.sample_id == self.last_sample_id)
                 else None
             )
-            n_images = self.params.experiment_params.get_num_images()
+            n_images = self.params.num_images
             if n_images < 200:
                 ISPYB_LOGGER.info(
                     f"Collection has {n_images} images - treating as a screening collection - new DCG"
@@ -85,10 +79,8 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 ISPYB_LOGGER.info(
                     f"Collection has {n_images} images - treating as a genuine dataset - storing sampleID to bundle images"
                 )
-                self.last_sample_id = self.params.hyperion_params.ispyb_params.sample_id
-            experiment_type = (
-                self.params.hyperion_params.ispyb_params.ispyb_experiment_type
-            )
+                self.last_sample_id = self.params.sample_id
+            experiment_type = self.params.ispyb_extras.ispyb_experiment_type
             if experiment_type:
                 self.ispyb = StoreInIspyb(
                     self.ispyb_config,
@@ -101,20 +93,18 @@ class RotationISPyBCallback(BaseISPyBCallback):
             ISPYB_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(
                 self.ispyb.experiment_type,
-                self.params.hyperion_params.detector_params,
-                self.params.hyperion_params.ispyb_params,
+                self.params.detector_params,
+                self.params.ispyb_params,
             )
             data_collection_info = populate_data_collection_info_for_rotation(
-                self.params.hyperion_params.ispyb_params,
-                self.params.hyperion_params.detector_params,
-                self.params,
+                self.params
             )
             data_collection_info = populate_remaining_data_collection_info(
                 COMMENT_FOR_ROTATION_SCAN,
                 dcgid,
                 data_collection_info,
-                self.params.hyperion_params.detector_params,
-                self.params.hyperion_params.ispyb_params,
+                self.params.detector_params,
+                self.params.ispyb_params,
             )
             data_collection_info.parent_id = dcgid
             scan_data_info = ScanDataInfo(
@@ -134,12 +124,12 @@ class RotationISPyBCallback(BaseISPyBCallback):
         assert (
             self.ispyb_ids.data_collection_ids
         ), "Expect an existing DataCollection to update"
-        params = cast(RotationInternalParameters, params)
+        params = cast(RotationScan, params)
         return [
             ScanDataInfo(
                 data_collection_info=event_sourced_data_collection_info,
                 data_collection_position_info=populate_data_collection_position_info(
-                    params.hyperion_params.ispyb_params
+                    params.ispyb_params
                 ),
                 data_collection_id=self.ispyb_ids.data_collection_ids[0],
             )

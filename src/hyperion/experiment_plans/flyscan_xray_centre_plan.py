@@ -164,7 +164,8 @@ def kickoff_and_complete_gridscan(
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,
-    scan_points: list[AxesPoints[Axis]],
+    scan_points: AxesPoints[Axis],
+    scan_start_indices: list[int],
 ):
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
@@ -173,6 +174,7 @@ def kickoff_and_complete_gridscan(
             "subplan_name": CONST.PLAN.DO_FGS,
             "zocalo_environment": zocalo_environment,
             "scan_points": scan_points,
+            "scan_start_indices": scan_start_indices,
         }
     )
     @bpp.contingency_decorator(
@@ -261,10 +263,8 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.zocalo_environment,
-        [
-            parameters.old_parameters().get_scan_points(1),
-            parameters.old_parameters().get_scan_points(2),
-        ],
+        parameters.scan_points,
+        parameters.scan_indices,
     )
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
@@ -345,7 +345,7 @@ def flyscan_xray_centre(
     at any point in it.
 
     Args:
-        parameters (FGSInternalParameters): The parameters to run the scan.
+        parameters (ThreeDGridScan): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -359,7 +359,7 @@ def flyscan_xray_centre(
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-            "hyperion_internal_parameters": parameters.old_parameters().json(),
+            "hyperion_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
             ],

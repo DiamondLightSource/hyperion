@@ -70,7 +70,7 @@ def dummy_rotation_data_collection_group_info():
     return DataCollectionGroupInfo(
         visit_string="cm31105-4",
         experiment_type="SAD",
-        sample_id="364758",
+        sample_id=364758,
     )
 
 
@@ -93,7 +93,7 @@ def scan_data_info_for_begin():
             kappa_start=0.0,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="364758",
+            sample_id=364758,
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=1.0,
