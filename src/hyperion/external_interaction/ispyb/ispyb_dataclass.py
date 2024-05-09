@@ -29,7 +29,7 @@ class IspybParams(BaseModel):
     focal_spot_size_y: float
     comment: str
 
-    sample_id: Optional[str] = None
+    sample_id: Optional[int] = None
 
     # Optional from GDA as populated by Ophyd
     undulator_gap: Optional[float] = None

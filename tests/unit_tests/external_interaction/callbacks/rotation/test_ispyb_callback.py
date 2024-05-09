@@ -29,10 +29,10 @@ EXPECTED_DATA_COLLECTION = {
     "beamsize_at_samplex": 1,
     "beamsize_at_sampley": 1,
     "comments": "Hyperion rotation scan",
-    "data_collection_number": 0,
+    "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
-    "imgdir": "/tmp/",
+    "imgdir": "/tmp/dls/i03/data/2024/cm31105-4/auto/123456/",
     "imgprefix": "file_name",
     "imgsuffix": "h5",
     "n_passes": 1,
@@ -46,9 +46,9 @@ EXPECTED_DATA_COLLECTION = {
     "xtal_snapshot3": "test_3_y",
     "synchrotron_mode": None,
     "starttime": EXPECTED_START_TIME,
-    "filetemplate": "file_name_0_master.h5",
+    "filetemplate": "file_name_1_master.h5",
     "nimages": 1800,
-    "kappastart": 0,
+    "kappastart": None,
 }
 
 

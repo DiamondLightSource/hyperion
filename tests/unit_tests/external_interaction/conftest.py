@@ -1,3 +1,4 @@
+import glob
 import os
 from copy import deepcopy
 from typing import Any, Callable, Sequence
@@ -184,7 +185,15 @@ def dummy_rotation_params():
         )
     )
     dummy_params.sample_id = TEST_SAMPLE_ID
-    return dummy_params
+
+    def clear_files():
+        files = glob.glob(f"{dummy_params.storage_directory}*")
+        for f in files:
+            os.remove(f)
+
+    clear_files()
+    yield dummy_params
+    clear_files()
 
 
 TEST_SAMPLE_ID = 364758

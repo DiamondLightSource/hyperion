@@ -8,7 +8,6 @@ import numpy as np
 from blueapi.core import MsgGenerator
 from bluesky import preprocessors as bpp
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
-from pydantic import BaseModel
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -40,7 +39,7 @@ if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
 
-def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters: BaseModel):
+def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
     return bpp.run_wrapper(
         plan_generator,
         md={

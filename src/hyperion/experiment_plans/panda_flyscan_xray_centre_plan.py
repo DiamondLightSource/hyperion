@@ -126,7 +126,7 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.zocalo_environment,
-        parameters.scan_points,
+        [parameters.scan_points_1, parameters.scan_points_2],
         parameters.scan_indices,
     )
 
