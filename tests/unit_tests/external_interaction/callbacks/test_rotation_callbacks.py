@@ -375,9 +375,19 @@ def test_ispyb_specifies_experiment_type_if_supplied(
     RE: RunEngine,
     params: RotationInternalParameters,
 ):
+    raw_params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+    )
+    raw_params["hyperion_params"]["ispyb_params"][
+        "ispyb_experiment_type"
+    ] = "Characterization"
+    params = RotationInternalParameters(**raw_params)
+
     ispyb_cb = RotationISPyBCallback()
     ispyb_cb.active = True
-    params.hyperion_params.ispyb_params.ispyb_experiment_type = "Characterization"
+    assert (
+        params.hyperion_params.ispyb_params.ispyb_experiment_type == "Characterization"
+    )
     rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
         data_collection_group_id=23, data_collection_ids=(45,)
     )
