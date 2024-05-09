@@ -225,7 +225,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    run_number = test_params.run_number
+    run_number = test_params.run_number or test_params.detector_params.run_number
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
     master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"
 

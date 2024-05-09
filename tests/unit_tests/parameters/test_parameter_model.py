@@ -37,7 +37,7 @@ def minimal_3d_gridscan_params():
 
 def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
     test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
-    assert {"sam_x", "sam_y", "sam_z", "omega"} == set(test_params.scan_points.keys())
+    assert {"sam_x", "sam_y", "sam_z"} == set(test_params.scan_points.keys())
     assert test_params.scan_indices == [0, 35]
     assert test_params.num_images == (5 * 7 + 5 * 9)
     assert test_params.exposure_time_s == 0.02

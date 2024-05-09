@@ -164,7 +164,7 @@ def kickoff_and_complete_gridscan(
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,
-    scan_points: AxesPoints[Axis],
+    scan_points: list[AxesPoints[Axis]],
     scan_start_indices: list[int],
 ):
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
@@ -263,7 +263,7 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.zocalo_environment,
-        parameters.scan_points,
+        [parameters.scan_points_1, parameters.scan_points_2],
         parameters.scan_indices,
     )
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)

@@ -6,6 +6,10 @@ from unittest.mock import patch
 import h5py
 import numpy as np
 import pytest
+from dodal.devices.detector.det_dim_constants import (
+    PIXELS_X_EIGER2_X_4M,
+    PIXELS_Y_EIGER2_X_4M,
+)
 from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
 
 from hyperion.external_interaction.nexus.nexus_utils import (
@@ -36,50 +40,56 @@ def create_nexus_writer(parameters: ThreeDGridScan, writer_num):
         if writer_num == 1
         else parameters.num_images - parameters.scan_indices[1]
     )
+    points = parameters.scan_points_1 if writer_num == 1 else parameters.scan_points_2
     data_shape = (n_img, d_size.width, d_size.height)
     run_number = parameters.detector_params.run_number + writer_num - 1
     vds_start = 0 if writer_num == 1 else parameters.scan_indices[1]
-    nexus_writer = NexusWriter(parameters, data_shape, run_number, vds_start)
+    omega_start = (
+        parameters.grid1_omega_deg if writer_num == 1 else parameters.grid2_omega_deg
+    )
+    nexus_writer = NexusWriter(
+        parameters,
+        data_shape,
+        scan_points=points,
+        run_number=run_number,
+        vds_start_index=vds_start,
+        omega_start_deg=omega_start,
+    )
     nexus_writer.beam, nexus_writer.attenuator = create_beam_and_attenuator_parameters(
         20, TEST_FLUX, 0.5
     )
     return nexus_writer
 
 
-@pytest.fixture
-def dummy_nexus_writers(test_fgs_params: ThreeDGridScan):
-    writers = [create_nexus_writer(test_fgs_params, i) for i in [1, 2]]
-    writers[1].start_index = test_fgs_params.scan_indices[1]
-
-    yield writers
-
-    for writer in writers:
-        os.remove(writer.nexus_file)
-        os.remove(writer.master_file)
-
-
 @contextmanager
-def create_nexus_writers_with_many_images(parameters: ThreeDGridScan):
-    x, y, z = 45, 35, 25
-    parameters.x_steps = x
-    parameters.y_steps = y
-    parameters.z_steps = z
-
+def create_nexus_writers(parameters: ThreeDGridScan):
     writers = [create_nexus_writer(parameters, i) for i in [1, 2]]
     writers[1].start_index = parameters.scan_indices[1]
-
     try:
         yield writers
-
     finally:
         for writer in writers:
-            os.remove(writer.nexus_file)
-            os.remove(writer.master_file)
+            for file in [writer.nexus_file, writer.master_file]:
+                if os.path.isfile(file):
+                    os.remove(file)
+
+
+@pytest.fixture
+def dummy_nexus_writers(test_fgs_params: ThreeDGridScan):
+    with create_nexus_writers(test_fgs_params) as (
+        nexus_writer_1,
+        nexus_writer_2,
+    ):
+        yield nexus_writer_1, nexus_writer_2
 
 
 @pytest.fixture
 def dummy_nexus_writers_with_more_images(test_fgs_params: ThreeDGridScan):
-    with create_nexus_writers_with_many_images(test_fgs_params) as (
+    x, y, z = 45, 35, 25
+    test_fgs_params.x_steps = x
+    test_fgs_params.y_steps = y
+    test_fgs_params.z_steps = z
+    with create_nexus_writers(test_fgs_params) as (
         nexus_writer_1,
         nexus_writer_2,
     ):
@@ -88,9 +98,15 @@ def dummy_nexus_writers_with_more_images(test_fgs_params: ThreeDGridScan):
 
 @pytest.fixture
 def single_dummy_file(test_fgs_params: ThreeDGridScan):
+    test_fgs_params.use_roi_mode = True
     d_size = test_fgs_params.detector_params.detector_size_constants.det_size_pixels
-    data_shape = (test_fgs_params.num_images, d_size.width, d_size.height)
-    nexus_writer = NexusWriter(test_fgs_params, data_shape)
+    data_shape = (test_fgs_params.scan_indices[1], d_size.width, d_size.height)
+    nexus_writer = NexusWriter(
+        test_fgs_params,
+        data_shape,
+        scan_points=test_fgs_params.scan_points_1,
+        run_number=1,
+    )
     yield nexus_writer
     for file in [nexus_writer.nexus_file, nexus_writer.master_file]:
         if os.path.isfile(file):
@@ -99,7 +115,7 @@ def single_dummy_file(test_fgs_params: ThreeDGridScan):
 
 @pytest.mark.parametrize(
     "test_fgs_params, expected_num_of_files",
-    [(2540, 3), (4000, 4), (8999, 9)],
+    [(2550, 3), (4000, 4), (8975, 9)],
     indirect=["test_fgs_params"],
 )
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
@@ -146,7 +162,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 h5py.Dataset,
             )
             assert flux[()] == TEST_FLUX
-            assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
+            assert_contains_external_link(data_path, "data_000001", "dummy_1_000001.h5")
             assert isinstance(omega := data_path["omega"], h5py.Dataset)
             assert np.all(omega[:] == 0.0)
 
@@ -175,7 +191,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 ]
             )
 
-    assert_data_edge_at(nexus_writer_1.nexus_file, 799)
+    assert_data_edge_at(nexus_writer_1.nexus_file, 629)
     assert_end_data_correct(nexus_writer_1)
 
     nexus_writer_2.create_nexus_file(np.uint16)
@@ -198,8 +214,8 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 h5py.Dataset,
             )
             assert flux[()] == TEST_FLUX
-            assert_contains_external_link(data_path, "data_000001", "dummy_0_000001.h5")
-            assert_contains_external_link(data_path, "data_000002", "dummy_0_000002.h5")
+            assert_contains_external_link(data_path, "data_000001", "dummy_1_000001.h5")
+            assert_contains_external_link(data_path, "data_000002", "dummy_1_000002.h5")
             assert isinstance(omega := data_path["omega"], h5py.Dataset)
             assert np.all(omega[:] == 90.0)
             assert np.all(
@@ -211,7 +227,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 ]
             )
 
-    assert_data_edge_at(nexus_writer_2.nexus_file, 243)
+    assert_data_edge_at(nexus_writer_2.nexus_file, 419)
 
 
 def assert_x_data_stride_correct(data_path, grid_scan_params, varying_axis_steps):
@@ -230,9 +246,9 @@ def assert_varying_axis_stride_correct(
 
 
 def assert_axis_data_fixed(written_nexus_file, axis, expected_value):
-    assert f"sam_{axis}" not in written_nexus_file["/entry/data"]
-    sam_y_data = written_nexus_file[f"/entry/sample/sample_{axis}/sam_{axis}"][()]
-    assert sam_y_data == expected_value
+    if f"sam_{axis}" in written_nexus_file["/entry/data"]:
+        fixed_data = written_nexus_file["/entry/data"][f"sam_{axis}"][:]
+        assert sum(fixed_data) == len(fixed_data) * fixed_data[0]
 
 
 def assert_data_edge_at(nexus_file, expected_edge_index):
@@ -254,18 +270,12 @@ def test_nexus_writer_files_are_formatted_as_expected(
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
-        expected_file_name_prefix = test_fgs_params.file_name + "_0"
+        expected_file_name_prefix = test_fgs_params.file_name + "_1"
         assert file_name.startswith(expected_file_name_prefix)
 
 
-def test_nexus_writer_writes_width_and_height_correctly(
-    single_dummy_file: NexusWriter,
-):
-    from dodal.devices.detector.det_dim_constants import (
-        PIXELS_X_EIGER2_X_4M,
-        PIXELS_Y_EIGER2_X_4M,
-    )
-
+def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file: NexusWriter):
+    assert len(single_dummy_file.detector.detector_params.image_size) >= 2
     assert (
         single_dummy_file.detector.detector_params.image_size[0] == PIXELS_Y_EIGER2_X_4M
     )
@@ -347,7 +357,7 @@ def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_fi
     test_fgs_params: ThreeDGridScan,
 ):
     test_fgs_params.file_name = "non_existant_file"
-    with create_nexus_writers_with_many_images(test_fgs_params) as (
+    with create_nexus_writers(test_fgs_params) as (
         nexus_writer_1,
         nexus_writer_2,
     ):

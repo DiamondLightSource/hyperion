@@ -179,20 +179,21 @@ def test_nexus_handler_only_writes_once(
 def test_nexus_handler_triggers_write_file_when_told(
     RE: RunEngine, params: RotationScan
 ):
-    if os.path.isfile("/tmp/file_name_0.nxs"):
-        os.remove("/tmp/file_name_0.nxs")
-    if os.path.isfile("/tmp/file_name_0_master.h5"):
-        os.remove("/tmp/file_name_0_master.h5")
+    pattern = f"{params.storage_directory}{params.file_name}_{params.detector_params.run_number}"
+    files = [f"{pattern}.nxs", f"{pattern}_master.h5"]
 
+    def do_files(do_assert=False):
+        for file in files:
+            if do_assert:
+                assert os.path.isfile(file)
+            if os.path.isfile(file):
+                os.remove(file)
+
+    do_files()
     cb = RotationNexusFileCallback()
     cb.active = True
-
     RE(fake_rotation_scan(params, [cb]))
-
-    assert os.path.isfile("/tmp/file_name_0.nxs")
-    assert os.path.isfile("/tmp/file_name_0_master.h5")
-    os.remove("/tmp/file_name_0.nxs")
-    os.remove("/tmp/file_name_0_master.h5")
+    do_files(do_assert=True)
 
 
 @patch(

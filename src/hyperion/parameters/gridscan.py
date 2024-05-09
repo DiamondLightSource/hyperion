@@ -86,7 +86,7 @@ class GridCommon(
             omega_increment=0,
             num_images_per_trigger=1,
             num_triggers=self.num_images,
-            use_roi_mode=False,
+            use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
             beam_xy_converter=DetectorDistanceToBeamXYConverter(
@@ -173,23 +173,21 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
 
     @property
     def grid_1_spec(self):
-        x_end = self.x_start_um + self.x_step_size_um * self.x_steps
-        y1_end = self.y_start_um + self.y_step_size_um * self.y_steps
+        x_end = self.x_start_um + self.x_step_size_um * (self.x_steps - 1)
+        y1_end = self.y_start_um + self.y_step_size_um * (self.y_steps - 1)
         grid_1_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
         grid_1_y = Line("sam_y", self.y_start_um, y1_end, self.y_steps)
-        grid_1_omega = Static("omega", self.grid1_omega_deg)
         grid_1_z = Static("sam_z", self.z_start_um)
-        return grid_1_x.zip(grid_1_z).zip(grid_1_omega) * ~grid_1_y
+        return grid_1_y.zip(grid_1_z) * ~grid_1_x
 
     @property
     def grid_2_spec(self):
-        x_end = self.x_start_um + self.x_step_size_um * self.x_steps
-        z2_end = self.z2_start_um + self.z_step_size_um * self.z_steps
+        x_end = self.x_start_um + self.x_step_size_um * (self.x_steps - 1)
+        z2_end = self.z2_start_um + self.z_step_size_um * (self.z_steps - 1)
         grid_2_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
         grid_2_z = Line("sam_z", self.z2_start_um, z2_end, self.z_steps)
-        grid_2_omega = Static("omega", self.grid2_omega_deg)
         grid_2_y = Static("sam_y", self.y2_start_um)
-        return grid_2_x.zip(grid_2_y).zip(grid_2_omega) * ~grid_2_z
+        return grid_2_z.zip(grid_2_y) * ~grid_2_x
 
     @property
     def scan_indices(self):
@@ -209,6 +207,16 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     def scan_points(self):
         """A list of all the points in the scan_spec."""
         return ScanPath(self.scan_spec.calculate()).consume().midpoints
+
+    @property
+    def scan_points_1(self):
+        """A list of all the points in the first grid scan."""
+        return ScanPath(self.grid_1_spec.calculate()).consume().midpoints
+
+    @property
+    def scan_points_2(self):
+        """A list of all the points in the second grid scan."""
+        return ScanPath(self.grid_2_spec.calculate()).consume().midpoints
 
     @property
     def num_images(self) -> int:

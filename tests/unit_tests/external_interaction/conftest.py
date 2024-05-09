@@ -76,14 +76,17 @@ def test_rotation_params():
     return params
 
 
-@pytest.fixture(params=[1044])
+@pytest.fixture(params=[1050])
 def test_fgs_params(request):
+    assert request.param % 25 == 0, "Please use a multiple of 25 images"
     params = ThreeDGridScan(**default_raw_params())
     params.demand_energy_ev = convert_angstrom_to_eV(1.0)
     params.use_roi_mode = True
-    params.x_steps = 1
-    params.y_steps = request.param - 1
-    params.z_steps = 1
+    first_scan_img = (request.param // 10) * 6
+    second_scan_img = (request.param // 10) * 4
+    params.x_steps = 5
+    params.y_steps = first_scan_img // 5
+    params.z_steps = second_scan_img // 5
     params.storage_directory = (
         os.path.dirname(os.path.realpath(__file__)) + "/test_data"
     )

@@ -13,6 +13,7 @@ from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
 from numpy.typing import DTypeLike
+from scanspec.core import AxesPoints
 
 from hyperion.external_interaction.nexus.nexus_utils import (
     create_detector_parameters,
@@ -28,14 +29,17 @@ class NexusWriter:
         self,
         parameters: ThreeDGridScan | RotationScan,
         data_shape: tuple[int, int, int],
+        *,
+        scan_points: AxesPoints | None = None,
         run_number: int | None = None,
+        omega_start_deg: float | None = None,
         vds_start_index: int = 0,
     ) -> None:
         self.beam: Optional[Beam] = None
         self.attenuator: Optional[Attenuator] = None
-        self.scan_points: dict = parameters.scan_points
+        self.scan_points: dict = scan_points or parameters.scan_points
         self.data_shape: tuple[int, int, int] = data_shape
-        self.omega_start: float = parameters.omega_start_deg or 0
+        self.omega_start: float = omega_start_deg or parameters.omega_start_deg or 0
         self.run_number: int = (
             run_number if run_number else parameters.detector_params.run_number
         )
