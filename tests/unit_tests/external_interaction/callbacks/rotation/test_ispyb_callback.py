@@ -160,6 +160,7 @@ def test_flux_read_events(
             "wavelength": 1.1164718451643736,
             "transmission": 98,
             "flux": 9.81,
+            "resolution": 1.1830593328548429,
         },
     )
 

@@ -8,7 +8,6 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
-from numpy import isclose
 from ophyd.sim import NullStatus, instantiate_fake_device
 from ophyd_async.core import set_sim_value
 
@@ -93,10 +92,6 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 
     assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
-    assert isinstance(
-        resolution := params_passed.hyperion_params.ispyb_params.resolution, float
-    )
-    assert isclose(resolution, 2.11338)
 
 
 @patch(

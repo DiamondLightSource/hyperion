@@ -189,6 +189,7 @@ class TestXrayCentreISPyBCallback:
                 "wavelength": 1.1164718451643736,
                 "transmission": 100,
                 "flux": 10,
+                "resolution": 1.1830593328548429,
             },
         )
         assert_upsert_call_with(
@@ -200,6 +201,7 @@ class TestXrayCentreISPyBCallback:
                 "wavelength": 1.1164718451643736,
                 "transmission": 100,
                 "flux": 10,
+                "resolution": 1.1830593328548429,
             },
         )
         assert_upsert_call_with(

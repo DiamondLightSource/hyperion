@@ -4,6 +4,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
+from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
@@ -177,9 +178,16 @@ class BaseISPyBCallback(PlanReactiveCallback):
         if transmission := doc["data"]["attenuator_actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
-        if doc["data"]["dcm-energy_in_kev"]:
-            energy_ev = doc["data"]["dcm-energy_in_kev"] * 1000
-            hwscan_data_collection_info.wavelength = convert_eV_to_angstrom(energy_ev)
+        event_energy = doc["data"]["dcm-energy_in_kev"]
+        if event_energy:
+            energy_ev = event_energy * 1000
+            wavelength_angstroms = convert_eV_to_angstrom(energy_ev)
+            hwscan_data_collection_info.wavelength = wavelength_angstroms
+            hwscan_data_collection_info.resolution = resolution(
+                self.params.hyperion_params.detector_params,
+                wavelength_angstroms,
+                self.params.hyperion_params.detector_params.detector_distance,
+            )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params
         )
