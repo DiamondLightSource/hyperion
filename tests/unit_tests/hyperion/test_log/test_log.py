@@ -8,6 +8,7 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
+from ophyd_async.log import logger as ophyd_async_logger
 
 from hyperion import log
 from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
@@ -128,6 +129,7 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
     logger = log.LOGGER
     logger.info("test_hyperion")
     dodal_logger.info("test_dodal")
+    ophyd_async_logger.info("test_ophyd_async_logs")
 
     filehandler_calls = mock_filehandler_emit.mock_calls
     graylog_calls = mock_GELFTCPHandler_emit.mock_calls
@@ -142,6 +144,7 @@ def test_messages_logged_from_dodal_and_hyperion_get_sent_to_graylog_and_file(
         assert "Dodal" in handler_names
         assert "test_hyperion" in handler_messages
         assert "test_dodal" in handler_messages
+        assert "test_ophyd_async_logs" in handler_messages
 
 
 @pytest.mark.skip_log_setup
