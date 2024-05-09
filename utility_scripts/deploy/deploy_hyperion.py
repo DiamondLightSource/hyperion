@@ -82,9 +82,10 @@ def get_hyperion_release_dir_from_args() -> str:
 
 def create_environment_from_control_machine():
     ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(
-        paramiko.AutoAddPolicy()
-    )  # This adds i03-control to your client's known hosts.
+
+    # This adds i03-control to your client's known hosts.
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
     username = input(
         "Setting up the venv requires SSH'ing to i03-control.\n Enter FedID:"
     )
@@ -96,9 +97,10 @@ def create_environment_from_control_machine():
             "i03-control.diamond.ac.uk", username=username, password=password
         )
         print("Succesfully connected to i03-control")
+
         # Call python script on i03-control to create the environment
         stdin, stdout, stderr = ssh_client.exec_command(
-            f"python3 {create_venv_location} {env_script}"
+            f"python3 {create_venv_location} {env_script} {hyperion_repo.deploy_location}"
         )
         stdout = stdout.readlines()
         for line in stdout:
@@ -168,7 +170,7 @@ if __name__ == "__main__":
         if release_area != DEV_DEPLOY_LOCATION:
             create_environment_from_control_machine()
         else:
-            setup_venv(create_venv_location)
+            setup_venv(create_venv_location, hyperion_repo.deploy_location)
 
     def create_symlink_by_tmp_and_rename(dirname, target, linkname):
         tmp_name = str(uuid1())

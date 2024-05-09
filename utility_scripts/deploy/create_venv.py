@@ -1,8 +1,13 @@
+import os
 import sys
 from subprocess import PIPE, CalledProcessError, Popen
 
 
-def setup_venv(path_to_create_venv_script):
+def setup_venv(path_to_create_venv_script, deployment_directory):
+    # Set up environment and run /dls_dev_env.sh...
+    os.chdir(deployment_directory)
+    print(f"Setting up environment in {deployment_directory}")
+
     with Popen(
         path_to_create_venv_script, stdout=PIPE, bufsize=1, universal_newlines=True
     ) as p:
@@ -15,4 +20,5 @@ def setup_venv(path_to_create_venv_script):
 
 if __name__ == "__main__":
     path_to_create_venv_script = sys.argv[1]
-    setup_venv(path_to_create_venv_script)
+    deployment_directory = sys.argv[2]
+    setup_venv(path_to_create_venv_script, deployment_directory)
