@@ -5,7 +5,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.focusing_mirror import (
-    FocusingMirror,
+    FocusingMirrorWithStripes,
     MirrorStripe,
     MirrorVoltageDemand,
     VFMMirrorVoltages,
@@ -23,7 +23,9 @@ from hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
 
 
 def test_apply_and_wait_for_voltages_to_settle_happy_path(
-    vfm_mirror_voltages: VFMMirrorVoltages, vfm: FocusingMirror, RE: RunEngine
+    vfm_mirror_voltages: VFMMirrorVoltages,
+    vfm: FocusingMirrorWithStripes,
+    RE: RunEngine,
 ):
     with patch(
         "dodal.devices.focusing_mirror.VFMMirrorVoltages.voltage_channels",
@@ -80,7 +82,9 @@ def _one_demand_not_accepted(vfm_mirror_voltages):
 
 @patch("dodal.devices.focusing_mirror.DEFAULT_SETTLE_TIME_S", 3)
 def test_apply_and_wait_for_voltages_to_settle_timeout(
-    vfm_mirror_voltages: VFMMirrorVoltages, vfm: FocusingMirror, RE: RunEngine
+    vfm_mirror_voltages: VFMMirrorVoltages,
+    vfm: FocusingMirrorWithStripes,
+    RE: RunEngine,
 ):
     with patch(
         "dodal.devices.focusing_mirror.VFMMirrorVoltages.voltage_channels",
@@ -124,7 +128,7 @@ mirror_stripe_params = [
 )
 def test_adjust_mirror_stripe(
     vfm_mirror_voltages: VFMMirrorVoltages,
-    vfm: FocusingMirror,
+    vfm: FocusingMirrorWithStripes,
     RE: RunEngine,
     energy_kev,
     expected_stripe,
@@ -136,10 +140,10 @@ def test_adjust_mirror_stripe(
         new_callable=_all_demands_accepted(vfm_mirror_voltages),
     ):
         vfm.stripe.set = MagicMock(return_value=NullStatus())
-        vfm.apply_stripe.set = MagicMock()
+        vfm.apply_stripe.set = MagicMock()  # type: ignore
         parent = MagicMock()
         parent.attach_mock(vfm.stripe.set, "stripe_set")
-        parent.attach_mock(vfm.apply_stripe.set, "apply_stripe")
+        parent.attach_mock(vfm.apply_stripe.set, "apply_stripe")  # type: ignore
 
         RE(adjust_mirror_stripe(energy_kev, vfm, vfm_mirror_voltages))
 
@@ -155,7 +159,7 @@ def test_adjust_mirror_stripe(
 
 def test_adjust_dcm_pitch_roll_vfm_from_lut(
     undulator_dcm: UndulatorDCM,
-    vfm: FocusingMirror,
+    vfm: FocusingMirrorWithStripes,
     vfm_mirror_voltages: VFMMirrorVoltages,
     beamline_parameters: GDABeamlineParameters,
     sim_run_engine,
@@ -195,8 +199,8 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "vfm_stripe"
-        and msg.args == ("Rhodium",),
+        and msg.obj.name == "vfm-stripe"
+        and msg.args == (MirrorStripe.RHODIUM,),
     )
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
@@ -205,7 +209,7 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "vfm_apply_stripe"
+        and msg.obj.name == "vfm-apply_stripe"
         and msg.args == (1,),
     )
     for channel, expected_voltage in (
@@ -231,6 +235,6 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "vfm_lat_mm"
+        and msg.obj.name == "vfm-x_mm"
         and msg.args == (10.0,),
     )
