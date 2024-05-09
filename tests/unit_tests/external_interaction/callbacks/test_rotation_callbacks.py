@@ -44,6 +44,7 @@ from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+from hyperion.parameters.rotation import RotationScan
 
 from ....conftest import raw_params_from_file
 
@@ -373,7 +374,6 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
 def test_ispyb_specifies_experiment_type_if_supplied(
     rotation_ispyb: MagicMock,
     RE: RunEngine,
-    params: RotationInternalParameters,
 ):
     raw_params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
@@ -382,6 +382,37 @@ def test_ispyb_specifies_experiment_type_if_supplied(
         "ispyb_experiment_type"
     ] = "Characterization"
     params = RotationInternalParameters(**raw_params)
+
+    ispyb_cb = RotationISPyBCallback()
+    ispyb_cb.active = True
+    assert (
+        params.hyperion_params.ispyb_params.ispyb_experiment_type == "Characterization"
+    )
+    rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
+        data_collection_group_id=23, data_collection_ids=(45,)
+    )
+
+    params.hyperion_params.ispyb_params.sample_id = "abc"
+
+    RE(fake_rotation_scan(params, [ispyb_cb]))
+
+    assert rotation_ispyb.call_args.args[1] == IspybExperimentType.CHARACTERIZATION
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
+    autospec=True,
+)
+def test_new_params_ispyb_specifies_experiment_type_if_supplied(
+    rotation_ispyb: MagicMock,
+    RE: RunEngine,
+):
+    raw_params = raw_params_from_file(
+        "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+    )
+    raw_params["ispyb_experiment_type"] = "Characterization"
+    new_params = RotationScan(**raw_params)
+    params = new_params.old_parameters()
 
     ispyb_cb = RotationISPyBCallback()
     ispyb_cb.active = True
