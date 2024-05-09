@@ -1,9 +1,11 @@
 import argparse
+import getpass
 import os
 import re
-from subprocess import PIPE, CalledProcessError, Popen
 from uuid import uuid1
 
+import paramiko
+from create_venv import setup_venv
 from git import Repo
 from packaging.version import VERSION_PATTERN, Version
 
@@ -12,6 +14,8 @@ recognised_beamlines = ["dev", "i03", "i04"]
 VERSION_PATTERN_COMPILED = re.compile(
     f"^{VERSION_PATTERN}$", re.VERBOSE | re.IGNORECASE
 )
+
+DEV_DEPLOY_LOCATION = "/scratch/30day_tmp/hyperion_release_test/bluesky"
 
 
 class repo:
@@ -71,9 +75,41 @@ def get_hyperion_release_dir_from_args() -> str:
     args = parser.parse_args()
     if args.beamline == "dev":
         print("Running as dev")
-        return "/scratch/30day_tmp/hyperion_release_test/bluesky"
+        return DEV_DEPLOY_LOCATION
     else:
         return f"/dls_sw/{args.beamline}/software/bluesky"
+
+
+def create_environment_from_control_machine():
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(
+        paramiko.AutoAddPolicy()
+    )  # This adds i03-control to your client's known hosts.
+    username = input(
+        "Setting up the venv requires SSH'ing to i03-control.\n Enter FedID:"
+    )
+    password = getpass.getpass(
+        "Enter password: (This won't be displayed in the console)"
+    )
+    try:
+        ssh_client.connect(
+            "i03-control.diamond.ac.uk", username=username, password=password
+        )
+        print("Succesfully connected to i03-control")
+        # Call python script on i03-control to create the environment
+        stdin, stdout, stderr = ssh_client.exec_command(
+            f"python3 {create_venv_location} {env_script}"
+        )
+        stdout = stdout.readlines()
+        for line in stdout:
+            print(line, end="")
+
+    except Exception as e:
+        print(f"Exception while trying to install venv on i03-control: {e}")
+
+    finally:
+        ssh_client.close()
+        print("Closed connection to i03-control")
 
 
 if __name__ == "__main__":
@@ -120,21 +156,19 @@ if __name__ == "__main__":
     # Now deploy the correct version of dodal
     dodal_repo.deploy(dodal_url)
 
-    # Set up environment and run /dls_dev_env.sh...
-    os.chdir(hyperion_repo.deploy_location)
-    print(f"Setting up environment in {hyperion_repo.deploy_location}")
-
     if hyperion_repo.name == "hyperion":
         env_script = os.path.join(
             hyperion_repo.deploy_location, "utility_scripts/dls_dev_env.sh"
         )
-        with Popen(env_script, stdout=PIPE, bufsize=1, universal_newlines=True) as p:
-            if p.stdout is not None:
-                for line in p.stdout:
-                    print(line, end="")
+        create_venv_location = os.path.join(
+            env_script, "utility_scripts/deploy/create_venv.py"
+        )
 
-    if p.returncode != 0:
-        raise CalledProcessError(p.returncode, p.args)
+        # SSH into control machine if not in dev mode
+        if release_area != DEV_DEPLOY_LOCATION:
+            create_environment_from_control_machine()
+        else:
+            setup_venv(create_venv_location)
 
     def create_symlink_by_tmp_and_rename(dirname, target, linkname):
         tmp_name = str(uuid1())
