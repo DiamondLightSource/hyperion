@@ -16,7 +16,7 @@ def test_start_and_end_robot_load():
     """
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
 
-    SAMPLE_ID = "5289780"
+    SAMPLE_ID = 5289780
     BARCODE = "test_barcode"
 
     expeye = ExpeyeInteraction()

@@ -52,7 +52,7 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
 )
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import PandAGridscanInternalParameters, ThreeDGridScan
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 from ...conftest import default_raw_params
 from ...system_tests.external_interaction.conftest import (
@@ -456,9 +456,7 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[
-            1
-        ].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
@@ -490,11 +488,12 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
+        expected_path = Path("/tmp/dls/i03/data/2023/cm33866-5/test_hyperion")
+        test_panda_fgs_params.storage_directory = str(expected_path)
         RE_with_subs[0].subscribe(VerbosePlanExecutionLoggingCallback())
         RE_with_subs[0](
             run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params)
         )
-        expected_path = Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
         get_directory_provider().update.assert_called_once_with(directory=expected_path)
 
     @patch(
@@ -535,9 +534,7 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[
-            1
-        ].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
