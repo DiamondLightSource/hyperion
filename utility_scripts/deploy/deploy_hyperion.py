@@ -163,7 +163,7 @@ if __name__ == "__main__":
             hyperion_repo.deploy_location, "utility_scripts/dls_dev_env.sh"
         )
         create_venv_location = os.path.join(
-            env_script, "utility_scripts/deploy/create_venv.py"
+            hyperion_repo.deploy_location, "utility_scripts/deploy/create_venv.py"
         )
 
         # SSH into control machine if not in dev mode
