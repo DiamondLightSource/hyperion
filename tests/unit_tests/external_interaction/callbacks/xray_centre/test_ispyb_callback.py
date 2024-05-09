@@ -37,7 +37,6 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "overlap": 0,
     "omegastart": 0,
     "start_image_number": 1,
-    "resolution": 1.0,  # deferred
     "wavelength": None,
     "xbeam": 150.0,
     "ybeam": 160.0,
@@ -78,7 +77,6 @@ EXPECTED_DATA_COLLECTION_2D = {
     "overlap": 0,
     "omegastart": 0,
     "start_image_number": 1,
-    "resolution": 1.0,  # deferred
     "wavelength": None,
     "xbeam": 150.0,
     "ybeam": 160.0,

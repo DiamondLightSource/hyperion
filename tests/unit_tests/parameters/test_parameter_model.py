@@ -250,7 +250,6 @@ class TestNewGdaParams:
 
         # This should all be stuff that is no longer needed because
         # we get it from devices!
-        old_params.hyperion_params.ispyb_params.resolution = None
         old_params.hyperion_params.ispyb_params.undulator_gap = None
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end = []
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = []
@@ -346,7 +345,6 @@ class TestNewGdaParams:
 
         # This should all be stuff that is no longer needed because
         # we get it from devices!
-        old_params.hyperion_params.ispyb_params.resolution = None
         old_params.hyperion_params.ispyb_params.undulator_gap = None
 
         assert new_old_params == old_params

@@ -36,7 +36,6 @@
             "focal_spot_size_x": 0.0,
             "focal_spot_size_y": 0.0,
             "comment": "Descriptive comment.",
-            "resolution": 1,
             "sample_id": null
         }
     },

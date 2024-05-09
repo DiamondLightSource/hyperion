@@ -39,7 +39,6 @@ EXPECTED_DATA_COLLECTION = {
     "overlap": 0,
     "omegastart": 0,
     "start_image_number": 1,
-    "resolution": 1.0,  # deferred
     "xbeam": 150.0,
     "ybeam": 160.0,
     "xtal_snapshot1": "test_1_y",
