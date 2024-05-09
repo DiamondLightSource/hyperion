@@ -1,6 +1,5 @@
 import random
 import types
-from pathlib import Path
 from typing import Any, Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
@@ -67,10 +66,6 @@ from .conftest import (
     modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
-)
-
-PANDA_TEST_PARAMS_PATH = (
-    "tests/test_data/parameter_json_files/panda_test_parameters.json"
 )
 
 
@@ -456,9 +451,7 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[
-            1
-        ].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
@@ -489,7 +482,9 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: tuple[RunEngine, Any],
         test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
+        tmp_path,
     ):
+        test_panda_fgs_params.hyperion_params.detector_params.directory = tmp_path
         RE_with_subs[0].subscribe(VerbosePlanExecutionLoggingCallback())
         RE_with_subs[0](
             run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params)
@@ -535,9 +530,7 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[
-            1
-        ].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
