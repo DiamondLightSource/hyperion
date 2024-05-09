@@ -19,6 +19,7 @@ def setup_venv(path_to_create_venv_script, deployment_directory):
 
 
 if __name__ == "__main__":
+    # This should only be entered from the control machine
     path_to_create_venv_script = sys.argv[1]
     deployment_directory = sys.argv[2]
     setup_venv(path_to_create_venv_script, deployment_directory)
