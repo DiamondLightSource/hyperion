@@ -32,11 +32,14 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import (
+    ScanDataInfo,
+)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -383,7 +386,7 @@ def test_ispyb_specifies_experiment_type_if_supplied(
 
     RE(fake_rotation_scan(params, [ispyb_cb]))
 
-    assert rotation_ispyb.call_args.args[1] == ExperimentType.CHARACTERIZATION
+    assert rotation_ispyb.call_args.args[1] == IspybExperimentType.CHARACTERIZATION
 
 
 n_images_store_id = [

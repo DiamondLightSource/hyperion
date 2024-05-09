@@ -77,7 +77,7 @@ class GridCommon(
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start
             or [],
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
-            ispyb_experiment_type=self.ispyb_extras.ispyb_experiment_type,
+            ispyb_experiment_type=self.ispyb_experiment_type,
         )
 
     @property
