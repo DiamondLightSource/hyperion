@@ -17,6 +17,7 @@ from blueapi.core import BlueskyContext
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.zebra import Zebra
 from flask.testing import FlaskClient
+from pydantic import BaseModel
 
 from hyperion.__main__ import (
     Actions,
@@ -472,9 +473,14 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
         },
         clear=True,
     ):
+
+        class MockParams(BaseModel):
+            mock_param: int
+
+        mock_params = MockParams(mock_param=1)
         runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(None, None, "flyscan_xray_centre", None)  # type: ignore
+        runner.start(None, mock_params, "flyscan_xray_centre", None)  # type: ignore
         mock_setup.assert_called_once()
         runner.shutdown()
 

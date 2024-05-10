@@ -114,7 +114,7 @@ class BlueskyRunner:
         plan_name: str,
         callbacks: Optional[CallbacksFactory],
     ) -> StatusAndMessage:
-        LOGGER.info(f"Started with parameters: {parameters}")
+        LOGGER.info(f"Started with parameters: {parameters.json(indent=2)}")
 
         devices: Any = PLAN_REGISTRY[plan_name]["setup"](self.context)
 

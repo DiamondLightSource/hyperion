@@ -111,7 +111,7 @@ def create_parameters_for_flyscan_xray_centre(
     params_json = json.loads(old_params.json())
     params_json["experiment_params"] = json.loads(grid_parameters.json())
     flyscan_xray_centre_parameters = GridscanInternalParameters(**params_json)
-    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
+    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters.json(indent=2)}")
     return flyscan_xray_centre_parameters
 
 
@@ -123,7 +123,7 @@ def create_parameters_for_panda_flyscan_xray_centre(
     params_json = json.loads(old_params.json())
     params_json["experiment_params"] = json.loads(grid_parameters.json())
     flyscan_xray_centre_parameters = PandAGridscanInternalParameters(**params_json)
-    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
+    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters.json(indent=2)}")
     return flyscan_xray_centre_parameters
 
 

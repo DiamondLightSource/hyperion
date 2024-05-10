@@ -10,20 +10,20 @@ class _BestEffortEncoder(json.JSONEncoder):
         return repr(o)
 
 
-def _format(doc):
+def format_doc_for_log(doc):
     return json.dumps(doc, indent=2, cls=_BestEffortEncoder)
 
 
 class VerbosePlanExecutionLoggingCallback(CallbackBase):
     def start(self, doc):
-        LOGGER.info(f"START: {_format(doc)}")
+        LOGGER.info(f"START: {format_doc_for_log(doc)}")
 
     def descriptor(self, doc):
-        LOGGER.info(f"DESCRIPTOR: {_format(doc)}")
+        LOGGER.info(f"DESCRIPTOR: {format_doc_for_log(doc)}")
 
     def event(self, doc):
-        LOGGER.info(f"EVENT: {_format(doc)}")
+        LOGGER.info(f"EVENT: {format_doc_for_log(doc)}")
         return doc
 
     def stop(self, doc):
-        LOGGER.info(f"STOP: {_format(doc)}")
+        LOGGER.info(f"STOP: {format_doc_for_log(doc)}")
