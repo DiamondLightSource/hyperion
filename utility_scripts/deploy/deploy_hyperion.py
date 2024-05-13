@@ -1,10 +1,9 @@
 import argparse
-import getpass
 import os
 import re
+import subprocess
 from uuid import uuid1
 
-import paramiko
 from create_venv import setup_venv
 from git import Repo
 from packaging.version import VERSION_PATTERN, Version
@@ -81,37 +80,30 @@ def get_hyperion_release_dir_from_args() -> str:
 
 
 def create_environment_from_control_machine():
-    ssh_client = paramiko.SSHClient()
-
-    # This adds i03-control to your client's known hosts.
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    username = input(
-        "Setting up the venv requires SSH'ing to i03-control.\n Enter FedID:"
-    )
-    password = getpass.getpass(
-        "Enter password: (This won't be displayed in the console)"
-    )
     try:
-        ssh_client.connect(
-            "i03-control.diamond.ac.uk", username=username, password=password
+        user = os.environ["USER"]
+    except KeyError:
+        user = input(
+            "Couldn't find username from the environment. Enter FedID in order to SSH to control machine:"
         )
-        print("Succesfully connected to i03-control")
+    cmd = f"ssh {user}@i03-control python3 {path_to_create_venv} {path_to_dls_dev_env} {hyperion_repo.deploy_location}"
 
+    process = None
+    try:
         # Call python script on i03-control to create the environment
-        stdin, stdout, stderr = ssh_client.exec_command(
-            f"python3 {create_venv_location} {env_script} {hyperion_repo.deploy_location}"
+        process = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        stdout = stdout.readlines()
-        for line in stdout:
-            print(line, end="")
-
+        stdout, stderr = process.communicate()
+        if process.returncode != 0:
+            print(f"Error occurred: {stderr.decode()}")
+        else:
+            print(f"Output: {stdout.decode()}")
     except Exception as e:
         print(f"Exception while trying to install venv on i03-control: {e}")
-
     finally:
-        ssh_client.close()
-        print("Closed connection to i03-control")
+        if process:
+            process.kill()
 
 
 if __name__ == "__main__":
@@ -159,10 +151,10 @@ if __name__ == "__main__":
     dodal_repo.deploy(dodal_url)
 
     if hyperion_repo.name == "hyperion":
-        env_script = os.path.join(
+        path_to_dls_dev_env = os.path.join(
             hyperion_repo.deploy_location, "utility_scripts/dls_dev_env.sh"
         )
-        create_venv_location = os.path.join(
+        path_to_create_venv = os.path.join(
             hyperion_repo.deploy_location, "utility_scripts/deploy/create_venv.py"
         )
 
@@ -170,7 +162,7 @@ if __name__ == "__main__":
         if release_area != DEV_DEPLOY_LOCATION:
             create_environment_from_control_machine()
         else:
-            setup_venv(create_venv_location, hyperion_repo.deploy_location)
+            setup_venv(path_to_create_venv, hyperion_repo.deploy_location)
 
     def create_symlink_by_tmp_and_rename(dirname, target, linkname):
         tmp_name = str(uuid1())
