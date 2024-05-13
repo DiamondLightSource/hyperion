@@ -48,7 +48,6 @@
 
 
  ===== Header information:
- date                                = 03 May 2024 17:59:43.001
  exposure time             [seconds] = 0.00400
  distance                       [mm] = 100.000
  wavelength                      [A] = 0.976254
