@@ -1,5 +1,8 @@
+"""PYTEST_DONT_REWRITE"""
+
 import os
 from pathlib import Path
+from shutil import copy
 from unittest.mock import patch
 
 import bluesky.preprocessors as bpp
@@ -7,6 +10,7 @@ import h5py
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
+from h5py import Dataset, ExternalLink, Group
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -21,10 +25,11 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
-from ...conftest import raw_params_from_file
+from ...conftest import extract_metafile, raw_params_from_file
 
 TEST_EXAMPLE_NEXUS_FILE = Path("ins_8_5.nxs")
-TEST_DATA_DIRECTORY = Path("tests/test_data")
+TEST_EXAMPLE_NEXUS_METAFILE_PREFIX = "ins_8_5_meta"
+TEST_DATA_DIRECTORY = Path("tests/test_data/nexus_files/rotation")
 TEST_FILENAME = "rotation_scan_test_nexus"
 
 
@@ -69,6 +74,102 @@ def fake_rotation_scan(
         yield from read_hardware_for_nexus_writer(rotation_devices.eiger)
 
     return plan()
+
+
+def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
+    test_params: RotationInternalParameters,
+    tmpdir,
+    fake_create_rotation_devices: RotationScanComposite,
+):
+    run_number = test_params.hyperion_params.detector_params.run_number
+    nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
+    master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"
+
+    fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
+
+    RE = RunEngine({})
+
+    with patch(
+        "hyperion.external_interaction.nexus.write_nexus.get_start_and_predicted_end_time",
+        return_value=("test_time", "test_time"),
+    ):
+        RE(
+            fake_rotation_scan(
+                test_params, RotationNexusFileCallback(), fake_create_rotation_devices
+            )
+        )
+
+    assert os.path.isfile(nexus_filename)
+    assert os.path.isfile(master_filename)
+
+    example_metafile_path = (
+        f"{TEST_DATA_DIRECTORY}/{TEST_EXAMPLE_NEXUS_METAFILE_PREFIX}.h5.gz"
+    )
+    extract_metafile(
+        example_metafile_path, f"{tmpdir}/{TEST_EXAMPLE_NEXUS_METAFILE_PREFIX}.h5"
+    )
+    example_nexus_path = f"{tmpdir}/{TEST_EXAMPLE_NEXUS_FILE}"
+    copy(TEST_DATA_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE, example_nexus_path)
+    with (
+        h5py.File(example_nexus_path, "r") as example_nexus,
+        h5py.File(nexus_filename, "r") as hyperion_nexus,
+    ):
+        _compare_actual_and_expected_nexus_output(
+            hyperion_nexus,
+            example_nexus,
+            {
+                "entry": {
+                    "_missing": {"end_time"},
+                    "_extra": {"source", "end_time_estimated"},
+                    "data": {"_ignore": {"data", "omega"}},
+                    "instrument": {
+                        "_missing": {"transformations", "detector_z", "source"},
+                        "detector": {
+                            "_missing": {"detector_distance"},
+                            "threshold_energy": 1,
+                            "detector_readout_time": 1,
+                            "distance": 1,
+                            "transformations": 1,
+                            "detector_z": 1,
+                            "underload_value": 1,
+                            "bit_depth_image": 1,
+                            "_ignore": {
+                                "beam_center_x",
+                                "beam_center_y",
+                                "depends_on",
+                                "saturation_value",
+                                "sensor_material",
+                                "serial_number",
+                            },
+                            "detectorSpecific": {
+                                "_missing": {"pixel_mask"},
+                                "eiger_fw_version": 1,
+                                "x_pixels": 1,
+                                "ntrigger": 1,
+                                "data_collection_date": 1,
+                                "y_pixels": 1,
+                                "software_version": 1,
+                            },
+                            "module": {"_ignore": {"module_offset"}},
+                            "sensor_thickness": np.isclose,
+                        },
+                        "attenuator": {"_ignore": {"attenuator_transmission"}},
+                        "beam": {"_ignore": {"incident_wavelength"}},
+                        "name": b"DIAMOND BEAMLINE S03",
+                    },
+                    "sample": {
+                        "beam": {"incident_wavelength": np.isclose},
+                        "transformations": {
+                            "_missing": {"omega_end", "omega_increment_set"}
+                        },
+                        "sample_omega": {"omega_end": 1, "omega_increment_set": 1},
+                    },
+                    "end_time_estimated": b"test_timeZ",
+                    "start_time": b"test_timeZ",
+                    "source": 1,
+                }
+            },
+        )
 
 
 def test_rotation_scan_nexus_output_compared_to_existing_file(
@@ -212,3 +313,62 @@ def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
 
         for call in write_vds_mock.mock_calls:
             assert call.kwargs["vds_dtype"] == expected_type
+
+
+def _compare_actual_and_expected_nexus_output(actual, expected, exceptions: dict):
+    _compare_actual_and_expected([], actual, expected, exceptions)
+
+
+def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: dict):
+    path_str = "/".join(path)
+    print(f"Comparing {path_str}")
+    keys_not_in_actual = (
+        expected.keys() - actual.keys() - exceptions.get("_missing", set())
+    )
+    assert (
+        len(keys_not_in_actual) == 0
+    ), f"Missing entries in group {path_str}, {keys_not_in_actual}"
+
+    keys_to_compare = actual.keys()
+    keys_not_in_expected = (
+        keys_to_compare
+        - expected.keys()
+        - {k for k in exceptions.keys() if not k.startswith("_")}
+    )
+    cmp = len(keys_not_in_expected) == 0
+    keys_to_compare = sorted(keys_to_compare)
+    assert cmp, f"Found unexpected entries in group {path_str}, {keys_not_in_expected}"
+    for key in keys_to_compare:
+        item_path = path + [key]
+        actual_link = actual.get(key, getlink=True)
+        item_path_str = "/" + "/".join(item_path)
+        if isinstance(actual_link, ExternalLink):
+            print(f"Skipping external link {item_path_str}")
+            continue
+        actual_class = actual.get(key, getclass=True, getlink=False)
+        expected_class = expected.get(key, getclass=True)
+        actual_value = actual.get(key)
+        expected_value = expected.get(key)
+        if expected_class == Group:
+            _compare_actual_and_expected(
+                item_path, actual_value, expected_value, exceptions.get(key, {})
+            )
+        elif expected_class == Dataset and key not in exceptions.get("_ignore", set()):
+            assert (
+                actual_value.shape == expected_value.shape
+            ), f"Actual and expected shapes differ for {item_path_str}: {actual_value.shape}, {expected_value.shape}"
+            if actual_value.shape == ():
+                exception = exceptions.get(key, None)
+                if callable(exception):
+                    assert exceptions.get(key)(actual_value, expected_value)
+                elif np.isscalar(exception):
+                    assert actual_value[()] == exception
+                else:
+                    assert (
+                        actual_class == expected_class
+                    ), f"{item_path_str} Actual and expected class don't match {actual_class}, {expected_class}"
+                    assert (
+                        actual_value[()] == expected_value[()]
+                    ), f"Actual and expected values differ for {item_path_str}: {actual_value[()]} != {expected_value[()]}"
+            else:
+                print(f"Ignoring non-scalar value {item_path_str}\n")
