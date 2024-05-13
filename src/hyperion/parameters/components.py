@@ -199,7 +199,6 @@ class TemporaryIspybExtras(BaseModel):
     beam_size_y: float
     focal_spot_size_x: float
     focal_spot_size_y: float
-    resolution: float | None = None
     undulator_gap: float | None = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None

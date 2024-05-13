@@ -39,7 +39,6 @@ EXPECTED_DATA_COLLECTION = {
     "overlap": 0,
     "omegastart": 0,
     "start_image_number": 1,
-    "resolution": 1.0,  # deferred
     "xbeam": 150.0,
     "ybeam": 160.0,
     "xtal_snapshot1": "test_1_y",
@@ -160,6 +159,7 @@ def test_flux_read_events(
             "wavelength": 1.1164718451643736,
             "transmission": 98,
             "flux": 9.81,
+            "resolution": 1.1830593328548429,
         },
     )
 
