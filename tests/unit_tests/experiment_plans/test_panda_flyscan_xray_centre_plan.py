@@ -17,7 +17,7 @@ from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -142,10 +142,10 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        set_sim_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
+        set_mock_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
 
         synchrotron_test_value = SynchrotronMode.USER
-        set_sim_value(
+        set_mock_value(
             fake_fgs_composite.synchrotron.synchrotron_mode, synchrotron_test_value
         )
 

@@ -9,7 +9,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
 from ophyd.sim import NullStatus, instantiate_fake_device
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import set_mock_value
 
 from hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
@@ -37,7 +37,7 @@ def robot_load_composite(
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
     composite.dcm = dcm
-    set_sim_value(composite.dcm.energy_in_kev.user_readback, 11.105)
+    set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
     composite.robot = robot
     composite.aperture_scatterguard = aperture_scatterguard
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
@@ -327,7 +327,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
 ):
     robot_load_composite.oav.snapshot.last_saved_path.put("test_oav_snapshot")  # type: ignore
-    set_sim_value(robot_load_composite.webcam.last_saved_path, "test_webcam_snapshot")
+    set_mock_value(robot_load_composite.webcam.last_saved_path, "test_webcam_snapshot")
     robot_load_composite.webcam.trigger = MagicMock(return_value=NullStatus())
 
     RE = RunEngine()

@@ -16,7 +16,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
 from ophyd.status import Status
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import set_mock_value
 
 from hyperion.experiment_plans import oav_grid_detection_plan
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
@@ -824,11 +824,11 @@ def test_ispyb_deposition_in_rotation_plan(
         energy_ev / 1000
     )
     fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)  # pyright: ignore
-    set_sim_value(
+    set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         test_synchrotron_mode,
     )
-    set_sim_value(
+    set_mock_value(
         fake_create_rotation_devices.synchrotron.topup_start_countdown,  # pyright: ignore
         -1,
     )

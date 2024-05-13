@@ -41,7 +41,7 @@ from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
 from ophyd_async.epics.motion.motor import Motor
 from scanspec.core import Path as ScanPath
@@ -189,16 +189,16 @@ async def mock_good_coroutine():
 
 
 def mock_async_motor_move(motor: Motor, val, *args, **kwargs):
-    set_sim_value(motor.user_setpoint, val)
-    set_sim_value(motor.user_readback, val)
+    set_mock_value(motor.user_setpoint, val)
+    set_mock_value(motor.user_readback, val)
     return mock_good_coroutine()  # type: ignore
 
 
 def patch_async_motor(motor: Motor, initial_position=0):
-    set_sim_value(motor.user_setpoint, initial_position)
-    set_sim_value(motor.user_readback, initial_position)
-    set_sim_value(motor.deadband, 0.001)
-    set_sim_value(motor.motor_done_move, 1)
+    set_mock_value(motor.user_setpoint, initial_position)
+    set_mock_value(motor.user_readback, initial_position)
+    set_mock_value(motor.deadband, 0.001)
+    set_mock_value(motor.motor_done_move, 1)
     return patch.object(
         motor, "_move", AsyncMock(side_effect=partial(mock_async_motor_move, motor))
     )
@@ -343,8 +343,8 @@ def s4_slit_gaps():
 def synchrotron():
     RunEngine()  # A RE is needed to start the bluesky loop
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
-    set_sim_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
-    set_sim_value(synchrotron.topup_start_countdown, 10)
+    set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
+    set_mock_value(synchrotron.topup_start_countdown, 10)
     return synchrotron
 
 
@@ -379,7 +379,7 @@ def ophyd_pin_tip_detection():
 def robot(done_status):
     RunEngine()  # A RE is needed to start the bluesky loop
     robot = i03.robot(fake_with_ophyd_sim=True)
-    set_sim_value(robot.barcode.bare_signal, ["BARCODE"])
+    set_mock_value(robot.barcode.bare_signal, ["BARCODE"])
     robot.set = MagicMock(return_value=done_status)
     return robot
 
@@ -407,8 +407,8 @@ def xbpm_feedback(done_status):
 @pytest.fixture
 def dcm(RE):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
-    set_sim_value(dcm.energy_in_kev.user_readback, 12.7)
-    set_sim_value(dcm.pitch_in_mrad.user_readback, 1)
+    set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
+    set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
     return dcm
 
 
@@ -668,7 +668,7 @@ def fake_fgs_composite(
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
     fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
 
-    set_sim_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
+    set_mock_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
 
     return fake_composite
 
