@@ -11,13 +11,13 @@ from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.DCM import DCM
+from dodal.devices.dcm import DCM
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.flux import Flux
-from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages
+from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, VFMMirrorVoltages
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
@@ -83,7 +83,7 @@ class RobotLoadThenCentreComposite:
     panda_fast_grid_scan: PandAFastGridScan
 
     # SetEnergyComposite fields
-    vfm: FocusingMirror
+    vfm: FocusingMirrorWithStripes
     vfm_mirror_voltages: VFMMirrorVoltages
     dcm: DCM
     undulator_dcm: UndulatorDCM

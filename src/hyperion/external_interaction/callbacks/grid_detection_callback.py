@@ -29,11 +29,11 @@ class GridDetectionCallback(CallbackBase):
 
     def event(self, doc: Event):
         data = doc.get("data")
-        top_left_x_px = data["oav_snapshot_top_left_x"]
-        box_width_px = data["oav_snapshot_box_width"]
+        top_left_x_px = data["oav_grid_snapshot_top_left_x"]
+        box_width_px = data["oav_grid_snapshot_box_width"]
         x_of_centre_of_first_box_px = top_left_x_px + box_width_px / 2
 
-        top_left_y_px = data["oav_snapshot_top_left_y"]
+        top_left_y_px = data["oav_grid_snapshot_top_left_y"]
         y_of_centre_of_first_box_px = top_left_y_px + box_width_px / 2
 
         smargon_omega = data["smargon_omega"]
@@ -54,7 +54,10 @@ class GridDetectionCallback(CallbackBase):
 
         self.start_positions.append(position_grid_start)
         self.box_numbers.append(
-            (data["oav_snapshot_num_boxes_x"], data["oav_snapshot_num_boxes_y"])
+            (
+                data["oav_grid_snapshot_num_boxes_x"],
+                data["oav_grid_snapshot_num_boxes_y"],
+            )
         )
 
         self.x_step_size_mm = box_width_px * self.oav_params.micronsPerXPixel / 1000

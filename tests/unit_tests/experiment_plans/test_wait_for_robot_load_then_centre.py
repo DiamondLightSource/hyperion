@@ -38,7 +38,7 @@ def robot_load_composite(
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
     composite.dcm = dcm
-    composite.dcm.energy_in_kev.user_readback.sim_put(11.105)
+    set_sim_value(composite.dcm.energy_in_kev.user_readback, 11.105)
     composite.robot = robot
     composite.aperture_scatterguard = aperture_scatterguard
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
@@ -114,8 +114,8 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
 ):
     sim_run_engine.add_handler(
         "read",
-        "dcm_energy_in_kev",
-        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(robot_load_composite, robot_load_then_centre_params)
@@ -144,8 +144,8 @@ def test_robot_load_then_centre_doesnt_set_energy_if_not_specified(
 ):
     sim_run_engine.add_handler(
         "read",
-        "dcm_energy_in_kev",
-        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(
@@ -178,8 +178,8 @@ def run_simulating_smargon_wait(
 
     sim_run_engine.add_handler(
         "read",
-        "dcm_energy_in_kev",
-        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
     )
     sim_run_engine.add_handler(
         "read",

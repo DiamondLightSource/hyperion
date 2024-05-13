@@ -1,11 +1,13 @@
+import asyncio
 import json
 import logging
 import sys
 import threading
 from functools import partial
 from typing import Any, Callable, Generator, Optional, Sequence
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
@@ -21,7 +23,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.DCM import DCM
+from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
@@ -41,6 +43,7 @@ from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
 from ophyd_async.core import set_sim_value
 from ophyd_async.core.async_status import AsyncStatus
+from ophyd_async.epics.motion.motor import Motor
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -177,6 +180,26 @@ def mock_set(motor: EpicsMotor, val):
 
 def patch_motor(motor: EpicsMotor):
     return patch.object(motor, "set", MagicMock(side_effect=partial(mock_set, motor)))
+
+
+async def mock_good_coroutine():
+    return asyncio.sleep(0)
+
+
+def mock_async_motor_move(motor: Motor, val, *args, **kwargs):
+    set_sim_value(motor.user_setpoint, val)
+    set_sim_value(motor.user_readback, val)
+    return mock_good_coroutine()  # type: ignore
+
+
+def patch_async_motor(motor: Motor, initial_position=0):
+    set_sim_value(motor.user_setpoint, initial_position)
+    set_sim_value(motor.user_readback, initial_position)
+    set_sim_value(motor.deadband, 0.001)
+    set_sim_value(motor.motor_done_move, 1)
+    return patch.object(
+        motor, "_move", AsyncMock(side_effect=partial(mock_async_motor_move, motor))
+    )
 
 
 @pytest.fixture
@@ -380,16 +403,10 @@ def xbpm_feedback(done_status):
 
 
 @pytest.fixture
-def dcm():
+def dcm(RE):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
-    dcm.energy_in_kev.user_readback.sim_put(12.7)  # type: ignore
-    dcm.pitch_in_mrad.user_setpoint._use_limits = False
-    dcm.dcm_roll_converter_lookup_table_path = (
-        "tests/test_data/test_beamline_dcm_roll_converter.txt"
-    )
-    dcm.dcm_pitch_converter_lookup_table_path = (
-        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
-    )
+    set_sim_value(dcm.energy_in_kev.user_readback, 12.7)
+    set_sim_value(dcm.pitch_in_mrad.user_readback, 1)
     return dcm
 
 
@@ -399,7 +416,7 @@ def qbpm1():
 
 
 @pytest.fixture
-def vfm():
+def vfm(RE):
     vfm = i03.vfm(fake_with_ophyd_sim=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
@@ -416,8 +433,16 @@ def vfm_mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm():
-    yield i03.undulator_dcm(fake_with_ophyd_sim=True)
+def undulator_dcm(RE, dcm):
+    undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
+    undulator_dcm.dcm = dcm
+    undulator_dcm.dcm_roll_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_roll_converter.txt"
+    )
+    undulator_dcm.dcm_pitch_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
+    )
+    yield undulator_dcm
     beamline_utils.clear_devices()
 
 
@@ -429,7 +454,7 @@ def webcam(RE) -> Generator[Webcam, Any, Any]:
 
 
 @pytest.fixture
-def aperture_scatterguard(done_status):
+def aperture_scatterguard(done_status, RE):
     AperturePositions.LARGE = SingleAperturePosition(
         location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
         name="Large",
@@ -463,16 +488,14 @@ def aperture_scatterguard(done_status):
             AperturePositions.ROBOT_LOAD,
         ),
     )
-    ap_sg.aperture.z.user_setpoint.sim_put(2)  # type: ignore
-    ap_sg.aperture.z.motor_done_move.sim_put(1)  # type: ignore
     with (
-        patch_motor(ap_sg.aperture.x),
-        patch_motor(ap_sg.aperture.y),
-        patch_motor(ap_sg.aperture.z),
-        patch_motor(ap_sg.scatterguard.x),
-        patch_motor(ap_sg.scatterguard.y),
+        patch_async_motor(ap_sg.aperture.x),
+        patch_async_motor(ap_sg.aperture.y),
+        patch_async_motor(ap_sg.aperture.z, 2),
+        patch_async_motor(ap_sg.scatterguard.x),
+        patch_async_motor(ap_sg.scatterguard.y),
     ):
-        ap_sg.set(ap_sg.aperture_positions.SMALL)  # type: ignore
+        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))  # type: ignore
         yield ap_sg
 
 
@@ -618,15 +641,6 @@ def fake_fgs_composite(
     fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_odin_state = lambda: True
-    fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.aperture.z.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.scatterguard.x.user_setpoint._use_limits = (
-        False
-    )
-    fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
-        False
-    )
 
     mock_gridscan_kickoff_complete(fake_composite.fast_grid_scan)
     mock_gridscan_kickoff_complete(fake_composite.panda_fast_grid_scan)
