@@ -1,0 +1,71 @@
+
+ ==========================================================================
+
+ Copyright  2007, 2024 Global Phasing Ltd
+
+ Author    (2007-2024) Clemens Vonrhein, Claus Flensburg, Thomas Womack, Gerard Bricogne
+
+
+ Contains HDF5 library:
+
+   HDF5 (Hierarchical Data Format 5) Software Library and Utilities
+   Copyright 2006-2015 by The HDF Group.
+
+   NCSA HDF5 (Hierarchical Data Format 5) Software Library and Utilities
+   Copyright 1998-2006 by the Board of Trustees of the University of Illinois. 
+
+ Contains also:
+
+   Bitshuffle - Filter for improving compression of typed binary data.
+   Copyright (c) 2014 Kiyoshi Masui (kiyo@physics.ubc.ca)
+
+   LZ4 - Fast LZ compression algorithm.
+   Copyright (C) 2011-2012, Yann Collet.
+
+   LZ4/HDF5 FILTER IMPLEMENTATION.
+   Copyright (C) 2011-2013, Dectris Ltd.
+
+   HDF5 filter plugin adopted from PyTables.
+   Copyright (c) 2002-2004 by Francesc Alted
+   Copyright (c) 2005-2007 by Carabos Coop. V.
+   Copyright (c) 2008-2010 by Francesc Alted
+
+ For full information, please run with "-fullinfo" flag.
+
+ ==========================================================================
+
+
+
+ ################# File = /data/ins_8_5_0_master.h5
+
+ >>> Image format detected as HDF5/Eiger
+ rotation axis = "OMEGA"
+
+ Sweep-1    :
+   from image      1 : Omega=    0.000 ..    0.100  Kappa=    0.000 ..    0.000  Chi=    0.000 ..    0.000  Phi=    0.000 ..    0.000  2-Theta=    0.000 ..    0.000
+   to   image   3600 : Omega=  360.000 ..  360.100  Kappa=    0.000 ..    0.000  Chi=    0.000 ..    0.000  Phi=    0.000 ..    0.000  2-Theta=    0.000 ..    0.000
+     Image number 1/3600
+
+
+ ===== Header information:
+ date                                = 03 May 2024 17:59:43.001
+ exposure time             [seconds] = 0.00400
+ distance                       [mm] = 100.000
+ wavelength                      [A] = 0.976254
+ sensor thickness               [mm] = 0.450
+ sensor material                     = Si
+ Phi-angle                  [degree] = 0.00000
+ Omega-angle (start, end)   [degree] = 0.00000 0.10003
+ Oscillation-angle in Omega [degree] = 0.10003
+ Chi-angle                  [degree] = 0.00000
+ Pixel size in X                [mm] = 0.075000
+ Pixel size in Y                [mm] = 0.075000
+ Number of pixels in X               = 4148
+ Number of pixels in Y               = 4362
+ Beam centre in X               [mm] = 150.000
+ Beam centre in X            [pixel] = 2000.000
+ Beam centre in Y               [mm] = 160.000
+ Beam centre in Y            [pixel] = 2133.333
+ Overload value                      = 46051
+
+
