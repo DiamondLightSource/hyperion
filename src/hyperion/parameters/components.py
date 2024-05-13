@@ -235,7 +235,7 @@ class OptionalGonioAngleStarts(BaseModel):
 
 
 class TemporaryIspybExtras(BaseModel):
-    # for while we still need ISpyB params_to be removed in #1277 and/or #43
+    # for while we still need ISpyB params - to be removed in #1277 and/or #43
     class Config:
         arbitrary_types_allowed = True
         extra = Extra.forbid
