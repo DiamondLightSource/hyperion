@@ -53,7 +53,7 @@ def h5repack(tempdir, file, inputfile):
 
 
 def run_command(args):
-    completion = subprocess.run(args, capture_output=True)
+    completion = subprocess.run(args, capture_output=True, text=True)
     if completion.returncode:
         sys.stderr.write(f"{args[0]} failed with return code {completion.returncode}")
         sys.stderr.write(completion.stderr)

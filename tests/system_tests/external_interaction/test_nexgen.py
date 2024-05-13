@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import bluesky.preprocessors as bpp
 import pytest
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
