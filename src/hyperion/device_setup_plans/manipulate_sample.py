@@ -61,3 +61,25 @@ def move_x_y_z(
         yield from bps.abs_set(smargon.z, z, group=group)
     if wait:
         yield from bps.wait(group)
+
+
+def move_phi_chi_omega(
+    smargon: Smargon,
+    phi: float | None = None,
+    chi: float | None = None,
+    omega: float | None = None,
+    wait=False,
+    group="move_phi_chi_omega",
+):
+    """Move the x, y, and z axes of the given smargon to the specified position. All
+    axes are optional."""
+
+    LOGGER.info(f"Moving smargon to phi, chi, omega: {(phi, chi, omega)}")
+    if phi:
+        yield from bps.abs_set(smargon.phi, phi, group=group)
+    if chi:
+        yield from bps.abs_set(smargon.chi, chi, group=group)
+    if omega:
+        yield from bps.abs_set(smargon.omega, omega, group=group)
+    if wait:
+        yield from bps.wait(group)

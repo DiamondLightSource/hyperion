@@ -159,8 +159,6 @@ class TestNewGdaParams:
     omega_start = 0.023
     transmission = 45 / 100
     visit = "cm66666-6"
-    microns_per_pixel_x = 0.7844
-    microns_per_pixel_y = 0.7111
     position = [123.0, 234.0, 345.0]
     beam_size_x = 131 / 1000.0
     beam_size_y = 204 / 1000.0
@@ -219,8 +217,6 @@ class TestNewGdaParams:
                     "sample_id": self.sample_id,
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
                     "undulator_gap": 0.5,
-                    "microns_per_pixel_x": self.microns_per_pixel_x,
-                    "microns_per_pixel_y": self.microns_per_pixel_y,
                     "position": self.position,
                     "beam_size_x": self.beam_size_x,
                     "beam_size_y": self.beam_size_y,
@@ -309,8 +305,6 @@ class TestNewGdaParams:
                     "sample_id": self.sample_id,
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
                     "undulator_gap": 0.5,
-                    "microns_per_pixel_x": self.microns_per_pixel_x,
-                    "microns_per_pixel_y": self.microns_per_pixel_y,
                     "position": self.position,
                     "beam_size_x": self.beam_size_x,
                     "beam_size_y": self.beam_size_y,

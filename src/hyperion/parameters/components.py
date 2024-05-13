@@ -61,7 +61,6 @@ class XyzAxis(str, Enum):
 class HyperionParameters(BaseModel):
     class Config:
         arbitrary_types_allowed = True
-        use_enum_values = True
         extra = Extra.forbid
         json_encoders = {
             ParameterVersion: lambda pv: str(pv),
