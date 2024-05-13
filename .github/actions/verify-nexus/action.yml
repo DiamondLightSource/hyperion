@@ -1,0 +1,15 @@
+name: "Verify nexus"
+description: "Verify nexus files against imginfo"
+inputs:
+  filename:
+    description: "nexus file to verify"
+    required: true
+    default: "test_nexus.nxs"
+outputs:
+  imginfo_output:
+    description: "imginfo output"
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - ${{ inputs.filename }}
