@@ -303,7 +303,7 @@ def zebra():
     zebra = i03.zebra(fake_with_ophyd_sim=True)
 
     def mock_side(*args, **kwargs):
-        zebra.pc.arm.armed._backend._set_value(*args, **kwargs)  # type: ignore
+        zebra.pc.arm.armed._backend.set_value(*args, **kwargs)  # type: ignore
         return Status(done=True, success=True)
 
     zebra.pc.arm.set = MagicMock(side_effect=mock_side)
