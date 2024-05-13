@@ -242,7 +242,6 @@ def run_gridscan(
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
-        yield from read_hardware_for_nexus_writer(fgs_composite.eiger)
 
     fgs_motors = fgs_composite.fast_grid_scan
 
@@ -254,6 +253,11 @@ def run_gridscan(
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
     yield from bps.stage(fgs_composite.eiger)
+
+    # This needs to occur after eiger is armed so that
+    # the HDF5 meta file is present for nexgen to inspect
+    with TRACER.start_span("nexus_hardware_readings"):
+        yield from read_hardware_for_nexus_writer(fgs_composite.eiger)
 
     yield from kickoff_and_complete_gridscan(
         fgs_motors,

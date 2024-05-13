@@ -8,7 +8,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
-from bluesky.utils import FailedStatus
+from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
 from dodal.beamlines.beamline_utils import clear_device
 from dodal.devices.detector.det_dim_constants import (
@@ -872,3 +872,37 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 
     assert mock_zocalo_trigger.run_end.call_count == 2
     assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
+
+
+@patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+    new=MagicMock(return_value=iter([Msg("kickoff_gridscan")])),
+)
+def test_read_hardware_for_nexus_occurs_after_eiger_arm(
+    fake_fgs_composite: FlyScanXRayCentreComposite,
+    test_fgs_params: GridscanInternalParameters,
+    sim_run_engine,
+):
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-synchrotron_mode",
+        lambda msg: {"values": {"value": SynchrotronMode.USER}},
+    )
+    msgs = sim_run_engine.simulate_plan(
+        run_gridscan(fake_fgs_composite, test_fgs_params)
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "create"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "read" and msg.obj.name == "eiger_bit_depth"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "save"
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "kickoff_gridscan"
+    )
