@@ -319,13 +319,16 @@ def grid_detect_then_xray_centre_composite(
         bottom_edge_data = [0] * tip_x_px + [
             (tip_y_px + target_grid_height_px // 2)
         ] * grid_width_px
-        ophyd_pin_tip_detection.triggered_top_edge._backend.set_value(
-            numpy.array(top_edge_data, dtype=numpy.uint32)
+        set_mock_value(
+            ophyd_pin_tip_detection.triggered_top_edge,
+            numpy.array(top_edge_data, dtype=numpy.uint32),
         )
 
-        ophyd_pin_tip_detection.triggered_bottom_edge._backend.set_value(
-            numpy.array(bottom_edge_data, dtype=numpy.uint32)
+        set_mock_value(
+            ophyd_pin_tip_detection.triggered_bottom_edge,
+            numpy.array(bottom_edge_data, dtype=numpy.uint32),
         )
+
         yield from []
         return tip_x_px, tip_y_px
 
