@@ -896,7 +896,7 @@ def test_tidy_up_plans_disable_panda_and_zebra(
 )
 def test_read_hardware_for_nexus_occurs_after_eiger_arm(
     fake_fgs_composite: FlyScanXRayCentreComposite,
-    test_panda_fgs_params: PandAGridscanInternalParameters,
+    test_panda_fgs_params: ThreeDGridScan,
     sim_run_engine,
 ):
     sim_run_engine.add_handler(
