@@ -17,9 +17,7 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
     rotation_scan_plan,
 )
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 
 from .conftest import fake_read
 
@@ -33,7 +31,7 @@ TEST_SHUTTER_OPENING_DEGREES = 2.5
 
 def do_rotation_main_plan_for_tests(
     run_eng: RunEngine,
-    expt_params: RotationInternalParameters,
+    expt_params: RotationScan,
     devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
     plan: Callable = rotation_scan_plan,
@@ -50,7 +48,7 @@ def do_rotation_main_plan_for_tests(
 @pytest.fixture
 def run_full_rotation_plan(
     RE: RunEngine,
-    test_rotation_params: RotationInternalParameters,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     with patch(
@@ -64,18 +62,17 @@ def run_full_rotation_plan(
 
 
 @pytest.fixture
-def motion_values(test_rotation_params: RotationInternalParameters):
+def motion_values(test_rotation_params: RotationScan):
     return calculate_motion_profile(
-        test_rotation_params.hyperion_params.detector_params,
-        test_rotation_params.experiment_params,
-        0.005,
+        test_rotation_params,
+        0.005,  # time for acceleration
         222,
     )
 
 
 def setup_and_run_rotation_plan_for_tests(
     RE: RunEngine,
-    test_params: RotationInternalParameters,
+    test_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
 ):
@@ -106,7 +103,7 @@ def setup_and_run_rotation_plan_for_tests(
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_standard(
     RE: RunEngine,
-    test_rotation_params: RotationInternalParameters,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
 ):
@@ -118,7 +115,7 @@ def setup_and_run_rotation_plan_for_tests_standard(
 @pytest.fixture
 def setup_and_run_rotation_plan_for_tests_nomove(
     RE: RunEngine,
-    test_rotation_params_nomove: RotationInternalParameters,
+    test_rotation_params_nomove: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
 ):
@@ -127,14 +124,12 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     )
 
 
-def test_rotation_scan_calculations(test_rotation_params: RotationInternalParameters):
-    test_rotation_params.hyperion_params.detector_params.exposure_time = 0.2
-    test_rotation_params.hyperion_params.detector_params.omega_start = 10
-    test_rotation_params.experiment_params.omega_start = 10
+def test_rotation_scan_calculations(test_rotation_params: RotationScan):
+    test_rotation_params.exposure_time_s = 0.2
+    test_rotation_params.omega_start_deg = 10
 
     motion_values = calculate_motion_profile(
-        test_rotation_params.hyperion_params.detector_params,
-        test_rotation_params.experiment_params,
+        test_rotation_params,
         0.005,  # time for acceleration
         224,
     )
@@ -160,7 +155,7 @@ def test_rotation_scan_calculations(test_rotation_params: RotationInternalParame
 def test_rotation_scan(
     plan: MagicMock,
     RE: RunEngine,
-    test_rotation_params,
+    test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     composite = fake_create_rotation_devices
@@ -179,14 +174,12 @@ async def test_rotation_plan_zebra_settings(
     setup_and_run_rotation_plan_for_tests_standard,
 ) -> None:
     zebra: Zebra = setup_and_run_rotation_plan_for_tests_standard["zebra"]
-    params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests_standard[
+    params: RotationScan = setup_and_run_rotation_plan_for_tests_standard[
         "test_rotation_params"
     ]
-    expt_params = params.experiment_params
 
-    assert await zebra.pc.gate_start.get_value() == expt_params.omega_start
-    assert await zebra.pc.gate_start.get_value() == expt_params.omega_start
-    assert await zebra.pc.pulse_start.get_value() == expt_params.shutter_opening_time_s
+    assert await zebra.pc.gate_start.get_value() == params.omega_start_deg
+    assert await zebra.pc.pulse_start.get_value() == params.shutter_opening_time_s
 
 
 def test_full_rotation_plan_smargon_settings(
@@ -194,22 +187,19 @@ def test_full_rotation_plan_smargon_settings(
     test_rotation_params,
 ) -> None:
     smargon: Smargon = run_full_rotation_plan.smargon
-    params: RotationInternalParameters = test_rotation_params
-    expt_params = params.experiment_params
+    params: RotationScan = test_rotation_params
 
     test_max_velocity = smargon.omega.max_velocity.get()
 
     omega_set: MagicMock = smargon.omega.set  # type: ignore
     omega_velocity_set: MagicMock = smargon.omega.velocity.set  # type: ignore
-    rotation_speed = (
-        expt_params.image_width / params.hyperion_params.detector_params.exposure_time
-    )
+    rotation_speed = params.rotation_increment_deg / params.exposure_time_s
 
-    assert smargon.phi.user_readback.get() == expt_params.phi_start
-    assert smargon.chi.user_readback.get() == expt_params.chi_start
-    assert smargon.x.user_readback.get() == expt_params.x
-    assert smargon.y.user_readback.get() == expt_params.y
-    assert smargon.z.user_readback.get() == expt_params.z
+    assert smargon.phi.user_readback.get() == params.phi_start_deg
+    assert smargon.chi.user_readback.get() == params.chi_start_deg
+    assert smargon.x.user_readback.get() == params.x_start_um
+    assert smargon.y.user_readback.get() == params.y_start_um
+    assert smargon.z.user_readback.get() == params.z_start_um
     assert omega_set.call_count == 2
     assert omega_velocity_set.call_count == 3
     assert omega_velocity_set.call_args_list == [
@@ -223,16 +213,14 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     setup_and_run_rotation_plan_for_tests_nomove,
 ) -> None:
     smargon: Smargon = setup_and_run_rotation_plan_for_tests_nomove["smargon"]
-    params: RotationInternalParameters = setup_and_run_rotation_plan_for_tests_nomove[
+    params: RotationScan = setup_and_run_rotation_plan_for_tests_nomove[
         "test_rotation_params"
     ]
-    expt_params = params.experiment_params
-
-    assert expt_params.phi_start is None
-    assert expt_params.chi_start is None
-    assert expt_params.x is None
-    assert expt_params.y is None
-    assert expt_params.z is None
+    assert params.phi_start_deg is None
+    assert params.chi_start_deg is None
+    assert params.x_start_um is None
+    assert params.y_start_um is None
+    assert params.z_start_um is None
     for motor in [smargon.phi, smargon.chi, smargon.x, smargon.y, smargon.z]:
         assert motor.user_readback.get() == 0
         motor.set.assert_not_called()  # type: ignore

@@ -108,15 +108,10 @@ def mock_ispyb_conn(base_ispyb_conn):
 
     upsert_data_collection.i = iter(TEST_DATA_COLLECTION_IDS)  # pyright: ignore
 
-    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection.side_effect = (
-        upsert_data_collection
-    )
-    base_ispyb_conn.return_value.mx_acquisition.update_dc_position.return_value = (
-        TEST_POSITION_ID
-    )
-    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
-        TEST_DATA_COLLECTION_GROUP_ID
-    )
+    mx_acq = base_ispyb_conn.return_value.mx_acquisition
+    mx_acq.upsert_data_collection.side_effect = upsert_data_collection
+    mx_acq.update_dc_position.return_value = TEST_POSITION_ID
+    mx_acq.upsert_data_collection_group.return_value = TEST_DATA_COLLECTION_GROUP_ID
 
     def upsert_dc_grid(values):
         kvpairs = remap_upsert_columns(list(MXAcquisition.get_dc_grid_params()), values)
@@ -127,9 +122,7 @@ def mock_ispyb_conn(base_ispyb_conn):
 
     upsert_dc_grid.i = iter(TEST_GRID_INFO_IDS)  # pyright: ignore
 
-    base_ispyb_conn.return_value.mx_acquisition.upsert_dc_grid.side_effect = (
-        upsert_dc_grid
-    )
+    mx_acq.upsert_dc_grid.side_effect = upsert_dc_grid
     return base_ispyb_conn
 
 
@@ -195,7 +188,7 @@ def dummy_rotation_params():
     return dummy_params
 
 
-TEST_SAMPLE_ID = "0001"
+TEST_SAMPLE_ID = "364758"
 TEST_BARCODE = "12345A"
 
 

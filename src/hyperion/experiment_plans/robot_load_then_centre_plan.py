@@ -12,7 +12,6 @@ from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatte
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
-from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
@@ -55,7 +54,6 @@ from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import
 from hyperion.parameters.plan_specific.robot_load_then_center_params import (
     RobotLoadThenCentreInternalParameters,
 )
-from hyperion.utils.utils import convert_eV_to_angstrom
 
 
 @dataclasses.dataclass
@@ -219,22 +217,10 @@ def robot_load_then_centre(
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
 
-    actual_energy_ev = 1000 * (
-        yield from read_energy(cast(SetEnergyComposite, composite))
-    )
-
-    if not parameters.experiment_params.requested_energy_kev:
-        parameters.hyperion_params.detector_params.expected_energy_ev = actual_energy_ev
-    else:
-        parameters.hyperion_params.detector_params.expected_energy_ev = (
-            parameters.experiment_params.requested_energy_kev * 1000
-        )
-
-    wavelength_angstroms = convert_eV_to_angstrom(actual_energy_ev)
-    parameters.hyperion_params.ispyb_params.resolution = resolution(
-        parameters.hyperion_params.detector_params,
-        wavelength_angstroms,
-        parameters.experiment_params.detector_distance,
+    parameters.hyperion_params.detector_params.expected_energy_ev = (
+        (parameters.experiment_params.requested_energy_kev * 1000)
+        if parameters.experiment_params.requested_energy_kev
+        else 1000 * (yield from read_energy(cast(SetEnergyComposite, composite)))
     )
 
     eiger.set_detector_parameters(parameters.hyperion_params.detector_params)

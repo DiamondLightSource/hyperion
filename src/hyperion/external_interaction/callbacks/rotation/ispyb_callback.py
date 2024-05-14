@@ -16,7 +16,6 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
 )
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
-    ExperimentType,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
@@ -24,6 +23,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
@@ -92,10 +92,12 @@ class RotationISPyBCallback(BaseISPyBCallback):
             if experiment_type:
                 self.ispyb = StoreInIspyb(
                     self.ispyb_config,
-                    ExperimentType(experiment_type),
+                    IspybExperimentType(experiment_type),
                 )
             else:
-                self.ispyb = StoreInIspyb(self.ispyb_config, ExperimentType.ROTATION)
+                self.ispyb = StoreInIspyb(
+                    self.ispyb_config, IspybExperimentType.ROTATION
+                )
             ISPYB_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(
                 self.ispyb.experiment_type,

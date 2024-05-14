@@ -18,6 +18,7 @@ from scanspec.specs import Line
 from hyperion.external_interaction.ispyb.ispyb_dataclass import RotationIspybParams
 from hyperion.parameters.components import (
     DiffractionExperiment,
+    IspybExperimentType,
     OptionalGonioAngleStarts,
     OptionalXyzStarts,
     RotationAxis,
@@ -46,6 +47,9 @@ class RotationScan(
     scan_width_deg: float = Field(default=360, gt=0)
     rotation_increment_deg: float = Field(default=0.1, gt=0)
     rotation_direction: RotationDirection = Field(default=RotationDirection.NEGATIVE)
+    ispyb_experiment_type: IspybExperimentType = Field(
+        default=IspybExperimentType.ROTATION
+    )
     transmission_frac: float
     ispyb_extras: TemporaryIspybExtras
 
@@ -88,12 +92,11 @@ class RotationScan(
             focal_spot_size_x=self.ispyb_extras.focal_spot_size_x,
             focal_spot_size_y=self.ispyb_extras.focal_spot_size_y,
             comment=self.comment,
-            resolution=self.ispyb_extras.resolution,
             sample_id=str(self.sample_id),
             undulator_gap=self.ispyb_extras.undulator_gap,
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,
-            ispyb_experiment_type="SAD",
+            ispyb_experiment_type=self.ispyb_experiment_type,
         )
 
     @property

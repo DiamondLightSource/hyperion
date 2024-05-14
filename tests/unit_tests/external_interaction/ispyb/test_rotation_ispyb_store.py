@@ -6,13 +6,13 @@ from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
     DataCollectionPositionInfo,
-    ExperimentType,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 
 from ..conftest import (
@@ -30,7 +30,7 @@ from ..conftest import (
 EXPECTED_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,
     "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-    "sampleid": TEST_SAMPLE_ID,
+    "sampleid": None,
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0.1,
@@ -51,7 +51,6 @@ EXPECTED_DATA_COLLECTION = {
     "overlap": 0,
     "omegastart": 0,
     "start_image_number": 1,
-    "resolution": 1.0,  # deferred
     "wavelength": 123.98419840550369,
     "xbeam": 150.0,
     "ybeam": 160.0,
@@ -60,7 +59,7 @@ EXPECTED_DATA_COLLECTION = {
     "xtal_snapshot3": "test_3_y",
     "synchrotron_mode": None,
     "starttime": EXPECTED_START_TIME,
-    "filetemplate": "file_name_0_master.h5",
+    "filetemplate": "file_name_1_master.h5",
     "nimages": 1800,
     "kappastart": 0,
 }
@@ -71,7 +70,7 @@ def dummy_rotation_data_collection_group_info():
     return DataCollectionGroupInfo(
         visit_string="cm31105-4",
         experiment_type="SAD",
-        sample_id="0001",
+        sample_id="364758",
     )
 
 
@@ -94,7 +93,7 @@ def scan_data_info_for_begin():
             kappa_start=0.0,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="0001",
+            sample_id="364758",
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=1.0,
@@ -106,13 +105,12 @@ def scan_data_info_for_begin():
             detector_distance=100.0,
             exp_time=0.1,
             imgdir="/tmp/",
-            file_template="file_name_0_master.h5",
+            file_template="file_name_1_master.h5",
             imgprefix="file_name",
             imgsuffix="h5",
             n_passes=1,
             overlap=0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -141,7 +139,6 @@ def scan_data_info_for_update(scan_data_info_for_begin):
             kappa_start=0.0,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="0001",
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=1.0,
@@ -155,14 +152,13 @@ def scan_data_info_for_update(scan_data_info_for_begin):
             detector_distance=100.0,
             exp_time=0.1,
             imgdir="/tmp/",
-            file_template="file_name_0_master.h5",
+            file_template="file_name_1_master.h5",
             imgprefix="file_name",
             imgsuffix="h5",
             n_passes=1,
             overlap=0,
             flux=10.0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -181,7 +177,7 @@ def scan_data_info_for_update(scan_data_info_for_begin):
 @pytest.fixture
 def dummy_rotation_ispyb_with_experiment_type():
     store_in_ispyb = StoreInIspyb(
-        CONST.SIM.ISPYB_CONFIG, ExperimentType.CHARACTERIZATION
+        CONST.SIM.ISPYB_CONFIG, IspybExperimentType.CHARACTERIZATION
     )
     return store_in_ispyb
 
@@ -223,7 +219,7 @@ def test_begin_deposition(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION,
+        EXPECTED_DATA_COLLECTION | {"sampleid": TEST_SAMPLE_ID},
     )
 
 
@@ -236,7 +232,9 @@ def test_begin_deposition_with_group_id_updates_but_doesnt_insert(
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
 ):
-    dummy_rotation_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.ROTATION)
+    dummy_rotation_ispyb = StoreInIspyb(
+        CONST.SIM.ISPYB_CONFIG, IspybExperimentType.ROTATION
+    )
     scan_data_info_for_begin.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
@@ -266,7 +264,7 @@ def test_begin_deposition_with_group_id_updates_but_doesnt_insert(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION,
+        EXPECTED_DATA_COLLECTION | {"sampleid": TEST_SAMPLE_ID},
     )
 
 
@@ -367,7 +365,9 @@ def test_update_deposition_with_group_id_updates(
     scan_data_info_for_begin,
     scan_data_info_for_update,
 ):
-    dummy_rotation_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.ROTATION)
+    dummy_rotation_ispyb = StoreInIspyb(
+        CONST.SIM.ISPYB_CONFIG, IspybExperimentType.ROTATION
+    )
     scan_data_info_for_begin.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
@@ -492,7 +492,7 @@ def test_store_rotation_scan_uses_supplied_dcgid(
     mock_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
         dcgid
     )
-    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, ExperimentType.ROTATION)
+    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, IspybExperimentType.ROTATION)
     scan_data_info_for_begin.data_collection_info.parent_id = dcgid
     ispyb_ids = store_in_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, [scan_data_info_for_begin]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 from abc import abstractmethod
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Sequence, SupportsInt, TypeVar
 
@@ -45,23 +45,67 @@ class ParameterVersion(Version):
 PARAMETER_VERSION = ParameterVersion.parse("5.0.0")
 
 
-class RotationAxis(str, Enum):
+class RotationAxis(StrEnum):
     OMEGA = "omega"
     PHI = "phi"
     CHI = "chi"
     KAPPA = "kappa"
 
 
-class XyzAxis(str, Enum):
+class XyzAxis(StrEnum):
     X = "sam_x"
     Y = "sam_y"
     Z = "sam_z"
 
 
+class IspybExperimentType(StrEnum):
+    # Enum values from ispyb column data type
+    SAD = "SAD"  # at or slightly above the peak
+    SAD_INVERSE_BEAM = "SAD - Inverse Beam"
+    OSC = "OSC"  # "native" (in the absence of a heavy atom)
+    COLLECT_MULTIWEDGE = (
+        "Collect - Multiwedge"  # "poorly determined" ~ EDNA complex strategy???
+    )
+    MAD = "MAD"
+    HELICAL = "Helical"
+    MULTI_POSITIONAL = "Multi-positional"
+    MESH = "Mesh"
+    BURN = "Burn"
+    MAD_INVERSE_BEAM = "MAD - Inverse Beam"
+    CHARACTERIZATION = "Characterization"
+    DEHYDRATION = "Dehydration"
+    TOMO = "tomo"
+    EXPERIMENT = "experiment"
+    EM = "EM"
+    PDF = "PDF"
+    PDF_BRAGG = "PDF+Bragg"
+    BRAGG = "Bragg"
+    SINGLE_PARTICLE = "single particle"
+    SERIAL_FIXED = "Serial Fixed"
+    SERIAL_JET = "Serial Jet"
+    STANDARD = "Standard"  # Routine structure determination experiment
+    TIME_RESOLVED = "Time Resolved"  # Investigate the change of a system over time
+    DLS_ANVIL_HP = "Diamond Anvil High Pressure"  # HP sample environment pressure cell
+    CUSTOM = "Custom"  # Special or non-standard data collection
+    XRF_MAP = "XRF map"
+    ENERGY_SCAN = "Energy scan"
+    XRF_SPECTRUM = "XRF spectrum"
+    XRF_MAP_XAS = "XRF map xas"
+    MESH_3D = "Mesh3D"
+    SCREENING = "Screening"
+    STILL = "Still"
+    SSX_CHIP = "SSX-Chip"
+    SSX_JET = "SSX-Jet"
+
+    # Aliases for historic hyperion experiment type mapping
+    ROTATION = "SAD"
+    GRIDSCAN_2D = "mesh"
+    GRIDSCAN_3D = "Mesh3D"
+
+
 class HyperionParameters(BaseModel):
     class Config:
         arbitrary_types_allowed = True
-        use_enum_values = True
         extra = Extra.forbid
         json_encoders = {
             ParameterVersion: lambda pv: str(pv),
@@ -104,6 +148,7 @@ class DiffractionExperiment(HyperionParameters):
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
     run_number: int | None = Field(default=None, ge=0)
+    ispyb_experiment_type: IspybExperimentType | None = None
     storage_directory: str
 
     @property
@@ -199,9 +244,7 @@ class TemporaryIspybExtras(BaseModel):
     beam_size_y: float
     focal_spot_size_x: float
     focal_spot_size_y: float
-    resolution: float | None = None
     undulator_gap: float | None = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None
-    ispyb_experiment_type: str | None = None

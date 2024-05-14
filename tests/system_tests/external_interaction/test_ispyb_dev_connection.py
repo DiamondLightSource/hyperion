@@ -45,7 +45,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 )
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
-    ExperimentType,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
@@ -53,6 +52,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
@@ -205,7 +205,7 @@ GRID_INFO_COLUMN_MAP = {
 @pytest.fixture
 def dummy_data_collection_group_info(dummy_params):
     return populate_data_collection_group(
-        ExperimentType.GRIDSCAN_2D.value,
+        IspybExperimentType.GRIDSCAN_2D.value,
         dummy_params.hyperion_params.detector_params,
         dummy_params.hyperion_params.ispyb_params,
     )
@@ -491,7 +491,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     scan_data_infos = generate_scan_data_infos(
         dummy_params,
         dummy_scan_data_info_for_begin,
-        ExperimentType.GRIDSCAN_3D,
+        IspybExperimentType.GRIDSCAN_3D,
         ispyb_ids,
     )
     ispyb_ids = dummy_ispyb_3d.update_deposition(ispyb_ids, scan_data_infos)
@@ -512,10 +512,10 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
 @pytest.mark.parametrize(
     "experiment_type, exp_num_of_grids, success",
     [
-        (ExperimentType.GRIDSCAN_2D, 1, False),
-        (ExperimentType.GRIDSCAN_2D, 1, True),
-        (ExperimentType.GRIDSCAN_3D, 2, False),
-        (ExperimentType.GRIDSCAN_3D, 2, True),
+        (IspybExperimentType.GRIDSCAN_2D, 1, False),
+        (IspybExperimentType.GRIDSCAN_2D, 1, True),
+        (IspybExperimentType.GRIDSCAN_3D, 2, False),
+        (IspybExperimentType.GRIDSCAN_3D, 2, True),
     ],
 )
 def test_can_store_2D_ispyb_data_correctly_when_in_error(
@@ -573,14 +573,14 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 def generate_scan_data_infos(
     dummy_params,
     dummy_scan_data_info_for_begin: ScanDataInfo,
-    experiment_type: ExperimentType,
+    experiment_type: IspybExperimentType,
     ispyb_ids: IspybIds,
 ) -> Sequence[ScanDataInfo]:
     xy_scan_data_info = scan_xy_data_info_for_update(
         ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
     )
     xy_scan_data_info.data_collection_id = ispyb_ids.data_collection_ids[0]
-    if experiment_type == ExperimentType.GRIDSCAN_3D:
+    if experiment_type == IspybExperimentType.GRIDSCAN_3D:
         scan_data_infos = scan_data_infos_for_update_3d(
             ispyb_ids, xy_scan_data_info, dummy_params
         )
@@ -633,7 +633,6 @@ def test_ispyb_deposition_in_gridscan(
         "overlap": 0,
         "omegastart": 0,
         "startimagenumber": 1,
-        "resolution": 1.0,
         "wavelength": 0.976254,
         "xbeam": 150.0,
         "ybeam": 160.0,
@@ -708,7 +707,6 @@ def test_ispyb_deposition_in_gridscan(
         "overlap": 0,
         "omegastart": 90,
         "startimagenumber": 1,
-        "resolution": 1.0,
         "wavelength": 0.976254,
         "xbeam": 150.0,
         "ybeam": 160.0,

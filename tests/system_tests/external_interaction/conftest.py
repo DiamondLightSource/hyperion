@@ -9,8 +9,8 @@ from ispyb.sqlalchemy import DataCollection, DataCollectionGroup, GridInfo, Posi
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from hyperion.external_interaction.ispyb.data_model import ExperimentType
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -148,7 +148,7 @@ def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
 def dummy_params():
     dummy_params = GridscanInternalParameters(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
+            "tests/test_data/parameter_json_files/system_test_gridscan_param_defaults.json"
         )
     )
     dummy_params.hyperion_params.ispyb_params.visit_path = (
@@ -159,12 +159,16 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, ExperimentType.GRIDSCAN_2D)
+    return StoreInIspyb(
+        CONST.SIM.DEV_ISPYB_DATABASE_CFG, IspybExperimentType.GRIDSCAN_2D
+    )
 
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG, ExperimentType.GRIDSCAN_3D)
+    return StoreInIspyb(
+        CONST.SIM.DEV_ISPYB_DATABASE_CFG, IspybExperimentType.GRIDSCAN_3D
+    )
 
 
 @pytest.fixture
