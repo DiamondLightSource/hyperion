@@ -442,7 +442,7 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
                 ), f"{item_path_str} data shape not expected shape{actual_value.shape}, {expected_shape}"
             if actual_value.shape == ():
                 if callable(exception):
-                    assert exceptions.get(key)(actual_value, expected_value)
+                    assert exceptions.get(key)(actual_value, expected_value)  # type: ignore
                 elif np.isscalar(exception):
                     assert (
                         actual_value[()] == exception
