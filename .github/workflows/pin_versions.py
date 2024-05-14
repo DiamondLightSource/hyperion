@@ -57,8 +57,11 @@ def process_files(input_file, output_file, dependency_processor):
         output_file.write(line)
         if line.startswith("install_requires"):
             break
-    while (line := input_file.readline()) and not line.isspace():
-        dependency_processor(line, output_file)
+    while (line := input_file.readline()) and not line.startswith("["):
+        if line.isspace():
+            output_file.write(line)
+        else:
+            dependency_processor(line, output_file)
     output_file.write(line)
     while line := input_file.readline():
         output_file.write(line)
