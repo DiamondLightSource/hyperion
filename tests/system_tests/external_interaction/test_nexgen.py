@@ -1,4 +1,3 @@
-import gzip
 import re
 import subprocess
 from os import environ
@@ -21,7 +20,7 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 
-from ...conftest import raw_params_from_file
+from ...conftest import extract_metafile, raw_params_from_file
 
 DOCKER = environ.get("DOCKER", "docker")
 
@@ -72,7 +71,7 @@ def test_rotation_nexgen(
     test_params.hyperion_params.detector_params.directory = f"{tmpdir}"
     run_number = test_params.hyperion_params.detector_params.run_number
 
-    _extract_metafile(
+    extract_metafile(
         f"{test_data_directory}/{meta_file}", f"{tmpdir}/{prefix}_{run_number}_meta.h5"
     )
 
@@ -136,12 +135,6 @@ def _check_nexgen_output_passes_imginfo(test_file, reference_file):
         pass
 
         # assert stdout == expected
-
-
-def _extract_metafile(input_filename, output_filename):
-    with gzip.open(input_filename) as metafile_fo:
-        with open(output_filename, "wb") as output_fo:
-            output_fo.write(metafile_fo.read())
 
 
 def _run_imginfo(filename):
