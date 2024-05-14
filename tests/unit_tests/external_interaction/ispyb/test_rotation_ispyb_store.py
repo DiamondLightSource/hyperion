@@ -30,7 +30,7 @@ from ..conftest import (
 EXPECTED_DATA_COLLECTION = {
     "visitid": TEST_SESSION_ID,
     "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-    "sampleid": TEST_SAMPLE_ID,
+    "sampleid": None,
     "detectorid": 78,
     "axisstart": 0.0,
     "axisrange": 0.1,
@@ -59,7 +59,7 @@ EXPECTED_DATA_COLLECTION = {
     "xtal_snapshot3": "test_3_y",
     "synchrotron_mode": None,
     "starttime": EXPECTED_START_TIME,
-    "filetemplate": "file_name_0_master.h5",
+    "filetemplate": "file_name_1_master.h5",
     "nimages": 1800,
     "kappastart": 0,
 }
@@ -70,7 +70,7 @@ def dummy_rotation_data_collection_group_info():
     return DataCollectionGroupInfo(
         visit_string="cm31105-4",
         experiment_type="SAD",
-        sample_id="0001",
+        sample_id="364758",
     )
 
 
@@ -93,7 +93,7 @@ def scan_data_info_for_begin():
             kappa_start=0.0,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="0001",
+            sample_id="364758",
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=1.0,
@@ -105,7 +105,7 @@ def scan_data_info_for_begin():
             detector_distance=100.0,
             exp_time=0.1,
             imgdir="/tmp/",
-            file_template="file_name_0_master.h5",
+            file_template="file_name_1_master.h5",
             imgprefix="file_name",
             imgsuffix="h5",
             n_passes=1,
@@ -139,7 +139,6 @@ def scan_data_info_for_update(scan_data_info_for_begin):
             kappa_start=0.0,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="0001",
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=1.0,
@@ -153,7 +152,7 @@ def scan_data_info_for_update(scan_data_info_for_begin):
             detector_distance=100.0,
             exp_time=0.1,
             imgdir="/tmp/",
-            file_template="file_name_0_master.h5",
+            file_template="file_name_1_master.h5",
             imgprefix="file_name",
             imgsuffix="h5",
             n_passes=1,
@@ -220,7 +219,7 @@ def test_begin_deposition(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION,
+        EXPECTED_DATA_COLLECTION | {"sampleid": TEST_SAMPLE_ID},
     )
 
 
@@ -265,7 +264,7 @@ def test_begin_deposition_with_group_id_updates_but_doesnt_insert(
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[0],
         mx_acq.get_data_collection_params(),
-        EXPECTED_DATA_COLLECTION,
+        EXPECTED_DATA_COLLECTION | {"sampleid": TEST_SAMPLE_ID},
     )
 
 

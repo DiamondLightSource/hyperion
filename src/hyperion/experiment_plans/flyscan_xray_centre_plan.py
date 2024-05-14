@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from time import time
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -54,9 +54,6 @@ from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -167,7 +164,7 @@ def kickoff_and_complete_gridscan(
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,
-    scan_points: List[AxesPoints[Axis]],
+    scan_points: list[AxesPoints[Axis]],
 ):
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
@@ -217,7 +214,7 @@ def kickoff_and_complete_gridscan(
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: GridscanInternalParameters,
+    parameters: ThreeDGridScan,
     md={
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
@@ -247,7 +244,7 @@ def run_gridscan(
     fgs_motors = fgs_composite.fast_grid_scan
 
     LOGGER.info("Setting fgs params")
-    yield from set_flyscan_params(fgs_motors, parameters.experiment_params)
+    yield from set_flyscan_params(fgs_motors, parameters.FGS_params)
     LOGGER.info("Waiting for gridscan validity check")
     yield from wait_for_gridscan_valid(fgs_motors)
 
@@ -259,8 +256,11 @@ def run_gridscan(
         fgs_motors,
         fgs_composite.eiger,
         fgs_composite.synchrotron,
-        parameters.hyperion_params.zocalo_environment,
-        [parameters.get_scan_points(1), parameters.get_scan_points(2)],
+        parameters.zocalo_environment,
+        [
+            parameters.old_parameters().get_scan_points(1),
+            parameters.old_parameters().get_scan_points(2),
+        ],
     )
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
@@ -269,7 +269,7 @@ def run_gridscan(
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
-    parameters: GridscanInternalParameters,
+    parameters: ThreeDGridScan,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
@@ -301,7 +301,7 @@ def run_gridscan_and_move(
         xray_centre, bbox_size = yield from get_processing_result(fgs_composite.zocalo)
         LOGGER.info(f"Got xray centre: {xray_centre}, bbox size: {bbox_size}")
         if xray_centre is not None:
-            xray_centre = parameters.experiment_params.grid_position_to_motor_position(
+            xray_centre = parameters.FGS_params.grid_position_to_motor_position(
                 xray_centre
             )
         else:
@@ -320,7 +320,7 @@ def run_gridscan_and_move(
     with TRACER.start_span("move_to_result"):
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
-    if parameters.experiment_params.set_stub_offsets:
+    if parameters.set_stub_offsets:
         LOGGER.info("Recentring smargon co-ordinate system to this point.")
         yield from bps.mv(
             fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
@@ -333,7 +333,7 @@ def run_gridscan_and_move(
 
 def flyscan_xray_centre(
     composite: FlyScanXRayCentreComposite,
-    parameters: Union[ThreeDGridScan, GridscanInternalParameters, Any],
+    parameters: ThreeDGridScan,
 ) -> MsgGenerator:
     """Create the plan to run the grid scan based on provided parameters.
 
@@ -347,24 +347,15 @@ def flyscan_xray_centre(
         Generator: The plan for the gridscan
     """
 
-    old_parameters = (
-        parameters
-        if isinstance(parameters, GridscanInternalParameters)
-        else parameters.old_parameters()
-    )
-    composite.eiger.set_detector_parameters(
-        old_parameters.hyperion_params.detector_params
-    )
-    composite.zocalo.zocalo_environment = (
-        old_parameters.hyperion_params.zocalo_environment
-    )
+    composite.eiger.set_detector_parameters(parameters.detector_params)
+    composite.zocalo.zocalo_environment = parameters.zocalo_environment
 
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-            "hyperion_internal_parameters": old_parameters.json(),
+            "hyperion_internal_parameters": parameters.old_parameters().json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
             ],
@@ -374,9 +365,9 @@ def flyscan_xray_centre(
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite.xbpm_feedback,
         composite.attenuator,
-        old_parameters.experiment_params.transmission_fraction,
+        parameters.transmission_frac,
     )
     def run_gridscan_and_move_and_tidy(fgs_composite, params):
         yield from run_gridscan_and_move(fgs_composite, params)
 
-    return run_gridscan_and_move_and_tidy(composite, old_parameters)
+    return run_gridscan_and_move_and_tidy(composite, parameters)

@@ -91,6 +91,9 @@ def test_new_gridscan_params_equals_old():
     ) as f:
         new_json_data = json.loads(f.read())
 
+    new_json_data["x_steps"] = 10
+    new_json_data["y_steps"] = 5
+    new_json_data["z_steps"] = 1
     old_params = GridscanInternalParameters(**old_json_data)
     new_params = ThreeDGridScan(**new_json_data)
 
