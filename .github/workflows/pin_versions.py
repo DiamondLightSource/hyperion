@@ -7,8 +7,8 @@ import subprocess
 from functools import partial
 from sys import stderr, stdout
 
-SETUP_CFG_PATTERN = re.compile("(.*?)\\s*(@(.*))?\n")
-SETUP_UNPINNED_PATTERN = re.compile("(.*?)\\s*([<>=]+(.*))?\n")
+SETUP_CFG_PATTERN = re.compile("(.*?\\S)\\s*(@(.*))?$")
+SETUP_UNPINNED_PATTERN = re.compile("(.*?\\S)\\s*([<>=]+(.*))?$")
 PIP = "pip"
 
 
@@ -68,14 +68,14 @@ def process_files(input_file, output_file, dependency_processor):
 
 
 def strip_comment(line: str):
-    split = line.split("#", 1)
+    split = line.rstrip("\n").split("#", 1)
     return split[0], (split[1] if len(split) > 1 else None)
 
 
 def write_with_comment(comment, text, output_file):
     output_file.write(text)
     if comment:
-        output_file.write("#" + comment)
+        output_file.write(" #" + comment)
     output_file.write("\n")
 
 
