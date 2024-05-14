@@ -126,7 +126,7 @@ DATATYPE_EXCEPTION_TABLE = {
 }
 
 
-def test_hyperion_rotation_nexus_datatypes_against_gda(
+def test_determine_datatype_differences(
     files_and_groups: FilesAndgroups,
 ):
     gda_nexus, gda_groups, hyperion_nexus, hyperion_groups = files_and_groups
