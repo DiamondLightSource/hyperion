@@ -15,7 +15,6 @@ from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionGroupInfo,
     DataCollectionInfo,
-    ExperimentType,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_utils import (
@@ -23,6 +22,7 @@ from hyperion.external_interaction.ispyb.ispyb_utils import (
     get_session_id_from_visit,
 )
 from hyperion.log import ISPYB_LOGGER
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ class IspybIds(BaseModel):
 
 
 class StoreInIspyb(ABC):
-    def __init__(self, ispyb_config: str, experiment_type: ExperimentType) -> None:
+    def __init__(self, ispyb_config: str, experiment_type: IspybExperimentType) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
         self._data_collection_group_id: int | None
         self._experiment_type = experiment_type
