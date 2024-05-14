@@ -12,6 +12,7 @@ from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatte
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
+from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
@@ -171,10 +172,7 @@ def robot_load_then_centre_plan(
         assert params.sample_pin is not None
         yield from bps.abs_set(
             composite.robot,
-            SampleLocation(
-                params.sample_puck,
-                params.sample_pin,
-            ),
+            SampleLocation(params.sample_puck, params.sample_pin),
             group="robot_load",
         )
 
@@ -214,18 +212,14 @@ def robot_load_then_centre_plan(
 def _get_updated_parameters_for_pin_and_xray(
     params: RobotLoadThenCentre, composite: RobotLoadThenCentreComposite
 ):
-    current_energy_ev = 1000 * (
+    use_energy = params.demand_energy_ev or 1000 * (
         yield from read_energy(cast(SetEnergyComposite, composite))
     )
-    use_energy = params.demand_energy_ev or current_energy_ev
-
-    wavelength_angstroms = convert_eV_to_angstrom(use_energy)
-    use_resolution = resolution(
-        params.detector_params,
-        wavelength_angstroms,
-        params.detector_distance_mm
-        or (yield from bps.rd(composite.detector_motion.z.user_readback)),
+    det_dist = params.detector_distance_mm or (
+        yield from bps.rd(composite.detector_motion.z.user_readback)
     )
+    wavelength_angstroms = convert_eV_to_angstrom(use_energy)
+    use_resolution = resolution(params.detector_params, wavelength_angstroms, det_dist)
 
     return use_energy, use_resolution
 
