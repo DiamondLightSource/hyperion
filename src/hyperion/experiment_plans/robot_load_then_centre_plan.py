@@ -12,7 +12,6 @@ from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatte
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
-from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
@@ -50,7 +49,6 @@ from hyperion.experiment_plans.set_energy_plan import (
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import RobotLoadThenCentre
-from hyperion.utils.utils import convert_eV_to_angstrom
 
 
 @dataclasses.dataclass
@@ -198,30 +196,14 @@ def robot_load_then_centre_plan(
 
     yield from robot_load()
 
-    use_energy, use_resolution = yield from _get_updated_parameters_for_pin_and_xray(
-        params, composite
-    )
-    yield from pin_centre_then_xray_centre_plan(
-        cast(GridDetectThenXRayCentreComposite, composite),
-        params.pin_centre_then_xray_centre_params(
-            energy_ev=use_energy, ispyb_resolution=use_resolution
-        ),
-    )
-
-
-def _get_updated_parameters_for_pin_and_xray(
-    params: RobotLoadThenCentre, composite: RobotLoadThenCentreComposite
-):
     use_energy = params.demand_energy_ev or 1000 * (
         yield from read_energy(cast(SetEnergyComposite, composite))
     )
-    det_dist = params.detector_distance_mm or (
-        yield from bps.rd(composite.detector_motion.z.user_readback)
-    )
-    wavelength_angstroms = convert_eV_to_angstrom(use_energy)
-    use_resolution = resolution(params.detector_params, wavelength_angstroms, det_dist)
 
-    return use_energy, use_resolution
+    yield from pin_centre_then_xray_centre_plan(
+        cast(GridDetectThenXRayCentreComposite, composite),
+        params.pin_centre_then_xray_centre_params(energy_ev=use_energy),
+    )
 
 
 def robot_load_then_centre(
