@@ -129,7 +129,6 @@ def _detect_grid_and_do_gridscan(
         composite.oav.parameters,
         parameters.exposure_time_s,
         parameters.set_stub_offsets,
-        parameters.panda_runup_distance_mm,
     )
 
     @bpp.subs_decorator([grid_params_callback])

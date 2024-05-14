@@ -7,12 +7,9 @@ from event_model.documents import Event
 
 from hyperion.device_setup_plans.setup_oav import calculate_x_y_z_of_pixel
 from hyperion.log import LOGGER
-from hyperion.parameters.constants import CONST
 
 
 class GridParamUpdate(TypedDict):
-    transmission_frac: float
-    exposure_time_s: float
     x_start_um: float
     y_start_um: float
     y2_start_um: float
@@ -24,7 +21,6 @@ class GridParamUpdate(TypedDict):
     x_step_size_um: float
     y_step_size_um: float
     z_step_size_um: float
-    set_stub_offsets: bool
 
 
 class GridDetectionCallback(CallbackBase):
@@ -33,14 +29,12 @@ class GridDetectionCallback(CallbackBase):
         oav_params: OAVConfigParams,
         exposure_time: float,
         set_stub_offsets: bool,
-        run_up_distance_mm: float = CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT,
         *args,
     ) -> None:
         super().__init__(*args)
         self.exposure_time = exposure_time
         self.set_stub_offsets = set_stub_offsets
         self.oav_params = oav_params
-        self.run_up_distance_mm: float = run_up_distance_mm
         self.start_positions: list = []
         self.box_numbers: list = []
 
@@ -84,8 +78,6 @@ class GridDetectionCallback(CallbackBase):
 
     def get_grid_parameters(self) -> GridParamUpdate:
         return {
-            "transmission_frac": 1.0,
-            "exposure_time_s": self.exposure_time,
             "x_start_um": self.start_positions[0][0],
             "y_start_um": self.start_positions[0][1],
             "y2_start_um": self.start_positions[0][1],
@@ -97,5 +89,4 @@ class GridDetectionCallback(CallbackBase):
             "x_step_size_um": self.x_step_size_mm,
             "y_step_size_um": self.y_step_size_mm,
             "z_step_size_um": self.z_step_size_mm,
-            "set_stub_offsets": self.set_stub_offsets,
         }

@@ -96,7 +96,7 @@ class GridCommon(
         ), "Detector distance must be filled before generating DetectorParams"
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
-            detector_size_constants=self.detector,  # type: ignore
+            detector_size_constants=self.detector,  # type: ignore # Will be cleaned up in #1307
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
             directory=self.storage_directory,

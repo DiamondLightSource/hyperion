@@ -313,9 +313,6 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     assert my_grid_params["z_steps"] == pytest.approx(1)
     assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
 
-    assert my_grid_params["exposure_time_s"] == pytest.approx(0.5)
-    assert my_grid_params["set_stub_offsets"] is True
-
 
 @pytest.mark.parametrize(
     "odd",
