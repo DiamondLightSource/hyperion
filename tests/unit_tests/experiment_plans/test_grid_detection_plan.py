@@ -154,7 +154,7 @@ def test_given_when_grid_detect_then_start_position_as_expected(
     composite.oav.parameters.beam_centre_j = 4
     box_size_y_pixels = box_size_um / composite.oav.parameters.micronsPerYPixel
 
-    grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004, False)
+    grid_param_cb = GridDetectionCallback(composite.oav.parameters)
     RE.subscribe(grid_param_cb)
 
     @bpp.run_decorator()
@@ -280,7 +280,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
     box_size_um = 20
-    cb = GridDetectionCallback(composite.oav.parameters, 0.5, True)
+    cb = GridDetectionCallback(composite.oav.parameters)
     RE.subscribe(cb)
 
     def decorated():

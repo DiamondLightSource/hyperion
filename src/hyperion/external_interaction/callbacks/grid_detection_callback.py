@@ -27,13 +27,9 @@ class GridDetectionCallback(CallbackBase):
     def __init__(
         self,
         oav_params: OAVConfigParams,
-        exposure_time: float,
-        set_stub_offsets: bool,
         *args,
     ) -> None:
         super().__init__(*args)
-        self.exposure_time = exposure_time
-        self.set_stub_offsets = set_stub_offsets
         self.oav_params = oav_params
         self.start_positions: list = []
         self.box_numbers: list = []
