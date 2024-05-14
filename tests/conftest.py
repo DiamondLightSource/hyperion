@@ -1,4 +1,5 @@
 import asyncio
+import gzip
 import json
 import logging
 import sys
@@ -654,6 +655,12 @@ def fake_fgs_composite(
 def fake_read(obj, initial_positions, _):
     initial_positions[obj] = 0
     yield Msg("null", obj)
+
+
+def extract_metafile(input_filename, output_filename):
+    with gzip.open(input_filename) as metafile_fo:
+        with open(output_filename, "wb") as output_fo:
+            output_fo.write(metafile_fo.read())
 
 
 class RunEngineSimulator:
