@@ -3,6 +3,7 @@ import types
 from typing import Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
+import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
@@ -178,7 +179,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
+        set_sim_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
 
         synchrotron_test_value = SynchrotronMode.USER
         set_sim_value(
@@ -191,8 +192,9 @@ class TestFlyscanXrayCentrePlan:
         )
 
         current_energy_kev_test_value = 12.05
-        fake_fgs_composite.dcm.energy_in_kev.user_readback.sim_put(  # type: ignore
-            current_energy_kev_test_value
+        set_sim_value(
+            fake_fgs_composite.dcm.energy_in_kev.user_readback,
+            current_energy_kev_test_value,
         )
 
         xgap_test_value = 0.1234
@@ -202,8 +204,11 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-        fake_fgs_composite.aperture_scatterguard.set(
-            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE  # type: ignore
+        RE(
+            bps.abs_set(
+                fake_fgs_composite.aperture_scatterguard,
+                fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE,  # type: ignore
+            )
         )
 
         test_ispyb_callback = PlanReactiveCallback(ISPYB_LOGGER)
@@ -239,7 +244,7 @@ class TestFlyscanXrayCentrePlan:
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[0],  # pyright: ignore
                 {
-                    "undulator_current_gap": undulator_test_value,
+                    "undulator-current_gap": undulator_test_value,
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
@@ -250,7 +255,7 @@ class TestFlyscanXrayCentrePlan:
                 {
                     "attenuator_actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
-                    "dcm_energy_in_kev": current_energy_kev_test_value,
+                    "dcm-energy_in_kev": current_energy_kev_test_value,
                 },
             )
             # fmt: on

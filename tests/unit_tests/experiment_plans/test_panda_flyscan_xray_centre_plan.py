@@ -134,7 +134,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
+        set_sim_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
 
         synchrotron_test_value = SynchrotronMode.USER
         set_sim_value(
@@ -185,7 +185,7 @@ class TestFlyscanXrayCentrePlan:
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[0],  # pyright: ignore
                 {
-                    "undulator_current_gap": undulator_test_value,
+                    "undulator-current_gap": undulator_test_value,
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
@@ -479,12 +479,12 @@ class TestFlyscanXrayCentrePlan:
         new=MagicMock(return_value=iter([])),
     )
     @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.udc_directory_provider.set_directory",
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.get_directory_provider",
         autospec=True,
     )
     def test_when_gridscan_run_panda_directory_applied(
         self,
-        set_directory,
+        get_directory_provider,
         RE_with_subs: tuple[RunEngine, Any],
         test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
@@ -494,7 +494,7 @@ class TestFlyscanXrayCentrePlan:
             run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params)
         )
         expected_path = Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
-        set_directory.assert_called_once_with(expected_path)
+        get_directory_provider().update.assert_called_once_with(directory=expected_path)
 
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",

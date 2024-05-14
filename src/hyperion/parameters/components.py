@@ -61,7 +61,6 @@ class XyzAxis(str, Enum):
 class HyperionParameters(BaseModel):
     class Config:
         arbitrary_types_allowed = True
-        use_enum_values = True
         extra = Extra.forbid
         json_encoders = {
             ParameterVersion: lambda pv: str(pv),
@@ -199,7 +198,6 @@ class TemporaryIspybExtras(BaseModel):
     beam_size_y: float
     focal_spot_size_x: float
     focal_spot_size_y: float
-    resolution: float | None = None
     undulator_gap: float | None = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None

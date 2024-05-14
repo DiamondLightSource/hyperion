@@ -14,7 +14,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.DCM import DCM
+from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params

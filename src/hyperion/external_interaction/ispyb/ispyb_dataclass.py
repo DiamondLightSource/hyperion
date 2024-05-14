@@ -15,7 +15,6 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "focal_spot_size_x": 0.0,
     "focal_spot_size_y": 0.0,
     "comment": "Descriptive comment.",
-    "resolution": 1,
     "undulator_gap": None,
 }
 
@@ -29,8 +28,6 @@ class IspybParams(BaseModel):
     focal_spot_size_x: float
     focal_spot_size_y: float
     comment: str
-    # populated by robot_load_then_centre
-    resolution: Optional[float]
 
     sample_id: Optional[str] = None
 

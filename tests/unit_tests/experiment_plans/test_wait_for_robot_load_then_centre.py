@@ -8,7 +8,6 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.webcam import Webcam
-from numpy import isclose
 from ophyd.sim import NullStatus, instantiate_fake_device
 from ophyd_async.core import set_sim_value
 
@@ -38,7 +37,7 @@ def robot_load_composite(
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
     composite.dcm = dcm
-    composite.dcm.energy_in_kev.user_readback.sim_put(11.105)
+    set_sim_value(composite.dcm.energy_in_kev.user_readback, 11.105)
     composite.robot = robot
     composite.aperture_scatterguard = aperture_scatterguard
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
@@ -93,10 +92,6 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 
     assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
     assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
-    assert isinstance(
-        resolution := params_passed.hyperion_params.ispyb_params.resolution, float
-    )
-    assert isclose(resolution, 2.11338)
 
 
 @patch(
@@ -114,8 +109,8 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
 ):
     sim_run_engine.add_handler(
         "read",
-        "dcm_energy_in_kev",
-        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(robot_load_composite, robot_load_then_centre_params)
@@ -144,8 +139,8 @@ def test_robot_load_then_centre_doesnt_set_energy_if_not_specified(
 ):
     sim_run_engine.add_handler(
         "read",
-        "dcm_energy_in_kev",
-        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(
@@ -178,8 +173,8 @@ def run_simulating_smargon_wait(
 
     sim_run_engine.add_handler(
         "read",
-        "dcm_energy_in_kev",
-        lambda msg: {"dcm_energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
     )
     sim_run_engine.add_handler(
         "read",

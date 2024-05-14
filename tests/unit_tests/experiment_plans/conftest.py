@@ -38,7 +38,7 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 
 BASIC_PRE_SETUP_DOC = {
-    "undulator_current_gap": 0,
+    "undulator-current_gap": 0,
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
@@ -47,7 +47,7 @@ BASIC_PRE_SETUP_DOC = {
 BASIC_POST_SETUP_DOC = {
     "attenuator_actual_transmission": 0,
     "flux_flux_reading": 10,
-    "dcm_energy_in_kev": 11.105,
+    "dcm-energy_in_kev": 11.105,
 }
 
 

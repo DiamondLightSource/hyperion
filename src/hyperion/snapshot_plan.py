@@ -18,9 +18,9 @@ def prepare_for_snapshot(backlight: Backlight, aperture: Aperture):
 
 def take_snapshot(oav: OAV, snapshot_filename, snapshot_directory):
     oav.wait_for_connection()
-    yield from bps.abs_set(oav.snapshot.filename, snapshot_filename)
-    yield from bps.abs_set(oav.snapshot.directory, snapshot_directory)
-    yield from bps.trigger(oav.snapshot, wait=True)
+    yield from bps.abs_set(oav.grid_snapshot.filename, snapshot_filename)
+    yield from bps.abs_set(oav.grid_snapshot.directory, snapshot_directory)
+    yield from bps.trigger(oav.grid_snapshot, wait=True)
 
 
 @bpp.run_decorator()

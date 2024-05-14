@@ -51,7 +51,6 @@ EXPECTED_DATA_COLLECTION = {
     "overlap": 0,
     "omegastart": 0,
     "start_image_number": 1,
-    "resolution": 1.0,  # deferred
     "wavelength": 123.98419840550369,
     "xbeam": 150.0,
     "ybeam": 160.0,
@@ -112,7 +111,6 @@ def scan_data_info_for_begin():
             n_passes=1,
             overlap=0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -161,7 +159,6 @@ def scan_data_info_for_update(scan_data_info_for_begin):
             overlap=0,
             flux=10.0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,

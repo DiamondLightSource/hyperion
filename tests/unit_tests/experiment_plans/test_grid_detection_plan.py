@@ -33,11 +33,10 @@ from .conftest import assert_event
 
 @pytest.fixture
 def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
-    oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True)
-
-    oav.parameters = OAVConfigParams(
+    params = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True, params=params)
     oav.parameters.update_on_zoom = MagicMock()
     oav.parameters.load_microns_per_pixel = MagicMock()
     oav.parameters.micronsPerXPixel = 1.58
@@ -244,31 +243,31 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
         assert_event(
             cb.activity_gated_event.mock_calls[0],  # pyright: ignore
             {
-                "oav_snapshot_top_left_x": 8,
-                "oav_snapshot_top_left_y": -6,
-                "oav_snapshot_num_boxes_x": 8,
-                "oav_snapshot_num_boxes_y": 2,
-                "oav_snapshot_box_width": 16,
-                "oav_snapshot_microns_per_pixel_x": 1.25,
-                "oav_snapshot_microns_per_pixel_y": 1.25,
-                "oav_snapshot_last_path_full_overlay": "tmp/test_0_grid_overlay.png",
-                "oav_snapshot_last_path_outer": "tmp/test_0_outer_overlay.png",
-                "oav_snapshot_last_saved_path": "tmp/test_0.png",
+                "oav_grid_snapshot_top_left_x": 8,
+                "oav_grid_snapshot_top_left_y": -6,
+                "oav_grid_snapshot_num_boxes_x": 8,
+                "oav_grid_snapshot_num_boxes_y": 2,
+                "oav_grid_snapshot_box_width": 16,
+                "oav_grid_snapshot_microns_per_pixel_x": 1.25,
+                "oav_grid_snapshot_microns_per_pixel_y": 1.25,
+                "oav_grid_snapshot_last_path_full_overlay": "tmp/test_0_grid_overlay.png",
+                "oav_grid_snapshot_last_path_outer": "tmp/test_0_outer_overlay.png",
+                "oav_grid_snapshot_last_saved_path": "tmp/test_0.png",
             },
         )
         assert_event(
             cb.activity_gated_event.mock_calls[1],  # pyright:ignore
             {
-                "oav_snapshot_top_left_x": 8,
-                "oav_snapshot_top_left_y": 2,
-                "oav_snapshot_num_boxes_x": 8,
-                "oav_snapshot_num_boxes_y": 1,
-                "oav_snapshot_box_width": 16,
-                "oav_snapshot_microns_per_pixel_x": 1.25,
-                "oav_snapshot_microns_per_pixel_y": 1.25,
-                "oav_snapshot_last_path_full_overlay": "tmp/test_90_grid_overlay.png",
-                "oav_snapshot_last_path_outer": "tmp/test_90_outer_overlay.png",
-                "oav_snapshot_last_saved_path": "tmp/test_90.png",
+                "oav_grid_snapshot_top_left_x": 8,
+                "oav_grid_snapshot_top_left_y": 2,
+                "oav_grid_snapshot_num_boxes_x": 8,
+                "oav_grid_snapshot_num_boxes_y": 1,
+                "oav_grid_snapshot_box_width": 16,
+                "oav_grid_snapshot_microns_per_pixel_x": 1.25,
+                "oav_grid_snapshot_microns_per_pixel_y": 1.25,
+                "oav_grid_snapshot_last_path_full_overlay": "tmp/test_90_grid_overlay.png",
+                "oav_grid_snapshot_last_path_outer": "tmp/test_90_outer_overlay.png",
+                "oav_grid_snapshot_last_saved_path": "tmp/test_90.png",
             },
         )
 
@@ -339,7 +338,10 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     box_size_y_pixels = box_size_um / composite.oav.parameters.micronsPerYPixel
     initial_min_y = 1
 
-    abs_sets: dict[str, list] = {"snapshot.top_left_y": [], "snapshot.num_boxes_y": []}
+    abs_sets: dict[str, list] = {
+        "grid_snapshot.top_left_y": [],
+        "grid_snapshot.num_boxes_y": [],
+    }
 
     def handle_read(msg: Msg):
         if msg.obj.name == "pin_tip_detection-triggered_tip":
@@ -394,8 +396,8 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     else:
         fake_logger.debug.assert_not_called()
 
-    assert abs_sets["snapshot.top_left_y"][0] == expected_min_y
-    assert abs_sets["snapshot.num_boxes_y"][0] == expected_y_steps
+    assert abs_sets["grid_snapshot.top_left_y"][0] == expected_min_y
+    assert abs_sets["grid_snapshot.num_boxes_y"][0] == expected_y_steps
 
 
 @pytest.mark.parametrize(

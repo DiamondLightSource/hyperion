@@ -20,6 +20,11 @@
     "visit": "cm31105-4",
     "zocalo_environment": "dev_artemis",
     "transmission_frac": 0.1,
+    "phi_start_deg": 0.47,
+    "chi_start_deg": 23.85,
+    "x_start_um": 1.0,
+    "y_start_um": 2.0,
+    "z_start_um": 3.0,
     "ispyb_extras": {
         "position": [
             10.0,

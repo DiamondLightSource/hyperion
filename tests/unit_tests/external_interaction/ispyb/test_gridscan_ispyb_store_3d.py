@@ -76,7 +76,6 @@ def scan_data_info_for_begin():
             n_passes=1,
             overlap=0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -126,7 +125,6 @@ def scan_data_infos_for_update():
             overlap=0,
             flux=10.0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -185,7 +183,6 @@ def scan_data_infos_for_update():
             overlap=0,
             flux=10.0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -345,7 +342,6 @@ def test_begin_deposition(
             "overlap": 0,
             "omegastart": 0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,
@@ -429,7 +425,6 @@ def test_update_deposition(
             "flux": 10.0,
             "omegastart": 0.0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,
@@ -506,7 +501,6 @@ def test_update_deposition(
             "flux": 10.0,
             "omegastart": 90.0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,

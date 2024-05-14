@@ -88,7 +88,6 @@ class RotationScan(
             focal_spot_size_x=self.ispyb_extras.focal_spot_size_x,
             focal_spot_size_y=self.ispyb_extras.focal_spot_size_y,
             comment=self.comment,
-            resolution=self.ispyb_extras.resolution,
             sample_id=str(self.sample_id),
             undulator_gap=self.ispyb_extras.undulator_gap,
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,

@@ -543,7 +543,7 @@ def test_warn_exception_during_plan_causes_warning_in_log(
 
 
 @patch(
-    "dodal.devices.DCM.get_beamline_parameters",
+    "dodal.devices.undulator_dcm.get_beamline_parameters",
     return_value={"DCM_Perp_Offset_FIXED": 111},
 )
 def test_when_context_created_then_contains_expected_number_of_plans(

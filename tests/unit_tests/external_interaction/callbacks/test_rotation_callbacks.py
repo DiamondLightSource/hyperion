@@ -8,11 +8,11 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.DCM import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from event_model import RunStart
 from ophyd.sim import make_fake_device
+from ophyd_async.core import set_sim_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -86,11 +86,9 @@ def fake_rotation_scan(
 ):
     attenuator = make_fake_device(Attenuator)(name="attenuator")
     flux = make_fake_device(Flux)(name="flux")
-    dcm = make_fake_device(DCM)(
-        name="dcm", daq_configuration_path=i03.DAQ_CONFIGURATION_PATH
-    )
-    dcm.energy_in_kev.user_readback.sim_put(12.1)
     eiger = make_fake_device(EigerDetector)(name="eiger")
+    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    set_sim_value(dcm.energy_in_kev.user_readback, 12.1)
 
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")

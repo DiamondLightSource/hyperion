@@ -70,7 +70,6 @@ def populate_remaining_data_collection_info(
     data_collection_info.n_passes = 1
     data_collection_info.overlap = 0
     data_collection_info.start_image_number = 1
-    data_collection_info.resolution = ispyb_params.resolution
     beam_position = detector_params.get_beam_position_mm(
         detector_params.detector_distance
     )
