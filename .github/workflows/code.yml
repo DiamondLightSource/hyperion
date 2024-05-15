@@ -28,40 +28,11 @@ jobs:
       - name: Run ruff
         run: ruff .
 
-  # tests:
-  #   if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Setup python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.11"
-
-  #     - name: Install with latest dependencies
-  #       run: pip install -e .[dev]
-
-  #     - name: Run Pyright on changes
-  #       run: diff-quality --violations=pyright --fail-under=100
-
-  #     - name: Run tests
-  #       run: pytest --logging -s --random-order -m "not (dlstbx or s03)"
-
-  #     - name: Upload coverage to Codecov
-  #       uses: codecov/codecov-action@v4
-  #       with:
-  #         name: ${{ matrix.python }}/${{ matrix.os }}
-  #         files: cov.xml
-
-  nexus-validation:
+  tests:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout hyperion
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -71,11 +42,27 @@ jobs:
         with:
           python-version: "3.11"
 
-      # - name: Run imginfo on reference nexus
-      #   uses: ./.github/actions/verify-nexus
-      #   id: verify_reference_nexus
-      #   with:
-      #     filename: "tests/test_data/nexus_files/rotation/ins_8_5.nxs"
+      - name: Install with latest dependencies
+        run: pip install -e .[dev]
+
+      - name: Run Pyright on changes
+        run: diff-quality --violations=pyright --fail-under=100
+
+      - name: Run tests
+        run: pytest --logging -s --random-order -m "not (dlstbx or s03)"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          name: ${{ matrix.python }}/${{ matrix.os }}
+          files: cov.xml
+
+      - name: Run imginfo on reference nexus
+        uses: ./.github/actions/verify-nexus
+        id: verify_reference_nexus
+        with:
+          filename: "tests/test_data/nexus_files/rotation/ins_8_5.nxs"
+
       - name: Install with latest dependencies
         run: pip install -e .[dev]
 
