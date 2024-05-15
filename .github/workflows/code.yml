@@ -71,11 +71,19 @@ jobs:
         with:
           python-version: "3.11"
 
-      # - name: Install with latest dependencies
-      #   run: pip install -e .[dev]
+      # - name: Run imginfo on reference nexus
+      #   uses: ./.github/actions/verify-nexus
+      #   with:
+      #     filename: "tests/test_data/nexus_files/rotation/ins_8_5.nxs"
 
-      # - name: Generate test nexus files
-      #   run: hyperion-generate-test-nexus
+      - name: Install with latest dependencies
+        run: pip install -e .[dev]
+
+      - name: Generate test nexus files
+        run: echo "filename=$(hyperion-generate-test-nexus)" >> $GITHUB_OUTPUT
+        id: generated_nexus_filename
 
       - name: Run imginfo on generated nexus
         uses: ./.github/actions/verify-nexus
+        with:
+          filename: ${{ steps.generated_nexus.outputs.filename }}

@@ -6,8 +6,8 @@ inputs:
     required: true
     default: "test_nexus.nxs"
 outputs:
-  imginfo_output:
-    description: "imginfo output"
+  imginfo_exit_code:
+    description: "imginfo_exit_code"
 runs:
   using: "docker"
   image: "Dockerfile"

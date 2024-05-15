@@ -1,4 +1,4 @@
 #!/bin/sh -l
-cp tests/test_data/ins_8_5.nxs gda_reference_test.h5
-/imginfo/imginfo  gda_reference_test.h5
-echo "imginfo_output=BLABLABLA" >> "$GITHUB_OUTPUT"
+echo "$1,$2,$3,$4,$5,$6"
+/imginfo/imginfo  $1
+echo "imginfo_exit_code=$?" >> "$GITHUB_OUTPUT"

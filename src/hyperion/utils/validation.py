@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 from pathlib import Path
 from unittest.mock import patch
 
@@ -97,5 +96,5 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
     assert os.path.isfile(master_filename)
 
 
-def generate_test_nexus_files():
-    shutil.copy(TEST_DATA_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE, "GDA_TEST_NEXUS.nxs")
+def generate_test_nexus():
+    print("tests/test_data/nexus_files/rotation/ins_8_5.nxs")
