@@ -19,6 +19,7 @@ echo "------------- IMGINFO STDERR -------------"
 cat imginfo_err_file
 echo "------------------------------------------"
 if [ -s imginfo_err_file ]; then
-  echo "ERRORS IN IMGINFO PROCESSING"
+  echo "ERRORS IN IMGINFO PROCESSING!"
   exit 1
 fi
+echo "VALIDATED SUCCESSFULLY!"

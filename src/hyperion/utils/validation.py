@@ -160,13 +160,22 @@ def generate_test_nexus():
 
     extract_metafile(
         str(TEST_DATA_DIRECTORY / TEST_METAFILE),
-        f"{filename_stub}_meta.h5",
+        f"{filename_stub}_{run_number}_meta.h5",
     )
 
     new_hyp_data = [f"{filename_stub}_{run_number}_00000{n}.h5" for n in [1, 2, 3, 4]]
     [shutil.copy(TEST_DATA_DIRECTORY / FAKE_DATAFILE, d) for d in new_hyp_data]
 
     exit(0)
+
+
+def copy_test_meta_data_files():
+    extract_metafile(
+        str(TEST_DATA_DIRECTORY / TEST_METAFILE),
+        f"{TEST_DATA_DIRECTORY}/ins_8_5_meta.h5",
+    )
+    new_data = [f"{TEST_DATA_DIRECTORY}/ins_8_5_00000{n}.h5" for n in [1, 2, 3, 4]]
+    [shutil.copy(TEST_DATA_DIRECTORY / FAKE_DATAFILE, d) for d in new_data]
 
 
 if __name__ == "__main__":

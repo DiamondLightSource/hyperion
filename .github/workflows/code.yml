@@ -57,14 +57,14 @@ jobs:
           name: ${{ matrix.python }}/${{ matrix.os }}
           files: cov.xml
 
+      - name: Prepare test data for reference nexus
+        run: hyperion-populate-test-and-meta-files
+
       - name: Run imginfo on reference nexus
         uses: ./.github/actions/verify-nexus
         id: verify_reference_nexus
         with:
           filename: "tests/test_data/nexus_files/rotation/ins_8_5.nxs"
-
-      - name: Install with latest dependencies
-        run: pip install -e .[dev]
 
         # ugly hack because we get double free error on exit
       - name: Generate test nexus files
