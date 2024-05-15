@@ -73,17 +73,21 @@ jobs:
 
       # - name: Run imginfo on reference nexus
       #   uses: ./.github/actions/verify-nexus
+      #   id: verify_reference_nexus
       #   with:
       #     filename: "tests/test_data/nexus_files/rotation/ins_8_5.nxs"
-
       - name: Install with latest dependencies
         run: pip install -e .[dev]
 
+        # ugly hack because we get double free error on exit
       - name: Generate test nexus files
-        run: echo "filename=$(hyperion-generate-test-nexus)" >> $GITHUB_OUTPUT
-        id: generated_nexus_filename
+        run: hyperion-generate-test-nexus
+      - name: Report test nexus files
+        run: echo "filename=$(cat OUTPUT_FILENAME)" >> $GITHUB_OUTPUT
+        id: generated_nexus
 
       - name: Run imginfo on generated nexus
         uses: ./.github/actions/verify-nexus
+        id: verify_generated_nexus
         with:
           filename: ${{ steps.generated_nexus.outputs.filename }}

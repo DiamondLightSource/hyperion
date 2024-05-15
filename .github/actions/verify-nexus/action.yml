@@ -4,10 +4,13 @@ inputs:
   filename:
     description: "nexus file to verify"
     required: true
-    default: "test_nexus.nxs"
 outputs:
+  imginfo_stdout:
+    description: "imginfo output"
+  imginfo_stderr:
+    description: "imginfo error output"
   imginfo_exit_code:
-    description: "imginfo_exit_code"
+    description: "imginfo exit code"
 runs:
   using: "docker"
   image: "Dockerfile"
