@@ -98,8 +98,8 @@ def RE_with_external_callbacks():
         [
             "python",
             "src/hyperion/external_interaction/callbacks/__main__.py",
-            "--logging-level",
-            "DEBUG",
+            # "--logging-level",
+            # "DEBUG",
             "--dev",
         ],
         env=process_env,
