@@ -458,7 +458,9 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[
+            1
+        ].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
@@ -535,7 +537,9 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[
+            1
+        ].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
@@ -564,10 +568,12 @@ class TestFlyscanXrayCentrePlan:
         mock_setup_panda: MagicMock,
         move_xyz: MagicMock,
         mock_mv: MagicMock,
+        mock_kickoff,
+        mock_complete,
+        test_panda_fgs_params: ThreeDGridScan,
         RE_with_subs: tuple[
             RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
         ],
-        test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
@@ -583,6 +589,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.smargon.x.user_readback.sim_put(initial_x_y_z[0])  # type: ignore
         fake_fgs_composite.smargon.y.user_readback.sim_put(initial_x_y_z[1])  # type: ignore
         fake_fgs_composite.smargon.z.user_readback.sim_put(initial_x_y_z[2])  # type: ignore
+        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
 
         def wrapped_run_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_panda_fgs_params)
@@ -590,8 +597,6 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite,
                 test_panda_fgs_params,
             )
-
-        mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
 
         RE(
             ispyb_activation_wrapper(

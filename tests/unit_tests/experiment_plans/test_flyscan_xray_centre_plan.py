@@ -489,7 +489,7 @@ class TestFlyscanXrayCentrePlan:
         fgs = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(return_value=done_status)
-        set_sim_value(fgs.motion_program.running, 1)
+        set_mock_value(fgs.motion_program.running, 1)
         with pytest.raises(FailedStatus):
             RE(
                 kickoff_and_complete_gridscan(
@@ -504,8 +504,8 @@ class TestFlyscanXrayCentrePlan:
                 )
             )
         fgs.KICKOFF_TIMEOUT = 1
-        set_sim_value(fgs.motion_program.running, 0)
-        set_sim_value(fgs.status, 1)
+        set_mock_value(fgs.motion_program.running, 0)
+        set_mock_value(fgs.status, 1)
         res = RE(
             kickoff_and_complete_gridscan(
                 fgs,
@@ -667,8 +667,8 @@ class TestFlyscanXrayCentrePlan:
     ):
         test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
 
-        set_sim_value(test_fgs.position_counter, 0)
-        set_sim_value(test_fgs.scan_invalid, False)
+        set_mock_value(test_fgs.position_counter, 0)
+        set_mock_value(test_fgs.scan_invalid, False)
 
         RE(wait_for_gridscan_valid(test_fgs))
 
@@ -682,8 +682,8 @@ class TestFlyscanXrayCentrePlan:
     ):
         test_fgs: ZebraFastGridScan = i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
 
-        set_sim_value(test_fgs.scan_invalid, True)
-        set_sim_value(test_fgs.position_counter, 0)
+        set_mock_value(test_fgs.scan_invalid, True)
+        set_mock_value(test_fgs.position_counter, 0)
 
         with pytest.raises(WarningException):
             RE(wait_for_gridscan_valid(test_fgs))

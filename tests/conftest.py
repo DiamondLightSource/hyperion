@@ -647,8 +647,8 @@ async def fake_fgs_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    set_mock_value(fake_composite.fast_grid_scan.scan_invalid, False)
-    set_mock_value(fake_composite.fast_grid_scan.position_counter, 0)
+    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
     fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
 
     set_mock_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
