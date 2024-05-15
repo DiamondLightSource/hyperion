@@ -55,9 +55,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_angstrom_to_eV
 
 from ...conftest import fake_read
@@ -286,22 +284,23 @@ def grid_detect_then_xray_centre_composite(
     oav.zoom_controller.zrst.set("1.0x")
     oav.cam.array_size.array_size_x.sim_put(1024)
     oav.cam.array_size.array_size_y.sim_put(768)
-    oav.snapshot.x_size.sim_put(1024)
-    oav.snapshot.y_size.sim_put(768)
-    oav.snapshot.top_left_x.set(50)
-    oav.snapshot.top_left_y.set(100)
-    oav.snapshot.box_width.set(0.1 * 1000 / 1.25)  # size in pixels
-    undulator.current_gap.sim_put(1.11)
+    oav.grid_snapshot.x_size.sim_put(1024)
+    oav.grid_snapshot.y_size.sim_put(768)
+    oav.grid_snapshot.top_left_x.set(50)
+    oav.grid_snapshot.top_left_y.set(100)
+    oav.grid_snapshot.box_width.set(0.1 * 1000 / 1.25)  # size in pixels
+    set_mock_value(undulator.current_gap, 1.11)
 
     unpatched_method = oav.parameters.load_microns_per_pixel
     eiger.stale_params.sim_put(0)
     eiger.odin.meta.ready.sim_put(1)
+    eiger.odin.meta.active.sim_put(1)
     eiger.odin.fan.ready.sim_put(1)
 
     def mock_snapshot_trigger():
-        oav.snapshot.last_path_full_overlay.set("test_1_y")
-        oav.snapshot.last_path_outer.set("test_2_y")
-        oav.snapshot.last_saved_path.set("test_3_y")
+        oav.grid_snapshot.last_path_full_overlay.set("test_1_y")
+        oav.grid_snapshot.last_path_outer.set("test_2_y")
+        oav.grid_snapshot.last_saved_path.set("test_3_y")
         return Status(success=True, done=True)
 
     def patch_lmpp(zoom, xsize, ysize):
@@ -327,6 +326,11 @@ def grid_detect_then_xray_centre_composite(
         set_mock_value(
             ophyd_pin_tip_detection.triggered_bottom_edge,
             numpy.array(bottom_edge_data, dtype=numpy.uint32),
+        )
+        (
+            set_mock_value(
+                zocalo.bbox_sizes, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
+            ),
         )
 
         yield from []
@@ -359,7 +363,7 @@ def grid_detect_then_xray_centre_composite(
             "wait_for_tip_to_be_found",
             side_effect=mock_pin_tip_detect,
         ),
-        patch.object(oav.snapshot, "trigger", side_effect=mock_snapshot_trigger),
+        patch.object(oav.grid_snapshot, "trigger", side_effect=mock_snapshot_trigger),
         patch.object(
             eiger.odin.file_writer.file_name,
             "set",
@@ -796,7 +800,7 @@ def test_ispyb_deposition_in_rotation_plan(
     bps_wait,
     fake_create_rotation_devices: RotationScanComposite,
     RE: RunEngine,
-    test_rotation_params: RotationInternalParameters,
+    test_rotation_params: RotationScan,
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
@@ -818,15 +822,18 @@ def test_ispyb_deposition_in_rotation_plan(
     test_slit_gap_horiz = 0.123
     test_slit_gap_vert = 0.234
 
-    test_rotation_params.experiment_params.image_width = test_img_wid
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
-    test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
+    test_rotation_params.rotation_increment_deg = test_img_wid
+    test_rotation_params.ispyb_extras.beam_size_x = test_bs_x
+    test_rotation_params.ispyb_extras.beam_size_y = test_bs_y
+    test_rotation_params.exposure_time_s = test_exp_time
     energy_ev = convert_angstrom_to_eV(test_wl)
-    fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(  # pyright: ignore
-        energy_ev / 1000
+    set_mock_value(
+        fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
+        energy_ev / 1000,  # pyright: ignore
     )
-    fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)  # pyright: ignore
+    set_mock_value(
+        fake_create_rotation_devices.undulator.current_gap, 1.12
+    )  # pyright: ignore
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         test_synchrotron_mode,
@@ -841,7 +848,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
         test_slit_gap_vert
     )
-    test_rotation_params.hyperion_params.detector_params.expected_energy_ev = energy_ev
+    test_rotation_params.detector_params.expected_energy_ev = energy_ev
 
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_cb = RotationISPyBCallback()
