@@ -7,6 +7,7 @@ from unittest.mock import DEFAULT, MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
+from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
@@ -17,7 +18,7 @@ from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -134,10 +135,10 @@ class TestFlyscanXrayCentrePlan:
     ):
         undulator_test_value = 1.234
 
-        set_sim_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
+        set_mock_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
 
         synchrotron_test_value = SynchrotronMode.USER
-        set_sim_value(
+        set_mock_value(
             fake_fgs_composite.synchrotron.synchrotron_mode, synchrotron_test_value
         )
 
@@ -887,3 +888,37 @@ def test_tidy_up_plans_disable_panda_and_zebra(
     RE(tidy_up_plans(MagicMock()))
     mock_panda_tidy.assert_called_once()
     mock_zebra_tidy.assert_called_once()
+
+
+@patch(
+    "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+    new=MagicMock(return_value=iter([Msg("kickoff_gridscan")])),
+)
+def test_read_hardware_for_nexus_occurs_after_eiger_arm(
+    fake_fgs_composite: FlyScanXRayCentreComposite,
+    test_panda_fgs_params: PandAGridscanInternalParameters,
+    sim_run_engine,
+):
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-synchrotron_mode",
+        lambda msg: {"values": {"value": SynchrotronMode.USER}},
+    )
+    msgs = sim_run_engine.simulate_plan(
+        run_gridscan(fake_fgs_composite, test_panda_fgs_params)
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "create"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "read" and msg.obj.name == "eiger_bit_depth"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "save"
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "kickoff_gridscan"
+    )
