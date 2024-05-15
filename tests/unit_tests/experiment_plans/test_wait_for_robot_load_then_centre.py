@@ -116,14 +116,14 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
 
 
 @patch(
-    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
+    MagicMock(),
 )
 @patch(
     "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
     MagicMock(return_value=iter([Msg("set_energy_plan")])),
 )
-def test_robot_load_then_centre_doesnt_set_energy_if_not_specified(
-    mock_centring_plan: MagicMock,
+def test_robot_load_then_centre_doesnt_set_energy_if_not_specified_and_current_energy_set_on_eiger(
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
     sim_run_engine,
@@ -140,8 +140,8 @@ def test_robot_load_then_centre_doesnt_set_energy_if_not_specified(
         )
     )
     assert not any(msg for msg in messages if msg.command == "set_energy_plan")
-    params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
-    assert params_passed.detector_params.expected_energy_ev == 11105
+    det_params = robot_load_composite.eiger.set_detector_parameters.call_args[0][0]
+    assert det_params.expected_energy_ev == 11105
 
 
 def run_simulating_smargon_wait(
