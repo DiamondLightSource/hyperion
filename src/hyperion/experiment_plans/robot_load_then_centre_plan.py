@@ -196,13 +196,9 @@ def robot_load_then_centre_plan(
 
     yield from robot_load()
 
-    use_energy = params.demand_energy_ev or 1000 * (
-        yield from read_energy(cast(SetEnergyComposite, composite))
-    )
-
     yield from pin_centre_then_xray_centre_plan(
         cast(GridDetectThenXRayCentreComposite, composite),
-        params.pin_centre_then_xray_centre_params(energy_ev=use_energy),
+        params.pin_centre_then_xray_centre_params(),
     )
 
 

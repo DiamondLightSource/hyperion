@@ -169,10 +169,8 @@ class PinTipCentreThenXrayCentre(GridCommon):
 
 
 class RobotLoadThenCentre(GridCommon, WithSample):
-    def pin_centre_then_xray_centre_params(self, *, energy_ev: float | None = None):
+    def pin_centre_then_xray_centre_params(self):
         params = PinTipCentreThenXrayCentre(**self.dict())
-        if energy_ev is not None:
-            params.demand_energy_ev = energy_ev
         return params
 
     # Can be removed in #1277
