@@ -52,7 +52,7 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
 )
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import PandAGridscanInternalParameters, ThreeDGridScan
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 from ...conftest import default_raw_params
 from ...system_tests.external_interaction.conftest import (
