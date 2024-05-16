@@ -192,8 +192,9 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
             "sample": {
                 "beam": {"incident_wavelength": np.isclose},
                 "transformations": {
-                    "_missing": {"omega_end", "omega_increment_set"},
+                    "_missing": {"omega_end"},
                     "_ignore": {"omega"},
+                    "omega_increment_set": 0.1,
                     "omega_end": lambda a, b: np.all(np.isclose(a, b, atol=1e-03)),
                 },
                 "sample_omega": {
