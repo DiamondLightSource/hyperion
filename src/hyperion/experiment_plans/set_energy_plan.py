@@ -12,7 +12,7 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import Msg
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.dcm import DCM
-from dodal.devices.focusing_mirror import FocusingMirror, VFMMirrorVoltages
+from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, VFMMirrorVoltages
 from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
@@ -28,7 +28,7 @@ UNDULATOR_GROUP = "UNDULATOR_GROUP"
 
 @dataclasses.dataclass
 class SetEnergyComposite:
-    vfm: FocusingMirror
+    vfm: FocusingMirrorWithStripes
     vfm_mirror_voltages: VFMMirrorVoltages
     dcm: DCM
     undulator_dcm: UndulatorDCM

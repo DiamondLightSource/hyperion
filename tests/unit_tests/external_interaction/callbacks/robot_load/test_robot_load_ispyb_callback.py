@@ -7,7 +7,7 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot
 from dodal.devices.webcam import Webcam
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import set_mock_value
 
 from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
@@ -118,7 +118,7 @@ def test_given_plan_reads_barcode_then_data_put_in_ispyb(
     start_load.return_value = ACTION_ID
 
     oav.snapshot.last_saved_path.put("test_oav_snapshot")  # type: ignore
-    set_sim_value(webcam.last_saved_path, "test_webcam_snapshot")
+    set_mock_value(webcam.last_saved_path, "test_webcam_snapshot")
 
     @bpp.run_decorator(md=metadata)
     def my_plan():

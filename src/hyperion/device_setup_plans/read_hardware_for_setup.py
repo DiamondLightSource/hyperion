@@ -35,7 +35,9 @@ def read_hardware_for_ispyb_pre_collection(
 
 
 def read_hardware_for_ispyb_during_collection(
-    attenuator: Attenuator, flux: Flux, dcm: DCM
+    attenuator: Attenuator,
+    flux: Flux,
+    dcm: DCM,
 ):
     LOGGER.info("Reading status of beamline for ispyb deposition, during collection.")
     yield from bps.create(name=CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ)

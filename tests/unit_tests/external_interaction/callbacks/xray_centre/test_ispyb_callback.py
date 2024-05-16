@@ -27,7 +27,7 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "focal_spot_size_at_sampley": 0.0,
     "beamsize_at_samplex": 0.1,
     "beamsize_at_sampley": 0.1,
-    "data_collection_number": 0,
+    "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
     "imgdir": "/tmp/",
@@ -37,14 +37,13 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "overlap": 0,
     "omegastart": 0,
     "start_image_number": 1,
-    "resolution": 1.0,  # deferred
     "wavelength": None,
     "xbeam": 150.0,
     "ybeam": 160.0,
     "synchrotron_mode": None,
     "undulator_gap1": None,
     "starttime": EXPECTED_START_TIME,
-    "filetemplate": "file_name_0_master.h5",
+    "filetemplate": "file_name_1_master.h5",
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
@@ -52,8 +51,8 @@ EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
     "axis_range": 0,
     "axisend": 90,
     "axisstart": 90,
-    "data_collection_number": 1,
-    "filetemplate": "file_name_1_master.h5",
+    "data_collection_number": 2,
+    "filetemplate": "file_name_2_master.h5",
 }
 
 EXPECTED_DATA_COLLECTION_2D = {
@@ -78,7 +77,6 @@ EXPECTED_DATA_COLLECTION_2D = {
     "overlap": 0,
     "omegastart": 0,
     "start_image_number": 1,
-    "resolution": 1.0,  # deferred
     "wavelength": None,
     "xbeam": 150.0,
     "ybeam": 160.0,
@@ -189,6 +187,7 @@ class TestXrayCentreISPyBCallback:
                 "wavelength": 1.1164718451643736,
                 "transmission": 100,
                 "flux": 10,
+                "resolution": 1.1830593328548429,
             },
         )
         assert_upsert_call_with(
@@ -200,6 +199,7 @@ class TestXrayCentreISPyBCallback:
                 "wavelength": 1.1164718451643736,
                 "transmission": 100,
                 "flux": 10,
+                "resolution": 1.1830593328548429,
             },
         )
         assert_upsert_call_with(

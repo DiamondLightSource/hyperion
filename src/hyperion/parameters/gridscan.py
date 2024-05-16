@@ -3,7 +3,10 @@ from __future__ import annotations
 import os
 
 import numpy as np
-from dodal.devices.detector import DetectorDistanceToBeamXYConverter, DetectorParams
+from dodal.devices.detector import (
+    DetectorDistanceToBeamXYConverter,
+    DetectorParams,
+)
 from dodal.devices.fast_grid_scan import GridScanParams
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from pydantic import Field
@@ -71,13 +74,12 @@ class GridCommon(
             focal_spot_size_x=self.ispyb_extras.focal_spot_size_x,
             focal_spot_size_y=self.ispyb_extras.focal_spot_size_y,
             comment=self.comment,
-            resolution=self.ispyb_extras.resolution,
             sample_id=str(self.sample_id),
             undulator_gap=self.ispyb_extras.undulator_gap,
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start
             or [],
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
-            ispyb_experiment_type=self.ispyb_extras.ispyb_experiment_type,
+            ispyb_experiment_type=self.ispyb_experiment_type,
         )
 
     @property
@@ -94,6 +96,7 @@ class GridCommon(
         ), "Detector distance must be filled before generating DetectorParams"
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
+            detector_size_constants=self.detector,  # type: ignore # Will be cleaned up in #1307
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
             directory=self.storage_directory,
@@ -166,6 +169,10 @@ class PinTipCentreThenXrayCentre(GridCommon):
 
 
 class RobotLoadThenCentre(GridCommon, WithSample):
+    def pin_centre_then_xray_centre_params(self):
+        params = PinTipCentreThenXrayCentre(**self.dict())
+        return params
+
     # Can be removed in #1277
     def old_parameters(self) -> RobotLoadThenCentreInternalParameters:
         return RobotLoadThenCentreInternalParameters(

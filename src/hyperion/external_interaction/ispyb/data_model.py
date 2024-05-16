@@ -1,53 +1,7 @@
 from dataclasses import asdict, dataclass
-from enum import Enum
 from typing import Optional
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
-
-
-class ExperimentType(Enum):
-    # Enum values from ispyb column data type
-    SAD = "SAD"  # at or slightly above the peak
-    SAD_INVERSE_BEAM = "SAD - Inverse Beam"
-    OSC = "OSC"  # "native" (in the absence of a heavy atom)
-    COLLECT_MULTIWEDGE = (
-        "Collect - Multiwedge"  # "poorly determined" ~ EDNA complex strategy???
-    )
-    MAD = "MAD"
-    HELICAL = "Helical"
-    MULTI_POSITIONAL = "Multi-positional"
-    MESH = "Mesh"
-    BURN = "Burn"
-    MAD_INVERSE_BEAM = "MAD - Inverse Beam"
-    CHARACTERIZATION = "Characterization"
-    DEHYDRATION = "Dehydration"
-    TOMO = "tomo"
-    EXPERIMENT = "experiment"
-    EM = "EM"
-    PDF = "PDF"
-    PDF_BRAGG = "PDF+Bragg"
-    BRAGG = "Bragg"
-    SINGLE_PARTICLE = "single particle"
-    SERIAL_FIXED = "Serial Fixed"
-    SERIAL_JET = "Serial Jet"
-    STANDARD = "Standard"  # Routine structure determination experiment
-    TIME_RESOLVED = "Time Resolved"  # Investigate the change of a system over time
-    DLS_ANVIL_HP = "Diamond Anvil High Pressure"  # HP sample environment pressure cell
-    CUSTOM = "Custom"  # Special or non-standard data collection
-    XRF_MAP = "XRF map"
-    ENERGY_SCAN = "Energy scan"
-    XRF_SPECTRUM = "XRF spectrum"
-    XRF_MAP_XAS = "XRF map xas"
-    MESH_3D = "Mesh3D"
-    SCREENING = "Screening"
-    STILL = "Still"
-    SSX_CHIP = "SSX-Chip"
-    SSX_JET = "SSX-Jet"
-
-    # Aliases for historic hyperion experiment type mapping
-    ROTATION = "SAD"
-    GRIDSCAN_2D = "mesh"
-    GRIDSCAN_3D = "Mesh3D"
 
 
 @dataclass()
