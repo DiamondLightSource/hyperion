@@ -148,6 +148,7 @@ class RotationInternalParameters(InternalParameters):
             stop=(
                 self.experiment_params.rotation_angle
                 + self.experiment_params.omega_start
+                - self.experiment_params.image_width
             ),
             num=self.experiment_params.get_num_images(),
         )

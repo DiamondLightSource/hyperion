@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
-import json
 from datetime import datetime
+from pathlib import Path
 from typing import cast
 
 import bluesky.plan_stubs as bps
@@ -48,12 +48,7 @@ from hyperion.experiment_plans.set_energy_plan import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
-    PinCentreThenXrayCentreInternalParameters,
-)
-from hyperion.parameters.plan_specific.robot_load_then_center_params import (
-    RobotLoadThenCentreInternalParameters,
-)
+from hyperion.parameters.gridscan import RobotLoadThenCentre
 
 
 @dataclasses.dataclass
@@ -116,14 +111,14 @@ def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
     )
 
 
-def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: str):
+def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: Path):
     time_now = datetime.now()
     snapshot_format = f"{time_now.strftime('%H%M%S')}_{{device}}_after_load"
     for device in [oav.snapshot, webcam]:
         yield from bps.abs_set(
             device.filename, snapshot_format.format(device=device.name)
         )
-        yield from bps.abs_set(device.directory, directory)
+        yield from bps.abs_set(device.directory, str(directory))
         yield from bps.trigger(device, group="snapshots")
     yield from bps.wait("snapshots")
 
@@ -151,7 +146,7 @@ def prepare_for_robot_load(composite: RobotLoadThenCentreComposite):
 
 def robot_load_then_centre_plan(
     composite: RobotLoadThenCentreComposite,
-    parameters: RobotLoadThenCentreInternalParameters,
+    params: RobotLoadThenCentre,
 ):
     yield from prepare_for_robot_load(composite)
 
@@ -159,10 +154,10 @@ def robot_load_then_centre_plan(
         md={
             "subplan_name": CONST.PLAN.ROBOT_LOAD,
             "metadata": {
-                "visit_path": parameters.hyperion_params.ispyb_params.visit_path,
-                "sample_id": parameters.hyperion_params.ispyb_params.sample_id,
-                "sample_puck": parameters.experiment_params.sample_puck,
-                "sample_pin": parameters.experiment_params.sample_pin,
+                "visit_path": params.ispyb_params.visit_path,
+                "sample_id": params.sample_id,
+                "sample_puck": params.sample_puck,
+                "sample_pin": params.sample_pin,
             },
             "activate_callbacks": [
                 "RobotLoadISPyBCallback",
@@ -170,25 +165,25 @@ def robot_load_then_centre_plan(
         }
     )
     def robot_load():
+        # TODO: get these from one source of truth #1347
+        assert params.sample_puck is not None
+        assert params.sample_pin is not None
         yield from bps.abs_set(
             composite.robot,
-            SampleLocation(
-                parameters.experiment_params.sample_puck,
-                parameters.experiment_params.sample_pin,
-            ),
+            SampleLocation(params.sample_puck, params.sample_pin),
             group="robot_load",
         )
 
-        if parameters.experiment_params.requested_energy_kev:
+        if params.demand_energy_ev:
             yield from set_energy_plan(
-                parameters.experiment_params.requested_energy_kev,
+                params.demand_energy_ev / 1000,
                 cast(SetEnergyComposite, composite),
             )
 
         yield from bps.wait("robot_load")
 
         yield from take_robot_snapshots(
-            composite.oav, composite.webcam, parameters.experiment_params.snapshot_dir
+            composite.oav, composite.webcam, params.snapshot_directory
         )
 
         yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_LOAD)
@@ -201,33 +196,29 @@ def robot_load_then_centre_plan(
 
     yield from robot_load()
 
-    # XXX 1278 this effectively casts between unrelated types which doesn't have all
-    # attributes needed for downstream e.g. grid_width_microns
-    params_json = json.loads(parameters.json())
-    pin_centre_params = PinCentreThenXrayCentreInternalParameters(**params_json)
-
     yield from pin_centre_then_xray_centre_plan(
-        cast(GridDetectThenXRayCentreComposite, composite), pin_centre_params
+        cast(GridDetectThenXRayCentreComposite, composite),
+        params.pin_centre_then_xray_centre_params(),
     )
 
 
 def robot_load_then_centre(
     composite: RobotLoadThenCentreComposite,
-    parameters: RobotLoadThenCentreInternalParameters,
+    parameters: RobotLoadThenCentre,
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
 
-    parameters.hyperion_params.detector_params.expected_energy_ev = (
-        (parameters.experiment_params.requested_energy_kev * 1000)
-        if parameters.experiment_params.requested_energy_kev
-        else 1000 * (yield from read_energy(cast(SetEnergyComposite, composite)))
-    )
-
-    eiger.set_detector_parameters(parameters.hyperion_params.detector_params)
+    detector_params = parameters.detector_params
+    if not detector_params.expected_energy_ev:
+        actual_energy_ev = 1000 * (
+            yield from read_energy(cast(SetEnergyComposite, composite))
+        )
+        detector_params.expected_energy_ev = actual_energy_ev
+    eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
         eiger,
         composite.detector_motion,
-        parameters.experiment_params.detector_distance,
+        parameters.detector_distance_mm,
         robot_load_then_centre_plan(composite, parameters),
     )

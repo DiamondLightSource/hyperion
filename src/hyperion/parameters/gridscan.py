@@ -169,6 +169,10 @@ class PinTipCentreThenXrayCentre(GridCommon):
 
 
 class RobotLoadThenCentre(GridCommon, WithSample):
+    def pin_centre_then_xray_centre_params(self):
+        params = PinTipCentreThenXrayCentre(**self.dict())
+        return params
+
     # Can be removed in #1277
     def old_parameters(self) -> RobotLoadThenCentreInternalParameters:
         return RobotLoadThenCentreInternalParameters(
