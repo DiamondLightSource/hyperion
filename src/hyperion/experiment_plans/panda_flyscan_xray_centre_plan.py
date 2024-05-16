@@ -189,7 +189,7 @@ def run_gridscan_and_move(
         time_between_x_steps_ms,
     )
 
-    panda_directory = Path(parameters.detector_params.directory)
+    panda_directory = Path(parameters.storage_directory, "panda")
 
     # Don't create directory once implemented in ophyd-async
     set_and_create_panda_directory(panda_directory)
