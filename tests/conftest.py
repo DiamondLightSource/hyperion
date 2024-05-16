@@ -360,7 +360,7 @@ def ophyd_pin_tip_detection():
 def robot(done_status):
     RunEngine()  # A RE is needed to start the bluesky loop
     robot = i03.robot(fake_with_ophyd_sim=True)
-    set_mock_value(robot.barcode.bare_signal, ["BARCODE"])
+    set_mock_value(robot.barcode, "BARCODE")
     robot.set = MagicMock(return_value=done_status)
     return robot
 
@@ -647,7 +647,7 @@ def fake_fgs_composite(
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
     fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
 
-    set_mock_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
+    set_mock_value(fake_composite.robot.barcode, "BARCODE")
 
     return fake_composite
 
