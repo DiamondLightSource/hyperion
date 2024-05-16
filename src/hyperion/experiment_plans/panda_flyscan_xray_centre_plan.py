@@ -191,7 +191,6 @@ def run_gridscan_and_move(
 
     panda_directory = Path(parameters.storage_directory, "panda")
 
-    # Don't create directory once implemented in ophyd-async
     set_and_create_panda_directory(panda_directory)
 
     yield from setup_panda_for_flyscan(

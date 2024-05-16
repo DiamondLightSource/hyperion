@@ -205,8 +205,10 @@ def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenera
 
 
 def set_and_create_panda_directory(panda_directory: Path):
-    """Updates and creates the panda subdirectory which is used by the PandA's PCAP. At some point, ophyd-async will handle the
-    creation of the directory"""
+    """Updates and creates the panda subdirectory which is used by the PandA's PCAP.
+    See https://github.com/DiamondLightSource/hyperion/issues/1385 for a better long
+    term solution.
+    """
 
     if not os.path.isdir(panda_directory):
         LOGGER.debug(f"Creating PandA PCAP subdirectory at {panda_directory}")
