@@ -35,6 +35,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
 )
 from hyperion.utils.utils import convert_eV_to_angstrom
 
+from .logging_callback import format_doc_for_log
+
 D = TypeVar("D")
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart, RunStop
@@ -89,7 +91,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         event_descriptor = self.descriptors.get(doc["descriptor"])
         if event_descriptor is None:
             ISPYB_LOGGER.warning(
-                f"Ispyb handler {self} recieved event doc {doc} and "
+                f"Ispyb handler {self} recieved event doc {format_doc_for_log(doc)} and "
                 "has no corresponding descriptor record"
             )
             return doc
@@ -218,7 +220,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.ispyb.end_deposition(self.ispyb_ids, exit_status, reason)
         except Exception as e:
             ISPYB_LOGGER.warning(
-                f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"
+                f"Failed to finalise ISPyB deposition on stop document: {format_doc_for_log(doc)} with exception: {e}"
             )
         return self._tag_doc(doc)
 
