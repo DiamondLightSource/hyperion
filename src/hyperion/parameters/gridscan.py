@@ -106,7 +106,7 @@ class GridCommon(
             omega_increment=0,
             num_images_per_trigger=1,
             num_triggers=self.num_images,
-            use_roi_mode=False,
+            use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
             beam_xy_converter=DetectorDistanceToBeamXYConverter(

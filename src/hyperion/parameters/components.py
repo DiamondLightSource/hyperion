@@ -159,7 +159,7 @@ class DiffractionExperiment(HyperionParameters):
 
     @property
     def snapshot_directory(self) -> Path:
-        return self.visit_directory / "snapshots"
+        return Path(self.storage_directory) / "snapshots"
 
     @property
     def num_images(self) -> int:
