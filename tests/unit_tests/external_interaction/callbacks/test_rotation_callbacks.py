@@ -376,9 +376,7 @@ def test_ispyb_specifies_experiment_type_if_supplied(
     raw_params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
-    raw_params["hyperion_params"]["ispyb_params"]["ispyb_experiment_type"] = (
-        "Characterization"
-    )
+    raw_params["ispyb_experiment_type"] = "Characterization"
     params = RotationScan(**raw_params)
 
     ispyb_cb = RotationISPyBCallback()
@@ -387,8 +385,6 @@ def test_ispyb_specifies_experiment_type_if_supplied(
     rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
         data_collection_group_id=23, data_collection_ids=(45,)
     )
-
-    params.sample_id = 123
 
     RE(fake_rotation_scan(params, [ispyb_cb]))
 

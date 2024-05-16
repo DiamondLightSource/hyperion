@@ -179,9 +179,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             wavelength_angstroms = convert_eV_to_angstrom(energy_ev)
             hwscan_data_collection_info.wavelength = wavelength_angstroms
             hwscan_data_collection_info.resolution = resolution(
-                self.params.hyperion_params.detector_params,
+                self.params.detector_params,
                 wavelength_angstroms,
-                self.params.hyperion_params.detector_params.detector_distance,
+                self.params.detector_params.detector_distance,
             )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params

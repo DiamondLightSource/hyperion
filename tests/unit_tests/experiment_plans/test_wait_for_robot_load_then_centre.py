@@ -44,19 +44,17 @@ def robot_load_composite(
 
 
 @pytest.fixture
-def robot_load_then_centre_params_no_energy():
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_robot_load_params_no_energy.json"
-    )
-    return RobotLoadThenCentre(**params)
-
-
-@pytest.fixture
 def robot_load_then_centre_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_robot_load_params.json"
     )
     return RobotLoadThenCentre(**params)
+
+
+@pytest.fixture
+def robot_load_then_centre_params_no_energy(robot_load_then_centre_params):
+    robot_load_then_centre_params.demand_energy_ev = None
+    return robot_load_then_centre_params
 
 
 def dummy_set_energy_plan(energy, composite):

@@ -16,9 +16,7 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 
 from ...conftest import extract_metafile, raw_params_from_file
 
@@ -30,15 +28,14 @@ def test_params(tmpdir):
     param_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
-    param_dict["hyperion_params"]["detector_params"]["directory"] = "tests/test_data"
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    param_dict["hyperion_params"]["detector_params"]["expected_energy_ev"] = 12700
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    params = RotationInternalParameters(**param_dict)
-    params.experiment_params.x = 0
-    params.experiment_params.y = 0
-    params.experiment_params.z = 0
-    params.hyperion_params.detector_params.exposure_time = 0.004
+    params = RotationScan(**param_dict)
+    params.demand_energy_ev = 12700
+    params.scan_width_deg = 360
+    params.storage_directory = "tests/test_data"
+    params.x_start_um = 0
+    params.y_start_um = 0
+    params.z_start_um = 0
+    params.exposure_time_s = 0.004
     return params
 
 
@@ -59,7 +56,7 @@ def test_params(tmpdir):
 )
 @pytest.mark.s03
 def test_rotation_nexgen(
-    test_params: RotationInternalParameters,
+    test_params: RotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
     test_data_directory,
@@ -67,9 +64,9 @@ def test_rotation_nexgen(
     reference_file,
 ):
     meta_file = f"{prefix}_meta.h5.gz"
-    test_params.hyperion_params.detector_params.prefix = f"{tmpdir}/{prefix}"
-    test_params.hyperion_params.detector_params.directory = f"{tmpdir}"
-    run_number = test_params.hyperion_params.detector_params.run_number
+    test_params.file_name = prefix
+    test_params.storage_directory = f"{tmpdir}"
+    run_number = test_params.detector_params.run_number
 
     extract_metafile(
         f"{test_data_directory}/{meta_file}", f"{tmpdir}/{prefix}_{run_number}_meta.h5"
@@ -150,7 +147,7 @@ def _run_imginfo(filename):
 
 
 def _fake_rotation_scan(
-    parameters: RotationInternalParameters,
+    parameters: RotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):

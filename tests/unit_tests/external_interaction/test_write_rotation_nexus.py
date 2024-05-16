@@ -105,11 +105,12 @@ def apply_metafile_mapping(exceptions: dict, mapping: dict):
 
 
 def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
-    test_params: RotationInternalParameters,
+    test_params: RotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    run_number = test_params.hyperion_params.detector_params.run_number
+    test_params.chi_start_deg = 0
+    run_number = test_params.detector_params.run_number
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
     master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"
     meta_filename = f"{TEST_FILENAME}_{run_number}_meta.h5"
@@ -187,8 +188,9 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
             "sample": {
                 "beam": {"incident_wavelength": np.isclose},
                 "transformations": {
-                    "_missing": {"omega_end", "omega_increment_set"},
+                    "_missing": {"omega_end"},
                     "_ignore": {"omega"},
+                    "omega_increment_set": 0.1,
                     "omega_end": lambda a, b: np.all(np.isclose(a, b, atol=1e-03)),
                 },
                 "sample_omega": {
@@ -459,7 +461,7 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
                 if callable(exception):
                     assert exception(
                         actual_value, expected_value
-                    ), f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}"
+                    ), f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}, according to {exception}"
                 else:
                     assert np.array_equal(
                         actual_value,

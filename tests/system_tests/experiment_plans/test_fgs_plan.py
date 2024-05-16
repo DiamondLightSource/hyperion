@@ -99,7 +99,7 @@ async def fxc_composite():
         zocalo=zocalo,
     )
 
-    await composite.robot.barcode.bare_signal._backend.put(["ABCDEFGHIJ"])  # type: ignore
+    await composite.robot.barcode._backend.put(["ABCDEFGHIJ"])  # type: ignore
     composite.dcm.energy_in_kev.user_readback.sim_put(12.345)  # type: ignore
 
     gda_beamline_parameters = GDABeamlineParameters.from_file(

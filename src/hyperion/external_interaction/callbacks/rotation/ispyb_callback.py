@@ -80,7 +80,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                     f"Collection has {n_images} images - treating as a genuine dataset - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.sample_id
-            experiment_type = self.params.ispyb_extras.ispyb_experiment_type
+            experiment_type = self.params.ispyb_experiment_type
             if experiment_type:
                 self.ispyb = StoreInIspyb(
                     self.ispyb_config,

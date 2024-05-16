@@ -61,9 +61,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 from tests.conftest import create_dummy_scan_spec
 
 from ...conftest import default_raw_params
@@ -498,7 +495,7 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.eiger,
                     fake_fgs_composite.synchrotron,
                     "zocalo environment",
-                    test_fgs_params.scan_points,
+                    [test_fgs_params.scan_points_1, test_fgs_params.scan_points_2],
                     test_fgs_params.scan_indices,
                 )
             )
@@ -511,7 +508,7 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
                 "zocalo environment",
-                test_fgs_params.scan_points,
+                [test_fgs_params.scan_points_1, test_fgs_params.scan_points_2],
                 test_fgs_params.scan_indices,
             )
         )
