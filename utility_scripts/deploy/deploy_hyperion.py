@@ -1,9 +1,10 @@
 import argparse
 import os
 import re
-from subprocess import PIPE, CalledProcessError, Popen
+import subprocess
 from uuid import uuid1
 
+from create_venv import setup_venv
 from git import Repo
 from packaging.version import VERSION_PATTERN, Version
 
@@ -12,6 +13,8 @@ recognised_beamlines = ["dev", "i03", "i04"]
 VERSION_PATTERN_COMPILED = re.compile(
     f"^{VERSION_PATTERN}$", re.VERBOSE | re.IGNORECASE
 )
+
+DEV_DEPLOY_LOCATION = "/scratch/30day_tmp/hyperion_release_test/bluesky"
 
 
 class repo:
@@ -71,9 +74,36 @@ def get_hyperion_release_dir_from_args() -> str:
     args = parser.parse_args()
     if args.beamline == "dev":
         print("Running as dev")
-        return "/scratch/30day_tmp/hyperion_release_test/bluesky"
+        return DEV_DEPLOY_LOCATION
     else:
         return f"/dls_sw/{args.beamline}/software/bluesky"
+
+
+def create_environment_from_control_machine():
+    try:
+        user = os.environ["USER"]
+    except KeyError:
+        user = input(
+            "Couldn't find username from the environment. Enter FedID in order to SSH to control machine:"
+        )
+    cmd = f"ssh {user}@i03-control python3 {path_to_create_venv} {path_to_dls_dev_env} {hyperion_repo.deploy_location}"
+
+    process = None
+    try:
+        # Call python script on i03-control to create the environment
+        process = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        stdout, stderr = process.communicate()
+        if process.returncode != 0:
+            print(f"Error occurred: {stderr.decode()}")
+        else:
+            print(f"Output: {stdout.decode()}")
+    except Exception as e:
+        print(f"Exception while trying to install venv on i03-control: {e}")
+    finally:
+        if process:
+            process.kill()
 
 
 if __name__ == "__main__":
@@ -120,21 +150,19 @@ if __name__ == "__main__":
     # Now deploy the correct version of dodal
     dodal_repo.deploy(dodal_url)
 
-    # Set up environment and run /dls_dev_env.sh...
-    os.chdir(hyperion_repo.deploy_location)
-    print(f"Setting up environment in {hyperion_repo.deploy_location}")
-
     if hyperion_repo.name == "hyperion":
-        env_script = os.path.join(
+        path_to_dls_dev_env = os.path.join(
             hyperion_repo.deploy_location, "utility_scripts/dls_dev_env.sh"
         )
-        with Popen(env_script, stdout=PIPE, bufsize=1, universal_newlines=True) as p:
-            if p.stdout is not None:
-                for line in p.stdout:
-                    print(line, end="")
+        path_to_create_venv = os.path.join(
+            hyperion_repo.deploy_location, "utility_scripts/deploy/create_venv.py"
+        )
 
-    if p.returncode != 0:
-        raise CalledProcessError(p.returncode, p.args)
+        # SSH into control machine if not in dev mode
+        if release_area != DEV_DEPLOY_LOCATION:
+            create_environment_from_control_machine()
+        else:
+            setup_venv(path_to_create_venv, hyperion_repo.deploy_location)
 
     def create_symlink_by_tmp_and_rename(dirname, target, linkname):
         tmp_name = str(uuid1())

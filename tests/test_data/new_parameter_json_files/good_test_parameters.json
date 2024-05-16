@@ -14,9 +14,9 @@
     "use_roi_mode": false,
     "transmission_frac": 1.0,
     "zocalo_environment": "dev_artemis",
-    "x_steps": 5,
-    "y_steps": 10,
-    "z_steps": 2,
+    "x_steps": 40,
+    "y_steps": 20,
+    "z_steps": 10,
     "x_step_size_um": 0.1,
     "y_step_size_um": 0.1,
     "z_step_size_um": 0.1,
@@ -50,7 +50,6 @@
         "beam_size_x": 1.0,
         "beam_size_y": 1.0,
         "focal_spot_size_x": 1.0,
-        "focal_spot_size_y": 1.0,
-        "resolution": 1.0
+        "focal_spot_size_y": 1.0
     }
 }

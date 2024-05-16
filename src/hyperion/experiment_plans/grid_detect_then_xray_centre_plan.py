@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-import json
 from pathlib import Path
 
 from blueapi.core import BlueskyContext, MsgGenerator
@@ -47,20 +46,13 @@ from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
 )
 from hyperion.external_interaction.callbacks.grid_detection_callback import (
     GridDetectionCallback,
+    GridParamUpdate,
 )
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from hyperion.log import LOGGER
-from hyperion.parameters.gridscan import GridScanWithEdgeDetect
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-    GridScanParams,
-)
-from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandAGridscanInternalParameters,
-    PandAGridScanParams,
-)
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
 )
@@ -105,25 +97,12 @@ def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite
 
 def create_parameters_for_flyscan_xray_centre(
     grid_scan_with_edge_params: GridScanWithEdgeDetect,
-    grid_parameters: GridScanParams,
-) -> GridscanInternalParameters:
-    old_params = grid_scan_with_edge_params.old_parameters()
-    params_json = json.loads(old_params.json())
-    params_json["experiment_params"] = json.loads(grid_parameters.json())
-    flyscan_xray_centre_parameters = GridscanInternalParameters(**params_json)
-    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters.json(indent=2)}")
-    return flyscan_xray_centre_parameters
-
-
-def create_parameters_for_panda_flyscan_xray_centre(
-    grid_scan_with_edge_params: GridScanWithEdgeDetect,
-    grid_parameters: PandAGridScanParams,
-) -> PandAGridscanInternalParameters:
-    old_params = grid_scan_with_edge_params.old_parameters()
-    params_json = json.loads(old_params.json())
-    params_json["experiment_params"] = json.loads(grid_parameters.json())
-    flyscan_xray_centre_parameters = PandAGridscanInternalParameters(**params_json)
-    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters.json(indent=2)}")
+    grid_parameters: GridParamUpdate,
+) -> ThreeDGridScan:
+    params_json = grid_scan_with_edge_params.dict()
+    params_json.update(grid_parameters)
+    flyscan_xray_centre_parameters = ThreeDGridScan(**params_json)
+    LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
     return flyscan_xray_centre_parameters
 
 
@@ -146,12 +125,7 @@ def _detect_grid_and_do_gridscan(
 
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
-    grid_params_callback = GridDetectionCallback(
-        composite.oav.parameters,
-        parameters.exposure_time_s,
-        parameters.set_stub_offsets,
-        parameters.panda_runup_distance_mm,
-    )
+    grid_params_callback = GridDetectionCallback(composite.oav.parameters)
 
     @bpp.subs_decorator([grid_params_callback])
     def run_grid_detection_plan(
@@ -210,24 +184,16 @@ def _detect_grid_and_do_gridscan(
         robot=composite.robot,
     )
 
+    flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
+        parameters, grid_params_callback.get_grid_parameters()
+    )
+
     if parameters.use_panda:
-        grid_params = grid_params_callback.get_panda_grid_parameters()
-
-        flyscan_xray_centre_parameters = (
-            create_parameters_for_panda_flyscan_xray_centre(parameters, grid_params)
-        )
-
         yield from panda_flyscan_xray_centre(
             flyscan_composite,
             flyscan_xray_centre_parameters,
         )
-
     else:
-        grid_params = grid_params_callback.get_grid_parameters()
-        flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
-            parameters, grid_params
-        )
-
         yield from flyscan_xray_centre(
             flyscan_composite,
             flyscan_xray_centre_parameters,
