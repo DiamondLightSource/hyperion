@@ -20,12 +20,7 @@ from hyperion.experiment_plans.robot_load_then_centre_plan import (
 from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
-from hyperion.parameters.plan_specific.pin_centre_then_xray_centre_params import (
-    PinCentreThenXrayCentreInternalParameters,
-)
-from hyperion.parameters.plan_specific.robot_load_then_center_params import (
-    RobotLoadThenCentreInternalParameters,
-)
+from hyperion.parameters.gridscan import PinTipCentreThenXrayCentre, RobotLoadThenCentre
 
 from ...conftest import raw_params_from_file
 
@@ -50,17 +45,17 @@ def robot_load_composite(
 @pytest.fixture
 def robot_load_then_centre_params_no_energy():
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_robot_load_params_no_energy.json"
+        "tests/test_data/new_parameter_json_files/good_test_robot_load_params_no_energy.json"
     )
-    return RobotLoadThenCentreInternalParameters(**params)
+    return RobotLoadThenCentre(**params)
 
 
 @pytest.fixture
 def robot_load_then_centre_params():
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_robot_load_params.json"
+        "tests/test_data/new_parameter_json_files/good_test_robot_load_params.json"
     )
-    return RobotLoadThenCentreInternalParameters(**params)
+    return RobotLoadThenCentre(**params)
 
 
 def dummy_set_energy_plan(energy, composite):
@@ -77,21 +72,19 @@ def dummy_set_energy_plan(energy, composite):
 def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
+    robot_load_then_centre_params: RobotLoadThenCentre,
 ):
     RE = RunEngine()
 
     RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
     composite_passed = mock_centring_plan.call_args[0][0]
-    params_passed: PinCentreThenXrayCentreInternalParameters = (
-        mock_centring_plan.call_args[0][1]
-    )
+    params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
 
     for name, value in vars(composite_passed).items():
         assert value == getattr(robot_load_composite, name)
 
-    assert isinstance(params_passed, PinCentreThenXrayCentreInternalParameters)
-    assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
+    assert isinstance(params_passed, PinTipCentreThenXrayCentre)
+    assert params_passed.detector_params.expected_energy_ev == 11100
 
 
 @patch(
@@ -104,7 +97,7 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
 def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
+    robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine,
 ):
     sim_run_engine.add_handler(
@@ -118,23 +111,21 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
     sim_run_engine.assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "set_energy_plan"
     )
-    params_passed: PinCentreThenXrayCentreInternalParameters = (
-        mock_centring_plan.call_args[0][1]
-    )
-    assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11100
+    params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
+    assert params_passed.detector_params.expected_energy_ev == 11100
 
 
 @patch(
-    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
+    MagicMock(),
 )
 @patch(
     "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
     MagicMock(return_value=iter([Msg("set_energy_plan")])),
 )
-def test_robot_load_then_centre_doesnt_set_energy_if_not_specified(
-    mock_centring_plan: MagicMock,
+def test_robot_load_then_centre_doesnt_set_energy_if_not_specified_and_current_energy_set_on_eiger(
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params_no_energy: RobotLoadThenCentreInternalParameters,
+    robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
     sim_run_engine,
 ):
     sim_run_engine.add_handler(
@@ -149,10 +140,8 @@ def test_robot_load_then_centre_doesnt_set_energy_if_not_specified(
         )
     )
     assert not any(msg for msg in messages if msg.command == "set_energy_plan")
-    params_passed: PinCentreThenXrayCentreInternalParameters = (
-        mock_centring_plan.call_args[0][1]
-    )
-    assert params_passed.hyperion_params.detector_params.expected_energy_ev == 11105
+    det_params = robot_load_composite.eiger.set_detector_parameters.call_args[0][0]
+    assert det_params.expected_energy_ev == 11105
 
 
 def run_simulating_smargon_wait(
@@ -198,7 +187,7 @@ def run_simulating_smargon_wait(
 def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
+    robot_load_then_centre_params: RobotLoadThenCentre,
     total_disabled_reads: int,
     sim_run_engine,
 ):
@@ -231,7 +220,7 @@ def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
 def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throws_exception(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
+    robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine,
 ):
     with pytest.raises(TimeoutError):
@@ -253,7 +242,7 @@ def test_given_smargon_disabled_for_longer_than_timeout_when_plan_run_then_throw
 def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
+    robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine,
 ):
     messages = run_simulating_smargon_wait(
@@ -324,7 +313,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
     update_barcode_and_snapshots: MagicMock,
     end_load: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
-    robot_load_then_centre_params: RobotLoadThenCentreInternalParameters,
+    robot_load_then_centre_params: RobotLoadThenCentre,
 ):
     robot_load_composite.oav.snapshot.last_saved_path.put("test_oav_snapshot")  # type: ignore
     set_mock_value(robot_load_composite.webcam.last_saved_path, "test_webcam_snapshot")
@@ -338,7 +327,7 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
 
     RE(robot_load_then_centre(robot_load_composite, robot_load_then_centre_params))
 
-    start_load.assert_called_once_with("cm31105", 4, "12345", 40, 3)
+    start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
     update_barcode_and_snapshots.assert_called_once_with(
         action_id, "BARCODE", "test_oav_snapshot", "test_webcam_snapshot"
     )

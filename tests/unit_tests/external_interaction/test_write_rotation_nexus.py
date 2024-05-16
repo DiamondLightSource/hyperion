@@ -164,7 +164,10 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
                         "serial_number",  # nexgen#236
                     },
                     "distance": 0.1,
-                    "transformations": {"detector_z": {"det_z": np.array([100])}},
+                    "transformations": {
+                        "detector_z": {"det_z": np.array([100])},
+                        "det_z": np.array([100]),
+                    },
                     "detector_z": {"det_z": np.array([100])},
                     "underload_value": 0,
                     "_ignore": {
@@ -191,6 +194,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
                 "transformations": {
                     "_missing": {"omega_end", "omega_increment_set"},
                     "_ignore": {"omega"},
+                    "omega_end": lambda a, b: np.all(np.isclose(a, b, atol=1e-03)),
                 },
                 "sample_omega": {
                     "_ignore": {"omega_end", "omega"},
@@ -259,7 +263,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         # we used to write the positions wrong...
         hyperion_omega: np.ndarray = np.array(
             hyperion_nexus["/entry/data/omega"][:]  # type: ignore
-        ) * (3599 / 3600)
+        )
         example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]  # type: ignore
         assert np.allclose(hyperion_omega, example_omega)
 

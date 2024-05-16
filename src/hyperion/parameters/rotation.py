@@ -104,7 +104,9 @@ class RotationScan(
         scan_spec = Line(
             axis="omega",
             start=self.omega_start_deg,
-            stop=(self.scan_width_deg + self.omega_start_deg),
+            stop=(
+                self.scan_width_deg + self.omega_start_deg - self.rotation_increment_deg
+            ),
             num=self.num_images,
         )
         scan_path = ScanPath(scan_spec.calculate())

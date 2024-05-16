@@ -196,9 +196,9 @@ class SplitScan(BaseModel):
 
 
 class WithSample(BaseModel):
-    sample_id: int  # Will be used to work out puck/pin
-    _puck: int | None = None
-    _pin: int | None = None
+    sample_id: int
+    sample_puck: int | None = None
+    sample_pin: int | None = None
 
 
 class WithOavCentring(BaseModel):
