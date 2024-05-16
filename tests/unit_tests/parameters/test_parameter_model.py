@@ -42,10 +42,6 @@ def minimal_3d_gridscan_params():
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
         "ispyb_extras": {
             "position": [0, 0, 0],
-            "beam_size_x": 0,
-            "beam_size_y": 0,
-            "focal_spot_size_x": 0,
-            "focal_spot_size_y": 0,
         },
     }
 
@@ -141,10 +137,6 @@ def test_robot_load_then_centre_params():
         "file_name": "file_name",
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
         "ispyb_extras": {
-            "beam_size_x": 0.05,
-            "beam_size_y": 0.05,
-            "focal_spot_size_x": 0.06,
-            "focal_spot_size_y": 0.06,
             "position": [0, 0, 0],
         },
     }
@@ -193,10 +185,6 @@ class TestNewGdaParams:
             "storage_directory": self.directory,
             "ispyb_extras": {
                 "position": self.position,
-                "beam_size_x": self.beam_size_x,
-                "beam_size_y": self.beam_size_y,
-                "focal_spot_size_x": self.focal_spot_size_x,
-                "focal_spot_size_y": self.focal_spot_size_y,
             },
         }
         old_hyperion_params_dict = {
@@ -221,10 +209,6 @@ class TestNewGdaParams:
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
                     "undulator_gap": 0.5,
                     "position": self.position,
-                    "beam_size_x": self.beam_size_x,
-                    "beam_size_y": self.beam_size_y,
-                    "focal_spot_size_x": self.focal_spot_size_x,
-                    "focal_spot_size_y": self.focal_spot_size_y,
                     "resolution": 1.57,
                     "comment": "",
                 },
@@ -278,10 +262,6 @@ class TestNewGdaParams:
                 "xtal_snapshots_omega_start": ["test1", "test2", "test3"],
                 "xtal_snapshots_omega_end": ["", "", ""],
                 "position": self.position,
-                "beam_size_x": self.beam_size_x,
-                "beam_size_y": self.beam_size_y,
-                "focal_spot_size_x": self.focal_spot_size_x,
-                "focal_spot_size_y": self.focal_spot_size_y,
             },
         }
 
@@ -309,10 +289,6 @@ class TestNewGdaParams:
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
                     "undulator_gap": 0.5,
                     "position": self.position,
-                    "beam_size_x": self.beam_size_x,
-                    "beam_size_y": self.beam_size_y,
-                    "focal_spot_size_x": self.focal_spot_size_x,
-                    "focal_spot_size_y": self.focal_spot_size_y,
                     "resolution": 1.57,
                     "comment": self.rotation_comment,
                     "xtal_snapshots_omega_start": ["test1", "test2", "test3"],

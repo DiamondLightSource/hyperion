@@ -87,10 +87,6 @@ class RotationScan(
         return RotationIspybParams(
             visit_path=str(self.visit_directory),
             position=np.array(self.ispyb_extras.position),
-            beam_size_x=self.ispyb_extras.beam_size_x,
-            beam_size_y=self.ispyb_extras.beam_size_y,
-            focal_spot_size_x=self.ispyb_extras.focal_spot_size_x,
-            focal_spot_size_y=self.ispyb_extras.focal_spot_size_y,
             comment=self.comment,
             sample_id=str(self.sample_id),
             undulator_gap=self.ispyb_extras.undulator_gap,

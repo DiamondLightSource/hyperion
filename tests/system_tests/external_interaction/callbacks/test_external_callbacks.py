@@ -208,6 +208,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     s4_slit_gaps,
     flux,
     robot,
+    aperture_scatterguard,
     fake_create_devices,
 ):
     test_wl = 0.71
@@ -217,14 +218,13 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     test_img_wid = 0.27
 
     test_rotation_params.experiment_params.image_width = test_img_wid
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
     test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
     test_rotation_params.hyperion_params.detector_params.expected_energy_ev = (
         convert_angstrom_to_eV(test_wl)
     )
 
     composite = RotationScanComposite(
+        aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=fake_create_devices["backlight"],
         dcm=fake_create_devices["dcm"],

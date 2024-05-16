@@ -819,8 +819,6 @@ def test_ispyb_deposition_in_rotation_plan(
     test_slit_gap_vert = 0.234
 
     test_rotation_params.experiment_params.image_width = test_img_wid
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
     test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
     energy_ev = convert_angstrom_to_eV(test_wl)
     fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(  # pyright: ignore

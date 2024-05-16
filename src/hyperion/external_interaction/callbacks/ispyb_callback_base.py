@@ -124,6 +124,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize.x_um,
             beamsize_at_sampley=beamsize.y_um,
+            focal_spot_size_at_samplex=beamsize.x_um,
+            focal_spot_size_at_sampley=beamsize.y_um,
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],

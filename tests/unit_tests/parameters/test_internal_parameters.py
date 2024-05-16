@@ -170,7 +170,7 @@ def test_hyperion_params_eq(raw_params):
     assert hyperion_params_1 != hyperion_params_2
 
     hyperion_params_2 = copy.deepcopy(hyperion_params_1)
-    hyperion_params_2.ispyb_params.beam_size_x = 99999
+    hyperion_params_2.ispyb_params.comment = "99999"
     assert hyperion_params_1 != hyperion_params_2
 
 
@@ -238,10 +238,6 @@ def test_internal_params_eq():
     assert internal_params_2.hyperion_params != 3
 
     internal_params_2.experiment_params.x_steps = 11111
-    assert internal_params != internal_params_2
-
-    internal_params_2 = copy.deepcopy(internal_params)
-    internal_params_2.hyperion_params.ispyb_params.beam_size_x = 123456
     assert internal_params != internal_params_2
 
     internal_params_2 = copy.deepcopy(internal_params)

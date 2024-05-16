@@ -198,9 +198,9 @@ class TestData:
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator-current_gap": 1.234,
             "aperture_scatterguard-selected_aperture": {
-                "name": "Robot_load",
-                "GDA_name": "ROBOT_LOAD",
-                "radius_microns": None,
+                "name": "Medium",
+                "GDA_name": "MEDIUM",
+                "radius_microns": 50,
                 "location": (15, 16, 2, 18, 19),
             },
         },
