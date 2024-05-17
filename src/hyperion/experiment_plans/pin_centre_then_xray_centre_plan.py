@@ -39,7 +39,7 @@ def create_parameters_for_grid_detection(
     del params_json["tip_offset_um"]
     grid_detect_and_xray_centre = GridScanWithEdgeDetect(**params_json)
     LOGGER.info(
-        f"Parameters for grid detect and xray centre: {grid_detect_and_xray_centre}"
+        f"Parameters for grid detect and xray centre: {grid_detect_and_xray_centre.json(indent=2)}"
     )
     return grid_detect_and_xray_centre
 
