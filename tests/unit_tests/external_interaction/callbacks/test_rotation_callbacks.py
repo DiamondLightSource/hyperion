@@ -8,11 +8,11 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.DCM import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from event_model import RunStart
 from ophyd.sim import make_fake_device
+from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -32,15 +32,19 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
-from hyperion.external_interaction.ispyb.data_model import ExperimentType, ScanDataInfo
+from hyperion.external_interaction.ispyb.data_model import (
+    ScanDataInfo,
+)
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
+from hyperion.parameters.rotation import RotationScan
 
 from ....conftest import raw_params_from_file
 
@@ -86,11 +90,9 @@ def fake_rotation_scan(
 ):
     attenuator = make_fake_device(Attenuator)(name="attenuator")
     flux = make_fake_device(Flux)(name="flux")
-    dcm = make_fake_device(DCM)(
-        name="dcm", daq_configuration_path=i03.DAQ_CONFIGURATION_PATH
-    )
-    dcm.energy_in_kev.user_readback.sim_put(12.1)
     eiger = make_fake_device(EigerDetector)(name="eiger")
+    dcm = i03.dcm(fake_with_ophyd_sim=True)
+    set_mock_value(dcm.energy_in_kev.user_readback, 12.1)
 
     @bpp.subs_decorator(list(subscriptions))
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
@@ -372,11 +374,20 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
 def test_ispyb_specifies_experiment_type_if_supplied(
     rotation_ispyb: MagicMock,
     RE: RunEngine,
-    params: RotationInternalParameters,
 ):
+    raw_params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+    )
+    raw_params["hyperion_params"]["ispyb_params"][
+        "ispyb_experiment_type"
+    ] = "Characterization"
+    params = RotationInternalParameters(**raw_params)
+
     ispyb_cb = RotationISPyBCallback()
     ispyb_cb.active = True
-    params.hyperion_params.ispyb_params.ispyb_experiment_type = "Characterization"
+    assert (
+        params.hyperion_params.ispyb_params.ispyb_experiment_type == "Characterization"
+    )
     rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
         data_collection_group_id=23, data_collection_ids=(45,)
     )
@@ -385,7 +396,38 @@ def test_ispyb_specifies_experiment_type_if_supplied(
 
     RE(fake_rotation_scan(params, [ispyb_cb]))
 
-    assert rotation_ispyb.call_args.args[1] == ExperimentType.CHARACTERIZATION
+    assert rotation_ispyb.call_args.args[1] == IspybExperimentType.CHARACTERIZATION
+
+
+@patch(
+    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
+    autospec=True,
+)
+def test_new_params_ispyb_specifies_experiment_type_if_supplied(
+    rotation_ispyb: MagicMock,
+    RE: RunEngine,
+):
+    raw_params = raw_params_from_file(
+        "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+    )
+    raw_params["ispyb_experiment_type"] = "Characterization"
+    new_params = RotationScan(**raw_params)
+    params = new_params.old_parameters()
+
+    ispyb_cb = RotationISPyBCallback()
+    ispyb_cb.active = True
+    assert (
+        params.hyperion_params.ispyb_params.ispyb_experiment_type == "Characterization"
+    )
+    rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
+        data_collection_group_id=23, data_collection_ids=(45,)
+    )
+
+    params.hyperion_params.ispyb_params.sample_id = "abc"
+
+    RE(fake_rotation_scan(params, [ispyb_cb]))
+
+    assert rotation_ispyb.call_args.args[1] == IspybExperimentType.CHARACTERIZATION
 
 
 n_images_store_id = [

@@ -3,11 +3,12 @@ import types
 from typing import Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
+import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
-from bluesky.utils import FailedStatus
+from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
 from dodal.beamlines.beamline_utils import clear_device
 from dodal.devices.detector.det_dim_constants import (
@@ -20,7 +21,7 @@ from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import make_fake_device
 from ophyd.status import Status
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -60,9 +61,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 from tests.conftest import create_dummy_scan_spec
 
 from ...conftest import default_raw_params
@@ -122,22 +120,16 @@ class TestFlyscanXrayCentrePlan:
 
     def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
         self,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
     ):
         assert (
-            test_fgs_params.hyperion_params.detector_params.detector_size_constants.det_type_string
+            test_fgs_params.detector_params.detector_size_constants.det_type_string
             == EIGER_TYPE_EIGER2_X_16M
         )
         raw_params_dict = default_raw_params()
-        raw_params_dict["hyperion_params"]["detector_params"][
-            "detector_size_constants"
-        ] = EIGER_TYPE_EIGER2_X_4M
-        params: GridscanInternalParameters = GridscanInternalParameters(
-            **raw_params_dict
-        )
-        det_dimension = (
-            params.hyperion_params.detector_params.detector_size_constants.det_dimension
-        )
+        raw_params_dict["detector"] = EIGER_TYPE_EIGER2_X_4M
+        params: ThreeDGridScan = ThreeDGridScan(**raw_params_dict)
+        det_dimension = params.detector_params.detector_size_constants.det_dimension
         assert det_dimension == EIGER2_X_4M_DIMENSION
 
     def test_when_run_gridscan_called_then_generator_returned(
@@ -150,7 +142,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         RE: RunEngine,
         fake_fgs_composite,
-        test_new_fgs_params,
+        test_fgs_params,
         mock_ispyb,
     ):
         ispyb_callback = GridscanISPyBCallback()
@@ -166,8 +158,8 @@ class TestFlyscanXrayCentrePlan:
 
                 RE(
                     ispyb_activation_wrapper(
-                        flyscan_xray_centre(fake_fgs_composite, test_new_fgs_params),
-                        test_new_fgs_params,
+                        flyscan_xray_centre(fake_fgs_composite, test_fgs_params),
+                        test_fgs_params,
                     )
                 )
 
@@ -181,16 +173,16 @@ class TestFlyscanXrayCentrePlan:
     def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         RE: RunEngine,
         ispyb_plan,
     ):
         undulator_test_value = 1.234
 
-        fake_fgs_composite.undulator.current_gap.sim_put(undulator_test_value)  # type: ignore
+        set_mock_value(fake_fgs_composite.undulator.current_gap, undulator_test_value)
 
         synchrotron_test_value = SynchrotronMode.USER
-        set_sim_value(
+        set_mock_value(
             fake_fgs_composite.synchrotron.synchrotron_mode, synchrotron_test_value
         )
 
@@ -200,8 +192,9 @@ class TestFlyscanXrayCentrePlan:
         )
 
         current_energy_kev_test_value = 12.05
-        fake_fgs_composite.dcm.energy_in_kev.user_readback.sim_put(  # type: ignore
-            current_energy_kev_test_value
+        set_mock_value(
+            fake_fgs_composite.dcm.energy_in_kev.user_readback,
+            current_energy_kev_test_value,
         )
 
         xgap_test_value = 0.1234
@@ -211,8 +204,11 @@ class TestFlyscanXrayCentrePlan:
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
-        fake_fgs_composite.aperture_scatterguard.set(
-            fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE  # type: ignore
+        RE(
+            bps.abs_set(
+                fake_fgs_composite.aperture_scatterguard,
+                fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE,  # type: ignore
+            )
         )
 
         test_ispyb_callback = PlanReactiveCallback(ISPYB_LOGGER)
@@ -248,7 +244,7 @@ class TestFlyscanXrayCentrePlan:
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[0],  # pyright: ignore
                 {
-                    "undulator_current_gap": undulator_test_value,
+                    "undulator-current_gap": undulator_test_value,
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
@@ -259,7 +255,7 @@ class TestFlyscanXrayCentrePlan:
                 {
                     "attenuator_actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
-                    "dcm_energy_in_kev": current_energy_kev_test_value,
+                    "dcm-energy_in_kev": current_energy_kev_test_value,
                 },
             )
             # fmt: on
@@ -281,7 +277,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         move_aperture: MagicMock,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         RE_with_subs: ReWithSubs,
     ):
         RE, _ = RE_with_subs
@@ -337,16 +333,14 @@ class TestFlyscanXrayCentrePlan:
     def test_results_passed_to_move_motors(
         self,
         bps_abs_set: MagicMock,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         RE: RunEngine,
     ):
         from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 
-        motor_position = (
-            test_fgs_params.experiment_params.grid_position_to_motor_position(
-                np.array([1, 2, 3])
-            )
+        motor_position = test_fgs_params.FGS_params.grid_position_to_motor_position(
+            np.array([1, 2, 3])
         )
         RE(move_x_y_z(fake_fgs_composite.sample_motors, *motor_position))
         bps_abs_set.assert_has_calls(
@@ -391,7 +385,7 @@ class TestFlyscanXrayCentrePlan:
         move_aperture: MagicMock,
         RE_with_subs: ReWithSubs,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
     ):
         RE, (_, ispyb_cb) = RE_with_subs
 
@@ -422,9 +416,10 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
+        test_fgs_params.set_stub_offsets = True
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
 
         def wrapped_gridscan_and_move():
@@ -456,7 +451,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         aperture_set: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
@@ -483,7 +478,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         check_topup_and_wait,
         RE,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
@@ -501,8 +496,8 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.synchrotron,
                     "zocalo environment",
                     [
-                        test_fgs_params.get_scan_points(1),
-                        test_fgs_params.get_scan_points(2),
+                        test_fgs_params.old_parameters().get_scan_points(1),
+                        test_fgs_params.old_parameters().get_scan_points(2),
                     ],
                 )
             )
@@ -516,8 +511,8 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.synchrotron,
                 "zocalo environment",
                 [
-                    test_fgs_params.get_scan_points(1),
-                    test_fgs_params.get_scan_points(2),
+                    test_fgs_params.old_parameters().get_scan_points(1),
+                    test_fgs_params.old_parameters().get_scan_points(2),
                 ],
             )
         )
@@ -535,7 +530,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
@@ -563,7 +558,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         mock_mv: MagicMock,
         RE_with_subs: ReWithSubs,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
@@ -603,7 +598,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         RE: RunEngine,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
     ):
         class MoveException(Exception):
             pass
@@ -629,7 +624,7 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         RE_with_subs: ReWithSubs,
         done_status,
     ):
@@ -637,7 +632,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
-        test_fgs_params.experiment_params.set_stub_offsets = False
+        test_fgs_params.FGS_params.set_stub_offsets = False
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
@@ -716,12 +711,12 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff,
         mock_abs_set,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_new_fgs_params: ThreeDGridScan,
+        test_fgs_params: ThreeDGridScan,
         RE_with_subs: ReWithSubs,
     ):
-        test_new_fgs_params.x_steps = 8
-        test_new_fgs_params.y_steps = 10
-        test_new_fgs_params.z_steps = 12
+        test_fgs_params.x_steps = 8
+        test_fgs_params.y_steps = 10
+        test_fgs_params.z_steps = 12
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
@@ -748,8 +743,8 @@ class TestFlyscanXrayCentrePlan:
             [RE.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
             RE(
                 ispyb_activation_wrapper(
-                    flyscan_xray_centre(fake_fgs_composite, test_new_fgs_params),
-                    test_new_fgs_params,
+                    flyscan_xray_centre(fake_fgs_composite, test_fgs_params),
+                    test_fgs_params,
                 )
             )
 
@@ -764,7 +759,7 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_wait,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         RE: RunEngine,
         done_status,
     ):
@@ -782,7 +777,7 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_wait,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        test_fgs_params: GridscanInternalParameters,
+        test_fgs_params: ThreeDGridScan,
         RE: RunEngine,
     ):
         class CompleteException(Exception):
@@ -867,3 +862,37 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 
     assert mock_zocalo_trigger.run_end.call_count == 2
     assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
+
+
+@patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+    new=MagicMock(return_value=iter([Msg("kickoff_gridscan")])),
+)
+def test_read_hardware_for_nexus_occurs_after_eiger_arm(
+    fake_fgs_composite: FlyScanXRayCentreComposite,
+    test_fgs_params: ThreeDGridScan,
+    sim_run_engine,
+):
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-synchrotron_mode",
+        lambda msg: {"values": {"value": SynchrotronMode.USER}},
+    )
+    msgs = sim_run_engine.simulate_plan(
+        run_gridscan(fake_fgs_composite, test_fgs_params)
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "create"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "read" and msg.obj.name == "eiger_bit_depth"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "save"
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "kickoff_gridscan"
+    )

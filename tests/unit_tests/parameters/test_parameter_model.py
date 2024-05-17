@@ -91,6 +91,9 @@ def test_new_gridscan_params_equals_old():
     ) as f:
         new_json_data = json.loads(f.read())
 
+    new_json_data["x_steps"] = 10
+    new_json_data["y_steps"] = 5
+    new_json_data["z_steps"] = 1
     old_params = GridscanInternalParameters(**old_json_data)
     new_params = ThreeDGridScan(**new_json_data)
 
@@ -159,8 +162,6 @@ class TestNewGdaParams:
     omega_start = 0.023
     transmission = 45 / 100
     visit = "cm66666-6"
-    microns_per_pixel_x = 0.7844
-    microns_per_pixel_y = 0.7111
     position = [123.0, 234.0, 345.0]
     beam_size_x = 131 / 1000.0
     beam_size_y = 204 / 1000.0
@@ -219,8 +220,6 @@ class TestNewGdaParams:
                     "sample_id": self.sample_id,
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
                     "undulator_gap": 0.5,
-                    "microns_per_pixel_x": self.microns_per_pixel_x,
-                    "microns_per_pixel_y": self.microns_per_pixel_y,
                     "position": self.position,
                     "beam_size_x": self.beam_size_x,
                     "beam_size_y": self.beam_size_y,
@@ -232,7 +231,7 @@ class TestNewGdaParams:
             },
             "experiment_params": {
                 "transmission_fraction": self.transmission,
-                "snapshot_dir": "/tmp/dls/i03/data/2024/cm66666-6/snapshots",
+                "snapshot_dir": f"{self.directory}snapshots",
                 "detector_distance": self.detector_distance_mm,
                 "exposure_time": self.exposure_time_s,
                 "omega_start": self.omega_start,
@@ -250,7 +249,6 @@ class TestNewGdaParams:
 
         # This should all be stuff that is no longer needed because
         # we get it from devices!
-        old_params.hyperion_params.ispyb_params.resolution = None
         old_params.hyperion_params.ispyb_params.undulator_gap = None
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end = []
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = []
@@ -310,8 +308,6 @@ class TestNewGdaParams:
                     "sample_id": self.sample_id,
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
                     "undulator_gap": 0.5,
-                    "microns_per_pixel_x": self.microns_per_pixel_x,
-                    "microns_per_pixel_y": self.microns_per_pixel_y,
                     "position": self.position,
                     "beam_size_x": self.beam_size_x,
                     "beam_size_y": self.beam_size_y,
@@ -346,7 +342,6 @@ class TestNewGdaParams:
 
         # This should all be stuff that is no longer needed because
         # we get it from devices!
-        old_params.hyperion_params.ispyb_params.resolution = None
         old_params.hyperion_params.ispyb_params.undulator_gap = None
 
         assert new_old_params == old_params

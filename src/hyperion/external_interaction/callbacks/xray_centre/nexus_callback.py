@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict
 
+from hyperion.external_interaction.callbacks.logging_callback import format_doc_for_log
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -78,12 +79,14 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                     nexus_writer.beam,
                     nexus_writer.attenuator,
                 ) = create_beam_and_attenuator_parameters(
-                    data["dcm_energy_in_kev"],
+                    data["dcm-energy_in_kev"],
                     data["flux_flux_reading"],
                     data["attenuator_actual_transmission"],
                 )
         if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
-            NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
+            NEXUS_LOGGER.info(
+                f"Nexus handler received event from read hardware {format_doc_for_log(doc)}"
+            )
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 vds_data_type = vds_type_based_on_bit_depth(
                     doc["data"]["eiger_bit_depth"]

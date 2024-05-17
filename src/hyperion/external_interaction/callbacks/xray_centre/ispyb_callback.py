@@ -16,6 +16,7 @@ from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
     BaseISPyBCallback,
 )
+from hyperion.external_interaction.callbacks.logging_callback import format_doc_for_log
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     populate_xy_data_collection_info,
     populate_xz_data_collection_info,
@@ -23,7 +24,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
-    ExperimentType,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
@@ -31,6 +31,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.plan_specific.gridscan_internal_params import (
     GridscanInternalParameters,
@@ -93,7 +94,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             )
             json_params = doc.get("hyperion_internal_parameters")
             self.params = GridscanInternalParameters.from_json(json_params)
-            self.ispyb = StoreInIspyb(self.ispyb_config, ExperimentType.GRIDSCAN_3D)
+            self.ispyb = StoreInIspyb(
+                self.ispyb_config, IspybExperimentType.GRIDSCAN_3D
+            )
             data_collection_group_info = populate_data_collection_group(
                 self.ispyb.experiment_type,
                 self.params.hyperion_params.detector_params,
@@ -142,7 +145,9 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 crystal_summary = f"Zocalo processing took {proc_time:.2f} s. "
 
             bboxes: List[np.ndarray] = []
-            ISPYB_LOGGER.info(f"Amending comment based on Zocalo reading doc: {doc}")
+            ISPYB_LOGGER.info(
+                f"Amending comment based on Zocalo reading doc: {format_doc_for_log(doc)}"
+            )
             raw_results = doc["data"]["zocalo-results"]
             if len(raw_results) > 0:
                 for n, res in enumerate(raw_results):

@@ -55,6 +55,10 @@ class RotationScanParams(AbstractExperimentWithBeamParams):
     shutter_opening_time_s: float = 0.6
 
     @validator("rotation_direction", pre=True)
+    def _parse_validator(cls, rotation_direction: str):
+        return RotationDirection(rotation_direction)
+
+    @validator("rotation_direction", pre=True)
     def _parse_direction(cls, rotation_direction: str):
         return RotationDirection(rotation_direction)
 
@@ -144,6 +148,7 @@ class RotationInternalParameters(InternalParameters):
             stop=(
                 self.experiment_params.rotation_angle
                 + self.experiment_params.omega_start
+                - self.experiment_params.image_width
             ),
             num=self.experiment_params.get_num_images(),
         )

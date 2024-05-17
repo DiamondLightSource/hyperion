@@ -16,10 +16,7 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import GridScanWithEdgeDetect
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 
 from ..device_setup_plans.test_setup_oav import fake_smargon
 
@@ -34,21 +31,21 @@ def _fake_grid_detection(
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
     smargon = fake_smargon()
-    oav.snapshot.box_width.put(635.00986)
+    oav.grid_snapshot.box_width.put(635.00986)
 
     # first grid detection: x * y
-    oav.snapshot.num_boxes_x.put(10)
-    oav.snapshot.num_boxes_y.put(4)
+    oav.grid_snapshot.num_boxes_x.put(10)
+    oav.grid_snapshot.num_boxes_y.put(4)
     yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.snapshot)
+    yield from bps.read(oav.grid_snapshot)
     yield from bps.read(smargon)
     yield from bps.save()
 
     # second grid detection: x * z, so num_boxes_y refers to smargon z
-    oav.snapshot.num_boxes_x.put(10)
-    oav.snapshot.num_boxes_y.put(1)
+    oav.grid_snapshot.num_boxes_x.put(10)
+    oav.grid_snapshot.num_boxes_y.put(1)
     yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.snapshot)
+    yield from bps.read(oav.grid_snapshot)
     yield from bps.read(smargon)
     yield from bps.save()
 
@@ -79,10 +76,10 @@ def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
     )
 
 
-def test_full_grid_scan(test_new_fgs_params, test_config_files):
+def test_full_grid_scan(test_fgs_params, test_config_files):
     devices = MagicMock()
     plan = grid_detect_then_xray_centre(
-        devices, test_new_fgs_params, test_config_files["oav_config_json"]
+        devices, test_fgs_params, test_config_files["oav_config_json"]
     )
     assert isinstance(plan, Generator)
 
@@ -180,16 +177,12 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
             )
         )
 
-        params: GridscanInternalParameters = mock_flyscan_xray_centre_plan.call_args[0][
-            1
-        ]
+        params: ThreeDGridScan = mock_flyscan_xray_centre_plan.call_args[0][1]
 
-        assert isinstance(params, GridscanInternalParameters)
+        assert params.detector_params.num_triggers == 50
 
-        assert params.hyperion_params.detector_params.num_triggers == 50
-
-        assert params.experiment_params.x_axis.full_steps == 10
-        assert params.experiment_params.y_axis.end == pytest.approx(1.511, 0.001)
+        assert params.FGS_params.x_axis.full_steps == 10
+        assert params.FGS_params.y_axis.end == pytest.approx(1.511, 0.001)
 
         # Parameters can be serialized
         params.json()

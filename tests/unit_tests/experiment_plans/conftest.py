@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable, Union
+from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -23,12 +23,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandAGridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 
 def make_event_doc(data, descriptor="abc123") -> Event:
@@ -43,7 +38,7 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 
 BASIC_PRE_SETUP_DOC = {
-    "undulator_current_gap": 0,
+    "undulator-current_gap": 0,
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
@@ -52,7 +47,7 @@ BASIC_PRE_SETUP_DOC = {
 BASIC_POST_SETUP_DOC = {
     "attenuator_actual_transmission": 0,
     "flux_flux_reading": 10,
-    "dcm_energy_in_kev": 11.105,
+    "dcm-energy_in_kev": 11.105,
 }
 
 
@@ -66,7 +61,7 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
 
 def run_generic_ispyb_handler_setup(
     ispyb_handler: GridscanISPyBCallback,
-    params: Union[GridscanInternalParameters, PandAGridscanInternalParameters],
+    params: ThreeDGridScan,
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
     happens at the start of the outer plan."""
@@ -75,7 +70,7 @@ def run_generic_ispyb_handler_setup(
     ispyb_handler.activity_gated_start(
         {
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": params.json(),
+            "hyperion_internal_parameters": params.old_parameters().json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(

@@ -37,7 +37,7 @@ def dummy_collection_group_info():
     return DataCollectionGroupInfo(
         visit_string="cm31105-4",
         experiment_type="Mesh3D",
-        sample_id="0001",
+        sample_id="364758",
     )
 
 
@@ -46,7 +46,7 @@ def scan_data_info_for_begin():
     return ScanDataInfo(
         data_collection_info=DataCollectionInfo(
             omega_start=0.0,
-            data_collection_number=0,
+            data_collection_number=1,
             xtal_snapshot1="test_1_y",
             xtal_snapshot2="test_2_y",
             xtal_snapshot3="test_3_y",
@@ -56,7 +56,7 @@ def scan_data_info_for_begin():
             kappa_start=None,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="0001",
+            sample_id="364758",
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=0.0,
@@ -76,7 +76,6 @@ def scan_data_info_for_begin():
             n_passes=1,
             overlap=0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -95,7 +94,7 @@ def scan_data_infos_for_update():
     scan_xy_data_info_for_update = ScanDataInfo(
         data_collection_info=DataCollectionInfo(
             omega_start=0.0,
-            data_collection_number=0,
+            data_collection_number=1,
             xtal_snapshot1="test_1_y",
             xtal_snapshot2="test_2_y",
             xtal_snapshot3="test_3_y",
@@ -105,7 +104,7 @@ def scan_data_infos_for_update():
             kappa_start=None,
             parent_id=34,
             visit_string="cm31105-4",
-            sample_id="0001",
+            sample_id="364758",
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=0.0,
@@ -126,7 +125,6 @@ def scan_data_infos_for_update():
             overlap=0,
             flux=10.0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -164,7 +162,7 @@ def scan_data_infos_for_update():
             kappa_start=None,
             parent_id=34,
             visit_string="cm31105-4",
-            sample_id="0001",
+            sample_id="364758",
             detector_id=78,
             axis_start=90.0,
             focal_spot_size_at_samplex=0.0,
@@ -185,7 +183,6 @@ def scan_data_infos_for_update():
             overlap=0,
             flux=10.0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -335,7 +332,7 @@ def test_begin_deposition(
             "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
             "bottom right (px): [3250,1700].",
-            "data_collection_number": 0,
+            "data_collection_number": 1,
             "detector_distance": 100.0,
             "exp_time": 0.1,
             "imgdir": "/tmp/",
@@ -345,7 +342,6 @@ def test_begin_deposition(
             "overlap": 0,
             "omegastart": 0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,
@@ -418,7 +414,7 @@ def test_update_deposition(
             "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
             "bottom right (px): [3250,1700].",
-            "data_collection_number": 0,
+            "data_collection_number": 1,
             "detector_distance": 100.0,
             "exp_time": 0.1,
             "imgdir": "/tmp/",
@@ -429,7 +425,6 @@ def test_update_deposition(
             "flux": 10.0,
             "omegastart": 0.0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,
@@ -506,7 +501,6 @@ def test_update_deposition(
             "flux": 10.0,
             "omegastart": 90.0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,
@@ -701,7 +695,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
 ):
-    expected_sample_id = "0001"
+    expected_sample_id = "364758"
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")

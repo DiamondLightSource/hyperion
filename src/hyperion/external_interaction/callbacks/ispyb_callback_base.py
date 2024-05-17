@@ -4,6 +4,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
+from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
@@ -33,6 +34,8 @@ from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
     RotationInternalParameters,
 )
 from hyperion.utils.utils import convert_eV_to_angstrom
+
+from .logging_callback import format_doc_for_log
 
 D = TypeVar("D")
 if TYPE_CHECKING:
@@ -88,7 +91,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         event_descriptor = self.descriptors.get(doc["descriptor"])
         if event_descriptor is None:
             ISPYB_LOGGER.warning(
-                f"Ispyb handler {self} recieved event doc {doc} and "
+                f"Ispyb handler {self} recieved event doc {format_doc_for_log(doc)} and "
                 "has no corresponding descriptor record"
             )
             return doc
@@ -113,7 +116,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             SynchrotronMode,
         )
         hwscan_data_collection_info = DataCollectionInfo(
-            undulator_gap1=doc["data"]["undulator_current_gap"],
+            undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
             slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
@@ -130,24 +133,25 @@ class BaseISPyBCallback(PlanReactiveCallback):
         data = doc["data"]
         data_collection_id = None
         data_collection_info = DataCollectionInfo(
-            xtal_snapshot1=data.get("oav_snapshot_last_path_full_overlay"),
-            xtal_snapshot2=data.get("oav_snapshot_last_path_outer"),
-            xtal_snapshot3=data.get("oav_snapshot_last_saved_path"),
+            xtal_snapshot1=data.get("oav_grid_snapshot_last_path_full_overlay"),
+            xtal_snapshot2=data.get("oav_grid_snapshot_last_path_outer"),
+            xtal_snapshot3=data.get("oav_grid_snapshot_last_saved_path"),
             n_images=(
-                data["oav_snapshot_num_boxes_x"] * data["oav_snapshot_num_boxes_y"]
+                data["oav_grid_snapshot_num_boxes_x"]
+                * data["oav_grid_snapshot_num_boxes_y"]
             ),
         )
-        microns_per_pixel_x = data["oav_snapshot_microns_per_pixel_x"]
-        microns_per_pixel_y = data["oav_snapshot_microns_per_pixel_y"]
+        microns_per_pixel_x = data["oav_grid_snapshot_microns_per_pixel_x"]
+        microns_per_pixel_y = data["oav_grid_snapshot_microns_per_pixel_y"]
         data_collection_grid_info = DataCollectionGridInfo(
-            dx_in_mm=data["oav_snapshot_box_width"] * microns_per_pixel_x / 1000,
-            dy_in_mm=data["oav_snapshot_box_width"] * microns_per_pixel_y / 1000,
-            steps_x=data["oav_snapshot_num_boxes_x"],
-            steps_y=data["oav_snapshot_num_boxes_y"],
+            dx_in_mm=data["oav_grid_snapshot_box_width"] * microns_per_pixel_x / 1000,
+            dy_in_mm=data["oav_grid_snapshot_box_width"] * microns_per_pixel_y / 1000,
+            steps_x=data["oav_grid_snapshot_num_boxes_x"],
+            steps_y=data["oav_grid_snapshot_num_boxes_y"],
             microns_per_pixel_x=microns_per_pixel_x,
             microns_per_pixel_y=microns_per_pixel_y,
-            snapshot_offset_x_pixel=int(data["oav_snapshot_top_left_x"]),
-            snapshot_offset_y_pixel=int(data["oav_snapshot_top_left_y"]),
+            snapshot_offset_x_pixel=int(data["oav_grid_snapshot_top_left_x"]),
+            snapshot_offset_y_pixel=int(data["oav_grid_snapshot_top_left_y"]),
             orientation=Orientation.HORIZONTAL,
             snaked=True,
         )
@@ -176,9 +180,16 @@ class BaseISPyBCallback(PlanReactiveCallback):
         if transmission := doc["data"]["attenuator_actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
-        if doc["data"]["dcm_energy_in_kev"]:
-            energy_ev = doc["data"]["dcm_energy_in_kev"] * 1000
-            hwscan_data_collection_info.wavelength = convert_eV_to_angstrom(energy_ev)
+        event_energy = doc["data"]["dcm-energy_in_kev"]
+        if event_energy:
+            energy_ev = event_energy * 1000
+            wavelength_angstroms = convert_eV_to_angstrom(energy_ev)
+            hwscan_data_collection_info.wavelength = wavelength_angstroms
+            hwscan_data_collection_info.resolution = resolution(
+                self.params.hyperion_params.detector_params,
+                wavelength_angstroms,
+                self.params.hyperion_params.detector_params.detector_distance,
+            )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params
         )
@@ -209,7 +220,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             self.ispyb.end_deposition(self.ispyb_ids, exit_status, reason)
         except Exception as e:
             ISPYB_LOGGER.warning(
-                f"Failed to finalise ISPyB deposition on stop document: {doc} with exception: {e}"
+                f"Failed to finalise ISPyB deposition on stop document: {format_doc_for_log(doc)} with exception: {e}"
             )
         return self._tag_doc(doc)
 

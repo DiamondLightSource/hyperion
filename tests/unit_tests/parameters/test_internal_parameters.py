@@ -11,6 +11,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GRIDSCAN_ISPYB_PARAM_DEFAULTS,
     GridscanIspybParams,
 )
+from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.parameters.internal_parameters import (
     InternalParameters,
     extract_hyperion_params_from_flat_dict,
@@ -85,12 +86,12 @@ def test_ispyb_param_dict():
 
 def test_internal_param_serialisation_deserialisation():
     data = default_raw_params()
-    internal_parameters = GridscanInternalParameters(**data)
+    internal_parameters = ThreeDGridScan(**data)
 
     serialised = internal_parameters.json(indent=2)
     reloaded = json.loads(serialised)
 
-    deserialised = GridscanInternalParameters(**reloaded)
+    deserialised = ThreeDGridScan(**reloaded)
 
     assert deserialised == internal_parameters
 

@@ -16,7 +16,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
 from ophyd.status import Status
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import set_mock_value
 
 from hyperion.experiment_plans import oav_grid_detection_plan
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
@@ -45,7 +45,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 )
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
-    ExperimentType,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
@@ -53,11 +52,10 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_angstrom_to_eV
 
 from ...conftest import fake_read
@@ -205,7 +203,7 @@ GRID_INFO_COLUMN_MAP = {
 @pytest.fixture
 def dummy_data_collection_group_info(dummy_params):
     return populate_data_collection_group(
-        ExperimentType.GRIDSCAN_2D.value,
+        IspybExperimentType.GRIDSCAN_2D.value,
         dummy_params.hyperion_params.detector_params,
         dummy_params.hyperion_params.ispyb_params,
     )
@@ -286,23 +284,26 @@ def grid_detect_then_xray_centre_composite(
     oav.zoom_controller.zrst.set("1.0x")
     oav.cam.array_size.array_size_x.sim_put(1024)
     oav.cam.array_size.array_size_y.sim_put(768)
-    oav.snapshot.x_size.sim_put(1024)
-    oav.snapshot.y_size.sim_put(768)
-    oav.snapshot.top_left_x.set(50)
-    oav.snapshot.top_left_y.set(100)
-    oav.snapshot.box_width.set(0.1 * 1000 / 1.25)  # size in pixels
-    undulator.current_gap.sim_put(1.11)
+    oav.grid_snapshot.x_size.sim_put(1024)
+    oav.grid_snapshot.y_size.sim_put(768)
+    oav.grid_snapshot.top_left_x.set(50)
+    oav.grid_snapshot.top_left_y.set(100)
+    oav.grid_snapshot.box_width.set(0.1 * 1000 / 1.25)  # size in pixels
+    set_mock_value(undulator.current_gap, 1.11)
 
     unpatched_method = oav.parameters.load_microns_per_pixel
     eiger.stale_params.sim_put(0)
     eiger.odin.meta.ready.sim_put(1)
+    eiger.odin.meta.active.sim_put(1)
     eiger.odin.fan.ready.sim_put(1)
 
+    unpatched_snapshot_trigger = oav.grid_snapshot.trigger
+
     def mock_snapshot_trigger():
-        oav.snapshot.last_path_full_overlay.set("test_1_y")
-        oav.snapshot.last_path_outer.set("test_2_y")
-        oav.snapshot.last_saved_path.set("test_3_y")
-        return Status(success=True, done=True)
+        oav.grid_snapshot.last_path_full_overlay.set("test_1_y")
+        oav.grid_snapshot.last_path_outer.set("test_2_y")
+        oav.grid_snapshot.last_saved_path.set("test_3_y")
+        return unpatched_snapshot_trigger()
 
     def patch_lmpp(zoom, xsize, ysize):
         unpatched_method(zoom, 1024, 768)
@@ -319,13 +320,21 @@ def grid_detect_then_xray_centre_composite(
         bottom_edge_data = [0] * tip_x_px + [
             (tip_y_px + target_grid_height_px // 2)
         ] * grid_width_px
-        ophyd_pin_tip_detection.triggered_top_edge._backend._set_value(
-            numpy.array(top_edge_data, dtype=numpy.uint32)
+        set_mock_value(
+            ophyd_pin_tip_detection.triggered_top_edge,
+            numpy.array(top_edge_data, dtype=numpy.uint32),
         )
 
-        ophyd_pin_tip_detection.triggered_bottom_edge._backend._set_value(
-            numpy.array(bottom_edge_data, dtype=numpy.uint32)
+        set_mock_value(
+            ophyd_pin_tip_detection.triggered_bottom_edge,
+            numpy.array(bottom_edge_data, dtype=numpy.uint32),
         )
+        (
+            set_mock_value(
+                zocalo.bbox_sizes, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
+            ),
+        )
+
         yield from []
         return tip_x_px, tip_y_px
 
@@ -356,7 +365,10 @@ def grid_detect_then_xray_centre_composite(
             "wait_for_tip_to_be_found",
             side_effect=mock_pin_tip_detect,
         ),
-        patch.object(oav.snapshot, "trigger", side_effect=mock_snapshot_trigger),
+        patch("dodal.devices.areadetector.plugins.MJPG.requests.get"),
+        patch("dodal.devices.areadetector.plugins.MJPG.Image.open"),
+        patch.object(oav.grid_snapshot, "post_processing"),
+        patch.object(oav.grid_snapshot, "trigger", side_effect=mock_snapshot_trigger),
         patch.object(
             eiger.odin.file_writer.file_name,
             "set",
@@ -491,7 +503,7 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
     scan_data_infos = generate_scan_data_infos(
         dummy_params,
         dummy_scan_data_info_for_begin,
-        ExperimentType.GRIDSCAN_3D,
+        IspybExperimentType.GRIDSCAN_3D,
         ispyb_ids,
     )
     ispyb_ids = dummy_ispyb_3d.update_deposition(ispyb_ids, scan_data_infos)
@@ -512,10 +524,10 @@ def test_ispyb_deposition_comment_correct_for_3D_on_failure(
 @pytest.mark.parametrize(
     "experiment_type, exp_num_of_grids, success",
     [
-        (ExperimentType.GRIDSCAN_2D, 1, False),
-        (ExperimentType.GRIDSCAN_2D, 1, True),
-        (ExperimentType.GRIDSCAN_3D, 2, False),
-        (ExperimentType.GRIDSCAN_3D, 2, True),
+        (IspybExperimentType.GRIDSCAN_2D, 1, False),
+        (IspybExperimentType.GRIDSCAN_2D, 1, True),
+        (IspybExperimentType.GRIDSCAN_3D, 2, False),
+        (IspybExperimentType.GRIDSCAN_3D, 2, True),
     ],
 )
 def test_can_store_2D_ispyb_data_correctly_when_in_error(
@@ -573,14 +585,14 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
 def generate_scan_data_infos(
     dummy_params,
     dummy_scan_data_info_for_begin: ScanDataInfo,
-    experiment_type: ExperimentType,
+    experiment_type: IspybExperimentType,
     ispyb_ids: IspybIds,
 ) -> Sequence[ScanDataInfo]:
     xy_scan_data_info = scan_xy_data_info_for_update(
         ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
     )
     xy_scan_data_info.data_collection_id = ispyb_ids.data_collection_ids[0]
-    if experiment_type == ExperimentType.GRIDSCAN_3D:
+    if experiment_type == IspybExperimentType.GRIDSCAN_3D:
         scan_data_infos = scan_data_infos_for_update_3d(
             ispyb_ids, xy_scan_data_info, dummy_params
         )
@@ -633,7 +645,6 @@ def test_ispyb_deposition_in_gridscan(
         "overlap": 0,
         "omegastart": 0,
         "startimagenumber": 1,
-        "resolution": 1.0,
         "wavelength": 0.976254,
         "xbeam": 150.0,
         "ybeam": 160.0,
@@ -708,7 +719,6 @@ def test_ispyb_deposition_in_gridscan(
         "overlap": 0,
         "omegastart": 90,
         "startimagenumber": 1,
-        "resolution": 1.0,
         "wavelength": 0.976254,
         "xbeam": 150.0,
         "ybeam": 160.0,
@@ -795,7 +805,7 @@ def test_ispyb_deposition_in_rotation_plan(
     bps_wait,
     fake_create_rotation_devices: RotationScanComposite,
     RE: RunEngine,
-    test_rotation_params: RotationInternalParameters,
+    test_rotation_params: RotationScan,
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
@@ -817,20 +827,23 @@ def test_ispyb_deposition_in_rotation_plan(
     test_slit_gap_horiz = 0.123
     test_slit_gap_vert = 0.234
 
-    test_rotation_params.experiment_params.image_width = test_img_wid
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_x = test_bs_x
-    test_rotation_params.hyperion_params.ispyb_params.beam_size_y = test_bs_y
-    test_rotation_params.hyperion_params.detector_params.exposure_time = test_exp_time
+    test_rotation_params.rotation_increment_deg = test_img_wid
+    test_rotation_params.ispyb_extras.beam_size_x = test_bs_x
+    test_rotation_params.ispyb_extras.beam_size_y = test_bs_y
+    test_rotation_params.exposure_time_s = test_exp_time
     energy_ev = convert_angstrom_to_eV(test_wl)
-    fake_create_rotation_devices.dcm.energy_in_kev.user_readback.sim_put(  # pyright: ignore
-        energy_ev / 1000
+    set_mock_value(
+        fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
+        energy_ev / 1000,  # pyright: ignore
     )
-    fake_create_rotation_devices.undulator.current_gap.sim_put(1.12)  # pyright: ignore
-    set_sim_value(
+    set_mock_value(
+        fake_create_rotation_devices.undulator.current_gap, 1.12
+    )  # pyright: ignore
+    set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         test_synchrotron_mode,
     )
-    set_sim_value(
+    set_mock_value(
         fake_create_rotation_devices.synchrotron.topup_start_countdown,  # pyright: ignore
         -1,
     )
@@ -840,7 +853,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
         test_slit_gap_vert
     )
-    test_rotation_params.hyperion_params.detector_params.expected_energy_ev = energy_ev
+    test_rotation_params.detector_params.expected_energy_ev = energy_ev
 
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
     ispyb_cb = RotationISPyBCallback()

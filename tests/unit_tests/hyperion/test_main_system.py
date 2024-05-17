@@ -457,7 +457,7 @@ def test_when_blueskyrunner_initiated_then_plans_are_setup_and_devices_connected
     "hyperion.experiment_plans.flyscan_xray_centre_plan.create_devices", autospec=True
 )
 def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upon_start(
-    mock_setup,
+    mock_setup, test_fgs_params
 ):
     mock_setup = MagicMock()
     with patch.dict(
@@ -474,7 +474,7 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_set_then_setup_called_upo
     ):
         runner = BlueskyRunner(MagicMock(), MagicMock(), skip_startup_connection=True)
         mock_setup.assert_not_called()
-        runner.start(None, None, "flyscan_xray_centre", None)  # type: ignore
+        runner.start(lambda: None, test_fgs_params, "flyscan_xray_centre", None)
         mock_setup.assert_called_once()
         runner.shutdown()
 
@@ -543,7 +543,7 @@ def test_warn_exception_during_plan_causes_warning_in_log(
 
 
 @patch(
-    "dodal.devices.DCM.get_beamline_parameters",
+    "dodal.devices.undulator_dcm.get_beamline_parameters",
     return_value={"DCM_Perp_Offset_FIXED": 111},
 )
 def test_when_context_created_then_contains_expected_number_of_plans(
