@@ -231,7 +231,7 @@ class TestNewGdaParams:
             },
             "experiment_params": {
                 "transmission_fraction": self.transmission,
-                "snapshot_dir": "/tmp/dls/i03/data/2024/cm66666-6/snapshots",
+                "snapshot_dir": f"{self.directory}snapshots",
                 "detector_distance": self.detector_distance_mm,
                 "exposure_time": self.exposure_time_s,
                 "omega_start": self.omega_start,

@@ -15,7 +15,7 @@ from hyperion.device_setup_plans.position_detector import (
 def start_preparing_data_collection_then_do_plan(
     eiger: EigerDetector,
     detector_motion: DetectorMotion,
-    detector_distance: float,
+    detector_distance_mm: float | None,
     plan_to_run: Generator[Msg, None, None],
     group="ready_for_data_collection",
 ) -> Generator[Msg, None, None]:
@@ -31,7 +31,10 @@ def start_preparing_data_collection_then_do_plan(
 
     def wrapped_plan():
         yield from bps.abs_set(eiger.do_arm, 1, group=group)
-        yield from set_detector_z_position(detector_motion, detector_distance, group)
+        if detector_distance_mm:
+            yield from set_detector_z_position(
+                detector_motion, detector_distance_mm, group
+            )
         yield from set_shutter(detector_motion, ShutterState.OPEN, group)
         yield from plan_to_run
 

@@ -159,7 +159,7 @@ class DiffractionExperiment(HyperionParameters):
 
     @property
     def snapshot_directory(self) -> Path:
-        return self.visit_directory / "snapshots"
+        return Path(self.storage_directory) / "snapshots"
 
     @property
     def num_images(self) -> int:
@@ -196,9 +196,9 @@ class SplitScan(BaseModel):
 
 
 class WithSample(BaseModel):
-    sample_id: int  # Will be used to work out puck/pin
-    _puck: int | None = None
-    _pin: int | None = None
+    sample_id: int
+    sample_puck: int | None = None
+    sample_pin: int | None = None
 
 
 class WithOavCentring(BaseModel):

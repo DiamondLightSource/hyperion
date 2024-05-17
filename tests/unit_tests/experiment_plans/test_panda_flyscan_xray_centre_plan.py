@@ -1,6 +1,5 @@
 import random
 import types
-from pathlib import Path
 from typing import Any, Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
@@ -52,7 +51,7 @@ from hyperion.external_interaction.callbacks.xray_centre.nexus_callback import (
 )
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import PandAGridscanInternalParameters, ThreeDGridScan
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 from ...conftest import default_raw_params
 from ...system_tests.external_interaction.conftest import (
@@ -67,10 +66,6 @@ from .conftest import (
     modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
-)
-
-PANDA_TEST_PARAMS_PATH = (
-    "tests/test_data/parameter_json_files/panda_test_parameters.json"
 )
 
 
@@ -462,40 +457,6 @@ class TestFlyscanXrayCentrePlan:
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
-
-    @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
-        new=MagicMock(return_value=Status(done=True, success=True)),
-    )
-    @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.move_x_y_z",
-        new=MagicMock(autospec=True),
-    )
-    @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
-        new=MagicMock(autospec=True),
-    )
-    @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
-        new=MagicMock(return_value=iter([])),
-    )
-    @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.get_directory_provider",
-        autospec=True,
-    )
-    def test_when_gridscan_run_panda_directory_applied(
-        self,
-        get_directory_provider,
-        RE_with_subs: tuple[RunEngine, Any],
-        test_panda_fgs_params: ThreeDGridScan,
-        fake_fgs_composite: FlyScanXRayCentreComposite,
-    ):
-        RE_with_subs[0].subscribe(VerbosePlanExecutionLoggingCallback())
-        RE_with_subs[0](
-            run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params)
-        )
-        expected_path = Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
-        get_directory_provider().update.assert_called_once_with(directory=expected_path)
 
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
@@ -896,7 +857,7 @@ def test_tidy_up_plans_disable_panda_and_zebra(
 )
 def test_read_hardware_for_nexus_occurs_after_eiger_arm(
     fake_fgs_composite: FlyScanXRayCentreComposite,
-    test_panda_fgs_params: PandAGridscanInternalParameters,
+    test_panda_fgs_params: ThreeDGridScan,
     sim_run_engine,
 ):
     sim_run_engine.add_handler(

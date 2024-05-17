@@ -61,9 +61,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 from tests.conftest import create_dummy_scan_spec
 
 from ...conftest import default_raw_params
@@ -873,7 +870,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 )
 def test_read_hardware_for_nexus_occurs_after_eiger_arm(
     fake_fgs_composite: FlyScanXRayCentreComposite,
-    test_fgs_params: GridscanInternalParameters,
+    test_fgs_params: ThreeDGridScan,
     sim_run_engine,
 ):
     sim_run_engine.add_handler(

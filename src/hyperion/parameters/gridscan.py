@@ -106,7 +106,7 @@ class GridCommon(
             omega_increment=0,
             num_images_per_trigger=1,
             num_triggers=self.num_images,
-            use_roi_mode=False,
+            use_roi_mode=self.use_roi_mode,
             det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
             trigger_mode=self.trigger_mode,
             beam_xy_converter=DetectorDistanceToBeamXYConverter(
@@ -169,6 +169,10 @@ class PinTipCentreThenXrayCentre(GridCommon):
 
 
 class RobotLoadThenCentre(GridCommon, WithSample):
+    def pin_centre_then_xray_centre_params(self):
+        params = PinTipCentreThenXrayCentre(**self.dict())
+        return params
+
     # Can be removed in #1277
     def old_parameters(self) -> RobotLoadThenCentreInternalParameters:
         return RobotLoadThenCentreInternalParameters(
