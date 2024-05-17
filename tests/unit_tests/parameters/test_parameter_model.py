@@ -219,7 +219,6 @@ class TestNewGdaParams:
                     "current_energy_ev": self.energy,
                     "sample_id": self.sample_id,
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
-                    "undulator_gap": 0.5,
                     "position": self.position,
                     "beam_size_x": self.beam_size_x,
                     "beam_size_y": self.beam_size_y,
@@ -249,7 +248,6 @@ class TestNewGdaParams:
 
         # This should all be stuff that is no longer needed because
         # we get it from devices!
-        old_params.hyperion_params.ispyb_params.undulator_gap = None
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_end = []
         old_params.hyperion_params.ispyb_params.xtal_snapshots_omega_start = []
 
@@ -307,7 +305,6 @@ class TestNewGdaParams:
                     "current_energy_ev": self.energy,
                     "sample_id": self.sample_id,
                     "visit_path": "/tmp/dls/i03/data/2024/cm66666-6",
-                    "undulator_gap": 0.5,
                     "position": self.position,
                     "beam_size_x": self.beam_size_x,
                     "beam_size_y": self.beam_size_y,
@@ -339,9 +336,5 @@ class TestNewGdaParams:
         old_params = RotationInternalParameters(**old_hyperion_params_dict)
 
         new_old_params = new_params.old_parameters()
-
-        # This should all be stuff that is no longer needed because
-        # we get it from devices!
-        old_params.hyperion_params.ispyb_params.undulator_gap = None
 
         assert new_old_params == old_params
