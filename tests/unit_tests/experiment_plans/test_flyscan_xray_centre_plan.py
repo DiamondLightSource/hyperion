@@ -410,7 +410,7 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
-    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
+    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
@@ -421,6 +421,8 @@ class TestFlyscanXrayCentrePlan:
     ):
         test_fgs_params.set_stub_offsets = True
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
+
+        fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
@@ -434,6 +436,7 @@ class TestFlyscanXrayCentrePlan:
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 1
         )
+        assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
