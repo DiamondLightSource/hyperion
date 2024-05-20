@@ -240,7 +240,6 @@ class TemporaryIspybExtras(BaseModel):
         extra = Extra.forbid
 
     position: list[float] | NDArray = Field(default=np.array([0, 0, 0]))
-    undulator_gap: float | None = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None
