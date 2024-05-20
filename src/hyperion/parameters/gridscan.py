@@ -75,7 +75,6 @@ class GridCommon(
             focal_spot_size_y=self.ispyb_extras.focal_spot_size_y,
             comment=self.comment,
             sample_id=str(self.sample_id),
-            undulator_gap=self.ispyb_extras.undulator_gap,
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start
             or [],
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],

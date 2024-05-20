@@ -15,7 +15,6 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "focal_spot_size_x": 0.0,
     "focal_spot_size_y": 0.0,
     "comment": "Descriptive comment.",
-    "undulator_gap": None,
 }
 
 
@@ -32,7 +31,6 @@ class IspybParams(BaseModel):
     sample_id: Optional[str] = None
 
     # Optional from GDA as populated by Ophyd
-    undulator_gap: Optional[float] = None
     xtal_snapshots_omega_start: Optional[list[str]] = None
     xtal_snapshots_omega_end: Optional[list[str]] = None
 

@@ -25,6 +25,7 @@ class repo:
 
         self.origin = self.repo.remotes.origin
         self.origin.fetch()
+        self.origin.fetch("refs/tags/*:refs/tags/*")
 
         self.versions = [
             t.name for t in self.repo.tags if VERSION_PATTERN_COMPILED.match(t.name)
@@ -40,6 +41,7 @@ class repo:
         deploy_origin = deploy_repo.create_remote("origin", self.origin.url)
 
         deploy_origin.fetch()
+        deploy_origin.fetch("refs/tags/*:refs/tags/*")
         deploy_repo.git.checkout(self.latest_version_str)
 
         print("Setting permissions")
