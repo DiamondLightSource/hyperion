@@ -4,6 +4,8 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
 
+from dodal.beamline_specific_utils.i03 import beam_size_from_aperture
+from dodal.devices.aperturescatterguard import SingleAperturePosition
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
@@ -115,7 +117,15 @@ class BaseISPyBCallback(PlanReactiveCallback):
             synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],
             SynchrotronMode,
         )
+        aperture_size = SingleAperturePosition(
+            **doc["data"]["aperture_scatterguard-selected_aperture"]
+        )
+        beamsize = beam_size_from_aperture(aperture_size)
         hwscan_data_collection_info = DataCollectionInfo(
+            beamsize_at_samplex=beamsize.x_um,
+            beamsize_at_sampley=beamsize.y_um,
+            focal_spot_size_at_samplex=beamsize.x_um,
+            focal_spot_size_at_sampley=beamsize.y_um,
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],

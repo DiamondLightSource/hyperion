@@ -240,10 +240,6 @@ class TemporaryIspybExtras(BaseModel):
         extra = Extra.forbid
 
     position: list[float] | NDArray = Field(default=np.array([0, 0, 0]))
-    beam_size_x: float
-    beam_size_y: float
-    focal_spot_size_x: float
-    focal_spot_size_y: float
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None

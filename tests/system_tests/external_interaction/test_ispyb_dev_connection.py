@@ -828,8 +828,6 @@ def test_ispyb_deposition_in_rotation_plan(
     test_slit_gap_vert = 0.234
 
     test_rotation_params.rotation_increment_deg = test_img_wid
-    test_rotation_params.ispyb_extras.beam_size_x = test_bs_x
-    test_rotation_params.ispyb_extras.beam_size_y = test_bs_y
     test_rotation_params.exposure_time_s = test_exp_time
     energy_ev = convert_angstrom_to_eV(test_wl)
     set_mock_value(
