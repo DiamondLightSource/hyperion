@@ -21,7 +21,7 @@ from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flysca
 from dodal.devices.flux import Flux
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import Slits
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
@@ -76,7 +76,7 @@ class FlyScanXRayCentreComposite:
     eiger: EigerDetector
     fast_grid_scan: FastGridScan
     flux: Flux
-    s4_slit_gaps: S4SlitGaps
+    s4_slit_gaps: Slits
     smargon: Smargon
     undulator: Undulator
     synchrotron: Synchrotron

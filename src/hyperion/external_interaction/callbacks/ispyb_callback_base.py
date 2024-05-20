@@ -118,8 +118,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         hwscan_data_collection_info = DataCollectionInfo(
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
-            slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
-            slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
+            slitgap_horizontal=doc["data"]["s4_slit_gaps-x_gap"],
+            slitgap_vertical=doc["data"]["s4_slit_gaps-y_gap"],
         )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params

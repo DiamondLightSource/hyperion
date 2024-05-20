@@ -3,7 +3,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import Slits
 from dodal.devices.undulator import Undulator
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -20,7 +20,7 @@ async def test_getting_data_for_ispyb():
         f"{CONST.SIM.INSERTION_PREFIX}-MO-SERVC-01:", name="undulator"
     )
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
-    slit_gaps = S4SlitGaps(f"{CONST.SIM.BEAMLINE}-AL-SLITS-04:", name="slits")
+    slit_gaps = Slits(f"{CONST.SIM.BEAMLINE}-AL-SLITS-04:", name="slits")
     attenuator = i03.attenuator(fake_with_ophyd_sim=True)
     flux = i03.flux(fake_with_ophyd_sim=True)
     dcm = i03.dcm(fake_with_ophyd_sim=True)
@@ -28,12 +28,12 @@ async def test_getting_data_for_ispyb():
         prefix=f"{CONST.SIM.BEAMLINE}-AL-APSG-04:", name="ao_sg"
     )
 
-    undulator.wait_for_connection()
+    await undulator.connect()
     await synchrotron.connect()
-    slit_gaps.wait_for_connection()
+    await slit_gaps.connect()
     attenuator.wait_for_connection()
     flux.wait_for_connection()
-    aperture_scatterguard.wait_for_connection()
+    await aperture_scatterguard.connect()
     robot = i03.robot(fake_with_ophyd_sim=True)
 
     RE = RunEngine()

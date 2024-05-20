@@ -40,8 +40,8 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 BASIC_PRE_SETUP_DOC = {
     "undulator-current_gap": 0,
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-    "s4_slit_gaps_xgap": 0,
-    "s4_slit_gaps_ygap": 0,
+    "s4_slit_gaps-x_gap": 0,
+    "s4_slit_gaps-y_gap": 0,
 }
 
 BASIC_POST_SETUP_DOC = {

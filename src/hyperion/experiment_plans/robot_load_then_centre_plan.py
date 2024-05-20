@@ -21,7 +21,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot, SampleLocation
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import Slits
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
@@ -68,7 +68,7 @@ class RobotLoadThenCentreComposite:
     pin_tip_detection: PinTipDetection
     smargon: Smargon
     synchrotron: Synchrotron
-    s4_slit_gaps: S4SlitGaps
+    s4_slit_gaps: Slits
     undulator: Undulator
     zebra: Zebra
     zocalo: ZocaloResults
