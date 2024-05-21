@@ -154,6 +154,10 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
 
     @property
     def panda_FGS_params(self) -> PandAGridScanParams:
+        if self.y_steps % 2 and self.z_steps > 0:
+            raise OddYStepsException(
+                "The number of Y steps must be even for a PandA gridscan"
+            )
         return PandAGridScanParams(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
@@ -221,3 +225,6 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     @property
     def num_images(self) -> int:
         return len(self.scan_points["sam_x"])
+
+
+class OddYStepsException(Exception): ...

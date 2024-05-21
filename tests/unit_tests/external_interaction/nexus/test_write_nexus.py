@@ -290,7 +290,7 @@ def test_nexus_writer_writes_beamline_name_correctly(
 ):
     d_size = test_fgs_params.detector_params.detector_size_constants.det_size_pixels
     data_shape = (test_fgs_params.num_images, d_size.width, d_size.height)
-    nexus_writer = NexusWriter(test_fgs_params, data_shape)
+    nexus_writer = NexusWriter(test_fgs_params, data_shape, test_fgs_params.scan_points)
     assert nexus_writer.source.beamline == "I03"
 
 

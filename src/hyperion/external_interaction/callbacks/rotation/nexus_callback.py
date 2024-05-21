@@ -85,7 +85,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             det_size = (
                 self.parameters.detector_params.detector_size_constants.det_size_pixels
             )
+            shape = (self.parameters.num_images, det_size.width, det_size.height)
             self.writer = NexusWriter(
-                self.parameters,
-                (self.parameters.num_images, det_size.width, det_size.height),
+                self.parameters, shape, self.parameters.scan_points
             )
