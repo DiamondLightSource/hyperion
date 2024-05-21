@@ -211,12 +211,12 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
         return ScanPath(self.scan_spec.calculate()).consume().midpoints
 
     @property
-    def scan_points_1(self):
+    def scan_points_first_grid(self):
         """A list of all the points in the first grid scan."""
         return ScanPath(self.grid_1_spec.calculate()).consume().midpoints
 
     @property
-    def scan_points_2(self):
+    def scan_points_second_grid(self):
         """A list of all the points in the second grid scan."""
         return ScanPath(self.grid_2_spec.calculate()).consume().midpoints
 

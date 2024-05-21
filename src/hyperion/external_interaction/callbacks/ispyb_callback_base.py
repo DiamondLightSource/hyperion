@@ -27,9 +27,8 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
+from hyperion.parameters.components import DiffractionExperimentWithSample
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
-from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_eV_to_angstrom
 
 from .logging_callback import format_doc_for_log
@@ -37,8 +36,6 @@ from .logging_callback import format_doc_for_log
 D = TypeVar("D")
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart, RunStop
-
-ALL_PLAN_PARAMS = ThreeDGridScan | GridScanWithEdgeDetect | RotationScan
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
@@ -53,7 +50,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
         self._oav_snapshot_event_idx: int = 0
-        self.params: ALL_PLAN_PARAMS | None = None
+        self.params: DiffractionExperimentWithSample | None = None
         self.ispyb: StoreInIspyb
         self.descriptors: Dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
@@ -205,7 +202,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
-        params: ALL_PLAN_PARAMS,
+        params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         pass
 

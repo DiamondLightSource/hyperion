@@ -9,7 +9,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
-from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
 
@@ -154,16 +153,12 @@ def dummy_params():
 
 @pytest.fixture
 def dummy_ispyb(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(
-        CONST.SIM.DEV_ISPYB_DATABASE_CFG, IspybExperimentType.GRIDSCAN_2D
-    )
+    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
 
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(
-        CONST.SIM.DEV_ISPYB_DATABASE_CFG, IspybExperimentType.GRIDSCAN_3D
-    )
+    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
 
 
 @pytest.fixture

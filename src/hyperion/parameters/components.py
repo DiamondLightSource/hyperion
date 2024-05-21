@@ -129,9 +129,13 @@ class HyperionParameters(BaseModel):
         return version
 
     @classmethod
-    def from_json(cls, input: str | None):
+    def from_json(cls, input: str | None, *, allow_extras: bool = False):
         assert input is not None
-        return cls(**json.loads(input))
+        if allow_extras:
+            cls.Config.extra = Extra.ignore
+        params = cls(**json.loads(input))
+        cls.Config.extra = Extra.forbid
+        return params
 
 
 class DiffractionExperiment(HyperionParameters):

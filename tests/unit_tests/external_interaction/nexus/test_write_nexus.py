@@ -40,7 +40,11 @@ def create_nexus_writer(parameters: ThreeDGridScan, writer_num):
         if writer_num == 1
         else parameters.num_images - parameters.scan_indices[1]
     )
-    points = parameters.scan_points_1 if writer_num == 1 else parameters.scan_points_2
+    points = (
+        parameters.scan_points_first_grid
+        if writer_num == 1
+        else parameters.scan_points_second_grid
+    )
     data_shape = (n_img, d_size.width, d_size.height)
     run_number = parameters.detector_params.run_number + writer_num - 1
     vds_start = 0 if writer_num == 1 else parameters.scan_indices[1]
@@ -104,7 +108,7 @@ def single_dummy_file(test_fgs_params: ThreeDGridScan):
     nexus_writer = NexusWriter(
         test_fgs_params,
         data_shape,
-        scan_points=test_fgs_params.scan_points_1,
+        scan_points=test_fgs_params.scan_points_first_grid,
         run_number=1,
     )
     yield nexus_writer

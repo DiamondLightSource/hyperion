@@ -263,8 +263,6 @@ def test_store_3d_grid_scan(
     scan_data_info_for_begin,
     scan_data_infos_for_update,
 ):
-    assert dummy_3d_gridscan_ispyb.experiment_type == "Mesh3D"
-
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
         dummy_collection_group_info, [scan_data_info_for_begin]
     )

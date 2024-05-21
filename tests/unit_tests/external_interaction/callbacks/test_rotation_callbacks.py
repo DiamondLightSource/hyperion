@@ -365,58 +365,6 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
         last_dcgid = ispyb_cb.ispyb_ids.data_collection_group_id
 
 
-@patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
-    autospec=True,
-)
-def test_ispyb_specifies_experiment_type_if_supplied(
-    rotation_ispyb: MagicMock,
-    RE: RunEngine,
-):
-    raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
-    )
-    raw_params["ispyb_experiment_type"] = "Characterization"
-    params = RotationScan(**raw_params)
-
-    ispyb_cb = RotationISPyBCallback()
-    ispyb_cb.active = True
-    assert params.ispyb_params.ispyb_experiment_type == "Characterization"
-    rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
-        data_collection_group_id=23, data_collection_ids=(45,)
-    )
-
-    RE(fake_rotation_scan(params, [ispyb_cb]))
-
-    assert rotation_ispyb.call_args.args[1] == IspybExperimentType.CHARACTERIZATION
-
-
-@patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
-    autospec=True,
-)
-def test_new_params_ispyb_specifies_experiment_type_if_supplied(
-    rotation_ispyb: MagicMock,
-    RE: RunEngine,
-):
-    raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
-    )
-    raw_params["ispyb_experiment_type"] = "Characterization"
-    params = RotationScan(**raw_params)
-
-    ispyb_cb = RotationISPyBCallback()
-    ispyb_cb.active = True
-    assert params.ispyb_params.ispyb_experiment_type == "Characterization"
-    rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
-        data_collection_group_id=23, data_collection_ids=(45,)
-    )
-
-    RE(fake_rotation_scan(params, [ispyb_cb]))
-
-    assert rotation_ispyb.call_args.args[1] == IspybExperimentType.CHARACTERIZATION
-
-
 n_images_store_id = [
     (123, False),
     (3600, True),
@@ -456,6 +404,8 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
 
     params.sample_id = 987678
     params.scan_width_deg = n_images / 10
+    if n_images < 200:
+        params.ispyb_experiment_type = IspybExperimentType.CHARACTERIZATION
     assert params.num_images == n_images
     doc["subplan_name"] = CONST.PLAN.ROTATION_OUTER  # type: ignore
     doc["hyperion_parameters"] = params.json()  # type: ignore

@@ -58,12 +58,12 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             data_shape_2 = (grid_n_img_2, d_size.width, d_size.height)
             run_number_2 = parameters.detector_params.run_number + 1
             self.nexus_writer_1 = NexusWriter(
-                parameters, data_shape_1, parameters.scan_points_1
+                parameters, data_shape_1, parameters.scan_points_first_grid
             )
             self.nexus_writer_2 = NexusWriter(
                 parameters,
                 data_shape_2,
-                parameters.scan_points_2,
+                parameters.scan_points_second_grid,
                 run_number=run_number_2,
                 vds_start_index=parameters.scan_indices[1],
                 omega_start_deg=90,

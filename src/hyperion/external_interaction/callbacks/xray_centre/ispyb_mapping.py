@@ -10,9 +10,7 @@ from hyperion.external_interaction.ispyb.data_model import (
 )
 
 
-def populate_xz_data_collection_info(
-    detector_params: DetectorParams,
-) -> DataCollectionInfo:
+def populate_xz_data_collection_info(detector_params: DetectorParams):
     assert (
         detector_params.omega_start is not None
         and detector_params.run_number is not None
@@ -29,13 +27,12 @@ def populate_xz_data_collection_info(
 
 
 def populate_xy_data_collection_info(detector_params: DetectorParams):
-    info = DataCollectionInfo(
+    return DataCollectionInfo(
         omega_start=detector_params.omega_start,
         data_collection_number=detector_params.run_number,
         axis_range=0,
         axis_end=detector_params.omega_start,
     )
-    return info
 
 
 def construct_comment_for_gridscan(grid_info: DataCollectionGridInfo) -> str:

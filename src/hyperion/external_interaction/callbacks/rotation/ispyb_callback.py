@@ -68,32 +68,21 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 if (self.params.sample_id == self.last_sample_id)
                 else None
             )
-            n_images = self.params.num_images
             if (
-                n_images < 200
-                or self.params.ispyb_experiment_type
+                self.params.ispyb_experiment_type
                 == IspybExperimentType.CHARACTERIZATION
             ):
-                ISPYB_LOGGER.info(
-                    f"Collection has {n_images} images - treating as a screening collection - new DCG"
-                )
+                ISPYB_LOGGER.info("Screening collection - using new DCG")
                 dcgid = None
                 self.last_sample_id = None
             else:
                 ISPYB_LOGGER.info(
-                    f"Collection has {n_images} images - treating as a genuine dataset - storing sampleID to bundle images"
+                    f"Collection is {self.params.ispyb_experiment_type} - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.sample_id
-            experiment_type = self.params.ispyb_experiment_type
-            if experiment_type:
-                self.ispyb = StoreInIspyb(
-                    self.ispyb_config,
-                    IspybExperimentType(experiment_type),
-                )
-            else:
-                self.ispyb = StoreInIspyb(
-                    self.ispyb_config, IspybExperimentType.ROTATION
-                )
+            self.ispyb = StoreInIspyb(
+                self.ispyb_config,
+            )
             ISPYB_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(

@@ -20,26 +20,25 @@ from hyperion.external_interaction.nexus.nexus_utils import (
     create_goniometer_axes,
     get_start_and_predicted_end_time,
 )
-from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.rotation import RotationScan
+from hyperion.parameters.components import DiffractionExperimentWithSample
 
 
 class NexusWriter:
     def __init__(
         self,
-        parameters: ThreeDGridScan | RotationScan,
+        parameters: DiffractionExperimentWithSample,
         data_shape: tuple[int, int, int],
         scan_points: AxesPoints,
         *,
         run_number: int | None = None,
-        omega_start_deg: float | None = None,
+        omega_start_deg: float = 0,
+        chi_start_deg: float = 0,
         vds_start_index: int = 0,
     ) -> None:
         self.beam: Optional[Beam] = None
         self.attenuator: Optional[Attenuator] = None
         self.scan_points: dict = scan_points
         self.data_shape: tuple[int, int, int] = data_shape
-        self.omega_start: float = omega_start_deg or parameters.omega_start_deg or 0
         self.run_number: int = (
             run_number if run_number else parameters.detector_params.run_number
         )
@@ -57,7 +56,7 @@ class NexusWriter:
             self.directory / f"{self.filename}_{self.run_number}_master.h5"
         )
         self.goniometer: Goniometer = create_goniometer_axes(
-            self.omega_start, self.scan_points, chi=parameters.chi_start_deg or 0
+            omega_start_deg, self.scan_points, chi=chi_start_deg
         )
 
     def create_nexus_file(self, bit_depth: DTypeLike):

@@ -502,7 +502,10 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.eiger,
                     fake_fgs_composite.synchrotron,
                     "zocalo environment",
-                    [test_fgs_params.scan_points_1, test_fgs_params.scan_points_2],
+                    [
+                        test_fgs_params.scan_points_first_grid,
+                        test_fgs_params.scan_points_second_grid,
+                    ],
                     test_fgs_params.scan_indices,
                 )
             )
@@ -515,7 +518,10 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
                 "zocalo environment",
-                [test_fgs_params.scan_points_1, test_fgs_params.scan_points_2],
+                [
+                    test_fgs_params.scan_points_first_grid,
+                    test_fgs_params.scan_points_second_grid,
+                ],
                 test_fgs_params.scan_indices,
             )
         )

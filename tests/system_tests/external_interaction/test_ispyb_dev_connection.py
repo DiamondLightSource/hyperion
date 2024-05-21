@@ -523,9 +523,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     dummy_data_collection_group_info,
     dummy_scan_data_info_for_begin,
 ):
-    ispyb: StoreInIspyb = StoreInIspyb(
-        CONST.SIM.DEV_ISPYB_DATABASE_CFG, experiment_type
-    )
+    ispyb: StoreInIspyb = StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
     ispyb_ids: IspybIds = ispyb.begin_deposition(
         dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )

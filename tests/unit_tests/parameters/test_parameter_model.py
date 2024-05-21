@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from hyperion.parameters.gridscan import (
+    OddYStepsException,
     RobotLoadThenCentre,
     ThreeDGridScan,
 )
@@ -37,6 +38,13 @@ def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
     assert test_params.scan_indices == [0, 35]
     assert test_params.num_images == (5 * 7 + 5 * 9)
     assert test_params.exposure_time_s == 0.02
+
+
+def test_cant_do_panda_fgs_with_odd_y_steps(minimal_3d_gridscan_params):
+    test_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    with pytest.raises(OddYStepsException):
+        test_params.panda_FGS_params
+    assert test_params.FGS_params
 
 
 def test_serialise_deserialise(minimal_3d_gridscan_params):
