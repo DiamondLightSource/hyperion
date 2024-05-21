@@ -39,7 +39,7 @@ class IspybParams(BaseModel):
     @validator("position", pre=True)
     def _parse_position(
         cls, position: list[int | float] | np.ndarray | None, values: Dict[str, Any]
-    ) -> np.ndarray:
+    ) -> np.ndarray | None:
         if position is None:
             return None
         assert len(position) == 3
