@@ -73,7 +73,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         emit: Callable[..., Any] | None = None,
     ) -> None:
         super().__init__(emit=emit)
-        self.params: ThreeDGridScan | GridScanWithEdgeDetect
         self.ispyb: StoreInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
         self._start_of_fgs_uid: str | None = None
@@ -170,7 +169,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
-        params: ThreeDGridScan,
+        params: ThreeDGridScan | GridScanWithEdgeDetect,
     ) -> Sequence[ScanDataInfo]:
         assert (
             self.ispyb_ids.data_collection_ids

@@ -28,7 +28,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import ThreeDGridScan
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_eV_to_angstrom
 
@@ -38,7 +38,7 @@ D = TypeVar("D")
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
-ALL_PLAN_PARAMS = ThreeDGridScan | RotationScan
+ALL_PLAN_PARAMS = ThreeDGridScan | GridScanWithEdgeDetect | RotationScan
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
