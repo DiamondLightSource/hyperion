@@ -12,7 +12,6 @@ from pydantic import ValidationError
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
-    populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
@@ -176,9 +175,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         ), "Expect at least one valid data collection to record scan data"
         xy_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
-            data_collection_position_info=populate_data_collection_position_info(
-                params.ispyb_params
-            ),
             data_collection_id=self.ispyb_ids.data_collection_ids[0],
         )
         scan_data_infos = [xy_scan_data_info]
@@ -190,9 +186,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         )
         xz_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
-            data_collection_position_info=populate_data_collection_position_info(
-                params.ispyb_params
-            ),
             data_collection_id=data_collection_id,
         )
         scan_data_infos.append(xz_scan_data_info)

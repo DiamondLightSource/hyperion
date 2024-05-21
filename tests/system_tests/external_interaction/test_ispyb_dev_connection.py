@@ -677,10 +677,7 @@ def test_ispyb_deposition_in_gridscan(
     position_id = fetch_datacollection_attribute(
         ispyb_ids.data_collection_ids[0], DATA_COLLECTION_COLUMN_MAP["positionid"]
     )
-    expected_values = {"posX": 10.0, "posY": 20.0, "posZ": 30.0}
-    compare_actual_and_expected(
-        position_id, expected_values, fetch_datacollection_position_attribute
-    )
+    assert position_id is None
     DC_EXPECTED_VALUES.update(
         {
             "axisstart": 90.0,
@@ -707,10 +704,7 @@ def test_ispyb_deposition_in_gridscan(
     position_id = fetch_datacollection_attribute(
         ispyb_ids.data_collection_ids[1], DATA_COLLECTION_COLUMN_MAP["positionid"]
     )
-    expected_values = {"posX": 10.0, "posY": 20.0, "posZ": 30.0}
-    compare_actual_and_expected(
-        position_id, expected_values, fetch_datacollection_position_attribute
-    )
+    assert position_id is None
     GRIDINFO_EXPECTED_VALUES.update(
         {
             "gridInfoId": ispyb_ids.grid_ids[1],
@@ -792,9 +786,7 @@ def test_ispyb_deposition_in_rotation_plan(
         fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
         energy_ev / 1000,  # pyright: ignore
     )
-    set_mock_value(
-        fake_create_rotation_devices.undulator.current_gap, 1.12
-    )  # pyright: ignore
+    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)  # pyright: ignore
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         test_synchrotron_mode,
