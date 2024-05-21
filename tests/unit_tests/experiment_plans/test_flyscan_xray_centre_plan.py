@@ -200,10 +200,10 @@ class TestFlyscanXrayCentrePlan:
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
         ap_sg_test_value = {
-            "name": "Robot_load",
-            "GDA_name": "ROBOT_LOAD",
-            "radius_microns": None,
-            "location": (15, 16, 2, 18, 19),
+            "name": "Small",
+            "GDA_name": "SMALL_APERTURE",
+            "radius_microns": 20,
+            "location": (10, 11, 2, 13, 14),
         }
         fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
         fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)  # type: ignore

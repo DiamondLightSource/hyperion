@@ -142,10 +142,10 @@ class TestFlyscanXrayCentrePlan:
             transmission_test_value
         )
         ap_sg_test_value = {
-            "name": "Robot_load",
-            "GDA_name": "ROBOT_LOAD",
-            "radius_microns": None,
-            "location": (15, 16, 2, 18, 19),
+            "name": "Small",
+            "GDA_name": "SMALL_APERTURE",
+            "radius_microns": 20,
+            "location": (10, 11, 2, 13, 14),
         }
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
