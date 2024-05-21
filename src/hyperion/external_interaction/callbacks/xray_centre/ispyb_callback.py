@@ -8,6 +8,7 @@ import numpy as np
 from blueapi.core import MsgGenerator
 from bluesky import preprocessors as bpp
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
+from pydantic import ValidationError
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -34,7 +35,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
 from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import ThreeDGridScan
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
@@ -72,7 +73,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         emit: Callable[..., Any] | None = None,
     ) -> None:
         super().__init__(emit=emit)
-        self.params: ThreeDGridScan
+        self.params: ThreeDGridScan | GridScanWithEdgeDetect
         self.ispyb: StoreInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
         self._start_of_fgs_uid: str | None = None
@@ -87,7 +88,12 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 "ISPyB callback recieved start document with experiment parameters and "
                 f"uid: {self.uid_to_finalize_on}"
             )
-            self.params = ThreeDGridScan.from_json(doc.get("hyperion_parameters"))
+            try:
+                self.params = ThreeDGridScan.from_json(doc.get("hyperion_parameters"))
+            except ValidationError:
+                self.params = GridScanWithEdgeDetect.from_json(
+                    doc.get("hyperion_parameters")
+                )
             self.ispyb = StoreInIspyb(
                 self.ispyb_config, IspybExperimentType.GRIDSCAN_3D
             )
