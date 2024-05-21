@@ -80,9 +80,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                     f"Collection is {self.params.ispyb_experiment_type} - storing sampleID to bundle images"
                 )
                 self.last_sample_id = self.params.sample_id
-            self.ispyb = StoreInIspyb(
-                self.ispyb_config,
-            )
+            self.ispyb = StoreInIspyb(self.ispyb_config)
             ISPYB_LOGGER.info("Beginning ispyb deposition")
             data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(

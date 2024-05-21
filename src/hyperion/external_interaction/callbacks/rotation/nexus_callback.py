@@ -36,7 +36,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
     def __init__(self) -> None:
         super().__init__(NEXUS_LOGGER)
         self.run_uid: str | None = None
-        self.parameters: RotationScan | None = None
         self.writer: NexusWriter | None = None
         self.descriptors: Dict[str, EventDescriptor] = {}
 
@@ -45,7 +44,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event):
         event_descriptor = self.descriptors.get(doc["descriptor"])
-        assert isinstance(self.parameters, RotationScan)
         if event_descriptor is None:
             NEXUS_LOGGER.warning(
                 f"Rotation Nexus handler {self} received event doc {format_doc_for_log(doc)} and "
@@ -86,16 +84,16 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {json_params}"
             )
-            self.parameters = RotationScan.from_json(json_params)
+            parameters = RotationScan.from_json(json_params)
             NEXUS_LOGGER.info("Setting up nexus file...")
             det_size = (
-                self.parameters.detector_params.detector_size_constants.det_size_pixels
+                parameters.detector_params.detector_size_constants.det_size_pixels
             )
-            shape = (self.parameters.num_images, det_size.width, det_size.height)
+            shape = (parameters.num_images, det_size.width, det_size.height)
             self.writer = NexusWriter(
-                self.parameters,
+                parameters,
                 shape,
-                self.parameters.scan_points,
-                omega_start_deg=self.parameters.omega_start_deg,
-                chi_start_deg=self.parameters.chi_start_deg or 0,
+                parameters.scan_points,
+                omega_start_deg=parameters.omega_start_deg,
+                chi_start_deg=parameters.chi_start_deg or 0,
             )
