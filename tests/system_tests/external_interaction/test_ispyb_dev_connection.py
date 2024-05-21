@@ -754,6 +754,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_position_attribute: Callable[..., Any],
     undulator: Undulator,
     attenuator: Attenuator,
     synchrotron: Synchrotron,
@@ -779,7 +780,9 @@ def test_ispyb_deposition_in_rotation_plan(
         fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
         energy_ev / 1000,  # pyright: ignore
     )
-    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)  # pyright: ignore
+    set_mock_value(
+        fake_create_rotation_devices.undulator.current_gap, 1.12
+    )  # pyright: ignore
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         test_synchrotron_mode,
@@ -840,3 +843,11 @@ def test_ispyb_deposition_in_rotation_plan(
     }
 
     compare_actual_and_expected(dcid, EXPECTED_VALUES, fetch_datacollection_attribute)
+
+    position_id = fetch_datacollection_attribute(
+        dcid, DATA_COLLECTION_COLUMN_MAP["positionid"]
+    )
+    expected_values = {"posX": 10.0, "posY": 20.0, "posZ": 30.0}
+    compare_actual_and_expected(
+        position_id, expected_values, fetch_datacollection_position_attribute
+    )
