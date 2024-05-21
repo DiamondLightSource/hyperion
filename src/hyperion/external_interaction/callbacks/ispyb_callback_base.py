@@ -27,14 +27,8 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
+from hyperion.parameters.components import DiffractionExperimentWithSample
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.internal_parameters import InternalParameters
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
 from hyperion.utils.utils import convert_eV_to_angstrom
 
 from .logging_callback import format_doc_for_log
@@ -56,9 +50,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_LOGGER, emit=emit)
         self._oav_snapshot_event_idx: int = 0
-        self.params: GridscanInternalParameters | RotationInternalParameters | None = (
-            None
-        )
+        self.params: DiffractionExperimentWithSample | None = None
         self.ispyb: StoreInIspyb
         self.descriptors: Dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
@@ -196,9 +188,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             wavelength_angstroms = convert_eV_to_angstrom(energy_ev)
             hwscan_data_collection_info.wavelength = wavelength_angstroms
             hwscan_data_collection_info.resolution = resolution(
-                self.params.hyperion_params.detector_params,
+                self.params.detector_params,
                 wavelength_angstroms,
-                self.params.hyperion_params.detector_params.detector_distance,
+                self.params.detector_params.detector_distance,
             )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params
@@ -210,7 +202,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
-        params: InternalParameters,
+        params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         pass
 

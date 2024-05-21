@@ -20,9 +20,7 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 
 from ...conftest import extract_metafile, raw_params_from_file
 
@@ -37,23 +35,20 @@ def test_params(tmpdir):
     param_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
-    param_dict["hyperion_params"]["detector_params"]["directory"] = "tests/test_data"
-    param_dict["hyperion_params"]["detector_params"][
-        "prefix"
-    ] = f"{tmpdir}/{TEST_FILENAME}"
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    param_dict["hyperion_params"]["detector_params"]["expected_energy_ev"] = 12700
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    params = RotationInternalParameters(**param_dict)
-    params.experiment_params.x = 0
-    params.experiment_params.y = 0
-    params.experiment_params.z = 0
-    params.hyperion_params.detector_params.exposure_time = 0.004
+    param_dict["storage_directory"] = "tests/test_data"
+    param_dict["file_name"] = f"{tmpdir}/{TEST_FILENAME}"
+    param_dict["scan_width_deg"] = 360.0
+    param_dict["demand_energy_ev"] = 12700
+    params = RotationScan(**param_dict)
+    params.x_start_um = 0
+    params.y_start_um = 0
+    params.z_start_um = 0
+    params.exposure_time_s = 0.004
     return params
 
 
 def fake_rotation_scan(
-    parameters: RotationInternalParameters,
+    parameters: RotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):
@@ -62,7 +57,7 @@ def fake_rotation_scan(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "hyperion_internal_parameters": parameters.json(),
+            "hyperion_parameters": parameters.json(),
             "activate_callbacks": "RotationNexusFileCallback",
         }
     )
@@ -110,11 +105,12 @@ def apply_metafile_mapping(exceptions: dict, mapping: dict):
 
 
 def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
-    test_params: RotationInternalParameters,
+    test_params: RotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    run_number = test_params.hyperion_params.detector_params.run_number
+    test_params.chi_start_deg = 0
+    run_number = test_params.detector_params.run_number
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
     master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"
     meta_filename = f"{TEST_FILENAME}_{run_number}_meta.h5"
@@ -227,11 +223,11 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
 
 
 def test_rotation_scan_nexus_output_compared_to_existing_file(
-    test_params: RotationInternalParameters,
+    test_params: RotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
 ):
-    run_number = test_params.hyperion_params.detector_params.run_number
+    run_number = test_params.run_number or test_params.detector_params.run_number
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
     master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"
 
@@ -344,7 +340,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
 @patch("hyperion.external_interaction.nexus.write_nexus.NXmxFileWriter")
 def test_given_detector_bit_depth_changes_then_vds_datatype_as_expected(
     mock_nexus_writer,
-    test_params: RotationInternalParameters,
+    test_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     bit_depth,
     expected_type,
@@ -465,7 +461,7 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
                 if callable(exception):
                     assert exception(
                         actual_value, expected_value
-                    ), f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}"
+                    ), f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}, according to {exception}"
                 else:
                     assert np.array_equal(
                         actual_value,

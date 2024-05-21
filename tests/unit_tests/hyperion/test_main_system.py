@@ -30,9 +30,7 @@ from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.log import LOGGER
 from hyperion.parameters.cli import parse_cli_args
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.utils.context import device_composite_from_context
 
 from ...conftest import raw_params_from_file
@@ -45,7 +43,7 @@ SHUTDOWN_ENDPOINT = Actions.SHUTDOWN.value
 TEST_BAD_PARAM_ENDPOINT = "/fgs_real_params/" + Actions.START.value
 TEST_PARAMS = json.dumps(
     raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/good_test_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_parameters.json"
     )
 )
 
@@ -114,7 +112,7 @@ def mock_dict_values(d: dict):
 TEST_EXPTS = {
     "test_experiment": {
         "setup": MagicMock(),
-        "internal_param_type": MagicMock(),
+        "param_type": MagicMock(),
         "experiment_param_type": MagicMock(),
         "callback_collection_type": MagicMock(),
     },
@@ -125,7 +123,7 @@ TEST_EXPTS = {
     },
     "fgs_real_params": {
         "setup": MagicMock(),
-        "internal_param_type": GridscanInternalParameters,
+        "param_type": ThreeDGridScan,
         "experiment_param_type": MagicMock(),
         "callback_collection_type": MagicMock(),
     },
@@ -291,7 +289,7 @@ def test_start_with_json_file_gives_success(test_env: ClientAndRunEngine):
     test_env.mock_run_engine.RE_takes_time = False
 
     with open(
-        "tests/test_data/new_parameter_json_files/good_test_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_parameters.json"
     ) as test_params_file:
         test_params = test_params_file.read()
     response = test_env.client.put(START_ENDPOINT, data=test_params)
@@ -348,7 +346,6 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     parsed_arg_values,
 ):
     mock_params = MagicMock()
-    mock_params.hyperion_params.experiment_type = "test_experiment"
     mock_param_class = MagicMock()
     mock_param_class.from_json.return_value = mock_params
     callbacks_mock = MagicMock(
@@ -359,8 +356,7 @@ def test_blueskyrunner_uses_cli_args_correctly_for_callbacks(
     TEST_REGISTRY = {
         "test_experiment": {
             "setup": MagicMock(),
-            "internal_param_type": mock_param_class,
-            "experiment_param_type": MagicMock(),
+            "param_type": mock_param_class,
             "callback_collection_type": callbacks_mock,
         }
     }
@@ -486,25 +482,25 @@ def test_when_blueskyrunner_initiated_and_skip_flag_is_not_set_then_all_plans_se
         {
             "flyscan_xray_centre": {
                 "setup": mock_setup,
-                "internal_param_type": MagicMock(),
+                "param_type": MagicMock(),
                 "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "rotation_scan": {
                 "setup": mock_setup,
-                "internal_param_type": MagicMock(),
+                "param_type": MagicMock(),
                 "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "other_plan": {
                 "setup": mock_setup,
-                "internal_param_type": MagicMock(),
+                "param_type": MagicMock(),
                 "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },
             "yet_another_plan": {
                 "setup": mock_setup,
-                "internal_param_type": MagicMock(),
+                "param_type": MagicMock(),
                 "experiment_param_type": MagicMock(),
                 "callback_collection_type": MagicMock(),
             },

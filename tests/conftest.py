@@ -6,7 +6,7 @@ import sys
 import threading
 from functools import partial
 from typing import Any, Callable, Generator, Optional, Sequence
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import pytest
@@ -43,7 +43,7 @@ from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import callback_on_mock_put, set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
 from ophyd_async.epics.motion.motor import Motor
 from scanspec.core import Path as ScanPath
@@ -77,7 +77,7 @@ def raw_params_from_file(filename):
 
 def default_raw_params():
     return raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/test_gridscan_param_defaults.json"
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
     )
 
 
@@ -182,20 +182,23 @@ async def mock_good_coroutine():
     return asyncio.sleep(0)
 
 
-def mock_async_motor_move(motor: Motor, val, *args, **kwargs):
-    set_mock_value(motor.user_setpoint, val)
-    set_mock_value(motor.user_readback, val)
-    return mock_good_coroutine()  # type: ignore
+def pass_on_mock(motor, call_log: MagicMock | None = None):
+    def _pass_on_mock(value, **kwargs):
+        set_mock_value(motor.user_readback, value)
+        if call_log is not None:
+            call_log(value, **kwargs)
+
+    return _pass_on_mock
 
 
-def patch_async_motor(motor: Motor, initial_position=0):
+def patch_async_motor(
+    motor: Motor, initial_position=0, call_log: MagicMock | None = None
+):
     set_mock_value(motor.user_setpoint, initial_position)
     set_mock_value(motor.user_readback, initial_position)
     set_mock_value(motor.deadband, 0.001)
     set_mock_value(motor.motor_done_move, 1)
-    return patch.object(
-        motor, "_move", AsyncMock(side_effect=partial(mock_async_motor_move, motor))
-    )
+    return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
 
 
 @pytest.fixture
@@ -209,7 +212,7 @@ def beamline_parameters():
 def test_fgs_params():
     return ThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/new_parameter_json_files/good_test_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_parameters.json"
         )
     )
 
@@ -224,7 +227,7 @@ def test_panda_fgs_params(test_fgs_params: ThreeDGridScan):
 def test_rotation_params():
     return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters.json"
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
 
@@ -233,7 +236,7 @@ def test_rotation_params():
 def test_rotation_params_nomove():
     return RotationScan(
         **raw_params_from_file(
-            "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
         )
     )
 
@@ -438,7 +441,7 @@ def webcam(RE) -> Generator[Webcam, Any, Any]:
 
 
 @pytest.fixture
-def aperture_scatterguard(done_status, RE):
+def aperture_scatterguard(RE):
     AperturePositions.LARGE = SingleAperturePosition(
         location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
         name="Large",
@@ -480,7 +483,8 @@ def aperture_scatterguard(done_status, RE):
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
-        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))  # type: ignore
+        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))  # type:
+        set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
 
 
@@ -496,7 +500,7 @@ def test_config_files():
 @pytest.fixture
 def test_full_grid_scan_params():
     params = raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
     return GridScanWithEdgeDetect(**params)
 

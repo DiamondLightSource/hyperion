@@ -9,11 +9,8 @@ from hyperion.external_interaction.ispyb.data_model import (
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
-from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 from ..conftest import (
     TEST_DATA_COLLECTION_GROUP_ID,
@@ -25,29 +22,27 @@ from ..conftest import (
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = GridscanInternalParameters(**default_raw_params())
-    dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
-    dummy_params.hyperion_params.detector_params.run_number = 0
+    dummy_params = ThreeDGridScan(**default_raw_params())
+    dummy_params.sample_id = TEST_SAMPLE_ID
+    dummy_params.run_number = 0
     return dummy_params
 
 
 @pytest.fixture
 def dummy_3d_gridscan_ispyb():
-    store_in_ispyb_3d = StoreInIspyb(
-        CONST.SIM.ISPYB_CONFIG, IspybExperimentType.GRIDSCAN_3D
-    )
+    store_in_ispyb_3d = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
     return store_in_ispyb_3d
 
 
 @pytest.fixture
 def dummy_rotation_ispyb(dummy_rotation_params):
-    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, IspybExperimentType.ROTATION)
+    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
     return store_in_ispyb
 
 
 @pytest.fixture
 def dummy_2d_gridscan_ispyb():
-    return StoreInIspyb(CONST.SIM.ISPYB_CONFIG, IspybExperimentType.GRIDSCAN_2D)
+    return StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
 
 
 @pytest.fixture

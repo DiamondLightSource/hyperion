@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from time import time
-from typing import TYPE_CHECKING, Any, Callable, List, cast
+from typing import TYPE_CHECKING, Any, Callable, List
 
 import numpy as np
+from blueapi.core import MsgGenerator
 from bluesky import preprocessors as bpp
 from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 
@@ -31,27 +32,24 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
-from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
+from hyperion.parameters.gridscan import (
+    GridCommon,
+    GridScanWithEdgeDetect,
+    ThreeDGridScan,
 )
 
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
 
-def ispyb_activation_wrapper(plan_generator, parameters):
+def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
     return bpp.run_wrapper(
         plan_generator,
         md={
             "activate_callbacks": ["GridscanISPyBCallback"],
             "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
-            "hyperion_internal_parameters": (
-                parameters.old_parameters()
-                if callable(getattr(parameters, "old_parameters", 0))
-                else parameters
-            ).json(),
+            "hyperion_parameters": parameters.json(),
         },
     )
 
@@ -77,7 +75,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         emit: Callable[..., Any] | None = None,
     ) -> None:
         super().__init__(emit=emit)
-        self.params: GridscanInternalParameters
         self.ispyb: StoreInIspyb
         self.ispyb_ids: IspybIds = IspybIds()
         self._start_of_fgs_uid: str | None = None
@@ -92,16 +89,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 "ISPyB callback recieved start document with experiment parameters and "
                 f"uid: {self.uid_to_finalize_on}"
             )
-            json_params = doc.get("hyperion_internal_parameters")
-            self.params = GridscanInternalParameters.from_json(json_params)
-            self.ispyb = StoreInIspyb(
-                self.ispyb_config, IspybExperimentType.GRIDSCAN_3D
+            self.params = GridCommon.from_json(
+                doc.get("hyperion_parameters"), allow_extras=True
             )
-            data_collection_group_info = populate_data_collection_group(
-                self.ispyb.experiment_type,
-                self.params.hyperion_params.detector_params,
-                self.params.hyperion_params.ispyb_params,
-            )
+            self.ispyb = StoreInIspyb(self.ispyb_config)
+            data_collection_group_info = populate_data_collection_group(self.params)
 
             scan_data_infos = [
                 ScanDataInfo(
@@ -109,21 +101,17 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                         None,
                         None,
                         populate_xy_data_collection_info(
-                            self.params.hyperion_params.detector_params,
+                            self.params.detector_params,
                         ),
-                        self.params.hyperion_params.detector_params,
-                        self.params.hyperion_params.ispyb_params,
+                        self.params,
                     ),
                 ),
                 ScanDataInfo(
                     data_collection_info=populate_remaining_data_collection_info(
                         None,
                         None,
-                        populate_xz_data_collection_info(
-                            self.params.hyperion_params.detector_params
-                        ),
-                        self.params.hyperion_params.detector_params,
-                        self.params.hyperion_params.ispyb_params,
+                        populate_xz_data_collection_info(self.params.detector_params),
+                        self.params,
                     )
                 ),
             ]
@@ -176,16 +164,17 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return doc
 
     def populate_info_for_update(
-        self, event_sourced_data_collection_info: DataCollectionInfo, params
+        self,
+        event_sourced_data_collection_info: DataCollectionInfo,
+        params: ThreeDGridScan | GridScanWithEdgeDetect,
     ) -> Sequence[ScanDataInfo]:
-        params = cast(GridscanInternalParameters, params)
         assert (
             self.ispyb_ids.data_collection_ids
         ), "Expect at least one valid data collection to record scan data"
         xy_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
             data_collection_position_info=populate_data_collection_position_info(
-                params.hyperion_params.ispyb_params
+                params.ispyb_params
             ),
             data_collection_id=self.ispyb_ids.data_collection_ids[0],
         )
@@ -199,7 +188,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         xz_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
             data_collection_position_info=populate_data_collection_position_info(
-                params.hyperion_params.ispyb_params
+                params.ispyb_params
             ),
             data_collection_id=data_collection_id,
         )

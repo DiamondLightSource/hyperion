@@ -12,7 +12,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 
 from ..conftest import (
@@ -70,7 +69,7 @@ def dummy_rotation_data_collection_group_info():
     return DataCollectionGroupInfo(
         visit_string="cm31105-4",
         experiment_type="SAD",
-        sample_id="364758",
+        sample_id=364758,
     )
 
 
@@ -93,7 +92,7 @@ def scan_data_info_for_begin():
             kappa_start=0.0,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="364758",
+            sample_id=364758,
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=1.0,
@@ -176,9 +175,7 @@ def scan_data_info_for_update(scan_data_info_for_begin):
 
 @pytest.fixture
 def dummy_rotation_ispyb_with_experiment_type():
-    store_in_ispyb = StoreInIspyb(
-        CONST.SIM.ISPYB_CONFIG, IspybExperimentType.CHARACTERIZATION
-    )
+    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
     return store_in_ispyb
 
 
@@ -232,9 +229,7 @@ def test_begin_deposition_with_group_id_updates_but_doesnt_insert(
     dummy_rotation_data_collection_group_info,
     scan_data_info_for_begin,
 ):
-    dummy_rotation_ispyb = StoreInIspyb(
-        CONST.SIM.ISPYB_CONFIG, IspybExperimentType.ROTATION
-    )
+    dummy_rotation_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
     scan_data_info_for_begin.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
@@ -365,9 +360,7 @@ def test_update_deposition_with_group_id_updates(
     scan_data_info_for_begin,
     scan_data_info_for_update,
 ):
-    dummy_rotation_ispyb = StoreInIspyb(
-        CONST.SIM.ISPYB_CONFIG, IspybExperimentType.ROTATION
-    )
+    dummy_rotation_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
     scan_data_info_for_begin.data_collection_info.parent_id = (
         TEST_DATA_COLLECTION_GROUP_ID
     )
@@ -492,7 +485,7 @@ def test_store_rotation_scan_uses_supplied_dcgid(
     mock_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
         dcgid
     )
-    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG, IspybExperimentType.ROTATION)
+    store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
     scan_data_info_for_begin.data_collection_info.parent_id = dcgid
     ispyb_ids = store_in_ispyb.begin_deposition(
         dummy_rotation_data_collection_group_info, [scan_data_info_for_begin]
