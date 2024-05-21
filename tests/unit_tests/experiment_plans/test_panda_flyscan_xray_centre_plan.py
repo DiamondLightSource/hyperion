@@ -1,14 +1,13 @@
 import random
 import types
-from pathlib import Path
 from typing import Any, Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
-from bluesky import Msg
 from bluesky.run_engine import RunEngine
+from bluesky.utils import Msg
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -67,10 +66,6 @@ from .conftest import (
     modified_interactor_mock,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
-)
-
-PANDA_TEST_PARAMS_PATH = (
-    "tests/test_data/parameter_json_files/panda_test_parameters.json"
 )
 
 
@@ -146,7 +141,12 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
             transmission_test_value
         )
-
+        ap_sg_test_value = {
+            "name": "Robot_load",
+            "GDA_name": "ROBOT_LOAD",
+            "radius_microns": None,
+            "location": (15, 16, 2, 18, 19),
+        }
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
         fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
@@ -190,6 +190,7 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
+                    'aperture_scatterguard-selected_aperture': ap_sg_test_value,
                 },
             )
             assert_event(
@@ -456,45 +457,12 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[
+            1
+        ].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
-
-    @patch(
-        "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
-        new=MagicMock(return_value=Status(done=True, success=True)),
-    )
-    @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.move_x_y_z",
-        new=MagicMock(autospec=True),
-    )
-    @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
-        new=MagicMock(autospec=True),
-    )
-    @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
-        new=MagicMock(return_value=iter([])),
-    )
-    @patch(
-        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.get_directory_provider",
-        autospec=True,
-    )
-    def test_when_gridscan_run_panda_directory_applied(
-        self,
-        get_directory_provider,
-        RE_with_subs: tuple[RunEngine, Any],
-        test_panda_fgs_params: ThreeDGridScan,
-        fake_fgs_composite: FlyScanXRayCentreComposite,
-    ):
-        expected_path = Path("/tmp/dls/i03/data/2023/cm33866-5/test_hyperion")
-        test_panda_fgs_params.storage_directory = str(expected_path)
-        RE_with_subs[0].subscribe(VerbosePlanExecutionLoggingCallback())
-        RE_with_subs[0](
-            run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params)
-        )
-        get_directory_provider().update.assert_called_once_with(directory=expected_path)
 
     @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.run_gridscan",
@@ -534,7 +502,9 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[
+            1
+        ].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]

@@ -27,10 +27,6 @@ def minimal_3d_gridscan_params():
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
         "ispyb_extras": {
             "position": [0, 0, 0],
-            "beam_size_x": 0,
-            "beam_size_y": 0,
-            "focal_spot_size_x": 0,
-            "focal_spot_size_y": 0,
         },
     }
 
@@ -75,10 +71,6 @@ def test_robot_load_then_centre_params():
         "file_name": "file_name",
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
         "ispyb_extras": {
-            "beam_size_x": 0.05,
-            "beam_size_y": 0.05,
-            "focal_spot_size_x": 0.06,
-            "focal_spot_size_y": 0.06,
             "position": [0, 0, 0],
         },
     }

@@ -23,10 +23,6 @@
             10.0,
             20.0,
             30.0
-        ],
-        "beam_size_x": 1.0,
-        "beam_size_y": 1.0,
-        "focal_spot_size_x": 1.0,
-        "focal_spot_size_y": 1.0
+        ]
     }
 }

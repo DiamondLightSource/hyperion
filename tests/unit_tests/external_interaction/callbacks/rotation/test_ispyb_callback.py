@@ -24,10 +24,6 @@ EXPECTED_DATA_COLLECTION = {
     "axisstart": 0.0,
     "axisrange": 0.1,
     "axisend": 180,
-    "focal_spot_size_at_samplex": 1.0,
-    "focal_spot_size_at_sampley": 1.0,
-    "beamsize_at_samplex": 1,
-    "beamsize_at_sampley": 1,
     "comments": "Hyperion rotation scan",
     "data_collection_number": 1,
     "detector_distance": 100.0,
@@ -109,6 +105,10 @@ def test_hardware_read_events(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
+            "focal_spot_size_at_samplex": 50.0,
+            "focal_spot_size_at_sampley": 20.0,
+            "beamsize_at_samplex": 50.0,
+            "beamsize_at_sampley": 20.0,
         },
     )
     assert_upsert_call_with(

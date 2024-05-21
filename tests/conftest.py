@@ -20,6 +20,7 @@ from dodal.devices.aperturescatterguard import (
     ApertureFiveDimensionalLocation,
     AperturePositions,
     ApertureScatterguard,
+    ApertureScatterguardTolerances,
     SingleAperturePosition,
 )
 from dodal.devices.attenuator import Attenuator
@@ -469,6 +470,7 @@ def aperture_scatterguard(done_status, RE):
             AperturePositions.MEDIUM,
             AperturePositions.SMALL,
             AperturePositions.ROBOT_LOAD,
+            tolerances=ApertureScatterguardTolerances(0.1, 0.1, 0.1, 0.1, 0.1),
         ),
     )
     with (

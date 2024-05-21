@@ -69,7 +69,11 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 else None
             )
             n_images = self.params.num_images
-            if n_images < 200:
+            if (
+                n_images < 200
+                or self.params.ispyb_experiment_type
+                == IspybExperimentType.CHARACTERIZATION
+            ):
                 ISPYB_LOGGER.info(
                     f"Collection has {n_images} images - treating as a screening collection - new DCG"
                 )
@@ -91,20 +95,12 @@ class RotationISPyBCallback(BaseISPyBCallback):
                     self.ispyb_config, IspybExperimentType.ROTATION
                 )
             ISPYB_LOGGER.info("Beginning ispyb deposition")
-            data_collection_group_info = populate_data_collection_group(
-                self.ispyb.experiment_type,
-                self.params.detector_params,
-                self.params.ispyb_params,
-            )
+            data_collection_group_info = populate_data_collection_group(self.params)
             data_collection_info = populate_data_collection_info_for_rotation(
                 self.params
             )
             data_collection_info = populate_remaining_data_collection_info(
-                COMMENT_FOR_ROTATION_SCAN,
-                dcgid,
-                data_collection_info,
-                self.params.detector_params,
-                self.params.ispyb_params,
+                COMMENT_FOR_ROTATION_SCAN, dcgid, data_collection_info, self.params
             )
             data_collection_info.parent_id = dcgid
             scan_data_info = ScanDataInfo(

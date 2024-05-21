@@ -94,8 +94,6 @@ def RE_with_external_callbacks():
         [
             "python",
             "src/hyperion/external_interaction/callbacks/__main__.py",
-            "--logging-level",
-            "DEBUG",
             "--dev",
         ],
         env=process_env,
@@ -204,6 +202,7 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     s4_slit_gaps,
     flux,
     robot,
+    aperture_scatterguard,
     fake_create_devices,
 ):
     test_wl = 0.71
@@ -213,14 +212,12 @@ def test_remote_callbacks_write_to_dev_ispyb_for_rotation(
     test_img_wid = 0.27
 
     test_rotation_params.rotation_increment_deg = test_img_wid
-    test_rotation_params.ispyb_extras.beam_size_x = test_bs_x
-    test_rotation_params.ispyb_extras.beam_size_y = test_bs_y
     test_rotation_params.exposure_time_s = test_exp_time
     test_rotation_params.demand_energy_ev = convert_angstrom_to_eV(test_wl)
 
     composite = RotationScanComposite(
+        aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
-        aperture_scatterguard=fake_create_devices["ap_sg"],
         backlight=fake_create_devices["backlight"],
         dcm=fake_create_devices["dcm"],
         detector_motion=fake_create_devices["detector_motion"],

@@ -17,12 +17,12 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
 )
 from hyperion.parameters.components import (
-    DiffractionExperiment,
+    DiffractionExperimentWithSample,
+    IspybExperimentType,
     OptionalGonioAngleStarts,
     SplitScan,
     TemporaryIspybExtras,
     WithOavCentring,
-    WithSample,
     WithScan,
     XyzStarts,
 )
@@ -30,7 +30,7 @@ from hyperion.parameters.constants import CONST
 
 
 class GridCommon(
-    DiffractionExperiment, OptionalGonioAngleStarts, WithSample, WithOavCentring
+    DiffractionExperimentWithSample, OptionalGonioAngleStarts, WithOavCentring
 ):
     grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
     exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
@@ -41,6 +41,9 @@ class GridCommon(
     )
     set_stub_offsets: bool = Field(default=False)
     use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
+    ispyb_experiment_type: IspybExperimentType = Field(
+        default=IspybExperimentType.GRIDSCAN_3D
+    )
     # field rather than inherited to make it easier to track when it can be removed:
     ispyb_extras: TemporaryIspybExtras
 
@@ -49,13 +52,8 @@ class GridCommon(
         return GridscanIspybParams(
             visit_path=str(self.visit_directory),
             position=np.array(self.ispyb_extras.position),
-            beam_size_x=self.ispyb_extras.beam_size_x,
-            beam_size_y=self.ispyb_extras.beam_size_y,
-            focal_spot_size_x=self.ispyb_extras.focal_spot_size_x,
-            focal_spot_size_y=self.ispyb_extras.focal_spot_size_y,
             comment=self.comment,
             sample_id=self.sample_id,
-            undulator_gap=self.ispyb_extras.undulator_gap,
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start
             or [],
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
@@ -96,20 +94,20 @@ class GridCommon(
         )
 
 
-class GridScanWithEdgeDetect(GridCommon, WithSample): ...
+class GridScanWithEdgeDetect(GridCommon): ...
 
 
 class PinTipCentreThenXrayCentre(GridCommon):
     tip_offset_um: float = 0
 
 
-class RobotLoadThenCentre(GridCommon, WithSample):
+class RobotLoadThenCentre(GridCommon):
     def pin_centre_then_xray_centre_params(self):
         params = PinTipCentreThenXrayCentre(**self.dict())
         return params
 
 
-class SpecifiedGridScan(GridCommon, XyzStarts, WithScan, WithSample):
+class SpecifiedGridScan(GridCommon, XyzStarts, WithScan):
     """A specified grid scan is one which has defined values for the start position,
     grid and box sizes, etc., as opposed to parameters for a plan which will create
     those parameters at some point (e.g. through optical pin detection)."""

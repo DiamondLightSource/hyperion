@@ -14,6 +14,8 @@ from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
 
+from ..logging_callback import format_doc_for_log
+
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
 
@@ -46,7 +48,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
         assert isinstance(self.parameters, RotationScan)
         if event_descriptor is None:
             NEXUS_LOGGER.warning(
-                f"Rotation Nexus handler {self} received event doc {doc} and "
+                f"Rotation Nexus handler {self} received event doc {format_doc_for_log(doc)} and "
                 "has no corresponding descriptor record"
             )
             return doc
@@ -54,7 +56,9 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             event_descriptor.get("name")
             == CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ
         ):
-            NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
+            NEXUS_LOGGER.info(
+                f"Nexus handler received event from read hardware {format_doc_for_log(doc)}"
+            )
             data = doc["data"]
             assert self.writer, "Nexus writer not initialised"
             (
@@ -66,7 +70,9 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 data["attenuator_actual_transmission"],
             )
         if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
-            NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
+            NEXUS_LOGGER.info(
+                f"Nexus handler received event from read hardware {format_doc_for_log(doc)}"
+            )
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
             assert self.writer is not None
             self.writer.create_nexus_file(vds_data_type)
