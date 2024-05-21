@@ -29,7 +29,6 @@ from hyperion.experiment_plans.rotation_scan_plan import (
 )
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
-    populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -397,9 +396,6 @@ def scan_xy_data_info_for_update(
             scan_data_info_for_update.data_collection_grid_info,
         )
     )
-    scan_data_info_for_update.data_collection_position_info = (
-        populate_data_collection_position_info(dummy_params.ispyb_params)
-    )
     return scan_data_info_for_update
 
 
@@ -436,9 +432,6 @@ def scan_data_infos_for_update_3d(
     scan_xz_data_info_for_update = ScanDataInfo(
         data_collection_info=xz_data_collection_info,
         data_collection_grid_info=(data_collection_grid_info),
-        data_collection_position_info=(
-            populate_data_collection_position_info(dummy_params.ispyb_params)
-        ),
     )
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
 
