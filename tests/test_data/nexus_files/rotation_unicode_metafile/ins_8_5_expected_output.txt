@@ -43,7 +43,7 @@
 
  Sweep-1    :
    from image      1 : Omega=    0.000 ..    0.100  Kappa=    0.000 ..    0.000  Chi=    0.000 ..    0.000  Phi=    0.000 ..    0.000  2-Theta=    0.000 ..    0.000
-   to   image   3600 : Omega=  360.000 ..  360.100  Kappa=    0.000 ..    0.000  Chi=    0.000 ..    0.000  Phi=    0.000 ..    0.000  2-Theta=    0.000 ..    0.000
+   to   image   3600 : Omega=  359.900 ..  360.000  Kappa=    0.000 ..    0.000  Chi=    0.000 ..    0.000  Phi=    0.000 ..    0.000  2-Theta=    0.000 ..    0.000
      Image number 1/3600
 
 
@@ -54,8 +54,8 @@
  sensor thickness               [mm] = 0.450
  sensor material                     = Si
  Phi-angle                  [degree] = 0.00000
- Omega-angle (start, end)   [degree] = 0.00000 0.10003
- Oscillation-angle in Omega [degree] = 0.10003
+ Omega-angle (start, end)   [degree] = 0.00000 0.10000
+ Oscillation-angle in Omega [degree] = 0.10000
  Chi-angle                  [degree] = 0.00000
  Pixel size in X                [mm] = 0.075000
  Pixel size in Y                [mm] = 0.075000
