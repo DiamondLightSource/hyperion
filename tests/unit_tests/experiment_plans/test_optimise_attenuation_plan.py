@@ -41,8 +41,6 @@ def fake_create_devices() -> OptimizeAttenuationComposite:
     )
     xspress3mini = i03.xspress3mini(fake_with_ophyd_sim=True, wait_for_connection=True)
     attenuator = i03.attenuator(fake_with_ophyd_sim=True, wait_for_connection=True)
-    for device in attenuator.get_actual_filter_state_list():
-        device.sim_put(0)  # pyright: ignore
 
     return OptimizeAttenuationComposite(
         sample_shutter=sample_shutter, xspress3mini=xspress3mini, attenuator=attenuator

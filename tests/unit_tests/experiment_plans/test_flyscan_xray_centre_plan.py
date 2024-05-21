@@ -187,8 +187,8 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
-            transmission_test_value
+        set_mock_value(
+            fake_fgs_composite.attenuator.actual_transmission, transmission_test_value
         )
 
         current_energy_kev_test_value = 12.05
@@ -260,7 +260,7 @@ class TestFlyscanXrayCentrePlan:
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[1],  # pyright: ignore
                 {
-                    "attenuator_actual_transmission": transmission_test_value,
+                    "attenuator-actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
                     "dcm-energy_in_kev": current_energy_kev_test_value,
                 },
