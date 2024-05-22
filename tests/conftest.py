@@ -139,8 +139,8 @@ def pytest_runtest_setup(item):
 
 
 def pytest_runtest_teardown(item):
-    if "dodal.beamlines.beamline_utils" in sys.modules:
-        sys.modules["dodal.beamlines.beamline_utils"].clear_devices()
+    if "dodal.common.beamlines.beamline_utils" in sys.modules:
+        sys.modules["dodal.common.beamlines.beamline_utils"].clear_devices()
     markers = [m.name for m in item.own_markers]
     if "skip_log_setup" in markers:
         _reset_loggers([*ALL_LOGGERS, dodal_logger])
