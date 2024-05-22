@@ -5,9 +5,14 @@ import json
 from abc import abstractmethod
 from enum import StrEnum
 from pathlib import Path
-from typing import Sequence, SupportsInt, TypeVar
+from typing import Optional, Sequence, SupportsInt, TypeVar
 
 import numpy as np
+from dodal.devices.aperturescatterguard import (
+    GDA_TO_HYPERION_APERTURE_MAPPING,
+    AperturePositionGDANames,
+    SingleAperturePosition,
+)
 from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
@@ -211,7 +216,17 @@ class WithSample(BaseModel):
     sample_pin: int | None = None
 
 
-class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
+class DiffractionExperimentWithSample(DiffractionExperiment, WithSample):
+    # Only used for conversion below
+    gda_selected_aperture: AperturePositionGDANames
+
+    # Created from validation
+    selected_aperture: Optional[SingleAperturePosition] = None
+
+    @validator("selected_aperture")
+    def _convert_selected_aperture(cls, selected_aperture, values):
+        """Convert selected_aperture from its GDA name to the Hyperion Enum"""
+        return GDA_TO_HYPERION_APERTURE_MAPPING[values["gda_selected_aperture"]]
 
 
 class WithOavCentring(BaseModel):
