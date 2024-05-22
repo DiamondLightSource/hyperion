@@ -19,7 +19,7 @@ from ...conftest import raw_params_from_file
 @pytest.fixture
 def test_pin_centre_then_xray_centre_params():
     params = raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json"
+        "tests/test_data/parameter_json_files/good_test_pin_centre_then_xray_centre_parameters.json"
     )
     return PinTipCentreThenXrayCentre(**params)
 

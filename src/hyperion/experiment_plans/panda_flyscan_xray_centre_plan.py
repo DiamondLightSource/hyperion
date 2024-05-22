@@ -126,10 +126,8 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.zocalo_environment,
-        [
-            parameters.old_parameters().get_scan_points(1),
-            parameters.old_parameters().get_scan_points(2),
-        ],
+        [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
+        parameters.scan_indices,
     )
 
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
@@ -266,7 +264,7 @@ def panda_flyscan_xray_centre(
     at any point in it.
 
     Args:
-        parameters (FGSInternalParameters): The parameters to run the scan.
+        parameters (ThreeDGridScan): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -281,7 +279,7 @@ def panda_flyscan_xray_centre(
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-            "hyperion_internal_parameters": parameters.old_parameters().json(),
+            "hyperion_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
             ],

@@ -54,7 +54,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.gridscan import GridScanWithEdgeDetect
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_angstrom_to_eV
 
@@ -203,24 +203,16 @@ GRID_INFO_COLUMN_MAP = {
 @pytest.fixture
 def dummy_data_collection_group_info(dummy_params):
     return populate_data_collection_group(
-        IspybExperimentType.GRIDSCAN_2D.value,
-        dummy_params.hyperion_params.detector_params,
-        dummy_params.hyperion_params.ispyb_params,
+        dummy_params,
     )
 
 
 @pytest.fixture
 def dummy_scan_data_info_for_begin(dummy_params):
     info = populate_xy_data_collection_info(
-        dummy_params.hyperion_params.detector_params,
+        dummy_params.detector_params,
     )
-    info = populate_remaining_data_collection_info(
-        None,
-        None,
-        info,
-        dummy_params.hyperion_params.detector_params,
-        dummy_params.hyperion_params.ispyb_params,
-    )
+    info = populate_remaining_data_collection_info(None, None, info, dummy_params)
     return ScanDataInfo(
         data_collection_info=info,
     )
@@ -229,7 +221,7 @@ def dummy_scan_data_info_for_begin(dummy_params):
 @pytest.fixture
 def grid_detect_then_xray_centre_parameters():
     json_dict = raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/ispyb_gridscan_system_test_parameters.json"
+        "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json"
     )
     return GridScanWithEdgeDetect(**json_dict)
 
@@ -329,10 +321,8 @@ def grid_detect_then_xray_centre_composite(
             ophyd_pin_tip_detection.triggered_bottom_edge,
             numpy.array(bottom_edge_data, dtype=numpy.uint32),
         )
-        (
-            set_mock_value(
-                zocalo.bbox_sizes, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
-            ),
+        set_mock_value(
+            zocalo.bbox_sizes, numpy.array([[10, 10, 10]], dtype=numpy.uint64)
         )
 
         yield from []
@@ -384,16 +374,16 @@ def grid_detect_then_xray_centre_composite(
 
 
 def scan_xy_data_info_for_update(
-    data_collection_group_id, dummy_params, scan_data_info_for_begin
+    data_collection_group_id, dummy_params: ThreeDGridScan, scan_data_info_for_begin
 ):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
     scan_data_info_for_update.data_collection_info.parent_id = data_collection_group_id
     assert dummy_params is not None
     scan_data_info_for_update.data_collection_grid_info = DataCollectionGridInfo(
-        dx_in_mm=dummy_params.experiment_params.x_step_size,
-        dy_in_mm=dummy_params.experiment_params.y_step_size,
-        steps_x=dummy_params.experiment_params.x_steps,
-        steps_y=dummy_params.experiment_params.y_steps,
+        dx_in_mm=dummy_params.x_step_size_um,
+        dy_in_mm=dummy_params.y_step_size_um,
+        steps_x=dummy_params.x_steps,
+        steps_y=dummy_params.y_steps,
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -408,27 +398,25 @@ def scan_xy_data_info_for_update(
         )
     )
     scan_data_info_for_update.data_collection_position_info = (
-        populate_data_collection_position_info(
-            dummy_params.hyperion_params.ispyb_params
-        )
+        populate_data_collection_position_info(dummy_params.ispyb_params)
     )
     return scan_data_info_for_update
 
 
 def scan_data_infos_for_update_3d(
-    ispyb_ids, scan_xy_data_info_for_update, dummy_params
+    ispyb_ids, scan_xy_data_info_for_update, dummy_params: ThreeDGridScan
 ):
     xz_data_collection_info = populate_xz_data_collection_info(
-        dummy_params.hyperion_params.detector_params
+        dummy_params.detector_params
     )
 
-    assert dummy_params.hyperion_params.ispyb_params is not None
+    assert dummy_params.ispyb_params is not None
     assert dummy_params is not None
     data_collection_grid_info = DataCollectionGridInfo(
-        dx_in_mm=dummy_params.experiment_params.x_step_size,
-        dy_in_mm=dummy_params.experiment_params.z_step_size,
-        steps_x=dummy_params.experiment_params.x_steps,
-        steps_y=dummy_params.experiment_params.z_steps,
+        dx_in_mm=dummy_params.x_step_size_um,
+        dy_in_mm=dummy_params.z_step_size_um,
+        steps_x=dummy_params.x_steps,
+        steps_y=dummy_params.z_steps,
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -441,8 +429,7 @@ def scan_data_infos_for_update_3d(
         construct_comment_for_gridscan(data_collection_grid_info),
         ispyb_ids.data_collection_group_id,
         xz_data_collection_info,
-        dummy_params.hyperion_params.detector_params,
-        dummy_params.hyperion_params.ispyb_params,
+        dummy_params,
     )
     xz_data_collection_info.parent_id = ispyb_ids.data_collection_group_id
 
@@ -450,9 +437,7 @@ def scan_data_infos_for_update_3d(
         data_collection_info=xz_data_collection_info,
         data_collection_grid_info=(data_collection_grid_info),
         data_collection_position_info=(
-            populate_data_collection_position_info(
-                dummy_params.hyperion_params.ispyb_params
-            )
+            populate_data_collection_position_info(dummy_params.ispyb_params)
         ),
     )
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
@@ -475,7 +460,6 @@ def test_ispyb_get_comment_from_collection_correctly(fetch_comment: Callable[...
 def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: StoreInIspyb,
     fetch_comment: Callable[..., Any],
-    dummy_params,
     dummy_data_collection_group_info,
     dummy_scan_data_info_for_begin,
 ):
@@ -539,9 +523,7 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     dummy_data_collection_group_info,
     dummy_scan_data_info_for_begin,
 ):
-    ispyb: StoreInIspyb = StoreInIspyb(
-        CONST.SIM.DEV_ISPYB_DATABASE_CFG, experiment_type
-    )
+    ispyb: StoreInIspyb = StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
     ispyb_ids: IspybIds = ispyb.begin_deposition(
         dummy_data_collection_group_info, [dummy_scan_data_info_for_begin]
     )
@@ -623,17 +605,17 @@ def test_ispyb_deposition_in_gridscan(
     )
 
     ispyb_ids = ispyb_callback.ispyb_ids
-    expected_values = {
+    DC_EXPECTED_VALUES = {
         "detectorid": 78,
         "axisstart": 0.0,
         "axisrange": 0,
         "axisend": 0,
-        "focalspotsizeatsamplex": 1.0,
-        "focalspotsizeatsampley": 1.0,
+        "focalspotsizeatsamplex": 20.0,
+        "focalspotsizeatsampley": 20.0,
         "slitgapvertical": 0.1,
         "slitgaphorizontal": 0.1,
-        "beamsizeatsamplex": 1,
-        "beamsizeatsampley": 1,
+        "beamsizeatsamplex": 20.0,
+        "beamsizeatsampley": 20.0,
         "transmission": 49.118,
         "datacollectionnumber": 1,
         "detectordistance": 100.0,
@@ -665,11 +647,11 @@ def test_ispyb_deposition_in_gridscan(
     )
     compare_actual_and_expected(
         ispyb_ids.data_collection_ids[0],
-        expected_values,
+        DC_EXPECTED_VALUES,
         fetch_datacollection_attribute,
         DATA_COLLECTION_COLUMN_MAP,
     )
-    expected_values = {
+    GRIDINFO_EXPECTED_VALUES = {
         "gridInfoId": ispyb_ids.grid_ids[0],
         "dx_mm": 0.02,
         "dy_mm": 0.02,
@@ -686,7 +668,7 @@ def test_ispyb_deposition_in_gridscan(
 
     compare_actual_and_expected(
         ispyb_ids.grid_ids[0],
-        expected_values,
+        GRIDINFO_EXPECTED_VALUES,
         fetch_datacollection_grid_attribute,
         GRID_INFO_COLUMN_MAP,
     )
@@ -697,42 +679,19 @@ def test_ispyb_deposition_in_gridscan(
     compare_actual_and_expected(
         position_id, expected_values, fetch_datacollection_position_attribute
     )
-    expected_values = {
-        "detectorid": 78,
-        "axisstart": 90.0,
-        "axisrange": 0,
-        "axisend": 90,
-        "focalspotsizeatsamplex": 1.0,
-        "focalspotsizeatsampley": 1.0,
-        "slitgapvertical": 0.1,
-        "slitgaphorizontal": 0.1,
-        "beamsizeatsamplex": 1,
-        "beamsizeatsampley": 1,
-        "transmission": 49.118,
-        "datacollectionnumber": 2,
-        "detectordistance": 100.0,
-        "exposuretime": 0.12,
-        "imagedirectory": "/tmp/",
-        "imageprefix": "file_name",
-        "imagesuffix": "h5",
-        "numberofpasses": 1,
-        "overlap": 0,
-        "omegastart": 90,
-        "startimagenumber": 1,
-        "wavelength": 0.976254,
-        "xbeam": 150.0,
-        "ybeam": 160.0,
-        "xtalsnapshotfullpath1": "test_1_y",
-        "xtalsnapshotfullpath2": "test_2_y",
-        "xtalsnapshotfullpath3": "test_3_y",
-        "synchrotronmode": "User",
-        "undulatorgap1": 1.11,
-        "filetemplate": "file_name_2_master.h5",
-        "numberofimages": 20 * 11,
-    }
+    DC_EXPECTED_VALUES.update(
+        {
+            "axisstart": 90.0,
+            "axisend": 90.0,
+            "datacollectionnumber": 2,
+            "omegastart": 90.0,
+            "filetemplate": "file_name_2_master.h5",
+            "numberofimages": 220,
+        }
+    )
     compare_actual_and_expected(
         ispyb_ids.data_collection_ids[1],
-        expected_values,
+        DC_EXPECTED_VALUES,
         fetch_datacollection_attribute,
         DATA_COLLECTION_COLUMN_MAP,
     )
@@ -750,23 +709,17 @@ def test_ispyb_deposition_in_gridscan(
     compare_actual_and_expected(
         position_id, expected_values, fetch_datacollection_position_attribute
     )
-    expected_values = {
-        "gridInfoId": ispyb_ids.grid_ids[1],
-        "dx_mm": 0.02,
-        "dy_mm": 0.02,
-        "steps_x": 20,
-        "steps_y": 11,
-        "snapshot_offsetXPixel": 100,
-        "snapshot_offsetYPixel": 165,
-        "orientation": "horizontal",
-        "snaked": True,
-        "dataCollectionId": ispyb_ids.data_collection_ids[1],
-        "micronsPerPixelX": 2.87,
-        "micronsPerPixelY": 2.87,
-    }
+    GRIDINFO_EXPECTED_VALUES.update(
+        {
+            "gridInfoId": ispyb_ids.grid_ids[1],
+            "steps_y": 11.0,
+            "snapshot_offsetYPixel": 165.0,
+            "dataCollectionId": ispyb_ids.data_collection_ids[1],
+        }
+    )
     compare_actual_and_expected(
         ispyb_ids.grid_ids[1],
-        expected_values,
+        GRIDINFO_EXPECTED_VALUES,
         fetch_datacollection_grid_attribute,
         GRID_INFO_COLUMN_MAP,
     )
@@ -786,6 +739,7 @@ def compare_comment(
 def compare_actual_and_expected(
     id, expected_values, fetch_datacollection_attribute, column_map: dict | None = None
 ):
+    results = "\n"
     for k, v in expected_values.items():
         actual = fetch_datacollection_attribute(
             id, column_map[k.lower()] if column_map else k
@@ -795,8 +749,10 @@ def compare_actual_and_expected(
         if isinstance(v, float):
             actual_v = actual == pytest.approx(v)
         else:
-            actual_v = actual == v  # if this is inlined, I don't get a nice message :/
-        assert actual_v, f"expected {k} {v} == {actual}"
+            actual_v = actual == v
+        if not actual_v:
+            results += f"expected {k} {v} == {actual}\n"
+    assert results == "\n", results
 
 
 @pytest.mark.s03
@@ -818,8 +774,8 @@ def test_ispyb_deposition_in_rotation_plan(
     fake_create_devices: dict[str, Any],
 ):
     test_wl = 0.71
-    test_bs_x = 0.023
-    test_bs_y = 0.047
+    test_bs_x = 20
+    test_bs_y = 20
     test_exp_time = 0.023
     test_img_wid = 0.27
     test_undulator_current_gap = 1.12
@@ -828,8 +784,6 @@ def test_ispyb_deposition_in_rotation_plan(
     test_slit_gap_vert = 0.234
 
     test_rotation_params.rotation_increment_deg = test_img_wid
-    test_rotation_params.ispyb_extras.beam_size_x = test_bs_x
-    test_rotation_params.ispyb_extras.beam_size_y = test_bs_y
     test_rotation_params.exposure_time_s = test_exp_time
     energy_ev = convert_angstrom_to_eV(test_wl)
     set_mock_value(
@@ -886,19 +840,16 @@ def test_ispyb_deposition_in_rotation_plan(
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     assert fetch_comment(dcid) == "Hyperion rotation scan"
-    assert fetch_datacollection_attribute(dcid, "wavelength") == test_wl
-    assert fetch_datacollection_attribute(dcid, "beamSizeAtSampleX") == test_bs_x
-    assert fetch_datacollection_attribute(dcid, "beamSizeAtSampleY") == test_bs_y
-    assert fetch_datacollection_attribute(dcid, "exposureTime") == test_exp_time
-    assert (
-        fetch_datacollection_attribute(dcid, "undulatorGap1")
-        == test_undulator_current_gap
-    )
-    assert (
-        fetch_datacollection_attribute(dcid, "synchrotronMode")
-        == test_synchrotron_mode.value
-    )
-    assert (
-        fetch_datacollection_attribute(dcid, "slitGapHorizontal") == test_slit_gap_horiz
-    )
-    assert fetch_datacollection_attribute(dcid, "slitGapVertical") == test_slit_gap_vert
+
+    EXPECTED_VALUES = {
+        "wavelength": test_wl,
+        "beamSizeAtSampleX": test_bs_x,
+        "beamSizeAtSampleY": test_bs_y,
+        "exposureTime": test_exp_time,
+        "undulatorGap1": test_undulator_current_gap,
+        "synchrotronMode": test_synchrotron_mode.value,
+        "slitGapHorizontal": test_slit_gap_horiz,
+        "slitGapVertical": test_slit_gap_vert,
+    }
+
+    compare_actual_and_expected(dcid, EXPECTED_VALUES, fetch_datacollection_attribute)

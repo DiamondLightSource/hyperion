@@ -12,9 +12,7 @@ from hyperion.external_interaction.nexus.nexus_utils import (
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 
 from ..logging_callback import format_doc_for_log
 
@@ -38,7 +36,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
     def __init__(self) -> None:
         super().__init__(NEXUS_LOGGER)
         self.run_uid: str | None = None
-        self.parameters: RotationInternalParameters | None = None
         self.writer: NexusWriter | None = None
         self.descriptors: Dict[str, EventDescriptor] = {}
 
@@ -47,7 +44,6 @@ class RotationNexusFileCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event):
         event_descriptor = self.descriptors.get(doc["descriptor"])
-        assert isinstance(self.parameters, RotationInternalParameters)
         if event_descriptor is None:
             NEXUS_LOGGER.warning(
                 f"Rotation Nexus handler {self} received event doc {format_doc_for_log(doc)} and "
@@ -84,14 +80,20 @@ class RotationNexusFileCallback(PlanReactiveCallback):
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
             self.run_uid = doc.get("uid")
-            json_params = doc.get("hyperion_internal_parameters")
+            json_params = doc.get("hyperion_parameters")
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {json_params}"
             )
-            self.parameters = RotationInternalParameters.from_json(json_params)
+            parameters = RotationScan.from_json(json_params)
             NEXUS_LOGGER.info("Setting up nexus file...")
+            det_size = (
+                parameters.detector_params.detector_size_constants.det_size_pixels
+            )
+            shape = (parameters.num_images, det_size.width, det_size.height)
             self.writer = NexusWriter(
-                self.parameters,
-                self.parameters.get_scan_points(),
-                self.parameters.get_data_shape(),
+                parameters,
+                shape,
+                parameters.scan_points,
+                omega_start_deg=parameters.omega_start_deg,
+                chi_start_deg=parameters.chi_start_deg or 0,
             )

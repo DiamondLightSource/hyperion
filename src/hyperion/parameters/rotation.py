@@ -17,29 +17,22 @@ from scanspec.specs import Line
 
 from hyperion.external_interaction.ispyb.ispyb_dataclass import RotationIspybParams
 from hyperion.parameters.components import (
-    DiffractionExperiment,
+    DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
     OptionalXyzStarts,
     RotationAxis,
     TemporaryIspybExtras,
-    WithSample,
     WithScan,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationHyperionParameters,
-    RotationInternalParameters,
-    RotationScanParams,
-)
 
 
 class RotationScan(
-    DiffractionExperiment,
+    DiffractionExperimentWithSample,
     WithScan,
     OptionalGonioAngleStarts,
     OptionalXyzStarts,
-    WithSample,
 ):
     omega_start_deg: float = Field(default=0)  # type: ignore
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
@@ -87,12 +80,7 @@ class RotationScan(
         return RotationIspybParams(
             visit_path=str(self.visit_directory),
             position=np.array(self.ispyb_extras.position),
-            beam_size_x=self.ispyb_extras.beam_size_x,
-            beam_size_y=self.ispyb_extras.beam_size_y,
-            focal_spot_size_x=self.ispyb_extras.focal_spot_size_x,
-            focal_spot_size_y=self.ispyb_extras.focal_spot_size_y,
             comment=self.comment,
-            sample_id=str(self.sample_id),
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,
             ispyb_experiment_type=self.ispyb_experiment_type,
@@ -114,32 +102,3 @@ class RotationScan(
     @property
     def num_images(self) -> int:
         return int(self.scan_width_deg / self.rotation_increment_deg)
-
-    # Can be removed in #1277
-    def old_parameters(self) -> RotationInternalParameters:
-        return RotationInternalParameters(
-            params_version=str(self.parameter_model_version),  # type: ignore
-            experiment_params=RotationScanParams(
-                rotation_axis=self.rotation_axis,
-                rotation_angle=self.scan_width_deg,
-                image_width=self.rotation_increment_deg,
-                omega_start=self.omega_start_deg,
-                phi_start=self.phi_start_deg,
-                chi_start=self.chi_start_deg,
-                kappa_start=self.kappa_start_deg,
-                x=self.x_start_um,
-                y=self.y_start_um,
-                z=self.z_start_um,
-                rotation_direction=self.rotation_direction,
-                shutter_opening_time_s=self.shutter_opening_time_s,
-                transmission_fraction=self.transmission_frac,
-            ),
-            hyperion_params=RotationHyperionParameters(
-                zocalo_environment=self.zocalo_environment,
-                beamline=self.beamline,
-                insertion_prefix=self.insertion_prefix,
-                experiment_type="SAD",
-                detector_params=self.detector_params,
-                ispyb_params=self.ispyb_params,
-            ),
-        )

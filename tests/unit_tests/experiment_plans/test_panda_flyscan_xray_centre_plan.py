@@ -6,8 +6,8 @@ from unittest.mock import DEFAULT, MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
-from bluesky import Msg
 from bluesky.run_engine import RunEngine
+from bluesky.utils import Msg
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -82,7 +82,7 @@ def ispyb_plan(test_panda_fgs_params):
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": test_panda_fgs_params.json(),
+            "hyperion_parameters": test_panda_fgs_params.json(),
         }
     )
     def standalone_read_hardware_for_ispyb(
@@ -141,7 +141,12 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
             transmission_test_value
         )
-
+        ap_sg_test_value = {
+            "name": "Small",
+            "GDA_name": "SMALL_APERTURE",
+            "radius_microns": 20,
+            "location": (10, 11, 2, 13, 14),
+        }
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
         fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
@@ -185,6 +190,7 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
+                    'aperture_scatterguard-selected_aperture': ap_sg_test_value,
                 },
             )
             assert_event(

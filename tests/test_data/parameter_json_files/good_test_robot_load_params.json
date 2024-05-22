@@ -13,6 +13,7 @@
     "transmission_frac": 1.0,
     "exposure_time_s": 0.004,
     "detector_distance_mm": 255,
+    "demand_energy_ev": 11100,
     "sample_id": 12345,
     "sample_puck": 40,
     "sample_pin": 3,
@@ -22,10 +23,6 @@
             0,
             0,
             0
-        ],
-        "beam_size_x": 0.1,
-        "beam_size_y": 0.1,
-        "focal_spot_size_x": 0.0,
-        "focal_spot_size_y": 0.0
+        ]
     }
 }
