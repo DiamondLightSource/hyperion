@@ -370,15 +370,17 @@ def robot(done_status):
 
 
 @pytest.fixture
-def attenuator():
-    with patch(
-        "dodal.devices.attenuator.await_value",
-        return_value=Status(done=True, success=True),
-        autospec=True,
-    ):
-        attenuator = i03.attenuator(fake_with_ophyd_sim=True)
-        attenuator.actual_transmission.sim_put(0.49118047952)  # type: ignore
-        yield attenuator
+def attenuator(RE):
+    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
+    set_mock_value(attenuator.actual_transmission, 0.49118047952)
+
+    @AsyncStatus.wrap
+    async def fake_attenuator_set(val):
+        set_mock_value(attenuator.actual_transmission, val)
+
+    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+
+    yield attenuator
 
 
 @pytest.fixture

@@ -51,7 +51,7 @@ BASIC_PRE_SETUP_DOC = {
 }
 
 BASIC_POST_SETUP_DOC = {
-    "attenuator_actual_transmission": 0,
+    "attenuator-actual_transmission": 0,
     "flux_flux_reading": 10,
     "dcm-energy_in_kev": 11.105,
 }

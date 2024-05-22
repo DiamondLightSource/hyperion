@@ -88,7 +88,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                 ) = create_beam_and_attenuator_parameters(
                     data["dcm-energy_in_kev"],
                     data["flux_flux_reading"],
-                    data["attenuator_actual_transmission"],
+                    data["attenuator-actual_transmission"],
                 )
         if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
             NEXUS_LOGGER.info(
