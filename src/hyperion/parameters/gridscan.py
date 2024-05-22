@@ -41,6 +41,7 @@ class GridCommon(
     )
     set_stub_offsets: bool = Field(default=False)
     use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
+    use_gpu: bool = Field(default=CONST.I03.USE_GPU_FOR_GRIDSCAN_ANALYSIS)
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
@@ -90,6 +91,7 @@ class GridCommon(
             beam_xy_converter=DetectorDistanceToBeamXYConverter(
                 self.det_dist_to_beam_converter_path
             ),
+            enable_dev_shm=self.use_gpu,
             **optional_args,
         )
 
