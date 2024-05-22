@@ -24,15 +24,11 @@ EXPECTED_DATA_COLLECTION = {
     "axisstart": 0.0,
     "axisrange": 0.1,
     "axisend": 180,
-    "focal_spot_size_at_samplex": 1.0,
-    "focal_spot_size_at_sampley": 1.0,
-    "beamsize_at_samplex": 1,
-    "beamsize_at_sampley": 1,
     "comments": "Hyperion rotation scan",
-    "data_collection_number": 0,
+    "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
-    "imgdir": "/tmp/",
+    "imgdir": "/tmp/dls/i03/data/2024/cm31105-4/auto/123456/",
     "imgprefix": "file_name",
     "imgsuffix": "h5",
     "n_passes": 1,
@@ -46,9 +42,9 @@ EXPECTED_DATA_COLLECTION = {
     "xtal_snapshot3": "test_3_y",
     "synchrotron_mode": None,
     "starttime": EXPECTED_START_TIME,
-    "filetemplate": "file_name_0_master.h5",
+    "filetemplate": "file_name_1_master.h5",
     "nimages": 1800,
-    "kappastart": 0,
+    "kappastart": None,
 }
 
 
@@ -109,6 +105,10 @@ def test_hardware_read_events(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
+            "focal_spot_size_at_samplex": 50.0,
+            "focal_spot_size_at_sampley": 20.0,
+            "beamsize_at_samplex": 50.0,
+            "beamsize_at_sampley": 20.0,
         },
     )
     assert_upsert_call_with(
@@ -116,9 +116,9 @@ def test_hardware_read_events(
         mx.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": dummy_rotation_params.hyperion_params.ispyb_params.position[0],
-            "pos_y": dummy_rotation_params.hyperion_params.ispyb_params.position[1],
-            "pos_z": dummy_rotation_params.hyperion_params.ispyb_params.position[2],
+            "pos_x": dummy_rotation_params.ispyb_params.position[0],
+            "pos_y": dummy_rotation_params.ispyb_params.position[1],
+            "pos_z": dummy_rotation_params.ispyb_params.position[2],
         },
     )
 

@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -11,6 +12,7 @@ from hyperion.device_setup_plans.setup_panda import (
     MM_TO_ENCODER_COUNTS,
     disarm_panda_for_gridscan,
     get_seq_table,
+    set_and_create_panda_directory,
     setup_panda_for_flyscan,
 )
 
@@ -203,3 +205,17 @@ def test_disarm_panda_disables_correct_blocks():
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions("disarm")
     assert num_of_sets == 6
     assert num_of_waits == 1
+
+
+def test_set_and_create_panda_directory(tmp_path):
+    with patch(
+        "hyperion.device_setup_plans.setup_panda.os.path.isdir", return_value=False
+    ), patch("hyperion.device_setup_plans.setup_panda.os.makedirs") as mock_makedir:
+        set_and_create_panda_directory(Path(tmp_path))
+        mock_makedir.assert_called_once()
+
+    with patch(
+        "hyperion.device_setup_plans.setup_panda.os.path.isdir", return_value=True
+    ), patch("hyperion.device_setup_plans.setup_panda.os.makedirs") as mock_makedir:
+        set_and_create_panda_directory(Path(tmp_path))
+        mock_makedir.assert_not_called()

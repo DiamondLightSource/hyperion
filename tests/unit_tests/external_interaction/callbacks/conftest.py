@@ -5,9 +5,6 @@ from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 from tests.conftest import create_dummy_scan_spec
 
 from ....conftest import default_raw_params, raw_params_from_file
@@ -19,11 +16,11 @@ def dummy_params():
 
 
 def dummy_params_2d():
-    return GridscanInternalParameters(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_parameter_defaults_2d.json"
-        )
+    raw_params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
     )
+    raw_params["z_steps"] = 1
+    return ThreeDGridScan(**raw_params)
 
 
 @pytest.fixture
@@ -31,7 +28,7 @@ def test_rotation_start_outer_document(dummy_rotation_params):
     return {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "subplan_name": CONST.PLAN.ROTATION_OUTER,
-        "hyperion_internal_parameters": dummy_rotation_params.json(),
+        "hyperion_parameters": dummy_rotation_params.json(),
     }
 
 
@@ -48,7 +45,7 @@ class TestData:
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-        "hyperion_internal_parameters": dummy_params().old_parameters().json(),
+        "hyperion_parameters": dummy_params().json(),
     }
     test_gridscan3d_start_document: RunStart = {  # type: ignore
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -58,7 +55,7 @@ class TestData:
         "plan_type": "generator",
         "plan_name": "test",
         "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
-        "hyperion_internal_parameters": dummy_params().old_parameters().json(),
+        "hyperion_parameters": dummy_params().json(),
     }
     test_gridscan2d_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -68,7 +65,7 @@ class TestData:
         "plan_type": "generator",
         "plan_name": "test",
         "subplan_name": CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN,
-        "hyperion_internal_parameters": dummy_params_2d().json(),
+        "hyperion_parameters": dummy_params_2d().json(),
     }
     test_rotation_start_main_document = {
         "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
@@ -83,7 +80,7 @@ class TestData:
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
         CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-        "hyperion_internal_parameters": dummy_params().old_parameters().json(),
+        "hyperion_parameters": dummy_params().json(),
     }
     test_rotation_event_document_during_data_collection: Event = {
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
@@ -197,6 +194,12 @@ class TestData:
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator-current_gap": 1.234,
+            "aperture_scatterguard-selected_aperture": {
+                "name": "Medium",
+                "GDA_name": "MEDIUM",
+                "radius_microns": 50,
+                "location": (15, 16, 2, 18, 19),
+            },
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,

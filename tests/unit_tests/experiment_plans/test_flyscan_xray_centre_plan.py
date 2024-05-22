@@ -60,9 +60,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
 from tests.conftest import create_dummy_scan_spec
 
 from ...conftest import default_raw_params
@@ -89,7 +86,7 @@ def ispyb_plan(test_fgs_params):
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": test_fgs_params.json(),
+            "hyperion_parameters": test_fgs_params.json(),
         }
     )
     def standalone_read_hardware_for_ispyb(
@@ -201,6 +198,12 @@ class TestFlyscanXrayCentrePlan:
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
+        ap_sg_test_value = {
+            "name": "Small",
+            "GDA_name": "SMALL_APERTURE",
+            "radius_microns": 20,
+            "location": (10, 11, 2, 13, 14),
+        }
         fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
         fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)  # type: ignore
         flux_test_value = 10.0
@@ -250,6 +253,7 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
+                    'aperture_scatterguard-selected_aperture': ap_sg_test_value
                 },
             )
             assert_event(
@@ -498,9 +502,10 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.synchrotron,
                     "zocalo environment",
                     [
-                        test_fgs_params.old_parameters().get_scan_points(1),
-                        test_fgs_params.old_parameters().get_scan_points(2),
+                        test_fgs_params.scan_points_first_grid,
+                        test_fgs_params.scan_points_second_grid,
                     ],
+                    test_fgs_params.scan_indices,
                 )
             )
         fgs.KICKOFF_TIMEOUT = 1
@@ -513,9 +518,10 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.synchrotron,
                 "zocalo environment",
                 [
-                    test_fgs_params.old_parameters().get_scan_points(1),
-                    test_fgs_params.old_parameters().get_scan_points(2),
+                    test_fgs_params.scan_points_first_grid,
+                    test_fgs_params.scan_points_second_grid,
                 ],
+                test_fgs_params.scan_indices,
             )
         )
         assert res.exit_status == "success"
@@ -861,6 +867,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
             fake_fgs_composite.synchrotron,
             zocalo_env,
             scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
+            scan_start_indices=[0, x_steps * y_steps],
         )
     )
 
@@ -889,7 +896,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
 )
 def test_read_hardware_for_nexus_occurs_after_eiger_arm(
     fake_fgs_composite: FlyScanXRayCentreComposite,
-    test_fgs_params: GridscanInternalParameters,
+    test_fgs_params: ThreeDGridScan,
     sim_run_engine,
 ):
     sim_run_engine.add_handler(

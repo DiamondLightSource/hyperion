@@ -22,7 +22,6 @@ from hyperion.external_interaction.ispyb.ispyb_utils import (
     get_session_id_from_visit,
 )
 from hyperion.log import ISPYB_LOGGER
-from hyperion.parameters.components import IspybExperimentType
 from hyperion.tracing import TRACER
 
 if TYPE_CHECKING:
@@ -39,14 +38,9 @@ class IspybIds(BaseModel):
 
 
 class StoreInIspyb(ABC):
-    def __init__(self, ispyb_config: str, experiment_type: IspybExperimentType) -> None:
+    def __init__(self, ispyb_config: str) -> None:
         self.ISPYB_CONFIG_PATH: str = ispyb_config
         self._data_collection_group_id: int | None
-        self._experiment_type = experiment_type
-
-    @property
-    def experiment_type(self) -> str:
-        return self._experiment_type.value
 
     def begin_deposition(
         self,

@@ -8,7 +8,7 @@ from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 class DataCollectionGroupInfo:
     visit_string: str
     experiment_type: str
-    sample_id: Optional[str]
+    sample_id: Optional[int]
     sample_barcode: Optional[str] = None
 
 
@@ -27,7 +27,7 @@ class DataCollectionInfo:
 
     parent_id: Optional[int] = None
     visit_string: Optional[str] = None
-    sample_id: Optional[str] = None
+    sample_id: Optional[int] = None
     detector_id: Optional[int] = None
     axis_start: Optional[float] = None
     focal_spot_size_at_samplex: Optional[float] = None

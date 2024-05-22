@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 from abc import abstractmethod
 from enum import StrEnum
 from pathlib import Path
@@ -127,6 +128,15 @@ class HyperionParameters(BaseModel):
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
+    @classmethod
+    def from_json(cls, input: str | None, *, allow_extras: bool = False):
+        assert input is not None
+        if allow_extras:
+            cls.Config.extra = Extra.ignore
+        params = cls(**json.loads(input))
+        cls.Config.extra = Extra.forbid
+        return params
+
 
 class DiffractionExperiment(HyperionParameters):
     """For all experiments which use beam"""
@@ -148,7 +158,7 @@ class DiffractionExperiment(HyperionParameters):
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
     run_number: int | None = Field(default=None, ge=0)
-    ispyb_experiment_type: IspybExperimentType | None = None
+    ispyb_experiment_type: IspybExperimentType
     storage_directory: str
 
     @property
@@ -159,7 +169,7 @@ class DiffractionExperiment(HyperionParameters):
 
     @property
     def snapshot_directory(self) -> Path:
-        return self.visit_directory / "snapshots"
+        return Path(self.storage_directory) / "snapshots"
 
     @property
     def num_images(self) -> int:
@@ -196,9 +206,12 @@ class SplitScan(BaseModel):
 
 
 class WithSample(BaseModel):
-    sample_id: int  # Will be used to work out puck/pin
-    _puck: int | None = None
-    _pin: int | None = None
+    sample_id: int
+    sample_puck: int | None = None
+    sample_pin: int | None = None
+
+
+class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
 
 
 class WithOavCentring(BaseModel):
@@ -240,11 +253,6 @@ class TemporaryIspybExtras(BaseModel):
         extra = Extra.forbid
 
     position: list[float] | NDArray = Field(default=np.array([0, 0, 0]))
-    beam_size_x: float
-    beam_size_y: float
-    focal_spot_size_x: float
-    focal_spot_size_y: float
-    undulator_gap: float | None = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None

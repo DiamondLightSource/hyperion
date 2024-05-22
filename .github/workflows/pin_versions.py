@@ -7,8 +7,8 @@ import subprocess
 from functools import partial
 from sys import stderr, stdout
 
-SETUP_CFG_PATTERN = re.compile("(.*?)\\s*(@(.*))?\n")
-SETUP_UNPINNED_PATTERN = re.compile("(.*?)\\s*([<>=]+(.*))?\n")
+SETUP_CFG_PATTERN = re.compile("(.*?\\S)\\s*(@(.*))?$")
+SETUP_UNPINNED_PATTERN = re.compile("(.*?\\S)\\s*([<>=]+(.*))?$")
 PIP = "pip"
 
 
@@ -57,22 +57,25 @@ def process_files(input_file, output_file, dependency_processor):
         output_file.write(line)
         if line.startswith("install_requires"):
             break
-    while (line := input_file.readline()) and not line.isspace():
-        dependency_processor(line, output_file)
+    while (line := input_file.readline()) and not line.startswith("["):
+        if line.isspace():
+            output_file.write(line)
+        else:
+            dependency_processor(line, output_file)
     output_file.write(line)
     while line := input_file.readline():
         output_file.write(line)
 
 
 def strip_comment(line: str):
-    split = line.split("#", 1)
+    split = line.rstrip("\n").split("#", 1)
     return split[0], (split[1] if len(split) > 1 else None)
 
 
 def write_with_comment(comment, text, output_file):
     output_file.write(text)
     if comment:
-        output_file.write("#" + comment)
+        output_file.write(" #" + comment)
     output_file.write("\n")
 
 
@@ -88,7 +91,7 @@ def update_setup_cfg_line(version_map: dict[str, str], line, output_file):
 
         write_with_comment(
             comment,
-            f"    {normalized_name} @ {version_map[normalized_name]}",
+            f"    {normalized_name} == {version_map[normalized_name]}",
             output_file,
         )
     else:

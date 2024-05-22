@@ -42,6 +42,12 @@ BASIC_PRE_SETUP_DOC = {
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
+    "aperture_scatterguard-selected_aperture": {
+        "name": "Robot_load",
+        "GDA_name": "ROBOT_LOAD",
+        "radius_microns": None,
+        "location": (15, 16, 2, 18, 19),
+    },
 }
 
 BASIC_POST_SETUP_DOC = {
@@ -70,7 +76,7 @@ def run_generic_ispyb_handler_setup(
     ispyb_handler.activity_gated_start(
         {
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": params.old_parameters().json(),
+            "hyperion_parameters": params.json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(

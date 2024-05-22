@@ -41,9 +41,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 )
 from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
 from hyperion.parameters.rotation import RotationScan
 
 from ....conftest import raw_params_from_file
@@ -51,7 +48,7 @@ from ....conftest import raw_params_from_file
 
 @pytest.fixture
 def params():
-    return RotationInternalParameters(
+    return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
@@ -59,10 +56,10 @@ def params():
 
 
 @pytest.fixture
-def test_outer_start_doc(params: RotationInternalParameters):
+def test_outer_start_doc(params: RotationScan):
     return {
         "subplan_name": CONST.PLAN.ROTATION_OUTER,
-        "hyperion_internal_parameters": params.json(),
+        "hyperion_parameters": params.json(),
     }
 
 
@@ -80,7 +77,7 @@ def activate_callbacks(cbs: Tuple[RotationNexusFileCallback, RotationISPyBCallba
 
 
 def fake_rotation_scan(
-    params: RotationInternalParameters,
+    params: RotationScan,
     subscriptions: (
         Tuple[RotationNexusFileCallback, RotationISPyBCallback]
         | Sequence[PlanReactiveCallback]
@@ -99,7 +96,7 @@ def fake_rotation_scan(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "hyperion_internal_parameters": params.json(),
+            "hyperion_parameters": params.json(),
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
         }
     )
@@ -112,7 +109,7 @@ def fake_rotation_scan(
             md={
                 "subplan_name": CONST.PLAN.ROTATION_MAIN,
                 "zocalo_environment": "dev_zocalo",
-                "scan_points": [params.get_scan_points()],
+                "scan_points": [params.scan_points],
             }
         )
         def fake_main_plan():
@@ -145,7 +142,7 @@ def activated_mocked_cbs():
 def test_nexus_handler_gets_documents_in_mock_plan(
     ispyb,
     RE: RunEngine,
-    params: RotationInternalParameters,
+    params: RotationScan,
     activated_mocked_cbs: Tuple[RotationNexusFileCallback, RotationISPyBCallback],
 ):
     nexus_handler, _ = activated_mocked_cbs
@@ -153,7 +150,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
 
     assert nexus_handler.activity_gated_start.call_count == 2  # type: ignore
     call_content_outer = nexus_handler.activity_gated_start.call_args_list[0].args[0]  # type: ignore
-    assert call_content_outer["hyperion_internal_parameters"] == params.json()
+    assert call_content_outer["hyperion_parameters"] == params.json()
     call_content_inner = nexus_handler.activity_gated_start.call_args_list[1].args[0]  # type: ignore
     assert call_content_inner["subplan_name"] == CONST.PLAN.ROTATION_MAIN
 
@@ -167,7 +164,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
 def test_nexus_handler_only_writes_once(
     nexus_writer: MagicMock,
     RE: RunEngine,
-    params: RotationInternalParameters,
+    params: RotationScan,
     test_outer_start_doc,
 ):
     nexus_writer.return_value.full_filename = "test_full_filename"
@@ -180,22 +177,23 @@ def test_nexus_handler_only_writes_once(
 
 
 def test_nexus_handler_triggers_write_file_when_told(
-    RE: RunEngine, params: RotationInternalParameters
+    RE: RunEngine, params: RotationScan
 ):
-    if os.path.isfile("/tmp/file_name_0.nxs"):
-        os.remove("/tmp/file_name_0.nxs")
-    if os.path.isfile("/tmp/file_name_0_master.h5"):
-        os.remove("/tmp/file_name_0_master.h5")
+    pattern = f"{params.storage_directory}{params.file_name}_{params.detector_params.run_number}"
+    files = [f"{pattern}.nxs", f"{pattern}_master.h5"]
 
+    def do_files(do_assert=False):
+        for file in files:
+            if do_assert:
+                assert os.path.isfile(file)
+            if os.path.isfile(file):
+                os.remove(file)
+
+    do_files()
     cb = RotationNexusFileCallback()
     cb.active = True
-
     RE(fake_rotation_scan(params, [cb]))
-
-    assert os.path.isfile("/tmp/file_name_0.nxs")
-    assert os.path.isfile("/tmp/file_name_0_master.h5")
-    os.remove("/tmp/file_name_0.nxs")
-    os.remove("/tmp/file_name_0_master.h5")
+    do_files(do_assert=True)
 
 
 @patch(
@@ -215,7 +213,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     zocalo_trigger,
     nexus_writer,
     RE: RunEngine,
-    params: RotationInternalParameters,
+    params: RotationScan,
     test_outer_start_doc,
 ):
     nexus_writer.return_value.full_filename = "test_full_filename"
@@ -243,7 +241,7 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
     zocalo_trigger,
     nexus_writer,
     RE: RunEngine,
-    params: RotationInternalParameters,
+    params: RotationScan,
     test_outer_start_doc,
     test_main_start_doc,
 ):
@@ -284,7 +282,7 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
     autospec=True,
 )
 def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
-    zocalo, RE: RunEngine, params: RotationInternalParameters, test_outer_start_doc
+    zocalo, RE: RunEngine, params: RotationScan, test_outer_start_doc
 ):
     (nexus_callback, ispyb_callback) = create_rotation_callbacks()
     ispyb_callback.emit_cb = None
@@ -328,7 +326,7 @@ def test_ispyb_handler_grabs_uid_from_main_plan_and_not_first_start_doc(
 def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb: MagicMock,
     RE: RunEngine,
-    params: RotationInternalParameters,
+    params: RotationScan,
 ):
     ispyb_cb = RotationISPyBCallback()
     ispyb_cb.active = True
@@ -336,14 +334,14 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
     rotation_ispyb.return_value.begin_deposition.return_value = ispyb_ids
 
     test_cases = zip(
-        ["abc", "abc", "abc", "def", "abc", "def", "def", "xyz", "hij", "hij", "hij"],
+        [123, 123, 123, 456, 123, 456, 456, 999, 789, 789, 789],
         [False, True, True, False, False, False, True, False, False, True, True],
     )
 
     last_dcgid = None
 
     for sample_id, same_dcgid in test_cases:
-        params.hyperion_params.ispyb_params.sample_id = sample_id
+        params.sample_id = sample_id
 
         def after_open_do(callbacks: list[RotationISPyBCallback]):
             assert callbacks[0].uid_to_finalize_on is None
@@ -365,69 +363,6 @@ def test_ispyb_reuses_dcgid_on_same_sampleID(
             assert begin_deposition_scan_data.data_collection_info.parent_id is None
 
         last_dcgid = ispyb_cb.ispyb_ids.data_collection_group_id
-
-
-@patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
-    autospec=True,
-)
-def test_ispyb_specifies_experiment_type_if_supplied(
-    rotation_ispyb: MagicMock,
-    RE: RunEngine,
-):
-    raw_params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
-    )
-    raw_params["hyperion_params"]["ispyb_params"][
-        "ispyb_experiment_type"
-    ] = "Characterization"
-    params = RotationInternalParameters(**raw_params)
-
-    ispyb_cb = RotationISPyBCallback()
-    ispyb_cb.active = True
-    assert (
-        params.hyperion_params.ispyb_params.ispyb_experiment_type == "Characterization"
-    )
-    rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
-        data_collection_group_id=23, data_collection_ids=(45,)
-    )
-
-    params.hyperion_params.ispyb_params.sample_id = "abc"
-
-    RE(fake_rotation_scan(params, [ispyb_cb]))
-
-    assert rotation_ispyb.call_args.args[1] == IspybExperimentType.CHARACTERIZATION
-
-
-@patch(
-    "hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
-    autospec=True,
-)
-def test_new_params_ispyb_specifies_experiment_type_if_supplied(
-    rotation_ispyb: MagicMock,
-    RE: RunEngine,
-):
-    raw_params = raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
-    )
-    raw_params["ispyb_experiment_type"] = "Characterization"
-    new_params = RotationScan(**raw_params)
-    params = new_params.old_parameters()
-
-    ispyb_cb = RotationISPyBCallback()
-    ispyb_cb.active = True
-    assert (
-        params.hyperion_params.ispyb_params.ispyb_experiment_type == "Characterization"
-    )
-    rotation_ispyb.return_value.begin_deposition.return_value = IspybIds(
-        data_collection_group_id=23, data_collection_ids=(45,)
-    )
-
-    params.hyperion_params.ispyb_params.sample_id = "abc"
-
-    RE(fake_rotation_scan(params, [ispyb_cb]))
-
-    assert rotation_ispyb.call_args.args[1] == IspybExperimentType.CHARACTERIZATION
 
 
 n_images_store_id = [
@@ -457,7 +392,7 @@ n_images_store_id = [
 def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
     n_images: int,
     store_id: bool,
-    params: RotationInternalParameters,
+    params: RotationScan,
 ):
     cb = RotationISPyBCallback()
     cb.active = True
@@ -467,11 +402,13 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
         "uid": "abc123",
     }
 
-    params.hyperion_params.ispyb_params.sample_id = "SAMPLEID"
-    params.experiment_params.rotation_angle = n_images / 10
-    assert params.experiment_params.get_num_images() == n_images
+    params.sample_id = 987678
+    params.scan_width_deg = n_images / 10
+    if n_images < 200:
+        params.ispyb_experiment_type = IspybExperimentType.CHARACTERIZATION
+    assert params.num_images == n_images
     doc["subplan_name"] = CONST.PLAN.ROTATION_OUTER  # type: ignore
-    doc["hyperion_internal_parameters"] = params.json()  # type: ignore
+    doc["hyperion_parameters"] = params.json()  # type: ignore
 
     cb.start(doc)
-    assert (cb.last_sample_id == "SAMPLEID") is store_id
+    assert (cb.last_sample_id == 987678) is store_id
