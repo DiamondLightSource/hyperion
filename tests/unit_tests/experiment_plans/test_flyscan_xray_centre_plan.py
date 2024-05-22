@@ -10,7 +10,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
-from dodal.beamlines.beamline_utils import clear_device
+from dodal.common.beamlines.beamline_utils import clear_device
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,

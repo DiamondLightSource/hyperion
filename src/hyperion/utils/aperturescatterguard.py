@@ -1,4 +1,4 @@
-from dodal.beamlines.beamline_parameters import get_beamline_parameters
+from dodal.common.beamlines.beamline_parameters import get_beamline_parameters
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 
 

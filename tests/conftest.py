@@ -12,8 +12,9 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.beamlines import beamline_utils, i03
-from dodal.beamlines.beamline_parameters import (
+from dodal.beamlines import i03
+from dodal.common.beamlines import beamline_utils
+from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
 from dodal.devices.aperturescatterguard import (

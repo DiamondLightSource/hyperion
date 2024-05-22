@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.beamlines.beamline_parameters import GDABeamlineParameters
+from dodal.common.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
     MirrorStripe,
