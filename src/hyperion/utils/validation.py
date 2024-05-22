@@ -20,39 +20,37 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.rotation import RotationScan
 
 TEST_DATA_DIRECTORY = Path("tests/test_data/nexus_files/rotation")
 TEST_METAFILE = "ins_8_5_meta.h5.gz"
-FAKE_DATAFILE = "fake_data.h5"
+FAKE_DATAFILE = "../fake_data.h5"
+FILENAME_STUB = "test_rotation_nexus"
 
 
-def test_params(filename_stub):
+def test_params(filename_stub, dir):
     def get_params(filename):
         with open(filename) as f:
             return json.loads(f.read())
 
-    param_dict = get_params(
-        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+    params = RotationScan(
+        **get_params(
+            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+        )
     )
-
-    param_dict["hyperion_params"]["detector_params"]["prefix"] = f"{filename_stub}"
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    param_dict["hyperion_params"]["detector_params"]["expected_energy_ev"] = 12700
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    params = RotationInternalParameters(**param_dict)
-    params.hyperion_params.detector_params.directory = os.getcwd()
-    params.experiment_params.x = 0
-    params.experiment_params.y = 0
-    params.experiment_params.z = 0
-    params.hyperion_params.detector_params.exposure_time = 0.004
+    params.file_name = filename_stub
+    params.scan_width_deg = 360
+    params.demand_energy_ev = 12700
+    params.storage_directory = str(dir)
+    params.x_start_um = 0
+    params.y_start_um = 0
+    params.z_start_um = 0
+    params.exposure_time_s = 0.004
     return params
 
 
 def fake_rotation_scan(
-    parameters: RotationInternalParameters,
+    parameters: RotationScan,
     subscription: RotationNexusFileCallback,
     rotation_devices: RotationScanComposite,
 ):
@@ -61,7 +59,7 @@ def fake_rotation_scan(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "hyperion_internal_parameters": parameters.json(),
+            "hyperion_parameters": parameters.json(),
             "activate_callbacks": "RotationNexusFileCallback",
         }
     )
@@ -116,12 +114,12 @@ def fake_create_rotation_devices():
 
 
 def sim_rotation_scan_to_create_nexus(
-    test_params: RotationInternalParameters,
+    test_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     filename_stub,
     RE,
 ):
-    run_number = test_params.hyperion_params.detector_params.run_number
+    run_number = test_params.detector_params.run_number
     nexus_filename = f"{filename_stub}_{run_number}.nxs"
 
     fake_create_rotation_devices.eiger.bit_depth.sim_put(32)  # type: ignore
@@ -136,8 +134,9 @@ def sim_rotation_scan_to_create_nexus(
             )
         )
 
-    assert os.path.isfile(nexus_filename)
-    return nexus_filename
+    nexus_path = Path(test_params.storage_directory) / nexus_filename
+    assert os.path.isfile(nexus_path)
+    return filename_stub, run_number
 
 
 def extract_metafile(input_filename, output_filename):
@@ -146,24 +145,28 @@ def extract_metafile(input_filename, output_filename):
             output_fo.write(metafile_fo.read())
 
 
-def generate_test_nexus():
+def _generate_fake_nexus(filename, dir=os.getcwd()):
     RE = RunEngine({})
-    filename_stub = "test_rotation_nexus"
-    params = test_params(filename_stub)
-    run_number = params.hyperion_params.detector_params.run_number
-    filename = sim_rotation_scan_to_create_nexus(
-        params, fake_create_rotation_devices(), filename_stub, RE
+    params = test_params(filename, dir)
+    run_number = params.detector_params.run_number
+    filename_stub, run_number = sim_rotation_scan_to_create_nexus(
+        params, fake_create_rotation_devices(), filename, RE
     )
+    return filename_stub, run_number
+
+
+def generate_test_nexus():
+    filename_stub, run_number = _generate_fake_nexus(FILENAME_STUB)
     # ugly hack because we get double free error on exit
     with open("OUTPUT_FILENAME", "x") as f:
-        f.write(filename)
+        f.write(f"{filename_stub}_{run_number}.nxs")
 
     extract_metafile(
         str(TEST_DATA_DIRECTORY / TEST_METAFILE),
-        f"{filename_stub}_{run_number}_meta.h5",
+        f"{FILENAME_STUB}_{run_number}_meta.h5",
     )
 
-    new_hyp_data = [f"{filename_stub}_{run_number}_00000{n}.h5" for n in [1, 2, 3, 4]]
+    new_hyp_data = [f"{FILENAME_STUB}_{run_number}_00000{n}.h5" for n in [1, 2, 3, 4]]
     [shutil.copy(TEST_DATA_DIRECTORY / FAKE_DATAFILE, d) for d in new_hyp_data]
 
     exit(0)

@@ -7,13 +7,15 @@ import pytest
 from h5py import Dataset, Datatype, File, Group
 from numpy import dtype
 
+from hyperion.utils.validation import _generate_fake_nexus
+
 from ....conftest import extract_metafile
 
 TEST_DATA_DIRECTORY = Path("tests/test_data/nexus_files/rotation")
 TEST_EXAMPLE_NEXUS_FILE = Path("ins_8_5.nxs")
-TEST_NEXUS_FILENAME = "rotation_scan_test_nexus_0.nxs"
+TEST_NEXUS_FILENAME = "rotation_scan_test_nexus"
 TEST_METAFILE = "ins_8_5_meta.h5.gz"
-FAKE_DATAFILE = "fake_data.h5"
+FAKE_DATAFILE = "../fake_data.h5"
 
 h5item = Group | Dataset | File | Datatype
 
@@ -49,21 +51,21 @@ FilesAndgroups = tuple[h5py.File, set[str], h5py.File, set[str]]
 
 @pytest.fixture
 def files_and_groups(tmpdir):
+    filename, run_number = _generate_fake_nexus(TEST_NEXUS_FILENAME, tmpdir)
     extract_metafile(
         str(TEST_DATA_DIRECTORY / TEST_METAFILE),
-        f"{tmpdir}/rotation_scan_test_nexus_0_meta.h5",
+        f"{tmpdir}/{filename}_{run_number}_meta.h5",
     )
     extract_metafile(
         str(TEST_DATA_DIRECTORY / TEST_METAFILE),
         f"{tmpdir}/ins_8_5_meta.h5",
     )
-    new_hyperion_master = tmpdir / TEST_NEXUS_FILENAME
+    new_hyperion_master = tmpdir / f"{filename}_{run_number}.nxs"
     new_gda_master = tmpdir / TEST_EXAMPLE_NEXUS_FILE
     new_gda_data = [tmpdir / f"ins_8_5_00000{n}.h5" for n in [1, 2, 3, 4]]
     new_hyp_data = [
-        tmpdir / f"rotation_scan_test_nexus_0_00000{n}.h5" for n in [1, 2, 3, 4]
+        tmpdir / f"{filename}_{run_number}_00000{n}.h5" for n in [1, 2, 3, 4]
     ]
-    shutil.copy(TEST_DATA_DIRECTORY / TEST_NEXUS_FILENAME, new_hyperion_master)
     shutil.copy(TEST_DATA_DIRECTORY / TEST_EXAMPLE_NEXUS_FILE, new_gda_master)
     [shutil.copy(TEST_DATA_DIRECTORY / FAKE_DATAFILE, d) for d in new_gda_data]
     [shutil.copy(TEST_DATA_DIRECTORY / FAKE_DATAFILE, d) for d in new_hyp_data]
@@ -80,11 +82,12 @@ def files_and_groups(tmpdir):
         )
 
 
-groups_EXCEPTIONS_TABLE = {
+GROUPS_EQUIVALENTS_TABLE = {
     "/entry/instrument/source": {"/entry/source"},
     "/entry/instrument/detector_z": {"/entry/instrument/detector/detector_z"},
     "/entry/instrument/transformations": {"/entry/instrument/detector/transformations"},
 }
+GROUPS_EXCEPTIONS = {"/entry/instrument/attenuator"}
 
 
 def test_hyperion_rotation_nexus_groups_against_gda(
@@ -92,8 +95,10 @@ def test_hyperion_rotation_nexus_groups_against_gda(
 ):
     _, gda_groups, _, hyperion_groups = files_and_groups
     for item in gda_groups:
-        assert item in hyperion_groups or has_equiv_in(
-            item, hyperion_groups, groups_EXCEPTIONS_TABLE
+        assert (
+            item in hyperion_groups
+            or has_equiv_in(item, hyperion_groups, GROUPS_EQUIVALENTS_TABLE)
+            or item in GROUPS_EXCEPTIONS
         )
 
 
