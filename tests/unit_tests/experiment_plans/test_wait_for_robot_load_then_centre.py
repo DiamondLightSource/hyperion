@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -43,19 +44,17 @@ def robot_load_composite(
 
 
 @pytest.fixture
-def robot_load_then_centre_params_no_energy():
+def robot_load_then_centre_params():
     params = raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/good_test_robot_load_params_no_energy.json"
+        "tests/test_data/parameter_json_files/good_test_robot_load_params.json"
     )
     return RobotLoadThenCentre(**params)
 
 
 @pytest.fixture
-def robot_load_then_centre_params():
-    params = raw_params_from_file(
-        "tests/test_data/new_parameter_json_files/good_test_robot_load_params.json"
-    )
-    return RobotLoadThenCentre(**params)
+def robot_load_then_centre_params_no_energy(robot_load_then_centre_params):
+    robot_load_then_centre_params.demand_energy_ev = None
+    return robot_load_then_centre_params
 
 
 def dummy_set_energy_plan(energy, composite):
@@ -346,7 +345,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
     oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
     webcam.trigger = MagicMock(return_value=NullStatus())
 
-    RE(take_robot_snapshots(oav, webcam, TEST_DIRECTORY))
+    RE(take_robot_snapshots(oav, webcam, Path(TEST_DIRECTORY)))
 
     oav.snapshot.trigger.assert_called_once()
     assert oav.snapshot.filename.get() == "TIME_oav_snapshot_after_load"
