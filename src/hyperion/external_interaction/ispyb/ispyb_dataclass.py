@@ -17,14 +17,12 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
 class IspybParams(BaseModel):
     visit_path: str
     position: np.ndarray
-
     comment: str
-    sample_id: Optional[str] = None
+    sample_id: Optional[int] = None
 
     # Optional from GDA as populated by Ophyd
     xtal_snapshots_omega_start: Optional[list[str]] = None
     xtal_snapshots_omega_end: Optional[list[str]] = None
-
     ispyb_experiment_type: Optional[str] = None
 
     class Config:

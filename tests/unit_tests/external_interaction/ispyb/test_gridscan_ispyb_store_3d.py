@@ -37,7 +37,7 @@ def dummy_collection_group_info():
     return DataCollectionGroupInfo(
         visit_string="cm31105-4",
         experiment_type="Mesh3D",
-        sample_id="364758",
+        sample_id=364758,
     )
 
 
@@ -56,7 +56,7 @@ def scan_data_info_for_begin():
             kappa_start=None,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="364758",
+            sample_id=364758,
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=0.0,
@@ -104,7 +104,7 @@ def scan_data_infos_for_update():
             kappa_start=None,
             parent_id=34,
             visit_string="cm31105-4",
-            sample_id="364758",
+            sample_id=364758,
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=0.0,
@@ -162,7 +162,7 @@ def scan_data_infos_for_update():
             kappa_start=None,
             parent_id=34,
             visit_string="cm31105-4",
-            sample_id="364758",
+            sample_id=364758,
             detector_id=78,
             axis_start=90.0,
             focal_spot_size_at_samplex=0.0,
@@ -263,15 +263,12 @@ def test_store_3d_grid_scan(
     scan_data_info_for_begin,
     scan_data_infos_for_update,
 ):
-    assert dummy_3d_gridscan_ispyb.experiment_type == "Mesh3D"
-
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
         dummy_collection_group_info, [scan_data_info_for_begin]
     )
     assert ispyb_ids == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
-        data_collection_id=TEST_DATA_COLLECTION_IDS[0],
     )
 
     assert dummy_3d_gridscan_ispyb.update_deposition(
@@ -695,7 +692,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
 ):
-    expected_sample_id = "364758"
+    expected_sample_id = 364758
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")

@@ -2,7 +2,6 @@ import os
 from functools import partial
 from typing import Any, Callable
 
-import dodal.devices.zocalo.zocalo_interaction
 import ispyb.sqlalchemy
 import pytest
 from ispyb.sqlalchemy import DataCollection, DataCollectionGroup, GridInfo, Position
@@ -10,11 +9,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
-from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 from ...conftest import raw_params_from_file
 
@@ -146,32 +142,25 @@ def fetch_datacollectiongroup_attribute(sqlalchemy_sessionmaker) -> Callable:
 
 @pytest.fixture
 def dummy_params():
-    dummy_params = GridscanInternalParameters(
+    dummy_params = ThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/system_test_parameter_defaults.json"
+            "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
         )
     )
-    dummy_params.hyperion_params.ispyb_params.visit_path = (
-        "/dls/i03/data/2022/cm31105-5/"
-    )
+    dummy_params.visit = "cm31105-5"
     return dummy_params
 
 
 @pytest.fixture
 def dummy_ispyb(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(
-        CONST.SIM.DEV_ISPYB_DATABASE_CFG, IspybExperimentType.GRIDSCAN_2D
-    )
+    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
 
 
 @pytest.fixture
 def dummy_ispyb_3d(dummy_params) -> StoreInIspyb:
-    return StoreInIspyb(
-        CONST.SIM.DEV_ISPYB_DATABASE_CFG, IspybExperimentType.GRIDSCAN_3D
-    )
+    return StoreInIspyb(CONST.SIM.DEV_ISPYB_DATABASE_CFG)
 
 
 @pytest.fixture
 def zocalo_env():
     os.environ["ZOCALO_CONFIG"] = "/dls_sw/apps/zocalo/live/configuration.yaml"
-    dodal.devices.zocalo.zocalo_interaction.DEFAULT_TIMEOUT = 5

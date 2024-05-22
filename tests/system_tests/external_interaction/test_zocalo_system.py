@@ -15,9 +15,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
 """
@@ -58,13 +56,13 @@ def fake_fgs_plan():
 
 @pytest.fixture
 def run_zocalo_with_dev_ispyb(
-    dummy_params: GridscanInternalParameters,
+    dummy_params: ThreeDGridScan,
     dummy_ispyb_3d,
     RE: RunEngine,
     zocalo_device: ZocaloResults,
 ):
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
-        dummy_params.hyperion_params.detector_params.prefix = sample_name
+        dummy_params.file_name = sample_name
         _, ispyb_callback = create_gridscan_callbacks()
         ispyb_callback.ispyb_config = dummy_ispyb_3d.ISPYB_CONFIG_PATH
         RE.subscribe(ispyb_callback)
@@ -77,7 +75,7 @@ def run_zocalo_with_dev_ispyb(
                 md={
                     "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
                     CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-                    "hyperion_internal_parameters": dummy_params.json(),
+                    "hyperion_parameters": dummy_params.json(),
                 }
             )
             def inner_plan():

@@ -6,8 +6,8 @@ from unittest.mock import DEFAULT, MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
-from bluesky import Msg
 from bluesky.run_engine import RunEngine
+from bluesky.utils import Msg
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -82,7 +82,7 @@ def ispyb_plan(test_panda_fgs_params):
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": test_panda_fgs_params.json(),
+            "hyperion_parameters": test_panda_fgs_params.json(),
         }
     )
     def standalone_read_hardware_for_ispyb(
@@ -142,10 +142,10 @@ class TestFlyscanXrayCentrePlan:
             fake_fgs_composite.attenuator.actual_transmission, transmission_test_value
         )
         ap_sg_test_value = {
-            "name": "Robot_load",
-            "GDA_name": "ROBOT_LOAD",
-            "radius_microns": None,
-            "location": (15, 16, 2, 18, 19),
+            "name": "Small",
+            "GDA_name": "SMALL_APERTURE",
+            "radius_microns": 20,
+            "location": (10, 11, 2, 13, 14),
         }
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
@@ -382,7 +382,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
         autospec=True,
     )
-    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
+    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
         self,
         setup_panda_for_flyscan: MagicMock,
         move_xyz: MagicMock,
@@ -394,6 +394,8 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         test_panda_fgs_params.set_stub_offsets = True
+
+        fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
         def wrapped_run_gridscan_and_move():
             run_generic_ispyb_handler_setup(
@@ -413,6 +415,8 @@ class TestFlyscanXrayCentrePlan:
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 1
         )
+
+        assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard.set",

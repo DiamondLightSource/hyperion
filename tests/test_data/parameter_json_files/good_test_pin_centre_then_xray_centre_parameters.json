@@ -1,37 +1,28 @@
 {
-    "params_version": "4.0.5",
-    "hyperion_params": {
-        "beamline": "BL03S",
-        "insertion_prefix": "SR03S",
-        "detector": "EIGER2_X_16M",
-        "zocalo_environment": "devrmq",
-        "experiment_type": "pin_tip_centre_then_xray_centre",
-        "detector_params": {
-            "expected_energy_ev": 100,
-            "directory": "/tmp",
-            "prefix": "file_name",
-            "run_number": 0,
-            "use_roi_mode": false,
-            "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt"
-        },
-        "ispyb_params": {
-            "visit_path": "/tmp/cm31105-4/",
-            "position": [
-                10.0,
-                20.0,
-                30.0
-            ],
-            "comment": "test"
-        }
-    },
-    "experiment_params": {
-        "snapshot_dir": "/tmp",
-        "exposure_time": 0.1,
-        "detector_distance": 100.0,
-        "omega_start": 0.0,
-        "tip_offset_microns": 108.9,
-        "grid_width_microns": 290.6,
-        "oav_centring_file": "tests/test_data/test_OAVCentring.json",
-        "transmission_fraction": 1.0
+    "parameter_model_version": "5.0.0",
+    "beamline": "BL03S",
+    "insertion_prefix": "SR03S",
+    "detector": "EIGER2_X_16M",
+    "zocalo_environment": "devrmq",
+    "storage_directory": "/tmp",
+    "file_name": "file_name",
+    "run_number": 0,
+    "sample_id": 123456,
+    "use_roi_mode": false,
+    "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt",
+    "exposure_time_s": 0.1,
+    "detector_distance_mm": 100.0,
+    "omega_start_deg": 0.0,
+    "tip_offset_um": 108.9,
+    "grid_width_um": 290.6,
+    "oav_centring_file": "tests/test_data/test_OAVCentring.json",
+    "transmission_frac": 1.0,
+    "visit": "cm31105-4",
+    "ispyb_extras": {
+        "position": [
+            10.0,
+            20.0,
+            30.0
+        ]
     }
 }
