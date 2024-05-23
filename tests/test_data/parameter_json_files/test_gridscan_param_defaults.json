@@ -29,11 +29,6 @@
     "exposure_time_s": 0.1,
     "set_stub_offsets": true,
     "ispyb_extras": {
-        "position": [
-            0,
-            0,
-            0
-        ],
         "xtal_snapshots_omega_start": [
             "test_1_y",
             "test_2_y",

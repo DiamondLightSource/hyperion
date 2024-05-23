@@ -7,7 +7,7 @@ from pydantic import BaseModel, validator
 GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
     "visit_path": "",
-    "position": [0, 0, 0],
+    "position": None,
     "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
     "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "comment": "Descriptive comment.",
@@ -16,7 +16,7 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
 
 class IspybParams(BaseModel):
     visit_path: str
-    position: np.ndarray
+    position: Optional[np.ndarray]
     comment: str
     sample_id: Optional[int] = None
 
@@ -31,13 +31,17 @@ class IspybParams(BaseModel):
 
     def dict(self, **kwargs):
         as_dict = super().dict(**kwargs)
-        as_dict["position"] = as_dict["position"].tolist()
+        as_dict["position"] = (
+            as_dict["position"].tolist() if as_dict["position"] is not None else None
+        )
         return as_dict
 
     @validator("position", pre=True)
     def _parse_position(
-        cls, position: list[int | float] | np.ndarray, values: Dict[str, Any]
-    ) -> np.ndarray:
+        cls, position: list[int | float] | np.ndarray | None, values: Dict[str, Any]
+    ) -> np.ndarray | None:
+        if position is None:
+            return None
         assert len(position) == 3
         if isinstance(position, np.ndarray):
             return position

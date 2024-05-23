@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 
-import numpy as np
 from dodal.devices.detector import (
     DetectorDistanceToBeamXYConverter,
     DetectorParams,
@@ -52,7 +51,6 @@ class GridCommon(
     def ispyb_params(self):
         return GridscanIspybParams(
             visit_path=str(self.visit_directory),
-            position=np.array(self.ispyb_extras.position),
             comment=self.comment,
             sample_id=self.sample_id,
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start

@@ -7,7 +7,6 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Sequence, SupportsInt, TypeVar
 
-import numpy as np
 from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
@@ -120,11 +119,11 @@ class HyperionParameters(BaseModel):
 
     @validator("parameter_model_version")
     def _validate_version(cls, version: ParameterVersion):
-        assert version >= ParameterVersion(
-            major=PARAMETER_VERSION.major
+        assert (
+            version >= ParameterVersion(major=PARAMETER_VERSION.major)
         ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
-        assert version <= ParameterVersion(
-            major=PARAMETER_VERSION.major + 1
+        assert (
+            version <= ParameterVersion(major=PARAMETER_VERSION.major + 1)
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
@@ -252,7 +251,7 @@ class TemporaryIspybExtras(BaseModel):
         arbitrary_types_allowed = True
         extra = Extra.forbid
 
-    position: list[float] | NDArray = Field(default=np.array([0, 0, 0]))
+    position: list[float] = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None
