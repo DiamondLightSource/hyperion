@@ -231,7 +231,7 @@ def grid_detect_then_xray_centre_parameters():
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
     backlight,
-    smargon,
+    mock_smargon,
     undulator,
     synchrotron,
     s4_slit_gaps,
@@ -253,7 +253,7 @@ def grid_detect_then_xray_centre_composite(
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
         panda_fast_grid_scan=None,  # type: ignore
-        smargon=smargon,
+        smargon=mock_smargon,
         undulator=undulator,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,

@@ -28,10 +28,10 @@ from ...conftest import raw_params_from_file
 
 @pytest.fixture
 def robot_load_composite(
-    smargon, dcm, robot, aperture_scatterguard, oav, webcam
+    mock_smargon, dcm, robot, aperture_scatterguard, oav, webcam
 ) -> RobotLoadThenCentreComposite:
     composite: RobotLoadThenCentreComposite = MagicMock()
-    composite.smargon = smargon
+    composite.smargon = mock_smargon
     composite.dcm = dcm
     set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
     composite.robot = robot

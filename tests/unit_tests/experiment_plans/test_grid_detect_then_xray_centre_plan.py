@@ -18,36 +18,36 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 
-from ..device_setup_plans.test_setup_oav import fake_smargon
 
+@pytest.fixture
+def fake_grid_detection(mock_smargon):
+    def _fake_grid_detection(
+        devices: Any,
+        parameters: OAVParameters,
+        snapshot_template: str,
+        snapshot_dir: str,
+        grid_width_microns: float = 0,
+        box_size_um: float = 0.0,
+    ):
+        oav = i03.oav(fake_with_ophyd_sim=True)
+        oav.grid_snapshot.box_width.put(635.00986)
+        # first grid detection: x * y
+        oav.grid_snapshot.num_boxes_x.put(10)
+        oav.grid_snapshot.num_boxes_y.put(4)
+        yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
+        yield from bps.read(oav.grid_snapshot)
+        yield from bps.read(mock_smargon)
+        yield from bps.save()
 
-def _fake_grid_detection(
-    devices: Any,
-    parameters: OAVParameters,
-    snapshot_template: str,
-    snapshot_dir: str,
-    grid_width_microns: float = 0,
-    box_size_um: float = 0.0,
-):
-    oav = i03.oav(fake_with_ophyd_sim=True)
-    smargon = fake_smargon()
-    oav.grid_snapshot.box_width.put(635.00986)
+        # second grid detection: x * z, so num_boxes_y refers to smargon z
+        oav.grid_snapshot.num_boxes_x.put(10)
+        oav.grid_snapshot.num_boxes_y.put(1)
+        yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
+        yield from bps.read(oav.grid_snapshot)
+        yield from bps.read(mock_smargon)
+        yield from bps.save()
 
-    # first grid detection: x * y
-    oav.grid_snapshot.num_boxes_x.put(10)
-    oav.grid_snapshot.num_boxes_y.put(4)
-    yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.grid_snapshot)
-    yield from bps.read(smargon)
-    yield from bps.save()
-
-    # second grid detection: x * z, so num_boxes_y refers to smargon z
-    oav.grid_snapshot.num_boxes_x.put(10)
-    oav.grid_snapshot.num_boxes_y.put(1)
-    yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
-    yield from bps.read(oav.grid_snapshot)
-    yield from bps.read(smargon)
-    yield from bps.save()
+    return _fake_grid_detection
 
 
 @pytest.fixture
@@ -99,8 +99,9 @@ def test_detect_grid_and_do_gridscan(
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
+    fake_grid_detection,
 ):
-    mock_grid_detection_plan.side_effect = _fake_grid_detection
+    mock_grid_detection_plan.side_effect = fake_grid_detection
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
@@ -153,10 +154,11 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
+    fake_grid_detection,
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
 
-    mock_grid_detection_plan.side_effect = _fake_grid_detection
+    mock_grid_detection_plan.side_effect = fake_grid_detection
 
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]

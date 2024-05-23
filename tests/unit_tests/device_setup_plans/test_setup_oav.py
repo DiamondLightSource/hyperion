@@ -1,5 +1,4 @@
-from functools import partial
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
@@ -49,31 +48,6 @@ def mock_parameters():
     return OAVParameters("loopCentring", OAV_CENTRING_JSON)
 
 
-def fake_smargon() -> Smargon:
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
-    smargon.x.user_setpoint._use_limits = False
-    smargon.y.user_setpoint._use_limits = False
-    smargon.z.user_setpoint._use_limits = False
-    smargon.omega.user_setpoint._use_limits = False
-
-    def mock_set(motor, val):
-        motor.user_readback.sim_put(val)  # type: ignore
-        return Status(done=True, success=True)
-
-    def patch_motor(motor):
-        return patch.object(motor, "set", partial(mock_set, motor))
-
-    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
-        smargon.y
-    ), patch_motor(smargon.z):
-        return smargon
-
-
-@pytest.fixture
-def smargon():
-    yield fake_smargon()
-
-
 @pytest.mark.parametrize(
     "zoom, expected_plugin",
     [
@@ -111,7 +85,7 @@ def test_when_set_up_oav_with_different_zoom_levels_then_flat_field_applied_corr
     ],
 )
 def test_values_for_move_so_that_beam_is_at_pixel(
-    smargon: Smargon,
+    mock_smargon: Smargon,
     oav: OAV,
     px_per_um,
     beam_centre,
@@ -124,12 +98,12 @@ def test_values_for_move_so_that_beam_is_at_pixel(
     oav.parameters.beam_centre_i = beam_centre[0]
     oav.parameters.beam_centre_j = beam_centre[1]
 
-    smargon.omega.user_readback.sim_put(angle)  # type: ignore
+    mock_smargon.omega.user_readback.sim_put(angle)  # type: ignore
 
     RE = RunEngine(call_returns_result=True)
     pos = RE(
         get_move_required_so_that_beam_is_at_pixel(
-            smargon, pixel_to_move_to, oav.parameters
+            mock_smargon, pixel_to_move_to, oav.parameters
         )
     ).plan_result
 

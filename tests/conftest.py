@@ -41,7 +41,11 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
-from dodal.testing_utils import patch_ophyd_async_motor, patch_ophyd_motor
+from dodal.testing_utils import (  # noqa
+    mock_smargon,
+    patch_ophyd_async_motor,
+    patch_ophyd_motor,
+)
 from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
 from ophyd_async.core import set_mock_value
@@ -216,32 +220,6 @@ def eiger():
     eiger.stage = MagicMock(return_value=NullStatus())
     eiger.unstage = MagicMock(return_value=NullStatus())
     return eiger
-
-
-@pytest.fixture
-def smargon() -> Generator[Smargon, None, None]:
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
-    smargon.x.user_setpoint._use_limits = False
-    smargon.y.user_setpoint._use_limits = False
-    smargon.z.user_setpoint._use_limits = False
-    smargon.omega.user_setpoint._use_limits = False
-    smargon.omega.velocity._use_limits = False
-
-    # Initial positions, needed for stub_offsets
-    smargon.stub_offsets.center_at_current_position.disp.sim_put(0)  # type: ignore
-    smargon.x.user_readback.sim_put(0.0)  # type: ignore
-    smargon.y.user_readback.sim_put(0.0)  # type: ignore
-    smargon.z.user_readback.sim_put(0.0)  # type: ignore
-
-    with (
-        patch_ophyd_motor(smargon.omega),
-        patch_ophyd_motor(smargon.x),
-        patch_ophyd_motor(smargon.y),
-        patch_ophyd_motor(smargon.z),
-        patch_ophyd_motor(smargon.chi),
-        patch_ophyd_motor(smargon.phi),
-    ):
-        yield smargon
 
 
 @pytest.fixture
@@ -472,31 +450,27 @@ def test_full_grid_scan_params():
 @pytest.fixture()
 def fake_create_devices(
     eiger: EigerDetector,
-    smargon: Smargon,
+    mock_smargon: Smargon,
     zebra: Zebra,
     detector_motion: DetectorMotion,
     aperture_scatterguard: ApertureScatterguard,
 ):
-    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
-
-    smargon.omega.velocity.set = mock_omega_sets
-    smargon.omega.set = mock_omega_sets
-
-    devices = {
+    mock_smargon.omega.velocity.set = MagicMock(return_value=NullStatus())
+    mock_smargon.omega.set = MagicMock(return_value=NullStatus())
+    return {
         "eiger": eiger,
-        "smargon": smargon,
+        "smargon": mock_smargon,
         "zebra": zebra,
         "detector_motion": detector_motion,
         "backlight": i03.backlight(fake_with_ophyd_sim=True),
         "ap_sg": aperture_scatterguard,
     }
-    return devices
 
 
 @pytest.fixture()
 def fake_create_rotation_devices(
     eiger: EigerDetector,
-    smargon: Smargon,
+    mock_smargon: Smargon,
     zebra: Zebra,
     detector_motion: DetectorMotion,
     backlight: Backlight,
@@ -509,13 +483,9 @@ def fake_create_rotation_devices(
     dcm: DCM,
     robot: BartRobot,
 ):
-    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
-    mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
-
-    smargon.omega.velocity.set = mock_omega_velocity_sets
-    smargon.omega.set = mock_omega_sets
-
-    smargon.omega.max_velocity.sim_put(131)  # type: ignore
+    mock_smargon.omega.velocity.set = MagicMock(return_value=NullStatus())
+    mock_smargon.omega.set = MagicMock(return_value=NullStatus())
+    mock_smargon.omega.max_velocity.sim_put(131)  # type: ignore
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -524,7 +494,7 @@ def fake_create_rotation_devices(
         detector_motion=detector_motion,
         eiger=eiger,
         flux=flux,
-        smargon=smargon,
+        smargon=mock_smargon,
         undulator=undulator,
         aperture_scatterguard=aperture_scatterguard,
         synchrotron=synchrotron,
@@ -553,7 +523,7 @@ def mock_gridscan_kickoff_complete(gridscan):
 
 @pytest.fixture
 def fake_fgs_composite(
-    smargon: Smargon,
+    mock_smargon: Smargon,
     test_fgs_params: ThreeDGridScan,
     RE: RunEngine,
     attenuator,
@@ -573,7 +543,7 @@ def fake_fgs_composite(
         fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),
         flux=i03.flux(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
-        smargon=smargon,
+        smargon=mock_smargon,
         undulator=i03.undulator(fake_with_ophyd_sim=True),
         synchrotron=synchrotron,
         xbpm_feedback=xbpm_feedback,

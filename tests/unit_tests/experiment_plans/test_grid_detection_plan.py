@@ -32,7 +32,7 @@ from .conftest import assert_event
 
 
 @pytest.fixture
-def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
+def fake_devices(RE, mock_smargon: Smargon, backlight: Backlight, test_config_files):
     params = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
@@ -73,7 +73,7 @@ def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
         composite = OavGridDetectionComposite(
             backlight=backlight,
             oav=oav,
-            smargon=smargon,
+            smargon=mock_smargon,
             pin_tip_detection=pin_tip_detection,
         )
 

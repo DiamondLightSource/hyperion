@@ -158,10 +158,12 @@ def fake_read(obj, initial_positions, _):
 
 
 @pytest.fixture
-def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_files, dcm):
+def simple_beamline(
+    detector_motion, oav, mock_smargon, synchrotron, test_config_files, dcm
+):
     magic_mock = MagicMock(autospec=True)
     magic_mock.oav = oav
-    magic_mock.smargon = smargon
+    magic_mock.smargon = mock_smargon
     magic_mock.detector_motion = detector_motion
     magic_mock.zocalo = make_fake_device(ZocaloResults)()
     magic_mock.dcm = dcm
