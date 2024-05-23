@@ -44,6 +44,9 @@ from hyperion.device_setup_plans.setup_zebra import (
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
+from hyperion.utils.aperturescatterguard import (
+    load_default_aperture_scatterguard_positions_if_unset,
+)
 from hyperion.utils.context import device_composite_from_context
 
 
@@ -64,6 +67,12 @@ class RotationScanComposite:
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     zebra: Zebra
+
+    def __post_init__(self):
+        """Ensure that aperture positions are loaded whenever this class is created."""
+        load_default_aperture_scatterguard_positions_if_unset(
+            self.aperture_scatterguard
+        )
 
 
 def create_devices(context: BlueskyContext) -> RotationScanComposite:
@@ -274,8 +283,12 @@ def rotation_scan(
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationScan,
     ):
+        assert composite.aperture_scatterguard.aperture_positions is not None
         yield from move_aperture(
-            composite.aperture_scatterguard, params.selected_aperture
+            composite.aperture_scatterguard,
+            composite.aperture_scatterguard.aperture_positions.get_position_from_gda_aperture_name(
+                params.selected_aperture
+            ),
         )
         motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
         max_vel = (

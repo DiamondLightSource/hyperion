@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 import numpy as np
+from dodal.devices.aperturescatterguard import AperturePositionGDANames
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_dist_to_beam_converter import (
     DetectorDistanceToBeamXYConverter,
@@ -44,6 +45,7 @@ class RotationScan(
         default=IspybExperimentType.ROTATION
     )
     transmission_frac: float
+    selected_aperture: AperturePositionGDANames
     ispyb_extras: TemporaryIspybExtras
 
     @property

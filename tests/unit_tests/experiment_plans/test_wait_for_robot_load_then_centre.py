@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
@@ -287,7 +286,9 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     assert smargon.omega.user_readback.get() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)  # type: ignore
+    aperture_scatterguard.set.assert_called_once_with(
+        aperture_scatterguard.aperture_positions.ROBOT_LOAD
+    )  # type: ignore
 
 
 @patch(

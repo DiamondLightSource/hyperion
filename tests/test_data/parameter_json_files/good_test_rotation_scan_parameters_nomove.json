@@ -20,6 +20,7 @@
     "visit": "cm31105-4",
     "zocalo_environment": "dev_artemis",
     "transmission_frac": 0.1,
+    "selected_aperture": "LARGE_APERTURE",
     "ispyb_extras": {
         "position": [
             10.0,
