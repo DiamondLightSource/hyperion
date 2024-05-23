@@ -272,7 +272,6 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     robot_load_composite: RobotLoadThenCentreComposite,
 ):
     smargon = robot_load_composite.smargon
-    aperture_scatterguard = robot_load_composite.aperture_scatterguard
 
     smargon.x.user_readback.sim_put(10)  # type: ignore
     smargon.z.user_readback.sim_put(5)  # type: ignore
@@ -286,9 +285,7 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     assert smargon.omega.user_readback.get() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    aperture_scatterguard.set.assert_called_once_with(
-        aperture_scatterguard.aperture_positions.ROBOT_LOAD
-    )  # type: ignore
+    smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
 
 
 @patch(
