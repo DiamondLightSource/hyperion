@@ -330,6 +330,10 @@ def run_gridscan_and_move(
             fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
         )
 
+    # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
+    LOGGER.info("Turning off Eiger dev/shm streaming")
+    yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)
+
     # Wait on everything before returning to GDA (particularly apertures), can be removed
     # when we do not return to GDA here
     yield from bps.wait()

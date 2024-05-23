@@ -19,11 +19,6 @@
     "visit": "cm31105-4",
     "demand_energy_ev": 12700,
     "ispyb_extras": {
-        "position": [
-            10.0,
-            20.0,
-            30.0
-        ],
         "xtal_snapshots_omega_start": [
             "test_1_y",
             "test_2_y",

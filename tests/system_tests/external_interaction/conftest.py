@@ -94,6 +94,8 @@ def get_current_position_attribute(
     with Session() as session:
         query = session.query(Position).filter(Position.positionId == position_id)
         first_result = query.first()
+        if first_result is None:
+            return None
         return getattr(first_result, attr)
 
 

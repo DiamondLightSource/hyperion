@@ -175,26 +175,7 @@ class TestXrayCentreISPyBCallback:
                 "resolution": 1.1830593328548429,
             },
         )
-        assert_upsert_call_with(
-            mx_acq.update_dc_position.mock_calls[0],
-            mx_acq.get_dc_position_params(),
-            {
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "pos_x": 0,
-                "pos_y": 0,
-                "pos_z": 0,
-            },
-        )
-        assert_upsert_call_with(
-            mx_acq.update_dc_position.mock_calls[1],
-            mx_acq.get_dc_position_params(),
-            {
-                "id": TEST_DATA_COLLECTION_IDS[1],
-                "pos_x": 0,
-                "pos_y": 0,
-                "pos_z": 0,
-            },
-        )
+        mx_acq.update_dc_position.assert_not_called()
         mx_acq.upsert_dc_grid.assert_not_called()
 
     def test_activity_gated_event_oav_snapshot_triggered(self, mock_ispyb_conn):

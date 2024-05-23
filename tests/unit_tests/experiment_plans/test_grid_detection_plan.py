@@ -80,7 +80,10 @@ def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
         yield composite, mock_image
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_grid_detection_plan_runs_and_triggers_snapshots(
     RE: RunEngine,
@@ -104,7 +107,10 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     assert image.save.call_count == 6
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @pytest.mark.asyncio
 async def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
@@ -138,7 +144,10 @@ async def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     assert "No pin found" in excinfo.value.args[0]
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices,
@@ -182,7 +191,10 @@ def test_given_when_grid_detect_then_start_position_as_expected(
     assert gridscan_params["z_start_um"] == pytest.approx(-0.0001)
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @patch(
     "hyperion.experiment_plans.oav_grid_detection_plan.pre_centring_setup_oav",
@@ -212,7 +224,10 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
         RE(decorated())
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
     fake_devices, RE: RunEngine, test_config_files, test_fgs_params
@@ -272,7 +287,10 @@ def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
         )
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_values(
     fake_devices, RE: RunEngine, test_config_files, test_fgs_params
@@ -318,7 +336,10 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     "odd",
     [(True), (False)],
 )
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @patch("hyperion.experiment_plans.oav_grid_detection_plan.LOGGER")
 def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(

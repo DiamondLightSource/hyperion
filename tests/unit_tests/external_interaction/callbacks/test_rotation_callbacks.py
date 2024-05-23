@@ -12,7 +12,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from event_model import RunStart
 from ophyd.sim import make_fake_device
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import DeviceCollector, set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -85,7 +85,8 @@ def fake_rotation_scan(
     after_open_do: Callable | None = None,
     after_main_do: Callable | None = None,
 ):
-    attenuator = make_fake_device(Attenuator)(name="attenuator")
+    with DeviceCollector(mock=True):
+        attenuator = Attenuator("", "attenuator")
     flux = make_fake_device(Flux)(name="flux")
     eiger = make_fake_device(EigerDetector)(name="eiger")
     dcm = i03.dcm(fake_with_ophyd_sim=True)

@@ -179,7 +179,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         hwscan_data_collection_info = DataCollectionInfo(
             flux=doc["data"]["flux_flux_reading"]
         )
-        if transmission := doc["data"]["attenuator_actual_transmission"]:
+        if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
         event_energy = doc["data"]["dcm-energy_in_kev"]

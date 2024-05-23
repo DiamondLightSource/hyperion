@@ -29,7 +29,6 @@ from hyperion.experiment_plans.rotation_scan_plan import (
 )
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
-    populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
@@ -397,9 +396,6 @@ def scan_xy_data_info_for_update(
             scan_data_info_for_update.data_collection_grid_info,
         )
     )
-    scan_data_info_for_update.data_collection_position_info = (
-        populate_data_collection_position_info(dummy_params.ispyb_params)
-    )
     return scan_data_info_for_update
 
 
@@ -436,9 +432,6 @@ def scan_data_infos_for_update_3d(
     scan_xz_data_info_for_update = ScanDataInfo(
         data_collection_info=xz_data_collection_info,
         data_collection_grid_info=(data_collection_grid_info),
-        data_collection_position_info=(
-            populate_data_collection_position_info(dummy_params.ispyb_params)
-        ),
     )
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
 
@@ -675,10 +668,7 @@ def test_ispyb_deposition_in_gridscan(
     position_id = fetch_datacollection_attribute(
         ispyb_ids.data_collection_ids[0], DATA_COLLECTION_COLUMN_MAP["positionid"]
     )
-    expected_values = {"posX": 10.0, "posY": 20.0, "posZ": 30.0}
-    compare_actual_and_expected(
-        position_id, expected_values, fetch_datacollection_position_attribute
-    )
+    assert position_id is None
     DC_EXPECTED_VALUES.update(
         {
             "axisstart": 90.0,
@@ -705,10 +695,7 @@ def test_ispyb_deposition_in_gridscan(
     position_id = fetch_datacollection_attribute(
         ispyb_ids.data_collection_ids[1], DATA_COLLECTION_COLUMN_MAP["positionid"]
     )
-    expected_values = {"posX": 10.0, "posY": 20.0, "posZ": 30.0}
-    compare_actual_and_expected(
-        position_id, expected_values, fetch_datacollection_position_attribute
-    )
+    assert position_id is None
     GRIDINFO_EXPECTED_VALUES.update(
         {
             "gridInfoId": ispyb_ids.grid_ids[1],
@@ -765,6 +752,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_comment: Callable[..., Any],
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_position_attribute: Callable[..., Any],
     undulator: Undulator,
     attenuator: Attenuator,
     synchrotron: Synchrotron,
@@ -853,3 +841,11 @@ def test_ispyb_deposition_in_rotation_plan(
     }
 
     compare_actual_and_expected(dcid, EXPECTED_VALUES, fetch_datacollection_attribute)
+
+    position_id = fetch_datacollection_attribute(
+        dcid, DATA_COLLECTION_COLUMN_MAP["positionid"]
+    )
+    expected_values = {"posX": 10.0, "posY": 20.0, "posZ": 30.0}
+    compare_actual_and_expected(
+        position_id, expected_values, fetch_datacollection_position_attribute
+    )

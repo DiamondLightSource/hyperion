@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.beamlines.beamline_parameters import (
+from dodal.common.beamlines.beamline_parameters import (
     BEAMLINE_PARAMETER_PATHS,
     GDABeamlineParameters,
 )
