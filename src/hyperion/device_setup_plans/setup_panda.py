@@ -4,7 +4,7 @@ from pathlib import Path
 
 import bluesky.plan_stubs as bps
 from blueapi.core import MsgGenerator
-from dodal.beamlines.beamline_utils import get_directory_provider
+from dodal.common.beamlines.beamline_utils import get_directory_provider
 from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
 from ophyd_async.core import load_device
 from ophyd_async.panda import (

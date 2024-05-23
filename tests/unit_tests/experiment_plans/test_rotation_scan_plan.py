@@ -150,7 +150,10 @@ def test_rotation_scan_calculations(test_rotation_params: RotationScan):
     assert motion_values.distance_to_move_deg == -180.3075
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan", autospec=True)
 def test_rotation_scan(
     plan: MagicMock,
