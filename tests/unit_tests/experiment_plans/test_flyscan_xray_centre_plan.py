@@ -19,7 +19,7 @@ from dodal.devices.detector.det_dim_constants import (
 from dodal.devices.fast_grid_scan import FastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
-from ophyd.sim import make_fake_device
+from ophyd.sim import NullStatus, make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 
@@ -490,13 +490,12 @@ class TestFlyscanXrayCentrePlan:
         RE,
         test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        done_status,
     ):
-        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=NullStatus())
         clear_device("fast_grid_scan")
         fgs = i03.fast_grid_scan(fake_with_ophyd_sim=True)
         fgs.KICKOFF_TIMEOUT = 0.1
-        fgs.complete = MagicMock(return_value=done_status)
+        fgs.complete = MagicMock(return_value=NullStatus())
         fgs.motion_program.running.sim_put(1)  # type: ignore
         with pytest.raises(FailedStatus):
             RE(
@@ -572,10 +571,9 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        done_status,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
-        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=NullStatus())
         initial_x_y_z = np.array(
             [
                 random.uniform(-0.5, 0.5),
@@ -638,11 +636,10 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: ThreeDGridScan,
         RE_with_subs: ReWithSubs,
-        done_status,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
-            return_value=done_status
+            return_value=NullStatus()
         )
         test_fgs_params.FGS_params.set_stub_offsets = False
 
@@ -773,9 +770,8 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params: ThreeDGridScan,
         RE: RunEngine,
-        done_status,
     ):
-        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=NullStatus())
         RE(run_gridscan(fake_fgs_composite, test_fgs_params))
         fake_fgs_composite.eiger.stage.assert_called_once()
         fake_fgs_composite.eiger.unstage.assert_called_once()

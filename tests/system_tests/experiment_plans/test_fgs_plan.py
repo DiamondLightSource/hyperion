@@ -14,6 +14,7 @@ from dodal.common.beamlines.beamline_parameters import (
 )
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.smargon import Smargon
+from ophyd.sim import NullStatus
 from ophyd.status import Status
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -301,10 +302,9 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     zocalo_env: None,
     params: ThreeDGridScan,
     callbacks,
-    done_status,
 ):
-    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
-    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
+    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=NullStatus())
+    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=NullStatus())
 
     params.storage_directory = "./tmp"
     params.file_name = str(uuid.uuid1())
@@ -318,7 +318,7 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
 
     def zocalo_trigger():
         fxc_composite.zocalo._raw_results_received.put({"results": []})
-        return done_status
+        return NullStatus()
 
     # [RE.subscribe(cb) for cb in callbacks]
     fxc_composite.zocalo.trigger = MagicMock(side_effect=zocalo_trigger)
@@ -338,10 +338,9 @@ def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     zocalo_env: None,
     params: ThreeDGridScan,
     callbacks,
-    done_status,
 ):
-    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
-    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
+    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=NullStatus())
+    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=NullStatus())
 
     params.storage_directory = "./tmp"
     params.file_name = str(uuid.uuid1())

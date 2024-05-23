@@ -14,6 +14,7 @@ from dodal.devices.zebra import (
     I03Axes,
     Zebra,
 )
+from ophyd.sim import NullStatus
 
 from hyperion.device_setup_plans.setup_zebra import (
     bluesky_retry,
@@ -51,21 +52,21 @@ class MyException(Exception):
     pass
 
 
-def test_when_first_try_fails_then_bluesky_retry_tries_again(RE, done_status):
+def test_when_first_try_fails_then_bluesky_retry_tries_again(RE):
     mock_device = MagicMock()
 
     @bluesky_retry
     def my_plan(value):
         yield from bps.abs_set(mock_device, value)
 
-    mock_device.set.side_effect = [MyException(), done_status]
+    mock_device.set.side_effect = [MyException(), NullStatus()]
 
     RE(my_plan(10))
 
     assert mock_device.set.mock_calls == [call(10), call(10)]
 
 
-def test_when_all_tries_fail_then_bluesky_retry_throws_error(RE, done_status):
+def test_when_all_tries_fail_then_bluesky_retry_throws_error(RE):
     mock_device = MagicMock()
 
     @bluesky_retry

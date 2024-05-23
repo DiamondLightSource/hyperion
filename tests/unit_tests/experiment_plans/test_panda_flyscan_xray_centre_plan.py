@@ -15,7 +15,7 @@ from dodal.devices.detector.det_dim_constants import (
 )
 from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
-from ophyd.sim import make_fake_device
+from ophyd.sim import NullStatus, make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 
@@ -534,10 +534,9 @@ class TestFlyscanXrayCentrePlan:
         ],
         test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
-        done_status,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
-        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=NullStatus())
         initial_x_y_z = np.array(
             [
                 random.uniform(-0.5, 0.5),
@@ -619,11 +618,10 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: ThreeDGridScan,
         RE: RunEngine,
-        done_status,
     ):
         _, ispyb_cb = mock_subscriptions
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
-            return_value=done_status
+            return_value=NullStatus()
         )
         test_panda_fgs_params.set_stub_offsets = False
 
@@ -776,9 +774,8 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: ThreeDGridScan,
         RE: RunEngine,
-        done_status,
     ):
-        fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
+        fake_fgs_composite.eiger.unstage = MagicMock(return_value=NullStatus())
 
         RE(run_gridscan(fake_fgs_composite, test_panda_fgs_params))
         fake_fgs_composite.eiger.stage.assert_called_once()

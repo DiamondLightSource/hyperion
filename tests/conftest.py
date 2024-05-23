@@ -41,12 +41,11 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
-from ophyd.epics_motor import EpicsMotor
+from dodal.testing_utils import patch_ophyd_async_motor, patch_ophyd_motor
 from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
-from ophyd_async.core import callback_on_mock_put, set_mock_value
+from ophyd_async.core import set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
-from ophyd_async.epics.motion.motor import Motor
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -69,17 +68,6 @@ from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.parameters.rotation import RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
-
-
-def raw_params_from_file(filename):
-    with open(filename) as f:
-        return json.loads(f.read())
-
-
-def default_raw_params():
-    return raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
-    )
 
 
 def create_dummy_scan_spec(x_steps, y_steps, z_steps):
@@ -169,37 +157,20 @@ def RE():
     del RE
 
 
-def mock_set(motor: EpicsMotor, val):
-    motor.user_setpoint.sim_put(val)  # type: ignore
-    motor.user_readback.sim_put(val)  # type: ignore
-    return Status(done=True, success=True)
-
-
-def patch_motor(motor: EpicsMotor):
-    return patch.object(motor, "set", MagicMock(side_effect=partial(mock_set, motor)))
-
-
 async def mock_good_coroutine():
     return asyncio.sleep(0)
 
 
-def pass_on_mock(motor, call_log: MagicMock | None = None):
-    def _pass_on_mock(value, **kwargs):
-        set_mock_value(motor.user_readback, value)
-        if call_log is not None:
-            call_log(value, **kwargs)
-
-    return _pass_on_mock
+def raw_params_from_file(filename):
+    with open(filename) as f:
+        return json.loads(f.read())
 
 
-def patch_async_motor(
-    motor: Motor, initial_position=0, call_log: MagicMock | None = None
-):
-    set_mock_value(motor.user_setpoint, initial_position)
-    set_mock_value(motor.user_readback, initial_position)
-    set_mock_value(motor.deadband, 0.001)
-    set_mock_value(motor.motor_done_move, 1)
-    return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
+PARAM_DIR = "tests/test_data/parameter_json_files/"
+
+
+def default_raw_params():
+    return raw_params_from_file(f"{PARAM_DIR}test_gridscan_param_defaults.json")
 
 
 @pytest.fixture
@@ -212,9 +183,7 @@ def beamline_parameters():
 @pytest.fixture
 def test_fgs_params():
     return ThreeDGridScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json"
-        )
+        **raw_params_from_file(f"{PARAM_DIR}good_test_parameters.json")
     )
 
 
@@ -227,33 +196,25 @@ def test_panda_fgs_params(test_fgs_params: ThreeDGridScan):
 @pytest.fixture
 def test_rotation_params():
     return RotationScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
-        )
+        **raw_params_from_file(f"{PARAM_DIR}good_test_rotation_scan_parameters.json")
     )
 
 
 @pytest.fixture
-def test_rotation_params_nomove():
-    return RotationScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
-        )
-    )
+def test_rotation_params_nomove(test_rotation_params: RotationScan):
+    test_rotation_params.x_start_um = None
+    test_rotation_params.y_start_um = None
+    test_rotation_params.z_start_um = None
+    test_rotation_params.phi_start_deg = None
+    test_rotation_params.chi_start_deg = None
+    return test_rotation_params
 
 
 @pytest.fixture
-def done_status():
-    s = Status()
-    s.set_finished()
-    return s
-
-
-@pytest.fixture
-def eiger(done_status):
+def eiger():
     eiger = i03.eiger(fake_with_ophyd_sim=True)
-    eiger.stage = MagicMock(return_value=done_status)
-    eiger.unstage = MagicMock(return_value=done_status)
+    eiger.stage = MagicMock(return_value=NullStatus())
+    eiger.unstage = MagicMock(return_value=NullStatus())
     return eiger
 
 
@@ -273,12 +234,12 @@ def smargon() -> Generator[Smargon, None, None]:
     smargon.z.user_readback.sim_put(0.0)  # type: ignore
 
     with (
-        patch_motor(smargon.omega),
-        patch_motor(smargon.x),
-        patch_motor(smargon.y),
-        patch_motor(smargon.z),
-        patch_motor(smargon.chi),
-        patch_motor(smargon.phi),
+        patch_ophyd_motor(smargon.omega),
+        patch_ophyd_motor(smargon.x),
+        patch_ophyd_motor(smargon.y),
+        patch_ophyd_motor(smargon.z),
+        patch_ophyd_motor(smargon.chi),
+        patch_ophyd_motor(smargon.phi),
     ):
         yield smargon
 
@@ -311,7 +272,7 @@ def detector_motion():
     det = i03.detector_motion(fake_with_ophyd_sim=True)
     det.z.user_setpoint._use_limits = False
 
-    with patch_motor(det.z):
+    with patch_ophyd_motor(det.z):
         yield det
 
 
@@ -362,11 +323,11 @@ def ophyd_pin_tip_detection():
 
 
 @pytest.fixture
-def robot(done_status):
+def robot():
     RunEngine()  # A RE is needed to start the bluesky loop
     robot = i03.robot(fake_with_ophyd_sim=True)
     set_mock_value(robot.barcode, "BARCODE")
-    robot.set = MagicMock(return_value=done_status)
+    robot.set = MagicMock(return_value=NullStatus())
     return robot
 
 
@@ -385,9 +346,9 @@ def attenuator(RE):
 
 
 @pytest.fixture
-def xbpm_feedback(done_status):
+def xbpm_feedback():
     xbpm = i03.xbpm_feedback(fake_with_ophyd_sim=True)
-    xbpm.trigger = MagicMock(return_value=done_status)  # type: ignore
+    xbpm.trigger = MagicMock(return_value=NullStatus())  # type: ignore
     yield xbpm
     beamline_utils.clear_devices()
 
@@ -480,11 +441,11 @@ def aperture_scatterguard(RE):
         ),
     )
     with (
-        patch_async_motor(ap_sg.aperture.x),
-        patch_async_motor(ap_sg.aperture.y),
-        patch_async_motor(ap_sg.aperture.z, 2),
-        patch_async_motor(ap_sg.scatterguard.x),
-        patch_async_motor(ap_sg.scatterguard.y),
+        patch_ophyd_async_motor(ap_sg.aperture.x),
+        patch_ophyd_async_motor(ap_sg.aperture.y),
+        patch_ophyd_async_motor(ap_sg.aperture.z, 2),
+        patch_ophyd_async_motor(ap_sg.scatterguard.x),
+        patch_ophyd_async_motor(ap_sg.scatterguard.y),
     ):
         RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))  # type:
         set_mock_value(ap_sg.aperture.small, 1)
@@ -547,7 +508,6 @@ def fake_create_rotation_devices(
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
     robot: BartRobot,
-    done_status,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
     mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
@@ -575,10 +535,10 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
-def zocalo(done_status):
+def zocalo():
     zoc = i03.zocalo(fake_with_ophyd_sim=True)
-    zoc.stage = MagicMock(return_value=done_status)
-    zoc.unstage = MagicMock(return_value=done_status)
+    zoc.stage = MagicMock(return_value=NullStatus())
+    zoc.unstage = MagicMock(return_value=NullStatus())
     return zoc
 
 
@@ -596,7 +556,6 @@ def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: ThreeDGridScan,
     RE: RunEngine,
-    done_status,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -625,7 +584,7 @@ def fake_fgs_composite(
         robot=i03.robot(fake_with_ophyd_sim=True),
     )
 
-    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.stage = MagicMock(return_value=NullStatus())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore

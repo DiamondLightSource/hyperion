@@ -18,6 +18,7 @@ from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from dodal.devices.zocalo import ZocaloResults
 from genericpath import isfile
+from ophyd.sim import NullStatus
 from zmq.utils.monitor import recv_monitor_message
 
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -142,7 +143,6 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     zocalo_env,
     test_fgs_params: ThreeDGridScan,
     fake_fgs_composite: FlyScanXRayCentreComposite,
-    done_status,
     zocalo_device: ZocaloResults,
     fetch_comment,
 ):
@@ -156,8 +156,8 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint.sim_put(  # type: ignore
         2
     )
-    fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
-    fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore
+    fake_fgs_composite.eiger.unstage = MagicMock(return_value=NullStatus())  # type: ignore
+    fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())  # type: ignore
     fake_fgs_composite.zocalo = zocalo_device
 
     doc_catcher = DocumentCatcher()
