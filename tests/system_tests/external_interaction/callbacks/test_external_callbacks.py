@@ -5,6 +5,7 @@ import re
 import signal
 import subprocess
 import threading
+from genericpath import isfile
 from time import sleep
 from unittest.mock import MagicMock, patch
 
@@ -17,7 +18,6 @@ from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from dodal.devices.zocalo import ZocaloResults
-from genericpath import isfile
 from zmq.utils.monitor import recv_monitor_message
 
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (

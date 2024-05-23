@@ -6,6 +6,7 @@ from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
@@ -50,7 +51,7 @@ def run_full_rotation_plan(
     RE: RunEngine,
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
-):
+) -> RotationScanComposite:
     with patch(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
@@ -210,6 +211,20 @@ def test_full_rotation_plan_smargon_settings(
         call(rotation_speed),
         call(test_max_velocity),
     ]
+
+
+async def test_rotation_plan_moves_aperture_correctly(
+    run_full_rotation_plan: RotationScanComposite,
+    test_rotation_params,
+) -> None:
+    aperture_scatterguard: ApertureScatterguard = (
+        run_full_rotation_plan.aperture_scatterguard
+    )
+    assert aperture_scatterguard.aperture_positions
+    assert (
+        await aperture_scatterguard._get_current_aperture_position()
+        == aperture_scatterguard.aperture_positions.SMALL
+    )
 
 
 def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
