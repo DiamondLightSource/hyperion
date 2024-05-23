@@ -42,7 +42,7 @@ BASIC_PRE_SETUP_DOC = {
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
-    "aperture_scatterguard-selected_aperture": {
+    "test_ap_sg-selected_aperture": {
         "name": "Robot_load",
         "GDA_name": "ROBOT_LOAD",
         "radius_microns": None,

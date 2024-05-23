@@ -194,7 +194,7 @@ class TestData:
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator-current_gap": 1.234,
-            "aperture_scatterguard-selected_aperture": {
+            "test_ap_sg-selected_aperture": {
                 "name": "Medium",
                 "GDA_name": "MEDIUM",
                 "radius_microns": 50,

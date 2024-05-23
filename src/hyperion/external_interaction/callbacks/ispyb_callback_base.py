@@ -110,7 +110,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             SynchrotronMode,
         )
         aperture_size = SingleAperturePosition(
-            **doc["data"]["aperture_scatterguard-selected_aperture"]
+            **doc["data"]["test_ap_sg-selected_aperture"]
         )
         beamsize = beam_size_from_aperture(aperture_size)
         hwscan_data_collection_info = DataCollectionInfo(

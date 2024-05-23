@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
+from dodal.devices.aperturescatterguard import ApertureFiveDimensionalLocation
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -121,7 +122,7 @@ class TestFlyscanXrayCentrePlan:
         plan = run_gridscan(MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
 
-    def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
+    async def test_read_hardware_for_ispyb_updates_from_ophyd_devices(
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: ThreeDGridScan,
@@ -140,6 +141,10 @@ class TestFlyscanXrayCentrePlan:
         transmission_test_value = 0.01
         set_mock_value(
             fake_fgs_composite.attenuator.actual_transmission, transmission_test_value
+        )
+        set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.small, True)
+        fake_fgs_composite.aperture_scatterguard.aperture_positions.SMALL.location = (
+            ApertureFiveDimensionalLocation(10, 11, 2, 13, 14)
         )
         ap_sg_test_value = {
             "name": "Small",
@@ -190,7 +195,7 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
-                    'aperture_scatterguard-selected_aperture': ap_sg_test_value,
+                    'test_ap_sg-selected_aperture': ap_sg_test_value,
                 },
             )
             assert_event(

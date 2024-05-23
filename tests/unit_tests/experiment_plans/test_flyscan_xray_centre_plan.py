@@ -11,6 +11,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
 from dodal.common.beamlines.beamline_utils import clear_device
+from dodal.devices.aperturescatterguard import ApertureFiveDimensionalLocation
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
@@ -199,6 +200,10 @@ class TestFlyscanXrayCentrePlan:
 
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
+        set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.small, True)
+        fake_fgs_composite.aperture_scatterguard.aperture_positions.SMALL.location = (
+            ApertureFiveDimensionalLocation(10, 11, 2, 13, 14)
+        )
         ap_sg_test_value = {
             "name": "Small",
             "GDA_name": "SMALL_APERTURE",
@@ -254,7 +259,7 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
-                    'aperture_scatterguard-selected_aperture': ap_sg_test_value
+                    'test_ap_sg-selected_aperture': ap_sg_test_value
                 },
             )
             assert_event(

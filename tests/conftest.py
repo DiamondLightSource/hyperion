@@ -8,7 +8,6 @@ from functools import partial
 from typing import Any, Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
-import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
@@ -18,11 +17,7 @@ from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
 from dodal.devices.aperturescatterguard import (
-    ApertureFiveDimensionalLocation,
-    AperturePositions,
     ApertureScatterguard,
-    ApertureScatterguardTolerances,
-    SingleAperturePosition,
 )
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -42,6 +37,8 @@ from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from dodal.testing_utils import (  # noqa
+    mock_aperturescatterguard,
+    mock_aperturescatterguard_with_call_log,
     mock_smargon,
     patch_ophyd_async_motor,
     patch_ophyd_motor,
@@ -382,54 +379,6 @@ def webcam(RE) -> Generator[Webcam, Any, Any]:
         yield webcam
 
 
-@pytest.fixture
-def aperture_scatterguard(RE):
-    AperturePositions.LARGE = SingleAperturePosition(
-        location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
-        name="Large",
-        GDA_name="LARGE_APERTURE",
-        radius_microns=100,
-    )
-    AperturePositions.MEDIUM = SingleAperturePosition(
-        location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
-        name="Medium",
-        GDA_name="MEDIUM_APERTURE",
-        radius_microns=50,
-    )
-    AperturePositions.SMALL = SingleAperturePosition(
-        location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
-        name="Small",
-        GDA_name="SMALL_APERTURE",
-        radius_microns=20,
-    )
-    AperturePositions.ROBOT_LOAD = SingleAperturePosition(
-        location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
-        name="Robot_load",
-        GDA_name="ROBOT_LOAD",
-        radius_microns=None,
-    )
-    ap_sg = i03.aperture_scatterguard(
-        fake_with_ophyd_sim=True,
-        aperture_positions=AperturePositions(
-            AperturePositions.LARGE,
-            AperturePositions.MEDIUM,
-            AperturePositions.SMALL,
-            AperturePositions.ROBOT_LOAD,
-            tolerances=ApertureScatterguardTolerances(0.1, 0.1, 0.1, 0.1, 0.1),
-        ),
-    )
-    with (
-        patch_ophyd_async_motor(ap_sg.aperture.x),
-        patch_ophyd_async_motor(ap_sg.aperture.y),
-        patch_ophyd_async_motor(ap_sg.aperture.z, 2),
-        patch_ophyd_async_motor(ap_sg.scatterguard.x),
-        patch_ophyd_async_motor(ap_sg.scatterguard.y),
-    ):
-        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))  # type:
-        set_mock_value(ap_sg.aperture.small, 1)
-        yield ap_sg
-
-
 @pytest.fixture()
 def test_config_files():
     return {
@@ -453,7 +402,7 @@ def fake_create_devices(
     mock_smargon: Smargon,
     zebra: Zebra,
     detector_motion: DetectorMotion,
-    aperture_scatterguard: ApertureScatterguard,
+    mock_aperturescatterguard: ApertureScatterguard,
 ):
     mock_smargon.omega.velocity.set = MagicMock(return_value=NullStatus())
     mock_smargon.omega.set = MagicMock(return_value=NullStatus())
@@ -463,7 +412,7 @@ def fake_create_devices(
         "zebra": zebra,
         "detector_motion": detector_motion,
         "backlight": i03.backlight(fake_with_ophyd_sim=True),
-        "ap_sg": aperture_scatterguard,
+        "ap_sg": mock_aperturescatterguard,
     }
 
 
@@ -477,7 +426,7 @@ def fake_create_rotation_devices(
     attenuator: Attenuator,
     flux: Flux,
     undulator: Undulator,
-    aperture_scatterguard: ApertureScatterguard,
+    mock_aperturescatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
@@ -496,7 +445,7 @@ def fake_create_rotation_devices(
         flux=flux,
         smargon=mock_smargon,
         undulator=undulator,
-        aperture_scatterguard=aperture_scatterguard,
+        aperture_scatterguard=mock_aperturescatterguard,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
@@ -529,12 +478,12 @@ def fake_fgs_composite(
     attenuator,
     xbpm_feedback,
     synchrotron,
-    aperture_scatterguard,
+    mock_aperturescatterguard,
     zocalo,
     dcm,
 ):
     fake_composite = FlyScanXRayCentreComposite(
-        aperture_scatterguard=aperture_scatterguard,
+        aperture_scatterguard=mock_aperturescatterguard,
         attenuator=attenuator,
         backlight=i03.backlight(fake_with_ophyd_sim=True),
         dcm=dcm,

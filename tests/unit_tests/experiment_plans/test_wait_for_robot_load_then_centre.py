@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon, StubPosition
@@ -28,14 +27,14 @@ from ...conftest import raw_params_from_file
 
 @pytest.fixture
 def robot_load_composite(
-    mock_smargon, dcm, robot, aperture_scatterguard, oav, webcam
+    mock_smargon, dcm, robot, mock_aperturescatterguard, oav, webcam
 ) -> RobotLoadThenCentreComposite:
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = mock_smargon
     composite.dcm = dcm
     set_mock_value(composite.dcm.energy_in_kev.user_readback, 11.105)
     composite.robot = robot
-    composite.aperture_scatterguard = aperture_scatterguard
+    composite.aperture_scatterguard = mock_aperturescatterguard
     composite.smargon.stub_offsets.set = MagicMock(return_value=NullStatus())
     composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
     composite.oav = oav
@@ -287,7 +286,9 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     assert smargon.omega.user_readback.get() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)  # type: ignore
+    aperture_scatterguard.set.assert_called_once_with(
+        aperture_scatterguard.aperture_positions.ROBOT_LOAD  # type: ignore
+    )
 
 
 @patch(

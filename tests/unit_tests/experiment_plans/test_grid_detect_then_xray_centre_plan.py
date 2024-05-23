@@ -51,9 +51,9 @@ def fake_grid_detection(mock_smargon):
 
 
 @pytest.fixture
-def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
+def grid_detect_devices(mock_aperturescatterguard, backlight, detector_motion):
     return GridDetectThenXRayCentreComposite(
-        aperture_scatterguard=aperture_scatterguard,
+        aperture_scatterguard=mock_aperturescatterguard,
         attenuator=MagicMock(),
         backlight=backlight,
         detector_motion=detector_motion,
