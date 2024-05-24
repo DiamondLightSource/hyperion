@@ -282,7 +282,7 @@ def test_rotation_plan_reads_hardware(
         "synchrotron-topup_start_countdown",
         lambda msg: {"values": {"value": -1}},
     )
-    fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)
+    fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)  # type: ignore
     sim_run_engine.add_handler(
         "read", "smargon_omega", lambda msg: {"values": {"value": -1}}
     )
