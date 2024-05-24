@@ -5,10 +5,7 @@ import dataclasses
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
-from dodal.devices.aperturescatterguard import (
-    ApertureScatterguard,
-    SingleAperturePosition,
-)
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
@@ -105,13 +102,6 @@ class RotationMotionProfile:
     total_exposure_s: float
     distance_to_move_deg: float
     max_velocity_deg_s: float
-
-
-def move_aperture(aperture: ApertureScatterguard, position: SingleAperturePosition):
-    """Between XRC and rotation, GDA moves the aperture out of position in order to do its snapshots.
-    We need to move it back in before doing the rotations"""
-    LOGGER.info(f"Moving aperture to {position}")
-    yield from bps.abs_set(aperture, position, wait=True)
 
 
 def calculate_motion_profile(
@@ -283,13 +273,6 @@ def rotation_scan(
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationScan,
     ):
-        assert composite.aperture_scatterguard.aperture_positions is not None
-        yield from move_aperture(
-            composite.aperture_scatterguard,
-            composite.aperture_scatterguard.aperture_positions.get_position_from_gda_aperture_name(
-                params.selected_aperture
-            ),
-        )
         motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
         max_vel = (
             yield from bps.rd(composite.smargon.omega.max_velocity)
@@ -307,8 +290,13 @@ def rotation_scan(
         @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: cleanup_plan(composite, max_vel))
         def rotation_with_cleanup_and_stage(params: RotationScan):
+            assert composite.aperture_scatterguard.aperture_positions is not None
             LOGGER.info("setting up sample environment...")
             yield from setup_sample_environment(
+                composite.aperture_scatterguard,
+                composite.aperture_scatterguard.aperture_positions.get_position_from_gda_aperture_name(
+                    params.selected_aperture
+                ),
                 composite.detector_motion,
                 composite.backlight,
                 composite.attenuator,

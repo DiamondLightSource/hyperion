@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import bluesky.plan_stubs as bps
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+    SingleAperturePosition,
+)
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -12,6 +16,8 @@ LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
 
 def setup_sample_environment(
+    aperture_scatterguard: ApertureScatterguard,
+    aperture_position: SingleAperturePosition,
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
@@ -19,9 +25,15 @@ def setup_sample_environment(
     detector_distance: float,
     group="setup_senv",
 ):
-    """Move out the backlight, retract the detector shutter, and set the attenuator to
-    transmission."""
+    """Move the aperture into the position determined during XRC, Move out the backlight, retract the detector shutter,
+    and set the attenuator to transmission."""
 
+    LOGGER.info(f"Moving aperture to {aperture_position}")
+    yield from bps.abs_set(
+        aperture_scatterguard,
+        aperture_position,
+        group=group,
+    )
     yield from bps.abs_set(detector_motion.shutter, 1, group=group)
     yield from bps.abs_set(detector_motion.z, detector_distance, group=group)
     yield from bps.abs_set(backlight, backlight.OUT, group=group)
