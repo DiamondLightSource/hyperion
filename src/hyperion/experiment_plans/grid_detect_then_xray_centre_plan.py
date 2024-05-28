@@ -156,12 +156,14 @@ def _detect_grid_and_do_gridscan(
 
     yield from bps.abs_set(composite.backlight, Backlight.OUT)
 
-    LOGGER.info(
-        f"Setting aperture position to {composite.aperture_scatterguard.aperture_positions.SMALL}"
+    aperture_to_use = composite.aperture_scatterguard.aperture_positions.get_position_from_gda_aperture_name(
+        parameters.selected_aperture
     )
+
+    LOGGER.info(f"Setting aperture position to {aperture_to_use}")
     yield from bps.abs_set(
         composite.aperture_scatterguard,
-        composite.aperture_scatterguard.aperture_positions.SMALL,
+        aperture_to_use,
     )
 
     flyscan_composite = FlyScanXRayCentreComposite(

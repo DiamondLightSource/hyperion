@@ -25,7 +25,7 @@ def setup_sample_environment(
     detector_distance: float,
     group="setup_senv",
 ):
-    """Move the aperture into the position determined during XRC, Move out the backlight, retract the detector shutter,
+    """Move the aperture into required position, move out the backlight, retract the detector shutter,
     and set the attenuator to transmission."""
 
     LOGGER.info(f"Moving aperture to {aperture_position}")
