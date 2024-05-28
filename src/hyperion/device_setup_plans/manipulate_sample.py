@@ -54,7 +54,7 @@ def move_aperture_if_required(
         aperture_position = aperture_scatterguard.aperture_positions.get_position_from_gda_aperture_name(
             aperture_position_gda_name
         )
-        LOGGER.info(f"Moving aperture to {aperture_position}")
+        LOGGER.info(f"Setting aperture position to {aperture_position}")
         yield from bps.abs_set(
             aperture_scatterguard,
             aperture_position,
