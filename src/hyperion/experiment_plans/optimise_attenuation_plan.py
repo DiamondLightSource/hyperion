@@ -6,8 +6,8 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.sample_shutter import OpenState, SampleShutter
 from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
+from dodal.devices.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
 
 from hyperion.log import LOGGER
 from hyperion.utils.context import device_composite_from_context
@@ -27,7 +27,7 @@ class OptimizeAttenuationComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     attenuator: Attenuator
-    sample_shutter: SampleShutter
+    sample_shutter: ZebraShutter
     xspress3mini: Xspress3Mini
 
 
@@ -140,7 +140,9 @@ def do_device_optimise_iteration(
     transmission,
 ):
     def close_shutter():
-        yield from bps.abs_set(composite.sample_shutter, OpenState.CLOSE, wait=True)
+        yield from bps.abs_set(
+            composite.sample_shutter, ZebraShutterState.CLOSE, wait=True
+        )
 
     @bpp.finalize_decorator(close_shutter)
     def open_and_run():
@@ -149,7 +151,9 @@ def do_device_optimise_iteration(
             composite.attenuator, transmission, group="set_transmission"
         )
         yield from bps.abs_set(composite.xspress3mini.set_num_images, 1, wait=True)
-        yield from bps.abs_set(composite.sample_shutter, OpenState.OPEN, wait=True)
+        yield from bps.abs_set(
+            composite.sample_shutter, ZebraShutterState.OPEN, wait=True
+        )
         yield from bps.abs_set(composite.xspress3mini.do_arm, 1, wait=True)
 
     yield from open_and_run()
@@ -192,7 +196,7 @@ def deadtime_optimisation(
 
     Here we use the percentage deadtime - the percentage of time to which the detector is unable to process events.
 
-    This algorithm gradually increases the transmisssion until the percentage deadtime goes beneath the specified threshold. It then increases
+    This algorithm gradually increases the transmission until the percentage deadtime goes beneath the specified threshold. It then increases
     the transmission and stops when the deadtime goes above the threshold. A smaller increment will provide a better optimised value, but take more
     cycles to complete.
 
@@ -201,10 +205,10 @@ def deadtime_optimisation(
 
         xspress3mini: (Xspress3Mini) Ophyd device
 
-        sample_shutter: (SampleShutter) Ophyd device for the fast shutter
+        sample_shutter: (SampleShutter) Ophyd_async device for the fast shutter
 
         transmission: (float)
-        The intial transmission value to use for the optimising
+        The initial transmission value to use for the optimising
 
         increment: (float)
         The factor to increase / decrease the transmission by each iteration
@@ -306,10 +310,10 @@ def total_counts_optimisation(
 
         xspress3mini: (Xspress3Mini) Ophyd device
 
-        sample_shutter: (SampleShutter) Ophyd device for the fast shutter
+        sample_shutter: (SampleShutter) Ophyd_async device for the fast shutter
 
         transmission: (float)
-        The intial transmission value to use for the optimising
+        The initial transmission value to use for the optimising
 
         low_roi: (float)
         Lower region of interest at which to include in the counts
