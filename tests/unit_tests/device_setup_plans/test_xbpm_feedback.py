@@ -15,20 +15,12 @@ from hyperion.device_setup_plans.xbpm_feedback import (
 
 
 @pytest.fixture
-def fake_devices():
+def fake_devices(attenuator: Attenuator):
     xbpm_feedback: XBPMFeedback = make_fake_device(XBPMFeedback)(name="xbpm")
-    attenuator: Attenuator = make_fake_device(Attenuator)(name="atten")
-
-    def fake_attenuator_set(val):
-        attenuator.actual_transmission.sim_put(val)  # type: ignore
-        return Status(done=True, success=True)
-
-    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
-
     return xbpm_feedback, attenuator
 
 
-def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expected(
+async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expected(
     fake_devices,
 ):
     xbpm_feedback: XBPMFeedback = fake_devices[0]
@@ -39,7 +31,8 @@ def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expecte
         xbpm_feedback, attenuator, expected_transmission
     )
     def my_collection_plan():
-        assert attenuator.actual_transmission.get() == expected_transmission
+        read_transmission = yield from bps.rd(attenuator.actual_transmission)
+        assert read_transmission == expected_transmission
         assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.PAUSE
         yield from bps.null()
 
@@ -48,11 +41,11 @@ def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_expecte
     RE = RunEngine()
     RE(my_collection_plan())
 
-    assert attenuator.actual_transmission.get() == 1.0
+    assert await attenuator.actual_transmission.get_value() == 1.0
     assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.RUN
 
 
-def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
+async def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
     fake_devices,
 ):
     xbpm_feedback: XBPMFeedback = fake_devices[0]
@@ -75,11 +68,11 @@ def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not_run(
         RE(my_collection_plan())
 
     mock.assert_not_called()
-    assert attenuator.actual_transmission.get() == 1.0
+    assert await attenuator.actual_transmission.get_value() == 1.0
     assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.RUN
 
 
-def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then_cleaned_up(
+async def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then_cleaned_up(
     fake_devices,
 ):
     xbpm_feedback: XBPMFeedback = fake_devices[0]
@@ -101,5 +94,5 @@ def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorator_then
     with pytest.raises(MyException):
         RE(my_collection_plan())
 
-    assert attenuator.actual_transmission.get() == 1.0
+    assert await attenuator.actual_transmission.get_value() == 1.0
     assert xbpm_feedback.pause_feedback.get() == xbpm_feedback.RUN

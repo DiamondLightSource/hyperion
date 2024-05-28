@@ -19,11 +19,6 @@
     "visit": "cm31105-4",
     "demand_energy_ev": 12700,
     "ispyb_extras": {
-        "position": [
-            10.0,
-            20.0,
-            30.0
-        ],
         "xtal_snapshots_omega_start": [
             "test_1_y",
             "test_2_y",
@@ -33,11 +28,6 @@
             "test_1_z",
             "test_2_z",
             "test_3_z"
-        ],
-        "beam_size_x": 1.0,
-        "beam_size_y": 1.0,
-        "focal_spot_size_x": 1.0,
-        "focal_spot_size_y": 1.0,
-        "resolution": 1.0
+        ]
     }
 }

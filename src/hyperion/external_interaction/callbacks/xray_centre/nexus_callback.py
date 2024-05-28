@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict
 
+from hyperion.external_interaction.callbacks.logging_callback import format_doc_for_log
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -12,9 +13,7 @@ from hyperion.external_interaction.nexus.nexus_utils import (
 from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import NEXUS_LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
@@ -47,18 +46,27 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.GRIDSCAN_OUTER:
-            json_params = doc.get("hyperion_internal_parameters")
+            json_params = doc.get("hyperion_parameters")
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {json_params}"
             )
-            parameters = GridscanInternalParameters.from_json(json_params)
-            nexus_data_1 = parameters.get_nexus_info(1)
-            nexus_data_2 = parameters.get_nexus_info(2)
-            self.nexus_writer_1 = NexusWriter(parameters, **nexus_data_1)
+            parameters = ThreeDGridScan.from_json(json_params)
+            d_size = parameters.detector_params.detector_size_constants.det_size_pixels
+            grid_n_img_1 = parameters.scan_indices[1]
+            grid_n_img_2 = parameters.num_images - grid_n_img_1
+            data_shape_1 = (grid_n_img_1, d_size.width, d_size.height)
+            data_shape_2 = (grid_n_img_2, d_size.width, d_size.height)
+            run_number_2 = parameters.detector_params.run_number + 1
+            self.nexus_writer_1 = NexusWriter(
+                parameters, data_shape_1, parameters.scan_points_first_grid
+            )
             self.nexus_writer_2 = NexusWriter(
                 parameters,
-                **nexus_data_2,
-                vds_start_index=nexus_data_1["data_shape"][0],
+                data_shape_2,
+                parameters.scan_points_second_grid,
+                run_number=run_number_2,
+                vds_start_index=parameters.scan_indices[1],
+                omega_start_deg=90,
             )
             self.run_start_uid = doc.get("uid")
 
@@ -78,12 +86,14 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                     nexus_writer.beam,
                     nexus_writer.attenuator,
                 ) = create_beam_and_attenuator_parameters(
-                    data["dcm_energy_in_kev"],
+                    data["dcm-energy_in_kev"],
                     data["flux_flux_reading"],
-                    data["attenuator_actual_transmission"],
+                    data["attenuator-actual_transmission"],
                 )
         if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
-            NEXUS_LOGGER.info(f"Nexus handler received event from read hardware {doc}")
+            NEXUS_LOGGER.info(
+                f"Nexus handler received event from read hardware {format_doc_for_log(doc)}"
+            )
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 vds_data_type = vds_type_based_on_bit_depth(
                     doc["data"]["eiger_bit_depth"]
