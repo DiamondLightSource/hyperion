@@ -294,9 +294,7 @@ def rotation_scan(
             LOGGER.info("setting up sample environment...")
             yield from setup_sample_environment(
                 composite.aperture_scatterguard,
-                composite.aperture_scatterguard.aperture_positions.get_position_from_gda_aperture_name(
-                    params.selected_aperture
-                ),
+                params.selected_aperture,
                 composite.detector_motion,
                 composite.backlight,
                 composite.attenuator,
