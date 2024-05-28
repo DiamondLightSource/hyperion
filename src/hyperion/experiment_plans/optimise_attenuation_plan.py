@@ -205,7 +205,7 @@ def deadtime_optimisation(
 
         xspress3mini: (Xspress3Mini) Ophyd device
 
-        sample_shutter: (SampleShutter) Ophyd_async device for the fast shutter
+        sample_shutter: (ZebraShutter) Ophyd_async device for the fast shutter
 
         transmission: (float)
         The initial transmission value to use for the optimising
@@ -310,7 +310,7 @@ def total_counts_optimisation(
 
         xspress3mini: (Xspress3Mini) Ophyd device
 
-        sample_shutter: (SampleShutter) Ophyd_async device for the fast shutter
+        sample_shutter: (ZebraShutter) Ophyd_async device for the fast shutter
 
         transmission: (float)
         The initial transmission value to use for the optimising
