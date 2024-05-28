@@ -153,7 +153,6 @@ class DiffractionExperiment(HyperionParameters):
         default=CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
     )
     zocalo_environment: str = Field(default=CONST.ZOCALO_ENV)
-    detector: str = Field(default=CONST.I03.DETECTOR)
     trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
