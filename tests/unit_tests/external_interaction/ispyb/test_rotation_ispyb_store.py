@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from ispyb import ReadWriteError
 
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -509,3 +510,43 @@ def test_store_rotation_scan_uses_supplied_dcgid(
         ).data_collection_group_id
         == dcgid
     )
+
+
+@patch("hyperion.external_interaction.ispyb.ispyb_store.ISPYB_LOGGER")
+def test_type_error_logs_a_message(
+    mock_ispyb_logger,
+    mock_ispyb_conn,
+    dummy_rotation_ispyb,
+    dummy_rotation_data_collection_group_info,
+    scan_data_info_for_begin,
+    scan_data_info_for_update,
+):
+    ispyb_ids = dummy_rotation_ispyb.begin_deposition(
+        dummy_rotation_data_collection_group_info, [scan_data_info_for_begin]
+    )
+    scan_data_info_for_update.data_collection_info.parent_id = (
+        ispyb_ids.data_collection_group_id
+    )
+    scan_data_info_for_update.data_collection_id = ispyb_ids.data_collection_ids[0]
+
+    mx_acq = mock_ispyb_conn.return_value.mx_acquisition
+
+    with patch.object(
+        mx_acq, "upsert_data_collection", side_effect=ReadWriteError("Test error")
+    ):
+        with pytest.raises(ReadWriteError):
+            assert dummy_rotation_ispyb.update_deposition(
+                ispyb_ids,
+                [scan_data_info_for_update],
+            ) == IspybIds(
+                data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
+                data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
+            )
+
+    calls = mock_ispyb_logger.mock_calls
+    message1 = [
+        c for c in calls if c[1][0] == "Failed to upsert data collection: Test error"
+    ]
+    message2 = [c for c in calls if c[1][0].startswith("Parameters in failed upsert: ")]
+    assert len(message1) > 0
+    assert len(message2) > 0

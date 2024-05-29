@@ -88,9 +88,7 @@ class StoreInIspyb(ABC):
                     )
                 )
             else:
-                assert (
-                    ispyb_ids.data_collection_group_id
-                ), "Attempt to update data collection without a data collection group ID"
+                assert ispyb_ids.data_collection_group_id, "Attempt to update data collection without a data collection group ID"
 
             grid_ids = list(ispyb_ids.grid_ids)
             data_collection_ids_out = list(ispyb_ids.data_collection_ids)
@@ -278,9 +276,18 @@ class StoreInIspyb(ABC):
     @staticmethod
     @TRACER.start_as_current_span("_upsert_data_collection")
     def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
-        return conn.mx_acquisition.upsert_data_collection(
-            _convert_subclasses_to_builtins(params.values())
-        )
+        try:
+            return conn.mx_acquisition.upsert_data_collection(
+                _convert_subclasses_to_builtins(params.values())
+            )
+        except ispyb.ISPyBException as e:
+            ISPYB_LOGGER.error(f"Failed to upsert data collection: {e}")
+            ISPYB_LOGGER.error(f"Parameters in failed upsert: {_dump_params(params)}")
+            raise e
+
+
+def _dump_params(params: StrictOrderedDict):
+    return ", ".join([f"{k}:{type(v)}/{v}" for k, v in params.items()])
 
 
 def _convert_to_builtin(v):
