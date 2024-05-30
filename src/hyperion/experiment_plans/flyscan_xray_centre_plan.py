@@ -8,6 +8,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext, MsgGenerator
+from dodal.common.exceptions import WarningException
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     SingleAperturePosition,
@@ -50,7 +51,6 @@ from hyperion.device_setup_plans.setup_zebra import (
 from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
-from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan

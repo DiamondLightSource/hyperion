@@ -5,13 +5,13 @@ import numpy as np
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine, RunEngineResult
+from dodal.common.exceptions import WarningException
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
 
-from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
     DEFAULT_STEP_SIZE,
     PinTipCentringComposite,

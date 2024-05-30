@@ -6,21 +6,23 @@ import pytest
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
+from dodal.common.exceptions import WarningException
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
+from dodal.devices.oav.utils import (
+    get_move_required_so_that_beam_is_at_pixel,
+    wait_for_tip_to_be_found,
+)
 from dodal.devices.smargon import Smargon
 from ophyd.signal import Signal
 from ophyd.sim import instantiate_fake_device
 from ophyd.status import Status
 
 from hyperion.device_setup_plans.setup_oav import (
-    get_move_required_so_that_beam_is_at_pixel,
     pre_centring_setup_oav,
-    wait_for_tip_to_be_found,
 )
-from hyperion.exceptions import WarningException
 
 ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
 OAV_CENTRING_JSON = "tests/test_data/test_OAVCentring.json"

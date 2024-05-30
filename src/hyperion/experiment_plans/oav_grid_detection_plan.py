@@ -11,11 +11,11 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
+from dodal.devices.oav.utils import wait_for_tip_to_be_found
 from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
-    wait_for_tip_to_be_found,
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
