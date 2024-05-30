@@ -845,7 +845,7 @@ def test_ispyb_deposition_in_rotation_plan(
     position_id = fetch_datacollection_attribute(
         dcid, DATA_COLLECTION_COLUMN_MAP["positionid"]
     )
-    expected_values = {"posX": 10.0, "posY": 20.0, "posZ": 30.0}
+    expected_values = {"posX": 1.0, "posY": 2.0, "posZ": 3.0}
     compare_actual_and_expected(
         position_id, expected_values, fetch_datacollection_position_attribute
     )
