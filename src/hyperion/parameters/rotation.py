@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 
-import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_dist_to_beam_converter import (
     DetectorDistanceToBeamXYConverter,
@@ -79,7 +78,6 @@ class RotationScan(
     def ispyb_params(self):  # pyright: ignore
         return RotationIspybParams(
             visit_path=str(self.visit_directory),
-            position=np.array(self.ispyb_extras.position),
             comment=self.comment,
             xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,

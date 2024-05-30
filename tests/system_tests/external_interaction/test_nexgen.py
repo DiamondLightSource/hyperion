@@ -156,7 +156,7 @@ def _fake_rotation_scan(
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
-            "hyperion_internal_parameters": parameters.json(),
+            "hyperion_parameters": parameters.json(),
             "activate_callbacks": "RotationNexusFileCallback",
         }
     )
