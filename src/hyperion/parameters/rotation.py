@@ -24,7 +24,7 @@ from hyperion.parameters.components import (
     TemporaryIspybExtras,
     WithScan,
 )
-from hyperion.parameters.constants import CONST
+from hyperion.parameters.constants import CONST, I03Constants
 
 
 class RotationScan(
@@ -57,6 +57,7 @@ class RotationScan(
         assert self.detector_distance_mm is not None
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
+            detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
             directory=self.storage_directory,
