@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
+from dodal.devices.aperturescatterguard import SingleAperturePosition
+
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
@@ -30,18 +32,25 @@ from hyperion.parameters.rotation import RotationScan
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
 
-COMMENT_FOR_ROTATION_SCAN = "Hyperion rotation scan"
-
 
 class RotationIsPyBComment:
     def __init__(self):
-        self.motor_position: str = ""
-        self.user_comment: str = ""
-        self.xrc_box: str = ""
-        self.aperture_size: str = ""
+        self.motor_position = None
+        self.user_comment = None
+        self.aperture_size = None
+
+        # Not used yet, we need to ask scientists if it's important
+        self.xrc_box = ""
+
+    def update_comment_values(
+        self, motor_pos: list[float], user_comment: str, aperture_size: str
+    ) -> None:
+        self.motor_position = f"({motor_pos[0]} {motor_pos[1]}, {motor_pos[2]})"
+        self.user_comment = user_comment
+        self.aperture_size = aperture_size
 
     def construct_comment(self) -> str:
-        return "comment in correct format"
+        return f"Smargon XYZ positions: {self.motor_position} User comment: {self.user_comment} Aperture size: {self.aperture_size}"
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -75,6 +84,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 "ISPyB callback recieved start document with experiment parameters."
             )
             self.params = RotationScan.from_json(doc.get("hyperion_parameters"))
+            self.rotation_comment.user_comment = self.params.comment
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)
@@ -126,27 +136,40 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids.data_collection_ids
         ), "Expect an existing DataCollection to update"
 
-        scan_data_info = ScanDataInfo(
-            data_collection_info=event_sourced_data_collection_info,
-            data_collection_id=self.ispyb_ids.data_collection_ids[0],
-            data_collection_position_info=event_sourced_position_info,
+        return [
+            ScanDataInfo(
+                data_collection_info=event_sourced_data_collection_info,
+                data_collection_id=self.ispyb_ids.data_collection_ids[0],
+                data_collection_position_info=event_sourced_position_info,
+            )
+        ]
+
+    def _handle_ispyb_hardware_read(self, doc: Event):
+        """Use the hardware read values to create the ispyb comment"""
+        scan_data_infos = super()._handle_ispyb_hardware_read(doc)
+        aperture_size = SingleAperturePosition(
+            **doc["data"]["aperture_scatterguard-selected_aperture"]
+        )
+        info = scan_data_infos[0]
+        assert (
+            info.data_collection_position_info
+        ), "Unable to find smargon motor position info"
+        motor_positions = [
+            info.data_collection_position_info.pos_x,
+            info.data_collection_position_info.pos_y,
+            info.data_collection_position_info.pos_z,
+        ]
+        self.rotation_comment.update_comment_values(
+            motor_positions,
+            self.rotation_comment.user_comment or "None",
+            aperture_size.name,
         )
 
-        # This will work after #1903 is merged
-        self.rotation_comment.aperture_size = (
-            str(scan_data_info.data_collection_position_info.pos_x) or ""
+        scan_data_infos[0].data_collection_info.comments = (
+            self.rotation_comment.construct_comment()
         )
 
-        # Check if this can be none by this point
-        self.rotation_comment.aperture_size = (
-            scan_data_info.data_collection_info.aperture_size or "Undefined"
-        )
-
-        self.rotation_comment.user_comment = (
-            scan_data_info.data_collection_info.comments or ""
-        )
-
-        return [scan_data_info]
+        return scan_data_infos
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
