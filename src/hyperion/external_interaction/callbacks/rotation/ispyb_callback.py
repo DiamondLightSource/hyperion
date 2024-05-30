@@ -33,6 +33,17 @@ if TYPE_CHECKING:
 COMMENT_FOR_ROTATION_SCAN = "Hyperion rotation scan"
 
 
+class RotationIsPyBComment:
+    def __init__(self):
+        self.motor_position: str = ""
+        self.user_comment: str = ""
+        self.xrc_box: str = ""
+        self.aperture_size: str = ""
+
+    def construct_comment(self) -> str:
+        return "comment in correct format"
+
+
 class RotationISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
@@ -56,6 +67,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         super().__init__(emit=emit)
         self.last_sample_id: int | None = None
         self.ispyb_ids: IspybIds = IspybIds()
+        self.rotation_comment: RotationIsPyBComment = RotationIsPyBComment()
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
@@ -87,7 +99,10 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.params
             )
             data_collection_info = populate_remaining_data_collection_info(
-                COMMENT_FOR_ROTATION_SCAN, dcgid, data_collection_info, self.params
+                self.rotation_comment.construct_comment(),
+                dcgid,
+                data_collection_info,
+                self.params,
             )
             data_collection_info.parent_id = dcgid
             scan_data_info = ScanDataInfo(
@@ -108,15 +123,29 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids.data_collection_ids
         ), "Expect an existing DataCollection to update"
         params = cast(RotationScan, params)
-        return [
-            ScanDataInfo(
-                data_collection_info=event_sourced_data_collection_info,
-                data_collection_position_info=populate_data_collection_position_info(
-                    params.ispyb_params
-                ),
-                data_collection_id=self.ispyb_ids.data_collection_ids[0],
-            )
-        ]
+        scan_data_info = ScanDataInfo(
+            data_collection_info=event_sourced_data_collection_info,
+            data_collection_position_info=populate_data_collection_position_info(
+                params.ispyb_params
+            ),
+            data_collection_id=self.ispyb_ids.data_collection_ids[0],
+        )
+
+        # This will work after #1903 is merged
+        self.rotation_comment.aperture_size = (
+            str(scan_data_info.data_collection_position_info.pos_x) or ""
+        )
+
+        # Check if this can be none by this point
+        self.rotation_comment.aperture_size = (
+            scan_data_info.data_collection_info.aperture_size or "Undefined"
+        )
+
+        self.rotation_comment.user_comment = (
+            scan_data_info.data_collection_info.comments or ""
+        )
+
+        return [scan_data_info]
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)

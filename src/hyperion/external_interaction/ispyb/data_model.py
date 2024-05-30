@@ -55,6 +55,7 @@ class DataCollectionInfo:
     synchrotron_mode: Optional[str] = None
     undulator_gap1: Optional[float] = None
     start_time: Optional[str] = None
+    aperture_size: Optional[str] = None
 
 
 @dataclass

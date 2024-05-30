@@ -122,6 +122,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             synchrotron_mode=synchrotron_mode.value,
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
             slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
+            aperture_size=aperture_size.name,
         )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, self.params
