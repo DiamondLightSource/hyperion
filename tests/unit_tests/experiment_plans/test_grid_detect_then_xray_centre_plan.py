@@ -18,8 +18,6 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 
-from ..device_setup_plans.test_setup_oav import fake_smargon
-
 
 def _fake_grid_detection(
     devices: Any,
@@ -30,7 +28,7 @@ def _fake_grid_detection(
     box_size_um: float = 0.0,
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
-    smargon = fake_smargon()
+    smargon = i03.smargon(fake_with_ophyd_sim=True)
     oav.grid_snapshot.box_width.put(635.00986)
 
     # first grid detection: x * y
