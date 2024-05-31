@@ -35,9 +35,9 @@ if TYPE_CHECKING:
 
 class RotationIsPyBComment:
     def __init__(self):
-        self.motor_position = None
-        self.user_comment = None
-        self.aperture_size = None
+        self.motor_position = "None"
+        self.user_comment = "None"
+        self.aperture_size = "None"
 
         # Not used yet, we need to ask scientists if it's important
         self.xrc_box = ""
