@@ -7,6 +7,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Sequence, SupportsInt, TypeVar
 
+from dodal.devices.aperturescatterguard import AperturePositionGDANames
 from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
@@ -157,6 +158,7 @@ class DiffractionExperiment(HyperionParameters):
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
     run_number: int | None = Field(default=None, ge=0)
+    selected_aperture: AperturePositionGDANames | None = Field(default=None)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
 
