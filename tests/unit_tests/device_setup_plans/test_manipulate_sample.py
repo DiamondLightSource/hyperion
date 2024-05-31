@@ -27,12 +27,10 @@ async def test_move_aperture_goes_to_correct_position(
     )
 
 
-@patch("bluesky.plan_stubs.abs_set")
 async def test_move_aperture_does_nothing_when_none_selected(
-    mock_set: MagicMock, aperture_scatterguard: ApertureScatterguard, RE: RunEngine
+    aperture_scatterguard: ApertureScatterguard, RE: RunEngine
 ):
     assert aperture_scatterguard.aperture_positions
-    await aperture_scatterguard.set(aperture_scatterguard.aperture_positions.ROBOT_LOAD)
-
-    RE(move_aperture_if_required(aperture_scatterguard, None))
-    mock_set.assert_not_called()
+    with patch("bluesky.plan_stubs.abs_set") as mock_set:
+        RE(move_aperture_if_required(aperture_scatterguard, None))
+        mock_set.assert_not_called()
