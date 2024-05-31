@@ -253,7 +253,6 @@ class TemporaryIspybExtras(BaseModel):
         arbitrary_types_allowed = True
         extra = Extra.forbid
 
-    position: list[float] = None
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None

@@ -91,9 +91,11 @@ def ispyb_plan(test_fgs_params):
         }
     )
     def standalone_read_hardware_for_ispyb(
-        und, syn, slits, robot, attn, fl, dcm, ap_sg
+        und, syn, slits, robot, attn, fl, dcm, ap_sg, sm
     ):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg, robot)
+        yield from read_hardware_for_ispyb_pre_collection(
+            und, syn, slits, ap_sg, robot, sm
+        )
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -237,6 +239,7 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.flux,
                     fake_fgs_composite.dcm,
                     fake_fgs_composite.aperture_scatterguard,
+                    fake_fgs_composite.smargon,
                 )
             )
             # fmt: off

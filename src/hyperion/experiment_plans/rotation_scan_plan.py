@@ -221,6 +221,7 @@ def rotation_scan_plan(
             composite.s4_slit_gaps,
             composite.aperture_scatterguard,
             composite.robot,
+            composite.smargon,
         )
         yield from read_hardware_for_ispyb_during_collection(
             composite.attenuator, composite.flux, composite.dcm
