@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
 import ispyb
 import ispyb.sqlalchemy
+import numpy as np
 from ispyb.connector.mysqlsp.main import ISPyBMySQLSPConnector as Connector
 from ispyb.sp.mxacquisition import MXAcquisition
 from ispyb.strictordereddict import StrictOrderedDict
@@ -270,9 +271,35 @@ class StoreInIspyb(ABC):
     def _upsert_data_collection_group(
         conn: Connector, params: StrictOrderedDict
     ) -> int:
-        return conn.mx_acquisition.upsert_data_collection_group(list(params.values()))
+        return conn.mx_acquisition.upsert_data_collection_group(
+            _convert_subclasses_to_builtins(params.values())
+        )
 
     @staticmethod
     @TRACER.start_as_current_span("_upsert_data_collection")
     def _upsert_data_collection(conn: Connector, params: StrictOrderedDict) -> int:
-        return conn.mx_acquisition.upsert_data_collection(list(params.values()))
+        return conn.mx_acquisition.upsert_data_collection(
+            _convert_subclasses_to_builtins(params.values())
+        )
+
+
+def _convert_to_builtin(v):
+    if isinstance(v, np.generic):
+        return v.item()
+    match v:
+        case float():
+            return float(v)
+        case int():
+            return int(v)
+        case str():
+            return str(v)
+        case None:
+            return None
+        case _:
+            raise ValueError(f"Unsupported data type {type(v)}")
+
+
+def _convert_subclasses_to_builtins(values: Sequence) -> list:
+    """ispybapi does not like subclasses of standard python builtin types, therefore we
+    must convert them to the corresponding builtin"""
+    return [_convert_to_builtin(v) for v in values]

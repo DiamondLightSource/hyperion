@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 from ispyb.sp.mxacquisition import MXAcquisition
@@ -210,23 +210,33 @@ def scan_data_infos_for_update():
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
 
 
-def setup_mock_return_values(ispyb_conn):
-    mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
+@pytest.fixture
+def conn_with_mock_return_values():
+    with patch("ispyb.open", mock_open()) as ispyb_conn:
+        mx_acquisition = MagicMock()
+        ispyb_conn.return_value.mx_acquisition = mx_acquisition
+        mx_acquisition.get_data_collection_group_params = (
+            MXAcquisition.get_data_collection_group_params
+        )
+        mx_acquisition.get_data_collection_params = (
+            MXAcquisition.get_data_collection_params
+        )
+        mx_acquisition.get_dc_grid_params = MXAcquisition.get_dc_grid_params
+        mx_acquisition.get_dc_position_params = MXAcquisition.get_dc_position_params
 
-    mx_acquisition.get_data_collection_group_params = (
-        MXAcquisition.get_data_collection_group_params
-    )
-    mx_acquisition.get_data_collection_params = MXAcquisition.get_data_collection_params
-    mx_acquisition.get_dc_grid_params = MXAcquisition.get_dc_grid_params
-    mx_acquisition.get_dc_position_params = MXAcquisition.get_dc_position_params
+        def mock_retrieve_visit(visit_str):
+            return TEST_SESSION_ID
 
-    ispyb_conn.return_value.core.retrieve_visit_id.return_value = TEST_SESSION_ID
-    mx_acquisition.upsert_data_collection.side_effect = TEST_DATA_COLLECTION_IDS * 2
-    mx_acquisition.update_dc_position.return_value = TEST_POSITION_ID
-    mx_acquisition.upsert_data_collection_group.return_value = (
-        TEST_DATA_COLLECTION_GROUP_ID
-    )
-    mx_acquisition.upsert_dc_grid.return_value = TEST_GRID_INFO_IDS[0]
+        mock_core = MagicMock()
+        mock_core.retrieve_visit_id.side_effect = mock_retrieve_visit
+        ispyb_conn.return_value.core = mock_core
+        mx_acquisition.upsert_data_collection.side_effect = TEST_DATA_COLLECTION_IDS * 2
+        mx_acquisition.update_dc_position.return_value = TEST_POSITION_ID
+        mx_acquisition.upsert_data_collection_group.return_value = (
+            TEST_DATA_COLLECTION_GROUP_ID
+        )
+        mx_acquisition.upsert_dc_grid.return_value = TEST_GRID_INFO_IDS[0]
+        yield ispyb_conn
 
 
 def test_ispyb_deposition_comment_for_3D_correct(
@@ -635,7 +645,6 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
     scan_data_info_for_update,
     test_group=False,
 ):
-    setup_mock_return_values(ispyb_conn)
     ispyb_ids = dummy_ispyb.begin_deposition(
         dummy_collection_group_info, [scan_data_info_for_begin]
     )
@@ -657,9 +666,8 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
         assert test_function(MXAcquisition.get_data_collection_group_params(), actual)
 
 
-@patch("ispyb.open", autospec=True)
 def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
-    ispyb_conn,
+    conn_with_mock_return_values,
     dummy_2d_gridscan_ispyb,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -674,7 +682,7 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
         return actual[sampleid_idx] == default_params["sampleid"]
 
     _test_when_grid_scan_stored_then_data_present_in_upserts(
-        ispyb_conn,
+        conn_with_mock_return_values,
         dummy_2d_gridscan_ispyb,
         test_sample_id,
         dummy_collection_group_info,
@@ -684,9 +692,8 @@ def test_given_sampleid_of_none_when_grid_scan_stored_then_sample_id_not_set(
     )
 
 
-@patch("ispyb.open", autospec=True)
 def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
-    ispyb_conn,
+    conn_with_mock_return_values,
     dummy_2d_gridscan_ispyb: StoreInIspyb,
     dummy_collection_group_info,
     scan_data_info_for_begin,
@@ -699,7 +706,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
         return actual[sampleid_idx] == expected_sample_id
 
     _test_when_grid_scan_stored_then_data_present_in_upserts(
-        ispyb_conn,
+        conn_with_mock_return_values,
         dummy_2d_gridscan_ispyb,
         test_sample_id,
         dummy_collection_group_info,
@@ -745,7 +752,7 @@ def test_no_exception_during_run_results_in_good_run_status(
     scan_xy_data_info_for_update,
 ):
     mock_ispyb_conn = mock_ispyb_conn
-    setup_mock_return_values(mock_ispyb_conn)
+    # setup_mock_return_values(mock_ispyb_conn)
     mock_mx_aquisition = (
         mock_ispyb_conn.return_value.__enter__.return_value.mx_acquisition
     )
