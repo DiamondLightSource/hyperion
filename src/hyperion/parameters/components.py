@@ -13,7 +13,7 @@ from dodal.devices.detector import (
     TriggerMode,
 )
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, Extra, Field, root_validator, validator
 from scanspec.core import AxesPoints
 from semver import Version
 
@@ -161,16 +161,23 @@ class DiffractionExperiment(HyperionParameters):
     selected_aperture: AperturePositionGDANames | None = Field(default=None)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
+    snapshot_directory: Path
+
+    @root_validator(pre=True)
+    def validate_snapshot_directory(cls, values):
+        snapshot_dir = values.get(
+            "snapshot_directory", Path(values["storage_directory"], "snapshots")
+        )
+        values["snapshot_directory"] = (
+            snapshot_dir if isinstance(snapshot_dir, Path) else Path(snapshot_dir)
+        )
+        return values
 
     @property
     def visit_directory(self) -> Path:
         return (
             Path(CONST.I03.BASE_DATA_DIR) / str(datetime.date.today().year) / self.visit
         )
-
-    @property
-    def snapshot_directory(self) -> Path:
-        return Path(self.storage_directory) / "snapshots"
 
     @property
     def num_images(self) -> int:
