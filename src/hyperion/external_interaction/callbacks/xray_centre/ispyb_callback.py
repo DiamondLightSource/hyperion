@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from time import time
-from typing import TYPE_CHECKING, Any, Callable, List
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 import numpy as np
 from blueapi.core import MsgGenerator
@@ -24,6 +24,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
+    DataCollectionPositionInfo,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
@@ -165,6 +166,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
+        event_sourced_position_info: Optional[DataCollectionPositionInfo],
         params: ThreeDGridScan | GridScanWithEdgeDetect,
     ) -> Sequence[ScanDataInfo]:
         assert (

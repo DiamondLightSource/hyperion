@@ -8,6 +8,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 
@@ -21,6 +22,7 @@ def read_hardware_for_ispyb_pre_collection(
     s4_slit_gaps: S4SlitGaps,
     aperture_scatterguard: ApertureScatterguard,
     robot: BartRobot,
+    smargon: Smargon,
 ):
     LOGGER.info("Reading status of beamline for ispyb deposition, pre collection.")
     yield from bps.create(
@@ -31,6 +33,9 @@ def read_hardware_for_ispyb_pre_collection(
     yield from bps.read(s4_slit_gaps.xgap)
     yield from bps.read(s4_slit_gaps.ygap)
     yield from bps.read(aperture_scatterguard)
+    yield from bps.read(smargon.x)
+    yield from bps.read(smargon.y)
+    yield from bps.read(smargon.z)
     yield from bps.save()
 
 

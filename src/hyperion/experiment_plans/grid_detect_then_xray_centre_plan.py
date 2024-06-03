@@ -28,6 +28,7 @@ from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.panda import HDFPanda
 
+from hyperion.device_setup_plans.manipulate_sample import move_aperture_if_required
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
@@ -156,12 +157,8 @@ def _detect_grid_and_do_gridscan(
 
     yield from bps.abs_set(composite.backlight, Backlight.OUT)
 
-    LOGGER.info(
-        f"Setting aperture position to {composite.aperture_scatterguard.aperture_positions.SMALL}"
-    )
-    yield from bps.abs_set(
-        composite.aperture_scatterguard,
-        composite.aperture_scatterguard.aperture_positions.SMALL,
+    yield from move_aperture_if_required(
+        composite.aperture_scatterguard, parameters.selected_aperture
     )
 
     flyscan_composite = FlyScanXRayCentreComposite(

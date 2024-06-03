@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 
+from dodal.devices.aperturescatterguard import AperturePositionGDANames
 from dodal.devices.detector import (
     DetectorDistanceToBeamXYConverter,
     DetectorParams,
@@ -43,6 +44,9 @@ class GridCommon(
     use_gpu: bool = Field(default=CONST.I03.USE_GPU_FOR_GRIDSCAN_ANALYSIS)
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
+    )
+    selected_aperture: AperturePositionGDANames | None = Field(
+        default=AperturePositionGDANames.SMALL_APERTURE
     )
     # field rather than inherited to make it easier to track when it can be removed:
     ispyb_extras: TemporaryIspybExtras
