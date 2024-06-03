@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Any, Dict, Generator
 from unittest.mock import ANY, MagicMock, patch
 
@@ -25,13 +26,12 @@ def _fake_grid_detection(
     parameters: OAVParameters,
     snapshot_template: str,
     snapshot_dir: str,
-    smargon: Smargon,
     grid_width_microns: float = 0,
     box_size_um: float = 0.0,
+    smargon=None,
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
     oav.grid_snapshot.box_width.put(635.00986)
-
     # first grid detection: x * y
     oav.grid_snapshot.num_boxes_x.put(10)
     oav.grid_snapshot.num_boxes_y.put(4)
@@ -96,10 +96,13 @@ def test_detect_grid_and_do_gridscan(
     mock_grid_detection_plan: MagicMock,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
+    smargon: Smargon,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
 ):
-    mock_grid_detection_plan.side_effect = _fake_grid_detection
+    mock_grid_detection_plan.side_effect = partial(
+        _fake_grid_detection, smargon=smargon
+    )
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
@@ -152,10 +155,13 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
+    smargon: Smargon,
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
 
-    mock_grid_detection_plan.side_effect = _fake_grid_detection
+    mock_grid_detection_plan.side_effect = partial(
+        _fake_grid_detection, smargon=smargon
+    )
 
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]

@@ -14,7 +14,6 @@ from unittest.mock import MagicMock, patch
 import flask
 import pytest
 from blueapi.core import BlueskyContext
-from dodal.common.exceptions import WarningException
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.zebra import Zebra
 from flask.testing import FlaskClient
@@ -27,6 +26,7 @@ from hyperion.__main__ import (
     create_targets,
     setup_context,
 )
+from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import PLAN_REGISTRY
 from hyperion.log import LOGGER
 from hyperion.parameters.cli import parse_cli_args

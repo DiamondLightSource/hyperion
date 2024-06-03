@@ -9,11 +9,11 @@ from typing import Any, Callable, Optional, Tuple
 from blueapi.core import BlueskyContext, MsgGenerator
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
-from dodal.common.exceptions import WarningException
 from flask import Flask, request
 from flask_restful import Api, Resource
 from pydantic.dataclasses import dataclass
 
+from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.experiment_registry import (
     PLAN_REGISTRY,
     PlanNotFound,

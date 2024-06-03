@@ -11,12 +11,13 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
-from dodal.devices.oav.utils import wait_for_tip_to_be_found
+from dodal.devices.oav.utils import PinNotFoundException, wait_for_tip_to_be_found
 from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.setup_oav import (
     pre_centring_setup_oav,
 )
+from hyperion.exceptions import catch_exception_and_warn
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.utils.context import device_composite_from_context
@@ -103,7 +104,9 @@ def grid_detection_plan(
         # See #673 for improvements
         yield from bps.sleep(CONST.HARDWARE.OAV_REFRESH_DELAY)
 
-        tip_x_px, tip_y_px = yield from wait_for_tip_to_be_found(pin_tip_detection)
+        tip_x_px, tip_y_px = yield from catch_exception_and_warn(
+            PinNotFoundException, wait_for_tip_to_be_found, pin_tip_detection
+        )
 
         LOGGER.info(f"Tip is at x,y: {tip_x_px},{tip_y_px}")
 

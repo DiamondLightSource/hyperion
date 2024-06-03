@@ -12,7 +12,6 @@ from dodal.common.beamlines.beamline_parameters import (
     BEAMLINE_PARAMETER_PATHS,
     GDABeamlineParameters,
 )
-from dodal.common.exceptions import WarningException
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.smargon import Smargon
 from ophyd.status import Status
@@ -24,6 +23,7 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
 from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
+from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
     flyscan_xray_centre,

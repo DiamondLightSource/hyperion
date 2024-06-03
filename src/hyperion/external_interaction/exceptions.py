@@ -1,4 +1,4 @@
-from dodal.common.exceptions import WarningException
+from hyperion.exceptions import WarningException
 
 
 class ISPyBDepositionNotMade(Exception):

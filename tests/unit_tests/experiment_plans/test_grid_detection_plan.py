@@ -6,7 +6,6 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import i03
-from dodal.common.exceptions import WarningException
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -14,6 +13,7 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE, SampleLocation
 from dodal.devices.smargon import Smargon
 
+from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     get_min_and_max_y_of_pin,
@@ -113,7 +113,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @pytest.mark.asyncio
-async def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
+async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     RE,
     test_config_files,
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],

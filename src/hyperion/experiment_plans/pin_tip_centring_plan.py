@@ -5,7 +5,6 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.common.exceptions import WarningException
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
@@ -18,6 +17,7 @@ from dodal.devices.oav.utils import (
 from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.setup_oav import pre_centring_setup_oav
+from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.utils.context import device_composite_from_context
