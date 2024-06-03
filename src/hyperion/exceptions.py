@@ -36,6 +36,8 @@ def catch_exception_and_warn(
     def warn_if_exception_matches(exception: Exception):
         if isinstance(exception, exception_to_catch):
             raise WarningException(str(exception))
+        else:
+            raise
 
     return (
         yield from contingency_wrapper(
