@@ -9,6 +9,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.smargon import Smargon
 
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
@@ -24,11 +25,11 @@ def _fake_grid_detection(
     parameters: OAVParameters,
     snapshot_template: str,
     snapshot_dir: str,
+    smargon: Smargon,
     grid_width_microns: float = 0,
     box_size_um: float = 0.0,
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
-    smargon = i03.smargon(fake_with_ophyd_sim=True)
     oav.grid_snapshot.box_width.put(635.00986)
 
     # first grid detection: x * y
