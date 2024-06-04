@@ -199,6 +199,7 @@ def patch_async_motor(
     set_mock_value(motor.user_readback, initial_position)
     set_mock_value(motor.deadband, 0.001)
     set_mock_value(motor.motor_done_move, 1)
+    set_mock_value(motor.velocity, 1)
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
 
 
@@ -486,7 +487,9 @@ def aperture_scatterguard(RE):
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
-        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))  # type:
+        assert ap_sg.aperture_positions
+        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))
+
         set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
 
