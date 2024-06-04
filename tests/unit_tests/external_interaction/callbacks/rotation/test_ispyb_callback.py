@@ -24,7 +24,7 @@ EXPECTED_DATA_COLLECTION = {
     "axisstart": 0.0,
     "axisrange": 0.1,
     "axisend": 180,
-    "comments": "Smargon XYZ positions: None User comment: test Aperture size: None",
+    "comments": "test",
     "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
@@ -45,7 +45,6 @@ EXPECTED_DATA_COLLECTION = {
     "filetemplate": "file_name_1_master.h5",
     "nimages": 1800,
     "kappastart": None,
-    # "comments": "Smargon XYZ positions: None User comment: test Aperture size: None",
 }
 
 
@@ -110,7 +109,7 @@ def test_hardware_read_events(
             "focal_spot_size_at_sampley": 20.0,
             "beamsize_at_samplex": 50.0,
             "beamsize_at_sampley": 20.0,
-            "comments": "Smargon XYZ positions: (10.0 20.0, 30.0) User comment: test Aperture size: Medium",
+            "comments": "Sample position: (10.0, 20.0, 30.0) test Aperture: Medium",
         },
     )
     assert_upsert_call_with(
@@ -243,6 +242,6 @@ def test_comment_correct_after_hardware_read(
             "focal_spot_size_at_sampley": 20.0,
             "beamsize_at_samplex": 50.0,
             "beamsize_at_sampley": 20.0,
-            "comments": "Smargon XYZ positions: (10.0 20.0, 30.0) User comment: a lovely unit test Aperture size: Medium",
+            "comments": "Sample position: (10.0, 20.0, 30.0) a lovely unit test Aperture: Medium",
         },
     )

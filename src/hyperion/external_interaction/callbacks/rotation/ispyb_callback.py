@@ -33,26 +33,6 @@ if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
 
 
-class RotationIsPyBComment:
-    def __init__(self):
-        self.motor_position = "None"
-        self.user_comment = "None"
-        self.aperture_size = "None"
-
-        # Not used yet, we need to ask scientists if it's important
-        self.xrc_box = ""
-
-    def update_comment_values(
-        self, motor_pos: list[float], user_comment: str, aperture_size: str
-    ) -> None:
-        self.motor_position = f"({motor_pos[0]} {motor_pos[1]}, {motor_pos[2]})"
-        self.user_comment = user_comment
-        self.aperture_size = aperture_size
-
-    def construct_comment(self) -> str:
-        return f"Smargon XYZ positions: {self.motor_position} User comment: {self.user_comment} Aperture size: {self.aperture_size}"
-
-
 class RotationISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
@@ -76,7 +56,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         super().__init__(emit=emit)
         self.last_sample_id: int | None = None
         self.ispyb_ids: IspybIds = IspybIds()
-        self.rotation_comment: RotationIsPyBComment = RotationIsPyBComment()
+        # self.rotation_comment: RotationISPyBComment = RotationISPyBComment()
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
@@ -84,7 +64,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 "ISPyB callback recieved start document with experiment parameters."
             )
             self.params = RotationScan.from_json(doc.get("hyperion_parameters"))
-            self.rotation_comment.user_comment = self.params.comment
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)
@@ -109,7 +88,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.params
             )
             data_collection_info = populate_remaining_data_collection_info(
-                self.rotation_comment.construct_comment(),
+                self.params.comment,
                 dcgid,
                 data_collection_info,
                 self.params,
@@ -154,21 +133,17 @@ class RotationISPyBCallback(BaseISPyBCallback):
         assert (
             info.data_collection_position_info
         ), "Unable to find smargon motor position info"
+
         motor_positions = [
-            info.data_collection_position_info.pos_x,
-            info.data_collection_position_info.pos_y,
-            info.data_collection_position_info.pos_z,
+            doc["data"]["smargon_x"],
+            doc["data"]["smargon_y"],
+            doc["data"]["smargon_z"],
         ]
-        self.rotation_comment.update_comment_values(
-            motor_positions,
-            self.rotation_comment.user_comment or "None",
-            aperture_size.name,
-        )
-
-        scan_data_infos[0].data_collection_info.comments = (
-            self.rotation_comment.construct_comment()
-        )
-
+        assert (
+            self.params
+        ), "handle_ispyb_hardware_read triggered beore activity_gated_start"
+        comment = f"Sample position: ({motor_positions[0]}, {motor_positions[1]}, {motor_positions[2]}) {self.params.comment} Aperture: {aperture_size.name}"
+        scan_data_infos[0].data_collection_info.comments = comment
         return scan_data_infos
 
     def activity_gated_event(self, doc: Event):
