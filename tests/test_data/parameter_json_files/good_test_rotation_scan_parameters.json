@@ -25,12 +25,8 @@
     "x_start_um": 1.0,
     "y_start_um": 2.0,
     "z_start_um": 3.0,
+    "selected_aperture": "SMALL_APERTURE",
     "ispyb_extras": {
-        "position": [
-            10.0,
-            20.0,
-            30.0
-        ],
         "xtal_snapshots_omega_start": [
             "test_1_y",
             "test_2_y",
