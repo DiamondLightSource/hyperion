@@ -140,15 +140,15 @@ def test_adjust_mirror_stripe(
         new_callable=_all_demands_accepted(vfm_mirror_voltages),
     ):
         vfm.stripe.set = MagicMock(return_value=NullStatus())
-        vfm.apply_stripe.set = MagicMock()  # type: ignore
+        vfm.apply_stripe.trigger = MagicMock()  # type: ignore
         parent = MagicMock()
         parent.attach_mock(vfm.stripe.set, "stripe_set")
-        parent.attach_mock(vfm.apply_stripe.set, "apply_stripe")  # type: ignore
+        parent.attach_mock(vfm.apply_stripe.trigger, "apply_stripe")  # type: ignore
 
         RE(adjust_mirror_stripe(energy_kev, vfm, vfm_mirror_voltages))
 
         assert parent.method_calls[0] == ("stripe_set", (expected_stripe,))
-        assert parent.method_calls[1] == ("apply_stripe", (1,))
+        assert parent.method_calls[1][0] == "apply_stripe"
         vfm_mirror_voltages.voltage_channels[0].set.assert_called_once_with(  # type: ignore
             first_voltage
         )
@@ -208,9 +208,7 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     )
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "vfm-apply_stripe"
-        and msg.args == (1,),
+        lambda msg: msg.command == "trigger" and msg.obj.name == "vfm-apply_stripe",
     )
     for channel, expected_voltage in (
         (14, 124),
