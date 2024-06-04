@@ -56,7 +56,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
         super().__init__(emit=emit)
         self.last_sample_id: int | None = None
         self.ispyb_ids: IspybIds = IspybIds()
-        # self.rotation_comment: RotationISPyBComment = RotationISPyBComment()
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
