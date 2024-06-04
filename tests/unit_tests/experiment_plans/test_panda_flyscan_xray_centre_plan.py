@@ -396,7 +396,7 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        test_panda_fgs_params.set_stub_offsets = True
+        test_panda_fgs_params._set_stub_offsets = True
 
         fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
@@ -628,7 +628,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
-        test_panda_fgs_params.set_stub_offsets = False
+        test_panda_fgs_params._set_stub_offsets = False
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
         RE.subscribe(ispyb_cb)

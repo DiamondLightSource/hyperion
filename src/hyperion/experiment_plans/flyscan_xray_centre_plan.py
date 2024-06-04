@@ -51,6 +51,7 @@ from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
+from hyperion.external_interaction.config_service import best_effort_get_feature_flag
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
@@ -325,7 +326,7 @@ def run_gridscan_and_move(
     with TRACER.start_span("move_to_result"):
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
-    if parameters.set_stub_offsets:
+    if parameters.FGS_params.set_stub_offsets:
         LOGGER.info("Recentring smargon co-ordinate system to this point.")
         yield from bps.mv(
             fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
@@ -358,6 +359,9 @@ def flyscan_xray_centre(
 
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = parameters.zocalo_environment
+    parameters.do_set_stub_offsets(
+        best_effort_get_feature_flag("set_stub_offsets", False)
+    )
 
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
