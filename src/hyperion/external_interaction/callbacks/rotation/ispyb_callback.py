@@ -128,10 +128,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
         aperture_size = SingleAperturePosition(
             **doc["data"]["aperture_scatterguard-selected_aperture"]
         )
-        info = scan_data_infos[0]
-        assert (
-            info.data_collection_position_info
-        ), "Unable to find smargon motor position info"
 
         motor_positions = [
             doc["data"]["smargon_x"],
