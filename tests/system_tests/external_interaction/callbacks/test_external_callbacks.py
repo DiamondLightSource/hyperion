@@ -18,6 +18,7 @@ from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.core import set_mock_value
 from zmq.utils.monitor import recv_monitor_message
 
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -153,9 +154,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE = RE_with_external_callbacks
     test_fgs_params.zocalo_environment = "dev_artemis"
 
-    fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint.sim_put(  # type: ignore
-        2
-    )
+    set_mock_value(fake_fgs_composite.aperture_scatterguard.aperture.z.user_setpoint, 2)
     fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)  # type: ignore
     fake_fgs_composite.smargon.stub_offsets.set = MagicMock(return_value=done_status)  # type: ignore
     fake_fgs_composite.zocalo = zocalo_device

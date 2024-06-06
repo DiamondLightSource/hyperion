@@ -38,7 +38,8 @@ class DocDescriptorNames:
     # Robot load event descriptor
     ROBOT_LOAD = "robot_load"
     # For callbacks to use
-    OAV_SNAPSHOT_TRIGGERED = "snapshot_to_ispyb"
+    OAV_ROTATION_SNAPSHOT_TRIGGERED = "rotation_snapshot_triggered"
+    OAV_GRID_SNAPSHOT_TRIGGERED = "snapshot_to_ispyb"
     NEXUS_READ = "nexus_read_plan"
     ISPYB_HARDWARE_READ = "ispyb_reading_hardware"
     ISPYB_TRANSMISSION_FLUX_READ = "ispyb_update_transmission_flux"

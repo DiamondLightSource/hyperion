@@ -43,7 +43,7 @@ class RotationScan(
         default=IspybExperimentType.ROTATION
     )
     transmission_frac: float
-    ispyb_extras: TemporaryIspybExtras
+    ispyb_extras: TemporaryIspybExtras | None
 
     @property
     def detector_params(self):
@@ -79,8 +79,11 @@ class RotationScan(
         return RotationIspybParams(
             visit_path=str(self.visit_directory),
             comment=self.comment,
-            xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
-            xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,
+            xtal_snapshots_omega_start=(
+                self.ispyb_extras.xtal_snapshots_omega_start
+                if self.ispyb_extras
+                else []
+            ),
             ispyb_experiment_type=self.ispyb_experiment_type,
         )
 

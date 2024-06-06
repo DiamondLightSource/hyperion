@@ -1,0 +1,61 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+abstract class BaseModel
+
+package Mixins {
+    class WithSample
+    class WithScan
+    class WithOavCentring
+    class WithSnapshot
+    class OptionalXyzStarts
+    class XyzStarts
+    class OptionalGonioAngleStarts
+    class SplitScan
+}
+
+class HyperionParameters
+package Experiments {
+    class DiffractionExperiment
+    class DiffractionExperimentWithSample
+    class GridCommon
+    class GridScanWithEdgeDetect
+    class PinTipCentreThenXrayCentre
+    class RotationScan
+    class RobotLoadThenCentre
+    class SpecifiedGridScan
+    class ThreeDGridScan
+}
+class TemporaryIspybExtras
+
+
+BaseModel <|-- HyperionParameters
+BaseModel <|-- SplitScan
+BaseModel <|-- OptionalGonioAngleStarts
+BaseModel <|-- OptionalXyzStarts
+BaseModel <|-- TemporaryIspybExtras
+BaseModel <|-- WithOavCentring
+BaseModel <|-- WithSnapshot
+BaseModel <|-- WithSample
+BaseModel <|-- WithScan
+BaseModel <|-- XyzStarts
+
+HyperionParameters <|-- DiffractionExperiment
+WithSnapshot <|-- DiffractionExperiment
+DiffractionExperiment <|-- DiffractionExperimentWithSample
+WithSample <|-- DiffractionExperimentWithSample
+DiffractionExperimentWithSample <|-- GridCommon
+GridCommon <|-- GridScanWithEdgeDetect
+GridCommon <|-- PinTipCentreThenXrayCentre
+GridCommon <|-- RobotLoadThenCentre
+GridCommon <|-- SpecifiedGridScan
+WithScan <|-- SpecifiedGridScan
+SpecifiedGridScan <|-- ThreeDGridScan
+SplitScan <|-- ThreeDGridScan
+WithOavCentring <|-- GridCommon
+DiffractionExperimentWithSample <|-- RotationScan
+OptionalXyzStarts <|-- RotationScan
+XyzStarts <|-- SpecifiedGridScan
+OptionalGonioAngleStarts <|-- GridCommon
+OptionalGonioAngleStarts <|-- RotationScan
+@enduml

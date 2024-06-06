@@ -54,20 +54,11 @@ def setup_pin_tip_detection_params(
     )
 
 
-def pre_centring_setup_oav(
-    oav: OAV,
-    parameters: OAVParameters,
-    pin_tip_detection_device: PinTipDetection,
-):
-    """
-    Setup OAV PVs with required values.
-    """
+def setup_general_oav_params(oav: OAV, parameters: OAVParameters):
     yield from set_using_group(oav.cam.color_mode, ColorMode.RGB1)
     yield from set_using_group(oav.cam.acquire_period, parameters.acquire_period)
     yield from set_using_group(oav.cam.acquire_time, parameters.exposure)
     yield from set_using_group(oav.cam.gain, parameters.gain)
-
-    yield from setup_pin_tip_detection_params(pin_tip_detection_device, parameters)
 
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
@@ -81,6 +72,17 @@ def pre_centring_setup_oav(
         wait=True,
     )
 
+
+def pre_centring_setup_oav(
+    oav: OAV,
+    parameters: OAVParameters,
+    pin_tip_detection_device: PinTipDetection,
+):
+    """
+    Setup OAV PVs with required values.
+    """
+    yield from setup_general_oav_params(oav, parameters)
+    yield from setup_pin_tip_detection_params(pin_tip_detection_device, parameters)
     yield from bps.wait(oav_group)
 
     """
