@@ -1,4 +1,5 @@
 import atexit
+import json
 import threading
 from dataclasses import asdict
 from queue import Queue
@@ -34,8 +35,8 @@ from hyperion.external_interaction.callbacks.logging_callback import (
 )
 from hyperion.log import LOGGER, do_default_logging_setup, flush_debug_handler
 from hyperion.parameters.cli import parse_cli_args
+from hyperion.parameters.components import HyperionParameters
 from hyperion.parameters.constants import CONST, Actions, Status
-from hyperion.parameters.internal_parameters import InternalParameters
 from hyperion.tracing import TRACER, setup_tracing
 from hyperion.utils.context import setup_context
 
@@ -47,7 +48,7 @@ class Command:
     action: Actions
     devices: Optional[Any] = None
     experiment: Optional[Callable[[Any, Any], MsgGenerator]] = None
-    parameters: Optional[InternalParameters] = None
+    parameters: Optional[HyperionParameters] = None
     callbacks: Optional[CallbacksFactory] = None
 
 
@@ -109,11 +110,11 @@ class BlueskyRunner:
     def start(
         self,
         experiment: Callable,
-        parameters: InternalParameters,
+        parameters: HyperionParameters,
         plan_name: str,
         callbacks: Optional[CallbacksFactory],
     ) -> StatusAndMessage:
-        LOGGER.info(f"Started with parameters: {parameters}")
+        LOGGER.info(f"Started with parameters: {parameters.json(indent=2)}")
 
         devices: Any = PLAN_REGISTRY[plan_name]["setup"](self.context)
 
@@ -212,9 +213,7 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
     if experiment_registry_entry is None:
         raise PlanNotFound(f"Experiment plan '{plan_name}' not found in registry.")
 
-    experiment_internal_param_type = experiment_registry_entry.get(
-        "internal_param_type"
-    )
+    experiment_internal_param_type = experiment_registry_entry.get("param_type")
     callback_type = experiment_registry_entry.get("callback_collection_type")
     plan = context.plan_functions.get(plan_name)
     if experiment_internal_param_type is None:
@@ -225,13 +224,12 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
         raise PlanNotFound(
             f"Experiment plan '{plan_name}' not found in context. Context has {context.plan_functions.keys()}"
         )
-
-    parameters = experiment_internal_param_type.from_json(request.data)
-    if plan_name != parameters.hyperion_params.experiment_type:
-        raise PlanNotFound(
-            f"Wrong experiment parameters ({parameters.hyperion_params.experiment_type}) "
-            f"for plan endpoint {plan_name}."
-        )
+    try:
+        parameters = experiment_internal_param_type(**json.loads(request.data))
+    except Exception as e:
+        raise ValueError(
+            "Supplied parameters don't match the plan for this endpoint"
+        ) from e
     return plan, parameters, plan_name, callback_type
 
 

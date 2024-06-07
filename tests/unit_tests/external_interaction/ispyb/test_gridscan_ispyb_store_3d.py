@@ -37,7 +37,7 @@ def dummy_collection_group_info():
     return DataCollectionGroupInfo(
         visit_string="cm31105-4",
         experiment_type="Mesh3D",
-        sample_id="0001",
+        sample_id=364758,
     )
 
 
@@ -46,7 +46,7 @@ def scan_data_info_for_begin():
     return ScanDataInfo(
         data_collection_info=DataCollectionInfo(
             omega_start=0.0,
-            data_collection_number=0,
+            data_collection_number=1,
             xtal_snapshot1="test_1_y",
             xtal_snapshot2="test_2_y",
             xtal_snapshot3="test_3_y",
@@ -56,7 +56,7 @@ def scan_data_info_for_begin():
             kappa_start=None,
             parent_id=None,
             visit_string="cm31105-4",
-            sample_id="0001",
+            sample_id=364758,
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=0.0,
@@ -76,7 +76,6 @@ def scan_data_info_for_begin():
             n_passes=1,
             overlap=0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -95,7 +94,7 @@ def scan_data_infos_for_update():
     scan_xy_data_info_for_update = ScanDataInfo(
         data_collection_info=DataCollectionInfo(
             omega_start=0.0,
-            data_collection_number=0,
+            data_collection_number=1,
             xtal_snapshot1="test_1_y",
             xtal_snapshot2="test_2_y",
             xtal_snapshot3="test_3_y",
@@ -105,7 +104,7 @@ def scan_data_infos_for_update():
             kappa_start=None,
             parent_id=34,
             visit_string="cm31105-4",
-            sample_id="0001",
+            sample_id=364758,
             detector_id=78,
             axis_start=0.0,
             focal_spot_size_at_samplex=0.0,
@@ -126,7 +125,6 @@ def scan_data_infos_for_update():
             overlap=0,
             flux=10.0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -134,7 +132,7 @@ def scan_data_infos_for_update():
             undulator_gap1=1.0,
             start_time=EXPECTED_START_TIME,
         ),
-        data_collection_id=None,
+        data_collection_id=TEST_DATA_COLLECTION_IDS[0],
         data_collection_position_info=DataCollectionPositionInfo(
             pos_x=0, pos_y=0, pos_z=0
         ),
@@ -164,7 +162,7 @@ def scan_data_infos_for_update():
             kappa_start=None,
             parent_id=34,
             visit_string="cm31105-4",
-            sample_id="0001",
+            sample_id=364758,
             detector_id=78,
             axis_start=90.0,
             focal_spot_size_at_samplex=0.0,
@@ -185,7 +183,6 @@ def scan_data_infos_for_update():
             overlap=0,
             flux=10.0,
             start_image_number=1,
-            resolution=1.0,
             wavelength=123.98419840550369,
             xbeam=150.0,
             ybeam=160.0,
@@ -243,11 +240,9 @@ def test_ispyb_deposition_comment_for_3D_correct(
     mock_mx_aquisition = mx_acquisition_from_conn(mock_ispyb_conn)
     mock_upsert_dc = mock_mx_aquisition.upsert_data_collection
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
-    dummy_3d_gridscan_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, scan_data_infos_for_update
-    )
+    dummy_3d_gridscan_ispyb.update_deposition(ispyb_ids, scan_data_infos_for_update)
 
     first_upserted_param_value_list = mock_upsert_dc.call_args_list[1][0][0]
     second_upserted_param_value_list = mock_upsert_dc.call_args_list[2][0][0]
@@ -268,10 +263,8 @@ def test_store_3d_grid_scan(
     scan_data_info_for_begin,
     scan_data_infos_for_update,
 ):
-    assert dummy_3d_gridscan_ispyb.experiment_type == "Mesh3D"
-
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     assert ispyb_ids == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
@@ -279,7 +272,7 @@ def test_store_3d_grid_scan(
     )
 
     assert dummy_3d_gridscan_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, scan_data_infos_for_update
+        ispyb_ids, scan_data_infos_for_update
     ) == IspybIds(
         data_collection_ids=TEST_DATA_COLLECTION_IDS,
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
@@ -298,7 +291,7 @@ def test_begin_deposition(
     scan_data_info_for_begin,
 ):
     assert dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
@@ -336,7 +329,7 @@ def test_begin_deposition(
             "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
             "bottom right (px): [3250,1700].",
-            "data_collection_number": 0,
+            "data_collection_number": 1,
             "detector_distance": 100.0,
             "exp_time": 0.1,
             "imgdir": "/tmp/",
@@ -346,7 +339,6 @@ def test_begin_deposition(
             "overlap": 0,
             "omegastart": 0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,
@@ -376,16 +368,17 @@ def test_update_deposition(
     scan_data_infos_for_update,
 ):
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
     mx_acq.upsert_data_collection_group.assert_called_once()
     mx_acq.upsert_data_collection.assert_called_once()
+    mx_acq.upsert_data_collection_group.reset_mock()
 
     dummy_collection_group_info.sample_barcode = TEST_BARCODE
 
     actual_rows = dummy_3d_gridscan_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, scan_data_infos_for_update
+        ispyb_ids, scan_data_infos_for_update
     )
 
     assert actual_rows == IspybIds(
@@ -394,17 +387,7 @@ def test_update_deposition(
         grid_ids=TEST_GRID_INFO_IDS,
     )
 
-    assert_upsert_call_with(
-        mx_acq.upsert_data_collection_group.mock_calls[1],
-        mx_acq.get_data_collection_group_params(),
-        {
-            "id": TEST_DATA_COLLECTION_GROUP_ID,
-            "parentid": TEST_SESSION_ID,
-            "experimenttype": "Mesh3D",
-            "sampleid": TEST_SAMPLE_ID,
-            "sample_barcode": TEST_BARCODE,
-        },
-    )
+    mx_acq.upsert_data_collection_group.assert_not_called()
 
     assert_upsert_call_with(
         mx_acq.upsert_data_collection.mock_calls[1],
@@ -428,7 +411,7 @@ def test_update_deposition(
             "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
             "images in 100.0 um by 100.0 um steps. Top left (px): [50,100], "
             "bottom right (px): [3250,1700].",
-            "data_collection_number": 0,
+            "data_collection_number": 1,
             "detector_distance": 100.0,
             "exp_time": 0.1,
             "imgdir": "/tmp/",
@@ -439,7 +422,6 @@ def test_update_deposition(
             "flux": 10.0,
             "omegastart": 0.0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,
@@ -516,7 +498,6 @@ def test_update_deposition(
             "flux": 10.0,
             "omegastart": 90.0,
             "start_image_number": 1,
-            "resolution": 1.0,  # deferred
             "wavelength": 123.98419840550369,
             "xbeam": 150.0,
             "ybeam": 160.0,
@@ -577,13 +558,14 @@ def test_end_deposition_happy_path(
     scan_data_infos_for_update,
 ):
     ispyb_ids = dummy_3d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
-    )
-    ispyb_ids = dummy_3d_gridscan_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, scan_data_infos_for_update
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
-    assert len(mx_acq.upsert_data_collection_group.mock_calls) == 2
+    assert len(mx_acq.upsert_data_collection_group.mock_calls) == 1
+    ispyb_ids = dummy_3d_gridscan_ispyb.update_deposition(
+        ispyb_ids, scan_data_infos_for_update
+    )
+    assert len(mx_acq.upsert_data_collection_group.mock_calls) == 1
     assert len(mx_acq.upsert_data_collection.mock_calls) == 3
     assert len(mx_acq.upsert_dc_grid.mock_calls) == 2
 
@@ -633,10 +615,10 @@ def test_param_keys(
     scan_xy_data_info_for_update,
 ):
     ispyb_ids = dummy_2d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     assert dummy_2d_gridscan_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]
+        ispyb_ids, [scan_xy_data_info_for_update]
     ) == IspybIds(
         data_collection_ids=(TEST_DATA_COLLECTION_IDS[0],),
         data_collection_group_id=TEST_DATA_COLLECTION_GROUP_ID,
@@ -655,11 +637,9 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 ):
     setup_mock_return_values(ispyb_conn)
     ispyb_ids = dummy_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
-    dummy_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, [scan_data_info_for_update]
-    )
+    dummy_ispyb.update_deposition(ispyb_ids, [scan_data_info_for_update])
 
     mx_acquisition = ispyb_conn.return_value.__enter__.return_value.mx_acquisition
 
@@ -671,7 +651,7 @@ def _test_when_grid_scan_stored_then_data_present_in_upserts(
 
     if test_group:
         upsert_data_collection_group_arg_list = (
-            mx_acquisition.upsert_data_collection_group.call_args_list[1][0]
+            mx_acquisition.upsert_data_collection_group.call_args_list[0][0]
         )
         actual = upsert_data_collection_group_arg_list[0]
         assert test_function(MXAcquisition.get_data_collection_group_params(), actual)
@@ -712,7 +692,7 @@ def test_given_real_sampleid_when_grid_scan_stored_then_sample_id_set(
     scan_data_info_for_begin,
     scan_xy_data_info_for_update,
 ):
-    expected_sample_id = "0001"
+    expected_sample_id = 364758
 
     def test_sample_id(default_params, actual):
         sampleid_idx = list(default_params).index("sampleid")
@@ -743,10 +723,10 @@ def test_fail_result_run_results_in_bad_run_status(
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
 
     ispyb_ids = dummy_2d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     ispyb_ids = dummy_2d_gridscan_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]
+        ispyb_ids, [scan_xy_data_info_for_update]
     )
     dummy_2d_gridscan_ispyb.end_deposition(ispyb_ids, "fail", "test specifies failure")
 
@@ -772,10 +752,10 @@ def test_no_exception_during_run_results_in_good_run_status(
     mock_upsert_data_collection = mock_mx_aquisition.upsert_data_collection
 
     ispyb_ids = dummy_2d_gridscan_ispyb.begin_deposition(
-        dummy_collection_group_info, scan_data_info_for_begin
+        dummy_collection_group_info, [scan_data_info_for_begin]
     )
     ispyb_ids = dummy_2d_gridscan_ispyb.update_deposition(
-        ispyb_ids, dummy_collection_group_info, [scan_xy_data_info_for_update]
+        ispyb_ids, [scan_xy_data_info_for_update]
     )
     dummy_2d_gridscan_ispyb.end_deposition(ispyb_ids, "success", "")
 

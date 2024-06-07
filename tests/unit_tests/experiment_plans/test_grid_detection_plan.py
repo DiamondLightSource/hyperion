@@ -1,12 +1,12 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import DEFAULT, AsyncMock, MagicMock, patch
 
+import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
-from dodal.devices.fast_grid_scan import GridAxis
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -22,20 +22,21 @@ from hyperion.experiment_plans.oav_grid_detection_plan import (
 from hyperion.external_interaction.callbacks.grid_detection_callback import (
     GridDetectionCallback,
 )
-from hyperion.external_interaction.callbacks.oav_snapshot_callback import (
-    OavSnapshotCallback,
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    GridscanISPyBCallback,
+    ispyb_activation_wrapper,
 )
 
 from ...conftest import RunEngineSimulator
+from .conftest import assert_event
 
 
 @pytest.fixture
 def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
-    oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True)
-
-    oav.parameters = OAVConfigParams(
+    params = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
+    oav = i03.oav(wait_for_connection=False, fake_with_ophyd_sim=True, params=params)
     oav.parameters.update_on_zoom = MagicMock()
     oav.parameters.load_microns_per_pixel = MagicMock()
     oav.parameters.micronsPerXPixel = 1.58
@@ -62,9 +63,10 @@ def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
     oav.zoom_controller.frst.set("7.0x")
     oav.zoom_controller.fvst.set("9.0x")
 
-    with patch("dodal.devices.areadetector.plugins.MJPG.requests"), patch(
-        "dodal.devices.areadetector.plugins.MJPG.Image"
-    ) as mock_image_class:
+    with (
+        patch("dodal.devices.areadetector.plugins.MJPG.requests"),
+        patch("dodal.devices.areadetector.plugins.MJPG.Image") as mock_image_class,
+    ):
         mock_image = MagicMock()
         mock_image_class.open.return_value.__enter__.return_value = mock_image
 
@@ -78,7 +80,10 @@ def fake_devices(RE, smargon: Smargon, backlight: Backlight, test_config_files):
         yield composite, mock_image
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_grid_detection_plan_runs_and_triggers_snapshots(
     RE: RunEngine,
@@ -86,31 +91,26 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     fake_devices,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
-    cb = OavSnapshotCallback()
-    RE.subscribe(cb)
     composite, image = fake_devices
 
-    RE(
-        grid_detection_plan(
+    @bpp.run_decorator()
+    def decorated():
+        yield from grid_detection_plan(
             composite,
             parameters=params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
         )
-    )
+
+    RE(decorated())
     assert image.save.call_count == 6
 
-    assert len(cb.snapshot_filenames) == 2
-    assert len(cb.snapshot_filenames[0]) == 3
-    assert cb.snapshot_filenames[0][0] == "tmp/test_0.png"
-    assert cb.snapshot_filenames[1][2] == "tmp/test_90_grid_overlay.png"
 
-    assert len(cb.out_upper_left) == 2
-    assert len(cb.out_upper_left[0])
-
-
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @pytest.mark.asyncio
 async def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
@@ -144,9 +144,12 @@ async def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
     assert "No pin found" in excinfo.value.args[0]
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
+def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices,
     RE: RunEngine,
     test_config_files,
@@ -160,12 +163,12 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
     composite.oav.parameters.beam_centre_j = 4
     box_size_y_pixels = box_size_um / composite.oav.parameters.micronsPerYPixel
 
-    oav_cb = OavSnapshotCallback()
-    grid_param_cb = GridDetectionCallback(composite.oav.parameters, 0.004, False)
-    RE.subscribe(oav_cb)
+    grid_param_cb = GridDetectionCallback(composite.oav.parameters)
     RE.subscribe(grid_param_cb)
-    RE(
-        grid_detection_plan(
+
+    @bpp.run_decorator()
+    def decorated():
+        yield from grid_detection_plan(
             composite,
             parameters=params,
             snapshot_dir="tmp",
@@ -173,25 +176,25 @@ def test_given_when_grid_detect_then_upper_left_and_start_position_as_expected(
             grid_width_microns=161.2,
             box_size_um=0.2,
         )
-    )
 
-    # 8, 2 based on tip x, and lowest value in the top array
-    assert oav_cb.out_upper_left[0] == [8, 2 - box_size_y_pixels / 2]
-    assert oav_cb.out_upper_left[1] == [8, 2]
+    RE(decorated())
 
     gridscan_params = grid_param_cb.get_grid_parameters()
 
-    assert gridscan_params.x_start == pytest.approx(0.0005)
-    assert gridscan_params.y1_start == pytest.approx(
+    assert gridscan_params["x_start_um"] == pytest.approx(0.0005)
+    assert gridscan_params["y_start_um"] == pytest.approx(
         -0.0001
         - (
             (box_size_y_pixels / 2) * composite.oav.parameters.micronsPerYPixel * 1e-3
         )  # microns to mm
     )
-    assert gridscan_params.z1_start == pytest.approx(-0.0001)
+    assert gridscan_params["z_start_um"] == pytest.approx(-0.0001)
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @patch(
     "hyperion.experiment_plans.oav_grid_detection_plan.pre_centring_setup_oav",
@@ -207,92 +210,136 @@ def test_when_grid_detection_plan_run_twice_then_values_do_not_persist_in_callba
     composite, _ = fake_devices
 
     for _ in range(2):
-        cb = OavSnapshotCallback()
-        RE.subscribe(cb)
 
-        RE(
-            grid_detection_plan(
+        @bpp.run_decorator()
+        def decorated():
+            yield from grid_detection_plan(
                 composite,
                 parameters=params,
                 snapshot_dir="tmp",
                 snapshot_template="test_{angle}",
                 grid_width_microns=161.2,
             )
-        )
-    assert len(cb.snapshot_filenames) == 2
-    assert len(cb.out_upper_left) == 2
+
+        RE(decorated())
 
 
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_values(
-    fake_devices,
-    RE: RunEngine,
-    test_config_files,
+def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
+    fake_devices, RE: RunEngine, test_config_files, test_fgs_params
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
-    box_size_um = 20
-    cb = GridDetectionCallback(composite.oav.parameters, 0.5, True)
+    composite.oav.parameters.micronsPerYPixel = 1.25
+    composite.oav.parameters.micronsPerXPixel = 1.25
+    cb = GridscanISPyBCallback()
     RE.subscribe(cb)
 
-    RE(
-        grid_detection_plan(
+    def decorated():
+        yield from grid_detection_plan(
             composite,
             parameters=params,
             snapshot_dir="tmp",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
         )
-    )
+
+    with patch.multiple(cb, activity_gated_start=DEFAULT, activity_gated_event=DEFAULT):
+        RE(ispyb_activation_wrapper(decorated(), test_fgs_params))
+
+        assert_event(
+            cb.activity_gated_start.mock_calls[0],  # pyright:ignore
+            {"activate_callbacks": ["GridscanISPyBCallback"]},
+        )
+        assert_event(
+            cb.activity_gated_event.mock_calls[0],  # pyright: ignore
+            {
+                "oav_grid_snapshot_top_left_x": 8,
+                "oav_grid_snapshot_top_left_y": -6,
+                "oav_grid_snapshot_num_boxes_x": 8,
+                "oav_grid_snapshot_num_boxes_y": 2,
+                "oav_grid_snapshot_box_width": 16,
+                "oav_grid_snapshot_microns_per_pixel_x": 1.25,
+                "oav_grid_snapshot_microns_per_pixel_y": 1.25,
+                "oav_grid_snapshot_last_path_full_overlay": "tmp/test_0_grid_overlay.png",
+                "oav_grid_snapshot_last_path_outer": "tmp/test_0_outer_overlay.png",
+                "oav_grid_snapshot_last_saved_path": "tmp/test_0.png",
+            },
+        )
+        assert_event(
+            cb.activity_gated_event.mock_calls[1],  # pyright:ignore
+            {
+                "oav_grid_snapshot_top_left_x": 8,
+                "oav_grid_snapshot_top_left_y": 2,
+                "oav_grid_snapshot_num_boxes_x": 8,
+                "oav_grid_snapshot_num_boxes_y": 1,
+                "oav_grid_snapshot_box_width": 16,
+                "oav_grid_snapshot_microns_per_pixel_x": 1.25,
+                "oav_grid_snapshot_microns_per_pixel_y": 1.25,
+                "oav_grid_snapshot_last_path_full_overlay": "tmp/test_90_grid_overlay.png",
+                "oav_grid_snapshot_last_path_outer": "tmp/test_90_outer_overlay.png",
+                "oav_grid_snapshot_last_saved_path": "tmp/test_90.png",
+            },
+        )
+
+
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
+@patch("bluesky.plan_stubs.sleep", new=MagicMock())
+def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_values(
+    fake_devices, RE: RunEngine, test_config_files, test_fgs_params
+):
+    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    composite, _ = fake_devices
+    box_size_um = 20
+    cb = GridDetectionCallback(composite.oav.parameters)
+    RE.subscribe(cb)
+
+    def decorated():
+        yield from grid_detection_plan(
+            composite,
+            parameters=params,
+            snapshot_dir="tmp",
+            snapshot_template="test_{angle}",
+            grid_width_microns=161.2,
+        )
+
+    RE(ispyb_activation_wrapper(decorated(), test_fgs_params))
 
     my_grid_params = cb.get_grid_parameters()
 
-    test_x_grid_axis = GridAxis(
-        start=my_grid_params.x_start,
-        step_size=my_grid_params.x_step_size,
-        full_steps=my_grid_params.x_steps,
+    assert my_grid_params["x_start_um"] == pytest.approx(-0.7942199999999999)
+    assert my_grid_params["y_start_um"] == pytest.approx(
+        -0.53984 - (box_size_um * 1e-3 / 2)
     )
-
-    test_y_grid_axis = GridAxis(
-        start=my_grid_params.y1_start,
-        step_size=my_grid_params.y_step_size,
-        full_steps=my_grid_params.y_steps,
+    assert my_grid_params["y2_start_um"] == pytest.approx(
+        -0.53984 - (box_size_um * 1e-3 / 2)
     )
-
-    test_z_grid_axis = GridAxis(
-        start=my_grid_params.z2_start,
-        step_size=my_grid_params.z_step_size,
-        full_steps=my_grid_params.z_steps,
-    )
-
-    assert my_grid_params.x_start == pytest.approx(-0.7942199999999999)
-    assert my_grid_params.y1_start == pytest.approx(-0.53984 - (box_size_um * 1e-3 / 2))
-    assert my_grid_params.y2_start == pytest.approx(-0.53984 - (box_size_um * 1e-3 / 2))
-    assert my_grid_params.z1_start == pytest.approx(-0.53984)
-    assert my_grid_params.z2_start == pytest.approx(-0.53984)
-    assert my_grid_params.x_step_size == pytest.approx(0.02)
-    assert my_grid_params.y_step_size == pytest.approx(0.02)
-    assert my_grid_params.z_step_size == pytest.approx(0.02)
-    assert my_grid_params.x_steps == pytest.approx(9)
-    assert my_grid_params.y_steps == pytest.approx(2)
-    assert my_grid_params.z_steps == pytest.approx(1)
+    assert my_grid_params["z_start_um"] == pytest.approx(-0.53984)
+    assert my_grid_params["z2_start_um"] == pytest.approx(-0.53984)
+    assert my_grid_params["x_step_size_um"] == pytest.approx(0.02)
+    assert my_grid_params["y_step_size_um"] == pytest.approx(0.02)
+    assert my_grid_params["z_step_size_um"] == pytest.approx(0.02)
+    assert my_grid_params["x_steps"] == pytest.approx(9)
+    assert my_grid_params["y_steps"] == pytest.approx(2)
+    assert my_grid_params["z_steps"] == pytest.approx(1)
     assert cb.x_step_size_mm == cb.y_step_size_mm == cb.z_step_size_mm == 0.02
-
-    assert my_grid_params.dwell_time_ms == pytest.approx(500)
-
-    assert my_grid_params.x_axis == test_x_grid_axis
-    assert my_grid_params.y_axis == test_y_grid_axis
-    assert my_grid_params.z_axis == test_z_grid_axis
-
-    assert my_grid_params.set_stub_offsets is True
 
 
 @pytest.mark.parametrize(
     "odd",
     [(True), (False)],
 )
-@patch("dodal.beamlines.beamline_utils.active_device_is_same_type", lambda a, b: True)
+@patch(
+    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
+    lambda a, b: True,
+)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @patch("hyperion.experiment_plans.oav_grid_detection_plan.LOGGER")
 def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
@@ -309,7 +356,10 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     box_size_y_pixels = box_size_um / composite.oav.parameters.micronsPerYPixel
     initial_min_y = 1
 
-    abs_sets: dict[str, list] = {"snapshot.top_left_y": [], "snapshot.num_boxes_y": []}
+    abs_sets: dict[str, list] = {
+        "grid_snapshot.top_left_y": [],
+        "grid_snapshot.num_boxes_y": [],
+    }
 
     def handle_read(msg: Msg):
         if msg.obj.name == "pin_tip_detection-triggered_tip":
@@ -364,8 +414,8 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     else:
         fake_logger.debug.assert_not_called()
 
-    assert abs_sets["snapshot.top_left_y"][0] == expected_min_y
-    assert abs_sets["snapshot.num_boxes_y"][0] == expected_y_steps
+    assert abs_sets["grid_snapshot.top_left_y"][0] == expected_min_y
+    assert abs_sets["grid_snapshot.num_boxes_y"][0] == expected_y_steps
 
 
 @pytest.mark.parametrize(

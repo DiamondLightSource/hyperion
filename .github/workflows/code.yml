@@ -16,7 +16,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           architecture: x64
 
       - name: Checkout Hyperion
@@ -40,7 +40,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install with latest dependencies
         run: pip install -e .[dev]
@@ -56,3 +56,25 @@ jobs:
         with:
           name: ${{ matrix.python }}/${{ matrix.os }}
           files: cov.xml
+
+      - name: Prepare test data for reference nexus
+        run: hyperion-populate-test-and-meta-files
+
+      - name: Run imginfo on reference nexus
+        uses: ./.github/actions/verify-nexus
+        id: verify_reference_nexus
+        with:
+          filename: "tests/test_data/nexus_files/rotation/ins_8_5.nxs"
+
+        # ugly hack because we get double free error on exit
+      - name: Generate test nexus files
+        run: hyperion-generate-test-nexus
+      - name: Report test nexus files
+        run: echo "filename=$(cat OUTPUT_FILENAME)" >> $GITHUB_OUTPUT
+        id: generated_nexus
+
+      - name: Run imginfo on generated nexus
+        uses: ./.github/actions/verify-nexus
+        id: verify_generated_nexus
+        with:
+          filename: ${{ steps.generated_nexus.outputs.filename }}

@@ -125,11 +125,15 @@ def test_when_update_barcode_called_with_success_then_correct_expected_url_poste
     mock_patch,
 ):
     expeye_interactor = ExpeyeInteraction()
-    expeye_interactor.update_barcode(3, "test")
+    expeye_interactor.update_barcode_and_snapshots(
+        3, "test", "/tmp/before.jpg", "/tmp/after.jpg"
+    )
 
     mock_patch.assert_called_once()
     assert mock_patch.call_args.args[0] == "http://blah/core/robot-actions/3"
     expected_data = {
         "sampleBarcode": "test",
+        "xtalSnapshotBefore": "/tmp/before.jpg",
+        "xtalSnapshotAfter": "/tmp/after.jpg",
     }
     assert mock_patch.call_args.kwargs["json"] == expected_data

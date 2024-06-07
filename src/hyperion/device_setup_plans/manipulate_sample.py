@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import bluesky.plan_stubs as bps
+from dodal.devices.aperturescatterguard import (
+    AperturePositionGDANames,
+    ApertureScatterguard,
+)
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -12,6 +16,8 @@ LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
 
 def setup_sample_environment(
+    aperture_scatterguard: ApertureScatterguard,
+    aperture_position_gda_name: AperturePositionGDANames | None,
     detector_motion: DetectorMotion,
     backlight: Backlight,
     attenuator: Attenuator,
@@ -19,13 +25,41 @@ def setup_sample_environment(
     detector_distance: float,
     group="setup_senv",
 ):
-    """Move out the backlight, retract the detector shutter, and set the attenuator to
-    transmission."""
+    """Move the aperture into required position, move out the backlight, retract the detector shutter,
+    and set the attenuator to transmission."""
 
+    yield from move_aperture_if_required(
+        aperture_scatterguard, aperture_position_gda_name, group=group
+    )
     yield from bps.abs_set(detector_motion.shutter, 1, group=group)
     yield from bps.abs_set(detector_motion.z, detector_distance, group=group)
     yield from bps.abs_set(backlight, backlight.OUT, group=group)
     yield from bps.abs_set(attenuator, transmission_fraction, group=group)
+
+
+def move_aperture_if_required(
+    aperture_scatterguard: ApertureScatterguard,
+    aperture_position_gda_name: AperturePositionGDANames | None,
+    group="move_aperture",
+):
+    if not aperture_position_gda_name:
+        previous_aperture_position = yield from bps.rd(aperture_scatterguard)
+        assert isinstance(previous_aperture_position, dict)
+        LOGGER.info(
+            f"Using previously set aperture position {previous_aperture_position['name']}"
+        )
+
+    else:
+        assert aperture_scatterguard.aperture_positions
+        aperture_position = aperture_scatterguard.aperture_positions.get_position_from_gda_aperture_name(
+            aperture_position_gda_name
+        )
+        LOGGER.info(f"Setting aperture position to {aperture_position}")
+        yield from bps.abs_set(
+            aperture_scatterguard,
+            aperture_position,
+            group=group,
+        )
 
 
 def cleanup_sample_environment(
@@ -59,5 +93,27 @@ def move_x_y_z(
         yield from bps.abs_set(smargon.y, y, group=group)
     if z:
         yield from bps.abs_set(smargon.z, z, group=group)
+    if wait:
+        yield from bps.wait(group)
+
+
+def move_phi_chi_omega(
+    smargon: Smargon,
+    phi: float | None = None,
+    chi: float | None = None,
+    omega: float | None = None,
+    wait=False,
+    group="move_phi_chi_omega",
+):
+    """Move the x, y, and z axes of the given smargon to the specified position. All
+    axes are optional."""
+
+    LOGGER.info(f"Moving smargon to phi, chi, omega: {(phi, chi, omega)}")
+    if phi:
+        yield from bps.abs_set(smargon.phi, phi, group=group)
+    if chi:
+        yield from bps.abs_set(smargon.chi, chi, group=group)
+    if omega:
+        yield from bps.abs_set(smargon.omega, omega, group=group)
     if wait:
         yield from bps.wait(group)

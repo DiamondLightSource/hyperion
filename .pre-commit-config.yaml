@@ -35,6 +35,6 @@ repos:
         args: ["--allow-multiple-documents"]
       - id: check-merge-conflict
       - id: check-added-large-files
-        args: ["--maxkb=200"]
+        args: ["--maxkb=500"]
       - id: no-commit-to-branch
         name: "Don't commit to 'main'"

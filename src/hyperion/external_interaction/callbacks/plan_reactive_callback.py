@@ -54,7 +54,7 @@ class PlanReactiveCallback(CallbackBase):
 
     def start(self, doc: RunStart) -> RunStart | None:
         callbacks_to_activate = doc.get("activate_callbacks")
-        if callbacks_to_activate:
+        if callbacks_to_activate and not self.active:
             activate = type(self).__name__ in callbacks_to_activate
             self.active = activate
             self.log.info(

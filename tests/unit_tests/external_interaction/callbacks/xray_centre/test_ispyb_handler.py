@@ -53,7 +53,7 @@ class TestXrayCentreIspybHandler:
         self,
     ):
         ispyb_handler = GridscanISPyBCallback()
-        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
         )
@@ -80,7 +80,7 @@ class TestXrayCentreIspybHandler:
         self,
     ):
         ispyb_handler = GridscanISPyBCallback()
-        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
         )
@@ -114,7 +114,7 @@ class TestXrayCentreIspybHandler:
         gelf_handler.emit = MagicMock()
 
         ispyb_handler = GridscanISPyBCallback()
-        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
         )
@@ -141,7 +141,7 @@ class TestXrayCentreIspybHandler:
         gelf_handler.emit = MagicMock()
 
         ispyb_handler = GridscanISPyBCallback()
-        ispyb_handler.activity_gated_start(td.test_start_document)
+        ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)
         ispyb_handler.activity_gated_descriptor(
             td.test_descriptor_document_pre_data_collection
         )
@@ -167,7 +167,9 @@ class TestXrayCentreIspybHandler:
     ):
         ispyb_handler = GridscanISPyBCallback()
 
-        ispyb_handler.activity_gated_start(td.test_start_document)  # type:ignore
+        ispyb_handler.activity_gated_start(
+            td.test_gridscan3d_start_document
+        )  # type:ignore
 
         ispyb_handler.activity_gated_start(td.test_do_fgs_start_document)  # type:ignore
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)

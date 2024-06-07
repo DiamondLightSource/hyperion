@@ -1,3 +1,4 @@
+import glob
 import os
 from copy import deepcopy
 from typing import Any, Callable, Sequence
@@ -13,14 +14,11 @@ from ophyd.sim import SynAxis
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.parameters.external_parameters import from_file
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.gridscan import ThreeDGridScan
+from hyperion.parameters.rotation import RotationScan
 from hyperion.utils.utils import convert_angstrom_to_eV
+
+from ...conftest import raw_params_from_file
 
 
 class MockReactiveCallback(PlanReactiveCallback):
@@ -64,33 +62,36 @@ def get_test_plan(callback_name):
 
 @pytest.fixture
 def test_rotation_params():
-    param_dict = from_file(
+    param_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
     )
-    param_dict["hyperion_params"]["detector_params"]["directory"] = "tests/test_data"
-    param_dict["hyperion_params"]["detector_params"]["prefix"] = "TEST_FILENAME"
-    param_dict["hyperion_params"]["detector_params"]["expected_energy_ev"] = 12700
-    param_dict["experiment_params"]["rotation_angle"] = 360.0
-    params = RotationInternalParameters(**param_dict)
-    params.experiment_params.x = 0
-    params.experiment_params.y = 0
-    params.experiment_params.z = 0
-    params.hyperion_params.detector_params.exposure_time = 0.004
+    param_dict["storage_directory"] = "tests/test_data"
+    param_dict["file_name"] = "TEST_FILENAME"
+    param_dict["demand_energy_ev"] = 12700
+    param_dict["scan_width_deg"] = 360.0
+    params = RotationScan(**param_dict)
+    params.x_start_um = 0
+    params.y_start_um = 0
+    params.z_start_um = 0
+    params.exposure_time_s = 0.004
     return params
 
 
-@pytest.fixture(params=[1044])
+@pytest.fixture(params=[1050])
 def test_fgs_params(request):
-    params = GridscanInternalParameters(**default_raw_params())
-    params.hyperion_params.detector_params.expected_energy_ev = convert_angstrom_to_eV(
-        1.0
-    )
-    params.hyperion_params.detector_params.use_roi_mode = True
-    params.hyperion_params.detector_params.num_triggers = request.param
-    params.hyperion_params.detector_params.directory = (
+    assert request.param % 25 == 0, "Please use a multiple of 25 images"
+    params = ThreeDGridScan(**default_raw_params())
+    params.demand_energy_ev = convert_angstrom_to_eV(1.0)
+    params.use_roi_mode = True
+    first_scan_img = (request.param // 10) * 6
+    second_scan_img = (request.param // 10) * 4
+    params.x_steps = 5
+    params.y_steps = first_scan_img // 5
+    params.z_steps = second_scan_img // 5
+    params.storage_directory = (
         os.path.dirname(os.path.realpath(__file__)) + "/test_data"
     )
-    params.hyperion_params.detector_params.prefix = "dummy"
+    params.file_name = "dummy"
     yield params
 
 
@@ -107,15 +108,10 @@ def mock_ispyb_conn(base_ispyb_conn):
 
     upsert_data_collection.i = iter(TEST_DATA_COLLECTION_IDS)  # pyright: ignore
 
-    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection.side_effect = (
-        upsert_data_collection
-    )
-    base_ispyb_conn.return_value.mx_acquisition.update_dc_position.return_value = (
-        TEST_POSITION_ID
-    )
-    base_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
-        TEST_DATA_COLLECTION_GROUP_ID
-    )
+    mx_acq = base_ispyb_conn.return_value.mx_acquisition
+    mx_acq.upsert_data_collection.side_effect = upsert_data_collection
+    mx_acq.update_dc_position.return_value = TEST_POSITION_ID
+    mx_acq.upsert_data_collection_group.return_value = TEST_DATA_COLLECTION_GROUP_ID
 
     def upsert_dc_grid(values):
         kvpairs = remap_upsert_columns(list(MXAcquisition.get_dc_grid_params()), values)
@@ -126,9 +122,7 @@ def mock_ispyb_conn(base_ispyb_conn):
 
     upsert_dc_grid.i = iter(TEST_GRID_INFO_IDS)  # pyright: ignore
 
-    base_ispyb_conn.return_value.mx_acquisition.upsert_dc_grid.side_effect = (
-        upsert_dc_grid
-    )
+    mx_acq.upsert_dc_grid.side_effect = upsert_dc_grid
     return base_ispyb_conn
 
 
@@ -185,20 +179,28 @@ def base_ispyb_conn():
 
 @pytest.fixture
 def dummy_rotation_params():
-    dummy_params = RotationInternalParameters(
+    dummy_params = RotationScan(
         **default_raw_params(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
     )
-    dummy_params.hyperion_params.ispyb_params.sample_id = TEST_SAMPLE_ID
-    return dummy_params
+    dummy_params.sample_id = TEST_SAMPLE_ID
+
+    def clear_files():
+        files = glob.glob(f"{dummy_params.storage_directory}*")
+        for f in files:
+            os.remove(f)
+
+    clear_files()
+    yield dummy_params
+    clear_files()
 
 
-TEST_SAMPLE_ID = "0001"
+TEST_SAMPLE_ID = 364758
 TEST_BARCODE = "12345A"
 
 
 def default_raw_params(
-    json_file="tests/test_data/parameter_json_files/test_internal_parameter_defaults.json",
+    json_file="tests/test_data/parameter_json_files/good_test_parameters.json",
 ):
-    return from_file(json_file)
+    return raw_params_from_file(json_file)

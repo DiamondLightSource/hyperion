@@ -1,42 +1,52 @@
+import asyncio
+import gzip
+import json
 import logging
 import sys
 import threading
 from functools import partial
-from typing import Callable, Generator, Optional, Sequence
+from typing import Any, Callable, Generator, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.beamlines import beamline_utils, i03
-from dodal.beamlines.beamline_parameters import (
+from dodal.beamlines import i03
+from dodal.common.beamlines import beamline_utils
+from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
 from dodal.devices.aperturescatterguard import (
     ApertureFiveDimensionalLocation,
     AperturePositions,
     ApertureScatterguard,
+    ApertureScatterguardTolerances,
     SingleAperturePosition,
 )
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.DCM import DCM
+from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import GridScanCompleteStatus
 from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
+from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
+from ophyd.sim import NullStatus
 from ophyd.status import DeviceStatus, Status
-from ophyd_async.core import set_sim_value
+from ophyd_async.core import callback_on_mock_put, set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
+from ophyd_async.epics.motion.motor import Motor
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -55,19 +65,8 @@ from hyperion.log import (
     _get_logging_dir,
     do_default_logging_setup,
 )
-from hyperion.parameters.external_parameters import from_file as raw_params_from_file
-from hyperion.parameters.plan_specific.grid_scan_with_edge_detect_params import (
-    GridScanWithEdgeDetectInternalParameters,
-)
-from hyperion.parameters.plan_specific.gridscan_internal_params import (
-    GridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.panda.panda_gridscan_internal_params import (
-    PandAGridscanInternalParameters,
-)
-from hyperion.parameters.plan_specific.rotation_scan_internal_params import (
-    RotationInternalParameters,
-)
+from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
+from hyperion.parameters.rotation import RotationScan
 from hyperion.tracing import TRACER, setup_tracing
 
 setup_tracing()
@@ -82,6 +81,17 @@ def tracing_span(request):
 
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
+
+
+def raw_params_from_file(filename):
+    with open(filename) as f:
+        return json.loads(f.read())
+
+
+def default_raw_params():
+    return raw_params_from_file(
+        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json"
+    )
 
 
 def create_dummy_scan_spec(x_steps, y_steps, z_steps):
@@ -141,8 +151,8 @@ def pytest_runtest_setup(item):
 
 
 def pytest_runtest_teardown(item):
-    if "dodal.beamlines.beamline_utils" in sys.modules:
-        sys.modules["dodal.beamlines.beamline_utils"].clear_devices()
+    if "dodal.common.beamlines.beamline_utils" in sys.modules:
+        sys.modules["dodal.common.beamlines.beamline_utils"].clear_devices()
     markers = [m.name for m in item.own_markers]
     if "skip_log_setup" in markers:
         _reset_loggers([*ALL_LOGGERS, dodal_logger])
@@ -181,6 +191,30 @@ def patch_motor(motor: EpicsMotor):
     return patch.object(motor, "set", MagicMock(side_effect=partial(mock_set, motor)))
 
 
+async def mock_good_coroutine():
+    return asyncio.sleep(0)
+
+
+def pass_on_mock(motor, call_log: MagicMock | None = None):
+    def _pass_on_mock(value, **kwargs):
+        set_mock_value(motor.user_readback, value)
+        if call_log is not None:
+            call_log(value, **kwargs)
+
+    return _pass_on_mock
+
+
+def patch_async_motor(
+    motor: Motor, initial_position=0, call_log: MagicMock | None = None
+):
+    set_mock_value(motor.user_setpoint, initial_position)
+    set_mock_value(motor.user_readback, initial_position)
+    set_mock_value(motor.deadband, 0.001)
+    set_mock_value(motor.motor_done_move, 1)
+    set_mock_value(motor.velocity, 1)
+    return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
+
+
 @pytest.fixture
 def beamline_parameters():
     return GDABeamlineParameters.from_file(
@@ -190,25 +224,22 @@ def beamline_parameters():
 
 @pytest.fixture
 def test_fgs_params():
-    return GridscanInternalParameters(
+    return ThreeDGridScan(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_internal_parameter_defaults.json"
+            "tests/test_data/parameter_json_files/good_test_parameters.json"
         )
     )
 
 
 @pytest.fixture
-def test_panda_fgs_params():
-    return PandAGridscanInternalParameters(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/panda_test_parameters.json"
-        )
-    )
+def test_panda_fgs_params(test_fgs_params: ThreeDGridScan):
+    test_fgs_params.use_panda = True
+    return test_fgs_params
 
 
 @pytest.fixture
 def test_rotation_params():
-    return RotationInternalParameters(
+    return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
         )
@@ -217,7 +248,7 @@ def test_rotation_params():
 
 @pytest.fixture
 def test_rotation_params_nomove():
-    return RotationInternalParameters(
+    return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
         )
@@ -254,9 +285,14 @@ def smargon() -> Generator[Smargon, None, None]:
     smargon.y.user_readback.sim_put(0.0)  # type: ignore
     smargon.z.user_readback.sim_put(0.0)  # type: ignore
 
-    with patch_motor(smargon.omega), patch_motor(smargon.x), patch_motor(
-        smargon.y
-    ), patch_motor(smargon.z), patch_motor(smargon.chi), patch_motor(smargon.phi):
+    with (
+        patch_motor(smargon.omega),
+        patch_motor(smargon.x),
+        patch_motor(smargon.y),
+        patch_motor(smargon.z),
+        patch_motor(smargon.chi),
+        patch_motor(smargon.phi),
+    ):
         yield smargon
 
 
@@ -266,7 +302,7 @@ def zebra():
     zebra = i03.zebra(fake_with_ophyd_sim=True)
 
     def mock_side(*args, **kwargs):
-        zebra.pc.arm.armed._backend._set_value(*args, **kwargs)  # type: ignore
+        set_mock_value(zebra.pc.arm.armed, *args, **kwargs)
         return Status(done=True, success=True)
 
     zebra.pc.arm.set = MagicMock(side_effect=mock_side)
@@ -276,6 +312,11 @@ def zebra():
 @pytest.fixture
 def backlight():
     return i03.backlight(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
+def fast_grid_scan():
+    return i03.fast_grid_scan(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -301,14 +342,19 @@ def s4_slit_gaps():
 def synchrotron():
     RunEngine()  # A RE is needed to start the bluesky loop
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
-    set_sim_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
-    set_sim_value(synchrotron.topup_start_countdown, 10)
+    set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
+    set_mock_value(synchrotron.topup_start_countdown, 10)
     return synchrotron
 
 
 @pytest.fixture
-def oav():
-    return i03.oav(fake_with_ophyd_sim=True)
+def oav(test_config_files):
+    parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    oav = i03.oav(fake_with_ophyd_sim=True, params=parameters)
+    oav.snapshot.trigger = MagicMock(return_value=NullStatus())
+    return oav
 
 
 @pytest.fixture
@@ -332,21 +378,23 @@ def ophyd_pin_tip_detection():
 def robot(done_status):
     RunEngine()  # A RE is needed to start the bluesky loop
     robot = i03.robot(fake_with_ophyd_sim=True)
-    set_sim_value(robot.barcode.bare_signal, ["BARCODE"])
+    set_mock_value(robot.barcode, "BARCODE")
     robot.set = MagicMock(return_value=done_status)
     return robot
 
 
 @pytest.fixture
-def attenuator():
-    with patch(
-        "dodal.devices.attenuator.await_value",
-        return_value=Status(done=True, success=True),
-        autospec=True,
-    ):
-        attenuator = i03.attenuator(fake_with_ophyd_sim=True)
-        attenuator.actual_transmission.sim_put(0.49118047952)  # type: ignore
-        yield attenuator
+def attenuator(RE):
+    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
+    set_mock_value(attenuator.actual_transmission, 0.49118047952)
+
+    @AsyncStatus.wrap
+    async def fake_attenuator_set(val):
+        set_mock_value(attenuator.actual_transmission, val)
+
+    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+
+    yield attenuator
 
 
 @pytest.fixture
@@ -358,16 +406,10 @@ def xbpm_feedback(done_status):
 
 
 @pytest.fixture
-def dcm():
+def dcm(RE):
     dcm = i03.dcm(fake_with_ophyd_sim=True)
-    dcm.energy_in_kev.user_readback.sim_put(12.7)  # type: ignore
-    dcm.pitch_in_mrad.user_setpoint._use_limits = False
-    dcm.dcm_roll_converter_lookup_table_path = (
-        "tests/test_data/test_beamline_dcm_roll_converter.txt"
-    )
-    dcm.dcm_pitch_converter_lookup_table_path = (
-        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
-    )
+    set_mock_value(dcm.energy_in_kev.user_readback, 12.7)
+    set_mock_value(dcm.pitch_in_mrad.user_readback, 1)
     return dcm
 
 
@@ -377,7 +419,7 @@ def qbpm1():
 
 
 @pytest.fixture
-def vfm():
+def vfm(RE):
     vfm = i03.vfm(fake_with_ophyd_sim=True)
     vfm.bragg_to_lat_lookup_table_path = (
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
@@ -394,13 +436,28 @@ def vfm_mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm():
-    yield i03.undulator_dcm(fake_with_ophyd_sim=True)
+def undulator_dcm(RE, dcm):
+    undulator_dcm = i03.undulator_dcm(fake_with_ophyd_sim=True)
+    undulator_dcm.dcm = dcm
+    undulator_dcm.dcm_roll_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_roll_converter.txt"
+    )
+    undulator_dcm.dcm_pitch_converter_lookup_table_path = (
+        "tests/test_data/test_beamline_dcm_pitch_converter.txt"
+    )
+    yield undulator_dcm
     beamline_utils.clear_devices()
 
 
 @pytest.fixture
-def aperture_scatterguard(done_status):
+def webcam(RE) -> Generator[Webcam, Any, Any]:
+    webcam = i03.webcam(fake_with_ophyd_sim=True)
+    with patch.object(webcam, "_write_image"):
+        yield webcam
+
+
+@pytest.fixture
+def aperture_scatterguard(RE):
     AperturePositions.LARGE = SingleAperturePosition(
         location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
         name="Large",
@@ -432,14 +489,20 @@ def aperture_scatterguard(done_status):
             AperturePositions.MEDIUM,
             AperturePositions.SMALL,
             AperturePositions.ROBOT_LOAD,
+            tolerances=ApertureScatterguardTolerances(0.1, 0.1, 0.1, 0.1, 0.1),
         ),
     )
-    ap_sg.aperture.z.user_setpoint.sim_put(2)  # type: ignore
-    ap_sg.aperture.z.motor_done_move.sim_put(1)  # type: ignore
-    with patch_motor(ap_sg.aperture.x), patch_motor(ap_sg.aperture.y), patch_motor(
-        ap_sg.aperture.z
-    ), patch_motor(ap_sg.scatterguard.x), patch_motor(ap_sg.scatterguard.y):
-        ap_sg.set(ap_sg.aperture_positions.SMALL)  # type: ignore
+    with (
+        patch_async_motor(ap_sg.aperture.x),
+        patch_async_motor(ap_sg.aperture.y),
+        patch_async_motor(ap_sg.aperture.z, 2),
+        patch_async_motor(ap_sg.scatterguard.x),
+        patch_async_motor(ap_sg.scatterguard.y),
+    ):
+        assert ap_sg.aperture_positions
+        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))
+
+        set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
 
 
@@ -457,7 +520,7 @@ def test_full_grid_scan_params():
     params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json"
     )
-    return GridScanWithEdgeDetectInternalParameters(**params)
+    return GridScanWithEdgeDetect(**params)
 
 
 @pytest.fixture()
@@ -546,11 +609,12 @@ def mock_gridscan_kickoff_complete(gridscan):
 @pytest.fixture
 def fake_fgs_composite(
     smargon: Smargon,
-    test_fgs_params: GridscanInternalParameters,
+    test_fgs_params: ThreeDGridScan,
     RE: RunEngine,
     done_status,
     attenuator,
     xbpm_feedback,
+    synchrotron,
     aperture_scatterguard,
     zocalo,
     dcm,
@@ -567,7 +631,7 @@ def fake_fgs_composite(
         s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
         smargon=smargon,
         undulator=i03.undulator(fake_with_ophyd_sim=True),
-        synchrotron=i03.synchrotron(fake_with_ophyd_sim=True),
+        synchrotron=synchrotron,
         xbpm_feedback=xbpm_feedback,
         zebra=i03.zebra(fake_with_ophyd_sim=True),
         zocalo=zocalo,
@@ -578,21 +642,10 @@ def fake_fgs_composite(
 
     fake_composite.eiger.stage = MagicMock(return_value=done_status)
     # unstage should be mocked on a per-test basis because several rely on unstage
-    fake_composite.eiger.set_detector_parameters(
-        test_fgs_params.hyperion_params.detector_params
-    )
+    fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.ALL_FRAMES_TIMEOUT = 2  # type: ignore
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_odin_state = lambda: True
-    fake_composite.aperture_scatterguard.aperture.x.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.aperture.y.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.aperture.z.user_setpoint._use_limits = False
-    fake_composite.aperture_scatterguard.scatterguard.x.user_setpoint._use_limits = (
-        False
-    )
-    fake_composite.aperture_scatterguard.scatterguard.y.user_setpoint._use_limits = (
-        False
-    )
 
     mock_gridscan_kickoff_complete(fake_composite.fast_grid_scan)
     mock_gridscan_kickoff_complete(fake_composite.panda_fast_grid_scan)
@@ -618,7 +671,7 @@ def fake_fgs_composite(
     fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
     fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
 
-    set_sim_value(fake_composite.robot.barcode.bare_signal, ["BARCODE"])
+    set_mock_value(fake_composite.robot.barcode, "BARCODE")
 
     return fake_composite
 
@@ -626,6 +679,12 @@ def fake_fgs_composite(
 def fake_read(obj, initial_positions, _):
     initial_positions[obj] = 0
     yield Msg("null", obj)
+
+
+def extract_metafile(input_filename, output_filename):
+    with gzip.open(input_filename) as metafile_fo:
+        with open(output_filename, "wb") as output_fo:
+            output_fo.write(metafile_fo.read())
 
 
 class RunEngineSimulator:

@@ -1,0 +1,18 @@
+name: "Verify nexus"
+description: "Verify nexus files against imginfo"
+inputs:
+  filename:
+    description: "nexus file to verify"
+    required: true
+outputs:
+  imginfo_stdout:
+    description: "imginfo output"
+  imginfo_stderr:
+    description: "imginfo error output"
+  imginfo_exit_code:
+    description: "imginfo exit code"
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - ${{ inputs.filename }}
