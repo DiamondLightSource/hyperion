@@ -5,6 +5,7 @@ import dataclasses
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
+from bluesky.tracing import trace_plan
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -41,6 +42,7 @@ from hyperion.device_setup_plans.setup_zebra import (
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
+from hyperion.tracing import TRACER
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
 )
@@ -78,6 +80,7 @@ def create_devices(context: BlueskyContext) -> RotationScanComposite:
     return device_composite_from_context(context, RotationScanComposite)
 
 
+_TRACE_PREFIX = "Rotation Scan"
 DEFAULT_DIRECTION = RotationDirection.NEGATIVE
 DEFAULT_MAX_VELOCITY = 120
 # Use a slightly larger time to acceleration than EPICS as it's better to be cautious
@@ -177,6 +180,7 @@ def rotation_scan_plan(
             "scan_points": [params.scan_points],
         }
     )
+    @trace_plan(TRACER, f"{_TRACE_PREFIX} main")
     def _rotation_scan_plan(
         motion_values: RotationMotionProfile, composite: RotationScanComposite
     ):
@@ -271,6 +275,7 @@ def rotation_scan(
             ],
         }
     )
+    @trace_plan(TRACER, f"{_TRACE_PREFIX} outer")
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationScan,
     ):

@@ -5,7 +5,6 @@ import math
 from typing import TYPE_CHECKING, Tuple
 
 import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.tracing import trace_plan
@@ -59,7 +58,6 @@ def get_min_and_max_y_of_pin(
     return min_y, max_y
 
 
-@bpp.run_decorator()
 @trace_plan(TRACER, "grid_detection_plan")
 def grid_detection_plan(
     composite: OavGridDetectionComposite,
