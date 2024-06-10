@@ -1,5 +1,4 @@
-from functools import partial
-from typing import Any, Dict, Generator
+from typing import Dict, Generator
 from unittest.mock import ANY, MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -14,6 +13,7 @@ from dodal.devices.smargon import Smargon
 
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
+    OavGridDetectionComposite,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
@@ -22,13 +22,12 @@ from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 
 
 def _fake_grid_detection(
-    devices: Any,
+    devices: OavGridDetectionComposite,
     parameters: OAVParameters,
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: float = 0,
     box_size_um: float = 0.0,
-    smargon=None,
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
     oav.grid_snapshot.box_width.put(635.00986)
@@ -37,7 +36,7 @@ def _fake_grid_detection(
     oav.grid_snapshot.num_boxes_y.put(4)
     yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
     yield from bps.read(oav.grid_snapshot)
-    yield from bps.read(smargon)
+    yield from bps.read(devices.smargon)
     yield from bps.save()
 
     # second grid detection: x * z, so num_boxes_y refers to smargon z
@@ -45,12 +44,12 @@ def _fake_grid_detection(
     oav.grid_snapshot.num_boxes_y.put(1)
     yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
     yield from bps.read(oav.grid_snapshot)
-    yield from bps.read(smargon)
+    yield from bps.read(devices.smargon)
     yield from bps.save()
 
 
 @pytest.fixture
-def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
+def grid_detect_devices(aperture_scatterguard, backlight, detector_motion, smargon):
     return GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=MagicMock(),
@@ -61,7 +60,7 @@ def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
         flux=MagicMock(),
         oav=MagicMock(),
         pin_tip_detection=MagicMock(),
-        smargon=MagicMock(),
+        smargon=smargon,
         synchrotron=MagicMock(),
         s4_slit_gaps=MagicMock(),
         undulator=MagicMock(),
@@ -100,9 +99,7 @@ def test_detect_grid_and_do_gridscan(
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
 ):
-    mock_grid_detection_plan.side_effect = partial(
-        _fake_grid_detection, smargon=smargon
-    )
+    mock_grid_detection_plan.side_effect = _fake_grid_detection
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
@@ -159,9 +156,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
 
-    mock_grid_detection_plan.side_effect = partial(
-        _fake_grid_detection, smargon=smargon
-    )
+    mock_grid_detection_plan.side_effect = _fake_grid_detection
 
     grid_detect_devices.oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
