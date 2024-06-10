@@ -629,13 +629,6 @@ async def fake_fgs_composite(
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_odin_state = lambda: True
 
-    # fake_composite.fast_grid_scan.complete = MagicMock(
-    #     return_value=(AsyncStatus(async_status_done()))
-    # )
-    # fake_composite.fast_grid_scan.kickoff = MagicMock(
-    #     return_value=(AsyncStatus(async_status_done()))
-    # )
-
     test_result = {
         "centre_of_mass": [6, 6, 6],
         "max_voxel": [5, 5, 5],
