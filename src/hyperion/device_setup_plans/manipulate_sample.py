@@ -6,7 +6,7 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.backlight import Backlight
+from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import Smargon
 
@@ -33,7 +33,7 @@ def setup_sample_environment(
     )
     yield from bps.abs_set(detector_motion.shutter, 1, group=group)
     yield from bps.abs_set(detector_motion.z, detector_distance, group=group)
-    yield from bps.abs_set(backlight, backlight.OUT, group=group)
+    yield from bps.abs_set(backlight, BacklightPosition.OUT, group=group)
     yield from bps.abs_set(attenuator, transmission_fraction, group=group)
 
 

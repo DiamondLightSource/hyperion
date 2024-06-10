@@ -5,7 +5,7 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.backlight import Backlight
+from dodal.devices.backlight import BacklightPosition
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -92,7 +92,7 @@ def test_full_grid_scan(test_fgs_params, test_config_files):
     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
     autospec=True,
 )
-def test_detect_grid_and_do_gridscan(
+async def test_detect_grid_and_do_gridscan(
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
@@ -126,7 +126,10 @@ def test_detect_grid_and_do_gridscan(
         mock_grid_detection_plan.assert_called_once()
 
         # Check backlight was moved OUT
-        assert grid_detect_devices.backlight.pos.get() == Backlight.OUT
+        assert (
+            await grid_detect_devices.backlight.position.get_value()
+            == BacklightPosition.OUT
+        )
 
         # Check aperture was changed to SMALL
         mock_aperture_scatterguard.assert_called_once_with(

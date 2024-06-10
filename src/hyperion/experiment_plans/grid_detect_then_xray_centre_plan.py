@@ -8,7 +8,7 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.backlight import Backlight
+from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -155,7 +155,7 @@ def _detect_grid_and_do_gridscan(
         parameters.snapshot_directory,
     )
 
-    yield from bps.abs_set(composite.backlight, Backlight.OUT)
+    yield from bps.abs_set(composite.backlight, BacklightPosition.OUT)
 
     yield from move_aperture_if_required(
         composite.aperture_scatterguard, parameters.selected_aperture
