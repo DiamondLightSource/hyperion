@@ -1,5 +1,5 @@
 import pytest
-from dodal.beamlines.beamline_parameters import (
+from dodal.common.beamlines.beamline_parameters import (
     BEAMLINE_PARAMETER_PATHS,
     GDABeamlineParameters,
 )

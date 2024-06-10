@@ -12,8 +12,9 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
-from dodal.beamlines import beamline_utils, i03
-from dodal.beamlines.beamline_parameters import (
+from dodal.beamlines import i03
+from dodal.common.beamlines import beamline_utils
+from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
 from dodal.devices.aperturescatterguard import (
@@ -138,8 +139,8 @@ def pytest_runtest_setup(item):
 
 
 def pytest_runtest_teardown(item):
-    if "dodal.beamlines.beamline_utils" in sys.modules:
-        sys.modules["dodal.beamlines.beamline_utils"].clear_devices()
+    if "dodal.common.beamlines.beamline_utils" in sys.modules:
+        sys.modules["dodal.common.beamlines.beamline_utils"].clear_devices()
     markers = [m.name for m in item.own_markers]
     if "skip_log_setup" in markers:
         _reset_loggers([*ALL_LOGGERS, dodal_logger])
@@ -198,6 +199,7 @@ def patch_async_motor(
     set_mock_value(motor.user_readback, initial_position)
     set_mock_value(motor.deadband, 0.001)
     set_mock_value(motor.motor_done_move, 1)
+    set_mock_value(motor.velocity, 1)
     return callback_on_mock_put(motor.user_setpoint, pass_on_mock(motor, call_log))
 
 
@@ -370,15 +372,17 @@ def robot(done_status):
 
 
 @pytest.fixture
-def attenuator():
-    with patch(
-        "dodal.devices.attenuator.await_value",
-        return_value=Status(done=True, success=True),
-        autospec=True,
-    ):
-        attenuator = i03.attenuator(fake_with_ophyd_sim=True)
-        attenuator.actual_transmission.sim_put(0.49118047952)  # type: ignore
-        yield attenuator
+def attenuator(RE):
+    attenuator = i03.attenuator(fake_with_ophyd_sim=True)
+    set_mock_value(attenuator.actual_transmission, 0.49118047952)
+
+    @AsyncStatus.wrap
+    async def fake_attenuator_set(val):
+        set_mock_value(attenuator.actual_transmission, val)
+
+    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+
+    yield attenuator
 
 
 @pytest.fixture
@@ -483,7 +487,9 @@ def aperture_scatterguard(RE):
         patch_async_motor(ap_sg.scatterguard.x),
         patch_async_motor(ap_sg.scatterguard.y),
     ):
-        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))  # type:
+        assert ap_sg.aperture_positions
+        RE(bps.abs_set(ap_sg, ap_sg.aperture_positions.SMALL))
+
         set_mock_value(ap_sg.aperture.small, 1)
         yield ap_sg
 

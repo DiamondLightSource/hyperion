@@ -8,7 +8,7 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.backlight import Backlight
+from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -27,6 +27,7 @@ from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.panda import HDFPanda
 
+from hyperion.device_setup_plans.manipulate_sample import move_aperture_if_required
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
@@ -153,14 +154,10 @@ def _detect_grid_and_do_gridscan(
         parameters.snapshot_directory,
     )
 
-    yield from bps.abs_set(composite.backlight, Backlight.OUT)
+    yield from bps.abs_set(composite.backlight, BacklightPosition.OUT)
 
-    LOGGER.info(
-        f"Setting aperture position to {composite.aperture_scatterguard.aperture_positions.SMALL}"
-    )
-    yield from bps.abs_set(
-        composite.aperture_scatterguard,
-        composite.aperture_scatterguard.aperture_positions.SMALL,
+    yield from move_aperture_if_required(
+        composite.aperture_scatterguard, parameters.selected_aperture
     )
 
     flyscan_composite = FlyScanXRayCentreComposite(

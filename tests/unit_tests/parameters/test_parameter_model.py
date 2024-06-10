@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -26,9 +27,7 @@ def minimal_3d_gridscan_params():
         "y_steps": 7,
         "z_steps": 9,
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
-        "ispyb_extras": {
-            "position": [0, 0, 0],
-        },
+        "ispyb_extras": {},
     }
 
 
@@ -78,11 +77,24 @@ def test_robot_load_then_centre_params():
         "visit": "cm12345",
         "file_name": "file_name",
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
-        "ispyb_extras": {
-            "position": [0, 0, 0],
-        },
+        "ispyb_extras": {},
     }
     params["detector_distance_mm"] = 200
     test_params = RobotLoadThenCentre(**params)
     assert test_params.visit_directory
     assert test_params.detector_params
+
+
+def test_default_snapshot_path(minimal_3d_gridscan_params):
+    gridscan_params = ThreeDGridScan(**minimal_3d_gridscan_params)
+    assert gridscan_params.snapshot_directory == Path(
+        "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/snapshots"
+    )
+
+    params_with_snapshot_path = dict(minimal_3d_gridscan_params)
+    params_with_snapshot_path["snapshot_directory"] = "/tmp/my_snapshots"
+
+    gridscan_params_with_snapshot_path = ThreeDGridScan(**params_with_snapshot_path)
+    assert gridscan_params_with_snapshot_path.snapshot_directory == Path(
+        "/tmp/my_snapshots"
+    )

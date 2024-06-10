@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from time import time
-from typing import TYPE_CHECKING, Any, Callable, List
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 import numpy as np
 from blueapi.core import MsgGenerator
@@ -11,7 +11,6 @@ from dodal.devices.zocalo.zocalo_results import ZOCALO_READING_PLAN_NAME
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
-    populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
@@ -25,6 +24,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 from hyperion.external_interaction.exceptions import ISPyBDepositionNotMade
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
+    DataCollectionPositionInfo,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
@@ -166,6 +166,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
+        event_sourced_position_info: Optional[DataCollectionPositionInfo],
         params: ThreeDGridScan | GridScanWithEdgeDetect,
     ) -> Sequence[ScanDataInfo]:
         assert (
@@ -173,9 +174,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         ), "Expect at least one valid data collection to record scan data"
         xy_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
-            data_collection_position_info=populate_data_collection_position_info(
-                params.ispyb_params
-            ),
             data_collection_id=self.ispyb_ids.data_collection_ids[0],
         )
         scan_data_infos = [xy_scan_data_info]
@@ -187,9 +185,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         )
         xz_scan_data_info = ScanDataInfo(
             data_collection_info=event_sourced_data_collection_info,
-            data_collection_position_info=populate_data_collection_position_info(
-                params.ispyb_params
-            ),
             data_collection_id=data_collection_id,
         )
         scan_data_infos.append(xz_scan_data_info)

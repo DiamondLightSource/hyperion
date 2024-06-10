@@ -86,9 +86,11 @@ def ispyb_plan(test_panda_fgs_params):
         }
     )
     def standalone_read_hardware_for_ispyb(
-        und, syn, slits, robot, attn, fl, dcm, ap_sg
+        und, syn, slits, robot, attn, fl, dcm, ap_sg, sm
     ):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg, robot)
+        yield from read_hardware_for_ispyb_pre_collection(
+            und, syn, slits, ap_sg, robot, sm
+        )
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -138,8 +140,8 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
-            transmission_test_value
+        set_mock_value(
+            fake_fgs_composite.attenuator.actual_transmission, transmission_test_value
         )
         ap_sg_test_value = {
             "name": "Small",
@@ -173,6 +175,7 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.flux,
                     fake_fgs_composite.dcm,
                     fake_fgs_composite.aperture_scatterguard,
+                    fake_fgs_composite.smargon,
                 )
             )
             # fmt: off
@@ -196,7 +199,7 @@ class TestFlyscanXrayCentrePlan:
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[1],  # pyright: ignore
                 {
-                    "attenuator_actual_transmission": transmission_test_value,
+                    "attenuator-actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
                 },
             )
@@ -382,7 +385,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
         autospec=True,
     )
-    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
+    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
         self,
         setup_panda_for_flyscan: MagicMock,
         move_xyz: MagicMock,
@@ -394,6 +397,8 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         test_panda_fgs_params.set_stub_offsets = True
+
+        fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
         def wrapped_run_gridscan_and_move():
             run_generic_ispyb_handler_setup(
@@ -413,6 +418,8 @@ class TestFlyscanXrayCentrePlan:
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 1
         )
+
+        assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard.set",

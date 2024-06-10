@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.beamlines.beamline_parameters import (
+from dodal.common.beamlines.beamline_parameters import (
     BEAMLINE_PARAMETER_PATHS,
     GDABeamlineParameters,
 )
@@ -137,36 +137,29 @@ def test_read_hardware_for_ispyb_pre_collection(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
 ):
-    undulator = fxc_composite.undulator
-    synchrotron = fxc_composite.synchrotron
-    slit_gaps = fxc_composite.s4_slit_gaps
-    attenuator = fxc_composite.attenuator
-    flux = fxc_composite.flux
-    dcm = fxc_composite.dcm
-    aperture_scatterguard = fxc_composite.aperture_scatterguard
-    robot = fxc_composite.robot
-
     @bpp.run_decorator()
-    def read_run(u, s, g, r, a, f, dcm, ap_sg):
+    def read_run(u, s, g, r, a, f, dcm, ap_sg, sm):
         yield from read_hardware_for_ispyb_pre_collection(
             undulator=u,
             synchrotron=s,
             s4_slit_gaps=g,
             aperture_scatterguard=ap_sg,
             robot=r,
+            smargon=sm,
         )
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
     RE(
         read_run(
-            undulator,
-            synchrotron,
-            slit_gaps,
-            robot,
-            attenuator,
-            flux,
-            dcm,
-            aperture_scatterguard,
+            fxc_composite.undulator,
+            fxc_composite.synchrotron,
+            fxc_composite.s4_slit_gaps,
+            fxc_composite.robot,
+            fxc_composite.attenuator,
+            fxc_composite.flux,
+            fxc_composite.dcm,
+            fxc_composite.aperture_scatterguard,
+            fxc_composite.smargon,
         )
     )
 

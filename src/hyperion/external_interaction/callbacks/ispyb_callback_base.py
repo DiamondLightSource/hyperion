@@ -18,6 +18,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     DataCollectionInfo,
+    DataCollectionPositionInfo,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
@@ -123,8 +124,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
             slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
         )
+        hwscan_position_info = DataCollectionPositionInfo(
+            pos_x=doc["data"]["smargon_x"],
+            pos_y=doc["data"]["smargon_y"],
+            pos_z=doc["data"]["smargon_z"],
+        )
         scan_data_infos = self.populate_info_for_update(
-            hwscan_data_collection_info, self.params
+            hwscan_data_collection_info, hwscan_position_info, self.params
         )
         ISPYB_LOGGER.info("Updating ispyb data collection after hardware read.")
         return scan_data_infos
@@ -179,7 +185,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         hwscan_data_collection_info = DataCollectionInfo(
             flux=doc["data"]["flux_flux_reading"]
         )
-        if transmission := doc["data"]["attenuator_actual_transmission"]:
+        if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
         event_energy = doc["data"]["dcm-energy_in_kev"]
@@ -193,7 +199,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 self.params.detector_params.detector_distance,
             )
         scan_data_infos = self.populate_info_for_update(
-            hwscan_data_collection_info, self.params
+            hwscan_data_collection_info, None, self.params
         )
         ISPYB_LOGGER.info("Updating ispyb data collection after flux read.")
         return scan_data_infos
@@ -202,6 +208,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
+        event_sourced_position_info: Optional[DataCollectionPositionInfo],
         params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         pass

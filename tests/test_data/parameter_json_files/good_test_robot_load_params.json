@@ -19,10 +19,5 @@
     "sample_pin": 3,
     "comment": "Descriptive comment.",
     "ispyb_extras": {
-        "position": [
-            0,
-            0,
-            0
-        ]
     }
 }

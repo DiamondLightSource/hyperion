@@ -86,7 +86,7 @@ class TestData:
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 2666604299.928203,
         "data": {
-            "attenuator_actual_transmission": 0.98,
+            "attenuator-actual_transmission": 0.98,
             "flux_flux_reading": 9.81,
             "dcm-energy_in_kev": 11.105,
         },
@@ -200,6 +200,9 @@ class TestData:
                 "radius_microns": 50,
                 "location": (15, 16, 2, 18, 19),
             },
+            "smargon_x": 10.0,
+            "smargon_y": 20.0,
+            "smargon_z": 30.0,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,
@@ -210,7 +213,7 @@ class TestData:
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 2666604299.928203,
         "data": {
-            "attenuator_actual_transmission": 1,
+            "attenuator-actual_transmission": 1,
             "flux_flux_reading": 10,
             "dcm-energy_in_kev": 11.105,
         },

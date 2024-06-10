@@ -39,6 +39,9 @@ def main() -> int:
         copyfile(inputfile, tmpfile)
         with h5py.File(tmpfile, "r+") as metafile:
             del metafile["flatfield"]
+            metafile.create_dataset("flatfield", (4362, 4148), "<f4")
+            del metafile["mask"]
+            metafile.create_dataset("mask", (4362, 4148), "<i4")
 
         h5repack(tempdir, tmpfile, inputfile)
 

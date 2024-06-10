@@ -18,11 +18,6 @@
     "transmission_frac": 1.0,
     "visit": "cm31105-4",
     "ispyb_extras": {
-        "position": [
-            10.0,
-            20.0,
-            30.0
-        ],
         "xtal_snapshots_omega_start": [
             "c",
             "b",

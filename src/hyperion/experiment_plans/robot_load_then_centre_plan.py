@@ -8,7 +8,7 @@ from typing import cast
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
-from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
@@ -123,9 +123,10 @@ def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: Path):
 
 
 def prepare_for_robot_load(composite: RobotLoadThenCentreComposite):
+    assert composite.aperture_scatterguard.aperture_positions
     yield from bps.abs_set(
         composite.aperture_scatterguard,
-        AperturePositions.ROBOT_LOAD,
+        composite.aperture_scatterguard.aperture_positions.ROBOT_LOAD,
         group="prepare_robot_load",
     )
 
