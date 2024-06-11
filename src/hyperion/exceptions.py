@@ -27,7 +27,7 @@ def catch_exception_and_warn(
 
     'def plan_which_can_raise_exception_a(*args, **kwargs):
         ...
-    yield from catch_exception_a_and_warn(ExceptionA, plan_which_can_raise_exception_a, **args, **kwargs)'
+    yield from catch_exception_and_warn(ExceptionA, plan_which_can_raise_exception_a, **args, **kwargs)'
 
     This will catch ExceptionA raised by the plan and instead raise a WarningException
     """
@@ -42,6 +42,5 @@ def catch_exception_and_warn(
         yield from contingency_wrapper(
             func(*args, **kwargs),
             except_plan=warn_if_exception_matches,
-            auto_raise=True,
         )
     )
