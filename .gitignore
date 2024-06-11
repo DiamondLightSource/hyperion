@@ -8,6 +8,7 @@ __pycache__/
 
 # Output
 *.png
+!docs/*.png
 
 # Distribution / packaging
 .Python
