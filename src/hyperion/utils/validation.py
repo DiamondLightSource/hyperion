@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
+from dodal.devices.oav.oav_parameters import OAVConfigParams
 from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 
@@ -22,6 +23,8 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
 
+DISPLAY_CONFIGURATION = "tests/devices/unit_tests/test_display.configuration"
+ZOOM_LEVELS_XML = "tests/devices/unit_tests/test_jCameraManZoomLevels.xml"
 TEST_DATA_DIRECTORY = Path("tests/test_data/nexus_files/rotation")
 TEST_METAFILE = "ins_8_5_meta.h5.gz"
 FAKE_DATAFILE = "../fake_data.h5"
@@ -88,6 +91,12 @@ def fake_create_rotation_devices():
     robot = i03.robot(fake_with_ophyd_sim=True)
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
     mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
+    oav = i03.oav(
+        fake_with_ophyd_sim=True,
+        params=OAVConfigParams(
+            zoom_params_file=ZOOM_LEVELS_XML, display_config=DISPLAY_CONFIGURATION
+        ),
+    )
 
     smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
@@ -95,6 +104,7 @@ def fake_create_rotation_devices():
     smargon.omega.max_velocity.sim_put(131)  # type: ignore
 
     set_mock_value(dcm.energy_in_kev.user_readback, 12700)
+    oav.zoom_controller.fvst.sim_put("1.0x")
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -110,6 +120,7 @@ def fake_create_rotation_devices():
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
         robot=robot,
+        oav=oav,
     )
 
 

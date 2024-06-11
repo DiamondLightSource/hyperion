@@ -25,6 +25,7 @@
     "y_start_um": 2.0,
     "z_start_um": 3.0,
     "selected_aperture": "SMALL_APERTURE",
+    "snapshot_omegas_deg": [0, 90, 180, 270],
     "ispyb_extras": {
         "xtal_snapshots_omega_start": [
             "test_1_y",

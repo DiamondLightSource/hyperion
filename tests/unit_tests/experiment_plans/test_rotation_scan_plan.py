@@ -7,11 +7,16 @@ from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.backlight import BacklightPosition
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
+from hyperion.experiment_plans.oav_snapshot_plan import (
+    OAV_SNAPSHOT_GROUP,
+    OAV_SNAPSHOT_SETUP_GROUP,
+)
 from hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
@@ -19,9 +24,10 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
     rotation_scan_plan,
 )
-from hyperion.parameters.constants import CONST
+from hyperion.parameters.constants import CONST, DocDescriptorNames
 from hyperion.parameters.rotation import RotationScan
 
+from ...conftest import RunEngineSimulator
 from .conftest import fake_read
 
 if TYPE_CHECKING:
@@ -206,7 +212,10 @@ def test_full_rotation_plan_smargon_settings(
     assert smargon.x.user_readback.get() == params.x_start_um
     assert smargon.y.user_readback.get() == params.y_start_um
     assert smargon.z.user_readback.get() == params.z_start_um
-    assert omega_set.call_count == 2
+    assert (
+        # setup + restore omega, 4 * snapshots, 1 * rotation sweep
+        omega_set.call_count == 2 + 4 + 1
+    )
     assert omega_velocity_set.call_count == 3
     assert omega_velocity_set.call_args_list == [
         call(test_max_velocity),
@@ -286,21 +295,7 @@ def test_rotation_plan_reads_hardware(
     motion_values,
     sim_run_engine,
 ):
-    sim_run_engine.add_handler(
-        "read",
-        "synchrotron-synchrotron_mode",
-        lambda msg: {"values": {"value": SynchrotronMode.USER}},
-    )
-    sim_run_engine.add_handler(
-        "read",
-        "synchrotron-top_up_start_countdown",
-        lambda msg: {"values": {"value": -1}},
-    )
-    fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)  # type: ignore
-    sim_run_engine.add_handler(
-        "read", "smargon_omega", lambda msg: {"values": {"value": -1}}
-    )
-
+    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
     msgs = sim_run_engine.simulate_plan(
         rotation_scan_plan(
             fake_create_rotation_devices, test_rotation_params, motion_values
@@ -322,3 +317,232 @@ def test_rotation_plan_reads_hardware(
     sim_run_engine.assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_z"
     )
+
+
+def test_rotation_scan_initialises_detector_distance_shutter_and_tx_fraction(
+    sim_run_engine: RunEngineSimulator,
+    fake_create_rotation_devices: RotationScanComposite,
+    test_rotation_params: RotationScan,
+):
+    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
+
+    msgs = sim_run_engine.simulate_plan(
+        rotation_scan(fake_create_rotation_devices, test_rotation_params)
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.args[0] == 1
+        and msg.obj.name == "detector_motion_shutter"
+        and msg.kwargs["group"] == "setup_senv",
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.args[0] == test_rotation_params.detector_distance_mm
+        and msg.obj.name == "detector_motion_z"
+        and msg.kwargs["group"] == "setup_senv",
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args[0] == test_rotation_params.transmission_frac
+        and msg.kwargs["group"] == "setup_senv",
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args[0] == test_rotation_params.transmission_frac
+        and msg.kwargs["group"] == "setup_senv",
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "setup_senv"
+    )
+
+
+def test_rotation_scan_moves_gonio_and_omega_to_start_before_snapshots(
+    fake_create_rotation_devices, sim_run_engine, test_rotation_params
+):
+    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
+    msgs = sim_run_engine.simulate_plan(
+        rotation_scan(fake_create_rotation_devices, test_rotation_params)
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == "move_gonio_to_start",
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == "move_to_rotation_start",
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_GROUP,
+    )
+
+
+def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_rotation(
+    fake_create_rotation_devices, sim_run_engine, test_rotation_params
+):
+    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
+    msgs = sim_run_engine.simulate_plan(
+        rotation_scan(fake_create_rotation_devices, test_rotation_params)
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "create"
+        and msg.kwargs["name"] == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "save"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "aperture_scatterguard"
+        and msg.args[0] == AperturePositions.SMALL
+        and msg.kwargs["group"] == "setup_senv",
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "backlight"
+        and msg.args[0] == BacklightPosition.OUT
+        and msg.kwargs["group"] == "setup_senv",
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "setup_senv"
+    )
+
+
+def test_rotation_scan_resets_omega_waits_for_sample_env_complete_after_snapshots_before_hw_read(
+    fake_create_rotation_devices: RotationScanComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_rotation_params: RotationScan,
+):
+    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
+    msgs = sim_run_engine.simulate_plan(
+        rotation_scan(fake_create_rotation_devices, test_rotation_params)
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "create"
+        and msg.kwargs["name"] == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "save"
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "smargon_omega"
+        and msg.args[0] == test_rotation_params.omega_start_deg
+        and msg.kwargs["group"] == "move_to_rotation_start",
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == "move_to_rotation_start",
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "setup_senv"
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == "move_to_rotation_start",
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "create"
+        and msg.kwargs["name"] == CONST.DESCRIPTORS.ZOCALO_HW_READ,
+    )
+
+
+def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before_triggering(
+    fake_create_rotation_devices: RotationScanComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_rotation_params: RotationScan,
+):
+    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
+    msgs = sim_run_engine.simulate_plan(
+        rotation_scan(fake_create_rotation_devices, test_rotation_params)
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "backlight"
+        and msg.args[0] == BacklightPosition.IN
+        and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_GROUP,
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "aperture_scatterguard"
+        and msg.args[0] == AperturePositions.ROBOT_LOAD
+        and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_GROUP,
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_GROUP,
+    )
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav_snapshot"
+    )
+
+
+def test_rotation_scan_skips_omega_init_backlight_aperture_and_snapshots_if_snapshot_params_specified(
+    fake_create_rotation_devices: RotationScanComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_rotation_params: RotationScan,
+):
+    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
+    test_rotation_params.snapshot_omegas_deg = None
+
+    msgs = sim_run_engine.simulate_plan(
+        rotation_scan(fake_create_rotation_devices, test_rotation_params)
+    )
+    assert not [
+        msg for msg in msgs if msg.kwargs.get("group", None) == OAV_SNAPSHOT_SETUP_GROUP
+    ]
+    assert not [
+        msg for msg in msgs if msg.kwargs.get("group", None) == OAV_SNAPSHOT_GROUP
+    ]
+    assert (
+        len(
+            [
+                msg
+                for msg in msgs
+                if msg.command == "set"
+                and msg.obj.name == "smargon_omega"
+                and msg.kwargs["group"] == "move_to_rotation_start"
+            ]
+        )
+        == 1
+    )
+
+
+def _add_sim_handlers_for_normal_operation(
+    fake_create_rotation_devices, sim_run_engine
+):
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-synchrotron_mode",
+        lambda msg: {"values": {"value": SynchrotronMode.USER}},
+    )
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-top_up_start_countdown",
+        lambda msg: {"values": {"value": -1}},
+    )
+    fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)  # type: ignore
+    sim_run_engine.add_handler(
+        "read", "smargon_omega", lambda msg: {"values": {"value": -1}}
+    )
+    fake_create_rotation_devices.oav.zoom_controller.fvst.sim_put("1.0x")

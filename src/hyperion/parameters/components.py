@@ -144,6 +144,10 @@ class WithSnapshot(BaseModel):
     snapshot_directory: Path
     snapshot_omegas_deg: list[float] | None
 
+    @property
+    def take_snapshots(self) -> bool:
+        return bool(self.snapshot_omegas_deg)
+
 
 class DiffractionExperiment(HyperionParameters, WithSnapshot):
     """For all experiments which use beam"""
