@@ -734,6 +734,11 @@ def compare_actual_and_expected(
 
 
 @pytest.mark.s03
+def test_ispyb_deposition_in_rotation_plan_snapshots_in_parameters():
+    assert False, "TODO"
+
+
+@pytest.mark.s03
 @patch("bluesky.plan_stubs.wait")
 def test_ispyb_deposition_in_rotation_plan(
     bps_wait,

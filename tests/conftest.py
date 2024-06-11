@@ -32,7 +32,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -556,9 +556,11 @@ def fake_create_rotation_devices(
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
     robot: BartRobot,
+    oav: OAV,
     done_status,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
+    oav.zoom_controller.fvst.sim_put("1.0x")
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -574,6 +576,7 @@ def fake_create_rotation_devices(
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
         robot=robot,
+        oav=oav,
     )
 
 

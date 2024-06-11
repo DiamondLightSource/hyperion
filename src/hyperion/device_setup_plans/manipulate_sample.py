@@ -15,14 +15,22 @@ from hyperion.log import LOGGER
 LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
 
-def setup_sample_environment(
-    aperture_scatterguard: ApertureScatterguard,
-    aperture_position_gda_name: AperturePositionGDANames | None,
+def begin_sample_environment_setup(
     detector_motion: DetectorMotion,
-    backlight: Backlight,
     attenuator: Attenuator,
     transmission_fraction: float,
     detector_distance: float,
+    group="setup_senv",
+):
+    yield from bps.abs_set(detector_motion.shutter, 1, group=group)
+    yield from bps.abs_set(detector_motion.z, detector_distance, group=group)
+    yield from bps.abs_set(attenuator, transmission_fraction, group=group)
+
+
+def setup_sample_environment(
+    aperture_scatterguard: ApertureScatterguard,
+    aperture_position_gda_name: AperturePositionGDANames | None,
+    backlight: Backlight,
     group="setup_senv",
 ):
     """Move the aperture into required position, move out the backlight, retract the detector shutter,
@@ -31,10 +39,7 @@ def setup_sample_environment(
     yield from move_aperture_if_required(
         aperture_scatterguard, aperture_position_gda_name, group=group
     )
-    yield from bps.abs_set(detector_motion.shutter, 1, group=group)
-    yield from bps.abs_set(detector_motion.z, detector_distance, group=group)
     yield from bps.abs_set(backlight, BacklightPosition.OUT, group=group)
-    yield from bps.abs_set(attenuator, transmission_fraction, group=group)
 
 
 def move_aperture_if_required(
