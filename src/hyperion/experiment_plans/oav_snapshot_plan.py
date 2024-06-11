@@ -56,6 +56,9 @@ def oav_snapshot_plan(
     oav_parameters: OAVParameters,
     wait: bool = True,
 ) -> MsgGenerator:
+    omegas = parameters.snapshot_omegas_deg
+    if not omegas:
+        return
     yield from _setup_oav(composite, parameters, oav_parameters)
-    for omega in parameters.snapshot_omegas_deg:
+    for omega in omegas:
         yield from _take_oav_snapshot(composite, parameters, omega)
