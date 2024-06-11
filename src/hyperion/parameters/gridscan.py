@@ -7,8 +7,10 @@ from dodal.devices.detector import (
     DetectorDistanceToBeamXYConverter,
     DetectorParams,
 )
-from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from dodal.devices.fast_grid_scan import (
+    PandAGridScanParams,
+    ZebraGridScanParams,
+)
 from pydantic import Field
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
@@ -136,8 +138,8 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     z_steps: int = Field(gt=0)
 
     @property
-    def FGS_params(self) -> GridScanParams:
-        return GridScanParams(
+    def FGS_params(self) -> ZebraGridScanParams:
+        return ZebraGridScanParams(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
             z_steps=self.z_steps,
