@@ -122,14 +122,3 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"
         )
-
-    # assert:
-    # for each position:
-    #   arm the oav, set:
-    #       snapshot filename
-
-    #   rotate smargon to omega
-    #   wait
-    #   trigger the oav
-    #   dispatch OAV_SNAPSHOT_TRIGGERED with
-    #       snapshot path
