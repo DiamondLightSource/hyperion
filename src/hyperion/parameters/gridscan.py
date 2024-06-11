@@ -108,6 +108,8 @@ class PinTipCentreThenXrayCentre(GridCommon):
 
 
 class RobotLoadThenCentre(GridCommon):
+    thawing_time: float = Field(default=CONST.I03.THAWING_TIME)
+
     def pin_centre_then_xray_centre_params(self):
         params = PinTipCentreThenXrayCentre(**self.dict())
         return params

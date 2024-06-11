@@ -95,6 +95,7 @@ class I03Constants:
     SHUTTER_TIME_S = 0.06
     USE_PANDA_FOR_GRIDSCAN = False
     USE_GPU_FOR_GRIDSCAN_ANALYSIS = False
+    THAWING_TIME = 20
 
 
 @dataclass(frozen=True)
