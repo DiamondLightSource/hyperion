@@ -33,6 +33,7 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -560,7 +561,8 @@ def fake_create_rotation_devices(
     done_status,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav.zoom_controller.fvst.sim_put("1.0x")
+    oav.zoom_controller.onst.sim_put("1.0x")  # type: ignore
+    oav.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -634,6 +636,11 @@ async def panda():
         }
     )
     return panda
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
 
 
 async def async_status_done():

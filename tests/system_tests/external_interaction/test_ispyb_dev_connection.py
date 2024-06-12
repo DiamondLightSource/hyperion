@@ -10,13 +10,10 @@ from unittest.mock import MagicMock, patch
 import numpy
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.attenuator import Attenuator
-from dodal.devices.flux import Flux
-from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.undulator import Undulator
+from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.sim import NullStatus
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import AsyncStatus, set_mock_value
 
 from hyperion.experiment_plans import oav_grid_detection_plan
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
@@ -59,6 +56,17 @@ from hyperion.utils.utils import convert_angstrom_to_eV
 
 from ...conftest import fake_read
 from .conftest import raw_params_from_file
+
+EXPECTED_DATACOLLECTION_FOR_ROTATION = {
+    "wavelength": 0.71,
+    "beamSizeAtSampleX": 20,
+    "beamSizeAtSampleY": 20,
+    "exposureTime": 0.023,
+    "undulatorGap1": 1.12,
+    "synchrotronMode": SynchrotronMode.USER.value,
+    "slitGapHorizontal": 0.123,
+    "slitGapVertical": 0.234,
+}
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -332,6 +340,10 @@ def grid_detect_then_xray_centre_composite(
         eiger.odin.file_writer.id.sim_put(val)  # type: ignore
         return NullStatus()
 
+    @AsyncStatus.wrap
+    async def mock_complete_status():
+        pass
+
     with (
         patch.object(eiger.odin.nodes, "get_init_state", return_value=True),
         patch.object(eiger, "wait_on_arming_if_started"),
@@ -425,6 +437,65 @@ def scan_data_infos_for_update_3d(
         data_collection_grid_info=(data_collection_grid_info),
     )
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
+
+
+@pytest.fixture
+def composite_for_rotation_scan(fake_create_rotation_devices: RotationScanComposite):
+    energy_ev = convert_angstrom_to_eV(0.71)
+    set_mock_value(
+        fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
+        energy_ev / 1000,  # pyright: ignore
+    )
+    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)  # pyright: ignore
+    set_mock_value(
+        fake_create_rotation_devices.synchrotron.synchrotron_mode,
+        SynchrotronMode.USER,
+    )
+    set_mock_value(
+        fake_create_rotation_devices.synchrotron.top_up_start_countdown,  # pyright: ignore
+        -1,
+    )
+    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
+        0.123
+    )
+    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
+        0.234
+    )
+    it_snapshot_filenames = iter(
+        [
+            "/tmp/snapshot1.png",
+            "/tmp/snapshot2.png",
+            "/tmp/snapshot3.png",
+            "/tmp/snapshot4.png",
+        ]
+    )
+
+    with (
+        patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read),
+        patch.object(
+            fake_create_rotation_devices.oav.snapshot.last_saved_path, "get"
+        ) as mock_last_saved_path,
+        patch("bluesky.plan_stubs.wait"),
+    ):
+
+        @AsyncStatus.wrap
+        async def apply_snapshot_filename():
+            mock_last_saved_path.return_value = next(it_snapshot_filenames)
+
+        with patch.object(
+            fake_create_rotation_devices.oav.snapshot,
+            "trigger",
+            side_effect=apply_snapshot_filename,
+        ):
+            yield fake_create_rotation_devices
+
+
+@pytest.fixture
+def params_for_rotation_scan(test_rotation_params: RotationScan):
+    test_rotation_params.rotation_increment_deg = 0.27
+    test_rotation_params.exposure_time_s = 0.023
+    test_rotation_params.detector_params.expected_energy_ev = 0.71
+    return test_rotation_params
 
 
 @pytest.mark.s03
@@ -546,25 +617,6 @@ def test_can_store_2D_ispyb_data_correctly_when_in_error(
     )
     for grid_no, dc_id in enumerate(ispyb_ids.data_collection_ids):
         assert fetch_comment(dc_id) == expected_comments[grid_no]
-
-
-def generate_scan_data_infos(
-    dummy_params,
-    dummy_scan_data_info_for_begin: ScanDataInfo,
-    experiment_type: IspybExperimentType,
-    ispyb_ids: IspybIds,
-) -> Sequence[ScanDataInfo]:
-    xy_scan_data_info = scan_xy_data_info_for_update(
-        ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
-    )
-    xy_scan_data_info.data_collection_id = ispyb_ids.data_collection_ids[0]
-    if experiment_type == IspybExperimentType.GRIDSCAN_3D:
-        scan_data_infos = scan_data_infos_for_update_3d(
-            ispyb_ids, xy_scan_data_info, dummy_params
-        )
-    else:
-        scan_data_infos = [xy_scan_data_info]
-    return scan_data_infos
 
 
 @pytest.mark.s03
@@ -703,15 +755,106 @@ def test_ispyb_deposition_in_gridscan(
     )
 
 
-def compare_comment(
-    fetch_datacollection_attribute, data_collection_id, expected_comment
+@pytest.mark.s03
+def test_ispyb_deposition_in_rotation_plan(
+    composite_for_rotation_scan: RotationScanComposite,
+    params_for_rotation_scan: RotationScan,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_comment: Callable[..., Any],
+    fetch_datacollection_attribute: Callable[..., Any],
+    fetch_datacollectiongroup_attribute: Callable[..., Any],
+    fetch_datacollection_position_attribute: Callable[..., Any],
 ):
-    actual_comment = fetch_datacollection_attribute(
-        data_collection_id, DATA_COLLECTION_COLUMN_MAP["comments"]
+    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
+    ispyb_cb = RotationISPyBCallback()
+    RE.subscribe(ispyb_cb)
+
+    RE(
+        rotation_scan(
+            composite_for_rotation_scan,
+            params_for_rotation_scan,
+            oav_parameters_for_rotation,
+        )
     )
-    match = re.search(" Zocalo processing took", actual_comment)
-    truncated_comment = actual_comment[: match.start()] if match else actual_comment
-    assert truncated_comment == expected_comment
+
+    dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
+    assert dcid is not None
+    assert (
+        fetch_comment(dcid) == "Sample position: (1.0, 2.0, 3.0) test Aperture: Small"
+    )
+
+    expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
+        "xtalSnapshotFullPath1": "/tmp/snapshot1.png",
+        "xtalSnapshotFullPath2": "/tmp/snapshot2.png",
+        "xtalSnapshotFullPath3": "/tmp/snapshot3.png",
+        "xtalSnapshotFullPath4": "/tmp/snapshot4.png",
+    }
+
+    compare_actual_and_expected(dcid, expected_values, fetch_datacollection_attribute)
+
+    position_id = fetch_datacollection_attribute(
+        dcid, DATA_COLLECTION_COLUMN_MAP["positionid"]
+    )
+    expected_values = {"posX": 1.0, "posY": 2.0, "posZ": 3.0}
+    compare_actual_and_expected(
+        position_id, expected_values, fetch_datacollection_position_attribute
+    )
+
+
+@pytest.mark.s03
+def test_ispyb_deposition_in_rotation_plan_snapshots_in_parameters(
+    composite_for_rotation_scan: RotationScanComposite,
+    params_for_rotation_scan: RotationScan,
+    oav_parameters_for_rotation: OAVParameters,
+    RE: RunEngine,
+    fetch_datacollection_attribute: Callable[..., Any],
+):
+    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
+    ispyb_cb = RotationISPyBCallback()
+    RE.subscribe(ispyb_cb)
+    params_for_rotation_scan.snapshot_omegas_deg = None
+    params_for_rotation_scan.ispyb_extras.xtal_snapshots_omega_start = [  # type: ignore
+        "/tmp/test_snapshot1.png",
+        "/tmp/test_snapshot2.png",
+        "/tmp/test_snapshot3.png",
+    ]
+    RE(
+        rotation_scan(
+            composite_for_rotation_scan,
+            params_for_rotation_scan,
+            oav_parameters_for_rotation,
+        )
+    )
+
+    dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
+    assert dcid is not None
+    expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
+        "xtalSnapshotFullPath1": "/tmp/test_snapshot1.png",
+        "xtalSnapshotFullPath2": "/tmp/test_snapshot2.png",
+        "xtalSnapshotFullPath3": "/tmp/test_snapshot3.png",
+    }
+
+    compare_actual_and_expected(dcid, expected_values, fetch_datacollection_attribute)
+
+
+def generate_scan_data_infos(
+    dummy_params,
+    dummy_scan_data_info_for_begin: ScanDataInfo,
+    experiment_type: IspybExperimentType,
+    ispyb_ids: IspybIds,
+) -> Sequence[ScanDataInfo]:
+    xy_scan_data_info = scan_xy_data_info_for_update(
+        ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
+    )
+    xy_scan_data_info.data_collection_id = ispyb_ids.data_collection_ids[0]
+    if experiment_type == IspybExperimentType.GRIDSCAN_3D:
+        scan_data_infos = scan_data_infos_for_update_3d(
+            ispyb_ids, xy_scan_data_info, dummy_params
+        )
+    else:
+        scan_data_infos = [xy_scan_data_info]
+    return scan_data_infos
 
 
 def compare_actual_and_expected(
@@ -733,119 +876,12 @@ def compare_actual_and_expected(
     assert results == "\n", results
 
 
-@pytest.mark.s03
-def test_ispyb_deposition_in_rotation_plan_snapshots_in_parameters():
-    assert False, "TODO"
-
-
-@pytest.mark.s03
-@patch("bluesky.plan_stubs.wait")
-def test_ispyb_deposition_in_rotation_plan(
-    bps_wait,
-    fake_create_rotation_devices: RotationScanComposite,
-    RE: RunEngine,
-    test_rotation_params: RotationScan,
-    fetch_comment: Callable[..., Any],
-    fetch_datacollection_attribute: Callable[..., Any],
-    fetch_datacollectiongroup_attribute: Callable[..., Any],
-    fetch_datacollection_position_attribute: Callable[..., Any],
-    undulator: Undulator,
-    attenuator: Attenuator,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    flux: Flux,
-    robot,
-    fake_create_devices: dict[str, Any],
+def compare_comment(
+    fetch_datacollection_attribute, data_collection_id, expected_comment
 ):
-    test_wl = 0.71
-    test_bs_x = 20
-    test_bs_y = 20
-    test_exp_time = 0.023
-    test_img_wid = 0.27
-    test_undulator_current_gap = 1.12
-    test_synchrotron_mode = SynchrotronMode.USER
-    test_slit_gap_horiz = 0.123
-    test_slit_gap_vert = 0.234
-
-    test_rotation_params.rotation_increment_deg = test_img_wid
-    test_rotation_params.exposure_time_s = test_exp_time
-    energy_ev = convert_angstrom_to_eV(test_wl)
-    set_mock_value(
-        fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
-        energy_ev / 1000,
+    actual_comment = fetch_datacollection_attribute(
+        data_collection_id, DATA_COLLECTION_COLUMN_MAP["comments"]
     )
-    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)
-    set_mock_value(
-        fake_create_rotation_devices.synchrotron.synchrotron_mode,
-        test_synchrotron_mode,
-    )
-    set_mock_value(
-        fake_create_rotation_devices.synchrotron.top_up_start_countdown,
-        -1,
-    )
-    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
-        test_slit_gap_horiz
-    )
-    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
-        test_slit_gap_vert
-    )
-    test_rotation_params.detector_params.expected_energy_ev = energy_ev
-
-    os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
-    ispyb_cb = RotationISPyBCallback()
-    RE.subscribe(ispyb_cb)
-
-    composite = RotationScanComposite(
-        attenuator=attenuator,
-        backlight=fake_create_devices["backlight"],
-        dcm=fake_create_rotation_devices.dcm,
-        detector_motion=fake_create_devices["detector_motion"],
-        eiger=fake_create_devices["eiger"],
-        flux=flux,
-        smargon=fake_create_devices["smargon"],
-        undulator=undulator,
-        synchrotron=synchrotron,
-        s4_slit_gaps=s4_slit_gaps,
-        zebra=fake_create_devices["zebra"],
-        aperture_scatterguard=fake_create_devices["ap_sg"],
-        robot=robot,
-    )
-
-    with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
-        RE(
-            rotation_scan(
-                composite,
-                test_rotation_params,
-            )
-        )
-
-    dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
-    assert dcid is not None
-    assert (
-        fetch_comment(dcid) == "Sample position: (1.0, 2.0, 3.0) test Aperture: Small"
-    )
-
-    EXPECTED_VALUES = {
-        "wavelength": test_wl,
-        "beamSizeAtSampleX": test_bs_x,
-        "beamSizeAtSampleY": test_bs_y,
-        "exposureTime": test_exp_time,
-        "undulatorGap1": test_undulator_current_gap,
-        "synchrotronMode": test_synchrotron_mode.value,
-        "slitGapHorizontal": test_slit_gap_horiz,
-        "slitGapVertical": test_slit_gap_vert,
-        "xtalSnapshotFullPath1": "/tmp/snapshot1.png",
-        "xtalSnapshotFullPath2": "/tmp/snapshot2.png",
-        "xtalSnapshotFullPath3": "/tmp/snapshot3.png",
-        "xtalSnapshotFullPath4": "/tmp/snapshot4.png",
-    }
-
-    compare_actual_and_expected(dcid, EXPECTED_VALUES, fetch_datacollection_attribute)
-
-    position_id = fetch_datacollection_attribute(
-        dcid, DATA_COLLECTION_COLUMN_MAP["positionid"]
-    )
-    expected_values = {"posX": 1.0, "posY": 2.0, "posZ": 3.0}
-    compare_actual_and_expected(
-        position_id, expected_values, fetch_datacollection_position_attribute
-    )
+    match = re.search(" Zocalo processing took", actual_comment)
+    truncated_comment = actual_comment[: match.start()] if match else actual_comment
+    assert truncated_comment == expected_comment

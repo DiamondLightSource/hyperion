@@ -8,6 +8,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import BacklightPosition
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
 from ophyd_async.core import get_mock_put, set_mock_value
@@ -42,14 +43,14 @@ def do_rotation_main_plan_for_tests(
     expt_params: RotationScan,
     devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
-    plan: Callable = rotation_scan_plan,
+    oav_parameters_for_rotation: OAVParameters
 ):
     with patch(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
     ):
         run_eng(
-            plan(devices, expt_params, motion_values),
+            rotation_scan_plan(devices, expt_params, motion_values, oav_parameters_for_rotation),
         )
 
 
@@ -83,10 +84,11 @@ def setup_and_run_rotation_plan_for_tests(
     test_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
+    oav_params: OAVParameters
 ):
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
-            RE, test_params, fake_create_rotation_devices, motion_values
+            RE, test_params, fake_create_rotation_devices, motion_values, oav_params
         )
 
     return {
@@ -103,9 +105,10 @@ def setup_and_run_rotation_plan_for_tests_standard(
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
+    oav_parameters_for_rotation: OAVParameters
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE, test_rotation_params, fake_create_rotation_devices, motion_values
+        RE, test_rotation_params, fake_create_rotation_devices, motion_values, oav_parameters_for_rotation
     )
 
 
@@ -115,9 +118,10 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     test_rotation_params_nomove: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
+    oav_parameters_for_rotation: OAVParameters
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE, test_rotation_params_nomove, fake_create_rotation_devices, motion_values
+        RE, test_rotation_params_nomove, fake_create_rotation_devices, motion_values, oav_parameters_for_rotation
     )
 
 
@@ -252,6 +256,7 @@ def test_cleanup_happens(
     test_rotation_params,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
+    oav_parameters_for_rotation: OAVParameters
 ):
     class MyTestException(Exception):
         pass
@@ -265,7 +270,7 @@ def test_cleanup_happens(
         with pytest.raises(MyTestException):
             RE(
                 rotation_scan_plan(
-                    fake_create_rotation_devices, test_rotation_params, motion_values
+                    fake_create_rotation_devices, test_rotation_params, motion_values, oav_parameters_for_rotation
                 )
             )
             cleanup_plan.assert_not_called()
@@ -282,11 +287,12 @@ def test_rotation_plan_reads_hardware(
     test_rotation_params,
     motion_values,
     sim_run_engine,
+    oav_parameters_for_rotation: OAVParameters
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
     msgs = sim_run_engine.simulate_plan(
         rotation_scan_plan(
-            fake_create_rotation_devices, test_rotation_params, motion_values
+            fake_create_rotation_devices, test_rotation_params, motion_values, oav_parameters_for_rotation
         )
     )
 
@@ -532,4 +538,4 @@ def _add_sim_handlers_for_normal_operation(
     sim_run_engine.add_handler(
         "read", "smargon-omega", lambda msg: {"smargon-omega": {"value": -1}}
     )
-    fake_create_rotation_devices.oav.zoom_controller.fvst.sim_put("1.0x")
+    fake_create_rotation_devices.oav.zoom_controller.fvst.sim_put("5.0x")
