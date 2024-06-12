@@ -274,7 +274,6 @@ def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 ):
     smargon = robot_load_composite.smargon
     aperture_scatterguard = robot_load_composite.aperture_scatterguard
-
     smargon.x.user_readback.sim_put(10)  # type: ignore
     smargon.z.user_readback.sim_put(5)  # type: ignore
     smargon.omega.user_readback.sim_put(90)  # type: ignore

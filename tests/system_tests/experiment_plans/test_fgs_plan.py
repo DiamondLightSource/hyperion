@@ -85,7 +85,7 @@ async def fxc_composite():
         backlight=i03.backlight(),
         dcm=i03.dcm(fake_with_ophyd_sim=True),
         eiger=i03.eiger(),
-        fast_grid_scan=i03.fast_grid_scan(),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(),
         flux=i03.flux(fake_with_ophyd_sim=True),
         robot=i03.robot(fake_with_ophyd_sim=True),
         panda=i03.panda(fake_with_ophyd_sim=True),
@@ -137,36 +137,29 @@ def test_read_hardware_for_ispyb_pre_collection(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
 ):
-    undulator = fxc_composite.undulator
-    synchrotron = fxc_composite.synchrotron
-    slit_gaps = fxc_composite.s4_slit_gaps
-    attenuator = fxc_composite.attenuator
-    flux = fxc_composite.flux
-    dcm = fxc_composite.dcm
-    aperture_scatterguard = fxc_composite.aperture_scatterguard
-    robot = fxc_composite.robot
-
     @bpp.run_decorator()
-    def read_run(u, s, g, r, a, f, dcm, ap_sg):
+    def read_run(u, s, g, r, a, f, dcm, ap_sg, sm):
         yield from read_hardware_for_ispyb_pre_collection(
             undulator=u,
             synchrotron=s,
             s4_slit_gaps=g,
             aperture_scatterguard=ap_sg,
             robot=r,
+            smargon=sm,
         )
         yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
 
     RE(
         read_run(
-            undulator,
-            synchrotron,
-            slit_gaps,
-            robot,
-            attenuator,
-            flux,
-            dcm,
-            aperture_scatterguard,
+            fxc_composite.undulator,
+            fxc_composite.synchrotron,
+            fxc_composite.s4_slit_gaps,
+            fxc_composite.robot,
+            fxc_composite.attenuator,
+            fxc_composite.flux,
+            fxc_composite.dcm,
+            fxc_composite.aperture_scatterguard,
+            fxc_composite.smargon,
         )
     )
 
@@ -303,8 +296,8 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     callbacks,
     done_status,
 ):
-    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
-    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
+    fxc_composite.zebra_fast_grid_scan.kickoff = MagicMock(return_value=done_status)
+    fxc_composite.zebra_fast_grid_scan.complete = MagicMock(return_value=done_status)
 
     params.storage_directory = "./tmp"
     params.file_name = str(uuid.uuid1())
@@ -340,8 +333,8 @@ def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     callbacks,
     done_status,
 ):
-    fxc_composite.fast_grid_scan.kickoff = MagicMock(return_value=done_status)
-    fxc_composite.fast_grid_scan.complete = MagicMock(return_value=done_status)
+    fxc_composite.zebra_fast_grid_scan.kickoff = MagicMock(return_value=done_status)
+    fxc_composite.zebra_fast_grid_scan.complete = MagicMock(return_value=done_status)
 
     params.storage_directory = "./tmp"
     params.file_name = str(uuid.uuid1())

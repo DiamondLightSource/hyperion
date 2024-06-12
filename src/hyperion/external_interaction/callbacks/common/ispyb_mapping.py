@@ -8,7 +8,6 @@ from dodal.devices.detector import DetectorParams
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
-    DataCollectionPositionInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_dataclass import IspybParams
 from hyperion.external_interaction.ispyb.ispyb_store import (
@@ -30,16 +29,6 @@ def populate_data_collection_group(params: DiffractionExperimentWithSample):
         sample_id=params.sample_id,
     )
     return dcg_info
-
-
-def populate_data_collection_position_info(ispyb_params):
-    # explicit cast to float because numpy int64, grrr...
-    dc_pos_info = DataCollectionPositionInfo(
-        float(ispyb_params.position[0]),
-        float(ispyb_params.position[1]),
-        float(ispyb_params.position[2]),
-    )
-    return dc_pos_info
 
 
 def populate_remaining_data_collection_info(

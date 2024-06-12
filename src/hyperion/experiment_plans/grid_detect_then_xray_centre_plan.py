@@ -8,16 +8,15 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.backlight import Backlight
+from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -28,6 +27,7 @@ from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.panda import HDFPanda
 
+from hyperion.device_setup_plans.manipulate_sample import move_aperture_if_required
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
@@ -69,7 +69,7 @@ class GridDetectThenXRayCentreComposite:
     dcm: DCM
     detector_motion: DetectorMotion
     eiger: EigerDetector
-    fast_grid_scan: FastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScan
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
@@ -154,14 +154,10 @@ def _detect_grid_and_do_gridscan(
         parameters.snapshot_directory,
     )
 
-    yield from bps.abs_set(composite.backlight, Backlight.OUT)
+    yield from bps.abs_set(composite.backlight, BacklightPosition.OUT)
 
-    LOGGER.info(
-        f"Setting aperture position to {composite.aperture_scatterguard.aperture_positions.SMALL}"
-    )
-    yield from bps.abs_set(
-        composite.aperture_scatterguard,
-        composite.aperture_scatterguard.aperture_positions.SMALL,
+    yield from move_aperture_if_required(
+        composite.aperture_scatterguard, parameters.selected_aperture
     )
 
     flyscan_composite = FlyScanXRayCentreComposite(
@@ -179,7 +175,7 @@ def _detect_grid_and_do_gridscan(
         zebra=composite.zebra,
         zocalo=composite.zocalo,
         panda=composite.panda,
-        fast_grid_scan=composite.fast_grid_scan,
+        zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
         dcm=composite.dcm,
         robot=composite.robot,
     )

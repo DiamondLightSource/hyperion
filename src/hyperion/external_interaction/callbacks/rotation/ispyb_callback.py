@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional
+
+from dodal.devices.aperturescatterguard import SingleAperturePosition
 
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
-    populate_data_collection_position_info,
     populate_remaining_data_collection_info,
 )
 from hyperion.external_interaction.callbacks.ispyb_callback_base import (
@@ -16,6 +17,7 @@ from hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
 )
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
+    DataCollectionPositionInfo,
     ScanDataInfo,
 )
 from hyperion.external_interaction.ispyb.ispyb_store import (
@@ -29,8 +31,6 @@ from hyperion.parameters.rotation import RotationScan
 
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
-
-COMMENT_FOR_ROTATION_SCAN = "Hyperion rotation scan"
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -87,7 +87,10 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.params
             )
             data_collection_info = populate_remaining_data_collection_info(
-                COMMENT_FOR_ROTATION_SCAN, dcgid, data_collection_info, self.params
+                self.params.comment,
+                dcgid,
+                data_collection_info,
+                self.params,
             )
             data_collection_info.parent_id = dcgid
             scan_data_info = ScanDataInfo(
@@ -102,21 +105,41 @@ class RotationISPyBCallback(BaseISPyBCallback):
         return super().activity_gated_start(doc)
 
     def populate_info_for_update(
-        self, event_sourced_data_collection_info: DataCollectionInfo, params
+        self,
+        event_sourced_data_collection_info: DataCollectionInfo,
+        event_sourced_position_info: Optional[DataCollectionPositionInfo],
+        params,
     ) -> Sequence[ScanDataInfo]:
         assert (
             self.ispyb_ids.data_collection_ids
         ), "Expect an existing DataCollection to update"
-        params = cast(RotationScan, params)
+
         return [
             ScanDataInfo(
                 data_collection_info=event_sourced_data_collection_info,
-                data_collection_position_info=populate_data_collection_position_info(
-                    params.ispyb_params
-                ),
                 data_collection_id=self.ispyb_ids.data_collection_ids[0],
+                data_collection_position_info=event_sourced_position_info,
             )
         ]
+
+    def _handle_ispyb_hardware_read(self, doc: Event):
+        """Use the hardware read values to create the ispyb comment"""
+        scan_data_infos = super()._handle_ispyb_hardware_read(doc)
+        aperture_size = SingleAperturePosition(
+            **doc["data"]["aperture_scatterguard-selected_aperture"]
+        )
+
+        motor_positions = [
+            doc["data"]["smargon_x"],
+            doc["data"]["smargon_y"],
+            doc["data"]["smargon_z"],
+        ]
+        assert (
+            self.params
+        ), "handle_ispyb_hardware_read triggered beore activity_gated_start"
+        comment = f"Sample position: ({motor_positions[0]}, {motor_positions[1]}, {motor_positions[2]}) {self.params.comment} Aperture: {aperture_size.name}"
+        scan_data_infos[0].data_collection_info.comments = comment
+        return scan_data_infos
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)

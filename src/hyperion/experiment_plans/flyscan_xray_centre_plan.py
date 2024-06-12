@@ -16,10 +16,13 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan import (
+    FastGridScanCommon,
+    PandAFastGridScan,
+    ZebraFastGridScan,
+)
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 from dodal.devices.flux import Flux
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon, StubPosition
@@ -61,7 +64,7 @@ from hyperion.utils.aperturescatterguard import (
 from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
-    PandaOrZebraGridscan = FastGridScan | PandAFastGridScan
+    PandaOrZebraGridscan = ZebraFastGridScan | PandAFastGridScan
     from scanspec.core import AxesPoints, Axis
 
 
@@ -74,7 +77,7 @@ class FlyScanXRayCentreComposite:
     backlight: Backlight
     dcm: DCM
     eiger: EigerDetector
-    fast_grid_scan: FastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScan
     flux: Flux
     s4_slit_gaps: S4SlitGaps
     smargon: Smargon
@@ -133,7 +136,7 @@ def set_aperture_for_bbox_size(
     yield from set_aperture()
 
 
-def wait_for_gridscan_valid(fgs_motors: PandaOrZebraGridscan, timeout=0.5):
+def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
     LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -160,7 +163,7 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
 
 
 def kickoff_and_complete_gridscan(
-    gridscan: PandaOrZebraGridscan,
+    gridscan: FastGridScanCommon,
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,
@@ -237,12 +240,13 @@ def run_gridscan(
             fgs_composite.s4_slit_gaps,
             fgs_composite.aperture_scatterguard,
             fgs_composite.robot,
+            fgs_composite.smargon,
         )
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
 
-    fgs_motors = fgs_composite.fast_grid_scan
+    fgs_motors = fgs_composite.zebra_fast_grid_scan
 
     LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.FGS_params)

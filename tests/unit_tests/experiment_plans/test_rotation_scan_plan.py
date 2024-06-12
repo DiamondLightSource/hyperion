@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from functools import partial
+from itertools import takewhile
 from typing import TYPE_CHECKING, Callable
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
@@ -17,6 +20,7 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan,
     rotation_scan_plan,
 )
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
 
 from .conftest import fake_read
@@ -50,7 +54,7 @@ def run_full_rotation_plan(
     RE: RunEngine,
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
-):
+) -> RotationScanComposite:
     with patch(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
@@ -212,6 +216,20 @@ def test_full_rotation_plan_smargon_settings(
     ]
 
 
+async def test_rotation_plan_moves_aperture_correctly(
+    run_full_rotation_plan: RotationScanComposite,
+    test_rotation_params,
+) -> None:
+    aperture_scatterguard: ApertureScatterguard = (
+        run_full_rotation_plan.aperture_scatterguard
+    )
+    assert aperture_scatterguard.aperture_positions
+    assert (
+        await aperture_scatterguard._get_current_aperture_position()
+        == aperture_scatterguard.aperture_positions.SMALL
+    )
+
+
 def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     setup_and_run_rotation_plan_for_tests_nomove,
 ) -> None:
@@ -260,3 +278,48 @@ def test_cleanup_happens(
             RE(rotation_scan(fake_create_rotation_devices, test_rotation_params))
             assert "Experiment fails because this is a test" in exc.value.args[0]
             cleanup_plan.assert_called_once()
+
+
+def test_rotation_plan_reads_hardware(
+    RE: RunEngine,
+    fake_create_rotation_devices: RotationScanComposite,
+    test_rotation_params,
+    motion_values,
+    sim_run_engine,
+):
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-synchrotron_mode",
+        lambda msg: {"values": {"value": SynchrotronMode.USER}},
+    )
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-topup_start_countdown",
+        lambda msg: {"values": {"value": -1}},
+    )
+    fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)  # type: ignore
+    sim_run_engine.add_handler(
+        "read", "smargon_omega", lambda msg: {"values": {"value": -1}}
+    )
+
+    msgs = sim_run_engine.simulate_plan(
+        rotation_scan_plan(
+            fake_create_rotation_devices, test_rotation_params, motion_values
+        )
+    )
+
+    msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "create"
+        and msg.kwargs["name"] == CONST.DESCRIPTORS.ISPYB_HARDWARE_READ,
+    )
+    msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_x"
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_y"
+    )
+    sim_run_engine.assert_message_and_return_remaining(
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_z"
+    )

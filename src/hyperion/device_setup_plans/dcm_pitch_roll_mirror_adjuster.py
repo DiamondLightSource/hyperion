@@ -63,7 +63,7 @@ def adjust_mirror_stripe(
         f"Adjusting mirror stripe for {energy_kev}keV selecting {stripe} stripe"
     )
     yield from bps.abs_set(mirror.stripe, stripe, wait=True)
-    yield from bps.abs_set(mirror.apply_stripe, 1)
+    yield from bps.trigger(mirror.apply_stripe)
 
     LOGGER.info("Adjusting mirror voltages...")
     yield from _apply_and_wait_for_voltages_to_settle(stripe, mirror, mirror_voltages)

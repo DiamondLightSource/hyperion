@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.utils import Msg
-from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
@@ -48,6 +48,9 @@ BASIC_PRE_SETUP_DOC = {
         "radius_microns": None,
         "location": (15, 16, 2, 18, 19),
     },
+    "smargon_x": 10.0,
+    "smargon_y": 20.0,
+    "smargon_z": 30.0,
 }
 
 BASIC_POST_SETUP_DOC = {
@@ -165,8 +168,8 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_file
     magic_mock.detector_motion = detector_motion
     magic_mock.zocalo = make_fake_device(ZocaloResults)()
     magic_mock.dcm = dcm
-    scan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
-    magic_mock.fast_grid_scan = scan
+    scan = make_fake_device(ZebraFastGridScan)("prefix", name="fake_fgs")
+    magic_mock.zebra_fast_grid_scan = scan
     magic_mock.synchrotron = synchrotron
     oav.zoom_controller.frst.set("7.5x")
     oav.parameters = OAVConfigParams(

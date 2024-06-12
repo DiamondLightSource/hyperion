@@ -24,7 +24,7 @@ EXPECTED_DATA_COLLECTION = {
     "axisstart": 0.0,
     "axisrange": 0.1,
     "axisend": 180,
-    "comments": "Hyperion rotation scan",
+    "comments": "test",
     "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
@@ -109,6 +109,7 @@ def test_hardware_read_events(
             "focal_spot_size_at_sampley": 20.0,
             "beamsize_at_samplex": 50.0,
             "beamsize_at_sampley": 20.0,
+            "comments": "Sample position: (10.0, 20.0, 30.0) test Aperture: Medium",
         },
     )
     assert_upsert_call_with(
@@ -116,9 +117,9 @@ def test_hardware_read_events(
         mx.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": dummy_rotation_params.ispyb_params.position[0],
-            "pos_y": dummy_rotation_params.ispyb_params.position[1],
-            "pos_z": dummy_rotation_params.ispyb_params.position[2],
+            "pos_x": 10,
+            "pos_y": 20,
+            "pos_z": 30,
         },
     )
 
@@ -203,3 +204,44 @@ def test_activity_gated_stop(mock_ispyb_conn, test_rotation_start_outer_document
         },
     )
     assert len(mx.upsert_data_collection.mock_calls) == 1
+
+
+def test_comment_correct_after_hardware_read(
+    mock_ispyb_conn, dummy_rotation_params, test_rotation_start_outer_document
+):
+    callback = RotationISPyBCallback()
+    test_rotation_start_outer_document["hyperion_parameters"] = (
+        test_rotation_start_outer_document["hyperion_parameters"].replace(
+            '"comment": "test"', '"comment": "a lovely unit test"'
+        )
+    )
+    callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
+    callback.activity_gated_start(
+        TestData.test_rotation_start_main_document  # pyright: ignore
+    )
+    mx = mx_acquisition_from_conn(mock_ispyb_conn)
+
+    mx.upsert_data_collection_group.reset_mock()
+    mx.upsert_data_collection.reset_mock()
+
+    callback.activity_gated_descriptor(
+        TestData.test_descriptor_document_pre_data_collection
+    )
+    callback.activity_gated_event(TestData.test_event_document_pre_data_collection)
+    assert_upsert_call_with(
+        mx.upsert_data_collection.mock_calls[0],
+        mx.get_data_collection_params(),
+        {
+            "parentid": TEST_DATA_COLLECTION_GROUP_ID,
+            "id": TEST_DATA_COLLECTION_IDS[0],
+            "slitgaphorizontal": 0.1234,
+            "slitgapvertical": 0.2345,
+            "synchrotronmode": "User",
+            "undulatorgap1": 1.234,
+            "focal_spot_size_at_samplex": 50.0,
+            "focal_spot_size_at_sampley": 20.0,
+            "beamsize_at_samplex": 50.0,
+            "beamsize_at_sampley": 20.0,
+            "comments": "Sample position: (10.0, 20.0, 30.0) a lovely unit test Aperture: Medium",
+        },
+    )

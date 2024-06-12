@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import os
 
+from dodal.devices.aperturescatterguard import AperturePositionGDANames
 from dodal.devices.detector import (
     DetectorDistanceToBeamXYConverter,
     DetectorParams,
 )
-from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from dodal.devices.fast_grid_scan import (
+    PandAGridScanParams,
+    ZebraGridScanParams,
+)
 from pydantic import Field
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
@@ -43,6 +46,9 @@ class GridCommon(
     use_gpu: bool = Field(default=CONST.I03.USE_GPU_FOR_GRIDSCAN_ANALYSIS)
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
+    )
+    selected_aperture: AperturePositionGDANames | None = Field(
+        default=AperturePositionGDANames.SMALL_APERTURE
     )
     # field rather than inherited to make it easier to track when it can be removed:
     ispyb_extras: TemporaryIspybExtras
@@ -132,8 +138,8 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     z_steps: int = Field(gt=0)
 
     @property
-    def FGS_params(self) -> GridScanParams:
-        return GridScanParams(
+    def FGS_params(self) -> ZebraGridScanParams:
+        return ZebraGridScanParams(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
             z_steps=self.z_steps,

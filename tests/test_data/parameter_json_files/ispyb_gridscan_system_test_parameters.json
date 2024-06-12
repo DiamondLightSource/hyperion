@@ -15,7 +15,7 @@
     "omega_start_deg": 0.0,
     "grid_width_um": 400,
     "oav_centring_file": "tests/test_data/test_OAVCentring.json",
-    "transmission_frac": 1.0,
+    "transmission_frac": 0.49118,
     "visit": "cm31105-4",
     "demand_energy_ev": 12700,
     "ispyb_extras": {
