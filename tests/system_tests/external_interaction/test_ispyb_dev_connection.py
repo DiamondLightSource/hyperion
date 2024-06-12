@@ -15,7 +15,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
-from ophyd.status import Status
+from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
 from hyperion.experiment_plans import oav_grid_detection_plan
@@ -248,7 +248,7 @@ def grid_detect_then_xray_centre_composite(
     ophyd_pin_tip_detection,
 ):
     composite = GridDetectThenXRayCentreComposite(
-        fast_grid_scan=fast_grid_scan,
+        zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
         panda_fast_grid_scan=None,  # type: ignore
@@ -330,14 +330,7 @@ def grid_detect_then_xray_centre_composite(
     def mock_set_file_name(val, timeout):
         eiger.odin.meta.file_name.sim_put(val)  # type: ignore
         eiger.odin.file_writer.id.sim_put(val)  # type: ignore
-        return Status(success=True, done=True)
-
-    unpatched_complete = fast_grid_scan.complete
-
-    def mock_complete_status():
-        status = unpatched_complete()
-        status.set_finished()
-        return status
+        return NullStatus()
 
     with (
         patch.object(eiger.odin.nodes, "get_init_state", return_value=True),
@@ -363,11 +356,9 @@ def grid_detect_then_xray_centre_composite(
             "set",
             side_effect=mock_set_file_name,
         ),
-        patch.object(
-            fast_grid_scan, "kickoff", return_value=Status(success=True, done=True)
-        ),
-        patch.object(fast_grid_scan, "complete", side_effect=mock_complete_status),
-        patch.object(zocalo, "trigger", return_value=Status(success=True, done=True)),
+        patch.object(fast_grid_scan, "kickoff", return_value=NullStatus()),
+        patch.object(fast_grid_scan, "complete", return_value=NullStatus()),
+        patch.object(zocalo, "trigger", return_value=NullStatus()),
     ):
         yield composite
 
@@ -827,7 +818,9 @@ def test_ispyb_deposition_in_rotation_plan(
 
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
-    assert fetch_comment(dcid) == "Hyperion rotation scan"
+    assert (
+        fetch_comment(dcid) == "Sample position: (1.0, 2.0, 3.0) test Aperture: Small"
+    )
 
     EXPECTED_VALUES = {
         "wavelength": test_wl,
