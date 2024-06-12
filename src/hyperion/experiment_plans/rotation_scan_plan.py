@@ -13,7 +13,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import Slits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
@@ -62,7 +62,7 @@ class RotationScanComposite:
     smargon: Smargon
     undulator: Undulator
     synchrotron: Synchrotron
-    s4_slit_gaps: S4SlitGaps
+    s4_slit_gaps: Slits
     zebra: Zebra
 
     def __post_init__(self):

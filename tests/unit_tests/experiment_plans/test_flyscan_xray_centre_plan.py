@@ -206,8 +206,13 @@ class TestFlyscanXrayCentrePlan:
             "radius_microns": 20,
             "location": (10, 11, 2, 13, 14),
         }
-        fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
-        fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)  # type: ignore
+        set_mock_value(
+            fake_fgs_composite.s4_slit_gaps.x_gap.user_readback, xgap_test_value
+        )
+        set_mock_value(
+            fake_fgs_composite.s4_slit_gaps.y_gap.user_readback, ygap_test_value
+        )
+
         flux_test_value = 10.0
         fake_fgs_composite.flux.flux_reading.sim_put(flux_test_value)  # type: ignore
 
@@ -254,9 +259,9 @@ class TestFlyscanXrayCentrePlan:
                 {
                     "undulator-current_gap": undulator_test_value,
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
-                    "s4_slit_gaps_xgap": xgap_test_value,
-                    "s4_slit_gaps_ygap": ygap_test_value,
-                    'aperture_scatterguard-selected_aperture': ap_sg_test_value
+                    "s4_slit_gaps-x_gap": xgap_test_value,
+                    "s4_slit_gaps-y_gap": ygap_test_value,
+                    aperture_scatterguard-selected_aperture': ap_sg_test_value
                 },
             )
             assert_event(

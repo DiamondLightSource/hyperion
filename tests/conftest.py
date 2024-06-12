@@ -33,7 +33,7 @@ from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import Slits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
@@ -547,7 +547,7 @@ def fake_create_rotation_devices(
     undulator: Undulator,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: Slits,
     dcm: DCM,
     robot: BartRobot,
     done_status,

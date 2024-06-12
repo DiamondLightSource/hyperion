@@ -12,7 +12,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.flux import Flux
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import Slits
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
 from ophyd.status import Status
@@ -586,8 +586,12 @@ def test_ispyb_deposition_in_gridscan(
     fetch_datacollection_position_attribute: Callable[..., Any],
 ):
     os.environ["ISPYB_CONFIG_PATH"] = CONST.SIM.DEV_ISPYB_DATABASE_CFG
-    grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback.sim_put(0.1)  # type: ignore
-    grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback.sim_put(0.1)  # type: ignore
+    set_mock_value(
+        grid_detect_then_xray_centre_composite.s4_slit_gaps.x_gap.user_readback, 0.1
+    )
+    set_mock_value(
+        grid_detect_then_xray_centre_composite.s4_slit_gaps.y_gap.user_readback, 0.1
+    )
     ispyb_callback = GridscanISPyBCallback()
     RE.subscribe(ispyb_callback)
     RE(
@@ -756,7 +760,7 @@ def test_ispyb_deposition_in_rotation_plan(
     undulator: Undulator,
     attenuator: Attenuator,
     synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: Slits,
     flux: Flux,
     robot,
     fake_create_devices: dict[str, Any],
@@ -789,11 +793,13 @@ def test_ispyb_deposition_in_rotation_plan(
         fake_create_rotation_devices.synchrotron.topup_start_countdown,  # pyright: ignore
         -1,
     )
-    fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
-        test_slit_gap_horiz
+    set_mock_value(
+        fake_create_rotation_devices.s4_slit_gaps.x_gap.user_readback,
+        test_slit_gap_horiz,
     )
-    fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback.sim_put(  # pyright: ignore
-        test_slit_gap_vert
+    set_mock_value(
+        fake_create_rotation_devices.s4_slit_gaps.y_gap.user_readback,
+        test_slit_gap_vert,
     )
     test_rotation_params.detector_params.expected_energy_ev = energy_ev
 
