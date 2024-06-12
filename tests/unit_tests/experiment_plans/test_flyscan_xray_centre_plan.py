@@ -12,8 +12,6 @@ from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
 from dodal.common.beamlines.beamline_utils import clear_device
 from dodal.devices.detector.det_dim_constants import (
-    EIGER2_X_4M_DIMENSION,
-    EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
@@ -62,7 +60,6 @@ from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
-from ...conftest import default_raw_params
 from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
@@ -119,7 +116,7 @@ def mock_ispyb():
 class TestFlyscanXrayCentrePlan:
     td: TestData = TestData()
 
-    def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
+    def test_eiger2_x_16_detector_specified(
         self,
         test_fgs_params: ThreeDGridScan,
     ):
@@ -127,11 +124,6 @@ class TestFlyscanXrayCentrePlan:
             test_fgs_params.detector_params.detector_size_constants.det_type_string
             == EIGER_TYPE_EIGER2_X_16M
         )
-        raw_params_dict = default_raw_params()
-        raw_params_dict["detector"] = EIGER_TYPE_EIGER2_X_4M
-        params: ThreeDGridScan = ThreeDGridScan(**raw_params_dict)
-        det_dimension = params.detector_params.detector_size_constants.det_dimension
-        assert det_dimension == EIGER2_X_4M_DIMENSION
 
     def test_when_run_gridscan_called_then_generator_returned(
         self,

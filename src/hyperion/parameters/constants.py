@@ -1,6 +1,7 @@
 import os
 from enum import Enum
 
+from dodal.devices.detector import EIGER2_X_16M_SIZE
 from pydantic.dataclasses import dataclass
 
 TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
@@ -89,7 +90,7 @@ _live_oav_file = "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperi
 class I03Constants:
     BASE_DATA_DIR = "/tmp/dls/i03/data/" if TEST_MODE else "/dls/i03/data/"
     BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
-    DETECTOR = "EIGER2_X_16M"
+    DETECTOR = EIGER2_X_16M_SIZE
     INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
     OAV_CENTRING_FILE = _test_oav_file if TEST_MODE else _live_oav_file
     SHUTTER_TIME_S = 0.06

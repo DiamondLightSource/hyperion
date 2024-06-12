@@ -28,7 +28,7 @@ from hyperion.parameters.components import (
     WithScan,
     XyzStarts,
 )
-from hyperion.parameters.constants import CONST
+from hyperion.parameters.constants import CONST, I03Constants
 
 
 class GridCommon(
@@ -79,7 +79,7 @@ class GridCommon(
         ), "Detector distance must be filled before generating DetectorParams"
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
-            detector_size_constants=self.detector,  # type: ignore # Will be cleaned up in #1307
+            detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
             directory=self.storage_directory,
