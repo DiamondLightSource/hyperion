@@ -1,5 +1,6 @@
 from typing import Callable, Generator, Type, TypeVar
 
+from bluesky.plan_stubs import null
 from bluesky.preprocessors import contingency_wrapper
 from bluesky.utils import Msg
 
@@ -35,8 +36,7 @@ def catch_exception_and_warn(
     def warn_if_exception_matches(exception: Exception):
         if isinstance(exception, exception_to_catch):
             raise WarningException(str(exception))
-        else:
-            raise
+        yield from null()
 
     return (
         yield from contingency_wrapper(
