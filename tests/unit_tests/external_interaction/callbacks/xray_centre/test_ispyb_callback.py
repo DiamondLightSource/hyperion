@@ -23,10 +23,6 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "axisstart": 0.0,
     "axisrange": 0,
     "axisend": 0,
-    "focal_spot_size_at_samplex": 0.0,
-    "focal_spot_size_at_sampley": 0.0,
-    "beamsize_at_samplex": 0.1,
-    "beamsize_at_sampley": 0.1,
     "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
@@ -53,37 +49,6 @@ EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
     "axisstart": 90,
     "data_collection_number": 2,
     "filetemplate": "file_name_2_master.h5",
-}
-
-EXPECTED_DATA_COLLECTION_2D = {
-    "visitid": TEST_SESSION_ID,
-    "parentid": TEST_DATA_COLLECTION_GROUP_ID,
-    "sampleid": TEST_SAMPLE_ID,
-    "detectorid": 78,
-    "axisstart": 0.0,
-    "axisrange": 0,
-    "axisend": 0,
-    "focal_spot_size_at_samplex": 0.0,
-    "focal_spot_size_at_sampley": 0.0,
-    "beamsize_at_samplex": 0.1,
-    "beamsize_at_sampley": 0.1,
-    "data_collection_number": 0,
-    "detector_distance": 100.0,
-    "exp_time": 0.1,
-    "imgdir": "/tmp/",
-    "imgprefix": "file_name",
-    "imgsuffix": "h5",
-    "n_passes": 1,
-    "overlap": 0,
-    "omegastart": 0,
-    "start_image_number": 1,
-    "wavelength": None,
-    "xbeam": 150.0,
-    "ybeam": 160.0,
-    "synchrotron_mode": None,
-    "undulator_gap1": None,
-    "starttime": EXPECTED_START_TIME,
-    "filetemplate": "file_name_0_master.h5",
 }
 
 
@@ -143,6 +108,10 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
+                "focal_spot_size_at_samplex": 50.0,
+                "focal_spot_size_at_sampley": 20.0,
+                "beamsize_at_samplex": 50.0,
+                "beamsize_at_sampley": 20.0,
             },
         )
         assert_upsert_call_with(
@@ -155,6 +124,10 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
+                "focal_spot_size_at_samplex": 50.0,
+                "focal_spot_size_at_sampley": 20.0,
+                "beamsize_at_samplex": 50.0,
+                "beamsize_at_sampley": 20.0,
             },
         )
 
@@ -202,26 +175,7 @@ class TestXrayCentreISPyBCallback:
                 "resolution": 1.1830593328548429,
             },
         )
-        assert_upsert_call_with(
-            mx_acq.update_dc_position.mock_calls[0],
-            mx_acq.get_dc_position_params(),
-            {
-                "id": TEST_DATA_COLLECTION_IDS[0],
-                "pos_x": 0,
-                "pos_y": 0,
-                "pos_z": 0,
-            },
-        )
-        assert_upsert_call_with(
-            mx_acq.update_dc_position.mock_calls[1],
-            mx_acq.get_dc_position_params(),
-            {
-                "id": TEST_DATA_COLLECTION_IDS[1],
-                "pos_x": 0,
-                "pos_y": 0,
-                "pos_z": 0,
-            },
-        )
+        mx_acq.update_dc_position.assert_not_called()
         mx_acq.upsert_dc_grid.assert_not_called()
 
     def test_activity_gated_event_oav_snapshot_triggered(self, mock_ispyb_conn):

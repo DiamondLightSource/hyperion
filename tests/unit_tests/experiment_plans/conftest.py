@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.utils import Msg
-from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan import ZebraFastGridScan
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
@@ -40,12 +40,21 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 BASIC_PRE_SETUP_DOC = {
     "undulator-current_gap": 0,
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-    "s4_slit_gaps-x_gap": 0,
-    "s4_slit_gaps-y_gap": 0,
+    "s4_slit_gaps_xgap": 0,
+    "s4_slit_gaps_ygap": 0,
+    "aperture_scatterguard-selected_aperture": {
+        "name": "Robot_load",
+        "GDA_name": "ROBOT_LOAD",
+        "radius_microns": None,
+        "location": (15, 16, 2, 18, 19),
+    },
+    "smargon_x": 10.0,
+    "smargon_y": 20.0,
+    "smargon_z": 30.0,
 }
 
 BASIC_POST_SETUP_DOC = {
-    "attenuator_actual_transmission": 0,
+    "attenuator-actual_transmission": 0,
     "flux_flux_reading": 10,
     "dcm-energy_in_kev": 11.105,
 }
@@ -70,7 +79,7 @@ def run_generic_ispyb_handler_setup(
     ispyb_handler.activity_gated_start(
         {
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": params.old_parameters().json(),
+            "hyperion_parameters": params.json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
@@ -159,8 +168,8 @@ def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_file
     magic_mock.detector_motion = detector_motion
     magic_mock.zocalo = make_fake_device(ZocaloResults)()
     magic_mock.dcm = dcm
-    scan = make_fake_device(FastGridScan)("prefix", name="fake_fgs")
-    magic_mock.fast_grid_scan = scan
+    scan = make_fake_device(ZebraFastGridScan)("prefix", name="fake_fgs")
+    magic_mock.zebra_fast_grid_scan = scan
     magic_mock.synchrotron = synchrotron
     oav.zoom_controller.frst.set("7.5x")
     oav.parameters = OAVConfigParams(

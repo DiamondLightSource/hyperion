@@ -16,10 +16,13 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan import (
+    FastGridScanCommon,
+    PandAFastGridScan,
+    ZebraFastGridScan,
+)
 from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
 from dodal.devices.flux import Flux
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot
 from dodal.devices.slits import Slits
 from dodal.devices.smargon import Smargon, StubPosition
@@ -61,7 +64,7 @@ from hyperion.utils.aperturescatterguard import (
 from hyperion.utils.context import device_composite_from_context
 
 if TYPE_CHECKING:
-    PandaOrZebraGridscan = FastGridScan | PandAFastGridScan
+    PandaOrZebraGridscan = ZebraFastGridScan | PandAFastGridScan
     from scanspec.core import AxesPoints, Axis
 
 
@@ -74,7 +77,7 @@ class FlyScanXRayCentreComposite:
     backlight: Backlight
     dcm: DCM
     eiger: EigerDetector
-    fast_grid_scan: FastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScan
     flux: Flux
     s4_slit_gaps: Slits
     smargon: Smargon
@@ -133,7 +136,7 @@ def set_aperture_for_bbox_size(
     yield from set_aperture()
 
 
-def wait_for_gridscan_valid(fgs_motors: PandaOrZebraGridscan, timeout=0.5):
+def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
     LOGGER.info("Waiting for valid fgs_params")
     SLEEP_PER_CHECK = 0.1
     times_to_check = int(timeout / SLEEP_PER_CHECK)
@@ -160,11 +163,12 @@ def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
 
 
 def kickoff_and_complete_gridscan(
-    gridscan: PandaOrZebraGridscan,
+    gridscan: FastGridScanCommon,
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo_environment: str,
     scan_points: list[AxesPoints[Axis]],
+    scan_start_indices: list[int],
 ):
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
@@ -173,6 +177,7 @@ def kickoff_and_complete_gridscan(
             "subplan_name": CONST.PLAN.DO_FGS,
             "zocalo_environment": zocalo_environment,
             "scan_points": scan_points,
+            "scan_start_indices": scan_start_indices,
         }
     )
     @bpp.contingency_decorator(
@@ -235,12 +240,13 @@ def run_gridscan(
             fgs_composite.s4_slit_gaps,
             fgs_composite.aperture_scatterguard,
             fgs_composite.robot,
+            fgs_composite.smargon,
         )
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
 
-    fgs_motors = fgs_composite.fast_grid_scan
+    fgs_motors = fgs_composite.zebra_fast_grid_scan
 
     LOGGER.info("Setting fgs params")
     yield from set_flyscan_params(fgs_motors, parameters.FGS_params)
@@ -261,10 +267,8 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.zocalo_environment,
-        [
-            parameters.old_parameters().get_scan_points(1),
-            parameters.old_parameters().get_scan_points(2),
-        ],
+        [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
+        parameters.scan_indices,
     )
     yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
 
@@ -330,6 +334,10 @@ def run_gridscan_and_move(
             fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
         )
 
+    # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
+    LOGGER.info("Turning off Eiger dev/shm streaming")
+    yield from bps.abs_set(fgs_composite.eiger.odin.fan.dev_shm_enable, 0)
+
     # Wait on everything before returning to GDA (particularly apertures), can be removed
     # when we do not return to GDA here
     yield from bps.wait()
@@ -345,7 +353,7 @@ def flyscan_xray_centre(
     at any point in it.
 
     Args:
-        parameters (FGSInternalParameters): The parameters to run the scan.
+        parameters (ThreeDGridScan): The parameters to run the scan.
 
     Returns:
         Generator: The plan for the gridscan
@@ -359,7 +367,7 @@ def flyscan_xray_centre(
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-            "hyperion_internal_parameters": parameters.old_parameters().json(),
+            "hyperion_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
             ],

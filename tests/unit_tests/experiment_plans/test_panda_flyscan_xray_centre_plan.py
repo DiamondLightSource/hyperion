@@ -6,16 +6,16 @@ from unittest.mock import DEFAULT, MagicMock, call, patch
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
-from bluesky import Msg
 from bluesky.run_engine import RunEngine
+from bluesky.utils import Msg
+from dodal.beamlines import i03
 from dodal.devices.detector.det_dim_constants import (
     EIGER2_X_4M_DIMENSION,
     EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
-from ophyd.sim import make_fake_device
 from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 
@@ -82,13 +82,15 @@ def ispyb_plan(test_panda_fgs_params):
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            "hyperion_internal_parameters": test_panda_fgs_params.json(),
+            "hyperion_parameters": test_panda_fgs_params.json(),
         }
     )
     def standalone_read_hardware_for_ispyb(
-        und, syn, slits, robot, attn, fl, dcm, ap_sg
+        und, syn, slits, robot, attn, fl, dcm, ap_sg, sm
     ):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, ap_sg, robot)
+        yield from read_hardware_for_ispyb_pre_collection(
+            und, syn, slits, ap_sg, robot, sm
+        )
         yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
@@ -138,10 +140,15 @@ class TestFlyscanXrayCentrePlan:
         )
 
         transmission_test_value = 0.01
-        fake_fgs_composite.attenuator.actual_transmission.sim_put(  # type: ignore
-            transmission_test_value
+        set_mock_value(
+            fake_fgs_composite.attenuator.actual_transmission, transmission_test_value
         )
-
+        ap_sg_test_value = {
+            "name": "Small",
+            "GDA_name": "SMALL_APERTURE",
+            "radius_microns": 20,
+            "location": (10, 11, 2, 13, 14),
+        }
         xgap_test_value = 0.1234
         ygap_test_value = 0.2345
         set_mock_value(
@@ -172,6 +179,7 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.flux,
                     fake_fgs_composite.dcm,
                     fake_fgs_composite.aperture_scatterguard,
+                    fake_fgs_composite.smargon,
                 )
             )
             # fmt: off
@@ -189,12 +197,13 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps-x_gap": xgap_test_value,
                     "s4_slit_gaps-y_gap": ygap_test_value,
+                    'aperture_scatterguard-selected_aperture': ap_sg_test_value,
                 },
             )
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[1],  # pyright: ignore
                 {
-                    "attenuator_actual_transmission": transmission_test_value,
+                    "attenuator-actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
                 },
             )
@@ -380,7 +389,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
         autospec=True,
     )
-    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set(
+    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
         self,
         setup_panda_for_flyscan: MagicMock,
         move_xyz: MagicMock,
@@ -392,6 +401,8 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
         test_panda_fgs_params.set_stub_offsets = True
+
+        fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
         def wrapped_run_gridscan_and_move():
             run_generic_ispyb_handler_setup(
@@ -411,6 +422,8 @@ class TestFlyscanXrayCentrePlan:
             fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
             == 1
         )
+
+        assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
 
     @patch(
         "dodal.devices.aperturescatterguard.ApertureScatterguard.set",
@@ -508,6 +521,14 @@ class TestFlyscanXrayCentrePlan:
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
 
     @patch(
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.bps.complete",
+        autospec=True,
+    )
+    @patch(
+        "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.bps.kickoff",
+        autospec=True,
+    )
+    @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.bps.mv", autospec=True
     )
     @patch(
@@ -520,13 +541,15 @@ class TestFlyscanXrayCentrePlan:
     )
     def test_GIVEN_no_results_from_zocalo_WHEN_communicator_wait_for_results_called_THEN_fallback_centre_used(
         self,
-        mock_setup_panda_for_flyscan: MagicMock,
+        mock_setup_panda: MagicMock,
         move_xyz: MagicMock,
         mock_mv: MagicMock,
+        mock_kickoff,
+        mock_complete,
+        test_panda_fgs_params: ThreeDGridScan,
         RE_with_subs: tuple[
             RunEngine, Tuple[GridscanNexusFileCallback, GridscanISPyBCallback]
         ],
-        test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         done_status,
     ):
@@ -648,12 +671,10 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_already_valid_THEN_wait_for_GRIDSCAN_returns_immediately(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: PandAFastGridScan = make_fake_device(PandAFastGridScan)(
-            "prefix", name="fake_fgs"
-        )
+        test_fgs: PandAFastGridScan = i03.panda_fast_grid_scan(fake_with_ophyd_sim=True)
 
-        test_fgs.scan_invalid.sim_put(False)  # type: ignore
-        test_fgs.position_counter.sim_put(0)  # type: ignore
+        set_mock_value(test_fgs.position_counter, 0)
+        set_mock_value(test_fgs.scan_invalid, False)
 
         RE(wait_for_gridscan_valid(test_fgs))
 
@@ -666,12 +687,10 @@ class TestFlyscanXrayCentrePlan:
     def test_GIVEN_scan_not_valid_THEN_wait_for_GRIDSCAN_raises_and_sleeps_called(
         self, patch_sleep: MagicMock, RE: RunEngine
     ):
-        test_fgs: PandAFastGridScan = make_fake_device(PandAFastGridScan)(
-            "prefix", name="fake_fgs"
-        )
+        test_fgs: PandAFastGridScan = i03.panda_fast_grid_scan(fake_with_ophyd_sim=True)
 
-        test_fgs.scan_invalid.sim_put(True)  # type: ignore
-        test_fgs.position_counter.sim_put(0)  # type: ignore
+        set_mock_value(test_fgs.scan_invalid, True)
+        set_mock_value(test_fgs.position_counter, 0)
         with pytest.raises(WarningException):
             RE(wait_for_gridscan_valid(test_fgs))
 
@@ -763,8 +782,12 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.bps.complete",
         autospec=True,
     )
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True
+    )
     def test_fgs_arms_eiger_without_grid_detect(
         self,
+        mock_kickoff,
         mock_complete,
         mock_wait,
         fake_fgs_composite: FlyScanXRayCentreComposite,
@@ -779,6 +802,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.unstage.assert_called_once()
 
     @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True
+    )
+    @patch(
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.bps.wait",
         autospec=True,
     )
@@ -790,6 +816,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_complete,
         mock_wait,
+        mock_kickoff,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_panda_fgs_params: ThreeDGridScan,
         RE: RunEngine,

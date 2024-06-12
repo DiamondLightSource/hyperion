@@ -13,68 +13,50 @@ from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
 from numpy.typing import DTypeLike
+from scanspec.core import AxesPoints
 
 from hyperion.external_interaction.nexus.nexus_utils import (
     create_detector_parameters,
     create_goniometer_axes,
     get_start_and_predicted_end_time,
 )
-from hyperion.parameters.internal_parameters import (
-    HyperionParameters,
-    InternalParameters,
-)
+from hyperion.parameters.components import DiffractionExperimentWithSample
 
 
 class NexusWriter:
     def __init__(
         self,
-        parameters: InternalParameters,
-        scan_points: dict,
+        parameters: DiffractionExperimentWithSample,
         data_shape: tuple[int, int, int],
-        omega_start: float | None = None,
+        scan_points: AxesPoints,
+        *,
         run_number: int | None = None,
+        omega_start_deg: float = 0,
+        chi_start_deg: float = 0,
         vds_start_index: int = 0,
     ) -> None:
         self.beam: Optional[Beam] = None
         self.attenuator: Optional[Attenuator] = None
         self.scan_points: dict = scan_points
         self.data_shape: tuple[int, int, int] = data_shape
-        hyperion_parameters: HyperionParameters = (
-            parameters.hyperion_params  # type:ignore
-        )
-        self.omega_start: float = (
-            omega_start
-            if omega_start
-            else hyperion_parameters.detector_params.omega_start
-        )
-        assert hyperion_parameters.detector_params.run_number is not None
         self.run_number: int = (
-            run_number if run_number else hyperion_parameters.detector_params.run_number
+            run_number if run_number else parameters.detector_params.run_number
         )
-        self.detector: Detector = create_detector_parameters(
-            hyperion_parameters.detector_params
-        )
+        self.detector: Detector = create_detector_parameters(parameters.detector_params)
         self.source: Source = Source(get_beamline_name("S03"))
-        self.directory: Path = Path(hyperion_parameters.detector_params.directory)
-        self.filename: str = hyperion_parameters.detector_params.prefix
+        self.directory: Path = Path(parameters.storage_directory)
+        self.filename: str = parameters.file_name
         self.start_index: int = vds_start_index
-        self.full_num_of_images: int = (
-            hyperion_parameters.detector_params.num_triggers
-            * hyperion_parameters.detector_params.num_images_per_trigger
-        )
-        self.full_filename: str = hyperion_parameters.detector_params.full_filename
+        self.full_num_of_images: int = parameters.num_images
+        self.full_filename: str = parameters.detector_params.full_filename
         self.nexus_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}.nxs"
         )
         self.master_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}_master.h5"
         )
-        try:
-            chi = parameters.experiment_params.chi_start
-        except Exception:
-            chi = 0.0
         self.goniometer: Goniometer = create_goniometer_axes(
-            self.omega_start, self.scan_points, chi=chi
+            omega_start_deg, self.scan_points, chi=chi_start_deg
         )
 
     def create_nexus_file(self, bit_depth: DTypeLike):

@@ -1,28 +1,28 @@
-from typing import Any, Dict, Generator
+from typing import Dict, Generator
 from unittest.mock import ANY, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.backlight import Backlight
+from dodal.devices.backlight import BacklightPosition
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.smargon import Smargon
 
 from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     GridDetectThenXRayCentreComposite,
+    OavGridDetectionComposite,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 
-from ..device_setup_plans.test_setup_oav import fake_smargon
-
 
 def _fake_grid_detection(
-    devices: Any,
+    devices: OavGridDetectionComposite,
     parameters: OAVParameters,
     snapshot_template: str,
     snapshot_dir: str,
@@ -30,15 +30,13 @@ def _fake_grid_detection(
     box_size_um: float = 0.0,
 ):
     oav = i03.oav(fake_with_ophyd_sim=True)
-    smargon = fake_smargon()
     oav.grid_snapshot.box_width.put(635.00986)
-
     # first grid detection: x * y
     oav.grid_snapshot.num_boxes_x.put(10)
     oav.grid_snapshot.num_boxes_y.put(4)
     yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
     yield from bps.read(oav.grid_snapshot)
-    yield from bps.read(smargon)
+    yield from bps.read(devices.smargon)
     yield from bps.save()
 
     # second grid detection: x * z, so num_boxes_y refers to smargon z
@@ -46,23 +44,23 @@ def _fake_grid_detection(
     oav.grid_snapshot.num_boxes_y.put(1)
     yield from bps.create(CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED)
     yield from bps.read(oav.grid_snapshot)
-    yield from bps.read(smargon)
+    yield from bps.read(devices.smargon)
     yield from bps.save()
 
 
 @pytest.fixture
-def grid_detect_devices(aperture_scatterguard, backlight, detector_motion):
+def grid_detect_devices(aperture_scatterguard, backlight, detector_motion, smargon):
     return GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=MagicMock(),
         backlight=backlight,
         detector_motion=detector_motion,
         eiger=MagicMock(),
-        fast_grid_scan=MagicMock(),
+        zebra_fast_grid_scan=MagicMock(),
         flux=MagicMock(),
         oav=MagicMock(),
         pin_tip_detection=MagicMock(),
-        smargon=MagicMock(),
+        smargon=smargon,
         synchrotron=MagicMock(),
         s4_slit_gaps=MagicMock(),
         undulator=MagicMock(),
@@ -92,11 +90,12 @@ def test_full_grid_scan(test_fgs_params, test_config_files):
     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
     autospec=True,
 )
-def test_detect_grid_and_do_gridscan(
+async def test_detect_grid_and_do_gridscan(
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     grid_detect_devices: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
+    smargon: Smargon,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
 ):
@@ -126,7 +125,10 @@ def test_detect_grid_and_do_gridscan(
         mock_grid_detection_plan.assert_called_once()
 
         # Check backlight was moved OUT
-        assert grid_detect_devices.backlight.pos.get() == Backlight.OUT
+        assert (
+            await grid_detect_devices.backlight.position.get_value()
+            == BacklightPosition.OUT
+        )
 
         # Check aperture was changed to SMALL
         mock_aperture_scatterguard.assert_called_once_with(
@@ -153,6 +155,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
+    smargon: Smargon,
 ):
     oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
 

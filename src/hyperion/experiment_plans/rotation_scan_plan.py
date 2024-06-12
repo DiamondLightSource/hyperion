@@ -41,6 +41,9 @@ from hyperion.device_setup_plans.setup_zebra import (
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
+from hyperion.utils.aperturescatterguard import (
+    load_default_aperture_scatterguard_positions_if_unset,
+)
 from hyperion.utils.context import device_composite_from_context
 
 
@@ -61,6 +64,12 @@ class RotationScanComposite:
     synchrotron: Synchrotron
     s4_slit_gaps: Slits
     zebra: Zebra
+
+    def __post_init__(self):
+        """Ensure that aperture positions are loaded whenever this class is created."""
+        load_default_aperture_scatterguard_positions_if_unset(
+            self.aperture_scatterguard
+        )
 
 
 def create_devices(context: BlueskyContext) -> RotationScanComposite:
@@ -212,6 +221,7 @@ def rotation_scan_plan(
             composite.s4_slit_gaps,
             composite.aperture_scatterguard,
             composite.robot,
+            composite.smargon,
         )
         yield from read_hardware_for_ispyb_during_collection(
             composite.attenuator, composite.flux, composite.dcm
@@ -254,7 +264,7 @@ def rotation_scan(
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
-            "hyperion_internal_parameters": parameters.old_parameters().json(),
+            "hyperion_parameters": parameters.json(),
             "activate_callbacks": [
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
@@ -281,8 +291,11 @@ def rotation_scan(
         @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: cleanup_plan(composite, max_vel))
         def rotation_with_cleanup_and_stage(params: RotationScan):
+            assert composite.aperture_scatterguard.aperture_positions is not None
             LOGGER.info("setting up sample environment...")
             yield from setup_sample_environment(
+                composite.aperture_scatterguard,
+                params.selected_aperture,
                 composite.detector_motion,
                 composite.backlight,
                 composite.attenuator,

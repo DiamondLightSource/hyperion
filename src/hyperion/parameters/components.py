@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 import datetime
+import json
 from abc import abstractmethod
 from enum import StrEnum
 from pathlib import Path
 from typing import Sequence, SupportsInt, TypeVar
 
-import numpy as np
+from dodal.devices.aperturescatterguard import AperturePositionGDANames
 from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
 )
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, Extra, Field, root_validator, validator
 from scanspec.core import AxesPoints
 from semver import Version
 
@@ -127,6 +128,15 @@ class HyperionParameters(BaseModel):
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
+    @classmethod
+    def from_json(cls, input: str | None, *, allow_extras: bool = False):
+        assert input is not None
+        if allow_extras:
+            cls.Config.extra = Extra.ignore
+        params = cls(**json.loads(input))
+        cls.Config.extra = Extra.forbid
+        return params
+
 
 class DiffractionExperiment(HyperionParameters):
     """For all experiments which use beam"""
@@ -148,18 +158,26 @@ class DiffractionExperiment(HyperionParameters):
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
     run_number: int | None = Field(default=None, ge=0)
-    ispyb_experiment_type: IspybExperimentType | None = None
+    selected_aperture: AperturePositionGDANames | None = Field(default=None)
+    ispyb_experiment_type: IspybExperimentType
     storage_directory: str
+    snapshot_directory: Path
+
+    @root_validator(pre=True)
+    def validate_snapshot_directory(cls, values):
+        snapshot_dir = values.get(
+            "snapshot_directory", Path(values["storage_directory"], "snapshots")
+        )
+        values["snapshot_directory"] = (
+            snapshot_dir if isinstance(snapshot_dir, Path) else Path(snapshot_dir)
+        )
+        return values
 
     @property
     def visit_directory(self) -> Path:
         return (
             Path(CONST.I03.BASE_DATA_DIR) / str(datetime.date.today().year) / self.visit
         )
-
-    @property
-    def snapshot_directory(self) -> Path:
-        return Path(self.storage_directory) / "snapshots"
 
     @property
     def num_images(self) -> int:
@@ -201,6 +219,9 @@ class WithSample(BaseModel):
     sample_pin: int | None = None
 
 
+class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
+
+
 class WithOavCentring(BaseModel):
     oav_centring_file: str = Field(default=CONST.I03.OAV_CENTRING_FILE)
 
@@ -239,11 +260,6 @@ class TemporaryIspybExtras(BaseModel):
         arbitrary_types_allowed = True
         extra = Extra.forbid
 
-    position: list[float] | NDArray = Field(default=np.array([0, 0, 0]))
-    beam_size_x: float
-    beam_size_y: float
-    focal_spot_size_x: float
-    focal_spot_size_y: float
     xtal_snapshots_omega_start: list[str] | None = None
     xtal_snapshots_omega_end: list[str] | None = None
     xtal_snapshots: list[str] | None = None

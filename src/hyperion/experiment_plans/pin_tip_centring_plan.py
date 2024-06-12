@@ -9,14 +9,14 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.smargon import Smargon
-
-from hyperion.device_setup_plans.setup_oav import (
+from dodal.devices.oav.utils import (
     Pixel,
     get_move_required_so_that_beam_is_at_pixel,
-    pre_centring_setup_oav,
     wait_for_tip_to_be_found,
 )
+from dodal.devices.smargon import Smargon
+
+from hyperion.device_setup_plans.setup_oav import pre_centring_setup_oav
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST

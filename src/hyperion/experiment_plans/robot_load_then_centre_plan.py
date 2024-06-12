@@ -8,18 +8,17 @@ from typing import cast
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext, MsgGenerator
-from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScan
+from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, VFMMirrorVoltages
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.panda_fast_grid_scan import PandAFastGridScan
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.slits import Slits
 from dodal.devices.smargon import Smargon, StubPosition
@@ -62,7 +61,7 @@ class RobotLoadThenCentreComposite:
     backlight: Backlight
     detector_motion: DetectorMotion
     eiger: EigerDetector
-    fast_grid_scan: FastGridScan
+    zebra_fast_grid_scan: ZebraFastGridScan
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
@@ -124,9 +123,10 @@ def take_robot_snapshots(oav: OAV, webcam: Webcam, directory: Path):
 
 
 def prepare_for_robot_load(composite: RobotLoadThenCentreComposite):
+    assert composite.aperture_scatterguard.aperture_positions
     yield from bps.abs_set(
         composite.aperture_scatterguard,
-        AperturePositions.ROBOT_LOAD,
+        composite.aperture_scatterguard.aperture_positions.ROBOT_LOAD,
         group="prepare_robot_load",
     )
 

@@ -61,6 +61,7 @@ def setup_logging(dev_mode: bool):
                 filename,
                 dev_mode,
                 error_log_buffer_lines=ERROR_LOG_BUFFER_LINES,
+                graylog_port=CONST.GRAYLOG_PORT,
             )
             handlers["graylog_handler"].addFilter(tag_filter)
     log_info(f"Loggers initialised with dev_mode={dev_mode}")
