@@ -23,7 +23,6 @@ from hyperion.parameters.components import (
     IspybExperimentType,
     OptionalGonioAngleStarts,
     SplitScan,
-    TemporaryIspybExtras,
     WithOavCentring,
     WithScan,
     XyzStarts,
@@ -49,8 +48,6 @@ class GridCommon(
     selected_aperture: AperturePositionGDANames | None = Field(
         default=AperturePositionGDANames.SMALL_APERTURE
     )
-    # field rather than inherited to make it easier to track when it can be removed:
-    ispyb_extras: TemporaryIspybExtras
 
     @property
     def ispyb_params(self):
@@ -58,9 +55,6 @@ class GridCommon(
             visit_path=str(self.visit_directory),
             comment=self.comment,
             sample_id=self.sample_id,
-            xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start
-            or [],
-            xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
             ispyb_experiment_type=self.ispyb_experiment_type,
             position=None,
         )

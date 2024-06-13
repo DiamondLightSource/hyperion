@@ -19,6 +19,7 @@ class DataCollectionInfo:
     xtal_snapshot1: Optional[str] = None
     xtal_snapshot2: Optional[str] = None
     xtal_snapshot3: Optional[str] = None
+    xtal_snapshot4: Optional[str] = None
 
     n_images: Optional[int] = None
     axis_range: Optional[float] = None
