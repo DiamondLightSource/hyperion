@@ -42,7 +42,7 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     set_aperture_for_bbox_size,
     wait_for_gridscan_valid,
 )
-from hyperion.external_interaction.config_service import best_effort_get_feature_flag
+from hyperion.external_interaction.config_server import best_effort_get_feature_flag
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan

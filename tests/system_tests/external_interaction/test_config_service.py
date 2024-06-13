@@ -3,41 +3,45 @@ from uuid import uuid4
 
 import numpy as np
 import pytest
-from config_service.client import ConfigService
+from daq_config_server.client import ConfigServer
 
-from hyperion.log import LOGGER
-from hyperion.parameters.constants import CONST
+from hyperion.external_interaction.config_server import config_server
 
 
 @pytest.fixture
 def config_service():
-    return ConfigService(*CONST.CONFIG_SERVICE_ADDRESS, LOGGER)
+    return config_server()
 
 
 @pytest.mark.s03
-def test_get_beamline_params(config_service: ConfigService):
+def test_get_beamline_params(config_service: ConfigServer):
     resp = config_service.get_beamline_param("miniap_x_SMALL_APERTURE")
     assert isinstance(resp, float)
-    assert np.isclose(resp, 2.459)
+    assert np.isclose(resp, 2.43)
 
 
 @pytest.mark.s03
-def test_get_feature_flag(config_service: ConfigService):
+def test_get_feature_flag(config_service: ConfigServer):
     resp = config_service.get_feature_flag("set_stub_offsets")
     assert isinstance(resp, bool)
-    assert resp
 
 
 @pytest.mark.s03
-def test_nonsense_feature_flag_is_none(config_service: ConfigService):
-    resp = config_service.get_feature_flag(str(uuid4()))
+def test_nonsense_feature_flag_fails_with_normal_call(config_service: ConfigServer):
+    with pytest.raises(AssertionError):
+        _ = config_service.get_feature_flag(str(uuid4()))
+
+
+@pytest.mark.s03
+def test_best_effort_gracefully_fails_with_nonsense(config_service: ConfigServer):
+    resp = config_service.best_effort_get_feature_flag(str(uuid4()))
     assert resp is None
 
 
 @pytest.mark.s03
-def test_best_effort_gracefully_fails():
+def test_best_effort_gracefully_fails_if_service_down():
     log_mock = MagicMock()
-    config_service = ConfigService("not_real_address", 9999, log_mock)
+    config_service = ConfigServer("http://not_real_address", log_mock)
     resp = config_service.best_effort_get_feature_flag("set_stub_offsets")
     assert resp is None
     log_mock.error.assert_called_with(

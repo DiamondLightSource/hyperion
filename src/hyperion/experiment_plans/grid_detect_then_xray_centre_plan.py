@@ -51,7 +51,7 @@ from hyperion.external_interaction.callbacks.grid_detection_callback import (
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from hyperion.external_interaction.config_service import best_effort_get_feature_flag
+from hyperion.external_interaction.config_server import best_effort_get_feature_flag
 from hyperion.log import LOGGER
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.utils.aperturescatterguard import (

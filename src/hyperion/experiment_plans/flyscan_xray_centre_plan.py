@@ -54,7 +54,7 @@ from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
-from hyperion.external_interaction.config_service import best_effort_get_feature_flag
+from hyperion.external_interaction.config_server import best_effort_get_feature_flag
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
