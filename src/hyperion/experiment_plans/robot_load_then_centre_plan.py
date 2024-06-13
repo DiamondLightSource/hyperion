@@ -168,6 +168,7 @@ def robot_load_and_energy_change(
 
 
 def raise_exception_if_moved_out_of_cryojet(exception):
+    yield from bps.null()
     if isinstance(exception, MoveTooLarge):
         raise Exception(
             f"Moving {exception.axis} back to {exception.position} after \

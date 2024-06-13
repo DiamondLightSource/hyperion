@@ -37,6 +37,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
+from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
@@ -413,6 +414,17 @@ def vfm(RE):
         "tests/test_data/test_beamline_vfm_lat_converter.txt"
     )
     return vfm
+
+
+@pytest.fixture
+def lower_gonio(RE):
+    lower_gonio = i03.lower_gonio(fake_with_ophyd_sim=True)
+    with (
+        oa_patch_motor(lower_gonio.x),
+        oa_patch_motor(lower_gonio.y),
+        oa_patch_motor(lower_gonio.z),
+    ):
+        yield lower_gonio
 
 
 @pytest.fixture
