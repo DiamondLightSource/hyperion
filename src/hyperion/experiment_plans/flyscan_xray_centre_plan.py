@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
+from pathlib import Path
 from time import time
-from typing import TYPE_CHECKING
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -43,6 +43,7 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from dodal.plans.check_topup import check_topup_and_wait_if_necessary
 from ophyd_async.panda import HDFPanda
+from scanspec.core import AxesPoints, Axis
 
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -53,10 +54,13 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
 )
 from hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
+    set_and_create_panda_directory,
+    setup_panda_for_flyscan,
 )
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_gridscan,
+    setup_zebra_for_panda_flyscan,
 )
 from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
@@ -78,9 +82,15 @@ from hyperion.utils.aperturescatterguard import (
 )
 from hyperion.utils.context import device_composite_from_context
 
-if TYPE_CHECKING:
-    PandaOrZebraGridscan = ZebraFastGridScan | PandAFastGridScan
-    from scanspec.core import AxesPoints, Axis
+PandaOrZebraGridscan = ZebraFastGridScan | PandAFastGridScan
+
+PANDA_SETUP_PATH = (
+    "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_pcap_ignore_seq.yaml"
+)
+
+
+class SmargonSpeedException(Exception):
+    pass
 
 
 @dataclasses.dataclass
@@ -120,6 +130,51 @@ class FlyScanXRayCentreComposite:
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
     """Creates the devices required for the plan and connect to them"""
     return device_composite_from_context(context, FlyScanXRayCentreComposite)
+
+
+def flyscan_xray_centre(
+    composite: FlyScanXRayCentreComposite,
+    parameters: ThreeDGridScan,
+) -> MsgGenerator:
+    """Create the plan to run the grid scan based on provided parameters.
+
+    The ispyb handler should be added to the whole gridscan as we want to capture errors
+    at any point in it.
+
+    Args:
+        parameters (ThreeDGridScan): The parameters to run the scan.
+
+    Returns:
+        Generator: The plan for the gridscan
+    """
+    features = FeatureFlags.best_effort()
+    composite.eiger.set_detector_parameters(parameters.detector_params)
+    composite.zocalo.zocalo_environment = parameters.zocalo_environment
+    parameters.do_set_stub_offsets(features.set_stub_offsets)
+
+    tidy_up = _panda_tidy if features.use_panda_for_gridscan else _zebra_tidy
+
+    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
+    @bpp.run_decorator(  # attach experiment metadata to the start document
+        md={
+            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+            "hyperion_parameters": parameters.json(),
+            "activate_callbacks": [
+                "GridscanNexusFileCallback",
+            ],
+        }
+    )
+    @bpp.finalize_decorator(lambda: tidy_up(composite))
+    @transmission_and_xbpm_feedback_for_collection_decorator(
+        composite.xbpm_feedback,
+        composite.attenuator,
+        parameters.transmission_frac,
+    )
+    def run_gridscan_and_move_and_tidy(fgs_composite, params, features):
+        yield from run_gridscan_and_move(fgs_composite, params, features)
+
+    return run_gridscan_and_move_and_tidy(composite, parameters, features)
 
 
 def set_aperture_for_bbox_size(
@@ -226,6 +281,7 @@ def kickoff_and_complete_gridscan(
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: ThreeDGridScan,
+    features: FeatureFlags,
     md={
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
@@ -251,11 +307,17 @@ def run_gridscan(
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
+    if features.use_panda_for_gridscan:
+        T = PandAGridScanParams
+    else:
+        T = ZebraGridScanParams
 
-    fgs_motors = fgs_composite.zebra_fast_grid_scan
+    fgs_motors, fgs_params = _matching_fgs_motors_and_params(
+        fgs_composite, parameters, features
+    )
 
     LOGGER.info("Setting fgs params")
-    yield from set_flyscan_params(fgs_motors, parameters.FGS_params)
+    yield from set_flyscan_params(fgs_motors, fgs_params)
     LOGGER.info("Waiting for gridscan validity check")
     yield from wait_for_gridscan_valid(fgs_motors)
 
@@ -284,6 +346,7 @@ def run_gridscan(
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: ThreeDGridScan,
+    features: FeatureFlags,
 ):
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
@@ -297,13 +360,16 @@ def run_gridscan_and_move(
         ]
     )
 
-    yield from setup_zebra_for_gridscan(fgs_composite.zebra, wait=True)
+    if features.use_panda_for_gridscan:
+        yield from extra_panda_setup(fgs_composite, parameters, initial_xyz)
+    else:
+        yield from setup_zebra_for_gridscan(fgs_composite.zebra, wait=True)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
         fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
     )  # connect to zocalo and make sure the queue is clear
-    yield from run_gridscan(fgs_composite, parameters)
+    yield from run_gridscan(fgs_composite, parameters, features)
 
     LOGGER.info("Grid scan finished, getting results.")
 
@@ -349,51 +415,6 @@ def run_gridscan_and_move(
     yield from bps.wait()
 
 
-def flyscan_xray_centre(
-    composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
-) -> MsgGenerator:
-    """Create the plan to run the grid scan based on provided parameters.
-
-    The ispyb handler should be added to the whole gridscan as we want to capture errors
-    at any point in it.
-
-    Args:
-        parameters (ThreeDGridScan): The parameters to run the scan.
-
-    Returns:
-        Generator: The plan for the gridscan
-    """
-    features = FeatureFlags.best_effort()
-    composite.eiger.set_detector_parameters(parameters.detector_params)
-    composite.zocalo.zocalo_environment = parameters.zocalo_environment
-    parameters.do_set_stub_offsets(features.set_stub_offsets)
-
-    tidy_up = _panda_tidy if features.use_panda_for_gridscan else _zebra_tidy
-
-    @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
-    @bpp.run_decorator(  # attach experiment metadata to the start document
-        md={
-            "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
-            CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
-            "hyperion_parameters": parameters.json(),
-            "activate_callbacks": [
-                "GridscanNexusFileCallback",
-            ],
-        }
-    )
-    @bpp.finalize_decorator(lambda: tidy_up(composite))
-    @transmission_and_xbpm_feedback_for_collection_decorator(
-        composite.xbpm_feedback,
-        composite.attenuator,
-        parameters.transmission_frac,
-    )
-    def run_gridscan_and_move_and_tidy(fgs_composite, params):
-        yield from run_gridscan_and_move(fgs_composite, params)
-
-    return run_gridscan_and_move_and_tidy(composite, parameters)
-
-
 def _generic_tidy(fgs_composite: FlyScanXRayCentreComposite, group, wait=True):
     LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra, group=group, wait=wait)
@@ -413,3 +434,72 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
     yield from disarm_panda_for_gridscan(fgs_composite.panda, group)
     yield from _generic_tidy(fgs_composite, group, False)
     yield from bps.wait(group, timeout=10)
+
+
+def _matching_fgs_motors_and_params(
+    fgs_composite: FlyScanXRayCentreComposite, parameters: ThreeDGridScan, use_panda
+):
+    if use_panda:
+        return fgs_composite.panda_fast_grid_scan, parameters.panda_FGS_params
+    else:
+        return fgs_composite.zebra_fast_grid_scan, parameters.FGS_params
+
+
+def extra_panda_setup(
+    fgs_composite: FlyScanXRayCentreComposite,
+    parameters: ThreeDGridScan,
+    initial_xyz: np.ndarray,
+):
+    LOGGER.info("Setting up Panda for flyscan")
+
+    run_up_distance_mm = yield from bps.rd(
+        fgs_composite.panda_fast_grid_scan.run_up_distance_mm
+    )
+
+    # Set the time between x steps pv
+    DEADTIME_S = 1e-6  # according to https://www.dectris.com/en/detectors/x-ray-detectors/eiger2/eiger2-for-synchrotrons/eiger2-x/
+
+    time_between_x_steps_ms = (DEADTIME_S + parameters.exposure_time_s) * 1e3
+
+    smargon_speed_limit_mm_per_s = yield from bps.rd(
+        fgs_composite.smargon.x.max_velocity
+    )
+
+    sample_velocity_mm_per_s = (
+        parameters.panda_FGS_params.x_step_size * 1e3 / time_between_x_steps_ms
+    )
+    if sample_velocity_mm_per_s > smargon_speed_limit_mm_per_s:
+        raise SmargonSpeedException(
+            f"Smargon speed was calculated from x step size\
+            {parameters.panda_FGS_params.x_step_size} and\
+            time_between_x_steps_ms {time_between_x_steps_ms} as\
+            {sample_velocity_mm_per_s}. The smargon's speed limit is\
+            {smargon_speed_limit_mm_per_s} mm/s."
+        )
+    else:
+        LOGGER.info(
+            f"Panda grid scan: Smargon speed set to {smargon_speed_limit_mm_per_s} mm/s"
+            f" and using a run-up distance of {run_up_distance_mm}"
+        )
+
+    yield from bps.mv(
+        fgs_composite.panda_fast_grid_scan.time_between_x_steps_ms,
+        time_between_x_steps_ms,
+    )
+
+    panda_directory = Path(parameters.storage_directory, "panda")
+
+    set_and_create_panda_directory(panda_directory)
+
+    yield from setup_panda_for_flyscan(
+        fgs_composite.panda,
+        PANDA_SETUP_PATH,
+        parameters.panda_FGS_params,
+        initial_xyz[0],
+        parameters.exposure_time_s,
+        time_between_x_steps_ms,
+        sample_velocity_mm_per_s,
+    )
+
+    LOGGER.info("Setting up Zebra for panda flyscan")
+    yield from setup_zebra_for_panda_flyscan(fgs_composite.zebra, wait=True)
