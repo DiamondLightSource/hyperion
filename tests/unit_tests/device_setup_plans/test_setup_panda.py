@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
-from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from dodal.devices.fast_grid_scan import PandAGridScanParams
 from ophyd_async.panda import SeqTrigger
 
 from hyperion.device_setup_plans.setup_panda import (

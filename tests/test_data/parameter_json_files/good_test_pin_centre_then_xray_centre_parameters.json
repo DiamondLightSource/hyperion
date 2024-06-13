@@ -2,7 +2,6 @@
     "parameter_model_version": "5.0.0",
     "beamline": "BL03S",
     "insertion_prefix": "SR03S",
-    "detector": "EIGER2_X_16M",
     "zocalo_environment": "devrmq",
     "storage_directory": "/tmp",
     "file_name": "file_name",

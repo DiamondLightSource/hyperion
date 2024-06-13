@@ -7,8 +7,10 @@ from dodal.devices.detector import (
     DetectorDistanceToBeamXYConverter,
     DetectorParams,
 )
-from dodal.devices.fast_grid_scan import GridScanParams
-from dodal.devices.panda_fast_grid_scan import PandAGridScanParams
+from dodal.devices.fast_grid_scan import (
+    PandAGridScanParams,
+    ZebraGridScanParams,
+)
 from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
@@ -26,7 +28,7 @@ from hyperion.parameters.components import (
     WithScan,
     XyzStarts,
 )
-from hyperion.parameters.constants import CONST
+from hyperion.parameters.constants import CONST, I03Constants
 
 
 class GridCommon(
@@ -60,6 +62,7 @@ class GridCommon(
             or [],
             xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end or [],
             ispyb_experiment_type=self.ispyb_experiment_type,
+            position=None,
         )
 
     @property
@@ -76,7 +79,7 @@ class GridCommon(
         ), "Detector distance must be filled before generating DetectorParams"
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
-            detector_size_constants=self.detector,  # type: ignore # Will be cleaned up in #1307
+            detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
             directory=self.storage_directory,
@@ -136,8 +139,8 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
 
     @property
-    def FGS_params(self) -> GridScanParams:
-        return GridScanParams(
+    def FGS_params(self) -> ZebraGridScanParams:
+        return ZebraGridScanParams(
             x_steps=self.x_steps,
             y_steps=self.y_steps,
             z_steps=self.z_steps,
