@@ -1,8 +1,7 @@
-from typing import TypeVar, cast
+from typing import TypeVar
 
 from daq_config_server.client import ConfigServer
 from pydantic import BaseModel
-from pydantic.fields import ModelField
 
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
@@ -32,9 +31,7 @@ class FeatureFlags(BaseModel):
     @classmethod
     def best_effort(cls):
         flags = {
-            field_name: best_effort_get_feature_flag(
-                field_name, cast(ModelField, field_details).default
-            )
-            for (field_name, field_details) in cls.__fields__
+            field_name: best_effort_get_feature_flag(field_name, field_details.default)
+            for (field_name, field_details) in cls.__fields__.items()
         }
         return cls(**flags)
