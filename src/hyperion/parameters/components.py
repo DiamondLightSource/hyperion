@@ -138,7 +138,12 @@ class HyperionParameters(BaseModel):
         return params
 
 
-class DiffractionExperiment(HyperionParameters):
+class WithSnapshot(BaseModel):
+    snapshot_directory: Path
+    snapshot_omegas_deg: list[float] | None
+
+
+class DiffractionExperiment(HyperionParameters, WithSnapshot):
     """For all experiments which use beam"""
 
     visit: str = Field(min_length=1)
@@ -160,7 +165,6 @@ class DiffractionExperiment(HyperionParameters):
     selected_aperture: AperturePositionGDANames | None = Field(default=None)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
-    snapshot_directory: Path
 
     @root_validator(pre=True)
     def validate_snapshot_directory(cls, values):
@@ -260,5 +264,3 @@ class TemporaryIspybExtras(BaseModel):
         extra = Extra.forbid
 
     xtal_snapshots_omega_start: list[str] | None = None
-    xtal_snapshots_omega_end: list[str] | None = None
-    xtal_snapshots: list[str] | None = None

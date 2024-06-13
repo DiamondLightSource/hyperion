@@ -831,6 +831,10 @@ def test_ispyb_deposition_in_rotation_plan(
         "synchrotronMode": test_synchrotron_mode.value,
         "slitGapHorizontal": test_slit_gap_horiz,
         "slitGapVertical": test_slit_gap_vert,
+        "xtalSnapshotFullPath1": "/tmp/snapshot1.png",
+        "xtalSnapshotFullPath2": "/tmp/snapshot2.png",
+        "xtalSnapshotFullPath3": "/tmp/snapshot3.png",
+        "xtalSnapshotFullPath4": "/tmp/snapshot4.png",
     }
 
     compare_actual_and_expected(dcid, EXPECTED_VALUES, fetch_datacollection_attribute)

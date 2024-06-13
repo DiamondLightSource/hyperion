@@ -16,17 +16,5 @@
     "oav_centring_file": "tests/test_data/test_OAVCentring.json",
     "transmission_frac": 0.49118,
     "visit": "cm31105-4",
-    "demand_energy_ev": 12700,
-    "ispyb_extras": {
-        "xtal_snapshots_omega_start": [
-            "test_1_y",
-            "test_2_y",
-            "test_3_y"
-        ],
-        "xtal_snapshots_omega_end": [
-            "test_1_z",
-            "test_2_z",
-            "test_3_z"
-        ]
-    }
+    "demand_energy_ev": 12700
 }
