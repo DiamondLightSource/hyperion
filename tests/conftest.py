@@ -57,6 +57,7 @@ from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.log import (
     ALL_LOGGERS,
     ISPYB_LOGGER,
@@ -824,3 +825,10 @@ class MessageHandler:
 @pytest.fixture
 def sim_run_engine():
     return RunEngineSimulator()
+
+
+@pytest.fixture
+def feature_flags():
+    return FeatureFlags(
+        **{field_name: False for field_name in FeatureFlags.__fields__.keys()}
+    )

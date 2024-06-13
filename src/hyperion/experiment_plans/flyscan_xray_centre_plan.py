@@ -66,12 +66,6 @@ from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
-from hyperion.experiment_plans.flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite,
-    kickoff_and_complete_gridscan,
-    set_aperture_for_bbox_size,
-    wait_for_gridscan_valid,
-)
 from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
@@ -307,17 +301,18 @@ def run_gridscan(
         yield from read_hardware_for_ispyb_during_collection(
             fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
         )
-    if features.use_panda_for_gridscan:
-        T = PandAGridScanParams
-    else:
-        T = ZebraGridScanParams
-
-    fgs_motors, fgs_params = _matching_fgs_motors_and_params(
-        fgs_composite, parameters, features
-    )
 
     LOGGER.info("Setting fgs params")
-    yield from set_flyscan_params(fgs_motors, fgs_params)
+    if features.use_panda_for_gridscan:
+        yield from set_flyscan_params(
+            fgs_motors := fgs_composite.panda_fast_grid_scan,
+            parameters.panda_FGS_params,
+        )
+    else:
+        yield from set_flyscan_params(
+            fgs_motors := fgs_composite.zebra_fast_grid_scan, parameters.FGS_params
+        )
+
     LOGGER.info("Waiting for gridscan validity check")
     yield from wait_for_gridscan_valid(fgs_motors)
 
@@ -434,15 +429,6 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
     yield from disarm_panda_for_gridscan(fgs_composite.panda, group)
     yield from _generic_tidy(fgs_composite, group, False)
     yield from bps.wait(group, timeout=10)
-
-
-def _matching_fgs_motors_and_params(
-    fgs_composite: FlyScanXRayCentreComposite, parameters: ThreeDGridScan, use_panda
-):
-    if use_panda:
-        return fgs_composite.panda_fast_grid_scan, parameters.panda_FGS_params
-    else:
-        return fgs_composite.zebra_fast_grid_scan, parameters.FGS_params
 
 
 def extra_panda_setup(
