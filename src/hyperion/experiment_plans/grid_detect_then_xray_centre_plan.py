@@ -51,7 +51,7 @@ from hyperion.external_interaction.callbacks.grid_detection_callback import (
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from hyperion.external_interaction.config_server import best_effort_get_feature_flag
+from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.log import LOGGER
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.utils.aperturescatterguard import (
@@ -185,7 +185,7 @@ def _detect_grid_and_do_gridscan(
         parameters, grid_params_callback.get_grid_parameters()
     )
 
-    if best_effort_get_feature_flag("use_panda", False):
+    if FeatureFlags.best_effort().use_panda_for_gridscan:
         yield from panda_flyscan_xray_centre(
             flyscan_composite,
             flyscan_xray_centre_parameters,

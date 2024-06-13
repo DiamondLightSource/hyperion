@@ -42,7 +42,7 @@ from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     set_aperture_for_bbox_size,
     wait_for_gridscan_valid,
 )
-from hyperion.external_interaction.config_server import best_effort_get_feature_flag
+from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
@@ -274,9 +274,7 @@ def panda_flyscan_xray_centre(
 
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = parameters.zocalo_environment
-    parameters.do_set_stub_offsets(
-        best_effort_get_feature_flag("set_stub_offsets", False)
-    )
+    parameters.do_set_stub_offsets(FeatureFlags.best_effort().set_stub_offsets)
 
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
