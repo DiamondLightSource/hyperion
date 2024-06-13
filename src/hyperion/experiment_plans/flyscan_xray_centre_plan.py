@@ -21,7 +21,9 @@ from dodal.devices.fast_grid_scan import (
     PandAFastGridScan,
     ZebraFastGridScan,
 )
-from dodal.devices.fast_grid_scan import set_fast_grid_scan_params as set_flyscan_params
+from dodal.devices.fast_grid_scan import (
+    set_fast_grid_scan_params as set_flyscan_params,
+)
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -30,6 +32,9 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
+from dodal.devices.zocalo import (
+    get_processing_result,
+)
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_READING_PLAN_NAME,
     ZOCALO_STAGE_GROUP,
@@ -46,6 +51,9 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_nexus_writer,
     read_hardware_for_zocalo,
 )
+from hyperion.device_setup_plans.setup_panda import (
+    disarm_panda_for_gridscan,
+)
 from hyperion.device_setup_plans.setup_zebra import (
     set_zebra_shutter_to_manual,
     setup_zebra_for_gridscan,
@@ -54,6 +62,12 @@ from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    FlyScanXRayCentreComposite,
+    kickoff_and_complete_gridscan,
+    set_aperture_for_bbox_size,
+    wait_for_gridscan_valid,
+)
 from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
@@ -152,15 +166,6 @@ def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
             return
         yield from bps.sleep(SLEEP_PER_CHECK)
     raise WarningException("Scan invalid - pin too long/short/bent and out of range")
-
-
-def tidy_up_plans(fgs_composite: FlyScanXRayCentreComposite):
-    LOGGER.info("Tidying up Zebra")
-    yield from set_zebra_shutter_to_manual(fgs_composite.zebra)
-    LOGGER.info("Tidying up Zocalo")
-    yield from bps.unstage(
-        fgs_composite.zocalo
-    )  # make sure we don't consume any other results
 
 
 def kickoff_and_complete_gridscan(
@@ -359,10 +364,12 @@ def flyscan_xray_centre(
     Returns:
         Generator: The plan for the gridscan
     """
-
+    features = FeatureFlags.best_effort()
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = parameters.zocalo_environment
-    parameters.do_set_stub_offsets(FeatureFlags.best_effort().set_stub_offsets)
+    parameters.do_set_stub_offsets(features.set_stub_offsets)
+
+    tidy_up = _panda_tidy if features.use_panda_for_gridscan else _zebra_tidy
 
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -375,7 +382,7 @@ def flyscan_xray_centre(
             ],
         }
     )
-    @bpp.finalize_decorator(lambda: tidy_up_plans(composite))
+    @bpp.finalize_decorator(lambda: tidy_up(composite))
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite.xbpm_feedback,
         composite.attenuator,
@@ -385,3 +392,24 @@ def flyscan_xray_centre(
         yield from run_gridscan_and_move(fgs_composite, params)
 
     return run_gridscan_and_move_and_tidy(composite, parameters)
+
+
+def _generic_tidy(fgs_composite: FlyScanXRayCentreComposite, group, wait=True):
+    LOGGER.info("Tidying up Zebra")
+    yield from set_zebra_shutter_to_manual(fgs_composite.zebra, group=group, wait=wait)
+    LOGGER.info("Tidying up Zocalo")
+    # make sure we don't consume any other results
+    yield from bps.unstage(fgs_composite.zocalo, group=group, wait=wait)
+
+
+def _zebra_tidy(fgs_composite: FlyScanXRayCentreComposite):
+    LOGGER.info("Tidying up Zebra")
+    yield from _generic_tidy(fgs_composite, "zebra_flyscan_tidy")
+
+
+def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
+    group = "panda_flyscan_tidy"
+    LOGGER.info("Disabling panda blocks")
+    yield from disarm_panda_for_gridscan(fgs_composite.panda, group)
+    yield from _generic_tidy(fgs_composite, group, False)
+    yield from bps.wait(group, timeout=10)
