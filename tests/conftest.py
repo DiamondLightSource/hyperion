@@ -44,9 +44,10 @@ from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import NullStatus
 from ophyd.status import Status
-from ophyd_async.core import callback_on_mock_put, set_mock_value
+from ophyd_async.core import Device, DeviceVector, callback_on_mock_put, set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
 from ophyd_async.epics.motion.motor import Motor
+from ophyd_async.epics.signal import epics_signal_rw
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -586,6 +587,54 @@ def zocalo(done_status):
     return zoc
 
 
+@pytest.fixture
+async def panda():
+    class MockBlock(Device):
+        def __init__(
+            self, prefix: str, name: str = "", attributes: dict[str, Any] = {}
+        ):
+            for name, dtype in attributes.items():
+                setattr(self, name, epics_signal_rw(dtype, "", ""))
+
+    def mock_vector_block(n, attributes):
+        return DeviceVector(
+            {i: MockBlock(f"{i}", f"{i}", attributes) for i in range(n)}
+        )
+
+    async def set_mock_blocks(
+        panda, mock_blocks: dict[str, tuple[int, dict[str, Any]]]
+    ):
+        for name, block in mock_blocks.items():
+            n, attrs = block
+            block = mock_vector_block(n, attrs)
+            await block.connect(mock=True)
+            setattr(panda, name, block)
+
+    async def create_mock_signals(devices_and_signals: dict[Device, dict[str, Any]]):
+        for device, signals in devices_and_signals.items():
+            for name, dtype in signals.items():
+                sig = epics_signal_rw(dtype, name, name)
+                await sig.connect(mock=True)
+                setattr(device, name, sig)
+
+    panda = i03.panda(fake_with_ophyd_sim=True)
+    await set_mock_blocks(
+        panda,
+        {
+            "inenc": (8, {"setp": float}),
+            "clock": (8, {"period": float}),
+            "counter": (8, {"enable": str}),
+        },
+    )
+    await create_mock_signals(
+        {
+            panda.pcap: {"enable": str},
+            **{panda.pulse[i]: {"enable": str} for i in panda.pulse.keys()},
+        }
+    )
+    return panda
+
+
 async def async_status_done():
     await asyncio.sleep(0)
 
@@ -607,6 +656,7 @@ async def fake_fgs_composite(
     aperture_scatterguard,
     zocalo,
     dcm,
+    panda,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -624,7 +674,7 @@ async def fake_fgs_composite(
         xbpm_feedback=xbpm_feedback,
         zebra=i03.zebra(fake_with_ophyd_sim=True),
         zocalo=zocalo,
-        panda=MagicMock(),
+        panda=panda,
         panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
         robot=i03.robot(fake_with_ophyd_sim=True),
     )

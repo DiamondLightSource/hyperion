@@ -7,7 +7,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
-from bluesky.run_engine import RunEngine
+from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
 from dodal.common.beamlines.beamline_utils import clear_device
@@ -533,6 +533,7 @@ class TestFlyscanXrayCentrePlan:
                 test_fgs_params.scan_indices,
             )
         )
+        assert isinstance(res, RunEngineResult)
         assert res.exit_status == "success"
         clear_device("zebra_fast_grid_scan")
 
