@@ -32,11 +32,10 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from hyperion.log import ISPYB_LOGGER, set_dcgid_tag
+from hyperion.parameters.components import DiffractionExperimentWithSample
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import (
     GridCommon,
-    GridScanWithEdgeDetect,
-    ThreeDGridScan,
 )
 
 if TYPE_CHECKING:
@@ -163,11 +162,20 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
         return doc
 
+    def populate_axis_info_for_snapshot(
+        self, data_collection_info: DataCollectionInfo, omega_start: float | None
+    ):
+        if omega_start is not None:
+            data_collection_info.omega_start = omega_start
+            data_collection_info.axis_start = omega_start
+            data_collection_info.axis_end = omega_start
+            data_collection_info.axis_range = 0
+
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
         event_sourced_position_info: Optional[DataCollectionPositionInfo],
-        params: ThreeDGridScan | GridScanWithEdgeDetect,
+        params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         assert (
             self.ispyb_ids.data_collection_ids

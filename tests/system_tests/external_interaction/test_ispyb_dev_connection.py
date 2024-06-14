@@ -662,10 +662,10 @@ def test_ispyb_deposition_in_gridscan(
     assert position_id is None
     DC_EXPECTED_VALUES.update(
         {
-            "axisstart": 90.0,
-            "axisend": 90.0,
+            "axisstart": -90.0,
+            "axisend": -90.0,
             "datacollectionnumber": 2,
-            "omegastart": 90.0,
+            "omegastart": -90.0,
             "filetemplate": "file_name_2_master.h5",
             "numberofimages": 220,
         }

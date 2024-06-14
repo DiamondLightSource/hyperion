@@ -104,6 +104,12 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.uid_to_finalize_on = doc.get("uid")
         return super().activity_gated_start(doc)
 
+    def populate_axis_info_for_snapshot(
+        self, data_collection_info: DataCollectionInfo, omega_start: float | None
+    ):
+        # TODO in subsequent PR which depends on rotation snapshots 349
+        pass
+
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,

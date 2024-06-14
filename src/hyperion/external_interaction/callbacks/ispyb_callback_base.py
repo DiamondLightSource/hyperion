@@ -190,6 +190,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             data_collection_id = self.ispyb_ids.data_collection_ids[
                 self._oav_snapshot_event_idx
             ]
+        self.populate_axis_info_for_snapshot(
+            data_collection_info, doc["data"]["smargon_omega"]
+        )
 
         scan_data_info = ScanDataInfo(
             data_collection_info=data_collection_info,
@@ -223,6 +226,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         ISPYB_LOGGER.info("Updating ispyb data collection after flux read.")
         return scan_data_infos
+
+    @abstractmethod
+    def populate_axis_info_for_snapshot(
+        self, data_collection_info: DataCollectionInfo, omega_start: float | None
+    ):
+        pass
 
     @abstractmethod
     def populate_info_for_update(
