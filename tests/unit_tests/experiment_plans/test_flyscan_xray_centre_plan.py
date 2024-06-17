@@ -798,7 +798,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         RE(run_gridscan(fake_fgs_composite, test_fgs_params, feature_panda_and_zebra))
-        fake_fgs_composite.eiger.stage.assert_called_once()
+        fake_fgs_composite.eiger.stage.assert_called_once()  # type: ignore
         fake_fgs_composite.eiger.unstage.assert_called_once()
 
     @patch(
