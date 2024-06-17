@@ -846,101 +846,108 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
 
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True
+    )
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True
+    )
+    @patch(
+        "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
+        autospec=True,
+    )
+    def test_kickoff_and_complete_gridscan_triggers_zocalo(
+        self,
+        mock_zocalo_trigger_class: MagicMock,
+        mock_complete: MagicMock,
+        mock_kickoff: MagicMock,
+        RE: RunEngine,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+    ):
+        id_1, id_2 = 100, 200
 
-@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.kickoff", autospec=True)
-@patch("hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True)
-@patch(
-    "hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger",
-    autospec=True,
-)
-def test_kickoff_and_complete_gridscan_triggers_zocalo(
-    mock_zocalo_trigger_class: MagicMock,
-    mock_complete: MagicMock,
-    mock_kickoff: MagicMock,
-    RE: RunEngine,
-    fake_fgs_composite: FlyScanXRayCentreComposite,
-):
-    id_1, id_2 = 100, 200
+        _, ispyb_cb = create_gridscan_callbacks()
+        ispyb_cb.active = True
+        ispyb_cb.ispyb = MagicMock()
+        ispyb_cb.params = MagicMock()
+        ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
+        assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
+        zocalo_env = "dev_env"
 
-    _, ispyb_cb = create_gridscan_callbacks()
-    ispyb_cb.active = True
-    ispyb_cb.ispyb = MagicMock()
-    ispyb_cb.params = MagicMock()
-    ispyb_cb.ispyb_ids.data_collection_ids = (id_1, id_2)
-    assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
-    zocalo_env = "dev_env"
+        zocalo_cb.start({CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS})  # type: ignore
+        assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
 
-    zocalo_cb.start({CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS})  # type: ignore
-    assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
+        mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
 
-    mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+        fake_fgs_composite.eiger.unstage = MagicMock()
+        fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
 
-    fake_fgs_composite.eiger.unstage = MagicMock()
-    fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
+        x_steps, y_steps, z_steps = 10, 20, 30
 
-    x_steps, y_steps, z_steps = 10, 20, 30
-
-    RE.subscribe(ispyb_cb)
-    RE(
-        kickoff_and_complete_gridscan(
-            fake_fgs_composite.zebra_fast_grid_scan,
-            fake_fgs_composite.eiger,
-            fake_fgs_composite.synchrotron,
-            zocalo_env,
-            scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
-            scan_start_indices=[0, x_steps * y_steps],
+        RE.subscribe(ispyb_cb)
+        RE(
+            kickoff_and_complete_gridscan(
+                fake_fgs_composite.zebra_fast_grid_scan,
+                fake_fgs_composite.eiger,
+                fake_fgs_composite.synchrotron,
+                zocalo_env,
+                scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
+                scan_start_indices=[0, x_steps * y_steps],
+            )
         )
-    )
 
-    mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
+        mock_zocalo_trigger_class.assert_called_once_with(zocalo_env)
 
-    expected_start_infos = [
-        ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps, 0),
-        ZocaloStartInfo(id_2, "test/filename", x_steps * y_steps, x_steps * z_steps, 1),
-    ]
+        expected_start_infos = [
+            ZocaloStartInfo(id_1, "test/filename", 0, x_steps * y_steps, 0),
+            ZocaloStartInfo(
+                id_2, "test/filename", x_steps * y_steps, x_steps * z_steps, 1
+            ),
+        ]
 
-    expected_start_calls = [
-        call(expected_start_infos[0]),
-        call(expected_start_infos[1]),
-    ]
+        expected_start_calls = [
+            call(expected_start_infos[0]),
+            call(expected_start_infos[1]),
+        ]
 
-    assert mock_zocalo_trigger.run_start.call_count == 2
-    assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls
+        assert mock_zocalo_trigger.run_start.call_count == 2
+        assert mock_zocalo_trigger.run_start.mock_calls == expected_start_calls
 
-    assert mock_zocalo_trigger.run_end.call_count == 2
-    assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
+        assert mock_zocalo_trigger.run_end.call_count == 2
+        assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
 
-
-@patch(
-    "hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
-    new=MagicMock(return_value=iter([Msg("kickoff_gridscan")])),
-)
-def test_read_hardware_for_nexus_occurs_after_eiger_arm(
-    fake_fgs_composite: FlyScanXRayCentreComposite,
-    test_fgs_params: ThreeDGridScan,
-    sim_run_engine: RunEngineSimulator,
-    feature_panda_and_zebra: FeatureFlags,
-):
-    sim_run_engine.add_handler(
-        "read",
-        "synchrotron-synchrotron_mode",
-        lambda msg: {"values": {"value": SynchrotronMode.USER}},
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
+        new=MagicMock(side_effect=lambda *_: iter([Msg("kickoff_gridscan")])),
     )
-    msgs = sim_run_engine.simulate_plan(
-        run_gridscan(fake_fgs_composite, test_fgs_params, feature_panda_and_zebra)
-    )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
-    )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "create"
-    )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "read" and msg.obj.name == "eiger_bit_depth"
-    )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "save"
-    )
-    sim_run_engine.assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "kickoff_gridscan"
-    )
+    def test_read_hardware_for_nexus_occurs_after_eiger_arm(
+        self,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        test_fgs_params: ThreeDGridScan,
+        sim_run_engine: RunEngineSimulator,
+        feature_panda_and_zebra: FeatureFlags,
+    ):
+        sim_run_engine.add_handler(
+            "read",
+            "synchrotron-synchrotron_mode",
+            lambda msg: {"values": {"value": SynchrotronMode.USER}},
+        )
+        msgs = sim_run_engine.simulate_plan(
+            run_gridscan(fake_fgs_composite, test_fgs_params, feature_panda_and_zebra)
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "create"
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "read" and msg.obj.name == "eiger_bit_depth",
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "save"
+        )
+        sim_run_engine.assert_message_and_return_remaining(
+            msgs, lambda msg: msg.command == "kickoff_gridscan"
+        )

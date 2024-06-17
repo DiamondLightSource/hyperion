@@ -171,171 +171,6 @@ def flyscan_xray_centre(
     return run_gridscan_and_move_and_tidy(composite, parameters, features)
 
 
-def set_aperture_for_bbox_size(
-    aperture_device: ApertureScatterguard,
-    bbox_size: list[int] | np.ndarray,
-):
-    # bbox_size is [x,y,z], for i03 we only care about x
-    assert aperture_device.aperture_positions is not None
-
-    new_selected_aperture: SingleAperturePosition = (
-        aperture_device.aperture_positions.MEDIUM
-        if bbox_size[0] < 2
-        else aperture_device.aperture_positions.LARGE
-    )
-    LOGGER.info(
-        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
-    )
-
-    @bpp.set_run_key_decorator("change_aperture")
-    @bpp.run_decorator(
-        md={
-            "subplan_name": "change_aperture",
-            "aperture_size": new_selected_aperture.GDA_name,
-        }
-    )
-    def set_aperture():
-        yield from bps.abs_set(aperture_device, new_selected_aperture)
-
-    yield from set_aperture()
-
-
-def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
-    LOGGER.info("Waiting for valid fgs_params")
-    SLEEP_PER_CHECK = 0.1
-    times_to_check = int(timeout / SLEEP_PER_CHECK)
-    for _ in range(times_to_check):
-        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
-        pos_counter = yield from bps.rd(fgs_motors.position_counter)
-        LOGGER.debug(
-            f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
-        )
-        if not scan_invalid and pos_counter == 0:
-            LOGGER.info("Gridscan scan valid and position counter reset")
-            return
-        yield from bps.sleep(SLEEP_PER_CHECK)
-    raise WarningException("Scan invalid - pin too long/short/bent and out of range")
-
-
-def kickoff_and_complete_gridscan(
-    gridscan: FastGridScanCommon,
-    eiger: EigerDetector,
-    synchrotron: Synchrotron,
-    zocalo_environment: str,
-    scan_points: list[AxesPoints[Axis]],
-    scan_start_indices: list[int],
-):
-    @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
-    @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
-    @bpp.run_decorator(
-        md={
-            "subplan_name": CONST.PLAN.DO_FGS,
-            "zocalo_environment": zocalo_environment,
-            "scan_points": scan_points,
-            "scan_start_indices": scan_start_indices,
-        }
-    )
-    @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(eiger)),
-        else_plan=lambda: (yield from bps.unstage(eiger)),
-    )
-    def do_fgs():
-        # Check topup gate
-        expected_images = yield from bps.rd(gridscan.expected_images)
-        exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)
-        LOGGER.info("waiting for topup if necessary...")
-        yield from check_topup_and_wait_if_necessary(
-            synchrotron,
-            expected_images * exposure_sec_per_image,
-            30.0,
-        )
-        yield from read_hardware_for_zocalo(eiger)
-        LOGGER.info("Wait for all moves with no assigned group")
-        yield from bps.wait()
-        LOGGER.info("kicking off FGS")
-        yield from bps.kickoff(gridscan, wait=True)
-        gridscan_start_time = time()
-        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
-        yield from bps.wait(
-            ZOCALO_STAGE_GROUP
-        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
-        LOGGER.info("completing FGS")
-        yield from bps.complete(gridscan, wait=True)
-
-        # Remove this logging statement once metrics have been added
-        LOGGER.info(
-            f"Gridscan motion program took {round(time()-gridscan_start_time,2)} to complete"
-        )
-
-    yield from do_fgs()
-
-
-@bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
-@bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
-def run_gridscan(
-    fgs_composite: FlyScanXRayCentreComposite,
-    parameters: ThreeDGridScan,
-    features: FeatureFlags,
-    md={
-        "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
-    },
-):
-    sample_motors = fgs_composite.sample_motors
-
-    # Currently gridscan only works for omega 0, see #
-    with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(sample_motors.omega, 0)
-
-    # We only subscribe to the communicator callback for run_gridscan, so this is where
-    # we should generate an event reading the values which need to be included in the
-    # ispyb deposition
-    with TRACER.start_span("ispyb_hardware_readings"):
-        yield from read_hardware_for_ispyb_pre_collection(
-            fgs_composite.undulator,
-            fgs_composite.synchrotron,
-            fgs_composite.s4_slit_gaps,
-            fgs_composite.aperture_scatterguard,
-            fgs_composite.robot,
-            fgs_composite.smargon,
-        )
-        yield from read_hardware_for_ispyb_during_collection(
-            fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
-        )
-
-    LOGGER.info("Setting fgs params")
-    if features.use_panda_for_gridscan:
-        yield from set_flyscan_params(
-            fgs_motors := fgs_composite.panda_fast_grid_scan,
-            parameters.panda_FGS_params,
-        )
-    else:
-        yield from set_flyscan_params(
-            fgs_motors := fgs_composite.zebra_fast_grid_scan, parameters.FGS_params
-        )
-
-    LOGGER.info("Waiting for gridscan validity check")
-    yield from wait_for_gridscan_valid(fgs_motors)
-
-    LOGGER.info("Waiting for arming to finish")
-    yield from bps.wait("ready_for_data_collection")
-    yield from bps.stage(fgs_composite.eiger)
-
-    # This needs to occur after eiger is armed so that
-    # the HDF5 meta file is present for nexgen to inspect
-    with TRACER.start_span("nexus_hardware_readings"):
-        yield from read_hardware_for_nexus_writer(fgs_composite.eiger)
-
-    yield from kickoff_and_complete_gridscan(
-        fgs_motors,
-        fgs_composite.eiger,
-        fgs_composite.synchrotron,
-        parameters.zocalo_environment,
-        [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
-        parameters.scan_indices,
-    )
-    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
-
-
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_AND_MOVE)
 @bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_AND_MOVE})
 def run_gridscan_and_move(
@@ -408,6 +243,171 @@ def run_gridscan_and_move(
     # Wait on everything before returning to GDA (particularly apertures), can be removed
     # when we do not return to GDA here
     yield from bps.wait()
+
+
+@bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_MAIN)
+@bpp.run_decorator(md={"subplan_name": CONST.PLAN.GRIDSCAN_MAIN})
+def run_gridscan(
+    fgs_composite: FlyScanXRayCentreComposite,
+    parameters: ThreeDGridScan,
+    features: FeatureFlags,
+    md={
+        "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
+    },
+):
+    sample_motors = fgs_composite.sample_motors
+
+    # Currently gridscan only works for omega 0, see #
+    with TRACER.start_span("moving_omega_to_0"):
+        yield from bps.abs_set(sample_motors.omega, 0)
+
+    # We only subscribe to the communicator callback for run_gridscan, so this is where
+    # we should generate an event reading the values which need to be included in the
+    # ispyb deposition
+    with TRACER.start_span("ispyb_hardware_readings"):
+        yield from read_hardware_for_ispyb_pre_collection(
+            fgs_composite.undulator,
+            fgs_composite.synchrotron,
+            fgs_composite.s4_slit_gaps,
+            fgs_composite.aperture_scatterguard,
+            fgs_composite.robot,
+            fgs_composite.smargon,
+        )
+        yield from read_hardware_for_ispyb_during_collection(
+            fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
+        )
+
+    LOGGER.info("Setting fgs params")
+    if features.use_panda_for_gridscan:
+        yield from set_flyscan_params(
+            fgs_motors := fgs_composite.panda_fast_grid_scan,
+            parameters.panda_FGS_params,
+        )
+    else:
+        yield from set_flyscan_params(
+            fgs_motors := fgs_composite.zebra_fast_grid_scan, parameters.FGS_params
+        )
+
+    LOGGER.info("Waiting for gridscan validity check")
+    yield from wait_for_gridscan_valid(fgs_motors)
+
+    LOGGER.info("Waiting for arming to finish")
+    yield from bps.wait("ready_for_data_collection")
+    yield from bps.stage(fgs_composite.eiger)
+
+    # This needs to occur after eiger is armed so that
+    # the HDF5 meta file is present for nexgen to inspect
+    with TRACER.start_span("nexus_hardware_readings"):
+        yield from read_hardware_for_nexus_writer(fgs_composite.eiger)
+
+    yield from kickoff_and_complete_gridscan(
+        fgs_motors,
+        fgs_composite.eiger,
+        fgs_composite.synchrotron,
+        parameters.zocalo_environment,
+        [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
+        parameters.scan_indices,
+    )
+    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+
+
+def kickoff_and_complete_gridscan(
+    gridscan: FastGridScanCommon,
+    eiger: EigerDetector,
+    synchrotron: Synchrotron,
+    zocalo_environment: str,
+    scan_points: list[AxesPoints[Axis]],
+    scan_start_indices: list[int],
+):
+    @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
+    @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
+    @bpp.run_decorator(
+        md={
+            "subplan_name": CONST.PLAN.DO_FGS,
+            "zocalo_environment": zocalo_environment,
+            "scan_points": scan_points,
+            "scan_start_indices": scan_start_indices,
+        }
+    )
+    @bpp.contingency_decorator(
+        except_plan=lambda e: (yield from bps.stop(eiger)),
+        else_plan=lambda: (yield from bps.unstage(eiger)),
+    )
+    def do_fgs():
+        # Check topup gate
+        expected_images = yield from bps.rd(gridscan.expected_images)
+        exposure_sec_per_image = yield from bps.rd(eiger.cam.acquire_time)
+        LOGGER.info("waiting for topup if necessary...")
+        yield from check_topup_and_wait_if_necessary(
+            synchrotron,
+            expected_images * exposure_sec_per_image,
+            30.0,
+        )
+        yield from read_hardware_for_zocalo(eiger)
+        LOGGER.info("Wait for all moves with no assigned group")
+        yield from bps.wait()
+        LOGGER.info("kicking off FGS")
+        yield from bps.kickoff(gridscan, wait=True)
+        gridscan_start_time = time()
+        LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
+        yield from bps.wait(
+            ZOCALO_STAGE_GROUP
+        )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        LOGGER.info("completing FGS")
+        yield from bps.complete(gridscan, wait=True)
+
+        # Remove this logging statement once metrics have been added
+        LOGGER.info(
+            f"Gridscan motion program took {round(time()-gridscan_start_time,2)} to complete"
+        )
+
+    yield from do_fgs()
+
+
+def wait_for_gridscan_valid(fgs_motors: FastGridScanCommon, timeout=0.5):
+    LOGGER.info("Waiting for valid fgs_params")
+    SLEEP_PER_CHECK = 0.1
+    times_to_check = int(timeout / SLEEP_PER_CHECK)
+    for _ in range(times_to_check):
+        scan_invalid = yield from bps.rd(fgs_motors.scan_invalid)
+        pos_counter = yield from bps.rd(fgs_motors.position_counter)
+        LOGGER.debug(
+            f"Scan invalid: {scan_invalid} and position counter: {pos_counter}"
+        )
+        if not scan_invalid and pos_counter == 0:
+            LOGGER.info("Gridscan scan valid and position counter reset")
+            return
+        yield from bps.sleep(SLEEP_PER_CHECK)
+    raise WarningException("Scan invalid - pin too long/short/bent and out of range")
+
+
+def set_aperture_for_bbox_size(
+    aperture_device: ApertureScatterguard,
+    bbox_size: list[int] | np.ndarray,
+):
+    # bbox_size is [x,y,z], for i03 we only care about x
+    assert aperture_device.aperture_positions is not None
+
+    new_selected_aperture: SingleAperturePosition = (
+        aperture_device.aperture_positions.MEDIUM
+        if bbox_size[0] < 2
+        else aperture_device.aperture_positions.LARGE
+    )
+    LOGGER.info(
+        f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
+    )
+
+    @bpp.set_run_key_decorator("change_aperture")
+    @bpp.run_decorator(
+        md={
+            "subplan_name": "change_aperture",
+            "aperture_size": new_selected_aperture.GDA_name,
+        }
+    )
+    def set_aperture():
+        yield from bps.abs_set(aperture_device, new_selected_aperture)
+
+    yield from set_aperture()
 
 
 def _generic_tidy(fgs_composite: FlyScanXRayCentreComposite, group, wait=True):
