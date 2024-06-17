@@ -333,7 +333,7 @@ def synchrotron():
     RunEngine()  # A RE is needed to start the bluesky loop
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
-    set_mock_value(synchrotron.topup_start_countdown, 10)
+    set_mock_value(synchrotron.top_up_start_countdown, 10)
     return synchrotron
 
 
