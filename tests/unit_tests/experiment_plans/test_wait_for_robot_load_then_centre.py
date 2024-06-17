@@ -28,7 +28,7 @@ from ...conftest import raw_params_from_file
 
 @pytest.fixture
 def robot_load_composite(
-    smargon, dcm, robot, aperture_scatterguard, oav, webcam
+    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer
 ) -> RobotLoadThenCentreComposite:
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
@@ -40,6 +40,7 @@ def robot_load_composite(
     composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
     composite.oav = oav
     composite.webcam = webcam
+    composite.thawer = thawer
     return composite
 
 
@@ -353,3 +354,39 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
     webcam.trigger.assert_called_once()
     assert (await webcam.filename.get_value()) == "TIME_webcam_after_load"
     assert (await webcam.directory.get_value()) == TEST_DIRECTORY
+
+
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+)
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
+def test_when_plan_run_then_thawing_turned_on_for_expected_time(
+    mock_centring_plan: MagicMock,
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
+    sim_run_engine,
+):
+    robot_load_then_centre_params_no_energy.thawing_time = (thaw_time := 50)
+
+    sim_run_engine.add_handler(
+        "read",
+        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+    )
+
+    messages = sim_run_engine.simulate_plan(
+        robot_load_then_centre(
+            robot_load_composite,
+            robot_load_then_centre_params_no_energy,
+        )
+    )
+
+    sim_run_engine.assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "thawer-thaw_for_time_s"
+        and msg.args[0] == thaw_time,
+    )
