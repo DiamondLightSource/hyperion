@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import dataclasses
+from functools import partial
 from pathlib import Path
 from time import time
+from typing import Callable, Protocol
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
+from attr import dataclass
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
@@ -146,7 +149,9 @@ def flyscan_xray_centre(
     composite.zocalo.zocalo_environment = parameters.zocalo_environment
     parameters.do_set_stub_offsets(features.set_stub_offsets)
 
-    tidy_up = _panda_tidy if features.use_panda_for_gridscan else _zebra_tidy
+    feature_controlled = _get_feature_controlled(
+        composite, parameters, features.use_panda_for_gridscan
+    )
 
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -159,16 +164,20 @@ def flyscan_xray_centre(
             ],
         }
     )
-    @bpp.finalize_decorator(lambda: tidy_up(composite))
+    @bpp.finalize_decorator(lambda: feature_controlled.tidy_plan(composite))
     @transmission_and_xbpm_feedback_for_collection_decorator(
         composite.xbpm_feedback,
         composite.attenuator,
         parameters.transmission_frac,
     )
-    def run_gridscan_and_move_and_tidy(fgs_composite, params, features):
-        yield from run_gridscan_and_move(fgs_composite, params, features)
+    def run_gridscan_and_move_and_tidy(
+        fgs_composite: FlyScanXRayCentreComposite,
+        params: ThreeDGridScan,
+        feature_controlled: _FeatureControlled,
+    ):
+        yield from run_gridscan_and_move(fgs_composite, params, feature_controlled)
 
-    return run_gridscan_and_move_and_tidy(composite, parameters, features)
+    return run_gridscan_and_move_and_tidy(composite, parameters, feature_controlled)
 
 
 @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_AND_MOVE)
@@ -176,8 +185,8 @@ def flyscan_xray_centre(
 def run_gridscan_and_move(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: ThreeDGridScan,
-    features: FeatureFlags,
-):
+    feature_controlled: _FeatureControlled,
+) -> MsgGenerator:
     """A multi-run plan which runs a gridscan, gets the results from zocalo
     and moves to the centre of mass determined by zocalo"""
 
@@ -190,16 +199,14 @@ def run_gridscan_and_move(
         ]
     )
 
-    if features.use_panda_for_gridscan:
-        yield from extra_panda_setup(fgs_composite, parameters, initial_xyz)
-    else:
-        yield from setup_zebra_for_gridscan(fgs_composite.zebra, wait=True)
+    yield from feature_controlled.extra_setup(fgs_composite, parameters, initial_xyz)
+    yield from feature_controlled.zebra_setup(fgs_composite.zebra, wait=True)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
         fgs_composite.zocalo, group=ZOCALO_STAGE_GROUP
     )  # connect to zocalo and make sure the queue is clear
-    yield from run_gridscan(fgs_composite, parameters, features)
+    yield from run_gridscan(fgs_composite, parameters, feature_controlled)
 
     LOGGER.info("Grid scan finished, getting results.")
 
@@ -250,7 +257,7 @@ def run_gridscan_and_move(
 def run_gridscan(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: ThreeDGridScan,
-    features: FeatureFlags,
+    feature_controlled: _FeatureControlled,
     md={
         "plan_name": CONST.PLAN.GRIDSCAN_MAIN,
     },
@@ -278,18 +285,10 @@ def run_gridscan(
         )
 
     LOGGER.info("Setting fgs params")
-    if features.use_panda_for_gridscan:
-        yield from set_flyscan_params(
-            fgs_motors := fgs_composite.panda_fast_grid_scan,
-            parameters.panda_FGS_params,
-        )
-    else:
-        yield from set_flyscan_params(
-            fgs_motors := fgs_composite.zebra_fast_grid_scan, parameters.FGS_params
-        )
+    yield from feature_controlled.set_flyscan_params()
 
     LOGGER.info("Waiting for gridscan validity check")
-    yield from wait_for_gridscan_valid(fgs_motors)
+    yield from wait_for_gridscan_valid(feature_controlled.fgs_motors)
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait("ready_for_data_collection")
@@ -301,14 +300,14 @@ def run_gridscan(
         yield from read_hardware_for_nexus_writer(fgs_composite.eiger)
 
     yield from kickoff_and_complete_gridscan(
-        fgs_motors,
+        feature_controlled.fgs_motors,
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         parameters.zocalo_environment,
         [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
         parameters.scan_indices,
     )
-    yield from bps.abs_set(fgs_motors.z_steps, 0, wait=False)
+    yield from bps.abs_set(feature_controlled.fgs_motors.z_steps, 0, wait=False)
 
 
 def kickoff_and_complete_gridscan(
@@ -410,7 +409,70 @@ def set_aperture_for_bbox_size(
     yield from set_aperture()
 
 
-def _generic_tidy(fgs_composite: FlyScanXRayCentreComposite, group, wait=True):
+@dataclass
+class _FeatureControlled:
+    class _ZebraSetup(Protocol):
+        def __call__(
+            self, zebra: Zebra, group="setup_zebra_for_gridscan", wait=True
+        ) -> MsgGenerator: ...
+
+    class _ExtraSetup(Protocol):
+        def __call__(
+            self,
+            fgs_composite: FlyScanXRayCentreComposite,
+            parameters: ThreeDGridScan,
+            initial_xyz: np.ndarray,
+        ) -> MsgGenerator: ...
+
+    extra_setup: _ExtraSetup
+    tidy_plan: Callable[[FlyScanXRayCentreComposite], MsgGenerator]
+    zebra_setup: _ZebraSetup
+    set_flyscan_params: Callable[[], MsgGenerator]
+    fgs_motors: FastGridScanCommon
+
+    @staticmethod
+    def blank_extra_setup(
+        fgs_composite: FlyScanXRayCentreComposite,
+        parameters: ThreeDGridScan,
+        initial_xyz: np.ndarray,
+    ):
+        yield from bps.null()
+
+
+def _get_feature_controlled(
+    fgs_composite: FlyScanXRayCentreComposite,
+    parameters: ThreeDGridScan,
+    use_panda: bool,
+):
+    if use_panda:
+        return _FeatureControlled(
+            extra_setup=_extra_panda_setup,
+            tidy_plan=_panda_tidy,
+            zebra_setup=setup_zebra_for_panda_flyscan,
+            set_flyscan_params=partial(
+                set_flyscan_params,
+                fgs_composite.panda_fast_grid_scan,
+                parameters.panda_FGS_params,
+            ),
+            fgs_motors=fgs_composite.panda_fast_grid_scan,
+        )
+    else:
+        return _FeatureControlled(
+            extra_setup=_FeatureControlled.blank_extra_setup,
+            tidy_plan=_zebra_tidy,
+            zebra_setup=setup_zebra_for_gridscan,
+            set_flyscan_params=partial(
+                set_flyscan_params,
+                fgs_composite.zebra_fast_grid_scan,
+                parameters.FGS_params,
+            ),
+            fgs_motors=fgs_composite.zebra_fast_grid_scan,
+        )
+
+
+def _generic_tidy(
+    fgs_composite: FlyScanXRayCentreComposite, group, wait=True
+) -> MsgGenerator:
     LOGGER.info("Tidying up Zebra")
     yield from set_zebra_shutter_to_manual(fgs_composite.zebra, group=group, wait=wait)
     LOGGER.info("Tidying up Zocalo")
@@ -431,7 +493,7 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
     yield from bps.wait(group, timeout=10)
 
 
-def extra_panda_setup(
+def _extra_panda_setup(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: ThreeDGridScan,
     initial_xyz: np.ndarray,

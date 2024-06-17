@@ -27,6 +27,7 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     FlyScanXRayCentreComposite,
+    _get_feature_controlled,
     flyscan_xray_centre,
     kickoff_and_complete_gridscan,
     run_gridscan,
@@ -299,27 +300,32 @@ class TestFlyscanXrayCentrePlan:
         RE_with_subs: ReWithSubs,
         feature_panda_and_zebra: FeatureFlags,
     ):
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
         RE, _ = RE_with_subs
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_LARGE)
         RE(
             run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
         )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_MEDIUM)
         RE(
             run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
         )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, TEST_RESULT_SMALL)
         RE(
             run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
         )
 
@@ -405,11 +411,16 @@ class TestFlyscanXrayCentrePlan:
         feature_panda_and_zebra: FeatureFlags,
     ):
         RE, (_, ispyb_cb) = RE_with_subs
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
 
         RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
@@ -436,6 +447,11 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: FlyScanXRayCentreComposite,
         feature_panda_and_zebra: FeatureFlags,
     ):
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
         test_fgs_params._set_stub_offsets = True
 
@@ -444,7 +460,7 @@ class TestFlyscanXrayCentrePlan:
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
 
         RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
@@ -475,11 +491,16 @@ class TestFlyscanXrayCentrePlan:
         feature_panda_and_zebra: FeatureFlags,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
 
         def _wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
@@ -557,11 +578,16 @@ class TestFlyscanXrayCentrePlan:
         feature_panda_and_zebra: FeatureFlags,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
@@ -594,6 +620,11 @@ class TestFlyscanXrayCentrePlan:
         feature_panda_and_zebra: FeatureFlags,
     ):
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
         initial_x_y_z = np.array(
             [
@@ -609,7 +640,7 @@ class TestFlyscanXrayCentrePlan:
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
 
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
@@ -634,13 +665,18 @@ class TestFlyscanXrayCentrePlan:
         class MoveException(Exception):
             pass
 
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
         move_xyz.side_effect = MoveException()
 
         with pytest.raises(MoveException):
             RE(
                 run_gridscan_and_move(
-                    fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                    fake_fgs_composite, test_fgs_params, feature_controlled
                 )
             )
         assert (
@@ -669,11 +705,16 @@ class TestFlyscanXrayCentrePlan:
             return_value=done_status
         )
         test_fgs_params._set_stub_offsets = False
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
             yield from run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
+                fake_fgs_composite, test_fgs_params, feature_controlled
             )
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
@@ -800,8 +841,13 @@ class TestFlyscanXrayCentrePlan:
         done_status: Status,
         feature_panda_and_zebra: FeatureFlags,
     ):
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
         fake_fgs_composite.eiger.unstage = MagicMock(return_value=done_status)
-        RE(run_gridscan(fake_fgs_composite, test_fgs_params, feature_panda_and_zebra))
+        RE(run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled))
         fake_fgs_composite.eiger.stage.assert_called_once()  # type: ignore
         fake_fgs_composite.eiger.unstage.assert_called_once()
 
@@ -825,6 +871,11 @@ class TestFlyscanXrayCentrePlan:
         class CompleteException(Exception):
             pass
 
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
         mock_complete.side_effect = CompleteException()
 
         fake_fgs_composite.eiger.stage = MagicMock(
@@ -841,11 +892,7 @@ class TestFlyscanXrayCentrePlan:
 
         # Want to get the underlying completion error, not the one raised from unstage
         with pytest.raises(CompleteException):
-            RE(
-                run_gridscan(
-                    fake_fgs_composite, test_fgs_params, feature_panda_and_zebra
-                )
-            )
+            RE(run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled))
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
         fake_fgs_composite.eiger.disarm_detector.assert_called()
@@ -931,13 +978,18 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine: RunEngineSimulator,
         feature_panda_and_zebra: FeatureFlags,
     ):
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params,
+            feature_panda_and_zebra.use_panda_for_gridscan,
+        )
         sim_run_engine.add_handler(
             "read",
             "synchrotron-synchrotron_mode",
             lambda msg: {"values": {"value": SynchrotronMode.USER}},
         )
         msgs = sim_run_engine.simulate_plan(
-            run_gridscan(fake_fgs_composite, test_fgs_params, feature_panda_and_zebra)
+            run_gridscan(fake_fgs_composite, test_fgs_params, feature_controlled)
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
