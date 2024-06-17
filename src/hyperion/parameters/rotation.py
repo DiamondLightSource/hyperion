@@ -24,7 +24,7 @@ from hyperion.parameters.components import (
     TemporaryIspybExtras,
     WithScan,
 )
-from hyperion.parameters.constants import CONST
+from hyperion.parameters.constants import CONST, I03Constants
 
 
 class RotationScan(
@@ -43,7 +43,7 @@ class RotationScan(
         default=IspybExperimentType.ROTATION
     )
     transmission_frac: float
-    ispyb_extras: TemporaryIspybExtras
+    ispyb_extras: TemporaryIspybExtras | None
 
     @property
     def detector_params(self):
@@ -57,6 +57,7 @@ class RotationScan(
         assert self.detector_distance_mm is not None
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
+            detector_size_constants=I03Constants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
             exposure_time=self.exposure_time_s,
             directory=self.storage_directory,
@@ -79,8 +80,11 @@ class RotationScan(
         return RotationIspybParams(
             visit_path=str(self.visit_directory),
             comment=self.comment,
-            xtal_snapshots_omega_start=self.ispyb_extras.xtal_snapshots_omega_start,
-            xtal_snapshots_omega_end=self.ispyb_extras.xtal_snapshots_omega_end,
+            xtal_snapshots_omega_start=(
+                self.ispyb_extras.xtal_snapshots_omega_start
+                if self.ispyb_extras
+                else []
+            ),
             ispyb_experiment_type=self.ispyb_experiment_type,
         )
 
