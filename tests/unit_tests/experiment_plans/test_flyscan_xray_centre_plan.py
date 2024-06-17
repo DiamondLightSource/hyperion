@@ -123,6 +123,10 @@ def mock_ispyb():
 
 
 @patch(
+    "hyperion.experiment_plans.flyscan_xray_centre_plan.PANDA_SETUP_PATH",
+    "tests/test_data/flyscan_pcap_ignore_seq.yaml",
+)
+@patch(
     "hyperion.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
