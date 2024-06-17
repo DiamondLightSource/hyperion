@@ -56,7 +56,7 @@ def test_given_start_doc_with_expected_data_then_data_put_in_ispyb(
     RE(my_plan())
 
     start_load.assert_called_once_with("cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN)
-    end_load.assert_called_once_with(ACTION_ID, "success", "")
+    end_load.assert_called_once_with(ACTION_ID, "success", "OK")
 
 
 @patch(
@@ -132,6 +132,6 @@ def test_given_plan_reads_barcode_then_data_put_in_ispyb(
 
     start_load.assert_called_once_with("cm31105", 4, SAMPLE_ID, SAMPLE_PUCK, SAMPLE_PIN)
     update_barcode_and_snapshots.assert_called_once_with(
-        ACTION_ID, "BARCODE", "test_oav_snapshot", "test_webcam_snapshot"
+        ACTION_ID, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
     )
-    end_load.assert_called_once_with(ACTION_ID, "success", "")
+    end_load.assert_called_once_with(ACTION_ID, "success", "OK")

@@ -34,7 +34,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.debug("ISPyB robot load callback received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROBOT_LOAD:
-            ISPYB_LOGGER.info(f"Received: {doc}")
+            ISPYB_LOGGER.debug(f"ISPyB robot load callback received: {doc}")
             self.run_uid = doc.get("uid")
             assert isinstance(metadata := doc.get("metadata"), Dict)
             assert isinstance(
