@@ -767,17 +767,15 @@ def test_ispyb_deposition_in_rotation_plan(
     energy_ev = convert_angstrom_to_eV(test_wl)
     set_mock_value(
         fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
-        energy_ev / 1000,  # pyright: ignore
+        energy_ev / 1000,
     )
-    set_mock_value(
-        fake_create_rotation_devices.undulator.current_gap, 1.12
-    )  # pyright: ignore
+    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         test_synchrotron_mode,
     )
     set_mock_value(
-        fake_create_rotation_devices.synchrotron.topup_start_countdown,  # pyright: ignore
+        fake_create_rotation_devices.synchrotron.top_up_start_countdown,
         -1,
     )
     fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
