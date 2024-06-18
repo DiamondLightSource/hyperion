@@ -93,8 +93,10 @@ class BaseISPyBCallback(PlanReactiveCallback):
         match event_descriptor.get("name"):
             case CONST.DESCRIPTORS.ISPYB_HARDWARE_READ:
                 scan_data_infos = self._handle_ispyb_hardware_read(doc)
-            case CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED:
-                scan_data_infos = self._handle_oav_snapshot_triggered(doc)
+            case CONST.DESCRIPTORS.OAV_ROTATION_SNAPSHOT_TRIGGERED:
+                scan_data_infos = self._handle_oav_rotation_snapshot_triggered(doc)
+            case CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED:
+                scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             case CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ:
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
@@ -135,7 +137,25 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.info("Updating ispyb data collection after hardware read.")
         return scan_data_infos
 
-    def _handle_oav_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
+    def _handle_oav_rotation_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
+        assert self.ispyb_ids.data_collection_ids, "No current data collection"
+        assert self.params, "ISPyB handler didn't recieve parameters!"
+        data = doc["data"]
+        self._oav_snapshot_event_idx += 1
+        data_collection_info = DataCollectionInfo(
+            **{
+                f"xtal_snapshot{self._oav_snapshot_event_idx}": data.get(
+                    "oav_snapshot_last_saved_path"
+                )
+            }
+        )
+        scan_data_info = ScanDataInfo(
+            data_collection_id=self.ispyb_ids.data_collection_ids[-1],
+            data_collection_info=data_collection_info,
+        )
+        return [scan_data_info]
+
+    def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
         assert self.params, "ISPyB handler didn't recieve parameters!"
         data = doc["data"]

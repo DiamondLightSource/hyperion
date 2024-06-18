@@ -29,7 +29,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import GridScanCompleteStatus
+from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.robot import BartRobot
@@ -43,7 +43,7 @@ from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import NullStatus
-from ophyd.status import DeviceStatus, Status
+from ophyd.status import Status
 from ophyd_async.core import callback_on_mock_put, set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
 from ophyd_async.epics.motion.motor import Motor
@@ -304,7 +304,7 @@ def backlight():
 
 @pytest.fixture
 def fast_grid_scan():
-    return i03.fast_grid_scan(fake_with_ophyd_sim=True)
+    return i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture
@@ -331,7 +331,7 @@ def synchrotron():
     RunEngine()  # A RE is needed to start the bluesky loop
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
-    set_mock_value(synchrotron.topup_start_countdown, 10)
+    set_mock_value(synchrotron.top_up_start_countdown, 10)
     return synchrotron
 
 
@@ -585,17 +585,17 @@ def zocalo(done_status):
     return zoc
 
 
-def mock_gridscan_kickoff_complete(gridscan):
-    gridscan_start = DeviceStatus(device=gridscan)
-    gridscan_start.set_finished()
-    gridscan_result = GridScanCompleteStatus(device=gridscan)
-    gridscan_result.set_finished()
-    gridscan.kickoff = MagicMock(return_value=gridscan_start)
-    gridscan.complete = MagicMock(return_value=gridscan_result)
+async def async_status_done():
+    await asyncio.sleep(0)
+
+
+def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
+    gridscan.kickoff = MagicMock(return_value=async_status_done)
+    gridscan.complete = MagicMock(return_value=async_status_done)
 
 
 @pytest.fixture
-def fake_fgs_composite(
+async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: ThreeDGridScan,
     RE: RunEngine,
@@ -614,7 +614,7 @@ def fake_fgs_composite(
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger(fake_with_ophyd_sim=True),
-        fast_grid_scan=i03.fast_grid_scan(fake_with_ophyd_sim=True),
+        zebra_fast_grid_scan=i03.zebra_fast_grid_scan(fake_with_ophyd_sim=True),
         flux=i03.flux(fake_with_ophyd_sim=True),
         s4_slit_gaps=i03.s4_slit_gaps(fake_with_ophyd_sim=True),
         smargon=smargon,
@@ -635,9 +635,6 @@ def fake_fgs_composite(
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_odin_state = lambda: True
 
-    mock_gridscan_kickoff_complete(fake_composite.fast_grid_scan)
-    mock_gridscan_kickoff_complete(fake_composite.panda_fast_grid_scan)
-
     test_result = {
         "centre_of_mass": [6, 6, 6],
         "max_voxel": [5, 5, 5],
@@ -655,8 +652,8 @@ def fake_fgs_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    fake_composite.fast_grid_scan.scan_invalid.sim_put(False)  # type: ignore
-    fake_composite.fast_grid_scan.position_counter.sim_put(0)  # type: ignore
+    set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
+    set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
     fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
 
     set_mock_value(fake_composite.robot.barcode, "BARCODE")

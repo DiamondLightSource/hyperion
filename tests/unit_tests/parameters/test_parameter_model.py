@@ -27,7 +27,6 @@ def minimal_3d_gridscan_params():
         "y_steps": 7,
         "z_steps": 9,
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
-        "ispyb_extras": {},
     }
 
 
@@ -77,7 +76,6 @@ def test_robot_load_then_centre_params():
         "visit": "cm12345",
         "file_name": "file_name",
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
-        "ispyb_extras": {},
     }
     params["detector_distance_mm"] = 200
     test_params = RobotLoadThenCentre(**params)

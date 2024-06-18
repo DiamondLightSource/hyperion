@@ -14,11 +14,10 @@ repos:
       - id: no-images
         name: Check for image files
         entry: >
-          Images for documentation should go into the documentation repository
-          https://github.com/dials/dials.github.io
+          Images for documentation should go into the docs folder
         language: fail
         files: '.*\.png$'
-
+        exclude: '^docs/'
       - id: ruff
         name: Run ruff
         stages: [commit]
