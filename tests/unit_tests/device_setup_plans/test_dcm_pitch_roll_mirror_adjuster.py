@@ -23,9 +23,9 @@ from hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
 
 
 def test_apply_and_wait_for_voltages_to_settle_happy_path(
+    RE: RunEngine,
     vfm_mirror_voltages: VFMMirrorVoltages,
     vfm: FocusingMirrorWithStripes,
-    RE: RunEngine,
 ):
     with patch.object(
         vfm_mirror_voltages,
