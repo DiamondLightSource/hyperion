@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
@@ -32,7 +32,8 @@ class NexusWriter:
         *,
         run_number: int | None = None,
         omega_start_deg: float = 0,
-        chi_phi_start_deg: Tuple[float, float] = (0.0, 0.0),
+        chi_start_deg: float = 0,
+        phi_start_deg: float = 0,
         vds_start_index: int = 0,
     ) -> None:
         self.beam: Optional[Beam] = None
@@ -58,8 +59,8 @@ class NexusWriter:
         self.goniometer: Goniometer = create_goniometer_axes(
             omega_start_deg,
             self.scan_points,
-            chi=chi_phi_start_deg[0],
-            phi=chi_phi_start_deg[1],
+            chi=chi_start_deg,
+            phi=phi_start_deg,
         )
 
     def create_nexus_file(self, bit_depth: DTypeLike):
