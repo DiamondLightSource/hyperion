@@ -23,12 +23,13 @@ from hyperion.device_setup_plans.dcm_pitch_roll_mirror_adjuster import (
 
 
 def test_apply_and_wait_for_voltages_to_settle_happy_path(
+    RE: RunEngine,
     vfm_mirror_voltages: VFMMirrorVoltages,
     vfm: FocusingMirrorWithStripes,
-    RE: RunEngine,
 ):
-    with patch(
-        "dodal.devices.focusing_mirror.VFMMirrorVoltages.voltage_channels",
+    with patch.object(
+        vfm_mirror_voltages,
+        "voltage_channels",
         new_callable=_all_demands_accepted(vfm_mirror_voltages),
     ):
         RE(
@@ -38,7 +39,8 @@ def test_apply_and_wait_for_voltages_to_settle_happy_path(
         )
 
         for channel, expected_voltage in zip(
-            vfm_mirror_voltages.voltage_channels, [140, 100, 70, 30, 30, -65, 24, 15]
+            vfm_mirror_voltages.voltage_channels.values(),
+            [140, 100, 70, 30, 30, -65, 24, 15],
         ):
             channel.set.assert_called_once_with(expected_voltage)  # type: ignore
 
@@ -57,11 +59,10 @@ def _mock_channel(magic_mock, accept_demand):
 
 
 def _all_demands_accepted(vfm_mirror_voltages):
-    mock_channels = []
-    # must enumerate because property cannot be mocked on the instance only the class
-    for real_channel in vfm_mirror_voltages.voltage_channels:
-        mock_channel = MagicMock()
-        mock_channels.append(_mock_channel(mock_channel, True))
+    mock_channels = {
+        i: _mock_channel(MagicMock(), True)
+        for i in vfm_mirror_voltages.voltage_channels.keys()
+    }
 
     voltage_channels = PropertyMock()
     voltage_channels.return_value = mock_channels
@@ -69,11 +70,10 @@ def _all_demands_accepted(vfm_mirror_voltages):
 
 
 def _one_demand_not_accepted(vfm_mirror_voltages):
-    mock_channels = []
-    # must enumerate because property cannot be mocked on the instance only the class
-    for i in range(0, len(vfm_mirror_voltages.voltage_channels)):
-        mock_channel = MagicMock()
-        mock_channels.append(_mock_channel(mock_channel, i != 0))
+    mock_channels = {
+        i: _mock_channel(MagicMock(), i != 0)
+        for i in vfm_mirror_voltages.voltage_channels.keys()
+    }
 
     voltage_channels = PropertyMock()
     voltage_channels.return_value = mock_channels
@@ -82,12 +82,13 @@ def _one_demand_not_accepted(vfm_mirror_voltages):
 
 @patch("dodal.devices.focusing_mirror.DEFAULT_SETTLE_TIME_S", 3)
 def test_apply_and_wait_for_voltages_to_settle_timeout(
+    RE: RunEngine,
     vfm_mirror_voltages: VFMMirrorVoltages,
     vfm: FocusingMirrorWithStripes,
-    RE: RunEngine,
 ):
-    with patch(
-        "dodal.devices.focusing_mirror.VFMMirrorVoltages.voltage_channels",
+    with patch.object(
+        vfm_mirror_voltages,
+        "voltage_channels",
         new_callable=_one_demand_not_accepted(vfm_mirror_voltages),
     ):
         actual_exception = None
@@ -104,7 +105,8 @@ def test_apply_and_wait_for_voltages_to_settle_timeout(
         assert actual_exception is not None
         # Check that all voltages set in parallel
         for channel, expected_voltage in zip(
-            vfm_mirror_voltages.voltage_channels, [140, 100, 70, 30, 30, -65, 24, 15]
+            vfm_mirror_voltages.voltage_channels.values(),
+            [140, 100, 70, 30, 30, -65, 24, 15],
         ):
             channel.set.assert_called_once_with(expected_voltage)  # type: ignore
 
@@ -127,16 +129,17 @@ mirror_stripe_params = [
     "energy_kev, expected_stripe, first_voltage, last_voltage", mirror_stripe_params
 )
 def test_adjust_mirror_stripe(
+    RE: RunEngine,
     vfm_mirror_voltages: VFMMirrorVoltages,
     vfm: FocusingMirrorWithStripes,
-    RE: RunEngine,
     energy_kev,
     expected_stripe,
     first_voltage,
     last_voltage,
 ):
-    with patch(
-        "dodal.devices.focusing_mirror.VFMMirrorVoltages.voltage_channels",
+    with patch.object(
+        vfm_mirror_voltages,
+        "voltage_channels",
         new_callable=_all_demands_accepted(vfm_mirror_voltages),
     ):
         vfm.stripe.set = MagicMock(return_value=NullStatus())
@@ -211,19 +214,19 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
         lambda msg: msg.command == "trigger" and msg.obj.name == "vfm-apply_stripe",
     )
     for channel, expected_voltage in (
-        (14, 124),
-        (15, 114),
-        (16, 34),
-        (17, 49),
-        (18, 19),
-        (19, -116),
-        (20, 4),
-        (21, -46),
+        (0, 124),
+        (1, 114),
+        (2, 34),
+        (3, 49),
+        (4, 19),
+        (5, -116),
+        (6, 4),
+        (7, -46),
     ):
         messages = sim_run_engine.assert_message_and_return_remaining(
             messages[1:],
             lambda msg: msg.command == "set"
-            and msg.obj.name == f"vfm_mirror_voltages__channel{channel}_voltage_device"
+            and msg.obj.name == f"vfm_mirror_voltages-voltage_channels-{channel}"
             and msg.args == (expected_voltage,),
         )
     messages = sim_run_engine.assert_message_and_return_remaining(
