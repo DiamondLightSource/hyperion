@@ -213,11 +213,14 @@ def test_full_rotation_plan_smargon_settings(
     assert smargon.y.user_readback.get() == params.y_start_um
     assert smargon.z.user_readback.get() == params.z_start_um
     assert (
-        # setup + restore omega, 4 * snapshots, 1 * rotation sweep
-        omega_set.call_count == 2 + 4 + 1
+        # 4 * snapshots, restore omega, 1 * rotation sweep
+        omega_set.call_count
+        == 4 + 1 + 1
     )
-    assert omega_velocity_set.call_count == 3
+    # 1 to max vel in outer plan, 1 to max vel in setup_oav_snapshot_plan, 1 set before rotation, 1 restore in cleanup plan
+    assert omega_velocity_set.call_count == 4
     assert omega_velocity_set.call_args_list == [
+        call(test_max_velocity),
         call(test_max_velocity),
         call(rotation_speed),
         call(test_max_velocity),
@@ -271,6 +274,7 @@ def test_cleanup_happens(
     failing_set = MagicMock(
         side_effect=MyTestException("Experiment fails because this is a test")
     )
+    fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)  # type: ignore
 
     with patch.object(fake_create_rotation_devices.smargon.omega, "set", failing_set):
         # check main subplan part fails
@@ -362,7 +366,7 @@ def test_rotation_scan_initialises_detector_distance_shutter_and_tx_fraction(
     )
 
 
-def test_rotation_scan_moves_gonio_and_omega_to_start_before_snapshots(
+def test_rotation_scan_moves_gonio_to_start_before_snapshots(
     fake_create_rotation_devices, sim_run_engine, test_rotation_params
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
@@ -373,11 +377,6 @@ def test_rotation_scan_moves_gonio_and_omega_to_start_before_snapshots(
         msgs,
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == "move_gonio_to_start",
-    )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == "move_to_rotation_start",
     )
     msgs = sim_run_engine.assert_message_and_return_remaining(
         msgs,
@@ -497,7 +496,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
     )
 
 
-def test_rotation_scan_skips_omega_init_backlight_aperture_and_snapshots_if_snapshot_params_specified(
+def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_snapshot_params_specified(
     fake_create_rotation_devices: RotationScanComposite,
     sim_run_engine: RunEngineSimulator,
     test_rotation_params: RotationScan,
