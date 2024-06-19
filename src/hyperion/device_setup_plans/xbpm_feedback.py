@@ -2,7 +2,7 @@ from bluesky import plan_stubs as bps
 from bluesky.preprocessors import finalize_wrapper
 from bluesky.utils import make_decorator
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 
 from hyperion.log import LOGGER
 
@@ -27,7 +27,7 @@ def _check_and_pause_feedback(
     LOGGER.info(
         "XPBM feedback in position, pausing and setting transmission for collection"
     )
-    yield from bps.mv(xbpm_feedback.pause_feedback, xbpm_feedback.PAUSE)
+    yield from bps.mv(xbpm_feedback.pause_feedback, Pause.PAUSE)
     yield from bps.mv(attenuator, desired_transmission_fraction)
 
 
@@ -42,7 +42,7 @@ def _unpause_xbpm_feedback_and_set_transmission_to_1(
                                       the beam in position
         attenuator (Attenuator): The attenuator used to set transmission
     """
-    yield from bps.mv(xbpm_feedback.pause_feedback, xbpm_feedback.RUN, attenuator, 1.0)
+    yield from bps.mv(xbpm_feedback.pause_feedback, Pause.RUN, attenuator, 1.0)
 
 
 def transmission_and_xbpm_feedback_for_collection_wrapper(
