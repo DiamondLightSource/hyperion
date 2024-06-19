@@ -166,9 +166,10 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self, data_collection_info: DataCollectionInfo, omega_start: float | None
     ):
         if omega_start is not None:
-            data_collection_info.omega_start = omega_start
-            data_collection_info.axis_start = omega_start
-            data_collection_info.axis_end = omega_start
+            omega_in_gda_space = -omega_start
+            data_collection_info.omega_start = omega_in_gda_space
+            data_collection_info.axis_start = omega_in_gda_space
+            data_collection_info.axis_end = omega_in_gda_space
             data_collection_info.axis_range = 0
 
     def populate_info_for_update(

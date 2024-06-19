@@ -218,9 +218,9 @@ class TestXrayCentreISPyBCallback:
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
                 "images in 100.0 um by 120.0 um steps. Top left (px): [50,0], "
                 "bottom right (px): [3250,800].",
-                "axisstart": -90,
-                "omegastart": -90,
-                "axisend": -90,
+                "axisstart": 90,
+                "omegastart": 90,
+                "axisend": 90,
                 "axisrange": 0,
             },
         )
