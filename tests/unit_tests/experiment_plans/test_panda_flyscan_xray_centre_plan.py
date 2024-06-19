@@ -454,7 +454,9 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[
+            1
+        ].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
@@ -497,7 +499,9 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[
+            1
+        ].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
@@ -733,7 +737,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
         )
-        fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
+        set_mock_value(fake_fgs_composite.xbpm_feedback.pos_stable, True)
 
         with (
             patch(
