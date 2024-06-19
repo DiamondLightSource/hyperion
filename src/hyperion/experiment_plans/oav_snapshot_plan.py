@@ -14,6 +14,7 @@ from hyperion.parameters.components import WithSnapshot
 from hyperion.parameters.constants import DocDescriptorNames
 
 OAV_SNAPSHOT_SETUP_GROUP = "oav_snapshot_setup"
+OAV_SNAPSHOT_SETUP_SHOT = "oav_snapshot_setup_shot"
 OAV_SNAPSHOT_GROUP = "oav_snapshot_group"
 
 
@@ -24,10 +25,17 @@ class OavSnapshotComposite(Protocol):
     backlight: Backlight
 
 
-def setup_oav_snapshot_plan(composite: OavSnapshotComposite, parameters: WithSnapshot):
+def setup_oav_snapshot_plan(
+    composite: OavSnapshotComposite,
+    parameters: WithSnapshot,
+    max_omega_velocity_deg_s: float,
+):
     if not parameters.take_snapshots:
         return
 
+    yield from bps.abs_set(
+        composite.smargon.omega.velocity, max_omega_velocity_deg_s, wait=True
+    )
     yield from bps.abs_set(
         composite.backlight, BacklightPosition.IN, group=OAV_SNAPSHOT_SETUP_GROUP
     )
@@ -49,7 +57,7 @@ def oav_snapshot_plan(
     yield from bps.wait(group=OAV_SNAPSHOT_SETUP_GROUP)
     yield from _setup_oav(composite, parameters, oav_parameters)
     for omega in parameters.snapshot_omegas_deg or []:
-        yield from _take_oav_snapshot(composite, parameters, omega)
+        yield from _take_oav_snapshot(composite, omega)
 
 
 def _setup_oav(
@@ -63,15 +71,17 @@ def _setup_oav(
     )
 
 
-def _take_oav_snapshot(
-    composite: OavSnapshotComposite, parameters: WithSnapshot, omega: float
-):
-    yield from bps.abs_set(composite.smargon.omega, omega, group=OAV_SNAPSHOT_GROUP)
+def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
+    yield from bps.abs_set(
+        composite.smargon.omega, omega, group=OAV_SNAPSHOT_SETUP_SHOT
+    )
     time_now = datetime.now()
     filename = f"{time_now.strftime('%H%M%S')}_oav_snapshot_{omega:.0f}"
-    yield from bps.abs_set(composite.oav.snapshot.filename, filename)
-    yield from bps.trigger(composite.oav.snapshot, group=OAV_SNAPSHOT_GROUP)
-    yield from bps.wait(group=OAV_SNAPSHOT_GROUP)
+    yield from bps.abs_set(
+        composite.oav.snapshot.filename, filename, group=OAV_SNAPSHOT_SETUP_SHOT
+    )
+    yield from bps.wait(group=OAV_SNAPSHOT_SETUP_SHOT)
+    yield from bps.trigger(composite.oav.snapshot, wait=True)
     yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
     yield from bps.read(composite.oav.snapshot)
     yield from bps.save()

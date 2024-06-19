@@ -11,7 +11,7 @@ from dodal.devices.oav.utils import ColorMode
 from dodal.devices.smargon import Smargon
 
 from hyperion.experiment_plans.oav_snapshot_plan import (
-    OAV_SNAPSHOT_GROUP,
+    OAV_SNAPSHOT_SETUP_SHOT,
     OavSnapshotComposite,
     oav_snapshot_plan,
 )
@@ -109,24 +109,27 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
             lambda msg: msg.command == "set"
             and msg.obj.name == "smargon-omega"
             and msg.args[0] == expected["omega"]
-            and msg.kwargs["group"] == OAV_SNAPSHOT_GROUP,
+            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
             and msg.obj.name == "oav_snapshot_filename"
-            and msg.args[0] == expected["filename"],
-        )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "trigger"
-            and msg.obj.name == "oav_snapshot"
-            and msg.kwargs["group"] == OAV_SNAPSHOT_GROUP,
+            and msg.args[0] == expected["filename"]
+            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == OAV_SNAPSHOT_GROUP,
+            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "trigger" and msg.obj.name == "oav_snapshot",
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "wait" and msg.kwargs["group"] is None,
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs,

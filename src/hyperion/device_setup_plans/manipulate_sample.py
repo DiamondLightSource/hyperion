@@ -22,6 +22,7 @@ def begin_sample_environment_setup(
     detector_distance: float,
     group="setup_senv",
 ):
+    """Start all sample environment changes that can be initiated before OAV snapshots are taken"""
     yield from bps.abs_set(detector_motion.shutter, 1, group=group)
     yield from bps.abs_set(detector_motion.z, detector_distance, group=group)
     yield from bps.abs_set(attenuator, transmission_fraction, group=group)
@@ -33,8 +34,7 @@ def setup_sample_environment(
     backlight: Backlight,
     group="setup_senv",
 ):
-    """Move the aperture into required position, move out the backlight, retract the detector shutter,
-    and set the attenuator to transmission."""
+    """Move the aperture into required position, move out the backlight."""
 
     yield from move_aperture_if_required(
         aperture_scatterguard, aperture_position_gda_name, group=group

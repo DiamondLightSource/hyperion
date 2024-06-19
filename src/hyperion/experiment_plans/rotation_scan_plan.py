@@ -173,7 +173,6 @@ def rotation_scan_plan(
     composite: RotationScanComposite,
     params: RotationScan,
     motion_values: RotationMotionProfile,
-    oav_params: OAVParameters,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
     a fixed axis - for now this axis is limited to omega. Only does the scan itself, no
@@ -190,22 +189,9 @@ def rotation_scan_plan(
     def _rotation_scan_plan(
         motion_values: RotationMotionProfile,
         composite: RotationScanComposite,
-        oav_params: OAVParameters,
     ):
         axis = composite.smargon.omega
 
-        LOGGER.info(f"moving omega to beginning, {motion_values.start_scan_deg=}")
-        # can move to start as fast as possible
-        # TODO get VMAX, see https://github.com/bluesky/ophyd/issues/1122
-        yield from bps.abs_set(
-            axis.velocity, motion_values.max_velocity_deg_s, wait=True
-        )
-        yield from bps.abs_set(
-            axis,
-            motion_values.start_motion_deg,
-            group="move_to_rotation_start",
-            wait=True,
-        )
         yield from setup_zebra_for_rotation(
             composite.zebra,
             start_angle=motion_values.start_scan_deg,
@@ -216,19 +202,6 @@ def rotation_scan_plan(
             group="setup_zebra",
             wait=True,
         )
-
-        yield from bps.wait("move_gonio_to_start")
-        if params.take_snapshots:
-            yield from bps.wait("move_to_rotation_start")
-            yield from oav_snapshot_plan(composite, params, oav_params)
-
-            # Move to start again for rotation scan after snapshots
-            yield from bps.abs_set(
-                axis,
-                motion_values.start_motion_deg,
-                group="move_to_rotation_start",
-                wait=True,
-            )
 
         yield from setup_sample_environment(
             composite.aperture_scatterguard,
@@ -279,7 +252,7 @@ def rotation_scan_plan(
             composite.dcm,
         )
 
-    yield from _rotation_scan_plan(motion_values, composite, oav_params)
+    yield from _rotation_scan_plan(motion_values, composite)
 
 
 def cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
@@ -340,7 +313,6 @@ def rotation_scan(
                 params.transmission_frac,
                 params.detector_params.detector_distance,
             )
-            yield from setup_oav_snapshot_plan(composite, params)
             LOGGER.info("moving to position (if specified)")
             yield from move_x_y_z(
                 composite.smargon,
@@ -355,7 +327,28 @@ def rotation_scan(
                 params.chi_start_deg,
                 group="move_gonio_to_start",
             )
-            yield from rotation_scan_plan(composite, params, motion_values, oav_params)
+            yield from bps.wait("move_gonio_to_start")
+
+            axis = composite.smargon.omega
+            # can move to start as fast as possible
+            # TODO get VMAX, see https://github.com/bluesky/ophyd/issues/1122
+            yield from bps.abs_set(
+                axis.velocity, motion_values.max_velocity_deg_s, wait=True
+            )
+            LOGGER.info(f"moving omega to beginning, {motion_values.start_scan_deg=}")
+            if params.take_snapshots:
+                yield from setup_oav_snapshot_plan(
+                    composite, params, motion_values.max_velocity_deg_s
+                )
+                yield from oav_snapshot_plan(composite, params, oav_params)
+
+            yield from bps.abs_set(
+                axis,
+                motion_values.start_motion_deg,
+                group="move_to_rotation_start",
+                wait=True,
+            )
+            yield from rotation_scan_plan(composite, params, motion_values)
 
         LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)

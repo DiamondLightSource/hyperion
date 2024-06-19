@@ -43,14 +43,13 @@ def do_rotation_main_plan_for_tests(
     expt_params: RotationScan,
     devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
-    oav_parameters_for_rotation: OAVParameters
 ):
     with patch(
         "bluesky.preprocessors.__read_and_stash_a_motor",
         fake_read,
     ):
         run_eng(
-            rotation_scan_plan(devices, expt_params, motion_values, oav_parameters_for_rotation),
+            rotation_scan_plan(devices, expt_params, motion_values),
         )
 
 
@@ -84,11 +83,10 @@ def setup_and_run_rotation_plan_for_tests(
     test_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
-    oav_params: OAVParameters
 ):
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
-            RE, test_params, fake_create_rotation_devices, motion_values, oav_params
+            RE, test_params, fake_create_rotation_devices, motion_values
         )
 
     return {
@@ -105,10 +103,9 @@ def setup_and_run_rotation_plan_for_tests_standard(
     test_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
-    oav_parameters_for_rotation: OAVParameters
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE, test_rotation_params, fake_create_rotation_devices, motion_values, oav_parameters_for_rotation
+        RE, test_rotation_params, fake_create_rotation_devices, motion_values
     )
 
 
@@ -118,10 +115,9 @@ def setup_and_run_rotation_plan_for_tests_nomove(
     test_rotation_params_nomove: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
-    oav_parameters_for_rotation: OAVParameters
 ):
     return setup_and_run_rotation_plan_for_tests(
-        RE, test_rotation_params_nomove, fake_create_rotation_devices, motion_values, oav_parameters_for_rotation
+        RE, test_rotation_params_nomove, fake_create_rotation_devices, motion_values
     )
 
 
@@ -205,11 +201,14 @@ async def test_full_rotation_plan_smargon_settings(
     assert await smargon.y.user_readback.get_value() == params.y_start_um
     assert await smargon.z.user_readback.get_value() == params.z_start_um
     assert (
-        # setup + restore omega, 4 * snapshots, 1 * rotation sweep
-        omega_set.call_count == 2 + 4 + 1
+        # 4 * snapshots, restore omega, 1 * rotation sweep
+        omega_set.call_count
+        == 4 + 1 + 1
     )
-    assert omega_velocity_set.call_count == 3
+    # 1 to max vel in outer plan, 1 to max vel in setup_oav_snapshot_plan, 1 set before rotation, 1 restore in cleanup plan
+    assert omega_velocity_set.call_count == 4
     assert omega_velocity_set.call_args_list == [
+        call(test_max_velocity, wait=True, timeout=10),
         call(test_max_velocity, wait=True, timeout=10),
         call(rotation_speed, wait=True, timeout=10),
         call(test_max_velocity, wait=True, timeout=10),
@@ -256,7 +255,6 @@ def test_cleanup_happens(
     test_rotation_params,
     fake_create_rotation_devices: RotationScanComposite,
     motion_values: RotationMotionProfile,
-    oav_parameters_for_rotation: OAVParameters
 ):
     class MyTestException(Exception):
         pass
@@ -270,7 +268,7 @@ def test_cleanup_happens(
         with pytest.raises(MyTestException):
             RE(
                 rotation_scan_plan(
-                    fake_create_rotation_devices, test_rotation_params, motion_values, oav_parameters_for_rotation
+                    fake_create_rotation_devices, test_rotation_params, motion_values
                 )
             )
             cleanup_plan.assert_not_called()
@@ -287,12 +285,11 @@ def test_rotation_plan_reads_hardware(
     test_rotation_params,
     motion_values,
     sim_run_engine,
-    oav_parameters_for_rotation: OAVParameters
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
     msgs = sim_run_engine.simulate_plan(
         rotation_scan_plan(
-            fake_create_rotation_devices, test_rotation_params, motion_values, oav_parameters_for_rotation
+            fake_create_rotation_devices, test_rotation_params, motion_values
         )
     )
 
@@ -356,7 +353,7 @@ def test_rotation_scan_initialises_detector_distance_shutter_and_tx_fraction(
     )
 
 
-def test_rotation_scan_moves_gonio_and_omega_to_start_before_snapshots(
+def test_rotation_scan_moves_gonio_to_start_before_snapshots(
     fake_create_rotation_devices, sim_run_engine, test_rotation_params
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
@@ -367,11 +364,6 @@ def test_rotation_scan_moves_gonio_and_omega_to_start_before_snapshots(
         msgs,
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == "move_gonio_to_start",
-    )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == "move_to_rotation_start",
     )
     msgs = sim_run_engine.assert_message_and_return_remaining(
         msgs,
@@ -491,7 +483,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
     )
 
 
-def test_rotation_scan_skips_omega_init_backlight_aperture_and_snapshots_if_snapshot_params_specified(
+def test_rotation_scan_skips_init_backlight_aperture_and_snapshots_if_snapshot_params_specified(
     fake_create_rotation_devices: RotationScanComposite,
     sim_run_engine: RunEngineSimulator,
     test_rotation_params: RotationScan,
