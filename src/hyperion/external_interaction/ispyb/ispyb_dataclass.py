@@ -8,8 +8,6 @@ GRIDSCAN_ISPYB_PARAM_DEFAULTS = {
     "sample_id": None,
     "visit_path": "",
     "position": None,
-    "xtal_snapshots_omega_start": ["test_1_y", "test_2_y", "test_3_y"],
-    "xtal_snapshots_omega_end": ["test_1_z", "test_2_z", "test_3_z"],
     "comment": "Descriptive comment.",
 }
 
@@ -22,7 +20,6 @@ class IspybParams(BaseModel):
 
     # Optional from GDA as populated by Ophyd
     xtal_snapshots_omega_start: Optional[list[str]] = None
-    xtal_snapshots_omega_end: Optional[list[str]] = None
     ispyb_experiment_type: Optional[str] = None
 
     class Config:

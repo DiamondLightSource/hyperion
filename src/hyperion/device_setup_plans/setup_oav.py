@@ -1,20 +1,12 @@
 from functools import partial
-from typing import Generator, Tuple
 
 import bluesky.plan_stubs as bps
-import numpy as np
-from bluesky.utils import Msg
-from dodal.devices.oav.oav_calculations import camera_coordinates_to_xyz
-from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_errors import OAVError_ZoomLevelNotFound
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.utils import ColorMode
-from dodal.devices.smargon import Smargon
 
-from hyperion.exceptions import WarningException
-
-Pixel = Tuple[int, int]
 oav_group = "oav_setup"
 # Helper function to make sure we set the waiting groups correctly
 set_using_group = partial(bps.abs_set, group=oav_group)
@@ -62,20 +54,11 @@ def setup_pin_tip_detection_params(
     )
 
 
-def pre_centring_setup_oav(
-    oav: OAV,
-    parameters: OAVParameters,
-    pin_tip_detection_device: PinTipDetection,
-):
-    """
-    Setup OAV PVs with required values.
-    """
+def setup_general_oav_params(oav: OAV, parameters: OAVParameters):
     yield from set_using_group(oav.cam.color_mode, ColorMode.RGB1)
     yield from set_using_group(oav.cam.acquire_period, parameters.acquire_period)
     yield from set_using_group(oav.cam.acquire_time, parameters.exposure)
     yield from set_using_group(oav.cam.gain, parameters.gain)
-
-    yield from setup_pin_tip_detection_params(pin_tip_detection_device, parameters)
 
     zoom_level_str = f"{float(parameters.zoom)}x"
     if zoom_level_str not in oav.zoom_controller.allowed_zoom_levels:
@@ -89,54 +72,19 @@ def pre_centring_setup_oav(
         wait=True,
     )
 
+
+def pre_centring_setup_oav(
+    oav: OAV,
+    parameters: OAVParameters,
+    pin_tip_detection_device: PinTipDetection,
+):
+    """
+    Setup OAV PVs with required values.
+    """
+    yield from setup_general_oav_params(oav, parameters)
+    yield from setup_pin_tip_detection_params(pin_tip_detection_device, parameters)
     yield from bps.wait(oav_group)
 
     """
     TODO: We require setting the backlight brightness to that in the json, we can't do this currently without a PV.
     """
-
-
-def calculate_x_y_z_of_pixel(
-    current_x_y_z, current_omega, pixel: Pixel, oav_params: OAVConfigParams
-) -> np.ndarray:
-    beam_distance_px: Pixel = oav_params.calculate_beam_distance(*pixel)
-
-    assert oav_params.micronsPerXPixel
-    assert oav_params.micronsPerYPixel
-    return current_x_y_z + camera_coordinates_to_xyz(
-        beam_distance_px[0],
-        beam_distance_px[1],
-        current_omega,
-        oav_params.micronsPerXPixel,
-        oav_params.micronsPerYPixel,
-    )
-
-
-def get_move_required_so_that_beam_is_at_pixel(
-    smargon: Smargon, pixel: Pixel, oav_params: OAVConfigParams
-) -> Generator[Msg, None, np.ndarray]:
-    """Calculate the required move so that the given pixel is in the centre of the beam."""
-
-    current_motor_xyz = np.array(
-        [
-            (yield from bps.rd(smargon.x)),
-            (yield from bps.rd(smargon.y)),
-            (yield from bps.rd(smargon.z)),
-        ],
-        dtype=np.float64,
-    )
-    current_angle = yield from bps.rd(smargon.omega)
-
-    return calculate_x_y_z_of_pixel(current_motor_xyz, current_angle, pixel, oav_params)
-
-
-def wait_for_tip_to_be_found(
-    ophyd_pin_tip_detection: PinTipDetection,
-) -> Generator[Msg, None, Pixel]:
-    yield from bps.trigger(ophyd_pin_tip_detection, wait=True)
-    found_tip = yield from bps.rd(ophyd_pin_tip_detection.triggered_tip)
-    if found_tip == ophyd_pin_tip_detection.INVALID_POSITION:
-        timeout = yield from bps.rd(ophyd_pin_tip_detection.validity_timeout)
-        raise WarningException(f"No pin found after {timeout} seconds")
-
-    return found_tip  # type: ignore

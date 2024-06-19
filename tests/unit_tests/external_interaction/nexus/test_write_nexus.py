@@ -10,7 +10,7 @@ from dodal.devices.detector.det_dim_constants import (
     PIXELS_X_EIGER2_X_4M,
     PIXELS_Y_EIGER2_X_4M,
 )
-from dodal.devices.fast_grid_scan import GridAxis, GridScanParams
+from dodal.devices.fast_grid_scan import GridAxis, ZebraGridScanParams
 
 from hyperion.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
@@ -145,7 +145,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
-    grid_scan_params: GridScanParams = test_fgs_params.FGS_params
+    grid_scan_params: ZebraGridScanParams = test_fgs_params.FGS_params
     nexus_writer_1.create_nexus_file(np.uint16)
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
@@ -241,7 +241,7 @@ def assert_x_data_stride_correct(data_path, grid_scan_params, varying_axis_steps
 
 
 def assert_varying_axis_stride_correct(
-    axis_data, grid_scan_params: GridScanParams, varying_axis: GridAxis
+    axis_data, grid_scan_params: ZebraGridScanParams, varying_axis: GridAxis
 ):
     assert len(axis_data) == (grid_scan_params.x_steps) * (varying_axis.full_steps)
     assert axis_data[grid_scan_params.x_steps + 1] - axis_data[0] == pytest.approx(
