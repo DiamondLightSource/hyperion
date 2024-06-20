@@ -133,7 +133,7 @@ class MultiRotationScan(RotationScanGeneric, SplitScan):
     def num_images(self):
         return sum(
             [
-                scan.scan_width_deg / self.rotation_increment_deg
+                int(scan.scan_width_deg / self.rotation_increment_deg)
                 for scan in self.rotation_scans
             ]
         )
