@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 
+import numpy as np
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_dist_to_beam_converter import (
     DetectorDistanceToBeamXYConverter,
@@ -27,8 +28,7 @@ from hyperion.parameters.components import (
 from hyperion.parameters.constants import CONST, I03Constants
 
 
-class RotationScan(
-    DiffractionExperimentWithSample,
+class RotationScanCore(
     WithScan,
     OptionalGonioAngleStarts,
     OptionalXyzStarts,
@@ -45,6 +45,8 @@ class RotationScan(
     transmission_frac: float
     ispyb_extras: TemporaryIspybExtras | None
 
+
+class RotationScan(DiffractionExperimentWithSample, RotationScanCore):
     @property
     def detector_params(self):
         self.det_dist_to_beam_converter_path = (
@@ -77,6 +79,7 @@ class RotationScan(
 
     @property
     def ispyb_params(self):  # pyright: ignore
+        pos = np.array([self.x_start_um, self.y_start_um, self.z_start_um])
         return RotationIspybParams(
             visit_path=str(self.visit_directory),
             comment=self.comment,
@@ -86,6 +89,7 @@ class RotationScan(
                 else []
             ),
             ispyb_experiment_type=self.ispyb_experiment_type,
+            position=pos if np.all(pos) else None,
         )
 
     @property
@@ -104,3 +108,7 @@ class RotationScan(
     @property
     def num_images(self) -> int:
         return int(self.scan_width_deg / self.rotation_increment_deg)
+
+
+class MultiRotationScan(DiffractionExperimentWithSample):
+    rotation_scans: list[RotationScanCore]
