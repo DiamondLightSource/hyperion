@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import takewhile
-from typing import TYPE_CHECKING, Callable
+from typing import Callable
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
 
@@ -23,11 +22,8 @@ from hyperion.experiment_plans.rotation_scan_plan import (
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
 
+from ...conftest import RunEngineSimulator
 from .conftest import fake_read
-
-if TYPE_CHECKING:
-    from dodal.devices.smargon import Smargon
-
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
@@ -285,41 +281,26 @@ def test_rotation_plan_reads_hardware(
     fake_create_rotation_devices: RotationScanComposite,
     test_rotation_params,
     motion_values,
-    sim_run_engine,
+    sim_run_engine_for_rotation: RunEngineSimulator,
 ):
-    sim_run_engine.add_handler(
-        "read",
-        "synchrotron-synchrotron_mode",
-        lambda msg: {"values": {"value": SynchrotronMode.USER}},
-    )
-    sim_run_engine.add_handler(
-        "read",
-        "synchrotron-top_up_start_countdown",
-        lambda msg: {"values": {"value": -1}},
-    )
-    fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)  # type: ignore
-    sim_run_engine.add_handler(
-        "read", "smargon_omega", lambda msg: {"values": {"value": -1}}
-    )
-
-    msgs = sim_run_engine.simulate_plan(
+    msgs = sim_run_engine_for_rotation.simulate_plan(
         rotation_scan_plan(
             fake_create_rotation_devices, test_rotation_params, motion_values
         )
     )
 
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = sim_run_engine_for_rotation.assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "create"
         and msg.kwargs["name"] == CONST.DESCRIPTORS.ISPYB_HARDWARE_READ,
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
-    sim_run_engine.assert_message_and_return_remaining(
+    sim_run_engine_for_rotation.assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_x"
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    sim_run_engine_for_rotation.assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_y"
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    sim_run_engine_for_rotation.assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_z"
     )

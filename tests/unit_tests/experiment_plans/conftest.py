@@ -60,6 +60,24 @@ BASIC_POST_SETUP_DOC = {
 }
 
 
+@pytest.fixture
+def sim_run_engine_for_rotation(sim_run_engine):
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-synchrotron_mode",
+        lambda msg: {"values": {"value": SynchrotronMode.USER}},
+    )
+    sim_run_engine.add_handler(
+        "read",
+        "synchrotron-top_up_start_countdown",
+        lambda msg: {"values": {"value": -1}},
+    )
+    sim_run_engine.add_handler(
+        "read", "smargon_omega", lambda msg: {"values": {"value": -1}}
+    )
+    return sim_run_engine
+
+
 def mock_zocalo_trigger(zocalo: ZocaloResults, result):
     @AsyncStatus.wrap
     async def mock_complete(results):

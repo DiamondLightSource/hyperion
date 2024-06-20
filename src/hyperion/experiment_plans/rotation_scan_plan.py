@@ -43,7 +43,6 @@ from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import (
     MultiRotationScan,
     RotationScan,
-    RotationScanCore,
 )
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -87,11 +86,6 @@ DEFAULT_MAX_VELOCITY = 120
 # Use a slightly larger time to acceleration than EPICS as it's better to be cautious
 ACCELERATION_MARGIN = 1.5
 
-ROTATION_DIRECTION = {
-    RotationDirection.POSITIVE: 1,
-    RotationDirection.NEGATIVE: -1,
-}
-
 
 @dataclasses.dataclass
 class RotationMotionProfile:
@@ -121,7 +115,7 @@ def calculate_motion_profile(
     See https://github.com/DiamondLightSource/hyperion/wiki/rotation-scan-geometry
     for a simple pictorial explanation."""
 
-    direction = ROTATION_DIRECTION[params.rotation_direction]
+    direction = params.rotation_direction.multiplier
     num_images = params.num_images
     shutter_time_s = params.shutter_opening_time_s
     image_width_deg = params.rotation_increment_deg
@@ -166,7 +160,7 @@ def calculate_motion_profile(
 
 def rotation_scan_plan(
     composite: RotationScanComposite,
-    params: RotationScanCore,
+    params: RotationScan,
     motion_values: RotationMotionProfile,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
@@ -260,7 +254,7 @@ def cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
 
 def move_and_rotation(
     composite: RotationScanComposite,
-    params: RotationScanCore,
+    params: RotationScan,
     motion_values: RotationMotionProfile,
 ):
     LOGGER.info("moving to position (if specified)")

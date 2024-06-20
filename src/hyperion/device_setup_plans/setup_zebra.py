@@ -97,8 +97,7 @@ def setup_zebra_for_rotation(
             "Disallowed rotation direction provided to Zebra setup plan. "
             "Use RotationDirection.POSITIVE or RotationDirection.NEGATIVE."
         )
-    # TODO Actually set the rotation direction in here.
-    # See https://github.com/DiamondLightSource/hyperion/issues/1273
+    yield from bps.abs_set(zebra.pc.dir, direction.value, group=group)
     LOGGER.info("ZEBRA SETUP: START")
     # must be on for shutter trigger to be enabled
     yield from bps.abs_set(zebra.inputs.soft_in_1, SoftInState.YES, group=group)
