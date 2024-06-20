@@ -71,7 +71,6 @@ def motion_values(test_rotation_params: RotationScan):
         test_rotation_params,
         0.005,  # time for acceleration
         222,
-        test_rotation_params.exposure_time_s,
     )
 
 
@@ -137,7 +136,6 @@ def test_rotation_scan_calculations(test_rotation_params: RotationScan):
         test_rotation_params,
         0.005,  # time for acceleration
         224,
-        test_rotation_params.exposure_time_s,
     )
 
     assert motion_values.direction == "Negative"

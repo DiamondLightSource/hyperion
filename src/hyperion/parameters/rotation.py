@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 
 import numpy as np
 from dodal.devices.detector import DetectorParams
@@ -10,7 +11,7 @@ from dodal.devices.detector.det_dist_to_beam_converter import (
 from dodal.devices.zebra import (
     RotationDirection,
 )
-from pydantic import Field
+from pydantic import BaseModel, Field
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -35,22 +36,22 @@ class RotationScanCore(
 ):
     omega_start_deg: float = Field(default=0)  # type: ignore
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
-    shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
     scan_width_deg: float = Field(default=360, gt=0)
-    rotation_increment_deg: float = Field(default=0.1, gt=0)
     rotation_direction: RotationDirection = Field(default=RotationDirection.NEGATIVE)
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.ROTATION
     )
-    transmission_frac: float
     ispyb_extras: TemporaryIspybExtras | None
 
 
-class RotationScan(DiffractionExperimentWithSample, RotationScanCore):
-    ispyb_experiment_type: IspybExperimentType = Field(
-        default=IspybExperimentType.ROTATION
-    )
+class RotationScanGeneric(BaseModel):
+    shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
+    rotation_increment_deg: float = Field(default=0.1, gt=0)
 
+
+class RotationScan(
+    RotationScanCore, DiffractionExperimentWithSample, RotationScanGeneric
+):
     @property
     def detector_params(self):
         self.det_dist_to_beam_converter_path = (
@@ -114,5 +115,16 @@ class RotationScan(DiffractionExperimentWithSample, RotationScanCore):
         return int(self.scan_width_deg / self.rotation_increment_deg)
 
 
-class MultiRotationScan(DiffractionExperimentWithSample):
+class MultiRotationScan(DiffractionExperimentWithSample, RotationScanGeneric):
     rotation_scans: tuple[RotationScanCore, ...]
+
+    def _single_rotation_scan(self, scan: RotationScanCore) -> RotationScan:
+        params = self.dict()
+        del params["rotation_scans"]
+        params.update(scan.dict())
+        return RotationScan(**params)
+
+    @property
+    def single_rotation_scans(self) -> Iterator[RotationScan]:
+        for scan in self.rotation_scans:
+            yield self._single_rotation_scan(scan)
