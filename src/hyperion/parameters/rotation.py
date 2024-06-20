@@ -47,6 +47,10 @@ class RotationScanCore(
 
 
 class RotationScan(DiffractionExperimentWithSample, RotationScanCore):
+    ispyb_experiment_type: IspybExperimentType = Field(
+        default=IspybExperimentType.ROTATION
+    )
+
     @property
     def detector_params(self):
         self.det_dist_to_beam_converter_path = (
@@ -111,4 +115,4 @@ class RotationScan(DiffractionExperimentWithSample, RotationScanCore):
 
 
 class MultiRotationScan(DiffractionExperimentWithSample):
-    rotation_scans: list[RotationScanCore]
+    rotation_scans: tuple[RotationScanCore, ...]

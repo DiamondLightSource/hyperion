@@ -498,7 +498,6 @@ class TestFlyscanXrayCentrePlan:
                     fgs,
                     fake_fgs_composite.eiger,
                     fake_fgs_composite.synchrotron,
-                    "zocalo environment",
                     [
                         test_fgs_params.scan_points_first_grid,
                         test_fgs_params.scan_points_second_grid,
@@ -514,7 +513,6 @@ class TestFlyscanXrayCentrePlan:
                 fgs,
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
-                "zocalo environment",
                 [
                     test_fgs_params.scan_points_first_grid,
                     test_fgs_params.scan_points_second_grid,
@@ -837,6 +835,7 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     RE: RunEngine,
     fake_fgs_composite: FlyScanXRayCentreComposite,
 ):
+    mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
     id_1, id_2 = 100, 200
 
     _, ispyb_cb = create_gridscan_callbacks()
@@ -847,10 +846,10 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
     assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
     zocalo_env = "dev_env"
 
-    zocalo_cb.start({CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS})  # type: ignore
+    zocalo_cb.start(
+        {CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS, "zocalo_environment": zocalo_env}  # type: ignore
+    )
     assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
-
-    mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
 
     fake_fgs_composite.eiger.unstage = MagicMock()
     fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
@@ -863,7 +862,6 @@ def test_kickoff_and_complete_gridscan_triggers_zocalo(
             fake_fgs_composite.zebra_fast_grid_scan,
             fake_fgs_composite.eiger,
             fake_fgs_composite.synchrotron,
-            zocalo_env,
             scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
             scan_start_indices=[0, x_steps * y_steps],
         )

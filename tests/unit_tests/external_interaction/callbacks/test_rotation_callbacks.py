@@ -99,6 +99,7 @@ def fake_rotation_scan(
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             "hyperion_parameters": params.json(),
             CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
+            "zocalo_environment": params.zocalo_environment,
         }
     )
     def plan():

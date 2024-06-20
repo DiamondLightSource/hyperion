@@ -40,7 +40,7 @@ from hyperion.device_setup_plans.setup_zebra import (
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
-from hyperion.parameters.rotation import RotationScan
+from hyperion.parameters.rotation import RotationScan, RotationScanCore
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
 )
@@ -162,7 +162,7 @@ def calculate_motion_profile(
 
 def rotation_scan_plan(
     composite: RotationScanComposite,
-    params: RotationScan,
+    params: RotationScanCore,
     motion_values: RotationMotionProfile,
 ):
     """A plan to collect diffraction images from a sample continuously rotating about
@@ -173,7 +173,6 @@ def rotation_scan_plan(
     @bpp.run_decorator(
         md={
             "subplan_name": CONST.PLAN.ROTATION_MAIN,
-            "zocalo_environment": params.zocalo_environment,
             "scan_points": [params.scan_points],
         }
     )
@@ -255,6 +254,32 @@ def cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
     yield from bpp.finalize_wrapper(disarm_zebra(composite.zebra), bps.wait("cleanup"))
 
 
+def move_and_rotation(
+    composite: RotationScanComposite,
+    params: RotationScanCore,
+    motion_values: RotationMotionProfile,
+):
+    LOGGER.info("moving to position (if specified)")
+    yield from move_x_y_z(
+        composite.smargon,
+        params.x_start_um,
+        params.y_start_um,
+        params.z_start_um,
+        group="move_gonio_to_start",
+    )
+    yield from move_phi_chi_omega(
+        composite.smargon,
+        params.phi_start_deg,
+        params.chi_start_deg,
+        group="move_gonio_to_start",
+    )
+    yield from rotation_scan_plan(
+        composite,
+        params,
+        motion_values,
+    )
+
+
 def rotation_scan(
     composite: RotationScanComposite,
     parameters: RotationScan,
@@ -302,25 +327,7 @@ def rotation_scan(
                 params.transmission_frac,
                 params.detector_params.detector_distance,
             )
-            LOGGER.info("moving to position (if specified)")
-            yield from move_x_y_z(
-                composite.smargon,
-                params.x_start_um,
-                params.y_start_um,
-                params.z_start_um,
-                group="move_gonio_to_start",
-            )
-            yield from move_phi_chi_omega(
-                composite.smargon,
-                params.phi_start_deg,
-                params.chi_start_deg,
-                group="move_gonio_to_start",
-            )
-            yield from rotation_scan_plan(
-                composite,
-                params,
-                motion_values,
-            )
+            yield from move_and_rotation(composite, params, motion_values)
 
         LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
