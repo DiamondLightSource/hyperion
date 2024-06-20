@@ -66,7 +66,7 @@ from hyperion.log import (
     do_default_logging_setup,
 )
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
-from hyperion.parameters.rotation import RotationScan
+from hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -239,6 +239,15 @@ def test_rotation_params_nomove():
     return RotationScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters_nomove.json"
+        )
+    )
+
+
+@pytest.fixture
+def test_multi_rotation_params():
+    return MultiRotationScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
         )
     )
 
