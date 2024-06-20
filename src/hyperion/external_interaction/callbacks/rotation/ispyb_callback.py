@@ -60,7 +60,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
             ISPYB_LOGGER.info(
-                "ISPyB callback recieved start document with experiment parameters."
+                "ISPyB callback received start document with experiment parameters."
             )
             self.params = RotationScan.from_json(doc.get("hyperion_parameters"))
             dcgid = (
@@ -104,11 +104,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.uid_to_finalize_on = doc.get("uid")
         return super().activity_gated_start(doc)
 
-    def populate_axis_info_for_snapshot(
-        self, data_collection_info: DataCollectionInfo, omega_start: float | None
-    ):
-        pass
-
     def populate_info_for_update(
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
@@ -149,7 +144,33 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
+
+        descriptor_name = self.descriptors[doc["descriptor"]].get("name")
+        if descriptor_name == CONST.DESCRIPTORS.OAV_ROTATION_SNAPSHOT_TRIGGERED:
+            scan_data_infos = self._handle_oav_rotation_snapshot_triggered(doc)
+            self.ispyb_ids = self.ispyb.update_deposition(
+                self.ispyb_ids, scan_data_infos
+            )
+
         return doc
+
+    def _handle_oav_rotation_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
+        assert self.ispyb_ids.data_collection_ids, "No current data collection"
+        assert self.params, "ISPyB handler didn't receive parameters!"
+        data = doc["data"]
+        self._oav_snapshot_event_idx += 1
+        data_collection_info = DataCollectionInfo(
+            **{
+                f"xtal_snapshot{self._oav_snapshot_event_idx}": data.get(
+                    "oav_snapshot_last_saved_path"
+                )
+            }
+        )
+        scan_data_info = ScanDataInfo(
+            data_collection_id=self.ispyb_ids.data_collection_ids[-1],
+            data_collection_info=data_collection_info,
+        )
+        return [scan_data_info]
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
         if doc.get("run_start") == self.uid_to_finalize_on:
