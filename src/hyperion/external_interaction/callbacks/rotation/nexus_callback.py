@@ -96,4 +96,5 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 parameters.scan_points,
                 omega_start_deg=parameters.omega_start_deg,
                 chi_start_deg=parameters.chi_start_deg or 0,
+                phi_start_deg=parameters.chi_start_deg or 0,
             )
