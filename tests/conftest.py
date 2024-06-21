@@ -1,5 +1,6 @@
 import asyncio
 import gzip
+import inspect
 import json
 import logging
 import sys
@@ -66,7 +67,7 @@ from hyperion.log import (
     do_default_logging_setup,
 )
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
-from hyperion.parameters.rotation import RotationScan
+from hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -244,6 +245,15 @@ def test_rotation_params_nomove():
 
 
 @pytest.fixture
+def test_multi_rotation_params():
+    return MultiRotationScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
+        )
+    )
+
+
+@pytest.fixture
 def done_status():
     s = Status()
     s.set_finished()
@@ -327,8 +337,7 @@ def s4_slit_gaps():
 
 
 @pytest.fixture
-def synchrotron():
-    RunEngine()  # A RE is needed to start the bluesky loop
+def synchrotron(RE):
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
     set_mock_value(synchrotron.top_up_start_countdown, 10)
@@ -554,6 +563,7 @@ def fake_create_rotation_devices(
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
     mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
+    smargon.omega.user_readback.sim_put(0)  # type: ignore
 
     smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
@@ -670,6 +680,10 @@ def extract_metafile(input_filename, output_filename):
     with gzip.open(input_filename) as metafile_fo:
         with open(output_filename, "wb") as output_fo:
             output_fo.write(metafile_fo.read())
+
+
+def _print_fn_and_code(func: Callable):
+    return f"{func.__code__.co_qualname}:\n{inspect.getsource(func)}\n"
 
 
 class RunEngineSimulator:
@@ -797,7 +811,7 @@ class RunEngineSimulator:
             )
             and predicate(messages[i])
         ]
-        assert indices, f"Nothing matched predicate {predicate}"
+        assert indices, f"Nothing matched predicate {_print_fn_and_code(predicate)}"
         return messages[indices[0] :]
 
     def mock_message_generator(

@@ -70,6 +70,7 @@ class TestData:
     test_rotation_start_main_document = {
         "uid": "2093c941-ded1-42c4-ab74-ea99980fbbfd",
         "subplan_name": CONST.PLAN.ROTATION_MAIN,
+        "zocalo_environment": "dev_artemis",
     }
     test_gridscan_outer_start_document = {
         "uid": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
@@ -79,6 +80,7 @@ class TestData:
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_OUTER,
         "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
+        "zocalo_environment": "dev_artemis",
         CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
         "hyperion_parameters": dummy_params().json(),
     }
@@ -120,7 +122,6 @@ class TestData:
         "plan_type": "generator",
         "plan_name": CONST.PLAN.GRIDSCAN_AND_MOVE,
         "subplan_name": CONST.PLAN.DO_FGS,
-        "zocalo_environment": "dev_artemis",
         "scan_points": create_dummy_scan_spec(10, 20, 30),
     }
     test_descriptor_document_oav_snapshot: EventDescriptor = {

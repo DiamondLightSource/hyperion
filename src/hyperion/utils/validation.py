@@ -89,6 +89,7 @@ def fake_create_rotation_devices():
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
     mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
 
+    smargon.omega.user_readback.sim_put(0)  # type: ignore
     smargon.omega.velocity.set = mock_omega_velocity_sets
     smargon.omega.set = mock_omega_sets
 

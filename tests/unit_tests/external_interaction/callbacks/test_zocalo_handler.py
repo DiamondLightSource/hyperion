@@ -24,13 +24,17 @@ EXPECTED_RUN_END_MESSAGE = {
 td = TestData()
 
 
+def start_dict(plan_name: str = "test_plan_name", env: str = "test_env"):
+    return {CONST.TRIGGER.ZOCALO: plan_name, "zocalo_environment": env}
+
+
 class TestZocaloHandler:
     def _setup_handler(self):
         zocalo_handler = ZocaloCallback()
         assert zocalo_handler.triggering_plan is None
-        zocalo_handler.start({CONST.TRIGGER.ZOCALO: "test_plan_name"})  # type: ignore
+        zocalo_handler.start(start_dict())  # type: ignore
         assert zocalo_handler.triggering_plan == "test_plan_name"
-        assert zocalo_handler.zocalo_interactor is None
+        assert zocalo_handler.zocalo_interactor is not None
         return zocalo_handler
 
     def test_handler_gets_plan_name_from_start_doc(self):
@@ -38,17 +42,15 @@ class TestZocaloHandler:
 
     def test_handler_doesnt_trigger_on_wrong_plan(self):
         zocalo_handler = self._setup_handler()
-        zocalo_handler.start({CONST.TRIGGER.ZOCALO: "_not_test_plan_name"})  # type: ignore
+        zocalo_handler.start(start_dict("_not_test_plan_name"))  # type: ignore
 
     def test_handler_raises_on_right_plan_with_wrong_metadata(self):
         zocalo_handler = self._setup_handler()
-        assert zocalo_handler.zocalo_interactor is None
         with pytest.raises(AssertionError):
             zocalo_handler.start({"subplan_name": "test_plan_name"})  # type: ignore
 
     def test_handler_raises_on_right_plan_with_no_ispyb_ids(self):
         zocalo_handler = self._setup_handler()
-        assert zocalo_handler.zocalo_interactor is None
         with pytest.raises(ISPyBDepositionNotMade):
             zocalo_handler.start(
                 {
@@ -64,7 +66,6 @@ class TestZocaloHandler:
     )
     def test_handler_inits_zocalo_trigger_on_right_plan(self, zocalo_trigger):
         zocalo_handler = self._setup_handler()
-        assert zocalo_handler.zocalo_interactor is None
         zocalo_handler.start(
             {
                 "subplan_name": "test_plan_name",

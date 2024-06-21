@@ -120,11 +120,11 @@ class HyperionParameters(BaseModel):
 
     @validator("parameter_model_version")
     def _validate_version(cls, version: ParameterVersion):
-        assert version >= ParameterVersion(
-            major=PARAMETER_VERSION.major
+        assert (
+            version >= ParameterVersion(major=PARAMETER_VERSION.major)
         ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
-        assert version <= ParameterVersion(
-            major=PARAMETER_VERSION.major + 1
+        assert (
+            version <= ParameterVersion(major=PARAMETER_VERSION.major + 1)
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
@@ -165,6 +165,7 @@ class DiffractionExperiment(HyperionParameters, WithSnapshot):
     selected_aperture: AperturePositionGDANames | None = Field(default=None)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
+    transmission_frac: float
 
     @root_validator(pre=True)
     def validate_snapshot_directory(cls, values):
