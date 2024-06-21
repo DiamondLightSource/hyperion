@@ -179,6 +179,7 @@ class TestData:
             "oav_grid_snapshot_last_path_full_overlay": "test_1_y",
             "oav_grid_snapshot_last_path_outer": "test_2_y",
             "oav_grid_snapshot_last_saved_path": "test_3_y",
+            "smargon_omega": 0,
         },
     }
     test_event_document_oav_snapshot_xz: Event = {
@@ -198,6 +199,7 @@ class TestData:
             "oav_grid_snapshot_last_saved_path": "test_3_z",
             "oav_grid_snapshot_microns_per_pixel_x": 1.25,
             "oav_grid_snapshot_microns_per_pixel_y": 1.5,
+            "smargon_omega": -90,
         },
     }
     test_event_document_pre_data_collection: Event = {

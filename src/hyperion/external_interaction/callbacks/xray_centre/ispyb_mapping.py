@@ -15,23 +15,16 @@ def populate_xz_data_collection_info(detector_params: DetectorParams):
         detector_params.omega_start is not None
         and detector_params.run_number is not None
     ), "StoreGridscanInIspyb failed to get parameters"
-    omega_start = detector_params.omega_start + 90
     run_number = detector_params.run_number + 1
     info = DataCollectionInfo(
-        omega_start=omega_start,
         data_collection_number=run_number,
-        axis_range=0,
-        axis_end=omega_start,
     )
     return info
 
 
 def populate_xy_data_collection_info(detector_params: DetectorParams):
     return DataCollectionInfo(
-        omega_start=detector_params.omega_start,
         data_collection_number=detector_params.run_number,
-        axis_range=0,
-        axis_end=detector_params.omega_start,
     )
 
 

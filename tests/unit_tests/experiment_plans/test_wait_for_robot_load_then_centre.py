@@ -327,9 +327,9 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
 
     start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
     update_barcode_and_snapshots.assert_called_once_with(
-        action_id, "BARCODE", "test_oav_snapshot", "test_webcam_snapshot"
+        action_id, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
     )
-    end_load.assert_called_once_with(action_id, "success", "")
+    end_load.assert_called_once_with(action_id, "success", "OK")
 
 
 @patch("hyperion.experiment_plans.robot_load_then_centre_plan.datetime")
