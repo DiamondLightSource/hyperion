@@ -13,7 +13,7 @@ from dodal.devices.detector.det_dist_to_beam_converter import (
 from dodal.devices.zebra import (
     RotationDirection,
 )
-from pydantic import Field
+from pydantic import Field, root_validator
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -37,6 +37,7 @@ class RotationScanCore(OptionalGonioAngleStarts, OptionalXyzStarts):
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
     scan_width_deg: float = Field(default=360, gt=0)
     rotation_direction: RotationDirection = Field(default=RotationDirection.NEGATIVE)
+    nexus_vds_start_img: float = Field(default=0, ge=0)
     ispyb_extras: TemporaryIspybExtras | None
 
 
@@ -124,19 +125,28 @@ class MultiRotationScan(RotationScanGeneric, SplitScan):
         params.update(scan.dict())
         return RotationScan(**params)
 
+    @root_validator(pre=False)
+    def validate_snapshot_directory(cls, values):
+        start_img = 0
+        for scan in values["rotation_scans"]:
+            scan.nexus_vds_start_img = start_img
+            start_img = scan.scan_width_deg / values["rotation_increment_deg"]
+        return values
+
     @property
     def single_rotation_scans(self) -> Iterator[RotationScan]:
         for scan in self.rotation_scans:
             yield self._single_rotation_scan(scan)
 
+    def _num_images_per_scan(self):
+        return [
+            int(scan.scan_width_deg / self.rotation_increment_deg)
+            for scan in self.rotation_scans
+        ]
+
     @property
     def num_images(self):
-        return sum(
-            [
-                int(scan.scan_width_deg / self.rotation_increment_deg)
-                for scan in self.rotation_scans
-            ]
-        )
+        return sum(self._num_images_per_scan())
 
     @property
     def scan_points(self):
@@ -144,7 +154,7 @@ class MultiRotationScan(RotationScanGeneric, SplitScan):
 
     @property
     def scan_indices(self):
-        return NotImplemented  # TODO: as above
+        return [0, *self._num_images_per_scan()]
 
     @property
     def detector_params(self):

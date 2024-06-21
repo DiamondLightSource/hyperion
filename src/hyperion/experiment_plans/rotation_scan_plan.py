@@ -329,6 +329,7 @@ def rotation_scan(
     yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
 
 
+@bpp.run_decorator()
 def multi_rotation_scan(
     composite: RotationScanComposite,
     outer_parameters: MultiRotationScan,

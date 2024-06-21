@@ -838,3 +838,113 @@ class MessageHandler:
 @pytest.fixture
 def sim_run_engine():
     return RunEngineSimulator()
+
+
+class CallbackSim:
+    def __init__(self) -> None:
+        self.docs_recieved: list[tuple[str, dict[str, Any]]] = []
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        self.docs_recieved.append((args[0], args[1]))
+
+    @staticmethod
+    def is_match(
+        doc: tuple[str, dict[str, Any]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+    ):
+        return (
+            doc[0] == name
+            and all(f in doc[1].keys() for f in has_fields)
+            and matches_fields.items() <= doc[1].items()
+        )
+
+    @staticmethod
+    def get_matches(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+    ):
+        return list(
+            filter(
+                partial(
+                    CallbackSim.is_match,
+                    name=name,
+                    has_fields=has_fields,
+                    matches_fields=matches_fields,
+                ),
+                docs,
+            )
+        )
+
+    @staticmethod
+    def assert_doc(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+        does_exist: bool = True,
+    ):
+        """Assert that a matching doc has been recieved by the sim,
+        and returns the first match if it is meant to exist"""
+        matches = CallbackSim.get_matches(docs, name, has_fields, matches_fields)
+        if does_exist:
+            assert matches
+            return matches[0]
+        else:
+            assert matches == []
+
+    @staticmethod
+    def assert_doc_return_rematining(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+        does_exist: bool = True,
+    ):
+        """Assert that a matching doc has been recieved by the sim,
+        and returns the first match if it is meant to exist"""
+        matches = CallbackSim.get_matches(docs, name, has_fields, matches_fields)
+        if does_exist:
+            assert matches
+            return matches[0]
+        else:
+            assert matches == []
+
+    @staticmethod
+    def get_docs_until(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+    ):
+        for i, doc in enumerate(docs):
+            if CallbackSim.is_match(doc, name, has_fields, matches_fields):
+                return docs[: i + 1]
+        raise ValueError(f"Doc {name=}, {has_fields=}, {matches_fields=} not found")
+
+    @staticmethod
+    def get_docs_from(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+    ):
+        for i, doc in enumerate(docs):
+            if CallbackSim.is_match(doc, name, has_fields, matches_fields):
+                return docs[i:]
+        raise ValueError(f"Doc {name=}, {has_fields=}, {matches_fields=} not found")
+
+    @staticmethod
+    def assert_events_and_data_in_order(
+        docs: list[tuple[str, dict[str, Any]]],
+        match_data_keys_list: Sequence[Sequence[str]],
+    ):
+        for event_data_keys in match_data_keys_list:
+            docs = CallbackSim.get_docs_from(docs, "event")
+            doc = docs.pop(0)[1]["data"]
+            assert all(
+                k in doc.keys() for k in event_data_keys
+            ), f"One of {event_data_keys=} not in {doc}"
