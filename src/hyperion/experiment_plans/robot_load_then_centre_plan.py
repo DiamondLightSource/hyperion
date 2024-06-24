@@ -185,6 +185,7 @@ def robot_load_then_centre_plan(
         yield from bps.wait("robot_load")
 
         yield from bps.abs_set(composite.thawer.thaw_for_time_s, params.thawing_time)
+        yield from wait_for_smargon_not_disabled(composite.smargon)
 
         yield from take_robot_snapshots(
             composite.oav, composite.webcam, params.snapshot_directory
@@ -195,8 +196,6 @@ def robot_load_then_centre_plan(
         yield from bps.read(composite.oav.snapshot)
         yield from bps.read(composite.webcam)
         yield from bps.save()
-
-        yield from wait_for_smargon_not_disabled(composite.smargon)
 
     yield from robot_load()
 

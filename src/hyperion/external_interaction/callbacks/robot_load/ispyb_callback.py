@@ -34,6 +34,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
     def activity_gated_start(self, doc: RunStart):
         ISPYB_LOGGER.debug("ISPyB robot load callback received start document.")
         if doc.get("subplan_name") == CONST.PLAN.ROBOT_LOAD:
+            ISPYB_LOGGER.debug(f"ISPyB robot load callback received: {doc}")
             self.run_uid = doc.get("uid")
             assert isinstance(metadata := doc.get("metadata"), Dict)
             assert isinstance(
@@ -64,9 +65,9 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             barcode = doc["data"]["robot-barcode"]
             oav_snapshot = doc["data"]["oav_snapshot_last_saved_path"]
             webcam_snapshot = doc["data"]["webcam-last_saved_path"]
-            # I03 uses oav/webcam snapshots in place of before/after snapshots
+            # I03 uses webcam/oav snapshots in place of before/after snapshots
             self.expeye.update_barcode_and_snapshots(
-                self.action_id, barcode, oav_snapshot, webcam_snapshot
+                self.action_id, barcode, webcam_snapshot, oav_snapshot
             )
 
         return super().activity_gated_event(doc)
@@ -80,7 +81,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             exit_status = (
                 doc.get("exit_status") or "Exit status not available in stop document!"
             )
-            reason = doc.get("reason") or ""
+            reason = doc.get("reason") or "OK"
             self.expeye.end_load(self.action_id, exit_status, reason)
             self.action_id = None
         return super().activity_gated_stop(doc)
