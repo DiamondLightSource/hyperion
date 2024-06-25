@@ -17,10 +17,6 @@ def config_server() -> ConfigServer:
     return _CONFIG_SERVER
 
 
-def best_effort_get_feature_flag(flag_name: str, fallback: T = None) -> bool | T:
-    return config_server().best_effort_get_feature_flag(flag_name, fallback)
-
-
 class FeatureFlags(BaseModel):
     # The default value will be used as the fallback when doing a best-effort fetch
     # from the service
@@ -29,9 +25,14 @@ class FeatureFlags(BaseModel):
     set_stub_offsets: bool = False
 
     @classmethod
+    def _get_flags(cls):
+        flags = config_server().best_effort_get_all_feature_flags()
+        return {f: flags[f] for f in flags if f in cls.__fields__.keys()}
+
+    @classmethod
     def best_effort(cls):
-        flags = {
-            field_name: best_effort_get_feature_flag(field_name, field_details.default)
-            for (field_name, field_details) in cls.__fields__.items()
-        }
-        return cls(**flags)
+        return cls(**cls._get_flags())
+
+    def update_self_from_server(self):
+        for flag, value in self._get_flags().items():
+            setattr(self, flag, value)
