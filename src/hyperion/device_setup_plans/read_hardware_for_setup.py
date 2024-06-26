@@ -24,6 +24,15 @@ def read_hardware_for_ispyb_pre_collection(
     robot: BartRobot,
     smargon: Smargon,
 ):
+    time = 0
+    busy = not (yield from bps.rd(aperture_scatterguard.aperture.y.motor_done_move))
+    if not busy:
+        busy = not (yield from bps.rd(aperture_scatterguard.aperture.y.motor_done_move))
+        LOGGER.warning("ApertureScatterguard still busy!")
+        yield from bps.sleep(0.1)
+        time += 0.1
+        if time > 5:
+            raise TimeoutError("Aperture still moving")
     LOGGER.info("Reading status of beamline for ispyb deposition, pre collection.")
     yield from bps.create(
         name=CONST.DESCRIPTORS.ISPYB_HARDWARE_READ

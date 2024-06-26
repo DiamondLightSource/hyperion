@@ -106,6 +106,7 @@ class BlueskyRunner:
             LOGGER.info("Initialising dodal devices...")
             for plan_name in PLAN_REGISTRY:
                 PLAN_REGISTRY[plan_name]["setup"](context)
+            LOGGER.info("Done!")
 
     def start(
         self,
@@ -228,7 +229,8 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
         parameters = experiment_internal_param_type(**json.loads(request.data))
     except Exception as e:
         raise ValueError(
-            "Supplied parameters don't match the plan for this endpoint"
+            f"Supplied parameters {request.data} don't match the"
+            f" plan for this endpoint: {experiment_internal_param_type}"
         ) from e
     return plan, parameters, plan_name, callback_type
 

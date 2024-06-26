@@ -29,7 +29,6 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.panda import HDFPanda
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -43,7 +42,6 @@ from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
 from hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
     read_energy,
-    set_energy_plan,
 )
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
@@ -71,7 +69,7 @@ class RobotLoadThenCentreComposite:
     undulator: Undulator
     zebra: Zebra
     zocalo: ZocaloResults
-    panda: HDFPanda
+    # panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
 
     # SetEnergyComposite fields
@@ -174,11 +172,11 @@ def robot_load_then_centre_plan(
             group="robot_load",
         )
 
-        if params.demand_energy_ev:
-            yield from set_energy_plan(
-                params.demand_energy_ev / 1000,
-                cast(SetEnergyComposite, composite),
-            )
+        # if params.demand_energy_ev:
+        #     yield from set_energy_plan(
+        #         params.demand_energy_ev / 1000,
+        #         cast(SetEnergyComposite, composite),
+        #     )
 
         yield from bps.wait("robot_load")
 
