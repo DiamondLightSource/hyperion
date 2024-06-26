@@ -146,7 +146,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             z1_start=self.z_start_um,
             y2_start=self.y2_start_um,
             z2_start=self.z2_start_um,
-            set_stub_offsets=self._set_stub_offsets,
+            set_stub_offsets=self.features.set_stub_offsets,
             dwell_time_ms=self.exposure_time_s * 1000,
             transmission_fraction=self.transmission_frac,
         )
@@ -169,7 +169,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             z1_start=self.z_start_um,
             y2_start=self.y2_start_um,
             z2_start=self.z2_start_um,
-            set_stub_offsets=self._set_stub_offsets,
+            set_stub_offsets=self.features.set_stub_offsets,
             run_up_distance_mm=self.panda_runup_distance_mm,
             transmission_fraction=self.transmission_frac,
         )

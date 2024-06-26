@@ -10,6 +10,9 @@ from dodal.log import set_up_all_logging_handlers
 from hyperion.external_interaction.callbacks.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
+from hyperion.external_interaction.callbacks.robot_load.ispyb_callback import (
+    RobotLoadISPyBCallback,
+)
 from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
@@ -46,6 +49,7 @@ def setup_callbacks():
         RotationNexusFileCallback(),
         RotationISPyBCallback(emit=zocalo),
         LogUidTaggingCallback(),
+        RobotLoadISPyBCallback(),
     ]
 
 

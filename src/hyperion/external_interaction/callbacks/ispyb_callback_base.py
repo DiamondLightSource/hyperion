@@ -12,16 +12,11 @@ from dodal.devices.synchrotron import SynchrotronMode
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
-    construct_comment_for_gridscan,
-)
 from hyperion.external_interaction.ispyb.data_model import (
-    DataCollectionGridInfo,
     DataCollectionInfo,
     DataCollectionPositionInfo,
     ScanDataInfo,
 )
-from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -86,17 +81,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
         event_descriptor = self.descriptors.get(doc["descriptor"])
         if event_descriptor is None:
             ISPYB_LOGGER.warning(
-                f"Ispyb handler {self} recieved event doc {format_doc_for_log(doc)} and "
+                f"Ispyb handler {self} received event doc {format_doc_for_log(doc)} and "
                 "has no corresponding descriptor record"
             )
             return doc
         match event_descriptor.get("name"):
             case CONST.DESCRIPTORS.ISPYB_HARDWARE_READ:
                 scan_data_infos = self._handle_ispyb_hardware_read(doc)
-            case CONST.DESCRIPTORS.OAV_ROTATION_SNAPSHOT_TRIGGERED:
-                scan_data_infos = self._handle_oav_rotation_snapshot_triggered(doc)
-            case CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED:
-                scan_data_infos = self._handle_oav_grid_snapshot_triggered(doc)
             case CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ:
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
@@ -137,69 +128,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_LOGGER.info("Updating ispyb data collection after hardware read.")
         return scan_data_infos
 
-    def _handle_oav_rotation_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
-        assert self.ispyb_ids.data_collection_ids, "No current data collection"
-        assert self.params, "ISPyB handler didn't recieve parameters!"
-        data = doc["data"]
-        self._oav_snapshot_event_idx += 1
-        data_collection_info = DataCollectionInfo(
-            **{
-                f"xtal_snapshot{self._oav_snapshot_event_idx}": data.get(
-                    "oav_snapshot_last_saved_path"
-                )
-            }
-        )
-        scan_data_info = ScanDataInfo(
-            data_collection_id=self.ispyb_ids.data_collection_ids[-1],
-            data_collection_info=data_collection_info,
-        )
-        return [scan_data_info]
-
-    def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
-        assert self.ispyb_ids.data_collection_ids, "No current data collection"
-        assert self.params, "ISPyB handler didn't recieve parameters!"
-        data = doc["data"]
-        data_collection_id = None
-        data_collection_info = DataCollectionInfo(
-            xtal_snapshot1=data.get("oav_grid_snapshot_last_path_full_overlay"),
-            xtal_snapshot2=data.get("oav_grid_snapshot_last_path_outer"),
-            xtal_snapshot3=data.get("oav_grid_snapshot_last_saved_path"),
-            n_images=(
-                data["oav_grid_snapshot_num_boxes_x"]
-                * data["oav_grid_snapshot_num_boxes_y"]
-            ),
-        )
-        microns_per_pixel_x = data["oav_grid_snapshot_microns_per_pixel_x"]
-        microns_per_pixel_y = data["oav_grid_snapshot_microns_per_pixel_y"]
-        data_collection_grid_info = DataCollectionGridInfo(
-            dx_in_mm=data["oav_grid_snapshot_box_width"] * microns_per_pixel_x / 1000,
-            dy_in_mm=data["oav_grid_snapshot_box_width"] * microns_per_pixel_y / 1000,
-            steps_x=data["oav_grid_snapshot_num_boxes_x"],
-            steps_y=data["oav_grid_snapshot_num_boxes_y"],
-            microns_per_pixel_x=microns_per_pixel_x,
-            microns_per_pixel_y=microns_per_pixel_y,
-            snapshot_offset_x_pixel=int(data["oav_grid_snapshot_top_left_x"]),
-            snapshot_offset_y_pixel=int(data["oav_grid_snapshot_top_left_y"]),
-            orientation=Orientation.HORIZONTAL,
-            snaked=True,
-        )
-        data_collection_info.comments = construct_comment_for_gridscan(
-            data_collection_grid_info
-        )
-        if len(self.ispyb_ids.data_collection_ids) > self._oav_snapshot_event_idx:
-            data_collection_id = self.ispyb_ids.data_collection_ids[
-                self._oav_snapshot_event_idx
-            ]
-
-        scan_data_info = ScanDataInfo(
-            data_collection_info=data_collection_info,
-            data_collection_id=data_collection_id,
-            data_collection_grid_info=data_collection_grid_info,
-        )
-        ISPYB_LOGGER.info("Updating ispyb data collection after oav snapshot.")
-        self._oav_snapshot_event_idx += 1
-        return [scan_data_info]
-
     def _handle_ispyb_transmission_flux_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params
         hwscan_data_collection_info = DataCollectionInfo(
@@ -238,7 +166,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         uid to use this method!"""
         assert isinstance(
             self.ispyb, StoreInIspyb
-        ), "ISPyB handler recieved stop document, but deposition object doesn't exist!"
+        ), "ISPyB handler received stop document, but deposition object doesn't exist!"
         ISPYB_LOGGER.debug("ISPyB handler received stop document.")
         exit_status = (
             doc.get("exit_status") or "Exit status not available in stop document!"

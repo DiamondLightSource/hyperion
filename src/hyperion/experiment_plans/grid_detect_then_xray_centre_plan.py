@@ -157,31 +157,30 @@ def _detect_grid_and_do_gridscan(
         composite.aperture_scatterguard, parameters.selected_aperture
     )
 
-    flyscan_composite = FlyScanXRayCentreComposite(
-        aperture_scatterguard=composite.aperture_scatterguard,
-        attenuator=composite.attenuator,
-        backlight=composite.backlight,
-        eiger=composite.eiger,
-        panda_fast_grid_scan=composite.panda_fast_grid_scan,
-        flux=composite.flux,
-        s4_slit_gaps=composite.s4_slit_gaps,
-        smargon=composite.smargon,
-        undulator=composite.undulator,
-        synchrotron=composite.synchrotron,
-        xbpm_feedback=composite.xbpm_feedback,
-        zebra=composite.zebra,
-        zocalo=composite.zocalo,
-        panda=composite.panda,
-        zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
-        dcm=composite.dcm,
-        robot=composite.robot,
+    yield from flyscan_xray_centre(
+        FlyScanXRayCentreComposite(
+            aperture_scatterguard=composite.aperture_scatterguard,
+            attenuator=composite.attenuator,
+            backlight=composite.backlight,
+            eiger=composite.eiger,
+            panda_fast_grid_scan=composite.panda_fast_grid_scan,
+            flux=composite.flux,
+            s4_slit_gaps=composite.s4_slit_gaps,
+            smargon=composite.smargon,
+            undulator=composite.undulator,
+            synchrotron=composite.synchrotron,
+            xbpm_feedback=composite.xbpm_feedback,
+            zebra=composite.zebra,
+            zocalo=composite.zocalo,
+            panda=composite.panda,
+            zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
+            dcm=composite.dcm,
+            robot=composite.robot,
+        ),
+        create_parameters_for_flyscan_xray_centre(
+            parameters, grid_params_callback.get_grid_parameters()
+        ),
     )
-
-    flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
-        parameters, grid_params_callback.get_grid_parameters()
-    )
-
-    yield from flyscan_xray_centre(flyscan_composite, flyscan_xray_centre_parameters)
 
 
 def grid_detect_then_xray_centre(

@@ -69,7 +69,6 @@ from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
 )
 from hyperion.exceptions import WarningException
-from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
@@ -144,14 +143,11 @@ def flyscan_xray_centre(
     Returns:
         Generator: The plan for the gridscan
     """
-    features = FeatureFlags.best_effort()
+    parameters.features.update_self_from_server()
     composite.eiger.set_detector_parameters(parameters.detector_params)
     composite.zocalo.zocalo_environment = parameters.zocalo_environment
-    parameters.do_set_stub_offsets(features.set_stub_offsets)
 
-    feature_controlled = _get_feature_controlled(
-        composite, parameters, features.use_panda_for_gridscan
-    )
+    feature_controlled = _get_feature_controlled(composite, parameters)
 
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
@@ -442,9 +438,8 @@ class _FeatureControlled:
 def _get_feature_controlled(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: ThreeDGridScan,
-    use_panda: bool,
 ):
-    if use_panda:
+    if parameters.features.use_panda_for_gridscan:
         return _FeatureControlled(
             extra_setup=_extra_panda_setup,
             tidy_plan=_panda_tidy,

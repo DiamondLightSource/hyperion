@@ -6,7 +6,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator import Attenuator
-from dodal.devices.xspress3_mini.xspress3_mini import Xspress3Mini
+from dodal.devices.xspress3.xspress3 import Xspress3
 from dodal.devices.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
 
 from hyperion.log import LOGGER
@@ -28,7 +28,7 @@ class OptimizeAttenuationComposite:
 
     attenuator: Attenuator
     sample_shutter: ZebraShutter
-    xspress3mini: Xspress3Mini
+    xspress3mini: Xspress3
 
 
 def create_devices(context: BlueskyContext) -> OptimizeAttenuationComposite:
@@ -73,11 +73,6 @@ def is_counts_within_target(total_count, lower_count_limit, upper_count_limit) -
         return True
     else:
         return False
-
-
-def arm_devices(xspress3mini: Xspress3Mini):
-    yield from bps.abs_set(xspress3mini.do_arm, 1, wait=True)
-    LOGGER.info("Arming Xspress3Mini complete")
 
 
 def calculate_new_direction(direction: Direction, deadtime, deadtime_threshold):
@@ -154,7 +149,8 @@ def do_device_optimise_iteration(
         yield from bps.abs_set(
             composite.sample_shutter, ZebraShutterState.OPEN, wait=True
         )
-        yield from bps.abs_set(composite.xspress3mini.do_arm, 1, wait=True)
+        yield from bps.stage(composite.xspress3mini, wait=True)
+        yield from bps.unstage(composite.xspress3mini, wait=True)
 
     yield from open_and_run()
 
@@ -240,8 +236,8 @@ def deadtime_optimisation(
     for cycle in range(0, max_cycles):
         yield from do_device_optimise_iteration(composite, transmission)
 
-        total_time = float(composite.xspress3mini.channel_1.total_time.get())
-        reset_ticks = float(composite.xspress3mini.channel_1.reset_ticks.get())
+        total_time = yield from bps.rd(composite.xspress3mini.channels[1].total_time)
+        reset_ticks = yield from bps.rd(composite.xspress3mini.channels[1].reset_ticks)
 
         LOGGER.info(f"Current total time = {total_time}")
         LOGGER.info(f"Current reset ticks = {reset_ticks}")
@@ -354,7 +350,7 @@ def total_counts_optimisation(
         yield from do_device_optimise_iteration(composite, transmission)
 
         data = np.array(
-            (yield from bps.rd(composite.xspress3mini.dt_corrected_latest_mca))
+            (yield from bps.rd(composite.xspress3mini.dt_corrected_latest_mca[1]))
         )
         total_count = sum(data[int(low_roi) : int(high_roi)])
         LOGGER.info(f"Total count is {total_count}")
