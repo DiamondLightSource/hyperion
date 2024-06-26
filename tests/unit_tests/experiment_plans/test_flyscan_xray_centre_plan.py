@@ -420,8 +420,8 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        test_fgs_params.set_stub_offsets = True
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        test_fgs_params.features.set_stub_offsets = True
 
         fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
@@ -646,7 +646,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
-        test_fgs_params.FGS_params.set_stub_offsets = False
+        test_fgs_params.features.set_stub_offsets = False
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)

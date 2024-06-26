@@ -93,7 +93,6 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         "x_step_size_um": 0.1,
         "y_step_size_um": 0.1,
         "z_step_size_um": 0.1,
-        "set_stub_offsets": False,
     }
 
     sim_run_engine.add_handler_for_callback_subscribes()

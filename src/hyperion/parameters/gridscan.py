@@ -40,7 +40,6 @@ class GridCommon(
     panda_runup_distance_mm: float = Field(
         default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
     )
-    set_stub_offsets: bool = Field(default=False)
     use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
     use_gpu: bool = Field(default=CONST.I03.USE_GPU_FOR_GRIDSCAN_ANALYSIS)
     ispyb_experiment_type: IspybExperimentType = Field(
@@ -57,6 +56,7 @@ class GridCommon(
             comment=self.comment,
             sample_id=self.sample_id,
             ispyb_experiment_type=self.ispyb_experiment_type,
+            position=None,
         )
 
     @property
@@ -145,7 +145,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             z1_start=self.z_start_um,
             y2_start=self.y2_start_um,
             z2_start=self.z2_start_um,
-            set_stub_offsets=False,
+            set_stub_offsets=self.features.set_stub_offsets,
             dwell_time_ms=self.exposure_time_s * 1000,
             transmission_fraction=self.transmission_frac,
         )
@@ -168,7 +168,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             z1_start=self.z_start_um,
             y2_start=self.y2_start_um,
             z2_start=self.z2_start_um,
-            set_stub_offsets=False,
+            set_stub_offsets=self.features.set_stub_offsets,
             run_up_distance_mm=self.panda_runup_distance_mm,
             transmission_fraction=self.transmission_frac,
         )

@@ -303,8 +303,6 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     params.storage_directory = "./tmp"
     params.file_name = str(uuid.uuid1())
 
-    params.set_stub_offsets = False
-
     # Currently s03 calls anything with z_steps > 1 invalid
     params.z_steps = 1
 
@@ -339,8 +337,6 @@ def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
 
     params.storage_directory = "./tmp"
     params.file_name = str(uuid.uuid1())
-
-    params.set_stub_offsets = False
 
     # Currently s03 calls anything with z_steps > 1 invalid
     params.z_steps = 1

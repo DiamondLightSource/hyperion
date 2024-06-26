@@ -109,6 +109,7 @@ class HyperionConstants:
     TRIGGER = TriggerConstants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()
+    CONFIG_SERVER_URL = "https://daq-config.diamond.ac.uk/api"
     GRAYLOG_PORT = 12232
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"
