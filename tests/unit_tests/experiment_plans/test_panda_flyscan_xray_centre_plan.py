@@ -386,7 +386,7 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        test_panda_fgs_params._set_stub_offsets = True
+        test_panda_fgs_params.features.set_stub_offsets = True
 
         fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
@@ -454,9 +454,7 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[
-            1
-        ].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
@@ -499,9 +497,7 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[
-            1
-        ].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
@@ -628,7 +624,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
-        test_panda_fgs_params._set_stub_offsets = False
+        test_panda_fgs_params.features.set_stub_offsets = False
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
         RE.subscribe(ispyb_cb)
