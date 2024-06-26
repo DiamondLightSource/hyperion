@@ -42,8 +42,8 @@
  rotation axis = "OMEGA"
 
  Sweep-1    :
-   from image      1 : Omega=    0.000 ..    0.100  Kappa=    0.000 ..    0.000  Chi=   23.850 ..   23.850  Phi=    0.000 ..    0.000  2-Theta=    0.000 ..    0.000
-   to   image   3600 : Omega=  359.900 ..  360.000  Kappa=    0.000 ..    0.000  Chi=   23.850 ..   23.850  Phi=    0.000 ..    0.000  2-Theta=    0.000 ..    0.000
+   from image      1 : Omega=    0.000 ..    0.100  Kappa=    0.000 ..    0.000  Chi=   23.850 ..   23.850  Phi=    0.470 ..    0.470  2-Theta=    0.000 ..    0.000
+   to   image   3600 : Omega=  359.900 ..  360.000  Kappa=    0.000 ..    0.000  Chi=   23.850 ..   23.850  Phi=    0.470 ..    0.470  2-Theta=    0.000 ..    0.000
      Image number 1/3600
 
 

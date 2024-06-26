@@ -737,7 +737,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
         )
-        fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
+        set_mock_value(fake_fgs_composite.xbpm_feedback.pos_stable, True)
 
         with (
             patch(
