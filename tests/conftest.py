@@ -31,7 +31,8 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -556,6 +557,7 @@ def fake_create_rotation_devices(
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
     robot: BartRobot,
+    oav: OAV,
     done_status,
 ):
     mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
@@ -565,6 +567,8 @@ def fake_create_rotation_devices(
     smargon.omega.set = mock_omega_sets
 
     smargon.omega.max_velocity.sim_put(131)  # type: ignore
+    oav.zoom_controller.onst.sim_put("1.0x")  # type: ignore
+    oav.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -580,6 +584,7 @@ def fake_create_rotation_devices(
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
         robot=robot,
+        oav=oav,
     )
 
 
@@ -589,6 +594,11 @@ def zocalo(done_status):
     zoc.stage = MagicMock(return_value=done_status)
     zoc.unstage = MagicMock(return_value=done_status)
     return zoc
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
 
 
 async def async_status_done():
