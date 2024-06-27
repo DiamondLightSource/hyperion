@@ -193,8 +193,7 @@ def run_gridscan_and_move(
         ]
     )
 
-    yield from feature_controlled.extra_setup(fgs_composite, parameters, initial_xyz)
-    yield from feature_controlled.zebra_setup(fgs_composite.zebra, wait=True)
+    yield from feature_controlled.setup_trigger(fgs_composite, parameters, initial_xyz)
 
     LOGGER.info("Starting grid scan")
     yield from bps.stage(
@@ -418,19 +417,10 @@ class _FeatureControlled:
             initial_xyz: np.ndarray,
         ) -> MsgGenerator: ...
 
-    extra_setup: _ExtraSetup
+    setup_trigger: _ExtraSetup
     tidy_plan: Callable[[FlyScanXRayCentreComposite], MsgGenerator]
-    zebra_setup: _ZebraSetup
     set_flyscan_params: Callable[[], MsgGenerator]
     fgs_motors: FastGridScanCommon
-
-    @staticmethod
-    def blank_extra_setup(
-        fgs_composite: FlyScanXRayCentreComposite,
-        parameters: ThreeDGridScan,
-        initial_xyz: np.ndarray,
-    ):
-        yield from bps.null()
 
 
 def _get_feature_controlled(
@@ -439,9 +429,8 @@ def _get_feature_controlled(
 ):
     if parameters.features.use_panda_for_gridscan:
         return _FeatureControlled(
-            extra_setup=_extra_panda_setup,
+            setup_trigger=_panda_triggering_setup,
             tidy_plan=_panda_tidy,
-            zebra_setup=setup_zebra_for_panda_flyscan,
             set_flyscan_params=partial(
                 set_flyscan_params,
                 fgs_composite.panda_fast_grid_scan,
@@ -451,9 +440,8 @@ def _get_feature_controlled(
         )
     else:
         return _FeatureControlled(
-            extra_setup=_FeatureControlled.blank_extra_setup,
+            setup_trigger=_zebra_triggering_setup,
             tidy_plan=_zebra_tidy,
-            zebra_setup=setup_zebra_for_gridscan,
             set_flyscan_params=partial(
                 set_flyscan_params,
                 fgs_composite.zebra_fast_grid_scan,
@@ -486,7 +474,15 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
     yield from bps.wait(group, timeout=10)
 
 
-def _extra_panda_setup(
+def _zebra_triggering_setup(
+    fgs_composite: FlyScanXRayCentreComposite,
+    parameters: ThreeDGridScan,
+    initial_xyz: np.ndarray,
+):
+    yield from setup_zebra_for_gridscan(fgs_composite.zebra, wait=True)
+
+
+def _panda_triggering_setup(
     fgs_composite: FlyScanXRayCentreComposite,
     parameters: ThreeDGridScan,
     initial_xyz: np.ndarray,
