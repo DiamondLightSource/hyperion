@@ -32,17 +32,14 @@ from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
+    FlyScanXRayCentreComposite as FlyScanXRayCentreComposite,
+)
+from hyperion.experiment_plans.flyscan_xray_centre_plan import (
     flyscan_xray_centre,
 )
 from hyperion.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     grid_detection_plan,
-)
-from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
-    FlyScanXRayCentreComposite as FlyScanXRayCentreComposite,
-)
-from hyperion.experiment_plans.panda_flyscan_xray_centre_plan import (
-    panda_flyscan_xray_centre,
 )
 from hyperion.external_interaction.callbacks.grid_detection_callback import (
     GridDetectionCallback,
@@ -51,7 +48,6 @@ from hyperion.external_interaction.callbacks.grid_detection_callback import (
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.log import LOGGER
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.utils.aperturescatterguard import (
@@ -161,40 +157,30 @@ def _detect_grid_and_do_gridscan(
         composite.aperture_scatterguard, parameters.selected_aperture
     )
 
-    flyscan_composite = FlyScanXRayCentreComposite(
-        aperture_scatterguard=composite.aperture_scatterguard,
-        attenuator=composite.attenuator,
-        backlight=composite.backlight,
-        eiger=composite.eiger,
-        panda_fast_grid_scan=composite.panda_fast_grid_scan,
-        flux=composite.flux,
-        s4_slit_gaps=composite.s4_slit_gaps,
-        smargon=composite.smargon,
-        undulator=composite.undulator,
-        synchrotron=composite.synchrotron,
-        xbpm_feedback=composite.xbpm_feedback,
-        zebra=composite.zebra,
-        zocalo=composite.zocalo,
-        panda=composite.panda,
-        zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
-        dcm=composite.dcm,
-        robot=composite.robot,
+    yield from flyscan_xray_centre(
+        FlyScanXRayCentreComposite(
+            aperture_scatterguard=composite.aperture_scatterguard,
+            attenuator=composite.attenuator,
+            backlight=composite.backlight,
+            eiger=composite.eiger,
+            panda_fast_grid_scan=composite.panda_fast_grid_scan,
+            flux=composite.flux,
+            s4_slit_gaps=composite.s4_slit_gaps,
+            smargon=composite.smargon,
+            undulator=composite.undulator,
+            synchrotron=composite.synchrotron,
+            xbpm_feedback=composite.xbpm_feedback,
+            zebra=composite.zebra,
+            zocalo=composite.zocalo,
+            panda=composite.panda,
+            zebra_fast_grid_scan=composite.zebra_fast_grid_scan,
+            dcm=composite.dcm,
+            robot=composite.robot,
+        ),
+        create_parameters_for_flyscan_xray_centre(
+            parameters, grid_params_callback.get_grid_parameters()
+        ),
     )
-
-    flyscan_xray_centre_parameters = create_parameters_for_flyscan_xray_centre(
-        parameters, grid_params_callback.get_grid_parameters()
-    )
-
-    if FeatureFlags.best_effort().use_panda_for_gridscan:
-        yield from panda_flyscan_xray_centre(
-            flyscan_composite,
-            flyscan_xray_centre_parameters,
-        )
-    else:
-        yield from flyscan_xray_centre(
-            flyscan_composite,
-            flyscan_xray_centre_parameters,
-        )
 
 
 def grid_detect_then_xray_centre(
