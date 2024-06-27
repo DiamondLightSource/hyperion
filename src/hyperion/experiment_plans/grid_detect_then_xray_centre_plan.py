@@ -4,8 +4,10 @@ import dataclasses
 from pathlib import Path
 
 from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.utils import BlueapiBaseModel
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
+from dodal.common.coordination import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight, BacklightPosition
@@ -58,29 +60,29 @@ from hyperion.utils.context import device_composite_from_context
 
 
 @dataclasses.dataclass
-class GridDetectThenXRayCentreComposite:
+class GridDetectThenXRayCentreComposite(BlueapiBaseModel):
     """All devices which are directly or indirectly required by this plan"""
 
-    aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
-    backlight: Backlight
-    dcm: DCM
-    detector_motion: DetectorMotion
-    eiger: EigerDetector
-    zebra_fast_grid_scan: ZebraFastGridScan
-    flux: Flux
-    oav: OAV
-    pin_tip_detection: PinTipDetection
-    smargon: Smargon
-    synchrotron: Synchrotron
-    s4_slit_gaps: S4SlitGaps
-    undulator: Undulator
-    xbpm_feedback: XBPMFeedback
-    zebra: Zebra
-    zocalo: ZocaloResults
-    panda: HDFPanda
-    panda_fast_grid_scan: PandAFastGridScan
-    robot: BartRobot
+    aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard")
+    attenuator: Attenuator = inject("attenuator")
+    backlight: Backlight = inject("backlight")
+    dcm: DCM = inject("dcm")
+    detector_motion: DetectorMotion = inject("detector_motion")
+    eiger: EigerDetector = inject("eiger")
+    zebra_fast_grid_scan: ZebraFastGridScan = inject("zebra_fast_grid_scan")
+    flux: Flux = inject("flux")
+    oav: OAV = inject("oav")
+    pin_tip_detection: PinTipDetection = inject("pin_tip_detection")
+    smargon: Smargon = inject("smargon")
+    synchrotron: Synchrotron = inject("synchrotron")
+    s4_slit_gaps: S4SlitGaps = inject("s4_slit_gaps")
+    undulator: Undulator = inject("undulator")
+    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback")
+    zebra: Zebra = inject("zebra")
+    zocalo: ZocaloResults = inject("zocalo")
+    panda: HDFPanda = inject("panda")
+    panda_fast_grid_scan: PandAFastGridScan = inject("panda_fast_grid_scan")
+    robot: BartRobot = inject("robot")
 
     def __post_init__(self):
         """Ensure that aperture positions are loaded whenever this class is created."""

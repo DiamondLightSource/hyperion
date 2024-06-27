@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Tuple
 import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import BlueskyContext
+from blueapi.utils import BlueapiBaseModel
+from dodal.common.coordination import inject
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -27,13 +29,13 @@ if TYPE_CHECKING:
 
 
 @dataclasses.dataclass
-class OavGridDetectionComposite:
+class OavGridDetectionComposite(BlueapiBaseModel):
     """All devices which are directly or indirectly required by this plan"""
 
-    backlight: Backlight
-    oav: OAV
-    smargon: Smargon
-    pin_tip_detection: PinTipDetection
+    backlight: Backlight = inject("backlight")
+    oav: OAV = inject("oav")
+    smargon: Smargon = inject("smargon")
+    pin_tip_detection: PinTipDetection = inject("pin_tip_detection")
 
 
 def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:

@@ -11,6 +11,8 @@ import bluesky.preprocessors as bpp
 import numpy as np
 from attr import dataclass
 from blueapi.core import BlueskyContext, MsgGenerator
+from blueapi.utils import BlueapiBaseModel
+from dodal.common.coordination import inject
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     SingleAperturePosition,
@@ -83,26 +85,26 @@ class SmargonSpeedException(Exception):
 
 
 @dataclasses.dataclass
-class FlyScanXRayCentreComposite:
+class FlyScanXRayCentreComposite(BlueapiBaseModel):
     """All devices which are directly or indirectly required by this plan"""
 
-    aperture_scatterguard: ApertureScatterguard
-    attenuator: Attenuator
-    backlight: Backlight
-    dcm: DCM
-    eiger: EigerDetector
-    zebra_fast_grid_scan: ZebraFastGridScan
-    flux: Flux
-    s4_slit_gaps: S4SlitGaps
-    smargon: Smargon
-    undulator: Undulator
-    synchrotron: Synchrotron
-    xbpm_feedback: XBPMFeedback
-    zebra: Zebra
-    zocalo: ZocaloResults
-    panda: HDFPanda
-    panda_fast_grid_scan: PandAFastGridScan
-    robot: BartRobot
+    aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard")
+    attenuator: Attenuator = inject("attenuator")
+    backlight: Backlight = inject("backlight")
+    dcm: DCM = inject("dcm")
+    eiger: EigerDetector = inject("eiger")
+    zebra_fast_grid_scan: ZebraFastGridScan = inject("zebra_fast_grid_scan")
+    flux: Flux = inject("flux")
+    s4_slit_gaps: S4SlitGaps = inject("s4_slit_gaps")
+    smargon: Smargon = inject("smargon")
+    undulator: Undulator = inject("undulator")
+    synchrotron: Synchrotron = inject("synchrotron")
+    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback")
+    zebra: Zebra = inject("zebra")
+    zocalo: ZocaloResults = inject("zocalo")
+    panda: HDFPanda = inject("panda")
+    panda_fast_grid_scan: PandAFastGridScan = inject("panda_fast_grid_scan")
+    robot: BartRobot = inject("robot")
 
     @property
     def sample_motors(self) -> Smargon:
