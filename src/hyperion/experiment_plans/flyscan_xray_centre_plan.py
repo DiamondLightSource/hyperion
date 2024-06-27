@@ -78,8 +78,6 @@ from hyperion.utils.aperturescatterguard import (
 )
 from hyperion.utils.context import device_composite_from_context
 
-PandaOrZebraGridscan = ZebraFastGridScan | PandAFastGridScan
-
 PANDA_SETUP_PATH = (
     "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_pcap_ignore_seq.yaml"
 )

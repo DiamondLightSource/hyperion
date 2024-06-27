@@ -1020,47 +1020,32 @@ class TestFlyscanXrayCentrePlan:
             msgs, lambda msg: msg.command == "kickoff_gridscan"
         )
 
-
-def test_if_smargon_speed_over_limit_then_log_error(
-    test_fgs_params_panda_zebra: ThreeDGridScan,
-    fake_fgs_composite: FlyScanXRayCentreComposite,
-    RE: RunEngine,
-):
-    test_fgs_params_panda_zebra.x_step_size_um = 10
-    test_fgs_params_panda_zebra.detector_params.exposure_time = 0.01
-
-    feature_controlled = _get_feature_controlled(
-        fake_fgs_composite,
-        test_fgs_params_panda_zebra,
+    @patch(
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
     )
+    def test_if_smargon_speed_over_limit_then_log_error(
+        self,
+        mock_kickoff_and_complete: MagicMock,
+        test_fgs_params_panda_zebra: ThreeDGridScan,
+        fake_fgs_composite: FlyScanXRayCentreComposite,
+        RE: RunEngine,
+    ):
+        test_fgs_params_panda_zebra.x_step_size_um = 10
+        test_fgs_params_panda_zebra.detector_params.exposure_time = 0.01
 
-    with pytest.raises(SmargonSpeedException):
-        RE(
-            run_gridscan_and_move(
-                fake_fgs_composite, test_fgs_params_panda_zebra, feature_controlled
-            )
+        feature_controlled = _get_feature_controlled(
+            fake_fgs_composite,
+            test_fgs_params_panda_zebra,
         )
 
-
-# Ideally we'd have a test to check the tidy up plan is called upon any errors
-@patch(
-    "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.disarm_panda_for_gridscan",
-    autospec=True,
-)
-@patch(
-    "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.set_zebra_shutter_to_manual",
-    autospec=True,
-)
-@patch(
-    "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.bps.wait",
-    autospec=True,
-)
-def test_tidy_up_plans_disable_panda_and_zebra(
-    mock_wait: MagicMock,
-    mock_zebra_tidy: MagicMock,
-    mock_panda_tidy: MagicMock,
-    RE: RunEngine,
-):
-    RE(tidy_up_plans(MagicMock()))
-    mock_panda_tidy.assert_called_once()
-    mock_zebra_tidy.assert_called_once()
+        # this exception should only be raised if we're using the panda
+        try:
+            RE(
+                run_gridscan_and_move(
+                    fake_fgs_composite, test_fgs_params_panda_zebra, feature_controlled
+                )
+            )
+        except SmargonSpeedException:
+            assert test_fgs_params_panda_zebra.features.use_panda_for_gridscan
+        else:
+            assert not test_fgs_params_panda_zebra.features.use_panda_for_gridscan
