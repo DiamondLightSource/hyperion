@@ -17,6 +17,7 @@ from pydantic import BaseModel, Extra, Field, root_validator, validator
 from scanspec.core import AxesPoints
 from semver import Version
 
+from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     IspybParams,
 )
@@ -116,15 +117,16 @@ class HyperionParameters(BaseModel):
     def __hash__(self) -> int:
         return self.json().__hash__()
 
+    features: FeatureFlags = Field(default=FeatureFlags())
     parameter_model_version: ParameterVersion
 
     @validator("parameter_model_version")
     def _validate_version(cls, version: ParameterVersion):
-        assert version >= ParameterVersion(
-            major=PARAMETER_VERSION.major
+        assert (
+            version >= ParameterVersion(major=PARAMETER_VERSION.major)
         ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
-        assert version <= ParameterVersion(
-            major=PARAMETER_VERSION.major + 1
+        assert (
+            version <= ParameterVersion(major=PARAMETER_VERSION.major + 1)
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
@@ -138,7 +140,12 @@ class HyperionParameters(BaseModel):
         return params
 
 
-class DiffractionExperiment(HyperionParameters):
+class WithSnapshot(BaseModel):
+    snapshot_directory: Path
+    snapshot_omegas_deg: list[float] | None
+
+
+class DiffractionExperiment(HyperionParameters, WithSnapshot):
     """For all experiments which use beam"""
 
     visit: str = Field(min_length=1)
@@ -153,7 +160,6 @@ class DiffractionExperiment(HyperionParameters):
         default=CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
     )
     zocalo_environment: str = Field(default=CONST.ZOCALO_ENV)
-    detector: str = Field(default=CONST.I03.DETECTOR)
     trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     detector_distance_mm: float | None = Field(default=None, gt=0)
     demand_energy_ev: float | None = Field(default=None, gt=0)
@@ -161,7 +167,6 @@ class DiffractionExperiment(HyperionParameters):
     selected_aperture: AperturePositionGDANames | None = Field(default=None)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
-    snapshot_directory: Path
 
     @root_validator(pre=True)
     def validate_snapshot_directory(cls, values):
@@ -261,5 +266,3 @@ class TemporaryIspybExtras(BaseModel):
         extra = Extra.forbid
 
     xtal_snapshots_omega_start: list[str] | None = None
-    xtal_snapshots_omega_end: list[str] | None = None
-    xtal_snapshots: list[str] | None = None

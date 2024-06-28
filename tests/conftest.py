@@ -36,6 +36,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
 from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
@@ -332,7 +333,7 @@ def synchrotron():
     RunEngine()  # A RE is needed to start the bluesky loop
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
-    set_mock_value(synchrotron.topup_start_countdown, 10)
+    set_mock_value(synchrotron.top_up_start_countdown, 10)
     return synchrotron
 
 
@@ -454,6 +455,11 @@ def webcam(RE) -> Generator[Webcam, Any, Any]:
     webcam = i03.webcam(fake_with_ophyd_sim=True)
     with patch.object(webcam, "_write_image"):
         yield webcam
+
+
+@pytest.fixture
+def thawer(RE) -> Generator[Thawer, Any, Any]:
+    yield i03.thawer(fake_with_ophyd_sim=True)
 
 
 @pytest.fixture

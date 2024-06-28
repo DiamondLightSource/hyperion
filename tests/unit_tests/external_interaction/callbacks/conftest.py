@@ -126,7 +126,12 @@ class TestData:
     test_descriptor_document_oav_snapshot: EventDescriptor = {
         "uid": "b5ba4aec-de49-4970-81a4-b4a847391d34",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.DESCRIPTORS.OAV_SNAPSHOT_TRIGGERED,
+        "name": CONST.DESCRIPTORS.OAV_GRID_SNAPSHOT_TRIGGERED,
+    }  # type: ignore
+    test_descriptor_document_oav_rotation_snapshot: EventDescriptor = {
+        "uid": "c7d698ce-6d49-4c56-967e-7d081f964573",
+        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
+        "name": CONST.DESCRIPTORS.OAV_ROTATION_SNAPSHOT_TRIGGERED,
     }  # type: ignore
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
@@ -148,6 +153,14 @@ class TestData:
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": CONST.DESCRIPTORS.NEXUS_READ,
     }  # type: ignore
+    test_event_document_oav_rotation_snapshot: Event = {
+        "descriptor": "c7d698ce-6d49-4c56-967e-7d081f964573",
+        "time": 1666604299.828203,
+        "timestamps": {},
+        "seq_num": 1,
+        "uid": "32d7c25c-c310-4292-ac78-36ce6509be3d",
+        "data": {"oav_snapshot_last_saved_path": "snapshot_0"},
+    }
     test_event_document_oav_snapshot_xy: Event = {
         "descriptor": "b5ba4aec-de49-4970-81a4-b4a847391d34",
         "time": 1666604299.828203,
@@ -165,6 +178,7 @@ class TestData:
             "oav_grid_snapshot_last_path_full_overlay": "test_1_y",
             "oav_grid_snapshot_last_path_outer": "test_2_y",
             "oav_grid_snapshot_last_saved_path": "test_3_y",
+            "smargon_omega": 0,
         },
     }
     test_event_document_oav_snapshot_xz: Event = {
@@ -184,6 +198,7 @@ class TestData:
             "oav_grid_snapshot_last_saved_path": "test_3_z",
             "oav_grid_snapshot_microns_per_pixel_x": 1.25,
             "oav_grid_snapshot_microns_per_pixel_y": 1.5,
+            "smargon_omega": -90,
         },
     }
     test_event_document_pre_data_collection: Event = {

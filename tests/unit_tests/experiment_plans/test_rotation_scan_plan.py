@@ -8,7 +8,6 @@ from unittest.mock import DEFAULT, MagicMock, call, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
 from ophyd.status import Status
@@ -294,7 +293,7 @@ def test_rotation_plan_reads_hardware(
     )
     sim_run_engine.add_handler(
         "read",
-        "synchrotron-topup_start_countdown",
+        "synchrotron-top_up_start_countdown",
         lambda msg: {"values": {"value": -1}},
     )
     fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)  # type: ignore

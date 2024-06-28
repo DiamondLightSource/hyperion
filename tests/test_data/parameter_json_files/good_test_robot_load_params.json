@@ -17,7 +17,5 @@
     "sample_id": 12345,
     "sample_puck": 40,
     "sample_pin": 3,
-    "comment": "Descriptive comment.",
-    "ispyb_extras": {
-    }
+    "comment": "Descriptive comment."
 }

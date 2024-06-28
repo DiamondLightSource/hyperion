@@ -33,6 +33,7 @@ class NexusWriter:
         run_number: int | None = None,
         omega_start_deg: float = 0,
         chi_start_deg: float = 0,
+        phi_start_deg: float = 0,
         vds_start_index: int = 0,
     ) -> None:
         self.beam: Optional[Beam] = None
@@ -56,7 +57,10 @@ class NexusWriter:
             self.directory / f"{self.filename}_{self.run_number}_master.h5"
         )
         self.goniometer: Goniometer = create_goniometer_axes(
-            omega_start_deg, self.scan_points, chi=chi_start_deg
+            omega_start_deg,
+            self.scan_points,
+            chi=chi_start_deg,
+            phi=phi_start_deg,
         )
 
     def create_nexus_file(self, bit_depth: DTypeLike):

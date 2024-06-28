@@ -1,16 +1,17 @@
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from ophyd.status import Status
+from ophyd_async.core import set_mock_value
 
 from hyperion.experiment_plans import optimise_attenuation_plan
 from hyperion.experiment_plans.optimise_attenuation_plan import (
     AttenuationOptimisationFailedException,
     Direction,
     OptimizeAttenuationComposite,
-    arm_devices,
     calculate_new_direction,
     check_parameters,
     deadtime_calc_new_transmission,
@@ -57,8 +58,8 @@ def get_good_status():
 @pytest.fixture
 def fake_composite_mocked_sets(fake_composite: OptimizeAttenuationComposite):
     with patch.object(
-        fake_composite.xspress3mini.do_arm,
-        "set",
+        fake_composite.xspress3mini,
+        "stage",
         MagicMock(return_value=get_good_status()),
     ), patch.object(
         fake_composite.sample_shutter,
@@ -93,8 +94,9 @@ def test_is_deadtime_is_optimised_logs_warning_when_upper_transmission_limit_is_
 def test_total_counts_calc_new_transmission_raises_warning_on_high_transmission(
     RE: RunEngine, mock_emit, fake_composite_mocked_sets: OptimizeAttenuationComposite
 ):
-    fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca.sim_put(  # type: ignore
-        [1, 1, 1, 1, 1, 1]
+    set_mock_value(
+        fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca[1],
+        np.array([1, 1, 1, 1, 1, 1]),
     )
     RE(
         total_counts_optimisation(
@@ -140,8 +142,8 @@ def test_deadtime_optimisation_calculates_deadtime_correctly(
     RE: RunEngine,
     fake_composite: OptimizeAttenuationComposite,
 ):
-    fake_composite.xspress3mini.channel_1.total_time.sim_put(100)  # type: ignore
-    fake_composite.xspress3mini.channel_1.reset_ticks.sim_put(101)  # type: ignore
+    set_mock_value(fake_composite.xspress3mini.channels[1].total_time, 100)
+    set_mock_value(fake_composite.xspress3mini.channels[1].reset_ticks, 101)
 
     with patch(
         "hyperion.experiment_plans.optimise_attenuation_plan.is_deadtime_optimised",
@@ -220,8 +222,9 @@ def test_total_count_exception_raised_after_max_cycles_reached(
     RE: RunEngine, fake_composite_mocked_sets: OptimizeAttenuationComposite
 ):
     optimise_attenuation_plan.is_counts_within_target = MagicMock(return_value=False)
-    fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca.sim_put(  # type: ignore
-        [1, 1, 1, 1, 1, 1]
+    set_mock_value(
+        fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca[1],
+        np.array([1, 1, 1, 1, 1, 1]),
     )
     with pytest.raises(AttenuationOptimisationFailedException):
         RE(
@@ -229,15 +232,6 @@ def test_total_count_exception_raised_after_max_cycles_reached(
                 fake_composite_mocked_sets, 1, 0, 10, 0, 5, 2, 1, 0, 0
             )
         )
-
-
-def test_arm_devices_runs_correct_functions(
-    RE: RunEngine, fake_composite: OptimizeAttenuationComposite
-):
-    fake_composite.xspress3mini.detector_state.sim_put("Acquire")  # type: ignore
-    fake_composite.xspress3mini.arm = MagicMock(return_value=get_good_status())
-    RE(arm_devices(fake_composite.xspress3mini))
-    fake_composite.xspress3mini.arm.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -267,8 +261,9 @@ def test_deadtime_calc_new_transmission_raises_error_on_low_ransmission():
 def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
     RE: RunEngine, fake_composite_mocked_sets: OptimizeAttenuationComposite
 ):
-    fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca.sim_put(  # type: ignore
-        [1, 1, 1, 1, 1, 1]
+    set_mock_value(
+        fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca[1],
+        np.array([1, 1, 1, 1, 1, 1]),
     )
     with pytest.raises(AttenuationOptimisationFailedException):
         RE(
@@ -287,9 +282,7 @@ def test_total_count_calc_new_transmission_raises_error_on_low_ransmission(
         )
 
 
-@patch("hyperion.experiment_plans.optimise_attenuation_plan.arm_devices", autospec=True)
 def test_total_counts_gets_within_target(
-    mock_arm_devices,
     RE: RunEngine,
     fake_composite_mocked_sets: OptimizeAttenuationComposite,
 ):
@@ -297,8 +290,9 @@ def test_total_counts_gets_within_target(
     def update_data(_):
         nonlocal iteration
         iteration += 1
-        fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca.sim_put(  # type: ignore
-            ([50, 50, 50, 50, 50]) * iteration
+        set_mock_value(
+            fake_composite_mocked_sets.xspress3mini.dt_corrected_latest_mca[1],
+            np.array(([50, 50, 50, 50, 50]) * iteration),
         )
         return get_good_status()
 

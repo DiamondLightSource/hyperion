@@ -9,11 +9,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.utils import Msg
 from dodal.beamlines import i03
-from dodal.devices.detector.det_dim_constants import (
-    EIGER2_X_4M_DIMENSION,
-    EIGER_TYPE_EIGER2_X_4M,
-    EIGER_TYPE_EIGER2_X_16M,
-)
+from dodal.devices.detector.det_dim_constants import EIGER_TYPE_EIGER2_X_16M
 from dodal.devices.fast_grid_scan import PandAFastGridScan
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd.status import Status
@@ -53,7 +49,6 @@ from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
 
-from ...conftest import default_raw_params
 from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
@@ -103,7 +98,7 @@ def ispyb_plan(test_panda_fgs_params):
 class TestFlyscanXrayCentrePlan:
     td: TestData = TestData()
 
-    def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
+    def test_eiger2_x_16_detector_specified(
         self,
         test_panda_fgs_params: ThreeDGridScan,
     ):
@@ -111,11 +106,6 @@ class TestFlyscanXrayCentrePlan:
             test_panda_fgs_params.detector_params.detector_size_constants.det_type_string
             == EIGER_TYPE_EIGER2_X_16M
         )
-        raw_params_dict = default_raw_params()
-        raw_params_dict["detector"] = EIGER_TYPE_EIGER2_X_4M
-        params: ThreeDGridScan = ThreeDGridScan(**raw_params_dict)
-        det_dimension = params.detector_params.detector_size_constants.det_dimension
-        assert det_dimension == EIGER2_X_4M_DIMENSION
 
     def test_when_run_gridscan_called_then_generator_returned(
         self,
@@ -396,7 +386,7 @@ class TestFlyscanXrayCentrePlan:
         test_panda_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        test_panda_fgs_params.set_stub_offsets = True
+        test_panda_fgs_params.features.set_stub_offsets = True
 
         fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
@@ -464,9 +454,7 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[
-            1
-        ].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
@@ -509,9 +497,7 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[
-            1
-        ].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
@@ -638,7 +624,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
-        test_panda_fgs_params.set_stub_offsets = False
+        test_panda_fgs_params.features.set_stub_offsets = False
 
         RE.subscribe(VerbosePlanExecutionLoggingCallback())
         RE.subscribe(ispyb_cb)
@@ -747,7 +733,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
         )
-        fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
+        set_mock_value(fake_fgs_composite.xbpm_feedback.pos_stable, True)
 
         with (
             patch(

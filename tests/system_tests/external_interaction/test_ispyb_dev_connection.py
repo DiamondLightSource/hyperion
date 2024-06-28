@@ -15,7 +15,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.undulator import Undulator
-from ophyd.status import Status
+from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
 from hyperion.experiment_plans import oav_grid_detection_plan
@@ -248,7 +248,7 @@ def grid_detect_then_xray_centre_composite(
     ophyd_pin_tip_detection,
 ):
     composite = GridDetectThenXRayCentreComposite(
-        fast_grid_scan=fast_grid_scan,
+        zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
         panda_fast_grid_scan=None,  # type: ignore
@@ -330,14 +330,7 @@ def grid_detect_then_xray_centre_composite(
     def mock_set_file_name(val, timeout):
         eiger.odin.meta.file_name.sim_put(val)  # type: ignore
         eiger.odin.file_writer.id.sim_put(val)  # type: ignore
-        return Status(success=True, done=True)
-
-    unpatched_complete = fast_grid_scan.complete
-
-    def mock_complete_status():
-        status = unpatched_complete()
-        status.set_finished()
-        return status
+        return NullStatus()
 
     with (
         patch.object(eiger.odin.nodes, "get_init_state", return_value=True),
@@ -363,11 +356,9 @@ def grid_detect_then_xray_centre_composite(
             "set",
             side_effect=mock_set_file_name,
         ),
-        patch.object(
-            fast_grid_scan, "kickoff", return_value=Status(success=True, done=True)
-        ),
-        patch.object(fast_grid_scan, "complete", side_effect=mock_complete_status),
-        patch.object(zocalo, "trigger", return_value=Status(success=True, done=True)),
+        patch.object(fast_grid_scan, "kickoff", return_value=NullStatus()),
+        patch.object(fast_grid_scan, "complete", return_value=NullStatus()),
+        patch.object(zocalo, "trigger", return_value=NullStatus()),
     ):
         yield composite
 
@@ -776,17 +767,15 @@ def test_ispyb_deposition_in_rotation_plan(
     energy_ev = convert_angstrom_to_eV(test_wl)
     set_mock_value(
         fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
-        energy_ev / 1000,  # pyright: ignore
+        energy_ev / 1000,
     )
-    set_mock_value(
-        fake_create_rotation_devices.undulator.current_gap, 1.12
-    )  # pyright: ignore
+    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         test_synchrotron_mode,
     )
     set_mock_value(
-        fake_create_rotation_devices.synchrotron.topup_start_countdown,  # pyright: ignore
+        fake_create_rotation_devices.synchrotron.top_up_start_countdown,
         -1,
     )
     fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback.sim_put(  # pyright: ignore
@@ -827,7 +816,9 @@ def test_ispyb_deposition_in_rotation_plan(
 
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
-    assert fetch_comment(dcid) == "Hyperion rotation scan"
+    assert (
+        fetch_comment(dcid) == "Sample position: (1.0, 2.0, 3.0) test Aperture: Small"
+    )
 
     EXPECTED_VALUES = {
         "wavelength": test_wl,
@@ -838,6 +829,10 @@ def test_ispyb_deposition_in_rotation_plan(
         "synchrotronMode": test_synchrotron_mode.value,
         "slitGapHorizontal": test_slit_gap_horiz,
         "slitGapVertical": test_slit_gap_vert,
+        "xtalSnapshotFullPath1": "/tmp/snapshot1.png",
+        "xtalSnapshotFullPath2": "/tmp/snapshot2.png",
+        "xtalSnapshotFullPath3": "/tmp/snapshot3.png",
+        "xtalSnapshotFullPath4": "/tmp/snapshot4.png",
     }
 
     compare_actual_and_expected(dcid, EXPECTED_VALUES, fetch_datacollection_attribute)

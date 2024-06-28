@@ -240,7 +240,7 @@ def run_gridscan_and_move(
     with TRACER.start_span("move_to_result"):
         yield from move_x_y_z(fgs_composite.sample_motors, *xray_centre, wait=True)
 
-    if parameters.set_stub_offsets:
+    if parameters.panda_FGS_params.set_stub_offsets:
         LOGGER.info("Recentring smargon co-ordinate system to this point.")
         yield from bps.mv(
             fgs_composite.sample_motors.stub_offsets, StubPosition.CURRENT_AS_CENTER
@@ -272,8 +272,8 @@ def panda_flyscan_xray_centre(
     """
 
     composite.eiger.set_detector_parameters(parameters.detector_params)
-
     composite.zocalo.zocalo_environment = parameters.zocalo_environment
+    parameters.features.update_self_from_server()
 
     @bpp.set_run_key_decorator(CONST.PLAN.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document

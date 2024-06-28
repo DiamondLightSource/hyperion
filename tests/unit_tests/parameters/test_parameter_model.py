@@ -9,6 +9,9 @@ from hyperion.parameters.gridscan import (
     RobotLoadThenCentre,
     ThreeDGridScan,
 )
+from hyperion.parameters.rotation import RotationScan
+
+from ...conftest import raw_params_from_file
 
 
 @pytest.fixture
@@ -27,7 +30,6 @@ def minimal_3d_gridscan_params():
         "y_steps": 7,
         "z_steps": 9,
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
-        "ispyb_extras": {},
     }
 
 
@@ -77,7 +79,6 @@ def test_robot_load_then_centre_params():
         "visit": "cm12345",
         "file_name": "file_name",
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
-        "ispyb_extras": {},
     }
     params["detector_distance_mm"] = 200
     test_params = RobotLoadThenCentre(**params)
@@ -98,3 +99,14 @@ def test_default_snapshot_path(minimal_3d_gridscan_params):
     assert gridscan_params_with_snapshot_path.snapshot_directory == Path(
         "/tmp/my_snapshots"
     )
+
+
+def test_osc_is_used():
+    raw_params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+    )
+    for osc in [0.001, 0.05, 0.1, 0.2, 0.75, 1, 1.43]:
+        raw_params["rotation_increment_deg"] = osc
+        params = RotationScan(**raw_params)
+        assert params.rotation_increment_deg == osc
+        assert params.num_images == int(params.scan_width_deg / osc)

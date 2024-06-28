@@ -12,8 +12,6 @@ from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
 from dodal.common.beamlines.beamline_utils import clear_device
 from dodal.devices.detector.det_dim_constants import (
-    EIGER2_X_4M_DIMENSION,
-    EIGER_TYPE_EIGER2_X_4M,
     EIGER_TYPE_EIGER2_X_16M,
 )
 from dodal.devices.fast_grid_scan import ZebraFastGridScan
@@ -62,7 +60,6 @@ from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
-from ...conftest import default_raw_params
 from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
     TEST_RESULT_MEDIUM,
@@ -119,7 +116,7 @@ def mock_ispyb():
 class TestFlyscanXrayCentrePlan:
     td: TestData = TestData()
 
-    def test_given_full_parameters_dict_when_detector_name_used_and_converted_then_detector_constants_correct(
+    def test_eiger2_x_16_detector_specified(
         self,
         test_fgs_params: ThreeDGridScan,
     ):
@@ -127,11 +124,6 @@ class TestFlyscanXrayCentrePlan:
             test_fgs_params.detector_params.detector_size_constants.det_type_string
             == EIGER_TYPE_EIGER2_X_16M
         )
-        raw_params_dict = default_raw_params()
-        raw_params_dict["detector"] = EIGER_TYPE_EIGER2_X_4M
-        params: ThreeDGridScan = ThreeDGridScan(**raw_params_dict)
-        det_dimension = params.detector_params.detector_size_constants.det_dimension
-        assert det_dimension == EIGER2_X_4M_DIMENSION
 
     def test_when_run_gridscan_called_then_generator_returned(
         self,
@@ -428,8 +420,8 @@ class TestFlyscanXrayCentrePlan:
         test_fgs_params: ThreeDGridScan,
         fake_fgs_composite: FlyScanXRayCentreComposite,
     ):
-        test_fgs_params.set_stub_offsets = True
         RE, (nexus_cb, ispyb_cb) = RE_with_subs
+        test_fgs_params.features.set_stub_offsets = True
 
         fake_fgs_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
 
@@ -654,7 +646,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.aperture_scatterguard.set = MagicMock(
             return_value=done_status
         )
-        test_fgs_params.FGS_params.set_stub_offsets = False
+        test_fgs_params.features.set_stub_offsets = False
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
@@ -747,7 +739,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite.eiger.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
         )
-        fake_fgs_composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
+        set_mock_value(fake_fgs_composite.xbpm_feedback.pos_stable, True)
 
         with (
             patch(

@@ -15,6 +15,7 @@ from dodal.common.beamlines.beamline_parameters import (
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.smargon import Smargon
 from ophyd.status import Status
+from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_for_ispyb_during_collection,
@@ -118,8 +119,8 @@ async def fxc_composite():
     composite.eiger.stage = MagicMock(return_value=Status(done=True, success=True))
     composite.eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
 
-    composite.xbpm_feedback.pos_ok.sim_put(1)  # type: ignore
-    composite.xbpm_feedback.pos_stable.sim_put(1)  # type: ignore
+    set_mock_value(composite.xbpm_feedback.pos_ok, True)
+    set_mock_value(composite.xbpm_feedback.pos_stable, True)
 
     return composite
 
@@ -302,8 +303,6 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     params.storage_directory = "./tmp"
     params.file_name = str(uuid.uuid1())
 
-    params.set_stub_offsets = False
-
     # Currently s03 calls anything with z_steps > 1 invalid
     params.z_steps = 1
 
@@ -338,8 +337,6 @@ def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
 
     params.storage_directory = "./tmp"
     params.file_name = str(uuid.uuid1())
-
-    params.set_stub_offsets = False
 
     # Currently s03 calls anything with z_steps > 1 invalid
     params.z_steps = 1

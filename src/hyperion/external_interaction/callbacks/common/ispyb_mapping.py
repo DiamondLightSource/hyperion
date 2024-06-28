@@ -18,7 +18,6 @@ from hyperion.external_interaction.ispyb.ispyb_utils import (
     VISIT_PATH_REGEX,
     get_current_time_string,
 )
-from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.components import DiffractionExperimentWithSample
 
 
@@ -41,7 +40,6 @@ def populate_remaining_data_collection_info(
     data_collection_info.parent_id = data_collection_group_id
     data_collection_info.sample_id = params.sample_id
     data_collection_info.detector_id = I03_EIGER_DETECTOR
-    data_collection_info.axis_start = data_collection_info.omega_start
     data_collection_info.comments = comment
     data_collection_info.detector_distance = params.detector_params.detector_distance
     data_collection_info.exp_time = params.detector_params.exposure_time
@@ -87,15 +85,3 @@ def get_visit_string(ispyb_params: IspybParams, detector_params: DetectorParams)
             f"Visit not found from {ispyb_params.visit_path} or {detector_params.directory}"
         )
     return visit_path_match
-
-
-def get_xtal_snapshots(ispyb_params):
-    if ispyb_params.xtal_snapshots_omega_start:
-        xtal_snapshots = ispyb_params.xtal_snapshots_omega_start[:3]
-        ISPYB_LOGGER.info(
-            f"Using rotation scan snapshots {xtal_snapshots} for ISPyB deposition"
-        )
-    else:
-        ISPYB_LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
-        xtal_snapshots = []
-    return xtal_snapshots + [None] * (3 - len(xtal_snapshots))

@@ -29,7 +29,7 @@ from ...conftest import raw_params_from_file
 
 @pytest.fixture
 def robot_load_composite(
-    smargon, dcm, robot, aperture_scatterguard, oav, webcam, lower_gonio
+    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer, lower_gonio
 ) -> RobotLoadThenCentreComposite:
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
@@ -42,6 +42,7 @@ def robot_load_composite(
     composite.oav = oav
     composite.webcam = webcam
     composite.lower_gonio = lower_gonio
+    composite.thawer = thawer
     return composite
 
 
@@ -329,9 +330,9 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
 
     start_load.assert_called_once_with("cm31105", 4, 12345, 40, 3)
     update_barcode_and_snapshots.assert_called_once_with(
-        action_id, "BARCODE", "test_oav_snapshot", "test_webcam_snapshot"
+        action_id, "BARCODE", "test_webcam_snapshot", "test_oav_snapshot"
     )
-    end_load.assert_called_once_with(action_id, "success", "")
+    end_load.assert_called_once_with(action_id, "success", "OK")
 
 
 @patch("hyperion.experiment_plans.robot_load_then_centre_plan.datetime")
@@ -382,6 +383,7 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
             robot_load_then_centre_params_no_energy,
         )
     )
+
     for axis in initial_values.keys():
         messages = sim_run_engine.assert_message_and_return_remaining(
             messages,
@@ -397,3 +399,39 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
             and msg.obj.name == f"lower_gonio-{axis}"
             and msg.args == (initial,),
         )
+
+
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+)
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
+def test_when_plan_run_then_thawing_turned_on_for_expected_time(
+    mock_centring_plan: MagicMock,
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
+    sim_run_engine,
+):
+    robot_load_then_centre_params_no_energy.thawing_time = (thaw_time := 50)
+
+    sim_run_engine.add_handler(
+        "read",
+        "dcm-energy_in_kev",
+        lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+    )
+
+    messages = sim_run_engine.simulate_plan(
+        robot_load_then_centre(
+            robot_load_composite,
+            robot_load_then_centre_params_no_energy,
+        )
+    )
+
+    sim_run_engine.assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "thawer-thaw_for_time_s"
+        and msg.args[0] == thaw_time,
+    )

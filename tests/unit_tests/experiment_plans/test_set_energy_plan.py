@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from bluesky.utils import Msg
+from dodal.devices.xbpm_feedback import Pause
 
 from hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
@@ -37,8 +38,8 @@ def test_set_energy(
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback_pause_feedback"
-        and msg.args == (0,),
+        and msg.obj.name == "xbpm_feedback-pause_feedback"
+        and msg.args == (Pause.PAUSE,),
     )
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
@@ -63,8 +64,8 @@ def test_set_energy(
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback_pause_feedback"
-        and msg.args == (1,),
+        and msg.obj.name == "xbpm_feedback-pause_feedback"
+        and msg.args == (Pause.RUN,),
     )
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[1:],

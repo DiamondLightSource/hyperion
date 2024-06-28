@@ -104,7 +104,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
         )
 
     RE(decorated())
-    assert image.save.call_count == 6
+    assert image.save.call_count == 8
 
 
 @patch(
@@ -113,7 +113,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @pytest.mark.asyncio
-async def test_grid_detection_plan_gives_warningerror_if_tip_not_found(
+async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     RE,
     test_config_files,
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
