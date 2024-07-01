@@ -263,6 +263,6 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
                 link = detector_specific.get(field, getlink=True)  # type: ignore
                 assert link.filename == meta_filename  # type: ignore
             data = written_nexus_file["entry/data"]
-            for field in [f"data_00000{i}" for i in num_datasets]:
+            for field in [f"data_00000{n}" for n in num_datasets]:
                 link = data.get(field, getlink=True)  # type: ignore
                 assert link.filename.startswith(data_filename_prefix)  # type: ignore
