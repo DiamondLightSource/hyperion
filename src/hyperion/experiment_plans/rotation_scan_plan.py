@@ -351,6 +351,18 @@ def multi_rotation_scan(
         outer_parameters.detector_params.detector_distance,
     )
 
+    @bpp.set_run_key_decorator("multi_rotation_scan")
+    @bpp.run_decorator(
+        md={
+            "subplan_name": CONST.PLAN.ROTATION_MULTI,
+            "full_num_of_images": outer_parameters.num_images,
+            "meta_data_run_number": outer_parameters.detector_params.run_number,
+            "activate_callbacks": [
+                "RotationISPyBCallback",
+                "RotationNexusFileCallback",
+            ],
+        }
+    )
     @bpp.stage_decorator([eiger])
     @bpp.finalize_decorator(lambda: cleanup_plan(composite, max_vel))
     def _multi_rotation_scan():
@@ -362,10 +374,6 @@ def multi_rotation_scan(
                     "subplan_name": CONST.PLAN.ROTATION_OUTER,
                     CONST.TRIGGER.ZOCALO: CONST.PLAN.ROTATION_MAIN,
                     "hyperion_parameters": single_scan.json(),
-                    "activate_callbacks": [
-                        "RotationISPyBCallback",
-                        "RotationNexusFileCallback",
-                    ],
                 }
             )
             def rotation_scan_core(

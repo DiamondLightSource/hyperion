@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 from itertools import takewhile
-from unittest.mock import patch
+from typing import Any, Callable, Sequence
+from unittest.mock import MagicMock, patch
 
 from bluesky.run_engine import RunEngine
 from dodal.devices.synchrotron import SynchrotronMode
@@ -12,6 +13,9 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     calculate_motion_profile,
     multi_rotation_scan,
+)
+from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
+    RotationNexusFileCallback,
 )
 from hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
@@ -109,22 +113,27 @@ def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         )
 
 
+def _run_multi_rotation_plan(
+    RE: RunEngine,
+    params: MultiRotationScan,
+    devices: RotationScanComposite,
+    callbacks: Sequence[Callable[[str, dict[str, Any]], Any]],
+):
+    for cb in callbacks:
+        RE.subscribe(cb)
+    with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
+        RE(multi_rotation_scan(devices, params))
+
+
 def test_full_multi_rotation_plan_docs_emitted(
     RE: RunEngine,
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
 ):
     callback_sim = CallbackSim()
-    RE.subscribe(callback_sim)
-    with patch(
-        "bluesky.preprocessors.__read_and_stash_a_motor",
-        fake_read,
-    ):
-        RE(
-            multi_rotation_scan(
-                fake_create_rotation_devices, test_multi_rotation_params
-            ),
-        )
+    _run_multi_rotation_plan(
+        RE, test_multi_rotation_params, fake_create_rotation_devices, [callback_sim]
+    )
     docs = callback_sim.docs_recieved
 
     assert (
@@ -176,3 +185,27 @@ def test_full_multi_rotation_plan_docs_emitted(
             "stop",
             matches_fields={"run_start": inner_run_docs[0][1]["uid"]},
         )
+
+
+@patch("hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter")
+def test_full_multi_rotation_plan_nexus_writer_called_correctly(
+    mock_nexus_writer: MagicMock,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+):
+    callback = RotationNexusFileCallback()
+    _run_multi_rotation_plan(
+        RE, test_multi_rotation_params, fake_create_rotation_devices, [callback]
+    )
+    nexus_writer_calls = mock_nexus_writer.call_args_list
+    for call, rotation_params in zip(
+        nexus_writer_calls, test_multi_rotation_params.single_rotation_scans
+    ):
+        assert call.args[0] == rotation_params
+        assert call.kwargs == {
+            "omega_start_deg": rotation_params.omega_start_deg,
+            "chi_start_deg": rotation_params.chi_start_deg,
+            "phi_start_deg": rotation_params.phi_start_deg,
+            "vds_start_index": rotation_params.nexus_vds_start_img,
+        }

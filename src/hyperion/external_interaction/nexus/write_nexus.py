@@ -35,6 +35,10 @@ class NexusWriter:
         chi_start_deg: float = 0,
         phi_start_deg: float = 0,
         vds_start_index: int = 0,
+        # override default values when there is more than one collection per
+        # detector arming event:
+        full_num_of_images: int | None = None,
+        meta_data_run_number: int | None = None,
     ) -> None:
         self.beam: Optional[Beam] = None
         self.attenuator: Optional[Attenuator] = None
@@ -48,8 +52,13 @@ class NexusWriter:
         self.directory: Path = Path(parameters.storage_directory)
         self.filename: str = parameters.file_name
         self.start_index: int = vds_start_index
-        self.full_num_of_images: int = parameters.num_images
+        self.full_num_of_images: int = full_num_of_images or parameters.num_images
         self.full_filename: str = parameters.detector_params.full_filename
+        self.data_filename: str = (
+            f"{self.filename}_{meta_data_run_number}"
+            if meta_data_run_number
+            else self.full_filename
+        )
         self.nexus_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}.nxs"
         )
@@ -88,7 +97,7 @@ class NexusWriter:
                 self.full_num_of_images,
             )
             NXmx_Writer.write(
-                image_filename=f"{self.full_filename}",
+                image_filename=f"{self.data_filename}",
                 start_time=start_time,
                 est_end_time=est_end_time,
             )
@@ -98,7 +107,7 @@ class NexusWriter:
 
     def get_image_datafiles(self, max_images_per_file=1000):
         return [
-            self.directory / f"{self.full_filename}_{h5_num + 1:06}.h5"
+            self.directory / f"{self.data_filename}_{h5_num + 1:06}.h5"
             for h5_num in range(
                 math.ceil(self.full_num_of_images / max_images_per_file)
             )

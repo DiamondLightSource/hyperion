@@ -30,6 +30,7 @@ class PlanNameConstants:
     GRIDSCAN_MAIN = "run_gridscan"
     DO_FGS = "do_fgs"
     # Rotation scan
+    ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
 

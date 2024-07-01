@@ -37,7 +37,7 @@ class RotationScanCore(OptionalGonioAngleStarts, OptionalXyzStarts):
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
     scan_width_deg: float = Field(default=360, gt=0)
     rotation_direction: RotationDirection = Field(default=RotationDirection.NEGATIVE)
-    nexus_vds_start_img: float = Field(default=0, ge=0)
+    nexus_vds_start_img: int = Field(default=0, ge=0)
     ispyb_extras: TemporaryIspybExtras | None
 
 
