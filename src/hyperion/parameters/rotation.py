@@ -131,7 +131,7 @@ class MultiRotationScan(RotationScanGeneric, SplitScan):
         start_img = 0
         for scan in values["rotation_scans"]:
             scan.nexus_vds_start_img = start_img
-            start_img = scan.scan_width_deg / values["rotation_increment_deg"]
+            start_img += scan.scan_width_deg / values["rotation_increment_deg"]
         return values
 
     @property
