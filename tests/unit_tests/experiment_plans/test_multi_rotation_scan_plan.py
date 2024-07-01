@@ -8,6 +8,7 @@ from typing import Any, Callable, Sequence
 from unittest.mock import MagicMock, patch
 
 import h5py
+import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd_async.core import set_mock_value
@@ -228,41 +229,64 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
     fake_create_rotation_devices: RotationScanComposite,
     tmpdir,
 ):
+    multi_params = test_multi_rotation_params
     prefix = "multi_rotation_test"
     test_data_dir = "tests/test_data/nexus_files/"
     meta_file = f"{test_data_dir}rotation/ins_8_5_meta.h5.gz"
     fake_datafile = f"{test_data_dir}fake_data.h5"
-    test_multi_rotation_params.file_name = prefix
-    test_multi_rotation_params.storage_directory = f"{tmpdir}"
-    meta_data_run_number = test_multi_rotation_params.detector_params.run_number
+    multi_params.file_name = prefix
+    multi_params.storage_directory = f"{tmpdir}"
+    meta_data_run_number = multi_params.detector_params.run_number
 
-    data_filename_prefix = f"{prefix}_{meta_data_run_number}_00000"
+    data_filename_prefix = f"{prefix}_{meta_data_run_number}_"
     meta_filename = f"{prefix}_{meta_data_run_number}_meta.h5"
 
     callback = RotationNexusFileCallback()
-    _run_multi_rotation_plan(
-        RE, test_multi_rotation_params, fake_create_rotation_devices, [callback]
-    )
+    _run_multi_rotation_plan(RE, multi_params, fake_create_rotation_devices, [callback])
 
-    num_datasets = range(1, int(ceil(test_multi_rotation_params.num_images / 1000)) + 1)
+    def _expected_dset_number(image_number: int):
+        # image numbers 0-999 are in dset 1, etc.
+        return int(ceil((image_number + 1) / 1000))
+
+    num_datasets = range(
+        1, _expected_dset_number(multi_params.num_images - 1)
+    )  # the index of the last image is num_images - 1
+
     for i in num_datasets:
         shutil.copy(
             fake_datafile,
-            f"{tmpdir}/{data_filename_prefix}{i}.h5",
+            f"{tmpdir}/{data_filename_prefix}{i:06d}.h5",
         )
     extract_metafile(
         meta_file,
         f"{tmpdir}/{meta_filename}",
     )
-    for i, scan in enumerate(test_multi_rotation_params.single_rotation_scans):
+    for i, scan in enumerate(multi_params.single_rotation_scans):
         with h5py.File(f"{tmpdir}/{prefix}_{i+1}.nxs", "r") as written_nexus_file:
+            # check links go to the right file:
             detector_specific = written_nexus_file[
                 "entry/instrument/detector/detectorSpecific"
             ]
             for field in ["software_version"]:
                 link = detector_specific.get(field, getlink=True)  # type: ignore
                 assert link.filename == meta_filename  # type: ignore
-            data = written_nexus_file["entry/data"]
-            for field in [f"data_00000{n}" for n in num_datasets]:
-                link = data.get(field, getlink=True)  # type: ignore
+            data_group = written_nexus_file["entry/data"]
+            for field in [f"data_{n:06d}" for n in num_datasets]:
+                link = data_group.get(field, getlink=True)  # type: ignore
                 assert link.filename.startswith(data_filename_prefix)  # type: ignore
+
+            # check dataset starts and stops are correct:
+            assert isinstance(dataset := data_group["data"], h5py.Dataset)  # type: ignore
+            assert dataset.is_virtual
+            assert dataset[scan.num_images - 1, 0, 0] == 0
+            with pytest.raises(IndexError):
+                assert dataset[scan.num_images, 0, 0] == 0
+            dataset_sources = dataset.virtual_sources()
+            expected_dset_start = _expected_dset_number(multi_params.scan_indices[i])
+            expected_dset_end = _expected_dset_number(multi_params.scan_indices[i + 1])
+            dset_start_name = dataset_sources[0].dset_name
+            dset_end_name = dataset_sources[-1].dset_name
+            assert dset_start_name.endswith(f"data_{expected_dset_start:06d}")
+            assert dset_end_name.endswith(f"data_{expected_dset_end:06d}")
+
+            # check scan values are correct for each file:

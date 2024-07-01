@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
+from itertools import accumulate
 from typing import Annotated
 
 import numpy as np
@@ -154,7 +155,7 @@ class MultiRotationScan(RotationScanGeneric, SplitScan):
 
     @property
     def scan_indices(self):
-        return [0, *self._num_images_per_scan()]
+        return list(accumulate([0, *self._num_images_per_scan()]))
 
     @property
     def detector_params(self):
