@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import shutil
 from itertools import takewhile
+from math import ceil
 from typing import Any, Callable, Sequence
 from unittest.mock import MagicMock, patch
 
+import h5py
 from bluesky.run_engine import RunEngine
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd_async.core import set_mock_value
@@ -19,8 +22,13 @@ from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
 )
 from hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
-from ...conftest import CallbackSim, RunEngineSimulator, raw_params_from_file
-from .conftest import fake_read
+from ...conftest import (
+    CallbackSim,
+    RunEngineSimulator,
+    extract_metafile,
+    fake_read,
+    raw_params_from_file,
+)
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
@@ -212,3 +220,49 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
             "full_num_of_images": test_multi_rotation_params.num_images,
             "meta_data_run_number": first_run_number,
         }
+
+
+def test_full_multi_rotation_plan_nexus_files_written_correctly(
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    tmpdir,
+):
+    prefix = "multi_rotation_test"
+    test_data_dir = "tests/test_data/nexus_files/"
+    meta_file = f"{test_data_dir}rotation/ins_8_5_meta.h5.gz"
+    fake_datafile = f"{test_data_dir}fake_data.h5"
+    test_multi_rotation_params.file_name = prefix
+    test_multi_rotation_params.storage_directory = f"{tmpdir}"
+    meta_data_run_number = test_multi_rotation_params.detector_params.run_number
+
+    data_filename_prefix = f"{prefix}_{meta_data_run_number}_00000"
+    meta_filename = f"{prefix}_{meta_data_run_number}_meta.h5"
+
+    callback = RotationNexusFileCallback()
+    _run_multi_rotation_plan(
+        RE, test_multi_rotation_params, fake_create_rotation_devices, [callback]
+    )
+
+    num_datasets = range(1, int(ceil(test_multi_rotation_params.num_images / 1000)) + 1)
+    for i in num_datasets:
+        shutil.copy(
+            fake_datafile,
+            f"{tmpdir}/{data_filename_prefix}{i}.h5",
+        )
+    extract_metafile(
+        meta_file,
+        f"{tmpdir}/{meta_filename}",
+    )
+    for i, scan in enumerate(test_multi_rotation_params.single_rotation_scans):
+        with h5py.File(f"{tmpdir}/{prefix}_{i+1}.nxs", "r") as written_nexus_file:
+            detector_specific = written_nexus_file[
+                "entry/instrument/detector/detectorSpecific"
+            ]
+            for field in ["software_version"]:
+                link = detector_specific.get(field, getlink=True)  # type: ignore
+                assert link.filename == meta_filename  # type: ignore
+            data = written_nexus_file["entry/data"]
+            for field in [f"data_00000{i}" for i in num_datasets]:
+                link = data.get(field, getlink=True)  # type: ignore
+                assert link.filename.startswith(data_filename_prefix)  # type: ignore
