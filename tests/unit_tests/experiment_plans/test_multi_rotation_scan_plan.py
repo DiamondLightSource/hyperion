@@ -8,6 +8,7 @@ from typing import Any, Callable, Sequence
 from unittest.mock import MagicMock, patch
 
 import h5py
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.synchrotron import SynchrotronMode
@@ -290,3 +291,37 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
             assert dset_end_name.endswith(f"data_{expected_dset_end:06d}")
 
             # check scan values are correct for each file:
+            assert isinstance(
+                chi := written_nexus_file["/entry/sample/sample_chi/chi"], h5py.Dataset
+            )
+            assert chi[:] == scan.chi_start_deg
+            assert isinstance(
+                phi := written_nexus_file["/entry/sample/sample_phi/phi"], h5py.Dataset
+            )
+            assert phi[:] == scan.phi_start_deg
+            assert isinstance(
+                omega := written_nexus_file["/entry/sample/sample_omega/omega"],
+                h5py.Dataset,
+            )
+            omega = omega[:]
+            assert isinstance(
+                omega_end := written_nexus_file["/entry/sample/sample_omega/omega_end"],
+                h5py.Dataset,
+            )
+            omega_end = omega_end[:]
+            assert len(omega) == scan.num_images
+            expected_omega_starts = np.linspace(
+                scan.omega_start_deg,
+                scan.omega_start_deg
+                + (
+                    (scan.num_images - 1)
+                    * multi_params.rotation_increment_deg
+                    * scan.rotation_direction.multiplier
+                ),
+                scan.num_images,
+            )
+            assert np.allclose(omega, expected_omega_starts)
+            expected_omega_ends = expected_omega_starts + (
+                multi_params.rotation_increment_deg * scan.rotation_direction.multiplier
+            )
+            assert np.allclose(omega_end, expected_omega_ends)
