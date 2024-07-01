@@ -199,6 +199,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
         RE, test_multi_rotation_params, fake_create_rotation_devices, [callback]
     )
     nexus_writer_calls = mock_nexus_writer.call_args_list
+    first_run_number = test_multi_rotation_params.detector_params.run_number
     for call, rotation_params in zip(
         nexus_writer_calls, test_multi_rotation_params.single_rotation_scans
     ):
@@ -208,4 +209,6 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
             "chi_start_deg": rotation_params.chi_start_deg,
             "phi_start_deg": rotation_params.phi_start_deg,
             "vds_start_index": rotation_params.nexus_vds_start_img,
+            "full_num_of_images": test_multi_rotation_params.num_images,
+            "meta_data_run_number": first_run_number,
         }
