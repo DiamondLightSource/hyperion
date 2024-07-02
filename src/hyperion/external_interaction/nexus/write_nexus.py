@@ -9,6 +9,7 @@ import math
 from pathlib import Path
 from typing import Optional
 
+from dodal.devices.zebra import RotationDirection
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
@@ -39,6 +40,7 @@ class NexusWriter:
         # detector arming event:
         full_num_of_images: int | None = None,
         meta_data_run_number: int | None = None,
+        rotation_direction: RotationDirection = RotationDirection.NEGATIVE,
     ) -> None:
         self.beam: Optional[Beam] = None
         self.attenuator: Optional[Attenuator] = None
@@ -70,6 +72,7 @@ class NexusWriter:
             self.scan_points,
             chi=chi_start_deg,
             phi=phi_start_deg,
+            rotation_direction=rotation_direction,
         )
 
     def create_nexus_file(self, bit_depth: DTypeLike):

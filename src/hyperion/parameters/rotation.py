@@ -106,10 +106,7 @@ class RotationScan(WithScan, RotationScanCore, RotationScanGeneric):
             start=self.omega_start_deg,
             stop=(
                 self.omega_start_deg
-                + (
-                    (self.scan_width_deg - self.rotation_increment_deg)
-                    * self.rotation_direction.multiplier
-                )
+                + (self.scan_width_deg - self.rotation_increment_deg)
             ),
             num=self.num_images,
         )

@@ -221,6 +221,7 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
             "vds_start_index": rotation_params.nexus_vds_start_img,
             "full_num_of_images": test_multi_rotation_params.num_images,
             "meta_data_run_number": first_run_number,
+            "rotation_direction": rotation_params.rotation_direction,
         }
 
 
@@ -313,15 +314,19 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
             expected_omega_starts = np.linspace(
                 scan.omega_start_deg,
                 scan.omega_start_deg
-                + (
-                    (scan.num_images - 1)
-                    * multi_params.rotation_increment_deg
-                    * scan.rotation_direction.multiplier
-                ),
+                + ((scan.num_images - 1) * multi_params.rotation_increment_deg),
                 scan.num_images,
             )
             assert np.allclose(omega, expected_omega_starts)
-            expected_omega_ends = expected_omega_starts + (
-                multi_params.rotation_increment_deg * scan.rotation_direction.multiplier
+            expected_omega_ends = (
+                expected_omega_starts + multi_params.rotation_increment_deg
             )
             assert np.allclose(omega_end, expected_omega_ends)
+            assert isinstance(
+                omega_transform := written_nexus_file[
+                    "/entry/sample/transformations/omega"
+                ],
+                h5py.Dataset,
+            )
+            assert isinstance(omega_vec := omega_transform.attrs["vector"], np.ndarray)
+            assert tuple(omega_vec) == (1.0 * scan.rotation_direction.multiplier, 0, 0)

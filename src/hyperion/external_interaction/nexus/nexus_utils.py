@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 from dodal.devices.detector import DetectorParams
+from dodal.devices.zebra import RotationDirection
 from nexgen.nxs_utils import Attenuator, Axis, Beam, Detector, EigerDetector, Goniometer
 from nexgen.nxs_utils.axes import TransformationType
 from numpy.typing import DTypeLike
@@ -34,7 +35,7 @@ def create_goniometer_axes(
     x_y_z_increments: tuple[float, float, float] = (0.0, 0.0, 0.0),
     chi: float = 0.0,
     phi: float = 0.0,
-    omega_increment: float = 0.0,
+    rotation_direction: RotationDirection = RotationDirection.NEGATIVE,
 ):
     """Returns a Nexgen 'Goniometer' object with the dependency chain of I03's Smargon
     goniometer. If scan points is provided these values will be used in preference to
@@ -55,9 +56,8 @@ def create_goniometer_axes(
             "omega",
             ".",
             TransformationType.ROTATION,
-            (-1.0, 0.0, 0.0),
+            (1.0 * rotation_direction.multiplier, 0.0, 0.0),
             omega_start,
-            omega_increment,
         ),
         Axis(
             name="sam_z",
