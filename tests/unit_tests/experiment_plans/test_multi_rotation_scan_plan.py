@@ -19,9 +19,14 @@ from hyperion.experiment_plans.rotation_scan_plan import (
     calculate_motion_profile,
     multi_rotation_scan,
 )
+from hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
+from hyperion.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 from ...conftest import (
@@ -330,3 +335,32 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
             )
             assert isinstance(omega_vec := omega_transform.attrs["vector"], np.ndarray)
             assert tuple(omega_vec) == (1.0 * scan.rotation_direction.multiplier, 0, 0)
+
+
+@patch("hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb")
+def test_full_multi_rotation_plan_ispyb_called_correctly(
+    mock_ispyb_store: MagicMock,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+):
+    callback = RotationISPyBCallback()
+    mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
+    _run_multi_rotation_plan(
+        RE, test_multi_rotation_params, fake_create_rotation_devices, [callback]
+    )
+    ispyb_calls = mock_ispyb_store.call_args_list
+    first_run_number = test_multi_rotation_params.detector_params.run_number
+    for instantiation_call, ispyb_store_calls, rotation_params in zip(
+        ispyb_calls,
+        [  # there should be 4 calls to the IspybStore per run
+            mock_ispyb_store.return_value.method_calls[i * 4 : (i + 1) * 4]
+            for i in range(len(test_multi_rotation_params.rotation_scans))
+        ],
+        test_multi_rotation_params.single_rotation_scans,
+    ):
+        assert instantiation_call.args[0] == CONST.SIM.ISPYB_CONFIG
+        assert ispyb_store_calls[0][0] == "begin_deposition"
+        assert ispyb_store_calls[1][0] == "update_deposition"
+        assert ispyb_store_calls[2][0] == "update_deposition"
+        assert ispyb_store_calls[3][0] == "end_deposition"
