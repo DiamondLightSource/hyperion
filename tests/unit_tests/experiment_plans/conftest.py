@@ -48,9 +48,9 @@ BASIC_PRE_SETUP_DOC = {
         "radius_microns": None,
         "location": (15, 16, 2, 18, 19),
     },
-    "smargon_x": 10.0,
-    "smargon_y": 20.0,
-    "smargon_z": 30.0,
+    "smargon-x": 10.0,
+    "smargon-y": 20.0,
+    "smargon-z": 30.0,
 }
 
 BASIC_POST_SETUP_DOC = {
