@@ -178,7 +178,7 @@ class TestData:
             "oav_grid_snapshot_last_path_full_overlay": "test_1_y",
             "oav_grid_snapshot_last_path_outer": "test_2_y",
             "oav_grid_snapshot_last_saved_path": "test_3_y",
-            "smargon_omega": 0,
+            "smargon-omega": 0,
         },
     }
     test_event_document_oav_snapshot_xz: Event = {
@@ -198,7 +198,7 @@ class TestData:
             "oav_grid_snapshot_last_saved_path": "test_3_z",
             "oav_grid_snapshot_microns_per_pixel_x": 1.25,
             "oav_grid_snapshot_microns_per_pixel_y": 1.5,
-            "smargon_omega": -90,
+            "smargon-omega": -90,
         },
     }
     test_event_document_pre_data_collection: Event = {
@@ -215,9 +215,9 @@ class TestData:
                 "radius_microns": 50,
                 "location": (15, 16, 2, 18, 19),
             },
-            "smargon_x": 10.0,
-            "smargon_y": 20.0,
-            "smargon_z": 30.0,
+            "smargon-x": 10.0,
+            "smargon-y": 20.0,
+            "smargon-z": 30.0,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,

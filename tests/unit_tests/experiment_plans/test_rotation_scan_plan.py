@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from functools import partial
 from itertools import takewhile
 from typing import TYPE_CHECKING, Callable
-from unittest.mock import DEFAULT, MagicMock, call, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
-from ophyd.status import Status
+from ophyd_async.core import get_mock_put
 
 from hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
@@ -79,17 +78,6 @@ def setup_and_run_rotation_plan_for_tests(
     fake_create_rotation_devices: RotationScanComposite,
     motion_values,
 ):
-    smargon = fake_create_rotation_devices.smargon
-
-    def side_set_w_return(obj, *args):
-        obj.sim_put(*args)
-        return DEFAULT
-
-    smargon.omega.velocity.set = MagicMock(
-        return_value=Status(done=True, success=True),
-        side_effect=partial(side_set_w_return, smargon.omega.velocity),
-    )
-
     with patch("bluesky.plan_stubs.wait", autospec=True):
         do_rotation_main_plan_for_tests(
             RE, test_params, fake_create_rotation_devices, motion_values
@@ -188,30 +176,30 @@ async def test_rotation_plan_zebra_settings(
     assert await zebra.pc.pulse_start.get_value() == params.shutter_opening_time_s
 
 
-def test_full_rotation_plan_smargon_settings(
+async def test_full_rotation_plan_smargon_settings(
     run_full_rotation_plan,
     test_rotation_params,
 ) -> None:
     smargon: Smargon = run_full_rotation_plan.smargon
     params: RotationScan = test_rotation_params
 
-    test_max_velocity = smargon.omega.max_velocity.get()
+    test_max_velocity = await smargon.omega.max_velocity.get_value()
 
-    omega_set: MagicMock = smargon.omega.set  # type: ignore
-    omega_velocity_set: MagicMock = smargon.omega.velocity.set  # type: ignore
+    omega_set: MagicMock = get_mock_put(smargon.omega.user_setpoint)
+    omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)
     rotation_speed = params.rotation_increment_deg / params.exposure_time_s
 
-    assert smargon.phi.user_readback.get() == params.phi_start_deg
-    assert smargon.chi.user_readback.get() == params.chi_start_deg
-    assert smargon.x.user_readback.get() == params.x_start_um
-    assert smargon.y.user_readback.get() == params.y_start_um
-    assert smargon.z.user_readback.get() == params.z_start_um
+    assert await smargon.phi.user_readback.get_value() == params.phi_start_deg
+    assert await smargon.chi.user_readback.get_value() == params.chi_start_deg
+    assert await smargon.x.user_readback.get_value() == params.x_start_um
+    assert await smargon.y.user_readback.get_value() == params.y_start_um
+    assert await smargon.z.user_readback.get_value() == params.z_start_um
     assert omega_set.call_count == 2
     assert omega_velocity_set.call_count == 3
     assert omega_velocity_set.call_args_list == [
-        call(test_max_velocity),
-        call(rotation_speed),
-        call(test_max_velocity),
+        call(test_max_velocity, wait=True, timeout=10),
+        call(rotation_speed, wait=True, timeout=10),
+        call(test_max_velocity, wait=True, timeout=10),
     ]
 
 
@@ -229,7 +217,7 @@ async def test_rotation_plan_moves_aperture_correctly(
     )
 
 
-def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
+async def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     setup_and_run_rotation_plan_for_tests_nomove,
 ) -> None:
     smargon: Smargon = setup_and_run_rotation_plan_for_tests_nomove["smargon"]
@@ -242,8 +230,8 @@ def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
     assert params.y_start_um is None
     assert params.z_start_um is None
     for motor in [smargon.phi, smargon.chi, smargon.x, smargon.y, smargon.z]:
-        assert motor.user_readback.get() == 0
-        motor.set.assert_not_called()  # type: ignore
+        assert await motor.user_readback.get_value() == 0
+        get_mock_put(motor.user_setpoint).assert_not_called()  # type: ignore
 
 
 @patch("hyperion.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)
@@ -296,9 +284,8 @@ def test_rotation_plan_reads_hardware(
         "synchrotron-top_up_start_countdown",
         lambda msg: {"values": {"value": -1}},
     )
-    fake_create_rotation_devices.smargon.omega.user_readback.sim_put(0)  # type: ignore
     sim_run_engine.add_handler(
-        "read", "smargon_omega", lambda msg: {"values": {"value": -1}}
+        "read", "smargon-omega", lambda msg: {"smargon-omega": {"value": -1}}
     )
 
     msgs = sim_run_engine.simulate_plan(
@@ -314,11 +301,11 @@ def test_rotation_plan_reads_hardware(
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     sim_run_engine.assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_x"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-x"
     )
     sim_run_engine.assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_y"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-y"
     )
     sim_run_engine.assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_z"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-z"
     )

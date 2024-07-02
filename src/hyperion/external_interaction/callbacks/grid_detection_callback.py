@@ -43,9 +43,9 @@ class GridDetectionCallback(CallbackBase):
         top_left_y_px = data["oav_grid_snapshot_top_left_y"]
         y_of_centre_of_first_box_px = top_left_y_px + box_width_px / 2
 
-        smargon_omega = data["smargon_omega"]
+        smargon_omega = data["smargon-omega"]
         current_xyz = np.array(
-            [data["smargon_x"], data["smargon_y"], data["smargon_z"]]
+            [data["smargon-x"], data["smargon-y"], data["smargon-z"]]
         )
 
         centre_of_first_box = (

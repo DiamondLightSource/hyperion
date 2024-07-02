@@ -207,7 +207,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             data_collection_id = self.ispyb_ids.data_collection_ids[
                 self._oav_snapshot_event_idx
             ]
-        self._populate_axis_info(data_collection_info, doc["data"]["smargon_omega"])
+        self._populate_axis_info(data_collection_info, doc["data"]["smargon-omega"])
 
         scan_data_info = ScanDataInfo(
             data_collection_info=data_collection_info,
