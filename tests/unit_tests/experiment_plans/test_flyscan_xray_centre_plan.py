@@ -411,7 +411,7 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
-    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
+    async def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
@@ -434,7 +434,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 1
         )
         assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
@@ -585,9 +585,9 @@ class TestFlyscanXrayCentrePlan:
                 random.uniform(-0.5, 0.5),
             ]
         )
-        fake_fgs_composite.smargon.x.user_readback.sim_put(initial_x_y_z[0])  # type: ignore
-        fake_fgs_composite.smargon.y.user_readback.sim_put(initial_x_y_z[1])  # type: ignore
-        fake_fgs_composite.smargon.z.user_readback.sim_put(initial_x_y_z[2])  # type: ignore
+        set_mock_value(fake_fgs_composite.smargon.x.user_readback, initial_x_y_z[0])
+        set_mock_value(fake_fgs_composite.smargon.y.user_readback, initial_x_y_z[1])
+        set_mock_value(fake_fgs_composite.smargon.z.user_readback, initial_x_y_z[2])
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
@@ -606,7 +606,7 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
-    def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
+    async def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
@@ -623,7 +623,7 @@ class TestFlyscanXrayCentrePlan:
         with pytest.raises(MoveException):
             RE(run_gridscan_and_move(fake_fgs_composite, test_fgs_params))
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 0
         )
 
@@ -633,7 +633,7 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
-    def test_given_setting_stub_offsets_disabled_then_stub_offsets_not_set(
+    async def test_given_setting_stub_offsets_disabled_then_stub_offsets_not_set(
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
@@ -659,7 +659,7 @@ class TestFlyscanXrayCentrePlan:
 
         RE(ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params))
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 0
         )
 

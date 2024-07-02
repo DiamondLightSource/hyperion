@@ -375,7 +375,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
         autospec=True,
     )
-    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
+    async def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
         self,
         setup_panda_for_flyscan: MagicMock,
         move_xyz: MagicMock,
@@ -405,7 +405,7 @@ class TestFlyscanXrayCentrePlan:
             )
         )
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 1
         )
 
@@ -454,7 +454,9 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[
+            1
+        ].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Crystal 1: Strength 999999" in call.args[1]
@@ -497,7 +499,9 @@ class TestFlyscanXrayCentrePlan:
                 wrapped_run_gridscan_and_move(), test_panda_fgs_params
             )
         )
-        app_to_comment: MagicMock = mock_subscriptions[1].ispyb.append_to_comment  # type:ignore
+        app_to_comment: MagicMock = mock_subscriptions[
+            1
+        ].ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
         call = app_to_comment.call_args_list[0]
         assert "Zocalo found no crystals in this gridscan" in call.args[1]
@@ -544,9 +548,9 @@ class TestFlyscanXrayCentrePlan:
                 random.uniform(-0.5, 0.5),
             ]
         )
-        fake_fgs_composite.smargon.x.user_readback.sim_put(initial_x_y_z[0])  # type: ignore
-        fake_fgs_composite.smargon.y.user_readback.sim_put(initial_x_y_z[1])  # type: ignore
-        fake_fgs_composite.smargon.z.user_readback.sim_put(initial_x_y_z[2])  # type: ignore
+        set_mock_value(fake_fgs_composite.smargon.x.user_readback, initial_x_y_z[0])
+        set_mock_value(fake_fgs_composite.smargon.y.user_readback, initial_x_y_z[1])
+        set_mock_value(fake_fgs_composite.smargon.z.user_readback, initial_x_y_z[2])
         mock_zocalo_trigger(fake_fgs_composite.zocalo, [])
 
         def wrapped_run_gridscan_and_move():
@@ -575,7 +579,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
         autospec=True,
     )
-    def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
+    async def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
         self,
         setup_panda_for_flyscan: MagicMock,
         move_xyz: MagicMock,
@@ -593,7 +597,7 @@ class TestFlyscanXrayCentrePlan:
         with pytest.raises(MoveException):
             RE(run_gridscan_and_move(fake_fgs_composite, test_panda_fgs_params))
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 0
         )
 
@@ -609,7 +613,7 @@ class TestFlyscanXrayCentrePlan:
         "hyperion.experiment_plans.panda_flyscan_xray_centre_plan.setup_panda_for_flyscan",
         autospec=True,
     )
-    def test_given_setting_stub_offsets_disabled_then_stub_offsets_not_set(
+    async def test_given_setting_stub_offsets_disabled_then_stub_offsets_not_set(
         self,
         setup_panda_for_flyscan: MagicMock,
         move_xyz: MagicMock,
@@ -642,7 +646,7 @@ class TestFlyscanXrayCentrePlan:
             )
         )
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 0
         )
 
