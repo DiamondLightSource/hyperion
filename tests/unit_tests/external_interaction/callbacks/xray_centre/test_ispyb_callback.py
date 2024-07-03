@@ -51,9 +51,7 @@ EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
 class TestXrayCentreISPyBCallback:
     def test_activity_gated_start_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan3d_start_document
-        )  # pyright: ignore
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         assert_upsert_call_with(
             mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
@@ -79,9 +77,7 @@ class TestXrayCentreISPyBCallback:
 
     def test_hardware_read_event_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan3d_start_document
-        )  # pyright: ignore
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
@@ -100,10 +96,6 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
-                "focal_spot_size_at_samplex": 50.0,
-                "focal_spot_size_at_sampley": 20.0,
-                "beamsize_at_samplex": 50.0,
-                "beamsize_at_sampley": 20.0,
             },
         )
         assert_upsert_call_with(
@@ -116,18 +108,12 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
-                "focal_spot_size_at_samplex": 50.0,
-                "focal_spot_size_at_sampley": 20.0,
-                "beamsize_at_samplex": 50.0,
-                "beamsize_at_sampley": 20.0,
             },
         )
 
     def test_flux_read_events_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan3d_start_document
-        )  # pyright: ignore
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_descriptor(
             TestData.test_descriptor_document_pre_data_collection
@@ -153,6 +139,10 @@ class TestXrayCentreISPyBCallback:
                 "transmission": 100,
                 "flux": 10,
                 "resolution": 1.1830593328548429,
+                "focal_spot_size_at_samplex": 50.0,
+                "focal_spot_size_at_sampley": 20.0,
+                "beamsize_at_samplex": 50.0,
+                "beamsize_at_sampley": 20.0,
             },
         )
         assert_upsert_call_with(
@@ -165,6 +155,10 @@ class TestXrayCentreISPyBCallback:
                 "transmission": 100,
                 "flux": 10,
                 "resolution": 1.1830593328548429,
+                "focal_spot_size_at_samplex": 50.0,
+                "focal_spot_size_at_sampley": 20.0,
+                "beamsize_at_samplex": 50.0,
+                "beamsize_at_sampley": 20.0,
             },
         )
         mx_acq.update_dc_position.assert_not_called()
@@ -172,9 +166,7 @@ class TestXrayCentreISPyBCallback:
 
     def test_activity_gated_event_oav_snapshot_triggered(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan3d_start_document
-        )  # pyright: ignore
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()

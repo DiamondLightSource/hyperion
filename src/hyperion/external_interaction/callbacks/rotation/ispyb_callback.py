@@ -3,8 +3,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-from dodal.devices.aperturescatterguard import SingleAperturePosition
-
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
@@ -125,10 +123,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def _handle_ispyb_hardware_read(self, doc: Event):
         """Use the hardware read values to create the ispyb comment"""
         scan_data_infos = super()._handle_ispyb_hardware_read(doc)
-        aperture_size = SingleAperturePosition(
-            **doc["data"]["aperture_scatterguard-selected_aperture"]
-        )
-
         motor_positions = [
             doc["data"]["smargon_x"],
             doc["data"]["smargon_y"],
@@ -137,7 +131,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
         assert (
             self.params
         ), "handle_ispyb_hardware_read triggered beore activity_gated_start"
-        comment = f"Sample position: ({motor_positions[0]}, {motor_positions[1]}, {motor_positions[2]}) {self.params.comment} Aperture: {aperture_size.name}"
+        comment = f"Sample position: ({motor_positions[0]}, {motor_positions[1]}, {motor_positions[2]}) {self.params.comment} "
         scan_data_infos[0].data_collection_info.comments = comment
         return scan_data_infos
 

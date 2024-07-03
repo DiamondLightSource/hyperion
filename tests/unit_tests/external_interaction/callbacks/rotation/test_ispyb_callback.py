@@ -149,11 +149,7 @@ def test_hardware_read_events(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "focal_spot_size_at_samplex": 50.0,
-            "focal_spot_size_at_sampley": 20.0,
-            "beamsize_at_samplex": 50.0,
-            "beamsize_at_sampley": 20.0,
-            "comments": "Sample position: (10.0, 20.0, 30.0) test Aperture: Medium",
+            "comments": "Sample position: (10.0, 20.0, 30.0) test ",
         },
     )
     assert_upsert_call_with(
@@ -201,6 +197,10 @@ def test_flux_read_events(
         {
             "parentid": TEST_DATA_COLLECTION_GROUP_ID,
             "id": TEST_DATA_COLLECTION_IDS[0],
+            "focal_spot_size_at_samplex": 50.0,
+            "focal_spot_size_at_sampley": 20.0,
+            "beamsize_at_samplex": 50.0,
+            "beamsize_at_sampley": 20.0,
             "wavelength": 1.1164718451643736,
             "transmission": 98,
             "flux": 9.81,
@@ -217,9 +217,7 @@ def test_oav_rotation_snapshot_triggered_event(
     mock_ispyb_conn, dummy_rotation_params, rotation_start_outer_doc_without_snapshots
 ):
     callback = RotationISPyBCallback()
-    callback.activity_gated_start(
-        rotation_start_outer_doc_without_snapshots
-    )  # pyright: ignore
+    callback.activity_gated_start(rotation_start_outer_doc_without_snapshots)  # pyright: ignore
     callback.activity_gated_start(
         TestData.test_rotation_start_main_document  # pyright: ignore
     )
@@ -300,9 +298,9 @@ def test_comment_correct_after_hardware_read(
 ):
     callback = RotationISPyBCallback()
     test_rotation_start_outer_document["hyperion_parameters"] = (
-        test_rotation_start_outer_document["hyperion_parameters"].replace(
-            '"comment": "test"', '"comment": "a lovely unit test"'
-        )
+        test_rotation_start_outer_document[
+            "hyperion_parameters"
+        ].replace('"comment": "test"', '"comment": "a lovely unit test"')
     )
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
@@ -327,10 +325,6 @@ def test_comment_correct_after_hardware_read(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "focal_spot_size_at_samplex": 50.0,
-            "focal_spot_size_at_sampley": 20.0,
-            "beamsize_at_samplex": 50.0,
-            "beamsize_at_sampley": 20.0,
-            "comments": "Sample position: (10.0, 20.0, 30.0) a lovely unit test Aperture: Medium",
+            "comments": "Sample position: (10.0, 20.0, 30.0) a lovely unit test ",
         },
     )

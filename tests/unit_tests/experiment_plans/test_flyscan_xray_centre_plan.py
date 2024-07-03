@@ -104,10 +104,8 @@ def ispyb_plan(test_fgs_params: ThreeDGridScan):
     def standalone_read_hardware_for_ispyb(
         und, syn, slits, robot, attn, fl, dcm, ap_sg, sm
     ):
-        yield from read_hardware_for_ispyb_pre_collection(
-            und, syn, slits, ap_sg, robot, sm
-        )
-        yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
+        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot, sm)
+        yield from read_hardware_for_ispyb_during_collection(ap_sg, attn, fl, dcm)
 
     return standalone_read_hardware_for_ispyb
 
@@ -270,12 +268,12 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
-                    'aperture_scatterguard-selected_aperture': ap_sg_test_value
                 },
             )
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[1],  # pyright: ignore
                 {
+                    'aperture_scatterguard-selected_aperture': ap_sg_test_value,
                     "attenuator-actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
                     "dcm-energy_in_kev": current_energy_kev_test_value,
@@ -514,8 +512,10 @@ class TestFlyscanXrayCentrePlan:
         )
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
-        call = app_to_comment.call_args_list[0]
-        assert "Crystal 1: Strength 999999" in call.args[1]
+        append_aperture_call = app_to_comment.call_args_list[0].args[1]
+        append_zocalo_call = app_to_comment.call_args_list[-1].args[1]
+        assert "Aperture:" in append_aperture_call
+        assert "Crystal 1: Strength 999999" in append_zocalo_call
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
@@ -602,8 +602,10 @@ class TestFlyscanXrayCentrePlan:
         )
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
-        call = app_to_comment.call_args_list[0]
-        assert "Zocalo found no crystals in this gridscan" in call.args[1]
+        append_aperture_call = app_to_comment.call_args_list[0].args[1]
+        append_zocalo_call = app_to_comment.call_args_list[-1].args[1]
+        assert "Aperture:" in append_aperture_call
+        assert "Zocalo found no crystals in this gridscan" in append_zocalo_call
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True
@@ -982,7 +984,7 @@ class TestFlyscanXrayCentrePlan:
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
-        new=MagicMock(side_effect=lambda *_: iter([Msg("kickoff_gridscan")])),
+        new=MagicMock(side_effect=lambda *_, **__: iter([Msg("kickoff_gridscan")])),
     )
     def test_read_hardware_for_nexus_occurs_after_eiger_arm(
         self,

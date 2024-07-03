@@ -29,12 +29,12 @@ async def test_getting_data_for_ispyb():
     )
     smargon = i03.smargon(fake_with_ophyd_sim=True)
 
-    undulator.wait_for_connection()
+    await undulator.connect()
     await synchrotron.connect()
     slit_gaps.wait_for_connection()
-    attenuator.wait_for_connection()
+    await attenuator.connect()
     flux.wait_for_connection()
-    aperture_scatterguard.wait_for_connection()
+    await aperture_scatterguard.connect()
     smargon.wait_for_connection()
     robot = i03.robot(fake_with_ophyd_sim=True)
 
@@ -43,9 +43,9 @@ async def test_getting_data_for_ispyb():
     @bpp.run_decorator()
     def standalone_read_hardware(und, syn, slits, robot, att, flux, ap_sg, sm):
         yield from read_hardware_for_ispyb_pre_collection(
-            und, syn, slits, robot, ap_sg, smargon=sm
+            und, syn, slits, robot, smargon=sm
         )
-        yield from read_hardware_for_ispyb_during_collection(att, flux, dcm)
+        yield from read_hardware_for_ispyb_during_collection(ap_sg, att, flux, dcm)
 
     RE(
         standalone_read_hardware(

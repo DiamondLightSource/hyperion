@@ -154,7 +154,9 @@ def _detect_grid_and_do_gridscan(
     yield from bps.abs_set(composite.backlight, BacklightPosition.OUT)
 
     yield from move_aperture_if_required(
-        composite.aperture_scatterguard, parameters.selected_aperture
+        composite.aperture_scatterguard,
+        parameters.selected_aperture,
+        group="ready_for_data_collection",
     )
 
     yield from flyscan_xray_centre(

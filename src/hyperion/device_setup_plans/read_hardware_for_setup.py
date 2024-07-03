@@ -20,7 +20,6 @@ def read_hardware_for_ispyb_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
-    aperture_scatterguard: ApertureScatterguard,
     robot: BartRobot,
     smargon: Smargon,
 ):
@@ -32,7 +31,6 @@ def read_hardware_for_ispyb_pre_collection(
     yield from bps.read(synchrotron.synchrotron_mode)
     yield from bps.read(s4_slit_gaps.xgap)
     yield from bps.read(s4_slit_gaps.ygap)
-    yield from bps.read(aperture_scatterguard)
     yield from bps.read(smargon.x)
     yield from bps.read(smargon.y)
     yield from bps.read(smargon.z)
@@ -40,12 +38,14 @@ def read_hardware_for_ispyb_pre_collection(
 
 
 def read_hardware_for_ispyb_during_collection(
+    aperture_scatterguard: ApertureScatterguard,
     attenuator: Attenuator,
     flux: Flux,
     dcm: DCM,
 ):
     LOGGER.info("Reading status of beamline for ispyb deposition, during collection.")
     yield from bps.create(name=CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ)
+    yield from bps.read(aperture_scatterguard)
     yield from bps.read(attenuator.actual_transmission)
     yield from bps.read(flux.flux_reading)
     yield from bps.read(dcm.energy_in_kev)

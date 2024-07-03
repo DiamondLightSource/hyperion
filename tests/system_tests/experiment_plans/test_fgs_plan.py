@@ -141,14 +141,9 @@ def test_read_hardware_for_ispyb_pre_collection(
     @bpp.run_decorator()
     def read_run(u, s, g, r, a, f, dcm, ap_sg, sm):
         yield from read_hardware_for_ispyb_pre_collection(
-            undulator=u,
-            synchrotron=s,
-            s4_slit_gaps=g,
-            aperture_scatterguard=ap_sg,
-            robot=r,
-            smargon=sm,
+            undulator=u, synchrotron=s, s4_slit_gaps=g, robot=r, smargon=sm
         )
-        yield from read_hardware_for_ispyb_during_collection(a, f, dcm)
+        yield from read_hardware_for_ispyb_during_collection(ap_sg, a, f, dcm)
 
     RE(
         read_run(

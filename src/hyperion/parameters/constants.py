@@ -35,6 +35,13 @@ class PlanNameConstants:
 
 
 @dataclass(frozen=True)
+class PlanGroupCheckpointConstants:
+    # For places to synchronise / stop and wait in plans, use as bluesky group names
+    # Gridscan
+    GRID_READY_FOR_DC = "ready_for_data_collection"
+
+
+@dataclass(frozen=True)
 class DocDescriptorNames:
     # Robot load event descriptor
     ROBOT_LOAD = "robot_load"
@@ -106,6 +113,7 @@ class HyperionConstants:
     I03 = I03Constants()
     PARAM = ExperimentParamConstants()
     PLAN = PlanNameConstants()
+    WAIT = PlanGroupCheckpointConstants()
     SIM = SimConstants()
     TRIGGER = TriggerConstants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
