@@ -192,6 +192,18 @@ def rotation_scan_plan(
     ):
         axis = composite.smargon.omega
 
+        # can move to start as fast as possible
+        yield from bps.abs_set(
+            axis.velocity, motion_values.max_velocity_deg_s, wait=True
+        )
+        LOGGER.info(f"moving omega to beginning, {motion_values.start_scan_deg=}")
+        yield from bps.abs_set(
+            axis,
+            motion_values.start_motion_deg,
+            group="move_to_rotation_start",
+            wait=True,
+        )
+
         yield from setup_zebra_for_rotation(
             composite.zebra,
             start_angle=motion_values.start_scan_deg,
@@ -329,25 +341,12 @@ def rotation_scan(
             )
             yield from bps.wait("move_gonio_to_start")
 
-            axis = composite.smargon.omega
-            # can move to start as fast as possible
-            # TODO get VMAX, see https://github.com/bluesky/ophyd/issues/1122
-            yield from bps.abs_set(
-                axis.velocity, motion_values.max_velocity_deg_s, wait=True
-            )
-            LOGGER.info(f"moving omega to beginning, {motion_values.start_scan_deg=}")
             if params.take_snapshots:
                 yield from setup_oav_snapshot_plan(
                     composite, params, motion_values.max_velocity_deg_s
                 )
                 yield from oav_snapshot_plan(composite, params, oav_params)
 
-            yield from bps.abs_set(
-                axis,
-                motion_values.start_motion_deg,
-                group="move_to_rotation_start",
-                wait=True,
-            )
             yield from rotation_scan_plan(composite, params, motion_values)
 
         LOGGER.info("setting up and staging eiger...")
