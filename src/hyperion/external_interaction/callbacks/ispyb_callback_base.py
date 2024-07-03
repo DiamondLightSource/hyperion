@@ -103,15 +103,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
             synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],
             SynchrotronMode,
         )
-        aperture_size = SingleAperturePosition(
-            **doc["data"]["aperture_scatterguard-selected_aperture"]
-        )
-        beamsize = beam_size_from_aperture(aperture_size)
+
         hwscan_data_collection_info = DataCollectionInfo(
-            beamsize_at_samplex=beamsize.x_um,
-            beamsize_at_sampley=beamsize.y_um,
-            focal_spot_size_at_samplex=beamsize.x_um,
-            focal_spot_size_at_sampley=beamsize.y_um,
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
@@ -130,8 +123,16 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def _handle_ispyb_transmission_flux_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params
+        aperture_size = SingleAperturePosition(
+            **doc["data"]["aperture_scatterguard-selected_aperture"]
+        )
+        beamsize = beam_size_from_aperture(aperture_size)
         hwscan_data_collection_info = DataCollectionInfo(
-            flux=doc["data"]["flux_flux_reading"]
+            beamsize_at_samplex=beamsize.x_um,
+            beamsize_at_sampley=beamsize.y_um,
+            focal_spot_size_at_samplex=beamsize.x_um,
+            focal_spot_size_at_sampley=beamsize.y_um,
+            flux=doc["data"]["flux_flux_reading"],
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
@@ -150,6 +151,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             hwscan_data_collection_info, None, self.params
         )
         ISPYB_LOGGER.info("Updating ispyb data collection after flux read.")
+        self.append_to_comment(f"Aperture: {aperture_size.name}. ")
         return scan_data_infos
 
     @abstractmethod

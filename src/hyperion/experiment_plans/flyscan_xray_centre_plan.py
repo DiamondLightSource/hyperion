@@ -269,13 +269,17 @@ def run_gridscan(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
-            fgs_composite.aperture_scatterguard,
             fgs_composite.robot,
             fgs_composite.smargon,
         )
-        yield from read_hardware_for_ispyb_during_collection(
-            fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
-        )
+
+    read_during_collection = partial(
+        read_hardware_for_ispyb_during_collection,
+        fgs_composite.aperture_scatterguard,
+        fgs_composite.attenuator,
+        fgs_composite.flux,
+        fgs_composite.dcm,
+    )
 
     LOGGER.info("Setting fgs params")
     yield from feature_controlled.set_flyscan_params()
@@ -284,7 +288,7 @@ def run_gridscan(
     yield from wait_for_gridscan_valid(feature_controlled.fgs_motors)
 
     LOGGER.info("Waiting for arming to finish")
-    yield from bps.wait("ready_for_data_collection")
+    yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
     yield from bps.stage(fgs_composite.eiger)
 
     # This needs to occur after eiger is armed so that
@@ -299,6 +303,7 @@ def run_gridscan(
         parameters.zocalo_environment,
         [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
         parameters.scan_indices,
+        do_during_run=read_during_collection,
     )
     yield from bps.abs_set(feature_controlled.fgs_motors.z_steps, 0, wait=False)
 
@@ -310,6 +315,7 @@ def kickoff_and_complete_gridscan(
     zocalo_environment: str,
     scan_points: list[AxesPoints[Axis]],
     scan_start_indices: list[int],
+    do_during_run: Callable[[], MsgGenerator] | None = None,
 ):
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
@@ -345,6 +351,9 @@ def kickoff_and_complete_gridscan(
         yield from bps.wait(
             ZOCALO_STAGE_GROUP
         )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        if do_during_run:
+            LOGGER.info(f"Running {do_during_run} during FGS")
+            yield from do_during_run()
         LOGGER.info("completing FGS")
         yield from bps.complete(gridscan, wait=True)
 
