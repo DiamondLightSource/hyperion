@@ -3,6 +3,7 @@ from typing import Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from blueapi.core import MsgGenerator
 from dodal.devices.zebra import (
     DISCONNECT,
     IN1_TTL,
@@ -142,7 +143,7 @@ def setup_zebra_for_gridscan(zebra: Zebra, group="setup_zebra_for_gridscan", wai
 @bluesky_retry
 def set_zebra_shutter_to_manual(
     zebra: Zebra, group="set_zebra_shutter_to_manual", wait=True
-):
+) -> MsgGenerator:
     yield from bps.abs_set(zebra.output.out_pvs[TTL_DETECTOR], PC_PULSE, group=group)
     yield from bps.abs_set(zebra.output.out_pvs[TTL_SHUTTER], OR1, group=group)
 

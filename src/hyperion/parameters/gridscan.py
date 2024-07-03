@@ -11,7 +11,7 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
@@ -40,7 +40,6 @@ class GridCommon(
     panda_runup_distance_mm: float = Field(
         default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
     )
-    set_stub_offsets: bool = Field(default=False)
     use_panda: bool = Field(default=CONST.I03.USE_PANDA_FOR_GRIDSCAN)
     use_gpu: bool = Field(default=CONST.I03.USE_GPU_FOR_GRIDSCAN_ANALYSIS)
     ispyb_experiment_type: IspybExperimentType = Field(
@@ -57,6 +56,7 @@ class GridCommon(
             comment=self.comment,
             sample_id=self.sample_id,
             ispyb_experiment_type=self.ispyb_experiment_type,
+            position=None,
         )
 
     @property
@@ -102,9 +102,12 @@ class PinTipCentreThenXrayCentre(GridCommon):
 
 
 class RobotLoadThenCentre(GridCommon):
+    thawing_time: float = Field(default=CONST.I03.THAWING_TIME)
+
     def pin_centre_then_xray_centre_params(self):
-        params = PinTipCentreThenXrayCentre(**self.dict())
-        return params
+        my_params = self.dict()
+        del my_params["thawing_time"]
+        return PinTipCentreThenXrayCentre(**my_params)
 
 
 class SpecifiedGridScan(GridCommon, XyzStarts, WithScan):
@@ -130,6 +133,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     x_steps: int = Field(gt=0)
     y_steps: int = Field(gt=0)
     z_steps: int = Field(gt=0)
+    _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
 
     @property
     def FGS_params(self) -> ZebraGridScanParams:
@@ -145,7 +149,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             z1_start=self.z_start_um,
             y2_start=self.y2_start_um,
             z2_start=self.z2_start_um,
-            set_stub_offsets=False,
+            set_stub_offsets=self.features.set_stub_offsets,
             dwell_time_ms=self.exposure_time_s * 1000,
             transmission_fraction=self.transmission_frac,
         )
@@ -168,10 +172,13 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             z1_start=self.z_start_um,
             y2_start=self.y2_start_um,
             z2_start=self.z2_start_um,
-            set_stub_offsets=False,
+            set_stub_offsets=self.features.set_stub_offsets,
             run_up_distance_mm=self.panda_runup_distance_mm,
             transmission_fraction=self.transmission_frac,
         )
+
+    def do_set_stub_offsets(self, value: bool):
+        self._set_stub_offsets = value
 
     @property
     def grid_1_spec(self):
