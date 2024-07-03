@@ -441,7 +441,7 @@ def _get_feature_controlled(
     else:
         return _FeatureControlled(
             setup_trigger=_zebra_triggering_setup,
-            tidy_plan=_zebra_tidy,
+            tidy_plan=partial(_generic_tidy, group="flyscan_zebra_tidy", wait=True),
             set_flyscan_params=partial(
                 set_flyscan_params,
                 fgs_composite.zebra_fast_grid_scan,
@@ -459,11 +459,6 @@ def _generic_tidy(
     LOGGER.info("Tidying up Zocalo")
     # make sure we don't consume any other results
     yield from bps.unstage(fgs_composite.zocalo, group=group, wait=wait)
-
-
-def _zebra_tidy(fgs_composite: FlyScanXRayCentreComposite):
-    LOGGER.info("Tidying up Zebra")
-    yield from _generic_tidy(fgs_composite, "zebra_flyscan_tidy")
 
 
 def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
