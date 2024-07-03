@@ -8,6 +8,7 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
 from ophyd_async.core import get_mock_put, set_mock_value
@@ -203,7 +204,8 @@ async def test_full_rotation_plan_smargon_settings(
     assert await smargon.z.user_readback.get_value() == params.z_start_um
     assert (
         # 4 * snapshots, restore omega, 1 * rotation sweep
-        omega_set.call_count == 4 + 1 + 1
+        omega_set.call_count
+        == 4 + 1 + 1
     )
     # 1 to max vel in outer plan, 1 to max vel in setup_oav_snapshot_plan, 1 set before rotation, 1 restore in cleanup plan
     assert omega_velocity_set.call_count == 4
