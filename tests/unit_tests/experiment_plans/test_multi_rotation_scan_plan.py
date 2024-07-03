@@ -350,7 +350,6 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
         RE, test_multi_rotation_params, fake_create_rotation_devices, [callback]
     )
     ispyb_calls = mock_ispyb_store.call_args_list
-    first_run_number = test_multi_rotation_params.detector_params.run_number
     for instantiation_call, ispyb_store_calls, rotation_params in zip(
         ispyb_calls,
         [  # there should be 4 calls to the IspybStore per run

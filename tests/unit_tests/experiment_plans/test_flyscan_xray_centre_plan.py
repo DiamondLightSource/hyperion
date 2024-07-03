@@ -936,12 +936,12 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
         zocalo_env = "dev_env"
 
+        mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+
         zocalo_cb.start(
             {CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS, "zocalo_environment": zocalo_env}  # type: ignore
         )
         assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
-
-        mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
 
         fake_fgs_composite.eiger.unstage = MagicMock()
         fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
