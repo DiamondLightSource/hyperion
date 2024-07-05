@@ -30,7 +30,6 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.panda import HDFPanda
 
 from hyperion.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -72,7 +71,7 @@ class RobotLoadThenCentreComposite:
     undulator: Undulator
     zebra: Zebra
     zocalo: ZocaloResults
-    panda: HDFPanda
+    # panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
     thawer: Thawer
 

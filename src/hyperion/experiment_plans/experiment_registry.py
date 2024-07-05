@@ -21,7 +21,7 @@ from hyperion.parameters.gridscan import (
     RobotLoadThenCentre,
     ThreeDGridScan,
 )
-from hyperion.parameters.rotation import RotationScan
+from hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 
 def not_implemented():
@@ -38,6 +38,7 @@ class ExperimentRegistryEntry(TypedDict):
         ThreeDGridScan
         | GridScanWithEdgeDetect
         | RotationScan
+        | MultiRotationScan
         | PinTipCentreThenXrayCentre
         | RobotLoadThenCentre
     ]
@@ -69,6 +70,11 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "setup": robot_load_then_centre_plan.create_devices,
         "param_type": RobotLoadThenCentre,
         "callbacks_factory": create_robot_load_and_centre_callbacks,
+    },
+    "multi_rotation_scan": {
+        "setup": rotation_scan_plan.create_devices,
+        "param_type": MultiRotationScan,
+        "callbacks_factory": create_rotation_callbacks,
     },
 }
 
