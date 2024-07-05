@@ -25,6 +25,7 @@ from dodal.devices.undulator import Undulator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra import Zebra
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.panda import HDFPanda
 
 from hyperion.device_setup_plans.manipulate_sample import move_aperture_if_required
 from hyperion.device_setup_plans.utils import (
@@ -76,7 +77,7 @@ class GridDetectThenXRayCentreComposite:
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zocalo: ZocaloResults
-    # panda: HDFPanda
+    panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
 
